@@ -27,7 +27,7 @@ which the demo run proves.
 | the brokers' statements | the book against a figure nothing here can influence | an account that is not judged; the audit names those |
 | the suite on the demo | the code runs on a book that is not yours | that the demo's figures are right |
 | `portfusion check` | the code passes on the demo, and the loaded book opens: figures, findings, every page | that the code is right on your book's rows |
-| `tools/export_test.py` | the tracked files, without a book's facts, install fresh and pass on the demo and on a new, empty book | that nothing of a book is named in what leaves |
+| `tools/clean_room.py` | the tracked files install fresh and pass on the demo and on a new, empty book, and the wheel built from them passes `portfusion check` | that nothing of a book is named in what leaves |
 | `test_demo` | the demo's files name nothing of a real book, and `tools/make_demo.py` writes them exactly | that the demo's invented figures agree beyond the suite |
 | `test_code` | the code carries nothing only a test reads, and a function its comments name exists | that the code is right |
 | eyes on the desk | whether a heading sits over its column | |

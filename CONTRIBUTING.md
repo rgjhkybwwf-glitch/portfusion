@@ -10,7 +10,7 @@ git config core.hooksPath .githooks       # the gate that keeps credentials out 
 python3 -m venv .venv && .venv/bin/python3 -m pip install -e '.[dev]' -c requirements.lock
 python3 -m pytest                          # the guard, on the book in this folder
 PORTFUSION_BOOK=demo python3 -m pytest     # on the demo
-python3 tools/export_test.py               # the code without a book's facts, and from a wheel
+python3 tools/clean_room.py                # the app on its own: a copy, a new book and a wheel
 ```
 
 `docs/testing.md` says what each layer of the guard proves, and what to do when a test fails.

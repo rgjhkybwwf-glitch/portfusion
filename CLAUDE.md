@@ -9,7 +9,7 @@ anything.**
 source .venv/bin/activate                 # once per terminal (docs/environment.md)
 python3 -m pytest                         # the guard: green unless the code broke
 portfusion record                         # the audit: what the record needs
-python3 tools/export_test.py              # the code without the book's facts, and from a wheel
+python3 tools/clean_room.py               # the app on its own: a copy, a new book and a wheel
 portfusion desk                           # the desk, in a browser
 ```
 
@@ -25,6 +25,6 @@ Every command reads the book in the folder it is typed in, or the one `PORTFUSIO
 | `docs/testing.md` | what each layer of the guard proves, and what to do when a test fails |
 | `docs/` | the component guides; `docs/glossary.md` is the agreed nomenclature |
 
-## Until the export                                                   *(stays with the book)*
+## Open work
 
-`docs/decisions.md` is the register, read before proposing work; `ROADMAP.md` is what is open.
+The repository's issues (`gh issue list`).

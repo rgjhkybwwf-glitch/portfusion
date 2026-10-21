@@ -6,14 +6,14 @@ in the browser, and a quarterly report. It records your own positions; it gives 
 
 ## Try it
 
-PortFusion needs Python 3.13. From a clone:
+PortFusion needs Python 3.13:
 
 ```bash
-python3 -m venv .venv && .venv/bin/python3 -m pip install -e . -c requirements.lock
-source .venv/bin/activate
-portfusion desk --book demo          # the invented demo book, in a browser
-portfusion init ~/my-book            # a new, empty book: its own folder and git history
-cd ~/my-book && portfusion desk      # every command reads the book in the folder it is typed in
+python3 -m venv ~/.portfusion && ~/.portfusion/bin/python3 -m pip install "portfusion @ git+https://github.com/rgjhkybwwf-glitch/portfusion@v0.2.0"
+~/.portfusion/bin/portfusion desk --book demo     # the invented demo book, in a browser
+~/.portfusion/bin/portfusion init ~/my-book       # a new, empty book: its folder, git history and release
+cd ~/my-book && python3 -m venv .venv && .venv/bin/python3 -m pip install -r requirements.txt
+source .venv/bin/activate && portfusion desk      # every command reads the book in the folder it is typed in
 ```
 
 `portfusion init --practice` makes a copy of the demo to try things on. On a Mac,

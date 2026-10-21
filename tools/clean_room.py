@@ -1,30 +1,22 @@
 """
-THE EXPORT TEST: can the code leave?
+THE CLEAN-ROOM TEST: does the app stand on its own?
 
-The tracked files are copied to an empty folder WITHOUT THE FACTS, and asked three ways: two on
-the demo, and one on a new book.
+The tracked files are copied to an empty folder and asked three ways:
 
-  THE COPY, installed in a venv of its own and its suite run there: the code stands without this
-  book beside it, every guard that reads a checkout's files included.
+  THE COPY, installed in a venv of its own and its suite run on the demo: nothing the code needs
+  lives outside what git tracks, every guard that reads a checkout's files included.
+  A NEW BOOK, made by `portfusion init` and holding no row, with the copy's suite run on it: every
+  test either runs or says which rows it needs, so the suite is one any book can run.
   THE WHEEL, built from the copy as a release is, installed in a second venv, and `portfusion
   check` run from an empty folder: the app a user installs carries everything it needs (the demo,
   the desk's screens, the typeface, the suite) and reaches back into no checkout. The guards that
   read a checkout skip there, as they do for a user, which is why the copy is asked as well.
-  A NEW BOOK, made by `portfusion init` and holding no row, with the copy's suite run on it: every
-  test either runs or says which rows it needs, so the suite is one any book can run.
 
-Green means all three pass. The workflow,
-`.github/workflows/guard.yml`, runs this same file, so the Mac and GitHub ask the question one
-way, and it is the workflow's one run of the suite.
+Green means all three pass. The workflow, `.github/workflows/guard.yml`, runs this same file, so
+the Mac and GitHub ask the question one way, and it is the workflow's one run of the suite.
 
-THE KNOWN SEAMS ARE A RATCHET, AND THEY ARE AT ZERO. A test that failed on the copy for a known reason
-was listed below with the issue that closed it; the run was RED when
-anything else failed, and RED when a listed seam started passing, so the list only shrank. It
-emptied when the last path was resolved against the book: every test passes on the copy, and the
-code can leave. A seam listed again is a step back.
-
-    python3 tools/export_test.py            run it; exit 0 only when exactly the known seams fail
-    python3 tools/export_test.py --keep     the same, and leave the copy, the wheel and the venv
+    python3 tools/clean_room.py             run it; exit 0 only when all three pass
+    python3 tools/clean_room.py --keep      the same, and leave the copy, the wheel and the venvs
 """
 from __future__ import annotations
 
@@ -40,34 +32,19 @@ from portfusion.log import log
 
 HERE = pathlib.Path(__file__).resolve().parent.parent     # the checkout; this file is in tools/
 
-#: WHAT STAYS BEHIND: the book's facts, its own checks, its brand, its backup hook and the guides
-#: whose subject is this book, as globs over the tracked paths. The workflow skips a push that
-#: touches nothing else, by these same globs; tests/test_export.py holds the two together.
-FACTS = ("store/*.csv", "_archive/statements/**", "_archive/bench/**", "checks/**", "brand/**",
-         ".githooks/post-commit", "docs/decisions.md", "docs/backup.md", "docs/publication.md",
-         "ROADMAP.md")
 
-#: Each test that fails on the copy, and the issue that closes it, by name. Empty: nothing
-#: fails there.
-KNOWN_SEAMS: dict[str, str] = {}
-
-
-def is_fact(path: str) -> bool:
-    return any(pathlib.PurePosixPath(path).full_match(glob) for glob in FACTS)
-
-
-def export(into: pathlib.Path) -> int:
-    """Copy every tracked file that is not a fact into `into`, and make it a repository of its
-    own: the guards read what git calls the project. Returns how many files went."""
+def copy_tracked(into: pathlib.Path) -> int:
+    """Copy every tracked file into `into`, and make it a repository of its own: the guards read
+    what git calls the project. Returns how many files went."""
     listed = subprocess.run(["git", "ls-files", "-z"], cwd=HERE, capture_output=True, text=True,
                             check=True).stdout.split("\0")
-    files = [p for p in listed if p and not is_fact(p)]
+    files = [p for p in listed if p]
     for path in files:
         (into / path).parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(HERE / path, into / path)
     for args in (["init", "-q"], ["add", "-A"],
-                 ["-c", "user.name=export", "-c", "user.email=export@example.invalid",
-                  "commit", "-qm", "export"]):
+                 ["-c", "user.name=clean-room", "-c", "user.email=clean-room@example.invalid",
+                  "commit", "-qm", "clean room"]):
         subprocess.run(["git", *args], cwd=into, check=True)
     return len(files)
 
@@ -104,11 +81,9 @@ def run_suite(where: pathlib.Path, python: pathlib.Path, *command: str,
     return done.returncode, done.stdout + done.stderr
 
 
-def verdict(code: int, output: str, seams: dict[str, str] | None = None) -> list[str]:
-    """What is wrong with a run, against the known seams; empty when nothing is. pytest exits 0
-    when all passed and 1 when some failed; anything else means the run itself broke. The wheel
-    is held to none: a seam is the copy's, by the copy's test ids."""
-    seams = KNOWN_SEAMS if seams is None else seams
+def verdict(code: int, output: str) -> list[str]:
+    """What is wrong with a run; empty when nothing is. pytest exits 0 when all passed and 1 when
+    some failed; anything else means the run itself broke."""
     if code not in (0, 1):
         return [f"pytest exited {code}: the run did not complete"]
     failed = set(re.findall(r"^(?:FAILED|ERROR) (\S+)", output, re.M))
@@ -117,47 +92,43 @@ def verdict(code: int, output: str, seams: dict[str, str] | None = None) -> list
     # passed (the review of 21 Oct 2026).
     if code == 1 and not failed:
         return ["pytest exited 1 and named no failed test: the run itself failed"]
-    problems = [f"FAILED, and not a known seam: {t}" for t in sorted(failed - seams.keys())]
-    problems += [f"PASSES now: delete its line from KNOWN_SEAMS ({seams[t]}): {t}"
-                 for t in sorted(seams.keys() - failed)]
-    return problems
+    return [f"FAILED: {t}" for t in sorted(failed)]
 
 
 def main(argv: list[str]) -> int:
-    top = pathlib.Path(tempfile.mkdtemp(prefix="export-test-"))
+    top = pathlib.Path(tempfile.mkdtemp(prefix="clean-room-"))
     into, user = top / "copy", top / "user"
     into.mkdir()
     user.mkdir()
     try:
-        log.info(f"export test: {export(into)} tracked files copied to {into}, the facts left behind")
+        log.info(f"clean room: {copy_tracked(into)} tracked files copied to {into}")
         lock = into / "requirements.lock"
         copy = install("-e .[dev]", lock, into)
         code, output = run_suite(into, copy, "pytest", "-p", "no:cacheprovider")
         log.info(output.rstrip())
         problems = [f"the copy: {p}" for p in verdict(code, output)]
         # A NEW BOOK, the first a new user has: every table and no row. A test built from rows it
-        # does not hold skips; one that fails leans on a book like the demo or this one.
+        # does not hold skips; one that fails leans on a book like the demo.
         empty = top / "a-new-book"
         subprocess.run([str(copy), "-m", "portfusion", "init", str(empty)], cwd=top,
                        check=True, capture_output=True)
-        log.info(f"export test: the suite on a new, empty book ({empty})")
+        log.info(f"clean room: the suite on a new, empty book ({empty})")
         code, output = run_suite(into, copy, "pytest", "-p", "no:cacheprovider", book=str(empty))
         log.info(output.rstrip().splitlines()[-1] if output.strip() else "")
-        problems += [f"a new book: {p}" for p in verdict(code, output, seams={})]
+        problems += [f"a new book: {p}" for p in verdict(code, output)]
         wheel = build(into)
-        log.info(f"export test: built {wheel.name}; `portfusion check` from {user}")
+        log.info(f"clean room: built {wheel.name}; `portfusion check` from {user}")
         code, output = run_suite(user, install(f"{wheel}[dev]", lock, user), "portfusion", "check")
         log.info(output.rstrip())
-        problems += [f"the wheel: {p}" for p in verdict(code, output, seams={})]
+        problems += [f"the wheel: {p}" for p in verdict(code, output)]
         for line in problems:
             log.error(line)
         if not problems:
-            log.info(f"export test: as expected — only the {len(KNOWN_SEAMS)} known seams fail"
-                     if KNOWN_SEAMS else "export test: green — the code can leave")
+            log.info("clean room: green — the app stands on its own")
         return 1 if problems else 0
     finally:
         if "--keep" in argv:
-            log.info(f"the copy, the wheel and the venv are kept at {top}")
+            log.info(f"the copy, the wheel and the venvs are kept at {top}")
         else:
             shutil.rmtree(top, ignore_errors=True)
 

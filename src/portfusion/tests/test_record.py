@@ -767,17 +767,8 @@ def test_the_code_repeats_itself_no_more_than_it_did(repo_root, project_files):
 #: Things a guide names that are not in the tree, each on purpose. Anything else a guide points
 #: at must be there, or be a path git ignores, which names a local thing deliberately.
 NAMED_ON_PURPOSE = {
-    "METHOD.md": "the register records why it was retired",
-    "TODO.md": "the register records why it retired into ROADMAP.md",
-    "_backups/": "docs/backup.md says there is none, and why",
     ".git/": "git's own folder, which it never lists",
     "bin/activate": "inside the venv, which git never lists",
-    "UPPERCASE.md": "a naming pattern, not a file",
-    "checks/": "a book's own folder, which stays with the book at the export",
-    "brand/": "a book's own folder, which stays with the book at the export",
-    ".githooks/post-commit": "a book's own backup hook, which stays with the book at the export",
-    "docs/decisions.md": "a guide whose subject is the book, which stays with it at the export",
-    "ROADMAP.md": "a guide whose subject is the book, which stays with it at the export",
 }
 
 
