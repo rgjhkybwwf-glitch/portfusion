@@ -24,7 +24,7 @@ A book is a folder:
 ```
 store/      the facts: one CSV per kind of event          brand/    its name and look (optional)
 _inbox/     documents waiting to be read onto the record   checks/   its own tests (optional)
-_archive/   the documents behind the rows                  .githooks/  the secret gate
+_archive/   the documents behind the rows                  .githooks/  its guards
 requirements.txt   the PortFusion release the book runs
 ```
 

@@ -64,7 +64,7 @@ where = ["src"]
 [tool.ruff]
 target-version = "py313"
 line-length = 100               # what the code is written to; E501 is not selected
-extend-include = [".githooks/pre-commit"]
+extend-include = [".githooks/pre-commit", ".githooks/pre-push"]
 
 [tool.ruff.lint]
 select = ["F", "E4", "E7", "E9", "W"]
