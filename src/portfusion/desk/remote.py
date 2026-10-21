@@ -338,7 +338,8 @@ def _ration(where: str, now: float | None = None) -> bool:
 
 
 def _refused(request: Request, e: Exception) -> JSONResponse:
-    auth.log("refused", address(request), detail=str(e))
+    why = getattr(e, "detail", "")
+    auth.log("refused", address(request), detail=f"{e}: {why}" if why else str(e))
     return JSONResponse(status_code=403, content={"error": "refused", "detail": str(e)})
 
 

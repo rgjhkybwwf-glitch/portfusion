@@ -123,7 +123,7 @@ def test_a_broker_export_that_is_not_utf8_still_reads(tmp_path):
     p = tmp_path / "hl-export.csv"
     p.write_bytes('Account,Total value\n"Stocks & Shares ISA","£12,345.67"\n'
                   .encode("cp1252"))
-    doc = R.extract(str(p))
+    doc = R.extract_file(p)
     assert doc["encoding"] == "cp1252", f"read as {doc['encoding']!r}"
     assert "£12,345.67" in doc["text"], \
         f"the figure did not survive the decode: {doc['text']!r}"

@@ -260,7 +260,7 @@ def _check_units(account: str, as_of: str, name: str, key: str, document=None) -
     from portfusion.engine import Book
     from portfusion.desk.intake import read_document, read_rows
     path = document or schema.STATEMENTS / name
-    units = read_rows.holdings(read_document.extract(str(path))["text"], key)
+    units = read_rows.holdings(read_document.extract_file(path)["text"], key)
     if not units:
         raise Refused(f"{account}: {name} lists no units this door can read.")
     check = Book().units_check(account, as_of, units)

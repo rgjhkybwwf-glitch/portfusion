@@ -53,7 +53,7 @@ def closes(on: str) -> dict:
         if not fnmatch.fnmatchcase(name, f"{label}*IG statement*.pdf"):
             continue
         path = schema.STATEMENTS / name
-        doc = read_document.extract(str(path))
+        doc = read_document.extract_file(path)
         printed = _PRINTED_DATE.search(doc["text"])
         if doc["scanned"] or not printed or (
                 _dt.datetime.strptime(printed.group(1), "%d %B %Y").date() != day):
