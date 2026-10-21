@@ -1,0 +1,76 @@
+# THE PROJECT: what the app is called, what it needs, and the one command it installs.
+# `requirements.lock` is the exact set the suite was proved on; the floors below are the promise.
+#
+#   python3 -m venv .venv
+#   .venv/bin/python3 -m pip install -e '.[dev]' -c requirements.lock
+#   source .venv/bin/activate
+#
+# docs/environment.md says why each checkout has its own venv, and what breaks one.
+
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "portfusion"             # PortFusion, the app
+description = "An investment book's own record: its engine, a desk and a quarterly report."
+readme = "README.md"
+# THE FLOOR IS WHAT HAS BEEN RUN: 3.13 is the only Python the suite has passed on. The locked
+# numpy needs 3.12 and the locked pandas 3.11, so a lower floor waits for a run that proves it.
+requires-python = ">=3.13"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+dynamic = ["version"]
+# FLOORS, NOT PINS. Nothing below a floor has been run; the lock says what has.
+# THE BUILD (the report and the engine) needs pandas alone; the rest is the desk's, beside it.
+# The build may not import desk/, feeds/ or history/ (tests/desk/test_boundaries.py).
+dependencies = [
+    "pandas>=2.2",      # the engine. Written on pandas 3; numpy comes with it
+    "fastapi>=0.115",   # desk/app.py
+    "uvicorn>=0.32",    # serves the desk on localhost
+    "pypdf>=5.0",       # a PDF's text: a document on the Bench, a filed IG statement's closes
+    "webauthn>=3.0",    # passkeys for the hosted desk's sign-in (desk/auth.py)
+    # THE GUARD SHIPS WITH THE APP: `portfusion check` runs the suite on whichever book is loaded.
+    "pytest>=8.0",      # the guard
+    "httpx2>=2.13",     # Starlette's TestClient requests the desk's routes with it in tests
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.17",       # the linter: python3 -m ruff check
+]
+
+[project.scripts]
+portfusion = "portfusion.__main__:main"
+
+[tool.setuptools.dynamic]
+version = { attr = "portfusion.__version__" }   # the release: portfusion/__init__.py
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+# THE SUITE, as files and not a package: no __init__.py, so pytest imports each test by its own
+# folder exactly as it does in a checkout, and `from harness import …` keeps working.
+"portfusion" = ["tests/*.py", "tests/pytest.ini", "tests/desk/*.py",
+                 # THE DEMO BOOK, so an installed copy has a book to show and `portfusion init --practice` to copy
+                 "demo/store/*.csv", "demo/_archive/**/*", "demo/checks/*"]
+"portfusion.desk" = ["static/*"]
+"portfusion.house" = ["fonts/*"]
+
+# THE LINTER: pyflakes (a name unused, undefined or redefined) and the pycodestyle errors that are
+# not layout. The guard runs it (tests/test_code.py) and so does the workflow. Its formatter is not
+# adopted: it would undo the aligned columns the code is written in, and the public repository's
+# style is settled at the export.
+[tool.ruff]
+target-version = "py313"
+line-length = 100               # what the code is written to; E501 is not selected
+extend-include = [".githooks/pre-commit"]
+
+[tool.ruff.lint]
+select = ["F", "E4", "E7", "E9", "W"]
+
+[tool.ruff.lint.per-file-ignores]
+# It checks that the book's store is whole BEFORE importing the rest of the record, so a missing
+# table says what is wrong rather than failing three frames deep.
+"src/portfusion/record/rules.py" = ["E402"]

@@ -1,0 +1,5 @@
+date,account,category,detail,amount,source,note,currency,local_amount,rate
+2026-06-15,Voss ii ISA,Dividend,BRYC.L final dividend,30.0,Not on file: invented for the demo,,,,
+2026-08-20,Voss IG Spread bet,Funding interest,"Long interest 06/07/26 to 31/08/26, ref CS00DEMO0000001",-1.2,Not on file: invented for the demo,,,,
+2026-09-25,Voss ii ISA,Cash interest,Gross interest,1.1,Not on file: invented for the demo,,,,
+2026-09-26,Voss ii Trading,Dividend,BRYC.L interim dividend,12.5,Not on file: invented for the demo,,,,

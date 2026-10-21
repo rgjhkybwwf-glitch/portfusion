@@ -1,0 +1,5 @@
+currency,date,rate,kind,quality,struck,status,source
+USD,2026-04-14,1.3158,spot,derived,,live,Invented for the demo
+USD,2026-06-30,1.32,spot,derived,close,live,Invented for the demo
+USD,2026-09-30,1.33,spot,derived,close,live,Invented for the demo
+SEK,2026-09-30,12.4,spot,derived,,live,Invented for the demo

@@ -1,0 +1,7 @@
+ticker,price,currency,as_of,source,struck,at
+BRYC.L,2.35,GBP,2026-09-30,Invented for the demo,close,
+KELS.L,1.7,GBP,2026-09-30,Invented for the demo,close,
+QNLR,112.0,USD,2026-09-30,Invented for the demo,close,
+VELD-DEC26,10610.0,USD,2026-09-30,Invented for the demo: an IG read would state bid 10610.0,live,2026-09-30T15:00Z
+VELD-MAR27,10340.0,USD,2026-09-30,Invented for the demo: an IG read would state bid 10340.0,live,2026-09-30T15:00Z
+QNLR-DEC26,10480.0,USD,2026-09-30,Invented for the demo: an IG read would state bid 10480.0,live,2026-09-30T15:00Z

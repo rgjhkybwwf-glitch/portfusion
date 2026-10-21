@@ -1,0 +1,1166 @@
+"""THE PRICE REFRESH — the marks door, the journal it writes, and the bay's rules."""
+from __future__ import annotations
+
+import datetime as _dt
+import pytest
+from portfusion.record import rules as _rules
+from portfusion.desk import actions
+from desk_support import SPREAD_BET_ACCOUNT, _ready, _static, all_crlf, to_crlf
+from portfusion.desk.intake import bench as _bench
+from harness import SRC, require
+
+# THE LOADED BOOK'S OWN LINES, derived once. These doors only replace rows the book has, so
+# every fixture row names whichever book is loaded rather than this one (docs/testing.md:
+# one suite, any book). The figures on the rows stay invented — a write lands in a copy.
+_CONTRACTS = set(_rules.LEG_CONTRACT.values())
+_BY_TICKER = {r[0]: r for r in _rules.CURRENT_PRICES}
+#: A replaceable share line: not a contract, not carried — the stand-in wherever one mark will do.
+TICK = next((t for t in _BY_TICKER if t not in _CONTRACTS and t not in _rules.STATEMENT_PRICED),
+            None)
+TICK_CUR = _BY_TICKER[TICK][2] if TICK else None
+#: Every door here replaces a row the book already has, so a book with no mark runs none of it.
+#: A CURRENCY THE BOOK HOLDS A RATE FOR, never a typed one: a book priced in no USD had every
+#: rate test here fail rather than run on its own currency.
+RATE_CUR = next((r[0] for r in _rules.fx_rows if r[0] != "GBP"), None)
+
+require(TICK, SPREAD_BET_ACCOUNT, RATE_CUR,
+        what="a replaceable share mark, a spread-bet account and a foreign rate")
+
+
+# =====================================================================================
+# THE MARKS DOOR — a replace, beside commit.py's append
+# =====================================================================================
+
+
+def test_a_mark_is_replaced_and_the_row_count_does_not_move(store_copy):
+    """A REPLACE, not an append — which is the whole difference from the other door."""
+    from portfusion.record import schema
+    from portfusion.desk.doors import marks
+
+    was = schema.load("current-prices")
+    row = {"ticker": TICK, "price": 91.5, "currency": TICK_CUR, "as_of": "2026-09-04",
+           "source": f"TradingView 1D {TICK}, session 2026-09-04 close — test", "struck": "close"}
+
+    result = marks.write(prices=[row])
+
+    now = schema.load("current-prices")
+    assert len(now) == len(was), "a replace moved the row count"
+    assert result["prices"] == 1
+    landed = next(r for r in now if r[0] == TICK)
+    assert landed[1] == 91.5 and landed[3] == "2026-09-04"
+
+
+def test_a_crlf_table_is_written_back_in_crlf(store_copy):
+    """THE FILE'S OWN LINE ENDING. The marks door rebuilt a table with "\\n" whatever it found,
+    so a CRLF file came back LF and every line showed as changed (the code review of 2 Oct 2026,
+    latent while the store is LF)."""
+    from portfusion.record import schema
+    from portfusion.desk.doors import marks
+    to_crlf("current-prices")
+    before = schema.TABLES["current-prices"].path.read_bytes().split(b"\r\n")
+    marks.write(prices=[{"ticker": TICK, "price": 91.5, "currency": TICK_CUR,
+                         "as_of": "2026-09-04", "struck": "close",
+                         "source": f"TradingView 1D {TICK}, session 2026-09-04 close — test"}])
+    assert all_crlf("current-prices"), "the marks door wrote a CRLF table back as LF"
+    after = schema.TABLES["current-prices"].path.read_bytes().split(b"\r\n")
+    assert sum(a != b for a, b in zip(before, after)) == 1, "more than the one line moved"
+
+
+def test_a_rate_replaces_its_own_line_and_every_other_line_is_byte_identical(store_copy):
+    """A refresh replaces LINES: the currency it was given, and every other line passed through
+    as the bytes it read, so a diff of fx.csv shows the rates that moved and nothing else."""
+    from portfusion.record import schema
+    from portfusion.desk.doors import marks
+
+    path = schema.TABLES["fx"].path
+    before = path.read_text(encoding="utf-8").splitlines()
+
+    marks.write(rates=[{"currency": RATE_CUR, "as_of": "2026-09-04", "rate": 1.3611,
+                        "source": f"TradingView quote FX_IDC:GBP{RATE_CUR}, live at 2026-09-04T14:00:00Z — test",
+                        "struck": "live"}])
+
+    after = path.read_text(encoding="utf-8").splitlines()
+    assert len(before) == len(after)
+    moved = [i for i, (a, b) in enumerate(zip(before, after)) if a != b]
+    assert len(moved) == 1, f"lines {moved} changed; only the {RATE_CUR} line should have"
+    assert after[moved[0]].startswith(f"{RATE_CUR},")
+
+
+@pytest.fixture
+def one_carried_rate(monkeypatch):
+    """A currency carried by decision, injected. A carry is a setting (settings.csv
+    `rate_carried`, read as rules.RATE_CARRIED) rather than prose in a source cell, and none is
+    carried by default, so the witness is planted on a
+    currency fx.csv holds, with the record's own reason."""
+    from portfusion.record import rules as R
+    currency = R.fx_rows[0][0]
+    monkeypatch.setattr(R, "RATE_CARRIED", {currency: R.RATE_CARRIED_WHY})
+    return currency
+
+
+def test_a_carried_line_is_refused_by_name_and_by_reason(store_copy, one_carried_rate):
+    """A refresh must not quietly undo a decision about what the book has stopped watching."""
+    from portfusion.desk.doors import marks
+
+    assert one_carried_rate in marks.carried()
+    with pytest.raises(marks.Refused) as e:
+        marks.write(rates=[{"currency": one_carried_rate, "as_of": "2026-09-04", "rate": 12.9,
+                            "source": "test", "struck": "live"}])
+    assert "carried" in str(e.value) and "nothing the book values" in str(e.value), \
+        "the refusal does not carry the reason the line is held"
+
+
+def test_a_mark_without_a_source_and_a_date_together_is_refused(store_copy):
+    """RULE 1 OF docs/prices.md, ENFORCED HERE.
+
+    A stale price wearing today's date is worse than a stale price, because the freshness
+    indicator then agrees everything is fine.
+    """
+    from portfusion.desk.doors import marks
+    for missing in ("as_of", "source"):
+        row = {"ticker": TICK, "price": 91.5, "currency": TICK_CUR,
+               "as_of": "2026-09-04", "source": "a source", "struck": "close"}
+        row[missing] = ""
+        with pytest.raises(marks.Refused) as e:
+            marks.write(prices=[row])
+        assert missing in str(e.value)
+
+
+def test_a_price_that_does_not_say_which_instant_it_describes_is_refused(store_copy):
+    """`struck` and `at` are the FEED'S. A price typed into the form says neither, and nothing
+    is typed; a live read without its instant, or with one on another day, is the
+    stale-level-wearing-a-fresh-date failure in a new column."""
+    from portfusion.desk.doors import marks
+    base = {"ticker": TICK, "price": 91.5, "currency": TICK_CUR, "as_of": "2026-09-04",
+            "source": "a source"}
+    for over, says in (
+        ({}, "struck"),
+        ({"struck": "live"}, "UTC instant"),
+        ({"struck": "live", "at": "2026-09-03T12:00:00Z"}, "dated"),
+        ({"struck": "close", "at": "2026-09-04T21:00:00Z"}, "carries no instant"),
+    ):
+        with pytest.raises(marks.Refused) as e:
+            marks.write(prices=[{**base, **over}])
+        assert says in str(e.value), (over, str(e.value))
+
+
+def test_a_live_read_is_dated_by_its_uk_day_and_lands_with_its_instant(store_copy):
+    """23:30 UTC in summer is 00:30 the next UK day — the book's day. The instant itself is
+    kept in UTC, exactly as the feed gave it."""
+    from portfusion.record import schema
+    from portfusion.desk.doors import marks
+    marks.write(prices=[{"ticker": TICK, "price": 91.5, "currency": TICK_CUR,
+                         "as_of": "2026-09-04", "source": "a live read — test",
+                         "struck": "live", "at": "2026-09-03T23:30:00Z"}])
+    landed = dict(zip(schema.TABLES["current-prices"].header,
+                      next(r for r in schema.load("current-prices") if r[0] == TICK)))
+    assert (landed["struck"], landed["at"]) == ("live", "2026-09-03T23:30:00Z")
+
+
+def test_a_refused_write_leaves_every_file_byte_identical(store_copy):
+    """The envelope, on this door. A half-written store is the one outcome worth machinery."""
+    from portfusion.record import schema
+    from portfusion.desk.doors import marks
+
+    paths = [schema.TABLES[t].path for t in ("current-prices", "fx")]
+    before = {p: p.read_bytes() for p in paths}
+
+    with pytest.raises(marks.Refused):
+        marks.write(prices=[{"ticker": TICK, "price": 91.5, "currency": TICK_CUR,
+                             "as_of": "2026-09-04", "source": "fine", "struck": "close"}],
+                    rates=[{"currency": "XXX", "as_of": "2026-09-04", "rate": 1.0,
+                            "source": "names no row", "struck": "live"}])
+
+    for path, original in before.items():
+        assert path.read_bytes() == original, f"{path.name} was left modified by a refused write"
+
+
+
+def test_a_refused_write_takes_back_the_banking_too(store_copy):
+    """THE HISTORIES ARE INSIDE THE ENVELOPE. The door banked the outgoing marks BEFORE its
+    `atomic()`, which held the tables and the journal alone, so a write refused after the bank
+    left price-history.csv changed by a refresh that never happened (the review of 21 Oct 2026).
+    The outgoing mark is unbanked here, so the bank has something to do."""
+    from portfusion.history import prices as PH
+    from portfusion.desk.doors import marks
+    live = {(m["ticker"], m["date"]) for m in PH.current_marks() if m["ticker"] == TICK}
+    PH.save([r for r in PH.load() if (r["ticker"], r["date"]) not in live])
+    history = store_copy / PH.CSV_NAME
+    before = history.read_bytes()
+
+    with pytest.raises(marks.Refused):
+        marks.write(prices=[{"ticker": TICK, "price": 91.5, "currency": TICK_CUR,
+                             "as_of": "2026-09-04", "source": "fine", "struck": "close"}],
+                    rates=[{"currency": "XXX", "as_of": "2026-09-04", "rate": 1.0,
+                            "source": "names no row", "struck": "live"}])
+
+    assert history.read_bytes() == before, "a refused write banked the outgoing marks"
+
+
+def test_a_fault_mid_write_puts_back_the_files_and_the_record_in_memory(store_copy, monkeypatch):
+    """A FAULT, NOT A REFUSAL. Until 14 Oct 2026 the Price Refresh's write caught only the doors'
+    refusals: anything else was a bare 500, and `D.reload_store()` was skipped, so the record in
+    memory went on holding a mark the restored files did not (the code review of 2 Oct, Todo's
+    P3). Here the mark lands, the record reloads with it, and then the write fails."""
+    from portfusion.record import rules as D, schema
+    from portfusion.desk.doors import marks
+    from portfusion.desk.panels import price_refresh
+    path = schema.TABLES["current-prices"].path
+    before = path.read_bytes()
+    was = {r[0]: r[1] for r in D.CURRENT_PRICES}[TICK]
+    real = marks.write
+
+    def write_then_fail(**kw):
+        real(**kw)
+        raise RuntimeError("the disk went away")
+    monkeypatch.setattr(marks, "write", write_then_fail)
+
+    out = price_refresh._write(prices=[{
+        "ticker": TICK, "price": was + 1, "currency": TICK_CUR, "as_of": "2026-09-04",
+        "struck": "close", "source": f"TradingView 1D {TICK}, session 2026-09-04 close — test"}])
+
+    assert out["ok"] is False and "the disk went away" in out["refused"], out
+    assert path.read_bytes() == before, "the files were not put back"
+    assert {r[0]: r[1] for r in D.CURRENT_PRICES}[TICK] == was, \
+        "the record in memory kept a mark the files no longer hold"
+
+
+def test_the_outgoing_mark_is_banked_before_the_new_one_lands(store_copy):
+    """THE ORDERING feeds/refresh.py EXISTS TO MAKE INSEPARABLE, enforced by this door rather than
+    by anyone remembering. Every quarter before the histories existed was lost by refreshing
+    without it."""
+    from portfusion.history import prices as PH
+    from portfusion.desk.doors import marks
+
+    outgoing = {(m["ticker"], m["date"]) for m in PH.current_marks()}
+    marks.write(prices=[{"ticker": TICK, "price": 91.5, "currency": TICK_CUR,
+                         "as_of": "2026-09-04", "source": "test", "struck": "close"}])
+
+    banked = {(r["ticker"], r["date"]) for r in PH.load()}
+    assert outgoing <= banked, "an outgoing mark was replaced without being banked first"
+    # THE FIGURE, not just the day: the book may already hold a banked close for this line on
+    # this date, and (ticker, date) alone would then pass with the write's own bank skipped.
+    assert any(r["ticker"] == TICK and r["date"] == "2026-09-04" and r["price"] == 91.5
+               for r in PH.load()), "the incoming mark was not banked after the write"
+
+
+def test_the_written_mark_is_visible_to_the_engine_without_a_restart(store_copy):
+    """WRITING THE CSV IS ONLY HALF OF REPLACING A MARK.
+
+    `rules.CURRENT_PRICES` and `rules.fx_rows` are module-level and read ONCE at import, and
+    `engine.load_store()` takes prices and FX from those attributes rather than from the files.
+    A long-lived desk would therefore go on serving the mark it had just replaced, however many
+    times the engine was rebuilt, with nothing on the page saying so.
+    """
+    from portfusion.record import rules as _rules
+    from portfusion.desk.doors import marks
+
+    marks.write(prices=[{"ticker": TICK, "price": 91.5, "currency": TICK_CUR,
+                         "as_of": "2026-09-04", "source": "test", "struck": "close"}])
+
+    live = {r[0]: r[1] for r in _rules.CURRENT_PRICES}
+    assert live[TICK] == 91.5, \
+        "the record in memory still holds the old mark — the write is invisible to the engine"
+
+
+def test_a_carried_rate_is_flagged_by_the_engine_and_carries_its_reason(one_carried_rate):
+    """A rate's carry once lived only as prose inside its own `source` cell.
+
+    A decision the code cannot read is a decision the code eventually breaks: the bay would
+    have asked for a rate nobody intends to supply, because nothing in the returned shape said
+    otherwise.
+    """
+    from portfusion import engine
+    rates = {r["currency"]: r for r in engine.marks_replaceable()["fx"]}
+    assert rates, "no live rates at all"
+    carried = [r for r in rates.values() if r["carried"]]
+    assert [r["currency"] for r in carried] == [one_carried_rate]
+    for rate in carried:
+        assert rate["why"], f"{rate['currency']} is carried with no reason on it"
+    for rate in rates.values():
+        assert rate["carried"] == (rate["why"] is not None), \
+            f"{rate['currency']}: carried and its reason disagree"
+
+
+def test_a_live_rate_says_how_old_it_is_as_a_price_does():
+    """THE THREE GROUPS ON THE PRICE REFRESH READ ALIKE (the owner, 1 Oct 2026): a price and an IG
+    account showed their outgoing date and its age, a rate its date alone. The engine ages a
+    live rate's as_of against the same today as a price's; a value that is no date is left
+    without an age rather than given a guessed one."""
+    import pandas as pd
+    from portfusion import engine
+    from portfusion.record import rules as D
+    can = engine.marks_replaceable()
+    today = pd.Timestamp(can["today"])
+    dated = [r for r in can["fx"] if r["as_of"] is not None]
+    assert dated, "no live rate carries a date — this asserts nothing"
+    as_of = {cur: day for cur, _rate, day, *_ in D.fx_rows}
+    for r in can["fx"]:
+        day = pd.to_datetime(as_of[r["currency"]], errors="coerce")
+        if pd.isna(day):
+            assert r["as_of"] is None and r["age_days"] is None, r
+        else:
+            assert r["as_of"] == day.date().isoformat(), r
+            assert r["age_days"] == (today - day).days, r
+
+
+def test_a_typed_figure_sits_on_the_line_of_a_fetched_one(repo_root):
+    """A rate the sweep left unpriced opens for typing, and its text sat 12px off the column of
+    fetched figures above it. The box reaches into the cell's padding by its own padding, on the
+    side the column's text is set to."""
+    import re
+    css = (SRC / "desk" / "static" / "app.css").read_text()
+    left = re.search(r'#rb-form td input:not\(\[readonly\]\)[^{]*\{([^}]*)\}', css).group(1)
+    right = re.search(r"#rb-form td\.num input:not\(\[readonly\]\) \{([^}]*)\}", css).group(1)
+    assert "padding-left: var(--space-2)" in left and "margin-left: calc(-1 * var(--space-2))" in left
+    assert "margin-right: calc(-1 * var(--space-2))" in right
+
+
+def test_the_engine_still_imports_nothing_new_for_the_refresh_set():
+    """marks_replaceable() needs today's date and takes it from pandas rather than importing datetime —
+    `engine.py` imports only the record and pandas, and that is asserted elsewhere. Named
+    here too because it is the constraint that shaped the function."""
+    from portfusion import engine
+    assert "datetime" not in {n.split(".")[0] for n in dir(engine) if not n.startswith("_")}
+    assert engine.marks_replaceable()["today"] == _dt.date.today().isoformat()
+
+
+# =====================================================================================
+# BOTH DOORS WRITE THE JOURNAL, IN THE SAME OPERATION
+#
+# `store/journal.csv` is record time — when the book LEARNED a thing. Its whole value rests on
+# a claim these tests make from the door end: a write to the record cannot happen without a
+# journal row, and a refused write cannot leave one behind. `tests/test_journal.py` holds the
+# table's own shape and arithmetic; this is the half that exercises the doors.
+# =====================================================================================
+
+def _journal(store):
+    from portfusion.record import schema
+    header = schema.TABLES["journal"].header
+    return [dict(zip(header, r)) for r in schema.load("journal")]
+
+
+def test_a_committed_item_lands_in_the_journal_as_well_as_the_record(
+        item, store_copy, tmp_path, monkeypatch):
+    """RECORD TIME IS WRITTEN BY THE SAME OPERATION THAT WRITES THE RECORD.
+
+    An item that reached `trades.csv` without reaching the journal would make the check report
+    a hand edit that never happened — and worse, it would make the journal's silence
+    meaningless, because a missing row could mean either "nobody wrote this" or "the door
+    forgot". The whole table is only worth having if this cannot happen.
+
+    THE INSTANT IS THE ARCHIVE'S. `written_at` is computed once, before the envelope opens, and
+    goes to the journal, the archived item and the summary — so `test_journal.py`'s comparison
+    of the two is comparing one fact rather than two clock readings a second apart.
+    """
+    from portfusion.desk.doors import commit as _commit
+    monkeypatch.setattr(_commit, "ARCHIVE", tmp_path / "archive")
+    was = len(_journal(store_copy))
+
+    result = _commit.commit(_bench.save(_ready(item))["id"])
+
+    rows = _journal(store_copy)
+    new = rows[was:]
+    assert new, "the commit wrote the record and not the journal"
+    assert all(r["ref"] == item["id"] for r in new), \
+        "the journal must name the item that retrieves the write"
+    assert all(r["at"] == result["written_at"] for r in new), (
+        "the journal and the summary disagree about when this landed; they are one write")
+
+    # TWO ROWS, AND THE SECOND ONE IS THE POINT. This item opens a position, so it writes the
+    # trade AND appends its thesis to reasoning.csv. Unjournalled, the check would find a row no
+    # route accounts for — which is what ORLA SB's first thesis did on 29 Sep 2026.
+    assert {(r["op"], r["table"], r["rows"]) for r in new} == {
+        ("append", "trades", 1), ("append", "reasoning", 1)}
+    from portfusion.record import rules
+    from portfusion import engine
+    rules.reload_store()
+    assert engine.Book().journal_unaccounted().empty, "the journal no longer accounts for the store"
+
+
+def test_a_refused_commit_leaves_the_journal_exactly_as_it_was(
+        item, store_copy, tmp_path, monkeypatch):
+    """THE OTHER HALF, AND THE REASON THE APPEND IS INSIDE THE ENVELOPE.
+
+    A journal row for a write that was rolled back is worse than no row: it asserts the record
+    holds something it does not, and the check would then report a row MISSING from the store.
+    `commit.atomic()` holds journal.csv among its targets, so a failure takes both.
+    """
+    from portfusion.record import schema
+    from portfusion.desk.doors import commit as _commit
+    monkeypatch.setattr(_commit, "ARCHIVE", tmp_path / "archive")
+    before = schema.TABLES["journal"].path.read_bytes()
+
+    real = _commit._rendered
+    monkeypatch.setattr(_commit, "_rendered", lambda tbl, v: real(tbl, v)[:-1])
+    with pytest.raises(Exception):          # the truncated row fails at the LOADER, not a gate
+        _commit.commit(_bench.save(_ready(item))["id"])
+
+    assert schema.TABLES["journal"].path.read_bytes() == before, \
+        "a refused commit left a journal row claiming a write that did not happen"
+
+
+def test_a_replaced_mark_is_journalled_as_a_replace_and_not_as_an_arrival(store_copy):
+    """`op` IS LOAD-BEARING HERE, and this is the test that says why.
+
+    A refresh replaces marks and adds no rows. Journalled as `append`, one fortnightly refresh
+    would make the check report twelve rows arriving in a table whose length never moved — and
+    a check that fires on ordinary work is one that teaches its reader to skip the line.
+
+    THE REF IS THE MARK DATE, because that is what retrieves the write: every replaced row
+    carries that `as_of`, and `price-history.csv` holds the value each one displaced.
+    """
+    from portfusion.record import schema
+    from portfusion.desk.doors import marks
+    was = len(_journal(store_copy))
+    marks.write(prices=[{"ticker": TICK, "price": 91.5, "currency": TICK_CUR,
+                         "as_of": "2026-09-04", "source": "AV close 4 Sep", "struck": "close"}])
+
+    rows = _journal(store_copy)
+    assert len(rows) == was + 1
+    row = rows[-1]
+    assert (row["route"], row["op"], row["table"]) == ("marks", "replace", "current-prices")
+    assert row["rows"] == 1
+    assert row["ref"] == "2026-09-04", "the journal must name the date that retrieves the marks"
+    assert len(schema.load("current-prices")) == \
+        sum(1 for _ in schema.TABLES["current-prices"].path.read_text().splitlines()[1:]), \
+        "sanity: a replace did not change the row count"
+
+
+def test_a_refused_mark_write_leaves_the_journal_exactly_as_it_was(store_copy):
+    """Same claim as the commit door's, on the door that replaces rather than appends."""
+    from portfusion.record import schema
+    from portfusion.desk.doors import marks
+    before = schema.TABLES["journal"].path.read_bytes()
+    with pytest.raises(marks.Refused):
+        marks.write(prices=[{"ticker": "NOT-A-ROW", "price": 1.0, "currency": RATE_CUR,
+                             "as_of": "2026-09-04", "source": "test", "struck": "close"}])
+    assert schema.TABLES["journal"].path.read_bytes() == before
+
+
+# =====================================================================================
+# THE BAY'S TWO CONVENIENCES, AND THE RULE NEITHER MAY BEND
+# =====================================================================================
+
+def test_take_all_can_only_ever_tick_a_line_the_form_already_allows(repo_root):
+    """SELECT-ALL IS A SHORTCUT THROUGH THE CLICKING, NEVER THROUGH THE RULE.
+
+    Fetching the IG levels fills a row per contract at once, and every one then had to be
+    ticked by hand — a click per row to accept one machine answer, which is what the owner asked
+    to remove. What must not come with it is a way past rule 1 of `docs/prices.md`: a line
+    without its figure, its date AND its source cannot be ticked one at a time, so it must not
+    become tickable in a batch.
+
+    The handler filters on `!b.disabled`, and `retick()` is the only thing that sets `disabled`
+    — from `complete(tr)`, which requires every field. So the shortcut reaches exactly the rows
+    the form had already opened, and this reads that filter rather than trusting the comment
+    beside it.
+    """
+    js = _static("app.js")
+    import re
+    m = re.search(r'const kind = e\.target\?\.dataset\?\.all;(.*?)\n    \}\);', js, re.S)
+    assert m, "app.js no longer wires a take-all handler this test can read"
+    body = m.group(1)
+    assert "!b.disabled" in body, (
+        "take-all no longer filters on the row being enabled — it could tick a line with no "
+        "source, which is the one thing the bay exists to refuse")
+    assert "data-all" in js and js.count('data-all="') >= 1
+
+    # ONE PER GROUP, NOT ONE FOR THE PAGE. Prices, rates and the IG accounts arrive by different
+    # routes and are finished at different moments — the contracts come from the broker while the
+    # shares are still being typed — so one control over all of them would tick a half-typed
+    # column. The three share one table (30 Sep 2026), and each group row carries its own.
+    for label, kind in (("Prices", "price"), ("Rates", "rate"), ("IG accounts", "reading")):
+        assert f'group("{label}", "{kind}"' in js, f"{label} has no group, and so no take-all"
+    assert "${takeAll(kind)}" in js, "a group row no longer carries its own take-all"
+
+
+def test_the_header_box_reports_its_column_rather_than_claiming_it(repo_root):
+    """A select-all showing "on" over a half-ticked column is a control lying about the thing it
+    controls. It follows: checked only when every takeable row is taken, indeterminate when some
+    are, disabled while none can be."""
+    js = _static("app.js")
+    for state in ("all.indeterminate", "all.checked", "all.disabled"):
+        assert state in js, f"the take-all no longer sets {state}"
+
+
+def test_a_written_refresh_moves_to_what_changed_and_a_refused_one_does_not(repo_root):
+    """THE LOOP ENDS WHERE IT IS REPORTED (the owner): bay writes, What Changed says what it did.
+    It used to re-render the BAY, which left you looking at the empty form you had just
+    emptied.
+
+    A REFUSAL MUST NOT MOVE. The refusal names the line and the rule that stopped it — which is
+    the only thing worth reading at that moment — and navigating away would throw it away. The
+    early return is what guarantees it, so this reads for the return rather than for the
+    navigation alone.
+    """
+    js = _static("app.js")
+    import re
+    m = re.search(r'if \(res\.ok === false\) \{\s*out\.textContent = `refused(.*?)\n        \}',
+                  js, re.S)
+    assert m, "the refusal branch no longer returns before anything else happens"
+    assert "return;" in m.group(1), "a refused write no longer stops before navigating"
+    assert 'openPanel("what-changed")' in js, "a written refresh no longer moves to What Changed"
+    assert "LAST_REFRESH" in js, "the receipt is no longer carried to the destination"
+
+
+def test_a_refused_write_does_not_even_move_the_mtime(store_copy):
+    """FOUND ON SCREEN, where the tests could not see it.
+
+    `atomic()` restored every file it held, unconditionally. Restoring identical bytes still
+    changes the MTIME, and `record.freshness()` reads the store's newest mtime — so a refused
+    write made the desk's header announce "store changed" when nothing had. Byte-comparing the
+    files, which is what every other test here does, passes on that happily.
+
+    A guard that reports a change it caused is worse than no guard.
+    """
+    from portfusion.record import schema
+    from portfusion.desk.doors import marks
+
+    path = schema.TABLES["current-prices"].path
+    before = path.stat().st_mtime_ns
+
+    with pytest.raises(marks.Refused):
+        marks.write(prices=[{"ticker": "NOT-A-ROW", "price": 1.0, "currency": RATE_CUR,
+                             "as_of": "2026-09-07", "source": "names a row that is not there", "struck": "close"}])
+
+    assert path.stat().st_mtime_ns == before, \
+        "a refused write touched the file, so the desk will report the store as changed"
+
+
+def test_a_write_button_is_never_offered_without_something_to_write(repo_root):
+    """AN ACTION STRIP OFFERS ONLY WHAT CAN BE PRESSED NOW (the owner).
+
+    A write means something only against lines that have been fetched and ticked, so its button
+    is rendered by the form that holds them — #rb-write in the bay — and never by an action
+    strip, where pressed alone it posts an empty body and is refused.
+
+    ASSERTED ON THE SOURCE, because this is a rendering rule and no Python object holds it.
+    """
+    js = (SRC / "desk" / "static" / "app.js").read_text()
+    assert 'wireActions("bench")' in js, "the Bench offers every standing button it has"
+    assert 'wireActions("accounts"' not in js, "Reconcile has no standing button to offer"
+    # THE RESTART IS THE SHELL'S, not a Bench button (13 Oct 2026): the rail
+    # draws it on every page, so the Bench's strip has no list to keep it off with.
+    from portfusion.desk import actions
+    assert actions.get("restart-desk").panel == "desk"
+    assert "restart-desk" not in [a.name for a in actions.all_actions() if a.panel == "bench"]
+
+    # The write action is reachable, and not offered as a standing panel button.
+    assert '"/api/action/refresh-write-marks"' in js, "the bay must post its ticked marks"
+
+
+# =====================================================================================
+# A CARRIED PRICE, which the record cannot supply
+# =====================================================================================
+
+@pytest.fixture
+def one_carried_price(monkeypatch):
+    """A holding carried by decision, injected — because the record cannot supply one.
+
+    `rules.STATEMENT_PRICED` is empty by default, and record/rules.py is explicit
+    that it must stay narrow: the test for an entry is BOTH no feed AND immaterial, and
+    *"do not add a holding to make a flag go away"*. So the second witness has to be a fixture.
+    Everything the carried path does for a PRICE goes unexercised without one, as for a RATE
+    (`one_carried_rate`): the two go down different branches.
+
+    THE TICKER MUST ALREADY BE IN CURRENT_PRICES: `marks_replaceable()` builds `held` by
+    filtering that table, so an invented code would produce an empty `held` and prove nothing.
+    """
+    from portfusion.record import rules as R
+    ticker = R.CURRENT_PRICES[0][0]
+    monkeypatch.setattr(R, "STATEMENT_PRICED",
+                        {ticker: "no market feed and immaterial — test fixture"})
+    return ticker
+
+
+def test_a_carried_price_leaves_the_replaceable_set_and_says_why(one_carried_price):
+    """The engine's half. A carried line is a DECISION with its reason, not a gap somebody is
+    chasing, and the two populations are kept apart so a refresh cannot assert an observation
+    nobody made."""
+    from portfusion import engine
+    can = engine.marks_replaceable()
+    assert one_carried_price not in [r["ticker"] for r in can["replaceable"]], \
+        "a carried line is still being offered for replacement"
+    held = {r["ticker"]: r for r in can["held"]}
+    assert one_carried_price in held, "a carried line reached neither population"
+    assert held[one_carried_price]["why"], "a carried line arrived with no reason on it"
+
+
+def test_the_bay_cannot_tick_a_carried_line(one_carried_price, one_carried_rate):
+    """The panel's half. A carried line is left off the screen (the owner, 30 Sep 2026), so the
+    one thing to hold is that it never reaches a tickable list — a price or a rate."""
+    from portfusion.desk.panels import price_refresh
+    q = price_refresh.query()
+    assert one_carried_price not in [r["line"] for r in q["prices"]], \
+        "the bay offers a carried line in the tickable list"
+    assert one_carried_rate not in [r["currency"] for r in q["rates"]], \
+        "the bay offers a carried rate in the tickable list"
+
+
+def test_a_carried_price_write_is_refused_by_name_and_by_reason(store_copy, one_carried_price):
+    """THE PRICE BRANCH OF THE REFUSAL. `marks.write()` has two loops with two `raise`
+    statements, one for a price and one for a rate."""
+    from portfusion.desk.doors import marks
+    assert one_carried_price in marks.carried()
+    with pytest.raises(marks.Refused) as e:
+        marks.write(prices=[{"ticker": one_carried_price, "price": 1.0, "currency": "GBP",
+                             "as_of": "2026-09-08", "source": "test", "struck": "close"}])
+    assert one_carried_price in str(e.value) and "carried" in str(e.value), \
+        "the refusal does not name the line or say why it is held"
+
+
+def test_a_carried_price_is_out_of_the_freshness_measure(one_carried_price):
+    """THE FIRST CONSEQUENCE record/rules.py declares, and it was declared and not implemented:
+    price_ageing() read every mark whatever its route while its own docstring said only
+    market-fed holdings count. Unnoticed for as long as the dict was empty."""
+    from portfusion import engine
+    b = engine.Book()
+    assert b.price_ageing()["marks"] == len(b.store["prices"]) - 1, \
+        "the carried line is still inside the price-freshness measure"
+
+
+# =====================================================================================
+# A PAST DAY'S CLOSES — banked into the histories, the live marks left alone
+# =====================================================================================
+
+_DAY = "2026-09-25"
+
+
+def _close(ticker=TICK, price=250.0, currency=TICK_CUR, **over):
+    row = {"ticker": ticker, "price": price, "currency": currency, "as_of": _DAY,
+           "source": f"TradingView 1D {ticker}, session {_DAY} close — test",
+           "struck": "close", "at": ""}
+    row.update(over)
+    return row
+
+
+def _rated_line():
+    """A foreign-priced, marked line a share account holds at _DAY, with its units — a banked
+    close has to reach that day's value through the day's own rate, and only a held foreign
+    line can stand that conversion up."""
+    from portfusion.record import rules as D
+    from portfusion.engine import Book
+    b = Book()
+    for account in D.ACCOUNT_ORDER:
+        if D.ACCOUNT_KIND[account] == "spread bet":
+            continue
+        held = b.holdings_at(_DAY, account)
+        for t, q, c in zip(held["ticker"], held["qty"], held["currency"]):
+            if c == RATE_CUR and t in _BY_TICKER:
+                return account, t, float(q)
+    raise AssertionError(
+        f"no share account holds a foreign-priced, marked line at {_DAY} — these conversion "
+        f"tests have nothing to stand on in this book")
+
+
+def _rate(rate=1.34, **over):
+    row = {"currency": RATE_CUR, "as_of": _DAY, "rate": rate,
+           "source": f"TradingView 1D FX_IDC:GBP{RATE_CUR}, session {_DAY} close — test",
+           "struck": "close"}
+    row.update(over)
+    return row
+
+
+def test_a_past_days_closes_are_banked_and_the_live_marks_do_not_move(store_copy):
+    """The quarter end fetched after it. The engine values that day from the histories, so
+    that is where the closes go; current-prices.csv and fx.csv stay byte-identical."""
+    from portfusion.record import schema
+    from portfusion.desk.doors import marks
+    from portfusion.history import prices as PH
+    from portfusion.engine import Book
+    account, line, qty = _rated_line()
+    live = {t: schema.TABLES[t].path.read_bytes() for t in ("current-prices", "fx")}
+    before = Book().holdings_at(_DAY, account).set_index("ticker")["value"][line]
+
+    out = marks.bank_closes(_DAY, prices=[_close(ticker=line, currency=RATE_CUR)], rates=[_rate()])
+
+    assert out["banked"] == {"prices": 1, "rates": 1}, out
+    assert all(schema.TABLES[t].path.read_bytes() == b for t, b in live.items())
+    row = next(r for r in PH.load() if r["ticker"] == line and r["date"] == _DAY)
+    assert (row["struck"], row["price"]) == ("close", 250.0)
+    after = Book().holdings_at(_DAY, account).set_index("ticker")["value"][line]
+    assert after != before and abs(after - qty * 250.0 / 1.34) < 0.01, (before, after)
+
+
+def test_the_same_close_twice_is_skipped_and_a_different_one_is_refused(store_copy):
+    """A settled close has one value. The same figure again is nothing to do; a different one
+    means one of the two is wrong, and the door does not choose."""
+    from portfusion.desk.doors import marks
+    marks.bank_closes(_DAY, prices=[_close()])
+    assert marks.bank_closes(_DAY, prices=[_close()])["already"] == 1
+    with pytest.raises(marks.Refused, match="does not choose"):
+        marks.bank_closes(_DAY, prices=[_close(price=251.0)])
+
+
+def test_a_close_on_file_from_the_retired_feed_still_reads_as_that_days_close(store_copy):
+    """A RETIRED FEED'S ROWS STAY, each with `struck` saying it is a close, so a close on file in a
+    shape no current feed writes must still settle a new fetch of the same day: the one fixture
+    here in such a shape, on purpose."""
+    from portfusion.desk.doors import marks
+    retired = f"Old Feed FX_DAILY GBP/{RATE_CUR}, {_DAY} daily close — test"
+    marks.bank_closes(_DAY, rates=[_rate(source=retired)])
+    assert marks.bank_closes(_DAY, rates=[_rate()])["already"] == 1
+
+
+@pytest.mark.parametrize("row, says", [
+    (_close(as_of="2026-09-26"), "after 2026-09-25"),
+    (_close(source="IG REST live SH.D.X, bid 1, IG updateTime 21:00:00, market OPEN",
+            struck="live", at=f"{_DAY}T21:00:00Z"),
+     "not a session close"),
+    (_close(source=""), "no source"),
+])
+def test_what_is_not_that_days_close_is_refused_and_nothing_is_written(store_copy, row, says):
+    from portfusion.desk.doors import marks
+    from portfusion.history import prices as PH
+    was = PH.load()
+    with pytest.raises(marks.Refused, match=says):
+        marks.bank_closes(_DAY, prices=[row])
+    assert PH.load() == was
+
+
+def _live_read(ticker, price=249.0):
+    return {"ticker": ticker, "price": price, "currency": RATE_CUR, "as_of": _DAY,
+            "source": f"TradingView {ticker} quote, live — test", "struck": "live",
+            "at": f"{_DAY}T13:45:00Z"}
+
+
+def test_a_close_outranks_its_days_live_read_and_the_next_bank_leaves_it(store_copy, capsys):
+    """THE TRAP. The 15:00 sweep writes and banks a live read; that day's close is banked over it
+    later; the next refresh's bank step still finds the live read in current-prices.csv. The
+    close stays the day's mark, the read leaves the file — the day seen earlier, never a wrong
+    figure (the owner, 12 Oct 2026) — and the next write is not refused for a read the close has
+    settled, nor does the read come back."""
+    from portfusion.engine import Book
+    from portfusion.desk.doors import marks
+    from portfusion.feeds import refresh
+    from portfusion.history import prices as PH
+    _, line, _ = _rated_line()
+    marks.write(prices=[_live_read(line)])
+    out = marks.bank_closes(_DAY, prices=[_close(ticker=line, currency=RATE_CUR)])
+    assert out["banked"]["prices"] == 1
+    assert out["superseded"] == [f"{line} {_DAY}: the live read 249.0 is replaced by that "
+                                 f"day's close 250.0"]
+    refresh.bank()
+    day = [r for r in PH.load() if (r["ticker"], r["date"]) == (line, _DAY)]
+    assert sorted((r["struck"], r["status"], r["price"]) for r in day) == [
+        ("close", "live", 250.0)]
+    assert PH.check() == [] and marks.banked()["ok"]
+    assert Book()._marks_at(_DAY)[0][line] == (_DAY, 250.0)
+
+
+def test_a_days_closing_rate_outranks_its_live_rate(store_copy):
+    """The same rule for FX: the day's close replaces the live read and becomes the day's rate."""
+    from portfusion.desk.doors import marks
+    from portfusion.history import fx as FX
+    FX.save(FX.load() + [{"currency": RATE_CUR, "date": _DAY, "rate": 1.33,
+                          "kind": "spot", "quality": "sourced", "struck": "live",
+                          "status": FX.LIVE,
+                          "source": f"TradingView FX_IDC:GBP{RATE_CUR} quote, live — test"}])
+    out = marks.bank_closes(_DAY, rates=[_rate()])
+    assert out["banked"]["rates"] == 1 and len(out["superseded"]) == 1
+    day = [r for r in FX.load() if (r["currency"], r["date"]) == (RATE_CUR, _DAY)]
+    assert sorted((r["status"], r["rate"]) for r in day) == [("live", 1.34)]
+    assert FX.rate_on(RATE_CUR, _DAY) == 1.34
+
+
+def test_a_live_read_its_close_outranks_needs_no_banking(store_copy, monkeypatch):
+    """The one path where the read reached no history first. The close is that day's mark, so the
+    read is not owed to the history and the archive step neither files it nor strikes it over the
+    close (until 12 Oct 2026 it was filed, superseded)."""
+    from portfusion.history import prices as PH
+    read = {"ticker": TICK, "date": _DAY, "price": 249.0, "currency": TICK_CUR,
+            "quality": "sourced", "struck": "live", "status": PH.LIVE, "source": "a read — test"}
+    PH.save(PH.load() + [{**read, "price": 250.0, "struck": "close", "source": "a close — test"}])
+    monkeypatch.setattr(PH, "current_marks", lambda: [read])
+    assert PH.check() == []
+    PH.archive(verbose=False)
+    day = [r for r in PH.load() if (r["ticker"], r["date"]) == (TICK, _DAY)]
+    assert sorted((r["struck"], r["status"]) for r in day) == [("close", "live")]
+    assert PH.check() == []
+
+
+def test_today_is_not_a_past_day(store_copy):
+    from portfusion.desk.doors import marks
+    with pytest.raises(marks.Refused, match="not a past day"):
+        marks.bank_closes(_dt.date.today().isoformat(), prices=[_close()])
+
+
+def test_the_bay_asks_for_a_past_day_and_the_write_banks_it(repo_root, monkeypatch):
+    """The fetch passes the day to the sweep; the write routes to the banking door; the screen
+    carries the day from one to the other."""
+    from portfusion.feeds import refresh
+    from portfusion.desk.panels import price_refresh as R
+    monkeypatch.setattr(refresh, "sweep", lambda on=None, filed=None: {"on": on})
+    assert R._fetch_all(on=_DAY)["on"] == _DAY
+
+    from portfusion.desk.doors import marks
+    monkeypatch.setattr(marks, "bank_closes", lambda day, prices=None, rates=None: {"day": day})
+    assert R._write(prices=[_close()], close_of=_DAY) == {"ok": True, "day": _DAY}
+
+    js = _static("app.js")
+    assert 'id="rb-on"' in js and "payload.close_of = closeOf" in js
+
+
+def test_the_bay_sends_every_column_a_mark_is_written_with(repo_root):
+    """WHAT THE SWEEP SUPPLIES REACHES THE WRITE, for a rate as for a price.
+
+    fx.csv gained `struck` on 9 Oct 2026 and the bay went on sending a rate without it: the 12 Oct
+    refresh wrote three rates blank where the sweep had said live, and a past day's closing rate
+    could not be banked at all, because `bank_closes()` refuses a rate that does not say it is a
+    close. The columns come from the schema, so a column added later fails here until the bay
+    fills it from the sweep and sends it. `quality` is the door's own word, never the bay's.
+    """
+    import re
+    from portfusion.record import schema
+    js = _static("app.js")
+    for table, kind in (("current-prices", "prices"), ("fx", "rates")):
+        m = re.search(rf"payload\.{kind}\.push\(\{{(.*?)\}}\);", js, re.S)
+        assert m, f"app.js no longer builds a row of {kind} this test can read"
+        sent = set(re.findall(r"(\w+):", m.group(1)))
+        wanted = {f.name for f in schema.TABLES[table].fields} - {"quality"}
+        assert wanted <= sent, f"the bay writes {kind} without {sorted(wanted - sent)}"
+    fills = re.findall(r'fill\(row\.\w+, "(price|rate)",\s*\{(.*?)\}', js, re.S)
+    assert {kind for kind, _ in fills} == {"price", "rate"}, "a fill this test reads has gone"
+    for kind, body in fills:
+        assert "struck: row.struck" in body, f"a {kind} row is filled without the sweep's struck"
+
+
+# =====================================================================================
+# THE IG READING — the equity lands with the levels read in the same pass
+# =====================================================================================
+
+def _account_number(account):
+    from portfusion.record import schema
+    hdr = schema.TABLES["accounts"].header
+    return next(r[hdr.index("number")] for r in schema.load("accounts")
+                if r[hdr.index("account")] == account)
+
+
+def _mapped_contract():
+    """A still-quoted contract the book maps a leg to AND marks, with its epic — the only kind
+    of level a reading may ride in on (`price_refresh._write` gates on `D.LEG_CONTRACT.values()`)."""
+    from portfusion.record import schema
+    epic_of = {r[0]: str(r[1] or "").strip() for r in schema.load("contracts")}
+    return next((c, epic_of[c]) for c in sorted(_CONTRACTS)
+                if c in _BY_TICKER and epic_of.get(c))
+
+
+def _reading(account=SPREAD_BET_ACCOUNT, **over):
+    row = {"account": account, "as_of": "2026-09-08", "at": "2026-09-08T13:00:00Z",
+           "funds": 20000.0, "running_pl": 3000.0, "equity": 23000.0, "deposit": 5000.0,
+           "available": 18000.0,
+           "evidence": "ig-accounts",
+           "reference": f"{_account_number(account)}, read 2026-09-08 at 14:00",
+           "note": "IG REST /accounts — test"}
+    row.update(over)
+    return row
+
+
+def _level(contract=None, **over):
+    contract, epic = (contract, contract) if contract else _mapped_contract()
+    row = {"ticker": contract, "price": 7690.0, "currency": _BY_TICKER[contract][2],
+           "as_of": "2026-09-08",
+           "source": f"IG REST live {epic}, bid 7690.0 — test",
+           "struck": "live", "at": "2026-09-08T14:02:11Z"}
+    row.update(over)
+    return row
+
+
+def test_a_reading_writes_its_levels_beside_its_equity(store_copy):
+    """The book's figure for a spread-bet account comes from its contract MARKS and the broker's
+    from the instant it is asked, so a reading written without the levels it was struck against
+    is compared to marks from some other time. That once read as two accounts out, with
+    nothing wrong in either figure."""
+    from portfusion.record import schema
+    from portfusion.desk.panels import price_refresh as R
+    contract, _ = _mapped_contract()
+
+    out = R._write(prices=[_level()], readings=[_reading()])
+
+    assert out["ok"] is True, out.get("refused")
+    assert (out["prices"], out["readings"]) == (1, 1)
+    landed = next(r for r in schema.load("current-prices") if r[0] == contract)
+    assert landed[1] == 7690.0, "the contract mark was not replaced"
+    read = next(r for r in schema.load("account-observations") if r[0] == SPREAD_BET_ACCOUNT)
+    assert read[schema.TABLES["account-observations"].header.index("equity")] == 23000.0, \
+        "the reading was not replaced"
+
+
+def test_a_refused_reading_rolls_back_the_levels_too(store_copy):
+    """THE ENVELOPE SPANS TWO DOORS. The levels are good and the reading is not, so the marks
+    door SUCCEEDS and the observations door refuses; anything short of a rollback across both
+    leaves the book re-struck against a stale baseline."""
+    from portfusion.desk.doors import marks, observations
+    from portfusion.desk.panels import price_refresh as R
+
+    files = {p: p.read_bytes()
+             for p in (*marks.paths(), *observations.paths()) if p.is_file()}
+
+    out = R._write(prices=[_level()], readings=[_reading(evidence="")])
+
+    assert out["ok"] is False, "a reading with no evidence class was accepted"
+    after = {p: p.read_bytes() for p in files}
+    moved = sorted(p.name for p in files if files[p] != after[p])
+    assert not moved, f"a refused write left these files changed: {moved}"
+
+
+@pytest.mark.parametrize("prices, reading, close_of, says", [
+    ([], _reading(), None, "contract levels"),
+    ([_level()], _reading(positions=76510.0), None, "NOTIONAL"),
+    ([_close()], _reading(), _DAY, "past day"),
+    ([], None, None, "nothing to write"),
+])
+def test_what_the_write_refuses_leaves_every_file_as_it_was(store_copy, prices, reading,
+                                                            close_of, says):
+    """A reading with no level from its pass, a notional figure no endpoint returns, a reading on
+    a past day's closes, and an empty press."""
+    from portfusion.desk.doors import marks, observations
+    from portfusion.desk.panels import price_refresh as R
+    files = {p: p.read_bytes() for p in (*marks.paths(), *observations.paths()) if p.is_file()}
+    out = R._write(prices=prices, readings=[reading] if reading else None, close_of=close_of)
+    assert out["ok"] is False and says in out["refused"], out
+    assert all(p.read_bytes() == b for p, b in files.items()), "a refused write moved a file"
+
+
+def test_the_write_is_declared_as_writing_marks_and_reaching_nothing():
+    """The marks rule: a contract level and an account's live equity are both MARKS, and neither is
+    an event. The write reaches nothing; the sweep that fetched them writes nothing."""
+    a = actions.get("refresh-write-marks")
+    assert a.writes == "marks" and a.reaches is None
+    assert "one operation" in a.summary.lower(), \
+        "the summary does not say the marks and readings land together"
+
+
+def test_the_bay_previews_each_ig_account_before_the_fetch():
+    """The owner, 30 Sep 2026: the IG accounts appeared only after the fetch, in a table of their own
+    with no take-all, and their readings were missed on the day's sweep. Each spread-bet account
+    now comes with the page, its outgoing equity and date shown the way a price's are."""
+    from portfusion.desk.panels import price_refresh
+    q = price_refresh.query()
+    readings = {r["account"]: r for r in q["readings"]}
+    from portfusion.record import rules as D
+    assert set(readings) == {a for a in D.ACCOUNT_ORDER if D.ACCOUNT_KIND[a] == "spread bet"}
+    for r in readings.values():
+        assert r["equity"] is not None and r["as_of"], r
+
+
+def test_an_ig_accounts_source_is_the_line_its_reading_is_filed_under(repo_root, monkeypatch):
+    """THE REVIEW SHOWS WHAT THE WRITE RECORDS. The bay composed an account's
+    source itself, "IG REST /accounts: funds …, running P/L …", where the record files the
+    reading under its evidence and reference and keeps no running P/L. Each account's row now
+    carries the record's own provenance line for its reading, and the bay fills the row with it."""
+    from portfusion.feeds import refresh
+    from portfusion.desk.panels import price_refresh as R
+    from portfusion.record import rules as D
+    account = SPREAD_BET_ACCOUNT
+    reading = _reading(account)
+    monkeypatch.setattr(refresh, "sweep", lambda on=None, filed=None: {
+        "ig_equity": {"ok": True, "readings": [reading],
+                      "rows": [{"account": account, "equity": reading["equity"]}]}})
+    row = R._fetch_all()["ig_equity"]["rows"][0]
+    assert row["source"] == D.evidence_source(reading["evidence"],
+                                              reference=reading["reference"], account=account)
+    assert reading["reference"] in row["source"]
+    js = _static("app.js")
+    import re
+    m = re.search(r'fill\(r\.account, "reading", \{(.*?)\}', js, re.S)
+    assert m, "app.js no longer fills an IG account's row in a way this test can read"
+    assert "source: read.source" in m.group(1), "the bay composes an account's source again"
+
+
+def test_the_bay_sends_what_it_draws_and_a_mark_past_the_limit_says_so(repo_root):
+    """The page's answer named a mark's key `ticker` though for a bet it is
+    a contract, sent the outgoing mark's source and drew it nowhere, and said a mark was past the
+    age limit only as a count. Now the key is `line`, as the grid heads it; the outgoing source
+    stays at its home, Holdings' Mark history; and the age of a mark past the limit is drawn in
+    the warning ink, which is the desk's on every page."""
+    from portfusion.desk.panels import holdings, price_refresh
+    q = price_refresh.query()
+    assert q["prices"] and all(set(r) == set(price_refresh.PRICE_COLUMNS) for r in q["prices"])
+    assert not any("source" in r for r in q["prices"] + q["rates"]), \
+        "the outgoing mark's source is sent to a page that does not draw it"
+    assert "source" in holdings.MARK_COLUMNS, "the outgoing source has lost its home"
+    js = _static("app.js")
+    assert '${r.stale ? "stale" : "muted"}' in js, "a mark past the limit no longer says so"
+    css = _static("app.css")
+    import re
+    assert re.search(r"^\.stale \{ color: var\(--warn-ink\); \}", css, re.M), \
+        "the warning ink is no longer the desk's on every page"
+
+
+def test_each_group_of_the_grid_runs_a_to_z_by_its_line():
+    """The rows came in the store's own order, the IG contracts in the middle of the
+    shares and two London lines at the foot. A-Z by line puts each contract beside its company."""
+    from portfusion.desk.panels import price_refresh
+    q = price_refresh.query()
+    for rows, key in ((q["prices"], "line"), (q["rates"], "currency"), (q["readings"], "account")):
+        said = [str(r[key]) for r in rows]
+        assert said == sorted(said, key=str.upper), f"{key}s are not A-Z: {said}"
+
+
+def test_the_step_bar_says_the_marks_age_and_draws_the_bank_only_when_it_cannot_bank(repo_root):
+    """The Bank step read "ready · all on file" before every refresh,
+    though the write banks either way and the reader does nothing about it; the Review step
+    counted what could be replaced; and the sweep's line opened with a sentence about the rows
+    it had filled. Now the age leads, as the Dashboard's does and from the same figure, the Bank
+    step is drawn only when the histories cannot be read, and the line says what came back."""
+    from portfusion.engine import Book
+    from portfusion.desk.panels import price_refresh
+    assert price_refresh.query()["age_days"] == Book().price_ageing()["age_days"]
+    js = _static("app.js")
+    assert "${d.age_days} days old · limit ${d.age_limit} days" in js
+    assert "const bank = !b.unavailable ? [] :" in js, "the Bank step is drawn when all is well"
+    assert "filled in below" not in js and "can be replaced" not in js
+
+
+def test_the_tick_column_is_headed_and_its_boxes_carry_no_word(repo_root):
+    """"Take" was printed beside every box under an unheaded column. The column is
+    headed once, in house/headings.py's words, and each box keeps the word only for a screen
+    reader."""
+    import re
+    from portfusion.desk.panels import price_refresh
+    assert "take" in price_refresh.GRID_COLUMNS
+    js = _static("app.js")
+    assert '<th>${head("take")}</th>' in js, "the tick column has no heading"
+    assert not re.search(r"data-tick disabled> take", js), "a box still prints the word"
+    # ONE BOX PER ROW TEMPLATE: a price, a rate, a rate the record lacks, an IG account.
+    assert js.count('data-tick disabled\n          aria-label="${head("take")}"') == 4
+
+
+def test_a_fetched_line_says_beside_its_date_whether_it_is_a_close_or_a_time(repo_root):
+    """New as at read "2026-10-12" for a quote struck mid-session and for a session
+    close alike; only the source text told them apart. The sweep says which (`struck`) and when
+    (`at`), so a price or rate row now shows "close" or the read's wall-clock time beside the date
+    it sends. The date the write sends is unchanged: the time sits outside the form's fields."""
+    import re
+    js = _static("app.js")
+    cells = re.findall(r'<tr data-kind="(price|rate)".*?<input data-f="as_of" readonly '
+                       r'size="10"> <span class="muted small" data-when></span>', js, re.S)
+    assert sorted(cells) == ["price", "rate"], "a price or rate row lost its time"
+    assert 'values.struck === "close" ? "close"' in js and "clock(values.at)" in js
+
+
+# =====================================================================================
+# THE DATED RATES THE RECORD LACKS
+# =====================================================================================
+
+def test_every_rate_the_record_lacks_is_a_past_foreign_date_it_converts_at():
+    """What `Book.rate_gaps()` names is work the record owes: a currency the book converts, a
+    date already past, one of the four kinds of date, and the rate it converts at today."""
+    import pandas as pd
+    from portfusion.engine import Book
+    today = pd.Timestamp.today().normalize()
+    for g in Book().rate_gaps():
+        assert g["currency"] != "GBP" and pd.Timestamp(g["date"]) < today, g
+        assert g["why"] in ("quarter end", "income", "typed", "deal"), g
+
+
+def _a_lacking_date(store_copy):
+    """A rate the record owes, planted where the book does not owe one: a typed rate on a
+    past weekday (a Wednesday), with no close on or after it in the week."""
+    from portfusion.history import fx as FX
+    day = "2025-12-10"
+    FX.save(FX.load() + [{"currency": RATE_CUR, "date": day, "rate": 1.29,
+                          "kind": "spot", "quality": "derived", "struck": "",
+                          "status": FX.LIVE, "source": "typed for the test"}])
+    return day
+
+
+def test_a_rate_the_record_lacks_leaves_the_list_when_its_close_is_banked(store_copy):
+    """THE LOOP: a typed rate is owed its day's close; the close banked through the past-day door
+    supersedes it, keeps it on file, and the date is owed nothing more."""
+    from portfusion.engine import Book
+    from portfusion.desk.doors import marks
+    from portfusion.history import fx as FX
+    day = _a_lacking_date(store_copy)
+    assert {"currency": RATE_CUR, "date": day, "why": "typed", "rate": 1.29} in Book().rate_gaps()
+    out = marks.bank_closes(day, rates=[{"currency": RATE_CUR, "as_of": day, "rate": 1.2917,
+                                         "source": f"TradingView 1D FX_IDC:GBP{RATE_CUR}, session {day} "
+                                                   f"close 1.2917 {RATE_CUR} — test",
+                                         "struck": "close"}])
+    assert out["banked"]["rates"] == 1 and out["days"] == [day]
+    assert not [g for g in Book().rate_gaps() if (g["currency"], g["date"]) == (RATE_CUR, day)]
+    on_day = sorted((r["status"], r["rate"]) for r in FX.load()
+                    if (r["currency"], r["date"]) == (RATE_CUR, day))
+    assert on_day == [("live", 1.2917), ("superseded", 1.29)]
+
+
+def test_a_weekend_date_is_served_by_the_friday_close():
+    """A Saturday has no session: the close of the Friday before it is that date's rate, so a
+    Saturday's income row owes nothing once Friday's close is on file."""
+    import pandas as pd
+    from portfusion.engine import Book
+    b = Book()
+    fh = b.store["history.fx"]
+    closes = fh[(fh["struck"] == "close") & (fh["status"] == "live") & (fh["kind"] == "spot")]
+    friday = next((d for d in closes["date"] if pd.Timestamp(d).weekday() == 4), None)
+    if friday is None:
+        pytest.skip("no Friday close on file to stand a Saturday on")
+    cur = closes[closes["date"] == friday]["currency"].iloc[0]
+    saturday = (pd.Timestamp(friday) + pd.Timedelta(days=1)).date().isoformat()
+    later = fh[(fh["currency"] == cur) & (fh["date"] == saturday) & (fh["status"] == "live")]
+    assert later.empty, "a rate dated the Saturday would answer before the Friday's close"
+    b.store["income"] = pd.concat([b.store["income"], pd.DataFrame([{
+        "date": pd.Timestamp(saturday), "account": "x", "category": "Cash interest",
+        "detail": "test", "amount": 0.0, "source": "test", "note": "", "currency": cur,
+        "local_amount": 1.0, "rate": None}])], ignore_index=True)
+    assert not [g for g in b.rate_gaps() if (g["currency"], g["date"]) == (cur, saturday)]
+
+
+def test_one_write_banks_a_rate_wanted_twice_once_and_refuses_two_figures(store_copy):
+    """Two dates one session serves are filled from one row, and both can be ticked: the same
+    close twice in one write is one close, and two figures for one day are refused."""
+    from portfusion.desk.doors import marks
+    day = _a_lacking_date(store_copy)
+    row = {"currency": RATE_CUR, "as_of": day, "rate": 1.2917, "struck": "close",
+           "source": f"TradingView 1D FX_IDC:GBP{RATE_CUR}, session {day} close — test"}
+    out = marks.bank_closes(day, rates=[row, dict(row)])
+    assert out["banked"]["rates"] == 1 and out["already"] == 1
+    with pytest.raises(marks.Refused, match="does not choose"):
+        marks.bank_closes("2025-12-11", rates=[{**row, "as_of": "2025-12-11", "rate": 1.30},
+                                               {**row, "as_of": "2025-12-11", "rate": 1.31}])
+
+
+def test_the_audit_names_every_rate_the_record_lacks():
+    """`portfusion record` and the Dashboard read one list: the engine's."""
+    from portfusion.engine import Book
+    b = Book()
+    f = b.findings()
+    owed = [g for g in f["gaps"] if g.startswith("rate owed")]
+    assert len(owed) == len(b.rate_gaps())
+    assert f"dated rates: {len(owed)} owed a TradingView close" in f["notes"]
+
+
+def test_the_bay_offers_the_rates_the_record_lacks_and_banks_them(repo_root, monkeypatch):
+    """The panel sends the engine's list; the fetch reads it in one press, the action reaching
+    TradingView once per currency; the rows fill by currency and date, and the write sends them
+    as rates for the past-day door to bank, never as live rates."""
+    import re
+    from portfusion.engine import Book
+    from portfusion.desk.panels import price_refresh
+    q = price_refresh.query()
+    assert q["lacking"] == Book().rate_gaps()
+    asked = {}
+
+    def fake(wanted, conn=None, today=None):
+        asked.update(wanted)
+        return {"rates": [{"currency": c, "as_of": d, "rate": 1.0, "struck": "close", "at": "",
+                           "wanted": [d], "source": "test", "symbol": "x", "raw": 1.0}
+                          for c, ds in wanted.items() for d in ds], "failed": []}
+    from portfusion.feeds import tv
+    monkeypatch.setattr(tv, "rate_closes", fake)
+    got = price_refresh._fetch_all(lacking=True)
+    assert got["lacking"] and got["tv"]["ok"]
+    assert sorted((c, d) for c, ds in asked.items() for d in ds) == \
+        sorted((g["currency"], g["date"]) for g in q["lacking"])
+    if q["lacking"]:
+        assert got["on"] == max(g["date"] for g in q["lacking"])
+    js = _static("app.js")
+    assert 'group("Rates the record lacks", "lacking", d.lacking.map(lackingRow))' in js
+    assert re.search(r'fill\(`\$\{row\.currency\}@\$\{w\}`, "lacking"', js)
+    assert 'fetchSweep(e.currentTarget, { lacking: true }, "TradingView")' in js
+    assert re.search(r"if \(lacking\) \{[^}]*\} else if \(ig\.ok === false\)", js), \
+        "a rates-only fetch reports IG, which it never asked"
+    m = re.search(r'dataset\.kind === "lacking"\) \{\s*payload\.rates\.push\(\{(.*?)\}\);', js, re.S)
+    assert m and {"currency", "as_of", "rate", "source", "struck"} <= set(re.findall(r"(\w+):", m.group(1)))

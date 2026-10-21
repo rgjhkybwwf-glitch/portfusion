@@ -1,0 +1,71 @@
+# THE GUARD, ON GITHUB. One job, three checks, each the command a session runs on the Mac: the
+# secret scan over every commit, the linter, and the export test, which is the suite on the demo
+# from the tracked files without the book's facts, and `portfusion check` from the wheel built
+# from them. A pull request is merged on GitHub once this is green (CONTRIBUTING.md).
+#
+# WHEN IT RUNS: on a pull request and on a push to main, not on every branch push: a run on
+# every branch push would spend a free plan's minutes quickly. A push that touches only the
+# facts is skipped: the export test leaves them behind, so they cannot change its answer.
+# `tools/export_test.py:FACTS` is the list, and tests/test_export.py holds both lists below to it.
+#
+# Each action is GitHub's own, pinned to a commit, and the repository allows no others.
+
+name: guard
+
+on:
+  pull_request:
+    paths-ignore:
+      - "store/*.csv"
+      - "_archive/statements/**"
+      - "_archive/bench/**"
+      - "checks/**"
+      - "brand/**"
+      - ".githooks/post-commit"
+      - "docs/decisions.md"
+      - "docs/backup.md"
+      - "docs/publication.md"
+      - "ROADMAP.md"
+  push:
+    branches: [main]
+    paths-ignore:
+      - "store/*.csv"
+      - "_archive/statements/**"
+      - "_archive/bench/**"
+      - "checks/**"
+      - "brand/**"
+      - ".githooks/post-commit"
+      - "docs/decisions.md"
+      - "docs/backup.md"
+      - "docs/publication.md"
+      - "ROADMAP.md"
+  workflow_dispatch:
+
+concurrency:
+  group: guard-${{ github.ref }}
+  cancel-in-progress: true          # a newer push to the same pull request supersedes the run
+
+permissions:
+  contents: read
+
+jobs:
+  guard:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1    # v7.0.1
+        with:
+          fetch-depth: 0              # the secret scan reads every commit ever made
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: requirements.lock
+      - name: The secret scan, over every commit
+        run: .githooks/pre-commit --history
+      - name: Install
+        run: python3 -m pip install -q -e '.[dev]' -c requirements.lock
+      - name: The linter
+        run: python3 -m ruff check --no-cache --output-format github
+      - name: The export test, on the demo
+        run: python3 tools/export_test.py

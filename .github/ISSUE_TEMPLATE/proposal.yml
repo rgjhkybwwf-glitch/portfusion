@@ -1,0 +1,15 @@
+name: A proposal
+description: Something PortFusion should do. Proposed and agreed before it is built (CONTRIBUTING.md).
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: What it would let you do
+      description: The record, figure or page it is for, and what you do today without it.
+    validations:
+      required: true
+  - type: textarea
+    id: shape
+    attributes:
+      label: How it might work
+      description: Optional. Which part it touches, if you know.

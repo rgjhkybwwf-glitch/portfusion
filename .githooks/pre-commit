@@ -1,0 +1,13 @@
+#!/usr/bin/env python3
+"""THIS CHECKOUT'S SECRET GATE: `portfusion/hooks/pre_commit.py`, run from this checkout's own
+`src/`, so a commit is checked by the code it commits and the gate runs before anything is
+installed. The gate's docstring says what it refuses. Held by tests/test_hooks.py.
+"""
+import pathlib
+import sys
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "src"))
+from portfusion.hooks.pre_commit import main  # noqa: E402 — the checkout's own app
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

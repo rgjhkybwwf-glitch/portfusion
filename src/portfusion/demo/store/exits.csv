@@ -1,0 +1,5 @@
+eid,date,account,ticker,qty,stake,price,cur,rate,proceeds,source,broker_ref,realisation,closes,note
+E-001,2026-06-20,Voss ii ISA,TARN.L,400,,5.6,GBP,,2240.0,Not on file: invented for the demo,WDEMO441,R-TARN,,
+E-002,2026-08-12,Voss ii ISA,KELS.L,1000,,1.8,GBP,,1800.0,ii contract note 12 Aug 2026,DMW5ZG,R-KELS,,
+E-003,2026-09-01,Voss IG Spread bet,VELD SB,,1,10420.0,GBP,,10420.0,Not on file: invented for the demo,,R-VELDSB,T-006,
+E-004,2026-09-15,Voss IG Spread bet,QNLR SB,,0.3,10400.0,GBP,,3120.0,Not on file: invented for the demo,,R-QNLRSB,T-010,

@@ -1,0 +1,16 @@
+as_of,account,ticker,qty,local_price,currency,gbp_value,gbp_cost,quality,status,source
+2026-03-31,Voss ii ISA,BRYC.L,1000,2.1,GBP,2100.0,2000.0,derived,live,Invented for the demo
+2026-03-31,Voss ii ISA,TARN.L,800,2.6,GBP,2080.0,2000.0,derived,live,Invented for the demo
+2026-03-31,Voss ii Trading,BRYC.L,500,2.1,GBP,1050.0,1025.0,derived,live,Invented for the demo
+2026-03-31,Voss IG Spread bet,(no positions),,,,0.0,0.0,derived,live,"No open position at 2026-03-31, frozen from the engine at the marks nearest 2026-03-31"
+2026-06-30,Voss ii ISA,BRYC.L,1000,2.2,GBP,2200.0,2000.0,derived,live,Invented for the demo
+2026-06-30,Voss ii ISA,KELS.L,2000,1.6,GBP,3200.0,3000.0,derived,live,Invented for the demo
+2026-06-30,Voss ii ISA,QNLR,50,105.0,USD,3977.27,3800.0,derived,live,Invented for the demo
+2026-06-30,Voss ii Trading,BRYC.L,500,2.2,GBP,1100.0,1025.0,derived,live,Invented for the demo
+2026-06-30,Voss IG Spread bet,(no positions),,,,0.0,0.0,derived,live,"No open position at 2026-06-30, frozen from the engine at the marks nearest 2026-06-30"
+2026-09-30,Voss ii ISA,BRYC.L,1000,2.35,GBP,2350.0,2000.0,derived,live,Invented for the demo
+2026-09-30,Voss ii ISA,KELS.L,1000,1.7,GBP,1700.0,1500.0,derived,live,Invented for the demo
+2026-09-30,Voss ii ISA,QNLR,50,112.0,USD,4210.53,3800.0,derived,live,Invented for the demo
+2026-09-30,Voss ii Trading,BRYC.L,500,2.35,GBP,1175.0,1025.0,derived,live,Invented for the demo
+2026-09-30,Voss IG Spread bet,QNLR SB,0.5,10480.0,USD,5240.0,5100.0,derived,live,Invented for the demo: an IG read would state bid 10480.0
+2026-09-30,Voss IG Spread bet,VELD SB,1.8,10490.0,USD,18882.0,17980.0,derived,live,Invented for the demo: an IG read would state bid 10610.0 + Invented for the demo: an IG read would state bid 10340.0

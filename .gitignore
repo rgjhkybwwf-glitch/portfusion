@@ -1,0 +1,102 @@
+# ==============================================================================
+# PortFusion — what git does NOT track
+# The reasoning for each rule sits beside it.
+#
+# THIS LIST IS ALSO WHAT .githooks/pre-commit REFUSES. `git add -f` overrides an ignore rule
+# and the hook does not, so adding a pattern here forbids committing it, not just forgetting it.
+# ==============================================================================
+
+# NO SPREADSHEET IS A SOURCE FILE. The record is the CSVs in store/, and a spreadsheet beside
+# them would be a second copy of it in an opaque binary. The other two lines are the lock
+# files LibreOffice and Excel leave beside an open copy.
+*.xlsx
+*.xlsx#
+~$*.xlsx
+
+# Python build cache, and the pytest cache beside it. Both regenerate on every
+# run and carry no record. .pytest_cache/ added 26 Aug 2026, with the test suite.
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Scratch/intermediate files from mid-edit work. The proper restore point is a
+# git commit, not a .bak copy left beside the original.
+*.bak
+*.tmp
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Credentials — nothing with an API key or a password ever enters this repo. .githooks/pre-commit
+# holds it, down to a value pasted into some other file.
+.env
+*.key
+secrets.*
+credentials.*
+
+# IG session tokens, cached so one login serves a whole price run rather than one
+# login per command, which would otherwise get the API key rate-limited.
+# Listed separately because `credentials.*` does not match it, and it is every bit
+# as sensitive: a CST and X-SECURITY-TOKEN are bearer credentials the full IG API
+# accepts, dealing included, for up to 72 hours.
+.ig_session.json
+# TradingView's OAuth session — an access token and the refresh token that renews it. Bearer
+# credentials to the TradingView account, alerts and watchlists included, for as long as
+# the refresh token lives.
+.tv_session.json
+# The passkeys enrolled for the hosted desk (desk/auth.py). Public keys rather than secrets,
+# but they say who may sign in, so they stay on the machine running the desk. With them, each
+# reader's level and the sign-in log, whose addresses and times are nobody else's business.
+.desk_passkeys.json
+.desk_passkeys.tmp
+.desk_readers.json
+.desk_readers.tmp
+.desk_signins.jsonl
+.desk_signins.tmp
+# The secret Netlify signs each proxied request with (desk/remote.py). A
+# credential: whoever holds it can reach the door as if through the hosted page.
+.desk_proxy_secret.json
+
+# The intake workbench. Documents land in _inbox/ and LEAVE it: worked into store/, then
+# moved to _archive/statements/, which IS tracked because it is the audit trail behind every
+# figure. Contents are ignored here so a document is never committed under two paths, and so
+# a half-worked intake cannot be mistaken for a record. The folder itself is tracked, via its
+# .gitkeep — the workbench is part of the method, what sits on it is not.
+# `.bench/` inside it, the desk's staging for an intake still being worked, is ignored with it.
+#
+# A document resting here is UNFINISHED WORK, and test_inbox.py says so.
+_inbox/*
+!_inbox/.gitkeep
+# Its old guide, gone to docs/intake.md, is in past commits, which the history scan reads.
+!_inbox/CLAUDE.md
+# The demo book's workbench (PORTFUSION_BOOK=demo, record/schema.py), ignored as this one is. The
+# other files a book keeps beside its store are ignored by the patterns above, wherever it is.
+src/portfusion/demo/_inbox/
+
+# The project virtual environment, added 1 Sep 2026 with the desk. Every byte of it is
+# reconstructible from pyproject.toml and requirements.lock — which is the test for whether something
+# belongs in git at all.
+#
+# LISTED EXPLICITLY ON PURPOSE. `python3 -m venv` drops its own .gitignore containing
+# `*` inside the directory, so this was already ignored — by a file we do not own, that
+# a different tool or a stray deletion would not recreate. Keeping the whole environment
+# out of git should not rest on someone else's default.
+#
+# NO TRAILING SLASH: `.venv/` matches a folder but not a link, and a venv may be either
+# (docs/environment.md).
+.venv
+
+# Claude Code's own files. A clone carries no machine-level ignore, so they are listed here:
+# otherwise the worktrees, whole checkouts of this repo, would go to the next `git add -A`.
+.claude/worktrees/
+.claude/settings.local.json
+
+# What pip writes into src/ when the checkout is installed: rebuilt by every install.
+*.egg-info/
+
+# What building a wheel leaves beside the checkout: the copy it packs, and the wheel.
+build/
+dist/

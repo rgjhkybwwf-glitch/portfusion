@@ -1,0 +1,85 @@
+{
+  "id": "B-20260812-4c7e2d",
+  "revision": 3,
+  "created": "2026-08-12T09:47:40",
+  "state": "archived",
+  "origin": "document",
+  "title": "ContractNote_DMW5ZG.pdf",
+  "document": {
+    "name": "ContractNote_DMW5ZG.pdf"
+  },
+  "evidence_class": "ii-contract-note",
+  "evidence": {
+    "dated": "2026-08-12",
+    "authority": "ii contract note",
+    "reference": "DMW5ZG"
+  },
+  "why": {
+    "why_entered": "",
+    "why_exited": "Invented for the demo: why half was sold."
+  },
+  "rows": [
+    {
+      "table": "exits",
+      "values": {
+        "eid": "E-002",
+        "date": "2026-08-12",
+        "account": "Voss ii ISA",
+        "ticker": "KELS.L",
+        "qty": "1000",
+        "price": "1.8",
+        "cur": "GBP",
+        "proceeds": "1800.0",
+        "source": "ii contract note 12 Aug 2026",
+        "broker_ref": "DMW5ZG",
+        "realisation": "R-KELS"
+      },
+      "sources": {
+        "date": "DATE 12/08/2026 TIME 09:47",
+        "qty": "1,000 1.80 1,800.00",
+        "price": "1,000 1.80 1,800.00",
+        "proceeds": "1,000 1.80 1,800.00",
+        "broker_ref": "CONTRACT No. DMW5ZG"
+      },
+      "derived": [
+        "account",
+        "eid",
+        "realisation"
+      ],
+      "machine": true,
+      "drafted": []
+    }
+  ],
+  "recognised": {
+    "name": "ContractNote_DMW5ZG.pdf",
+    "classes": [
+      "ii-contract-note"
+    ],
+    "instant": "2026-08-12 09:47",
+    "instant_from": "document",
+    "reference": "DMW5ZG",
+    "encoding": null,
+    "scanned": false,
+    "why": ""
+  },
+  "proposed": {
+    "at": "2026-08-12T09:47:52",
+    "by": "a Claude session",
+    "document": "ContractNote_DMW5ZG.pdf",
+    "kind": "ii contract note",
+    "not_found": [],
+    "dropped": [],
+    "directives": []
+  },
+  "written_at": "2026-08-12T10:03:15",
+  "written_to": {
+    "exits": 1
+  },
+  "reasoning_written": {
+    "KELS.L": {
+      "date": "2026-08-12",
+      "why_exited": "Invented for the demo: why half was sold."
+    }
+  },
+  "document_archived_to": "_archive/statements/12 Aug 2026 09.47 ii contract note DMW5ZG (KELS.L).pdf"
+}

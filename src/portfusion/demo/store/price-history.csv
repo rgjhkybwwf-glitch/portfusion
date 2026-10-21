@@ -1,0 +1,15 @@
+ticker,date,price,currency,quality,struck,status,source
+BRYC.L,2025-12-31,2.0,GBP,derived,close,live,Invented for the demo
+BRYC.L,2026-03-31,2.1,GBP,derived,close,live,Invented for the demo
+TARN.L,2026-03-31,2.6,GBP,derived,close,live,Invented for the demo
+BRYC.L,2026-06-30,2.2,GBP,derived,close,live,Invented for the demo
+KELS.L,2026-06-30,1.6,GBP,derived,close,live,Invented for the demo
+QNLR,2026-06-30,105.0,USD,derived,close,live,Invented for the demo
+VELD SB,2026-07-31,10020.0,USD,derived,close,live,Invented for the demo
+BRYC.L,2026-09-30,2.35,GBP,derived,close,live,Invented for the demo
+KELS.L,2026-09-30,1.7,GBP,derived,close,live,Invented for the demo
+QNLR,2026-09-30,111.5,USD,derived,close,superseded,Invented for the demo
+QNLR,2026-09-30,112.0,USD,derived,close,live,Invented for the demo
+VELD-DEC26,2026-09-30,10610.0,USD,derived,live,live,Invented for the demo: an IG read would state bid 10610.0
+VELD-MAR27,2026-09-30,10340.0,USD,derived,live,live,Invented for the demo: an IG read would state bid 10340.0
+QNLR-DEC26,2026-09-30,10480.0,USD,derived,live,live,Invented for the demo: an IG read would state bid 10480.0

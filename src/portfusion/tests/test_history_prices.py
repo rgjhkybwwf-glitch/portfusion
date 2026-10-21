@@ -1,0 +1,341 @@
+"""
+THE PRICE HISTORY.
+
+price-history.csv is append-only and exists so the book can answer "what was this
+worth on that date?" — which it could not do while CURRENT_PRICES was overwritten in
+place on every refresh.
+
+These tests guard the properties that make it trustworthy rather than merely present:
+the live set is banked, no date carries two live marks, and a superseded mark never
+floats free of the mark that replaced it.
+"""
+import re
+from collections import Counter
+
+import pytest
+
+from portfusion.engine import Book
+from portfusion.history import prices as PH
+from quarter_support import frozen_quarters, perf_recon_q2_rows
+from portfusion.record import rules as D
+from harness import needs
+
+ISO = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+
+@pytest.fixture(scope="module")
+def rows():
+    r = PH.load()
+    assert r, "price-history.csv is empty or missing"
+    return r
+
+
+@pytest.mark.audit
+def test_every_current_mark_is_archived():
+    """The whole point. If a refresh happens without archiving, the superseded mark is
+    gone for good — so this failing means data is about to be lost, not that a file is
+    untidy. Fix: python3 -m portfusion.history.prices --archive"""
+    missing = PH.check()
+    assert not missing, ("current marks not in the history: "
+                         + ", ".join(f"{m['ticker']} {m['date']}" for m in missing))
+
+
+@needs("price-history")
+def test_no_duplicate_live_marks(rows):
+    """One live price per instrument per date. A second one means two sources
+    disagreed and nobody chose between them."""
+    live = [(r["ticker"], r["date"]) for r in rows if r["status"] == PH.LIVE]
+    dupes = [k for k, n in Counter(live).items() if n > 1]
+    assert not dupes, f"more than one live mark for: {dupes}"
+
+
+@needs("price-history")
+def test_struck_values_are_known(rows):
+    """`STRUCK_KINDS` was once declared and read by nothing, and a vocabulary no code checks is
+    only a comment. Every mark on file is one of its kinds or blank — and blank means the row
+    never said what instant it describes, which is a fact about the row, not an error. The live
+    marks cannot be blank: current-prices.csv's loader refuses it (`schema.CURRENT_PRICES`)."""
+    allowed = set(PH.STRUCK_KINDS) | {""}
+    bad = {r["struck"] for r in rows} - allowed
+    assert not bad, f"unknown struck value(s) on file: {bad}"
+    assert all(m["struck"] in PH.STRUCK_KINDS for m in PH.current_marks())
+
+
+@needs("price-history")
+def test_qualities_are_known(rows):
+    bad = {r["quality"] for r in rows} - set(PH.QUALITIES)
+    assert not bad, f"unknown quality value(s): {bad}"
+    # THE SECOND AXIS. Supersession is a lifecycle, not a grade; a sourced mark replaced by a
+    # better sourced one keeps its provenance and changes its status.
+    bad = {r["status"] for r in rows} - set(PH.STATUSES)
+    assert not bad, f"unknown status value(s): {bad}"
+
+
+@needs("price-history")
+def test_superseded_marks_have_a_replacement(rows):
+    """A superseded mark is only meaningful beside the mark that replaced it. On its
+    own it is just a wrong number sitting in the record."""
+    live = {(r["ticker"], r["date"]) for r in rows if r["status"] == PH.LIVE}
+    orphans = [(r["ticker"], r["date"]) for r in rows
+               if r["status"] == "superseded" and (r["ticker"], r["date"]) not in live]
+    assert not orphans, f"superseded marks with nothing replacing them: {orphans}"
+
+
+@needs("price-history")
+def test_the_engines_dated_lookup_returns_the_live_half_of_a_pair(rows):
+    """A defect this file's own vocabulary had already named.
+
+    `superseded` exists so a replaced mark can stay on file with its real date rather than be
+    deleted. Two rows therefore share a (ticker, date), and every reader has to say which one it
+    means. `history/` did, through `LIVE`. `Book._marks_at()` did not — it filtered on date
+    alone and returned whichever row it met last, which was the SUPERSEDED one for both pairs
+    then on file.
+
+    NO FIGURE IS WRITTEN DOWN HERE. The claim is that the engine agrees with the record about
+    which of the two is live, whatever the two are — a fixture would go stale the first time a
+    mark is superseded, which is precisely the event this guards.
+    """
+    from portfusion import engine
+    b = engine.Book()
+    live = {(r["ticker"], r["date"]): r["price"] for r in rows if r["status"] == PH.LIVE}
+    pairs = sorted({(r["ticker"], r["date"]) for r in rows if r["status"] == "superseded"})
+    assert pairs, "no superseded mark on file — this asserts nothing"
+    for ticker, date in pairs:
+        got = b._marks_at(date)[0].get(ticker)
+        assert got is not None, f"_marks_at({date}) has no mark for {ticker} at all"
+        assert got[1] == live[(ticker, date)], (
+            f"_marks_at({date}) values {ticker} at {got[1]} — the record's live mark is "
+            f"{live[(ticker, date)]}, and the other row is marked superseded")
+
+
+@needs("price-history")
+def test_dates_are_iso_and_prices_positive(rows):
+    bad_date = [r["ticker"] for r in rows if not ISO.match(r["date"])]
+    assert not bad_date, f"non-ISO date on: {bad_date}"
+    bad_price = [(r["ticker"], r["date"]) for r in rows if not r["price"] > 0]
+    assert not bad_price, f"non-positive price on: {bad_price}"
+
+
+@needs("price-history")
+def test_every_mark_names_a_source(rows):
+    """No fabricated data: a price with no stated source cannot be checked by anyone."""
+    bare = [(r["ticker"], r["date"]) for r in rows if not (r["source"] or "").strip()]
+    assert not bare, f"marks with no source: {bare}"
+
+
+def test_the_build_does_not_import_this(build_imports):
+    """A tool alongside the build, never part of it — the same contract feeds/ig.py
+    works to. A report build must not be able to fail because a CSV moved.
+
+    Checked as an IMPORT rather than a grep: the prose mentions these tools by name.
+    """
+    assert "history.prices" not in build_imports
+
+
+# ---------------------------------------------------------------------------------
+# QUARTER-END COVERAGE
+#
+# A holding once went missing. Its trade date was later CORRECTED back across a quarter end --
+# moving it into the earlier quarter. The Performance reconstruction
+# picked the correction up; the Q Snapshots tab did not, and the price history seeded from
+# the snapshot inherited the hole.
+#
+# A quarter-end valuation is only as complete as its price coverage, so the coverage
+# is asserted rather than assumed.
+#
+# The snapshot quarters are DERIVED from rules.QSNAP_FROZEN, so a new freeze is checked from
+# its first row — a hand-typed list would let the next quarter land unchecked.
+# PERF_RECON_Q2_ROWS is a different table and stays named.
+# ---------------------------------------------------------------------------------
+QUARTER_TABLES = [
+    *(pytest.param(as_of, "quarter-snapshots", rows, 1, id=Book.quarter_label(as_of))
+      for as_of, rows in frozen_quarters()),
+    pytest.param("2026-06-30", "PERF_RECON_Q2_ROWS", perf_recon_q2_rows(), 0,
+                 id="PERF_RECON_Q2_ROWS"),
+]
+
+
+@pytest.mark.parametrize("date,table,rows,tick_idx", QUARTER_TABLES)
+def test_every_quarter_end_holding_has_a_price(date, table, rows, tick_idx):
+    """A holding is priced at the quarter end by its own mark within the close window
+    (`rules.CLOSE_CHECK_WINDOW_DAYS` either side, the window a freeze takes its marks from), or
+    — a spread bet — by such a mark for every contract it was held under that day, which is how
+    IG marks are keyed. The engine says which contracts those were, so this asks the question a
+    valuation asks."""
+    import datetime as _dt
+    day, window = _dt.date.fromisoformat(date), _dt.timedelta(days=D.CLOSE_CHECK_WINDOW_DAYS)
+    marked = {}
+    for r in PH.load():
+        if r["status"] == PH.LIVE:
+            marked.setdefault(r["ticker"], []).append(_dt.date.fromisoformat(r["date"][:10]))
+
+    def near(key):
+        return any(abs(d - day) <= window for d in marked.get(key, []))
+
+    contracts = {}
+    for (ticker, key), _qty in Book()._held_by_mark_key(date).items():
+        contracts.setdefault(ticker, set()).add(key)
+    wanted = {row[tick_idx] for row in rows
+              if row[tick_idx] not in ("(no positions)",)}
+    missing = sorted(t for t in wanted
+                     if not near(t)
+                     and not (contracts.get(t) and all(near(k) for k in contracts[t])))
+    assert not missing, (
+        f"{table} holds {missing} at {date} with no price mark within the close window — "
+        f"a quarter-end valuation cannot be reconstructed without one")
+
+
+# =====================================================================================
+# A MARK READ TWICE IN ONE DAY
+# =====================================================================================
+
+def _restrike(rows, price_delta=0.5):
+    """One live mark, re-read the same day at a different price. Returns (live_set, ticker)."""
+    live = PH.current_marks()
+    target = live[0]["ticker"]
+    for m in live:
+        if m["ticker"] == target:
+            m["price"] = round(m["price"] + price_delta, 4)
+    return live, target
+
+
+def _row(ticker, price, struck, source):
+    return {"ticker": ticker, "date": "2026-09-30", "price": price, "currency": "USD",
+            "quality": "sourced", "struck": struck, "status": PH.LIVE, "source": source}
+
+
+def test_a_same_day_restrike_replaces_a_live_read_and_supersedes_a_correction():
+    """THE HOLE THIS CLOSES. The identity is (ticker, date), so the second reading of a day
+    found itself already banked and appended nothing — leaving price-history holding the
+    morning's level while current-prices held the afternoon's. Two files disagreeing about one
+    date is what makes changes_since() stop tying to the book, which is a failure two invariants
+    are there to catch and a reader is not.
+
+    TWO OUTCOMES (the owner, 12 Oct 2026). A LIVE READ on file is dropped: the later read is the
+    same day seen later, and nothing reads the earlier one. Anything else on file — a close, a
+    statement's price — that a different figure replaces was wrong, and is SUPERSEDED, its
+    status moving and its provenance staying. Either way the new figure lands.
+
+    In memory only: nothing here touches the store.
+    """
+    read = _row("AAA", 10.0, "live", "a morning read — test")
+    close = _row("BBB", 20.0, "close", "a close — test")
+    rows = [read, close]
+    live = [{**read, "price": 10.5, "source": "an afternoon read — test"},
+            {**close, "price": 20.5, "source": "another close — test"}]
+    dropped, superseded = PH._restruck(rows, live)
+    assert [r["ticker"] for r in dropped] == ["AAA"], "a same-day live read was not replaced"
+    assert [r["ticker"] for r in superseded] == ["BBB"], "a corrected close was not superseded"
+    assert close["status"] == "superseded" and close["source"] == "a close — test" \
+        and close["quality"] == "sourced", "the correction changed more than the lifecycle"
+    assert read["status"] == PH.LIVE, "a dropped read was marked rather than left for the caller"
+    kept = [r for r in rows if r is not read]
+    landing = sorted(m["ticker"] for m in PH._FILE.unbanked(live, kept))
+    assert landing == ["AAA", "BBB"], f"the new figures would not be appended: {landing}"
+
+
+def test_a_same_day_reading_at_the_same_price_is_a_no_op():
+    """Re-reading a closed market returns the same level. If that replaced anything, every
+    reading would bank a replacement of itself and the history would churn every day."""
+    rows = PH.load()
+    assert PH._restruck(rows, PH.current_marks()) == ([], []), \
+        "an unchanged same-day mark was treated as a re-strike"
+
+
+@needs("price-history")
+def test_a_restruck_mark_reads_as_unbanked(monkeypatch):
+    """check() is the PRECONDITION the Price Refresh's step 1 and desk/doors/marks.py both read
+    before allowing a write. It asked only whether the (ticker, date) was on file, so a
+    re-struck mark reported as banked while its price sat nowhere — the write gate opening on
+    a guarantee that had not been met."""
+    rows = PH.load()
+    live, ticker = _restrike(rows)
+    monkeypatch.setattr(PH, "current_marks", lambda: live)
+    assert [m["ticker"] for m in PH.check()] == [ticker], \
+        "a re-struck mark still reads as banked"
+
+
+def _synthetic_pair() -> list[dict]:
+    """Two live marks a day apart, with the first one's replacement between them.
+
+    SYNTHETIC ON PURPOSE. Asserted against the live record this would be an audit — it would
+    go red when the book gained or cleared a superseded mark, which is not a code change.
+    """
+    def row(date, price, status, source):
+        return {"ticker": "AAA", "date": date, "price": price, "currency": "GBP",
+                "quality": "sourced", "struck": "close", "status": status, "source": source}
+    return [row("2026-01-02", 100.0, "live", "the reading that stood"),
+            row("2026-01-02", 90.0, "superseded", "the reading that was replaced"),
+            row("2026-01-03", 110.0, "live", "the next day")]
+
+
+def test_a_superseded_mark_is_not_listed_as_a_price_movement(monkeypatch, capsys):
+    """THE AXIS THIS LISTING READ. `show()` split its rows on `quality == "superseded"` — a
+    value that column stopped taking when the lifecycle moved to `status`. The superseded half
+    was therefore always empty, every replaced mark fell into the move chain, and a holding printed
+    a correction as a percentage move against the mark that replaced it. The comment two
+    lines above said doing so would lie.
+
+    A CORRECTION IS NOT A MOVEMENT. Two marks on one date are one reading superseding another;
+    printing the second as a percentage tells the reader the instrument moved when it did not.
+    """
+    monkeypatch.setattr(PH, "load", lambda: _synthetic_pair())
+    PH.show("AAA")
+    out = capsys.readouterr().out
+
+    replaced = [ln for ln in out.splitlines() if "90.0000" in ln]
+    assert len(replaced) == 1, f"the replaced mark is missing or printed twice: {replaced}"
+    assert "(superseded)" in replaced[0], \
+        f"a replaced mark was shown inside the move chain: {replaced[0]!r}"
+    assert "%" not in replaced[0], "a correction was printed as a percentage move"
+    assert "+10.00%" in out, "the move between the two LIVE marks is missing or wrong"
+    assert "(2 marks" in out, "the replaced mark was counted as part of the series"
+
+
+@needs("price-history")
+def test_a_save_that_fails_leaves_the_history_as_it_was(store_copy):
+    """A SAVE THAT RAISES MUST NOT TRUNCATE. It once opened the file for writing and then
+    rendered the rows, so a row the writer refused — a cell under a column the history does not
+    have — left price-history.csv empty: every mark ever banked, gone in one refresh."""
+    path = store_copy / PH.CSV_NAME
+    before = path.read_bytes()
+    rows = PH.load()
+    bad = dict(rows[0], date="1900-01-01", stray="a cell no column holds")
+    with pytest.raises(ValueError):
+        PH.save(rows + [bad])
+    assert path.read_bytes() == before, "a refused save changed the history on disk"
+    assert not [p for p in store_copy.iterdir() if p.name.startswith(".")], \
+        "a refused save left its working file in the store"
+
+
+def test_a_row_that_does_not_fit_the_header_is_refused_on_reading(store_copy):
+    """A HAND-EDITED ROW WITH AN EXTRA CELL is refused where the file is READ, so the bank never
+    gets as far as writing over a history it could not have written back whole."""
+    path = store_copy / PH.CSV_NAME
+    lines = path.read_text(encoding="utf-8").splitlines()
+    path.write_text("\n".join(lines + [lines[-1] + ",extra"]) + "\n", encoding="utf-8")
+    before = path.read_bytes()
+    with pytest.raises(ValueError, match="cells expected"):
+        PH.load()
+    with pytest.raises(ValueError):
+        PH.archive(verbose=False)
+    assert path.read_bytes() == before
+
+
+def test_a_close_at_the_figure_of_its_days_live_read_still_replaces_it(store_copy):
+    """A CLOSE IS THE DAY'S MARK, whatever figure it lands on. One that equalled the live read
+    already banked for its day was skipped as "the same figure", so the history kept a live read
+    for that day and the day read as owed its close (the review of 21 Oct 2026)."""
+    close = next((m for m in PH.current_marks() if m["struck"] == "close"), None)
+    if close is None:
+        pytest.skip("the book holds no close among its live marks")
+    key = (close["ticker"], close["date"])
+    rows = [r for r in PH.load() if (r["ticker"], r["date"]) != key]
+    PH.save(rows + [dict(close, struck="live")])
+    assert PH.check() == [close], "a close over its day's live read reads as banked"
+
+    PH.archive(verbose=False)
+
+    on_file = [r for r in PH.load() if (r["ticker"], r["date"]) == key and r["status"] == PH.LIVE]
+    assert [r["struck"] for r in on_file] == ["close"], on_file
+    assert PH.check() == []
