@@ -155,3 +155,14 @@ def test_an_installed_book_runs_on_its_own_venv(tmp_path, monkeypatch):
     monkeypatch.setattr(sys, "prefix", str(venv))
     d = about.interpreter()
     assert d["is_project_venv"] and "NOT the project .venv" not in d["line"], d["line"]
+
+
+def test_an_installed_release_names_its_own_commit(monkeypatch):
+    """THE FOOTER NAMED THE BOOK'S COMMIT AS PORTFUSION'S: installed in a book's `.venv`, the app
+    asked git from its own folder and found the book's repository around it. Installed, the code's
+    commit is the one it was installed from (issue #18)."""
+    from portfusion import about
+    from portfusion.record import schema
+    monkeypatch.setattr(schema, "ROOT", None)
+    monkeypatch.setattr(about, "_installed_commit", lambda: "abc1234")
+    assert about.release().endswith(" · abc1234"), about.release()

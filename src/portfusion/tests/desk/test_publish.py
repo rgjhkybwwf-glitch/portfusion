@@ -60,7 +60,8 @@ def test_publish_only_ever_pushes_main_of_the_deploy_repo(deploy):
                           capture_output=True, check=True).stdout == bundle.files()["/"]
     m = json.loads(_git(origin, "show", "main:version.json"))
     assert m["version"] == bundle.version() and m["source"] == SOURCE
-    assert f"PortFusion@{SOURCE[:7]}" in _git(origin, "log", "-1", "--format=%s", "main")
+    subject = _git(origin, "log", "-1", "--format=%s", "main")
+    assert f"the book at {SOURCE[:7]}" in subject
 
 
 def test_every_file_in_the_deploy_repository_is_generated(deploy):
@@ -157,6 +158,39 @@ def test_a_value_from_the_record_stops_the_publish(deploy, monkeypatch):
     with pytest.raises(publish.Refused, match="must not"):
         publish.publish(deploy=clone, tunnel=TUNNEL, commit=SOURCE)
     assert _git(origin, "for-each-ref") == ""
+
+
+def test_a_publish_names_the_code_and_the_book_apart(deploy):
+    """A PUBLISH NAMED THE BOOK'S COMMIT AS PORTFUSION'S: `PortFusion@<commit>` took the commit of
+    whatever repository held the app, which, installed in a book's `.venv`, is the book's. The
+    code is named by its release and the book by its commit, each as what it is (issue #18)."""
+    from portfusion import about
+    clone, origin = deploy
+    publish.publish(deploy=clone, tunnel=TUNNEL, commit=SOURCE)
+    m = json.loads(_git(origin, "show", "main:version.json"))
+    assert m["code"] == about.release() and m["source"] == SOURCE
+    subject = _git(origin, "log", "-1", "--format=%s", "main")
+    assert about.release() in subject and f"the book at {SOURCE[:7]}" in subject, subject
+    assert f"PortFusion@{SOURCE[:7]}" not in subject
+
+
+def test_the_commit_published_is_the_books(tmp_path, monkeypatch):
+    """The commit a publish checks and names is the loaded book's, wherever the app is installed:
+    it read the app's folder, which finds the book only when the app sits inside it."""
+    from portfusion.desk import engine
+    from portfusion.record import schema
+    origin, book = tmp_path / "o.git", tmp_path / "book"
+    subprocess.run(["git", "init", "-q", "--bare", "-b", "main", str(origin)], check=True)
+    subprocess.run(["git", "clone", "-q", str(origin), str(book)], check=True, capture_output=True)
+    (book / "f").write_text("1")
+    _git(book, "add", "f")
+    _git(book, "commit", "-q", "-m", "one")
+    _git(book, "push", "-q", "origin", "main")
+    elsewhere = tmp_path / "site-packages" / "portfusion"
+    elsewhere.mkdir(parents=True)
+    monkeypatch.setattr(engine, "ROOT", elsewhere)
+    monkeypatch.setattr(schema, "BOOK", book)
+    assert publish.source() == _git(book, "rev-parse", "HEAD")
 
 
 def test_only_a_clean_pushed_main_is_published(tmp_path):

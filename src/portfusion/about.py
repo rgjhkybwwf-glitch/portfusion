@@ -27,6 +27,19 @@ def _commit(root: str) -> str | None:
         return None
 
 
+def _installed_commit() -> str | None:
+    """The short commit pip installed this release from, where it came from a repository; None
+    for a release installed by its number or from a folder."""
+    import json
+    from importlib import metadata
+    try:
+        found = json.loads(metadata.distribution("portfusion").read_text("direct_url.json") or "{}")
+    except Exception:
+        return None
+    commit = found.get("vcs_info", {}).get("commit_id")
+    return commit[:7] if commit else None
+
+
 def release(root: str | None = None) -> str:
     """WHICH RELEASE THIS IS, as a reader meets it: "PortFusion 0.2.0 beta" for a release, and
     between releases the dev number and the commit, "PortFusion 0.2.0.dev0 · 1a2b3c4", since a
@@ -34,7 +47,13 @@ def release(root: str | None = None) -> str:
     from portfusion import LABEL, __version__
     if ".dev" not in __version__:
         return f"PortFusion {__version__} {LABEL}"
-    commit = _commit(root or os.path.dirname(os.path.abspath(__file__)))
+    if root is None:
+        # THE CODE'S OWN COMMIT, never the folder's around it: installed in a book's `.venv`, git
+        # asked from the package finds the book's repository (issue #18).
+        from portfusion.record import schema
+        commit = _commit(str(schema.ROOT)) if schema.ROOT else _installed_commit()
+    else:
+        commit = _commit(root)
     return f"PortFusion {__version__}" + (f" · {commit}" if commit else "")
 
 
