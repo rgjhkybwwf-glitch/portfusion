@@ -27,8 +27,12 @@ FOLDERS = ("_archive/statements", "_archive/bench", "_inbox")
 #: WHAT A BOOK'S OWN REPOSITORY MUST NEVER HOLD: the files that reach its brokers and readers, and
 #: the documents still being worked on. Written as the book's .gitignore.
 GITIGNORE = """\
-# The files that reach the brokers and the readers: never in git.
+# The files that reach the brokers and the readers, and the shapes a key arrives in from
+# anywhere else: never in git.
 credentials.*
+secrets.*
+*.key
+.env
 .ig_session.json
 .tv_session.json
 .desk_passkeys.json
