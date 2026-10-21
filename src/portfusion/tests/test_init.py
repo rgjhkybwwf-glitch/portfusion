@@ -218,6 +218,31 @@ def test_a_new_books_secret_gate_refuses_a_credential(tmp_path):
     assert "A_BROKER/api_key" in result.stderr
 
 
+def test_a_new_book_refuses_a_push_that_takes_anything_from_main(tmp_path):
+    """A BOOK'S MAIN HAD NO GUARD: `init` wrote the secret gate and not the hook that refuses a
+    deletion or a rewrite of `main`, and a host may protect no branch, so a force push over a
+    book's record went through. The guard is the app's, run by the portfusion the book runs."""
+    book = _started(tmp_path)
+    env = {**os.environ, **_GIT_NAMED, "PATH": os.pathsep.join(
+        [str(pathlib.Path(sys.executable).parent), "/usr/bin", "/bin"])}
+    env.pop("MAIN_REWRITE", None)
+
+    def git(*args):
+        return subprocess.run(["git", *args], cwd=book, env=env, capture_output=True, text=True)
+
+    subprocess.run(["git", "init", "-q", "--bare", str(tmp_path / "origin.git")], check=True)
+    git("remote", "add", "origin", str(tmp_path / "origin.git"))
+    assert git("push", "-q", "origin", "HEAD:refs/heads/main").returncode == 0
+    there = git("rev-parse", "HEAD").stdout.strip()
+    git("commit", "-q", "--amend", "-m", "the first commit, rewritten")
+    for args in (["--force", "origin", "HEAD:refs/heads/main"], ["origin", "--delete", "main"]):
+        result = git("push", "-q", *args)
+        assert result.returncode != 0 and "REFUSED" in result.stderr, (args, result.stderr)
+    shown = subprocess.run(["git", "rev-parse", "refs/heads/main"], cwd=tmp_path / "origin.git",
+                           capture_output=True, text=True).stdout.strip()
+    assert shown == there, "main moved on the remote"
+
+
 def test_a_new_books_gate_refuses_when_it_cannot_run(tmp_path):
     """A gate that cannot find the app has checked nothing, so the commit is refused and the
     line says how to give it the app: never waved through."""

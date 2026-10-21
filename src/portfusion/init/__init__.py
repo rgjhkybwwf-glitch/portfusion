@@ -69,6 +69,25 @@ exit 1
 """
 
 
+#: THE BOOK'S GUARD ON MAIN, as `.githooks/pre-push`: a push that deletes `main` or rewrites it is
+#: refused, as in PortFusion's own repository (`portfusion/hooks/pre_push.py`). It finds the
+#: portfusion the book runs as the gate does, and where none can be found the push is REFUSED.
+PUSH_HOOK = """\
+#!/bin/sh
+# THIS BOOK'S GUARD ON MAIN, written by `portfusion init`: a push that would delete `main` or
+# rewrite it is refused. The guard is PortFusion's own; this asks the portfusion the book runs.
+top=$(git rev-parse --show-toplevel)
+main=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")
+for py in "$top/.venv/bin/python3" "$main/.venv/bin/python3" python3; do
+    if "$py" -c "import portfusion.hooks.pre_push" 2>/dev/null; then
+        exec "$py" -m portfusion.hooks.pre_push "$@"
+    fi
+done
+echo "pre-push: REFUSED. The guard on main could not run: no portfusion in the book's .venv or on PATH." >&2
+echo "  Install it (pip install -r requirements.txt) or activate the venv that has it, and push again." >&2
+exit 1
+"""
+
 def pin() -> str:
     """The requirement line for the portfusion running now, as `pip install -r` takes it: the
     commit it was installed from, the folder or file, or else the release by its number."""
@@ -98,7 +117,8 @@ def start_history(folder: pathlib.Path) -> str:
     written whether or not git is there.
 
     Side effects: runs `git init` and `git commit` in `folder`, and points its hooks at the
-    book's `.githooks/`, so the secret gate (`HOOK`) is on from that first commit."""
+    book's `.githooks/`, so the secret gate (`HOOK`) and the guard on main (`PUSH_HOOK`) are on
+    from that first commit."""
     # THE GATE GUARDS THE FIRST COMMIT TOO, run by the Python running this: the book has no venv
     # yet, and this one has portfusion in it.
     env = {**os.environ, "PATH": os.pathsep.join([str(pathlib.Path(sys.executable).parent),
@@ -177,9 +197,10 @@ def create(folder, practice: bool = False, begins: int | None = None) -> pathlib
     for name in FOLDERS:
         (folder / name).mkdir(parents=True, exist_ok=True)
     (folder / ".gitignore").write_text(GITIGNORE, encoding="utf-8")
-    hook = folder / ".githooks" / "pre-commit"
-    hook.parent.mkdir(exist_ok=True)
-    hook.write_text(HOOK, encoding="utf-8")
-    hook.chmod(0o755)
+    (folder / ".githooks").mkdir(exist_ok=True)
+    for name, text in (("pre-commit", HOOK), ("pre-push", PUSH_HOOK)):
+        hook = folder / ".githooks" / name
+        hook.write_text(text, encoding="utf-8")
+        hook.chmod(0o755)
     (folder / "requirements.txt").write_text(PIN.format(pin=pin()), encoding="utf-8")
     return folder

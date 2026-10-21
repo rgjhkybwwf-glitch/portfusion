@@ -1,97 +1,13 @@
 #!/usr/bin/env python3
-"""Refuse a push that would delete `main` or rewrite it.
-
-A host may not enforce branch protection, so the moment before a push leaves the machine is
-the one moment it can be stopped. Every change
-reaches `main` either as a merge made on GitHub or as a commit made on top of it, and each of
-those only ever adds to `main`. A push that takes anything away from it is refused:
-
-1. Deleting `main`, by any remote, refspec or flag.
-2. Moving `main` to a commit that does not contain the one it is on now: a force push, a reset,
-   an amend or a rebase pushed over it. When this checkout has not fetched the commit `main` is
-   on (a merge made on GitHub and not yet pulled), it is not known to be safe either, and is
-   refused with the pull that resolves it.
-
-Every other branch is free: a merged branch is deleted from GitHub, and a session's own branch
-is its own.
-
-THE OVERRIDE NAMES WHAT IT OVERWRITES. The owner approves a rewrite by naming the commit that
-`main` is on now, at least seven characters of it:
-
-    MAIN_REWRITE=<sha> git push --force-with-lease origin main
-
-so an approval covers that one rewrite and cannot be carried to the next. `git push --no-verify`
-skips this hook, as it is git's own; `.claude/settings.json` denies both, and every force push,
-to a Claude session, which leaves them to the owner's own terminal.
-
-Held by tests/test_hooks.py.
+"""THIS CHECKOUT'S GUARD ON MAIN: `portfusion/hooks/pre_push.py`, run from this checkout's own
+`src/`, so a push is checked before anything is installed. The guard's docstring says what it
+refuses. Held by tests/test_hooks.py.
 """
-import os
-import subprocess
+import pathlib
 import sys
 
-PROTECTED = "refs/heads/main"
-ZERO = "0" * 40
-
-
-def is_ancestor(old: str, new: str) -> bool | None:
-    """Does `new` contain `old`? None when this checkout does not have `old` at all."""
-    if subprocess.run(["git", "cat-file", "-e", f"{old}^{{commit}}"],
-                      capture_output=True).returncode:
-        return None
-    return subprocess.run(["git", "merge-base", "--is-ancestor", old, new],
-                          capture_output=True).returncode == 0
-
-
-def refusal(local_sha: str, remote_sha: str) -> tuple[str, bool] | None:
-    """Why a push of `main` from local_sha over remote_sha is refused, and whether the override
-    may approve it; None when the push only adds. An unfetched tip is never approved: what it
-    would overwrite has not been seen."""
-    if remote_sha == ZERO:
-        return None                                          # main is new on that remote
-    if local_sha == ZERO:
-        return "deletes main", True
-    contained = is_ancestor(remote_sha, local_sha)
-    if contained:
-        return None
-    if contained is None:
-        return (f"main is at {remote_sha[:7]} there, a commit this checkout has not fetched: "
-                f"`git pull --ff-only origin main`, then push", False)
-    return f"rewrites main: {remote_sha[:7]} there is not contained in {local_sha[:7]}", True
-
-
-def approved(remote_sha: str) -> bool:
-    named = os.environ.get("MAIN_REWRITE", "").strip().lower()
-    return len(named) >= 7 and remote_sha.startswith(named)
-
-
-def main(argv: list[str], lines: list[str]) -> int:
-    remote = argv[0] if argv else "the remote"
-    problems = []
-    for line in lines:
-        fields = line.split()
-        if len(fields) != 4 or fields[2] != PROTECTED:
-            continue
-        _, local_sha, _, remote_sha = fields
-        refused = refusal(local_sha, remote_sha)
-        if refused and not (refused[1] and approved(remote_sha)):
-            problems.append((*refused, remote_sha))
-    if not problems:
-        return 0
-    print(f"pre-push: REFUSED. This push to {remote} would take something away from main.\n",
-          file=sys.stderr)
-    for why, _, _ in problems:
-        print(f"  {why}", file=sys.stderr)
-    print("\nChanges reach main as a pull request merged on GitHub (CONTRIBUTING.md). If GitHub "
-          "has a merge this checkout lacks, take it first:\n"
-          "  git pull --no-rebase --no-edit origin main", file=sys.stderr)
-    for _, overridable, remote_sha in problems:
-        if overridable:
-            print("Only the owner rewrites it, naming the commit it replaces:\n"
-                  f"  MAIN_REWRITE={remote_sha[:12]} git push --force-with-lease {remote} main",
-                  file=sys.stderr)
-    return 1
-
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "src"))
+from portfusion.hooks.pre_push import main  # noqa: E402 — the checkout's own app
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv[1:], sys.stdin.read().splitlines()))
