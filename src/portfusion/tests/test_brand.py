@@ -104,6 +104,7 @@ def test_the_release_has_one_home_and_every_reader_meets_it(monkeypatch):
     assert about.release() == f"PortFusion 9.9.0 {portfusion.LABEL}"
     monkeypatch.setattr(portfusion, "__version__", "9.9.0.dev0")
     assert about.release().startswith("PortFusion 9.9.0.dev0")
-    monkeypatch.setattr(about, "_commit", lambda root: "abc1234")
+    monkeypatch.setattr(about, "_commit", lambda root: "abc1234")           # a checkout
+    monkeypatch.setattr(about, "_installed_commit", lambda: "abc1234")       # an install
     assert about.release() == "PortFusion 9.9.0.dev0 · abc1234"
     assert main(["--version"]) == 0

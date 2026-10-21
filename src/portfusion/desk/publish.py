@@ -34,7 +34,7 @@ import subprocess
 import time
 
 from portfusion import brand
-from portfusion.desk import auth, bundle, engine
+from portfusion.desk import auth, bundle
 from portfusion.log import log
 from portfusion.record import rules
 
@@ -145,8 +145,11 @@ def files(tunnel: str) -> dict[str, bytes]:
 
 
 def manifest(tree: dict[str, bytes], source: str, now: _dt.datetime | None = None) -> dict:
+    """What was published: the bundle's version, the PortFusion release that made it (`code`),
+    the book's commit whose figures it serves (`source`), when, and every file's hash."""
+    from portfusion import about
     now = now or _dt.datetime.now(_dt.timezone.utc)
-    return {"version": bundle.version(), "source": source,
+    return {"version": bundle.version(), "code": about.release(), "source": source,
             "published": now.replace(microsecond=0).isoformat(),
             "files": {p: hashlib.sha256(b).hexdigest() for p, b in sorted(tree.items())}}
 
@@ -227,14 +230,17 @@ def _on_clean_main(where: pathlib.Path, what: str) -> None:
 
 
 def source(root: pathlib.Path | None = None) -> str:
-    """The commit being published: this checkout's `main`, clean, and already on GitHub."""
-    root = root or engine.ROOT
-    _on_clean_main(root, "this checkout")
+    """The book's commit being published: its `main`, clean, and already on GitHub, so the figures
+    the hosted desk serves are ones a pushed commit holds. Read from the book's own folder, never
+    from where the app is installed (issue #18)."""
+    from portfusion.record import schema
+    root = root or schema.BOOK
+    _on_clean_main(root, "the book")
     head = _git(root, "rev-parse", "HEAD")
     r = subprocess.run(["git", "-C", str(root), "merge-base", "--is-ancestor", head,
                         "origin/main"], capture_output=True)
     if r.returncode:
-        raise Refused("this checkout's main is not pushed: git push origin main, then publish")
+        raise Refused("the book's main is not pushed: git push origin main, then publish")
     return head
 
 
@@ -316,11 +322,12 @@ def publish(port: int = 8768, deploy: pathlib.Path | None = None,
 
     _git(deploy, "add", "-A")
     _git(deploy, "commit", "-q", "-m",
-         f"Publish desk version {m['version']} from PortFusion@{commit[:7]}")
+         f"Publish desk version {m['version']}: {m['code']}, the book at {commit[:7]}")
     _git(deploy, "push", "-q", "origin", "main")
     month = _dt.date.today().replace(day=1).isoformat()
     count = len(_git(deploy, "log", f"--since={month}", "--format=%h").split())
-    return {"published": True, "version": m["version"], "source": commit, "tunnel": tunnel,
+    return {"published": True, "version": m["version"], "code": m["code"], "source": commit,
+            "tunnel": tunnel,
             "this_month": count}
 
 
@@ -355,7 +362,8 @@ def main(port: int = 8768) -> int:
     if not got["published"]:
         log.info(f"\n  Nothing to publish: version {got['version']} is already live.\n")
         return 0
-    log.info(f"\n  Published version {got['version']} from PortFusion@{got['source'][:7]}.\n"
-          f"  Netlify deploys it from {DEPLOY.name}'s main in a minute or two.\n"
-          f"  Publishes this month: {got['this_month']}.\n")
+    log.info(f"\n  Published version {got['version']}: {got['code']}, the book at "
+             f"{got['source'][:7]}.\n"
+             f"  Netlify deploys it from {DEPLOY.name}'s main in a minute or two.\n"
+             f"  Publishes this month: {got['this_month']}.\n")
     return 0
