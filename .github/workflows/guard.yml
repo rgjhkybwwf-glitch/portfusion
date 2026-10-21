@@ -1,12 +1,10 @@
 # THE GUARD, ON GITHUB. One job, three checks, each the command a session runs on the Mac: the
-# secret scan over every commit, the linter, and the export test, which is the suite on the demo
-# from the tracked files without the book's facts, and `portfusion check` from the wheel built
-# from them. A pull request is merged on GitHub once this is green (CONTRIBUTING.md).
+# secret scan over every commit, the linter, and the clean-room test, which is the suite on the
+# demo and on a new book from the tracked files, and `portfusion check` from the wheel built from
+# them. A pull request is merged on GitHub once this is green (CONTRIBUTING.md).
 #
 # WHEN IT RUNS: on a pull request and on a push to main, not on every branch push: a run on
-# every branch push would spend a free plan's minutes quickly. A push that touches only the
-# facts is skipped: the export test leaves them behind, so they cannot change its answer.
-# `tools/export_test.py:FACTS` is the list, and tests/test_export.py holds both lists below to it.
+# every branch push would spend a free plan's minutes quickly.
 #
 # Each action is GitHub's own, pinned to a commit, and the repository allows no others.
 
@@ -14,30 +12,8 @@ name: guard
 
 on:
   pull_request:
-    paths-ignore:
-      - "store/*.csv"
-      - "_archive/statements/**"
-      - "_archive/bench/**"
-      - "checks/**"
-      - "brand/**"
-      - ".githooks/post-commit"
-      - "docs/decisions.md"
-      - "docs/backup.md"
-      - "docs/publication.md"
-      - "ROADMAP.md"
   push:
     branches: [main]
-    paths-ignore:
-      - "store/*.csv"
-      - "_archive/statements/**"
-      - "_archive/bench/**"
-      - "checks/**"
-      - "brand/**"
-      - ".githooks/post-commit"
-      - "docs/decisions.md"
-      - "docs/backup.md"
-      - "docs/publication.md"
-      - "ROADMAP.md"
   workflow_dispatch:
 
 concurrency:
@@ -67,5 +43,5 @@ jobs:
         run: python3 -m pip install -q -e '.[dev]' -c requirements.lock
       - name: The linter
         run: python3 -m ruff check --no-cache --output-format github
-      - name: The export test, on the demo
-        run: python3 tools/export_test.py
+      - name: The clean-room test
+        run: python3 tools/clean_room.py
