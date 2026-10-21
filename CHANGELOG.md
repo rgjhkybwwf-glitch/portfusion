@@ -3,7 +3,7 @@
 Each release, newest first. The version is `portfusion/__init__.py`'s, and `portfusion --version`
 prints it.
 
-## 0.2.0 — beta, unreleased
+## 0.2.0 — beta, 21 Oct 2026
 
 The first public release: the app and the demo book, apart from any book that uses them.
 
@@ -14,8 +14,8 @@ The first public release: the app and the demo book, apart from any book that us
   person approves each row, and the Price Refresh, where marks are fetched and reviewed.
 - **The report**: the quarterly report, from the same engine.
 - **The feeds**: IG and TradingView, read-only.
-- **`portfusion init`**: a new book's folder, its git history, its secret gate and the release it
-  runs; `--practice` copies the demo.
+- **`portfusion init`**: a new book's folder, its git history, its secret gate, the guard on its
+  `main` and the release it runs; `--practice` copies the demo.
 - **`portfusion check`**: the guard, shipped with the app and run on any book.
 
 ### Known limits

@@ -161,8 +161,10 @@ def test_an_installed_release_names_its_own_commit(monkeypatch):
     """THE FOOTER NAMED THE BOOK'S COMMIT AS PORTFUSION'S: installed in a book's `.venv`, the app
     asked git from its own folder and found the book's repository around it. Installed, the code's
     commit is the one it was installed from (issue #18)."""
+    import portfusion
     from portfusion import about
     from portfusion.record import schema
+    monkeypatch.setattr(portfusion, "__version__", "9.9.0.dev0")    # a release names no commit
     monkeypatch.setattr(schema, "ROOT", None)
     monkeypatch.setattr(about, "_installed_commit", lambda: "abc1234")
-    assert about.release().endswith(" · abc1234"), about.release()
+    assert about.release() == "PortFusion 9.9.0.dev0 · abc1234", about.release()
