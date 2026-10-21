@@ -72,8 +72,12 @@ def stamp(root: str | None = None, store: str | None = None) -> str:
 
 
 # =================================================================================================
-# WHICH PYTHON IS RUNNING. Derived, never typed — the venv is always the checkout's .venv.
-PROJECT_VENV = _Path(__file__).resolve().parents[2] / ".venv"
+# WHICH PYTHON IS RUNNING. Derived, never typed — the venv is the checkout's .venv where the app
+# runs from one, and the loaded book's where it is installed: a book runs the release its
+# requirements.txt names from a venv of its own.
+def project_venv() -> _Path:
+    from portfusion.record import schema
+    return (schema.ROOT or schema.BOOK) / ".venv"
 
 
 def interpreter() -> dict:
@@ -85,11 +89,12 @@ def interpreter() -> dict:
     the two interpreters can differ.
     """
     prefix = _Path(sys.prefix).resolve()
-    is_project = PROJECT_VENV.exists() and prefix == PROJECT_VENV.resolve()
+    venv = project_venv()
+    is_project = venv.exists() and prefix == venv.resolve()
     v = ".".join(str(n) for n in sys.version_info[:3])
     line = (f"{prefix} · {v}" if is_project
             else f"SYSTEM — {prefix} · {v}  (NOT the project .venv)")
-    return {"prefix": str(prefix), "venv": str(PROJECT_VENV),
+    return {"prefix": str(prefix), "venv": str(venv),
             "is_project_venv": is_project, "version": v, "line": line}
 
 
