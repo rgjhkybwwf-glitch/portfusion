@@ -11,11 +11,11 @@ import pytest
 def test_the_interpreter_is_reported_not_typed(repo_root):
     """The venv path is DERIVED from the module's own location, never written down — the same
     rule every figure in this book sits under."""
-    from portfusion.about import PROJECT_VENV, interpreter
-    assert PROJECT_VENV == repo_root / ".venv"
+    from portfusion.about import interpreter, project_venv
+    assert project_venv() == repo_root / ".venv"
     d = interpreter()
     assert d["is_project_venv"] is (pathlib.Path(sys.prefix).resolve()
-                                    == PROJECT_VENV.resolve())
+                                    == project_venv().resolve())
     # The line has to be readable at a glance in either state, and must SAY when it is wrong.
     assert ("NOT the project .venv" in d["line"]) is not d["is_project_venv"]
 
@@ -140,3 +140,18 @@ def test_backup_counts_the_hooks_on_in_a_worktree_pointed_at_the_main_checkout(s
     subprocess.run(["git", "config", "--worktree", "core.hooksPath", str(tmp_path / "elsewhere")],
                    cwd=tree, check=True)
     assert "hooks: NOT ACTIVE" in _state_in(tree)
+
+
+def test_an_installed_book_runs_on_its_own_venv(tmp_path, monkeypatch):
+    """A BOOK OF ITS OWN READ AS THE SYSTEM PYTHON: the audit judged the venv against the
+    checkout's, so a book whose `.venv` runs the release it names was told `NOT the project
+    .venv` on every run. Where the app is installed, the project is the loaded book."""
+    from portfusion import about
+    from portfusion.record import schema
+    venv = tmp_path / ".venv"
+    venv.mkdir()
+    monkeypatch.setattr(schema, "ROOT", None)
+    monkeypatch.setattr(schema, "BOOK", tmp_path)
+    monkeypatch.setattr(sys, "prefix", str(venv))
+    d = about.interpreter()
+    assert d["is_project_venv"] and "NOT the project .venv" not in d["line"], d["line"]
