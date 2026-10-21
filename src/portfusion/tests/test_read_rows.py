@@ -258,10 +258,11 @@ def test_a_documents_download_time_is_uk_time_wherever_the_mac_is(tmp_path, monk
     doc.write_text("x\n", encoding="utf-8")
     noon_utc = calendar.timegm((2026, 7, 1, 12, 0, 0))     # 13:00 in London, summer time
     os.utime(doc, (noon_utc, noon_utc))
+    monkeypatch.setattr(read_document, "INBOX", str(tmp_path))     # on the workbench, by name
     monkeypatch.setenv("TZ", "America/New_York")
     time.tzset()
     try:
-        assert read_document.modified(str(doc)) == dt.datetime(2026, 7, 1, 13, 0)
+        assert read_document.modified("export.csv") == dt.datetime(2026, 7, 1, 13, 0)
     finally:
         monkeypatch.undo()
         time.tzset()
@@ -299,5 +300,5 @@ def test_a_utf16_export_is_read_as_utf16(tmp_path):
     from portfusion.desk.intake import read_document
     doc = tmp_path / "export.csv"
     doc.write_bytes("Symbol,Qty\nWEND,100\n".encode("utf-16"))
-    got = read_document.extract(str(doc))
+    got = read_document.extract_file(doc)
     assert "Symbol,Qty" in got["text"] and "\x00" not in got["text"], got["text"][:40]

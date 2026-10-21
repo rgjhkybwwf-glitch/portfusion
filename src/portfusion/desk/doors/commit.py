@@ -471,7 +471,7 @@ def _document_stamp(original: str, when) -> str:
     if not src.is_file():
         return ""
     try:
-        inst = D.document_instant(read_document.extract(str(src)).get("text") or "")
+        inst = D.document_instant(read_document.extract_file(src).get("text") or "")
     except Exception:                     # noqa: BLE001 — a name is worth more than a stamp
         return ""
     return f"{inst:%H.%M}" if inst and inst.date() == when else ""

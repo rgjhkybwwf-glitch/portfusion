@@ -365,6 +365,19 @@ def test_a_passkey_answering_another_page_is_refused(door):
     assert _sign_in(door, pk).status_code == 403
 
 
+def test_a_refused_passkey_tells_the_log_why_and_the_caller_only_that(door):
+    """THE DOOR ANSWERS ANYONE BEFORE SIGN-IN, and a passkey the library refused came back with
+    the library's own words, which name what the desk expected. The caller is told the passkey was
+    not accepted; the sign-in log keeps why (CodeQL's first scan of the public repository)."""
+    pk = SoftPasskey()
+    assert _enrol(door, pk, _code()).status_code == 200
+    pk.origin = "https://evil.example"
+    r = _sign_in(door, pk)
+    assert r.status_code == 403 and r.json()["detail"] == "the passkey was not accepted", r.text
+    refused = [s for s in auth.signins() if s["result"] == "refused"]
+    assert refused and refused[-1]["detail"].startswith("the passkey was not accepted: "), refused
+
+
 def test_an_answer_counts_once_and_a_stranger_counts_never(door):
     pk = SoftPasskey()
     assert _enrol(door, pk, _code()).status_code == 200

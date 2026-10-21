@@ -71,6 +71,22 @@ def test_a_document_that_states_no_instant_is_dated_by_its_download(tmp_path, mo
     assert seen["instant"] == "2026-09-30 15:03" and seen["instant_from"] == "download"
 
 
+def test_a_name_is_read_from_the_workbench_and_a_path_only_from_code(tmp_path, monkeypatch):
+    """AN ABSOLUTE PATH WAS READ AS GIVEN by the reader every browser route reaches, for the
+    doors' own reads of the archive: safe only while each route happened to refuse a slash. A name
+    is the workbench's; a path is read only by `extract_file`, which the code alone calls."""
+    from portfusion.desk.intake import read_document
+    inbox, outside = tmp_path / "inbox", tmp_path / "elsewhere" / "kept.csv"
+    inbox.mkdir()
+    outside.parent.mkdir()
+    outside.write_text("Date,Amount\n01/01/2026,1.00\n", encoding="utf-8")
+    monkeypatch.setattr(read_document, "INBOX", str(inbox))
+    with pytest.raises(FileNotFoundError):
+        read_document.extract(str(outside))
+    assert read_document.modified(str(outside)) is None
+    assert "01/01/2026" in read_document.extract_file(outside)["text"]
+
+
 def test_a_path_in_the_filename_cannot_escape_the_inbox(inbox):
     """The name arrives from the browser, so it is data. Traversal is not rejected but
     REDUCED — the leaf is a perfectly good filename and refusing it would teach nothing."""
@@ -142,7 +158,7 @@ def test_every_accepted_extension_is_one_the_intake_extractor_can_READ(inbox, tm
                 w.write(fh)
         else:
             sample.write_text("a,b\n1,2\n", encoding="utf-8")
-        doc = reader.extract(str(sample))
+        doc = reader.extract_file(sample)
         assert "text" in doc and "scanned" in doc, f"{ext}: {doc}"
 
 
@@ -1145,7 +1161,7 @@ def test_every_archived_contract_note_reads_back_its_own_reference():
              if (m := re.search(r"contract note ([A-Z0-9]{5,})", p.name))]
     assert notes, "no archived contract note to read — has the naming convention moved?"
     for path, ref in notes:
-        doc = read_document.extract(str(path))
+        doc = read_document.extract_file(path)
         assert doc["kind"] == "pdf" and not doc["scanned"], f"{path.name} gave no text"
         assert ref in doc["text"], f"{path.name}: {ref} is not in its own extracted text"
 

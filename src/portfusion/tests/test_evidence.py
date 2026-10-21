@@ -368,7 +368,7 @@ def test_an_ii_contract_note_is_recognised_and_nothing_else_is_taken_for_one():
     for path in sorted(folder.iterdir()):
         if path.suffix.lower() not in (".pdf", ".csv", ".tsv", ".txt"):
             continue
-        text = read_document.extract(str(path)).get("text") or ""
+        text = read_document.extract_file(path).get("text") or ""
         named = re.search(r"^(\d{2} \w{3} \d{4})(?: \d{2}\.\d{2})? ii contract note ([A-Z0-9]{5,})",
                           path.name)
         if not named:

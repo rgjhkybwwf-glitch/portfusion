@@ -75,16 +75,15 @@ def _decode(path) -> tuple[str, str]:
 
 
 def _located(name):
-    """The file a name means: an ABSOLUTE path as given — the doors' own, into the archive — or a
-    bare name ON THE WORKBENCH, and nowhere else.
+    """The file a name means: a bare name ON THE WORKBENCH, and nowhere else. A path the code
+    already holds — the doors' own, into the archive — is read by `extract_file()`, so nothing a
+    browser sends is ever read as a path (CodeQL's first scan of the public repository).
 
     A NAME IS NOT TRIED AGAINST THE FOLDER THE PROCESS RUNS IN. It was, first, so a name the desk
     was handed by a browser — `credentials.json` — was read from the book's own folder and served
     back (the review of 21 Oct 2026). The containment is the `/raw` route's: the name resolves
     inside `_inbox/` or it is not found.
     """
-    if os.path.isabs(name):
-        return name
     inbox = os.path.realpath(INBOX)
     path = os.path.realpath(os.path.join(inbox, name))
     if os.path.dirname(path) != inbox:
@@ -122,7 +121,19 @@ def extract(name):
     Returns {name, kind, pages, text, scanned}. `scanned` true means NO TEXT CAME OUT: the
     caller must stop and read it by eye rather than treat an empty string as an empty document.
     """
-    path = _located(name)
+    return _extract(_located(name))
+
+
+def extract_file(path):
+    """`extract()` for a file the code already holds by its absolute path: the archive's, a
+    door's, or one named at a terminal. Never called with what a browser sent."""
+    path = os.fspath(path)
+    if not os.path.isabs(path):
+        raise ValueError(f"{path!r} is not an absolute path: a bare name is extract()'s")
+    return _extract(path)
+
+
+def _extract(path):
     if not os.path.exists(path):
         raise FileNotFoundError(path)
     ext = os.path.splitext(path)[1].lower()
@@ -168,7 +179,7 @@ def waiting():
 def text_of(name):
     """Print a document's text. PRINTS ONLY — extract() does the work."""
     try:
-        doc = extract(name)
+        doc = extract_file(name) if os.path.isabs(name) else extract(name)
     except FileNotFoundError as e:
         sys.exit(f"not found: {e}")
     except RuntimeError as e:
@@ -192,7 +203,7 @@ def text_of(name):
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         # TYPED AT A TERMINAL, a path means what it means there: a file in this folder is read by
-        # its full path, which `_located()` takes as given. A bare name is the workbench's.
+        # its full path (`extract_file()`). A bare name is the workbench's.
         arg = sys.argv[1]
         text_of(os.path.abspath(arg) if os.path.sep in arg else arg)
     else:

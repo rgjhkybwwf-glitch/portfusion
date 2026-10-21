@@ -448,7 +448,7 @@ def test_every_share_reading_rests_on_units_that_still_agree(book):
         if len(names) != 1:
             owed.append(f"{r.acct} — \"{source}\" matches {len(names)} filed document(s)")
             continue
-        text = read_document.extract(str(folder / names[0]))["text"]
+        text = read_document.extract_file(folder / names[0])["text"]
         check = book.units_check(r.acct, str(r.as_of)[:10], read_rows.holdings(text, r.evidence))
         owed += [f"{r.acct} — {x.ticker}: book {x.book:,.0f}, {names[0]} {x.broker:,.0f}"
                  for x in check[~check["agrees"]].itertuples(index=False)]

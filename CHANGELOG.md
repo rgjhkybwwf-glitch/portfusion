@@ -3,6 +3,15 @@
 Each release, newest first. The version is `portfusion/__init__.py`'s, and `portfusion --version`
 prints it.
 
+## Unreleased
+
+- **A document is read from the workbench by its bare name only.** `read_document.extract()` no
+  longer reads an absolute path, which every route a browser reaches had to refuse for it; code
+  that holds a path, such as a book's own check reading its archive, calls
+  `read_document.extract_file(path)`.
+- **A refused passkey is not described to the caller.** The door says the passkey was not
+  accepted; the passkey library's reason goes to the sign-in log only.
+
 ## 0.2.0 — beta, 21 Oct 2026
 
 The first public release: the app and the demo book, apart from any book that uses them.

@@ -176,7 +176,13 @@ def limit_key(address: str) -> str:
 
 
 class Refused(Exception):
-    """A sign-in or enrolment that did not happen, with the reason the page shows."""
+    """A sign-in or enrolment that did not happen, with the reason the page shows. `detail` is
+    what only the sign-in log hears: the door answers anyone before sign-in, so a library's own
+    account of a refusal, which names what the desk expected, is not sent to the caller."""
+
+    def __init__(self, reason: str, detail: str = ""):
+        super().__init__(reason)
+        self.detail = detail
 
 
 def proxy_secret() -> bytes | None:
@@ -469,7 +475,7 @@ def enrol_verify(credential: dict, rp_id: str, origin: str, now: float | None = 
             credential=credential, expected_challenge=challenge, expected_rp_id=rp_id,
             expected_origin=origin, require_user_verification=True)
     except WebAuthnException as e:
-        raise Refused(f"the passkey was not accepted: {e}")
+        raise Refused("the passkey was not accepted", detail=str(e))
     key = bytes_to_base64url(v.credential_id)
     keys = _keys()
     keys[key] = {"who": p["who"], "public_key": bytes_to_base64url(v.credential_public_key),
@@ -513,7 +519,7 @@ def sign_in_verify(credential: dict, rp_id: str, origin: str,
             expected_origin=origin, credential_public_key=base64url_to_bytes(key["public_key"]),
             credential_current_sign_count=key["sign_count"], require_user_verification=True)
     except WebAuthnException as e:
-        raise Refused(f"the passkey was not accepted: {e}")
+        raise Refused("the passkey was not accepted", detail=str(e))
     if not level(key["who"]):
         raise Refused(f"{key['who']} has no level yet; the owner sets one on the Mac's Access page")
     key["sign_count"], key["last_used"] = v.new_sign_count, int(now)
