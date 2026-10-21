@@ -194,6 +194,18 @@ def test_a_new_book_never_tracks_its_venv_or_what_python_leaves(tmp_path):
     assert untracked == "", untracked
 
 
+def test_a_new_book_never_tracks_a_key_file(tmp_path):
+    """A KEY KEPT BESIDE THE BOOK went into git with the next `git add -A`: the .gitignore `init`
+    wrote named the brokers' and the desk's files, and not the shapes a key arrives in from
+    anywhere else. The gate refuses whatever the list ignores, so naming them forbids them."""
+    book = _started(tmp_path)
+    for leftover in (".env", "broker.key", "secrets.json"):
+        (book / leftover).write_text("")
+    untracked = subprocess.run(["git", "status", "--porcelain"], cwd=book, capture_output=True,
+                               text=True).stdout
+    assert untracked == "", untracked
+
+
 def test_a_new_books_secret_gate_refuses_a_credential(tmp_path):
     """A NEW BOOK HOLDS ITS OWNER'S CREDENTIALS TOO, and had no gate: `init` set no hooks, so a
     key pasted into a note went into git and out with the next push. The gate is the app's, on
