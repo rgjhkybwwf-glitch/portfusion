@@ -8,8 +8,7 @@ says what PortFusion is; this says how a change is worked.
 ```bash
 git config core.hooksPath .githooks       # the gate that keeps credentials out of git
 python3 -m venv .venv && .venv/bin/python3 -m pip install -e '.[dev]' -c requirements.lock
-python3 -m pytest                          # the guard, on the book in this folder
-PORTFUSION_BOOK=demo python3 -m pytest     # on the demo
+PORTFUSION_BOOK=demo python3 -m pytest     # the guard, on the demo
 python3 tools/clean_room.py                # the app on its own: a copy, a new book and a wheel
 ```
 
@@ -38,6 +37,12 @@ python3 tools/clean_room.py                # the app on its own: a copy, a new b
 
 Search for what already does the job before adding anything; give a function a parameter rather
 than a second version.
+
+## A book stays out
+
+- **Examples are invented.** Use the demo's names, never a real book's people, holdings,
+  references, figures or dates: in code, guides, commits, branches, issues or pull requests.
+- **The pre-push hook checks it** on the book `PORTFUSION_BOOK` names. CI runs on the demo and cannot.
 
 ## Commits and pull requests
 

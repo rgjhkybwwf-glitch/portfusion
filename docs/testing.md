@@ -12,7 +12,8 @@ python3 -m pytest -m audit     # the audit set alone
 **One suite, any book.** The guard runs on whichever book is loaded, and its last line names
 that book. A check of one book's own facts lives in **that book's `checks/` folder**, collected
 when that book is loaded (`tests/harness.py`). Everything in `tests/` must pass on any book,
-which the demo run proves.
+which the demo run proves. A check another book could pass or fail belongs in `tests/` or the
+audit, never in a book's `checks/`.
 
 **Read a test's docstring before changing it.** It says why the check exists.
 
