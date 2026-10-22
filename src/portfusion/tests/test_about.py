@@ -168,3 +168,4 @@ def test_an_installed_release_names_its_own_commit(monkeypatch):
     monkeypatch.setattr(schema, "ROOT", None)
     monkeypatch.setattr(about, "_installed_commit", lambda: "abc1234")
     assert about.release() == "PortFusion 9.9.0.dev0 · abc1234", about.release()
+    assert "· PortFusion 9.9.0.dev0 · abc1234 ·" in about.stamp(), "the footer's stamp drops it"
