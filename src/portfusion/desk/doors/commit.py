@@ -257,28 +257,52 @@ def _write_reasoning(targets: dict) -> list[str]:
     return sorted(targets)
 
 
-def contracts_closed_by(rows: list[dict]) -> list[str]:
-    """The IG contracts these rows leave with no open leg: each sale's leg's contract, still
-    mapped to an epic, when every leg on it is closed — already, or by these rows. Read from the
-    files, so it answers before a write (the Bench's review) and inside one (`commit()`) alike."""
+def retired_by(rows: list[dict]) -> list[str]:
+    """The lines these rows leave held by nothing, each with a live price to retire, sorted:
+      · an IG contract, still mapped to an epic, when every leg on it is closed — already, or by
+        these rows' sales naming their legs
+      · a share these rows' sales leave in no account: a holding is per account, but a price is
+        per ticker, so a ticker still held anywhere keeps it
+    These rows' own buys count, so a line reopened in the same item stays. Read from the files,
+    so it answers before a write (the Bench's review) and inside one (`commit()`) alike."""
     from portfusion.record import schema
+    sales = [r.get("values") or {} for r in rows if r.get("table") == "exits"]
+    buys = [r.get("values") or {} for r in rows if r.get("table") == "trades"]
     th, eh = schema.TABLES["trades"].header, schema.TABLES["exits"].header
-    named = {str((r.get("values") or {}).get("closes") or "").strip()
-             for r in rows if r.get("table") == "exits"} - {""}
-    if not named:
-        return []
-    closed = {r[eh.index("closes")] for r in schema.load("exits") if r[eh.index("closes")]} | named
-    contract_of = {r[th.index("id")]: r[th.index("contract")] for r in schema.load("trades")}
-    # THESE ROWS' OWN LEGS COUNT: a close and a reopen on one contract in one item left the new
-    # leg out, so the contract was retired under it and the book would not load with the item
-    # written (the review of 21 Oct 2026).
-    contract_of.update({str(v.get("id") or "").strip(): str(v.get("contract") or "").strip()
-                        for r in rows if r.get("table") == "trades"
-                        for v in [r.get("values") or {}] if str(v.get("id") or "").strip()})
-    epics = {r[0]: r[1] for r in schema.load("contracts")}
-    touched = {contract_of.get(leg) for leg in named} - {None, ""}
-    return sorted(c for c in touched if epics.get(c)
-                  and all(leg in closed for leg, on in contract_of.items() if on == c))
+    out = []
+
+    named = {str(v.get("closes") or "").strip() for v in sales} - {""}
+    if named:
+        closed = {r[eh.index("closes")] for r in schema.load("exits")
+                  if r[eh.index("closes")]} | named
+        contract_of = {r[th.index("id")]: r[th.index("contract")] for r in schema.load("trades")}
+        contract_of.update({str(v.get("id") or "").strip(): str(v.get("contract") or "").strip()
+                            for v in buys if str(v.get("id") or "").strip()})
+        epics = {r[0]: r[1] for r in schema.load("contracts")}
+        touched = {contract_of.get(leg) for leg in named} - {None, ""}
+        out += [c for c in touched if epics.get(c)
+                and all(leg in closed for leg, on in contract_of.items() if on == c)]
+
+    sold = {str(v.get("ticker") or "").strip() for v in sales} - {""}
+    if sold:
+        sh = schema.TABLES["securities"].header
+        sold &= ({r[sh.index("code")] for r in schema.load("securities")
+                  if r[sh.index("kind")] == "shares"}
+                 & {r[0] for r in schema.load("current-prices")})
+        held = dict.fromkeys(sold, 0)
+        # A CORPORATE ACTION IS A BUY OF NIL COST, its quantity signed, so buys less sales is the
+        # quantity held whatever the holding went through.
+        for table, h, sign, mine in (("trades", th, 1, buys), ("exits", eh, -1, sales)):
+            ticker, qty = h.index("ticker"), h.index("qty")
+            for r in schema.load(table):
+                if r[ticker] in held:
+                    held[r[ticker]] += sign * (r[qty] or 0)
+            for v in mine:
+                t = str(v.get("ticker") or "").strip()
+                if t in held:
+                    held[t] += sign * int(float(str(v.get("qty") or 0).strip() or 0))
+        out += [t for t, q in held.items() if q <= 0]
+    return sorted(out)
 
 
 @held
@@ -330,10 +354,11 @@ def commit(item_id: str) -> dict:
 
     # A HOLDINGS EXPORT FILES THE ACCOUNT'S READING, and the reading's table shares the envelope.
     reading = bench.reading_of(item) if item.get("reading") is not None else None
-    # A SALE THAT CLOSES A CONTRACT'S LAST LEG RETIRES ITS LIVE PRICE in the same write, through
-    # the marks door — this door still only appends the event.
+    # A SALE THAT CLOSES A CONTRACT'S LAST LEG, OR SELLS A SHARE OUT OF EVERY ACCOUNT, RETIRES
+    # ITS LIVE PRICE in the same write, through the marks door — this door still only appends
+    # the event.
     from portfusion.desk.doors import marks
-    retiring = contracts_closed_by(rows)
+    retiring = retired_by(rows)
     # A NEW CONTRACT'S FIRST MARK, read from IG when its set-up was pressed (`bench.for_event`).
     marking = list(item.get("marks") or [])
     held = list(dict.fromkeys([path for path, _, _ in before.values()]
@@ -380,7 +405,7 @@ def commit(item_id: str) -> dict:
         try:
             retired = marks.retire(retiring, "bench", item["id"], written_at) if retiring else []
         except marks.Refused as e:
-            raise Refused(f"the contract could not be retired, so nothing was written — {e}") from e
+            raise Refused(f"the live price could not be retired, so nothing was written — {e}") from e
         try:
             marked = marks.first(marking, "bench", item["id"], written_at) if marking else []
         except marks.Refused as e:

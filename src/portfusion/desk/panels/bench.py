@@ -120,7 +120,7 @@ def detail(item_id: str) -> dict:
     from portfusion.desk.doors import commit
     item = bench.get(item_id)
     return {"item": item, "gates": bench.gates(item),
-            "retires": _guarded(lambda: commit.contracts_closed_by(item.get("rows") or [])),
+            "retires": _guarded(lambda: commit.retired_by(item.get("rows") or [])),
             # THE REST OF THE BENCH, in its order, each ready or not — so a finished item can
             # offer the next one still owed, or the review once none is.
             "bench": [{"id": s["id"], "title": s["title"], "ready": s["ready"]}

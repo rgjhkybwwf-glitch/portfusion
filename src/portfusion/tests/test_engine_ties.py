@@ -716,6 +716,16 @@ def test_a_closed_legs_contract_is_not_expected_to_be_priced(book):
         f"price there is a mark nobody needs and a refresh would have to keep fresh.")
 
 
+def test_every_live_price_is_on_a_line_still_held(book):
+    """A share no account holds, or a contract no open leg is on, carries no live price: the
+    sale that empties it retires it, and the audit names any that stays."""
+    unheld = book.priced_unheld()
+    assert not unheld, (
+        f"live prices on lines nothing holds: {unheld}. Every refresh fetches them and their "
+        f"age counts against the prices' freshness.")
+    assert not [p for p in book.findings()["problems"] if "nothing holds" in p]
+
+
 # =====================================================================================
 # THE TRADING FLOW IS DERIVED  (after the owner found Q3 had stopped moving)
 #

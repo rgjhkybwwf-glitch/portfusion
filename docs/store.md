@@ -40,6 +40,9 @@ happened, never an instruction or how a figure was reached; those go in the comm
   cost is stake × level. It is priced by contract: its row names the contract, and
   `contracts.csv` gives the contract its epic and the code of its line, which is the leg's
   ticker. The write that closes a contract's last leg retires it.
+- **A live price is on a line still held.** The sale that leaves a share in no account banks its
+  price and takes it out of `current-prices.csv`, as a contract's last close does; the audit
+  names any price nothing holds.
 - **A mark has three axes**: `quality` (provenance), `status` (lifecycle) and `struck` (`close`
   or `live`). A blank `struck` compares with nothing.
 - **A frozen quarter end is restated, never edited.** `restate()` supersedes the rows and appends

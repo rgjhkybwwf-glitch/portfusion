@@ -458,6 +458,107 @@ def test_a_sale_leaving_another_leg_open_retires_nothing(item, store_copy, tmp_p
     assert {r[0]: r[1] for r in schema.load("contracts")}[contract]
 
 
+def _sterling_shares_held():
+    """{ticker: {account: quantity}} for every sterling share line with a live price, from the
+    loaded book, each account's quantity as it stands."""
+    from portfusion import engine
+    from portfusion.record import schema
+    priced = {r[0] for r in schema.load("current-prices") if r[2] == "GBP"}
+    b = engine.Book()
+    out = {}
+    for acct in b.account_order():
+        h = b.holdings(account=acct, by="ticker")
+        for r in h[h["held_as"].eq("shares")].itertuples():
+            if r.ticker in priced and r.qty > 0:
+                out.setdefault(r.ticker, {})[acct] = int(r.qty)
+    return out
+
+
+def _selling(item, ticker, held, ref):
+    """The item, carrying one sale per account of all that account holds of `ticker`, each
+    filed under its own holding's parcel: two new ones in one item are numbered apart, as the
+    record would number the second once the first is on file."""
+    from portfusion import engine
+    b = engine.Book()
+    parcels = []
+    for acct in sorted(held):
+        parcel, n = b.parcel(acct, ticker), 2
+        while parcel in parcels:
+            parcel, n = f"{b.parcel(acct, ticker)}-{n}", n + 1
+        parcels.append(parcel)
+    item["evidence"] = dict(GOOD_EVIDENCE, reference=ref)
+    item["why"] = {"why_entered": "", "why_exited": "Sold to release cash."}
+    item["rows"] = [{"table": "exits", "values": dict(
+        eid=free_id("exits", n), date="2026-09-29", account=acct, ticker=ticker, qty=str(qty),
+        stake="", price="1.00", cur="GBP", rate="", proceeds=f"{qty:.2f}",
+        source="ii contract note 29 Sep 2026", broker_ref="", realisation=parcel,
+        closes="", note="n")}
+        for n, ((acct, qty), parcel) in enumerate(zip(sorted(held.items()), parcels))]
+    _bench.save(item)
+    return item
+
+
+@needs("accounts", "trades")
+def test_a_sale_emptying_a_share_in_every_account_retires_its_price_in_the_same_write(
+        item, store_copy, tmp_path, monkeypatch):
+    """A share sold out kept its live price, so every refresh went on fetching a quote nothing
+    read, and a failed fetch counted against the prices' freshness. The write that leaves no
+    account holding it now banks the price and takes it out, as a contract's last close does;
+    the review says so before the press."""
+    from portfusion import engine
+    from portfusion.record import schema
+    from portfusion.desk.doors import commit as _commit
+    from portfusion.history import prices as PH
+    monkeypatch.setattr(_commit, "ARCHIVE", tmp_path / "archive")
+    ticker, held = next(iter(sorted(_sterling_shares_held().items())))
+    _selling(item, ticker, held, "TESTREF9")
+    assert bench_panel.detail(item["id"])["retires"] == [ticker]
+
+    done = _commit.commit(item["id"])
+    assert done["retired"] == [ticker]
+    assert ticker not in {r[0] for r in schema.load("current-prices")}, "still priced"
+    assert any(r["ticker"] == ticker for r in PH.load()), "its last price was not banked"
+    jh = schema.TABLES["journal"].header
+    said = [dict(zip(jh, r)) for r in schema.load("journal") if r[jh.index("ref")] == item["id"]]
+    assert ("remove", "current-prices") in {(j["op"], j["table"]) for j in said}, said
+    assert ("replace", "contracts") not in {(j["op"], j["table"]) for j in said}, \
+        "a share has no epic to blank"
+    assert engine.Book().priced_unheld() == []
+
+
+@needs("accounts", "trades")
+def test_a_share_still_held_in_another_account_keeps_its_price(
+        item, store_copy, tmp_path, monkeypatch):
+    """The other half: a price is per ticker, so one account selling out retires nothing while
+    another still holds the line."""
+    from portfusion.record import schema
+    from portfusion.desk.doors import commit as _commit
+    monkeypatch.setattr(_commit, "ARCHIVE", tmp_path / "archive")
+    shared = [(t, h) for t, h in sorted(_sterling_shares_held().items()) if len(h) > 1]
+    if not shared:
+        pytest.skip("no sterling share in this book is held in two accounts")
+    ticker, held = shared[0]
+    one = dict([sorted(held.items())[0]])
+    _selling(item, ticker, one, "TESTREF10")
+    assert bench_panel.detail(item["id"])["retires"] == []
+    assert _commit.commit(item["id"])["retired"] == []
+    assert ticker in {r[0] for r in schema.load("current-prices")}
+
+
+def test_a_share_bought_back_in_the_same_item_is_not_retired():
+    """THE ITEM'S OWN BUY HOLDS THE LINE: a sale of all of it beside a buy retires nothing."""
+    from portfusion.desk.doors import commit
+    held = next(iter(sorted(_sterling_shares_held().items())), None)
+    if held is None:
+        pytest.skip("no sterling share line with a live price")
+    ticker, by_account = held
+    sales = [{"table": "exits", "values": {"ticker": ticker, "qty": str(q)}}
+             for q in by_account.values()]
+    assert commit.retired_by(sales) == [ticker], "the premise: the sales empty it"
+    buy = {"table": "trades", "values": {"ticker": ticker, "qty": "10"}}
+    assert commit.retired_by(sales + [buy]) == []
+
+
 def test_an_event_is_dated_on_the_bench_and_on_load():
     """The owner, 12 Oct 2026: a buy, a sale, an income row or a money movement with a blank date
     passed every check — only a cash reading's date was required — so the Bench would approve an
@@ -2226,9 +2327,9 @@ def test_a_contract_reopened_in_the_same_item_is_not_retired():
         pytest.skip("no contract with an epic and one open leg")
     contract, leg = pick
     sale = {"table": "exits", "values": {"closes": leg}}
-    assert commit.contracts_closed_by([sale]) == [contract], "the premise: the sale closes it"
+    assert commit.retired_by([sale]) == [contract], "the premise: the sale closes it"
     reopen = {"table": "trades", "values": {"id": "T-NEWLEG", "contract": contract}}
-    assert commit.contracts_closed_by([sale, reopen]) == []
+    assert commit.retired_by([sale, reopen]) == []
 
 
 def _drawn_js():

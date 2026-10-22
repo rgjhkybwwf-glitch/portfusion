@@ -795,6 +795,16 @@ class Book:
                 "spread_days": int((newest - oldest).days), "marks": int(len(dates)),
                 "age_days": int((day - oldest).days)}
 
+    def priced_unheld(self) -> list[str]:
+        """The lines `current-prices.csv` prices that nothing holds, sorted: a share no account
+        holds a share of, or a contract no open leg is on. A sale retires its line's price as it
+        empties it (`desk/doors/marks.py`), so any here is a mark nobody needs."""
+        L = self.ledger
+        open_legs = L[L["open_leg"]]
+        held = set(open_legs.loc[open_legs["held_as"] == "shares", "ticker"])
+        held |= {self.D.LEG_CONTRACT[i] for i in open_legs["id"] if i in self.D.LEG_CONTRACT}
+        return sorted(set(self.store["prices"]["ticker"]) - held)
+
     # ---- IDENTITY  —  code -> issuer -> sector / region ------------------------------
 
     #
@@ -3491,6 +3501,10 @@ class Book:
                             f"— past the {self.D.PRICE_SPREAD_LIMIT}-day spread limit. A ticker "
                             f"was probably missed in the last sweep; the newest mark being fresh "
                             f"hides it")
+        unheld = self.priced_unheld()
+        if unheld:
+            problems.append(f"a live price nothing holds — {', '.join(unheld)}: every refresh "
+                            f"fetches it, and its age counts against the prices' freshness")
 
         # ---- JUDGEMENTS OWED ------------------------------------------------------------
         owed = self.theses_owed()
