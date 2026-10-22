@@ -1,19 +1,8 @@
 """THE DEMO BOOK NAMES NOBODY HERE, AND ITS GENERATOR WRITES ALL OF IT.
 
 `demo/` is a small invented book, written whole by `tools/make_demo.py`; every name and figure in
-it is made up and every source says so. It ships with the code, so nothing of THIS book — no
-holder, account, number, feed label, realisation, ticker, contract or archived document — may
-appear anywhere in its files.
-
-THIS FILE ONCE BUILT EVERY PAGE FROM THE DEMO in a child process, because the suite refused to
-run with PORTFUSION_BOOK set. Q5 (decided 9 Oct 2026) retired that: the suite itself now runs on any
-book — `PORTFUSION_BOOK=demo python3 -m pytest` IS the demo build, every door and page test included —
-and only one assertion, the one that needs both books in hand at once, stayed behind. It reads
-this book's names from the loaded record and scans the demo's files, so it is this book's own
-check, in `checks/test_book_demo.py`: on another book the "real names" would be the demo's own.
-
-What a PAGE could add beyond the files is code-baked text, and that is held separately, on both
-books, by test_record.py::test_the_code_names_nobody_in_the_book_it_reads.
+it is made up and every source says so. It ships with the code, so nothing of a real book may
+appear in its files: `test_what_leaves.py` holds them, with the code, to the book loaded.
 
 THE TWO TESTS HERE RUN ON ANY BOOK, since they read `demo/` whichever is loaded: a fresh run of
 the generator writes exactly the files tracked there, and the demo's one bench record is what the
