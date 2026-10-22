@@ -179,6 +179,10 @@ BY_TAB = {
         "evidence": "Document kind",
         "reference": "Reference",
         "retires": "Also retires",          # an IG contract the sale leaves with no open leg
+        "kind": "Held as",                  # a new line's: shares or spread bet
+        "tv_symbol": "TradingView symbol",
+        "tv_unit": "TradingView unit",
+        "epic": "Epic",                     # the IG market a new contract is priced by
     },
     # A FOREIGN INCOME'S CONVERSION, beside the sterling the book adds up: the amount in the
     # currency the Ccy column names, as the Bench heads it, and the day of the rate.

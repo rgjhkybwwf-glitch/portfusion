@@ -268,10 +268,10 @@ def _book() -> dict[str, list[dict]]:
         ("deploy_repo", ""), ("research_repo", ""),
         ("insights_url", "https://example.test/insights"))]
     T["contracts"] = [
-        {"contract": "VELD-SEP26", "funding": "daily"},
-        {"contract": "VELD-DEC26", "epic": "DM.D.VELDUS.DEC.IP", "funding": "dated"},
-        {"contract": "VELD-MAR27", "epic": "DM.D.VELDUS.MAR.IP", "funding": "dated"},
-        {"contract": "QNLR-DEC26", "epic": "DM.D.QNLRUS.DEC.IP", "funding": "dated"},
+        {"contract": "VELD-SEP26", "funding": "daily", "code": "VELD SB"},
+        {"contract": "VELD-DEC26", "epic": "DM.D.VELDUS.DEC.IP", "funding": "dated", "code": "VELD SB"},
+        {"contract": "VELD-MAR27", "epic": "DM.D.VELDUS.MAR.IP", "funding": "dated", "code": "VELD SB"},
+        {"contract": "QNLR-DEC26", "epic": "DM.D.QNLRUS.DEC.IP", "funding": "dated", "code": "QNLR SB"},
     ]
     return T
 

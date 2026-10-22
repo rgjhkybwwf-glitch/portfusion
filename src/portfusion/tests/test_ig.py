@@ -292,21 +292,20 @@ def test_an_unknown_epic_resolves_to_no_ticker(D):
     reported — never guessed at by name similarity.
     """
     m = ig._epic_to_ticker(D)
-    assert m, "the map is empty; the LEG_CONTRACT chain has broken"
+    assert m, "the map is empty"
     assert m.get("XX.D.NOTREAL.DEC.IP") is None
     assert m.get("") is None
 
 
-def test_every_mapped_epic_resolves_through_the_book_not_a_typed_list(D):
-    """The map is DERIVED: epic -> contract key (EPICS) -> trade id (LEG_CONTRACT) ->
-    ticker (the trades). Nothing is typed twice, so a new contract on a known underlying
-    resolves by itself. If an EPICS entry stops resolving, its legs have gone."""
+@needs("contracts", "trades")
+def test_every_open_contract_resolves_to_its_line(D):
+    """An epic resolves to the code its contract names, so the first bet on a contract reads
+    with no leg before it."""
     m = ig._epic_to_ticker(D)
-    for contract, (_acct, epic) in ig.epics().items():
-        assert epic in m, (
-            f"{contract} ({epic}) resolves to no ticker — either no trade carries a "
-            f"LEG_CONTRACT entry for it, or two tickers claim it")
-        assert m[epic].endswith(" SB"), f"{epic} resolved to {m[epic]!r}, not a spread bet"
+    for contract, epic in D.CONTRACTS.items():
+        if epic:
+            assert m[epic] == D.CONTRACT_CODE[contract]
+            assert D.KIND_OF_CODE[m[epic]] == "spread bet", f"{epic} resolved to a share line"
 
 
 def test_the_generated_rows_are_real_csv(D):
@@ -711,6 +710,52 @@ def test_a_swept_close_names_its_parcel_and_its_leg(monkeypatch, D):
     assert [e["what"] for e in r["opens"]] == [f"{leg.ticker} · Buy · £0.25/pt · 8,000 pts"]
     assert [e["what"] for e in r["closes"]] == [f"{leg.ticker} · Sell · £0.25/pt · 8,000 pts"] * 2
     assert r["matched"] == [f"{leg.ticker} · Buy · £{leg.stake:g}/pt · 2026-09-27 · in the book"]
+
+
+@pytest.mark.parametrize("epic, want", [
+    ("DM.D.NEWUS.JUN.IP", ("-JUN27", "dated")), ("DM.D.NEWUS.DEC.IP", ("-DEC26", "dated")),
+    ("DM.D.NEWUS.OCT.IP", ("-OCT26", "dated")), ("DM.D.NEWUS.DAILY.IP", ("-DFB", "daily")),
+    ("DM.D.NEWUS.IP", ("", "dated"))])
+def test_a_new_contracts_name_and_funding_are_read_off_its_epic(epic, want):
+    """The month, in the year it next falls on or after the deal; a daily-funded bet is DFB."""
+    got = ig.contract_suffix(epic, "2026-08-12")
+    assert (got["suffix"], got["funding"]) == want
+
+
+@needs("contracts", "trades")
+def test_a_first_bet_on_a_contract_the_book_lacks_is_offered_for_set_up(monkeypatch, D):
+    """An opening on an epic no contract carries is a set-up, carrying the trade, the epic and
+    its contract's month; a close on one is skipped, having nothing in the book to close."""
+    label = _referenced_open_leg(D)[4]
+    epic = "DM.D.NEWUS.JUN.IP"
+
+    def act(deal, kind, affected):
+        return {"date": "2026-08-12T10:00:00", "dealId": deal, "epic": epic,
+                "details": {"size": 1, "level": 50.0, "marketName": "Newco Inc (24 Hours)",
+                            "dealReference": "R", "limitLevel": None,
+                            "actions": [{"actionType": kind, "affectedDealId": affected}]}}
+    activity = {"activities": [act("DIAAAATESTNEWOPEN", "POSITION_OPENED", None),
+                               act("DIAAAATESTNEWCLOSE", "POSITION_CLOSED", "DIAAAAELSE")]}
+
+    class _S(_EventSession):
+        def _request(self, method, path, weight):
+            if path.startswith("/history/activity"):
+                return activity, None
+            if path.startswith("/history/transactions"):
+                return {"transactions": []}, None
+            return super()._request(method, path, weight)
+    monkeypatch.setattr(ig, "load_credentials", lambda *a, **k: {label: {"env": "LIVE"}})
+    monkeypatch.setattr(ig, "IGSession", _S)
+
+    r = ig.ig_events("2026-08-01")
+    assert not r["opens"]
+    [s] = r["setups"]
+    assert (s["epic"], s["suffix"], s["funding"]) == (epic, "-JUN27", "dated")
+    assert (s["values"]["broker_ref"], s["values"]["ticker"], s["values"]["contract"]) == \
+        ("DIAAAATESTNEWOPEN", "", "")
+    assert s["what"] == "Newco Inc (24 Hours) · Buy · £1/pt · 50 pts"
+    [skipped] = r["skipped"]
+    assert "DIAAAATESTNEWCLOSE" in skipped and skipped.endswith("not in the book")
 
 
 # =====================================================================================

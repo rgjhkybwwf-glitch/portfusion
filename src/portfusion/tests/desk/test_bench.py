@@ -307,9 +307,9 @@ def test_the_bench_speaks_the_desks_words_not_the_stores(item, repo_root):
     field_fn = js[js.index("function field(spec"):js.index("function drawItem(d)")]
     assert "head(spec.name)" in field_fn and "sentence(spec.name)" not in field_fn
     assert "BENCH.table_labels" in js[js.index("function drawItem(d)"):]
-    assert set(_bench.TABLE_LABELS) == set(_bench.TABLES)
+    assert set(_bench.TABLE_LABELS) == set(_bench.TABLES + _bench.REGISTER)
     assert set(bench_panel.FORM_COLUMNS) == {
-        f.name for t in _bench.TABLES for f in _rules.schema.TABLES[t].fields}
+        f.name for t in _bench.TABLES + _bench.REGISTER for f in _rules.schema.TABLES[t].fields}
     labels = {g["name"]: g["label"] for g in _bench.gates(item)}
     assert labels["why_exited"] == COMMON["why_exited"] == "Why we exited"
 
@@ -411,11 +411,14 @@ def test_a_sale_closing_a_contracts_last_leg_retires_it_in_the_same_write(
     contract, legs = next(iter(sorted(_open_legs_by_contract().items())))
     _closing(item, legs, "TESTREF7")
     assert bench_panel.detail(item["id"])["retires"] == [contract]
+    line = {r[0]: r[3] for r in schema.load("contracts")}[contract]
 
     done = _commit.commit(item["id"])
     assert done["retired"] == [contract]
     assert contract not in {r[0] for r in schema.load("current-prices")}, "still priced"
     assert not {r[0]: r[1] for r in schema.load("contracts")}[contract], "still has its epic"
+    assert {r[0]: r[3] for r in schema.load("contracts")}[contract] == line, \
+        "the closed contract lost its line"
     assert any(r["ticker"] == contract for r in PH.load()), "its last price was not banked"
     jh = schema.TABLES["journal"].header
     said = [dict(zip(jh, r)) for r in schema.load("journal") if r[jh.index("ref")] == item["id"]]
@@ -1315,14 +1318,104 @@ def swept(tmp_path, monkeypatch):
     monkeypatch.setattr(_b, "BENCH_DIR", tmp_path / "bench")
     made = []
 
-    def _carry(event=None):
-        item = _b.for_event(event or dict(_IG_CLOSE))
+    def _carry(event=None, marks=None):
+        item = _b.for_event(event or dict(_IG_CLOSE), marks=marks)
         made.append(item["id"])
         return item
 
     yield _carry
     for i in made:
         _b.discard(i)
+
+
+def _set_up(code="NEWCO SB", contract="NEWCO-JUN27", company="Newco Inc.", ticker=None):
+    """A first bet on a contract the book lacks, as the sweep's set-up sends it: the trade, with
+    its new line, company and contract. Invented names; the account is the loaded book's."""
+    from portfusion.record import schema
+    trade = {"id": free_id("trades"), "date": "2026-08-12",
+             "source": _rules.trade_source("ig-api", "2026-08-12", endpoint="/history/activity"),
+             "account": SPREAD_BET_ACCOUNT, "ticker": code if ticker is None else ticker,
+             "cur": "GBP", "qty": "", "stake": 1, "val": 50.0, "broker_ref": "DIAAAATESTNEWOPEN",
+             "note": "", "contract": contract, "price": "", "rate": ""}
+
+    def row(table, **v):
+        return {"table": table, "values": {f.name: v.get(f.name, "") for f in schema.TABLES[table].fields}}
+    return {"table": "trades", "ref": "DIAAAATESTNEWOPEN", "kind": "open",
+            "account": SPREAD_BET_ACCOUNT, "what": "Newco Inc (24 Hours) · Buy · £1/pt · 50 pts",
+            "values": trade, "with": [
+                row("securities", code=code, company=company, kind="spread bet",
+                    currency="USD", tv_symbol="NYSE:NEWCO"),
+                row("issuers", company=company, sector="Industrials", region="US"),
+                row("contracts", contract=contract, epic="DM.D.NEWCOUS.JUN.IP", funding="dated",
+                    code=code)]}
+
+
+#: The new contract's first mark, as the set-up press reads it from IG.
+_FIRST_MARK = {"ticker": "NEWCO-JUN27", "price": 50.4, "currency": "USD", "as_of": "2026-08-12",
+               "source": "IG REST LIVE DM.D.NEWCOUS.JUN.IP, bid 50.4", "struck": "live",
+               "at": "2026-08-12T10:00:00Z"}
+
+
+@needs("accounts", "trades")
+def test_a_set_up_writes_its_line_company_contract_and_trade_together(swept, store_copy,
+                                                                      tmp_path, monkeypatch):
+    """The first bet on a new contract lands with everything it stands on, in one write, and
+    the line it sets up reads as the bet's own."""
+    from portfusion.record import schema
+    from portfusion.desk.doors import commit as _commit
+    monkeypatch.setattr(_commit, "ARCHIVE", tmp_path / "archive")
+    item = swept(_set_up(), marks=[_FIRST_MARK])
+    item["why"] = {"why_entered": "A first position on the thesis in the note.", "why_exited": ""}
+    _bench.save(item)
+    assert [g["name"] for g in _bench.gates(item) if not g["ok"]] == []
+
+    done = _commit.commit(item["id"])
+    assert done["written"] == {"securities": 1, "issuers": 1, "contracts": 1, "trades": 1}
+    assert done["marked"] == ["NEWCO-JUN27"]
+    assert schema.load("contracts")[-1][0::3] == ("NEWCO-JUN27", "NEWCO SB")
+    assert _rules.CONTRACT_CODE["NEWCO-JUN27"] == "NEWCO SB"
+    assert schema.load("current-prices")[-1][:2] == ("NEWCO-JUN27", 50.4)
+    jh = schema.TABLES["journal"].header
+    assert ("append", "current-prices") in {(r[jh.index("op")], r[jh.index("table")])
+                                            for r in schema.load("journal")
+                                            if r[jh.index("ref")] == item["id"]}
+
+
+@pytest.mark.parametrize("event, says", [
+    (dict(_set_up(), values=dict(_set_up()["values"], ticker="")), "a new line needs its trade"),
+    (_set_up(ticker="OTHER SB"), "a new contract needs its trade, on its line"),
+    (dict(_set_up(), **{"with": _set_up()["with"][:1] + _set_up()["with"][2:]}),
+     "has no company row"),
+    (_set_up(), "a new contract needs its first mark"),
+])
+def test_a_set_up_that_does_not_stand_with_its_trade_is_refused(swept, event, says):
+    """A line, company or contract is written only with the trade that first needs it, and
+    agreeing with it: the register holds nothing no trade stands on."""
+    item = swept(event)
+    rows = next(g for g in _bench.gates(item) if g["name"] == "rows")
+    assert not rows["ok"] and says in rows["detail"], rows["detail"]
+
+
+@pytest.mark.parametrize("priced", [True, False])
+def test_the_set_up_press_reads_the_contracts_first_mark_or_refuses(swept, monkeypatch, priced):
+    """The set-up press asks IG for the new contract's level: a priced one rides on the item as
+    its first mark, and an unpriced one opens no item at all."""
+    from portfusion.desk.intake import bench as _b
+    from portfusion.feeds import ig
+    level = {"priced": priced, "level": 50.4 if priced else None, "currency": "USD",
+             "as_of": "2026-08-12", "source": _FIRST_MARK["source"] if priced else "",
+             "struck": "live", "at": _FIRST_MARK["at"], "status": "TRADEABLE" if priced else "CLOSED"}
+    asked = []
+    monkeypatch.setattr(ig, "contract_levels", lambda mapped=None: asked.append(mapped)
+                        or {"rows": [dict(level, contract="NEWCO-JUN27")]})
+    got = bench_panel._set_up(_set_up())
+    assert asked == [{"NEWCO-JUN27": (None, "DM.D.NEWCOUS.JUN.IP")}]
+    if priced:
+        item = _b.get(got["id"])
+        assert item["marks"] == [_FIRST_MARK]
+        _b.discard(item["id"])
+    else:
+        assert got == {"ok": False, "error": "IG gave no level for DM.D.NEWCOUS.JUN.IP: CLOSED"}
 
 
 def test_a_swept_event_reaches_the_bench_with_its_evidence_filled(swept):

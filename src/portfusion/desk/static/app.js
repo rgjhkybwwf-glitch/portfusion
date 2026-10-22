@@ -644,6 +644,15 @@ function field(spec, value, quote, drafted) {
     (spec.help ? `<em>${esc(spec.help)}</em>` : "") + `</span>${input}${q}</label>`;
 }
 
+/* A NEW CONTRACT'S FIRST MARK, read from IG when its set-up was pressed: written with the bet,
+   so shown with it. */
+function firstMarks(it) {
+  return (it.marks || []).map((m) => `<div class="row-card"><div class="row-head">
+      <strong>First mark</strong></div><dl class="detail">${["ticker", "price", "currency", "as_of",
+      "source"].map((k) => `<dt>${head(k)}</dt><dd>${esc(m[k] ?? "")}</dd>`).join("")}</dl></div>`)
+    .join("");
+}
+
 function drawItem(d) {
   const it = d.item;
   DRAWN = it.revision || 0;
@@ -785,7 +794,7 @@ function drawItem(d) {
     <div class="grid">${classPicker}</div>
     <div class="grid">${limbs}</div>
     <h2>Proposed rows</h2>
-    <div id="rows">${rows || `<p class="muted">nothing proposed yet</p>`}</div>
+    <div id="rows">${rows || `<p class="muted">nothing proposed yet</p>`}${firstMarks(it)}</div>
     <p>${BENCH.tables.map((t) =>
         `<button class="link" data-addrow="${esc(t)}">+ ${esc(
           ((BENCH.table_labels || {})[t] || t).toLowerCase())}</button>`).join(" ")}
@@ -999,12 +1008,13 @@ async function reviewItems() {
       <dl class="detail">${Object.entries(r.values).filter(([, v]) => v !== "" && v != null)
         .map(([k, v]) => `<dt>${head(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl>`).join("");
     const said = it.why || {};
+    const marked = firstMarks(it);
     const whys = ["why_entered", "why_exited"].filter((w) => (said[w] || "").trim())
       .map((w) => `<dt>${head(w)}</dt><dd>${esc(said[w])}</dd>`).join("")
       + ((d.retires || []).length ? `<dt>${head("retires")}</dt><dd>${esc(d.retires.join(", "))}</dd>` : "");
     return `<section class="review-item" data-item="${esc(it.id)}">
       <div class="row-head"><h2>${esc(it.title)}</h2></div>
-      ${rows}${whys ? `<dl class="detail">${whys}</dl>` : ""}
+      ${rows}${marked}${whys ? `<dl class="detail">${whys}</dl>` : ""}
       <ul class="items gates">${d.gates.map((g) =>
         `<li class="ok"><span class="tag">ok</span><strong>${esc(g.label || g.name)}</strong></li>`).join("")}</ul>
       <p><button class="link" data-write="${esc(it.id)}">${rdg
@@ -1429,7 +1439,7 @@ const ACTION_VIEW = {
     /* The swept events, held by deal id so a button can name one without carrying the whole
        row through the DOM. Replaced on every sweep — a stale ref must not be workable. */
     IG_EVENTS = {};
-    const events = (label, rows) => !(rows || []).length ? "" : `
+    const events = (label, rows, setup) => !(rows || []).length ? "" : `
       <h3>${esc(label)} <span class="tag gap">${rows.length}</span></h3>
       <ul class="items">${rows.map((r) => {
         IG_EVENTS[r.ref] = r;
@@ -1449,12 +1459,15 @@ const ACTION_VIEW = {
             ? `<span class="tag swept-state">on the bench${
                 item.blocked && item.blocked.length
                   ? ` — ${esc(item.blocked.join(", "))} owed` : " — ready"}</span>`
-            : `<button class="link swept-do" data-ig-event="${esc(r.ref)}">work it</button>`;
+            : setup
+              ? `<button class="link swept-do" data-setup="${esc(r.ref)}">set it up</button>`
+              : `<button class="link swept-do" data-ig-event="${esc(r.ref)}">work it</button>`;
         return `<li class="swept${done ? " swept-done" : ""}"><div class="swept-head">
             <span class="swept-what">${esc(r.what || r.ref)}</span>${state}</div>
-          <p class="muted swept-meta">${esc(r.account || "")} · ${esc(r.ref)}</p></li>`;
-      }).join("")}</ul>`;
-    const missing = ["opens", "closes", "costs", "capital"]
+          <p class="muted swept-meta">${esc(r.account || "")} · ${esc(r.ref)}</p>${
+            setup ? `<div data-setup-form="${esc(r.ref)}" hidden></div>` : ""}</li>`;
+      }).join("")}${setup ? (d.skipped || []).map((s) => `<li>${esc(s)}</li>`).join("") : ""}</ul>`;
+    const missing = ["opens", "closes", "costs", "capital", "setups"]
       .reduce((n, k) => n + (d[k] || []).length, 0);
     return `
       <p class="muted">${esc(d.frm || "")} to ${esc(d.to || "")} ·
@@ -1466,7 +1479,7 @@ const ACTION_VIEW = {
       ${events("Costs", d.costs)}
       ${events("Money in or out", d.capital)}
       ${list("Unmatched, and not obviously a book event", d.orphans, "note")}
-      ${list("Skipped", d.skipped, "note")}
+      ${(d.setups || []).length ? events("Skipped", d.setups, true) : list("Skipped", d.skipped, "note")}
       ${(d.matched || []).length ? `<details><summary>${d.matched.length} matched</summary>
          <ul class="items">${d.matched.map((m) => `<li>${esc(m)}</li>`).join("")}</ul>
        </details>` : ""}`;
@@ -2902,7 +2915,7 @@ async function showSweep(result) {
   /* ASK WHAT HAS HAPPENED TO THESE EVENTS. The snapshot supplies the events; the server
      supplies their state. Without this a row carried to the bench offered "work it" again on
      the way back, and a row already WRITTEN stayed on the sweep as though it were missing. */
-  const refs = ["opens", "closes", "costs", "capital"]
+  const refs = ["opens", "closes", "costs", "capital", "setups"]
     .flatMap((k) => (result[k] || []).map((r) => r.ref)).filter(Boolean);
   SWEEP_STATUS = {};
   if (refs.length) {
@@ -2922,33 +2935,114 @@ function wireIgEvents() {
   if (!main || main.dataset.igWired) return;
   main.dataset.igWired = "1";
   main.addEventListener("click", async (e) => {
+    const open = e.target.closest("[data-setup]");
+    if (open) {
+      const ev = IG_EVENTS[open.dataset.setup];
+      const form = main.querySelector(`[data-setup-form="${CSS.escape(open.dataset.setup)}"]`);
+      if (!ev || !form) { open.textContent = "sweep again — this event is stale"; return; }
+      if (!form.innerHTML) form.innerHTML = setupForm(ev);
+      form.hidden = !form.hidden;
+      return;
+    }
+    const go = e.target.closest("[data-setup-go]");
+    if (go) {
+      const ev = IG_EVENTS[go.dataset.setupGo];
+      if (!ev) { go.textContent = "sweep again — this event is stale"; return; }
+      await toBench(go, setupEvent(ev, go.closest("[data-setup-form]")), "ig-setup-to-bench");
+      return;
+    }
     const b = e.target.closest("[data-ig-event]");
     if (!b) return;
     const ev = IG_EVENTS[b.dataset.igEvent];
     if (!ev) { b.textContent = "sweep again — this event is stale"; return; }
-    b.disabled = true;
-    b.textContent = "opening…";
-    try {
-      const r = await fetch("/api/action/ig-event-to-bench", {
-        method: "POST", headers: { "content-type": "application/json" },
-        body: JSON.stringify({ event: ev }) });
-      const { body: d, raw } = await readJson(r);
-      if (raw) { b.textContent = "failed — see the log"; console.error(raw); return; }
-      /* The action's own answer, not this function's opinion of it: for_event() refuses a row
-         whose shape does not match its table, and that refusal must reach the screen. */
-      const res = d.result || d;
-      if (res.ok === false) { b.textContent = `refused — ${res.error || "see the log"}`; return; }
-      b.textContent = res.blocked && res.blocked.length
-        ? `on the bench — ${res.blocked.join(", ")} still owed`
-        : "on the bench";
-      /* THE LIST ABOVE REDRAWS, the sweep with it from its snapshot: the item was made and the
-         list went on without it, so the page read as stuck (12 Oct 2026). */
-      await show("bench");
-    } catch (err) {
-      b.textContent = "failed — see the log";
-      console.error(err);
+    await toBench(b, ev);
+  });
+  /* THE CONTRACT FOLLOWS THE CODE until it is typed itself: the code's root and the epic's
+     month. A company not in the register asks for its sector and region. */
+  main.addEventListener("input", (e) => {
+    const form = e.target.closest("[data-setup-form]");
+    if (!form) return;
+    const name = e.target.dataset.su;
+    const ev = IG_EVENTS[form.dataset.setupForm] || {};
+    const contract = form.querySelector('[data-su="contract"]');
+    if (name === "contract") contract.dataset.typed = "1";
+    if (name === "code" && !contract.dataset.typed) {
+      contract.value = e.target.value.trim().replace(/ SB$/i, "").toUpperCase() + (ev.suffix || "");
+    }
+    if (name === "company") {
+      const known = ((BENCH.forms.securities || []).find((s) => s.name === "company") || {}).choices || [];
+      form.querySelectorAll("[data-su-new]").forEach((l) => {
+        l.hidden = !e.target.value.trim() || known.includes(e.target.value.trim());
+      });
     }
   });
+}
+
+/* A FIRST BET ON A CONTRACT THE BOOK DOES NOT HAVE, set up with its line, its company when that
+   is new, and its contract: typed once here, and carried to the bench as one item with the trade. */
+function setupForm(ev) {
+  const choices = (t, f) => ((BENCH.forms[t] || []).find((s) => s.name === f) || {}).choices || [];
+  const options = (id, xs) => `<datalist id="${id}">${xs.map((x) =>
+    `<option value="${esc(x)}">`).join("")}</datalist>`;
+  const box = (name, value = "", extra = "", shown = "") => `<label class="f"${shown}><span>${
+    head(name)}</span><input data-su="${name}" value="${esc(value)}"${extra}></label>`;
+  const pick = (name, xs, chosen = "") => `<label class="f"><span>${head(name)}</span>
+    <select data-su="${name}"><option></option>${xs.map((x) =>
+      `<option${x === chosen ? " selected" : ""}>${esc(x)}</option>`).join("")}</select></label>`;
+  return `<div class="grid">${box("code")}${box("company", "", ' list="su-company"')}
+      ${pick("currency", choices("trades", "cur"))}${box("tv_symbol")}
+      ${box("sector", "", ' list="su-sector"', " data-su-new hidden")}${
+        box("region", "", ' list="su-region"', " data-su-new hidden")}
+      ${box("contract", ev.suffix || "")}${box("epic", ev.epic || "", " readonly")}
+      ${pick("funding", choices("contracts", "funding"), ev.funding)}</div>
+    ${options("su-company", choices("securities", "company"))}${options("su-sector",
+      choices("issuers", "sector"))}${options("su-region", choices("issuers", "region"))}
+    <p><button class="link" data-setup-go="${esc(ev.ref)}">work it</button></p>`;
+}
+
+/* The rows a set-up carries, each in its table's own column order: a line not in the register,
+   a company not in it, and always the contract, which is what made the bet unreadable. */
+function setupEvent(ev, form) {
+  const got = (k) => ((form.querySelector(`[data-su="${k}"]`) || {}).value || "").trim();
+  const choices = (t, f) => ((BENCH.forms[t] || []).find((s) => s.name === f) || {}).choices || [];
+  const row = (table, v) => ({ table, values: Object.fromEntries(
+    (BENCH.forms[table] || []).map((s) => [s.name, v[s.name] ?? ""])) });
+  const code = got("code"), company = got("company"), contract = got("contract");
+  const rows = [];
+  if (!choices("trades", "ticker").includes(code)) {
+    rows.push(row("securities", { code, company, kind: "spread bet", currency: got("currency"),
+      tv_symbol: got("tv_symbol") }));
+  }
+  if (!choices("securities", "company").includes(company)) {
+    rows.push(row("issuers", { company, sector: got("sector"), region: got("region") }));
+  }
+  rows.push(row("contracts", { contract, epic: got("epic"), funding: got("funding"), code }));
+  return { ...ev, values: { ...ev.values, ticker: code, contract }, with: rows };
+}
+
+async function toBench(b, ev, action = "ig-event-to-bench") {
+  b.disabled = true;
+  b.textContent = "opening…";
+  try {
+    const r = await fetch(`/api/action/${action}`, {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ event: ev }) });
+    const { body: d, raw } = await readJson(r);
+    if (raw) { b.textContent = "failed — see the log"; console.error(raw); return; }
+    /* The action's own answer, not this function's opinion of it: for_event() refuses a row
+       whose shape does not match its table, and that refusal must reach the screen. */
+    const res = d.result || d;
+    if (res.ok === false) { b.textContent = `refused — ${res.error || "see the log"}`; return; }
+    b.textContent = res.blocked && res.blocked.length
+      ? `on the bench — ${res.blocked.join(", ")} still owed`
+      : "on the bench";
+    /* THE LIST ABOVE REDRAWS, the sweep with it from its snapshot: the item was made and the
+       list went on without it, so the page read as stuck (12 Oct 2026). */
+    await show("bench");
+  } catch (err) {
+    b.textContent = "failed — see the log";
+    console.error(err);
+  }
 }
 
 function wireTradeLinks() {

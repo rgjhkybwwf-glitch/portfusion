@@ -480,8 +480,9 @@ def _each_epic(fetch):
     return out
 
 
-def contract_levels():
+def contract_levels(mapped=None):
     """THE IG CONTRACT SWEEP, AS DATA. What `feeds/refresh.py` prints and the desk ticks.
+    `mapped` ({contract: (holder, epic)}) reads only those: a new contract's first mark.
 
     ONE CALL FOR EVERY CONTRACT, through one session, so the levels describe one instant and the
     equity `account_state()` reads beside them meets them there. `priced` is False when IG
@@ -497,7 +498,7 @@ def contract_levels():
     from portfusion.record import rules as D
     held_in = {t: c for t, _p, c, *_ in D.CURRENT_PRICES}
     with _instrument_session() as s:
-        mapped = epics(D)
+        mapped = mapped or epics(D)
         snaps = s.markets([epic for _holder, epic in mapped.values()])
         read_at, via, env = _utc_now(), s.label, s.env
     rows = []
@@ -698,24 +699,10 @@ def _record():
 
 
 def _epic_to_ticker(D):
-    """epic -> the book's ticker, derived rather than typed.
-
-    `epics()` gives epic -> contract key, LEG_CONTRACT trade id -> contract key, the trades id ->
-    ticker. So a new contract on a KNOWN underlying resolves by itself, and an UNKNOWN epic resolves
-    to nothing — the answer that matters, because a wrong ticker would file a real trade against the
-    wrong position.
-    """
-    by_contract = {}
-    for t in D.trades:
-        c = D.LEG_CONTRACT.get(t.id)
-        if c:
-            by_contract.setdefault(c, set()).add(t.ticker)
-    out = {}
-    for contract, (_acct, epic) in epics(D).items():
-        names = by_contract.get(contract, set())
-        if len(names) == 1:
-            out[epic] = next(iter(names))
-    return out
+    """epic -> the book's ticker: the code of the line its contract is on (contracts.csv). An
+    epic no contract carries resolves to nothing, never to a guess: a wrong ticker would file a
+    real trade against the wrong position."""
+    return {epic: D.CONTRACT_CODE[c] for c, epic in D.CONTRACTS.items() if epic}
 
 
 #: THE COLUMNS EACH GENERATED ROW FILLS, in the store's own order, BY NAME: a positional row once
@@ -732,6 +719,23 @@ ROW_COLUMNS = {
                "currency", "local_amount", "rate"),
     "capital-movements": ("date", "account", "amount", "source", "detail"),
 }
+
+
+_MONTHS = ("JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC")
+
+
+def contract_suffix(epic: str, day: str) -> dict:
+    """A new contract's name after its line's root, and its funding, read off its epic: the
+    month and the year it next falls on or after `day` (`-JUN27`), or `-DFB` for a daily-funded
+    bet. The owner confirms both; a month the epic does not carry suggests nothing."""
+    part = (epic.split(".") + ["", "", "", ""])[3]
+    if part in ("DAILY", "CASH"):
+        return {"suffix": "-DFB", "funding": "daily"}
+    if part not in _MONTHS:
+        return {"suffix": "", "funding": "dated"}
+    on = _dt.date.fromisoformat(day)
+    year = on.year + (_MONTHS.index(part) + 1 < on.month)
+    return {"suffix": f"-{part}{year % 100:02d}", "funding": "dated"}
 
 
 def _said(ticker, direction, stake, level=None, day=""):
@@ -832,7 +836,7 @@ def ig_events(since=None):
     WHAT IT WILL NOT DO:
 
       * Write. You paste, and the human read between a fetched number and the record stays.
-      * Invent a ticker. An epic the LEG_CONTRACT chain cannot resolve is reported and skipped.
+      * Invent a ticker. An epic no contract carries is offered for set-up, never guessed.
       * Write the WHY. Every generated row carries a marker where the judgement belongs.
 
     THE WINDOW DEFAULTS TO 30 DAYS. Activity from before the record begins is not reconstructed
@@ -875,7 +879,7 @@ def ig_events(since=None):
     nt, ne = int(free["trades"][2:]) - 1, int(free["exits"][2:]) - 1
     contract_of = {epic: c for c, (_holder, epic) in epics(D).items()}
 
-    matched, rows_t, rows_e, rows_i, rows_m, skipped = [], [], [], [], [], []
+    matched, rows_t, rows_e, rows_i, rows_m, skipped, setups = [], [], [], [], [], [], []
     seen_api_cash, swept = set(), set()
     for label in sorted(creds):
         acct = account_names(D).get(label, label)
@@ -908,21 +912,23 @@ def ig_events(since=None):
                     matched.append(_said(e.ticker, "Sell", e.stake, day=day) + " · in the book")
                     continue
                 tk = tick_of.get(a["epic"])
-                if tk is None:
-                    skipped.append(f"{day} {ref} {a['epic']} {d.get('marketName','')} "
-                                   f"({acct}) — epic not in contracts.csv")
+                market = d.get("marketName", "")
+                if tk is None and kind == "POSITION_CLOSED":
+                    skipped.append(f"{day} {ref} {a['epic']} {market} ({acct}) — not in the book")
                     continue
                 size, level = d.get("size"), d.get("level")
                 if kind == "POSITION_OPENED":
                     nt += 1
                     leg_of[ref] = f"T-{nt:03d}"        # a close later in this sweep can name it
-                    rows_t.append(_event(
+                    # AN EPIC NO CONTRACT CARRIES is the first bet on a contract: offered for
+                    # set-up with its line and contract, never filed against a guessed ticker.
+                    (rows_t if tk else setups).append(_event(
                         "trades", ref, "open", acct,
-                        _said(tk, "Buy", size, level), {
+                        _said(tk or market, "Buy", size, level), {
                             "id": f"T-{nt:03d}", "date": day,
                             # ONE FORMAT FOR A TRADE: the read and its day; the dealId is broker_ref.
                             "source": D.trade_source("ig-api", to, endpoint="/history/activity"),
-                            "account": acct, "ticker": tk,
+                            "account": acct, "ticker": tk or "",
                             # A BET IS STERLING: IG prints "Curr £" on every bet, the stake's
                             # currency; the market's own currency is the code's, on securities.csv.
                             "cur": "GBP", "qty": "",
@@ -931,6 +937,9 @@ def ig_events(since=None):
                             "broker_ref": ref, "note": "",
                             "contract": contract_of.get(a["epic"], ""),
                             "price": "", "rate": ""}))
+                    if not tk:
+                        setups[-1].update(epic=a["epic"], market=market,
+                                          **contract_suffix(a["epic"], day))
                 else:
                     closed = closed_id
                     ne += 1
@@ -998,7 +1007,7 @@ def ig_events(since=None):
 
     return {"frm": frm, "to": to, "matched": matched,
             "opens": rows_t, "closes": rows_e, "costs": rows_i, "capital": rows_m,
-            "orphans": orphans, "skipped": skipped}
+            "orphans": orphans, "skipped": skipped, "setups": setups}
 
 
 def cmd_events(since=None):
@@ -1032,13 +1041,15 @@ def cmd_events(since=None):
         log.info("      A FIGURE IG DID NOT GIVE, which the rows above supersede, or one that should not be there.")
         log.info("      REMOVE IT BEFORE PASTING, or the money is counted twice.")
 
+    if r["setups"]:
+        log.info(f"\n  --- FIRST BET ON A CONTRACT THE BOOK DOES NOT HAVE: {len(r['setups'])} ---")
+        for x in r["setups"]:
+            log.info(f"    {x['what']} · {x['account']} · {x['ref']} · {x['epic']}")
+        log.info("      Set each up on the Bench: its line, company and contract go with the trade.")
     if skipped:
-        log.info(f"\n  --- SKIPPED, epic not resolvable: {len(skipped)} ---")
+        log.info(f"\n  --- SKIPPED: {len(skipped)} ---")
         for x in skipped:
             log.info(f"    {x}")
-        log.info("      Add the contract and its epic to store/contracts.csv, name the contract on")
-        log.info("      the leg's trades.csv row, then re-run.")
-        log.info("      NOT GUESSED: filing a trade against the wrong ticker is worse than not filing it.")
     log.info("\n  Every generated row marks the WHY as owed. Fill it before pasting — it is the one")
     log.info("  field no API supplies, and a rationale written after the outcome is worth little.")
     log.info("  A close carries IG's own realised figure: CHECK IT against the book's before")

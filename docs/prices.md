@@ -60,8 +60,9 @@ python3 -m portfusion.feeds.ig --ig-events          # trades, closes, costs and 
 ```
 
 - **Never guess an epic.** A wrong one returns a plausible price for the wrong contract and
-  passes the audit. Find it with `--ig-search`, check it with `--ig-verify`, then add its row to
-  `store/contracts.csv`.
+  passes the audit. A first bet on a new contract is set up from the IG sweep on the Bench, which
+  takes the epic from the deal and reads the contract's first mark; `--ig-search` and
+  `--ig-verify` check one by hand.
 - **Credentials are three per account**: identifier, password and API key, in
   `credentials.json` in the book's folder. Git ignores it.
 - **A reading moves the book.** It writes the equity and re-marks the contracts, because the two

@@ -15,7 +15,8 @@ ORDER = 20
 #: EVERY FIELD THE FORMS SHOW, from the tables the bench writes, so each is headed in
 #: house/headings.py's words for this tab and never by its store name. The schema's column
 #: definitions only: importing it reads no table.
-FORM_COLUMNS = tuple(dict.fromkeys(f.name for t in bench.TABLES for f in _schema.TABLES[t].fields))
+FORM_COLUMNS = tuple(dict.fromkeys(f.name for t in bench.TABLES + bench.REGISTER
+                                   for f in _schema.TABLES[t].fields))
 
 #: WHAT THE REVIEW SAYS BESIDE AN ITEM'S ROWS: an IG contract its sale leaves with no open leg,
 #: whose live price the same write retires.
@@ -30,10 +31,10 @@ def data() -> dict:
         # A PUBLISHED RESEARCH NOTE THE BOOK HAS NO ROW FOR, each with the codes it covers: one
         # press records it (`desk/doors/research_notes.py`).
         "notes": _guarded(lambda: research_notes.owed(engine.book().codes_held())),
-        "tables": list(bench.TABLES),
+        "tables": list(bench.TABLES + bench.REGISTER),
         "table_labels": bench.TABLE_LABELS,
         "adjustment_label": bench.ADJUSTMENT_LABEL,
-        "forms": {t: bench.form_for(t) for t in bench.TABLES},
+        "forms": {t: bench.form_for(t) for t in bench.TABLES + bench.REGISTER},
         "limbs": [{"key": k, "label": lab, "help": h} for k, lab, h in bench.LIMBS],
         # WHAT KIND OF DOCUMENT THIS IS. ii gives contract notes and quarterly statements —
         # official, referenced, reconciled — and also a recent-transactions download, which is
@@ -169,12 +170,21 @@ register(Action(
     # button would stand in the panel's action list with nothing to act on.
     inline=True,
     gate="The owner presses it on one event from a sweep they ran",
-    summary=("Open a bench item for one swept IG event. It fills the evidence the API genuinely "
-             "supplies — class `ig-api`, the endpoint as authority, the dealId as the reference, "
-             "the event's own date — and the proposed row. It never fills the why: no API "
-             "supplies it, and the item cannot be approved without one where one is owed. "
-             "Pressing twice returns the item already open, not a second copy."),
+    summary=("Opens a bench item for one swept IG event, its evidence and row from the API and "
+             "its why left to you. Pressing twice returns the same item."),
     run=lambda event: _to_bench(event),
+))
+
+
+# A FIRST BET ON A CONTRACT THE BOOK LACKS: the same item, with its line, company and contract,
+# and the contract's first mark read from IG on this press, so the bet and the mark it is valued
+# at are written together.
+register(Action(
+    name="ig-setup-to-bench", label="Set up this bet", panel=NAME, writes=None,
+    reaches="network", inline=True,
+    gate="The owner presses it on one swept bet",
+    summary="Opens a first bet on the bench with its line, contract and live IG level.",
+    run=lambda event: _set_up(event),
 ))
 
 
@@ -214,11 +224,29 @@ def sweep_status(refs: list[str]) -> dict:
     return out
 
 
-def _to_bench(event: dict) -> dict:
+def _set_up(event: dict) -> dict:
+    """Read the new contract's live level from IG, then carry the event and its set-up across."""
+    new = [r["values"] for r in event.get("with") or [] if r.get("table") == "contracts"]
+    if len(new) != 1 or not str(new[0].get("epic") or "").strip():
+        return {"ok": False, "error": "a set-up carries one new contract, with its epic"}
+    contract, epic = str(new[0]["contract"]).strip(), str(new[0]["epic"]).strip()
+    got = _ig(lambda ig: ig.contract_levels({contract: (None, epic)}))
+    if not got["ok"]:
+        return {"ok": False, "error": got["error"]}
+    level = got["result"]["rows"][0]
+    if not level["priced"]:
+        return {"ok": False, "error": f"IG gave no level for {epic}: {level['status']}"}
+    mark = {"ticker": contract, "price": level["level"], "currency": level["currency"],
+            "as_of": level["as_of"], "source": level["source"], "struck": level["struck"],
+            "at": level["at"]}
+    return _to_bench(event, marks=[mark])
+
+
+def _to_bench(event: dict, marks: list[dict] | None = None) -> dict:
     """Carry one swept event onto the bench. Returns the item, or a refusal."""
     from portfusion.desk.intake import bench
     try:
-        item = bench.for_event(event)
+        item = bench.for_event(event, marks=marks)
     except ValueError as e:
         return {"ok": False, "error": str(e)}
     except engine.RecordUnavailable as e:

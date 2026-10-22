@@ -364,6 +364,8 @@ trades = [Trade(*_r) for _r in schema.load("trades")]
 _contract_rows = schema.load("contracts")
 CONTRACTS = {_r[0]: _r[1] for _r in _contract_rows}
 CONTRACT_FUNDING = {_r[0]: _r[2] for _r in _contract_rows}
+#: The line each contract is on: contract -> its code on securities.csv.
+CONTRACT_CODE = {_r[0]: _r[3] for _r in _contract_rows}
 
 # WHICH CONTRACT EACH SPREAD-BET LEG IS ON, read off the legs themselves: trade id -> contract.
 LEG_CONTRACT = {t.id: t.contract for t in trades if t.contract}
@@ -373,6 +375,9 @@ LEG_CONTRACT = {t.id: t.contract for t in trades if t.contract}
 _unpriced = [t.id for t in trades if t.mode == "sb" and not t.contract]
 assert not _unpriced, (f"spread-bet legs {_unpriced} name no contract: give each its contract "
                        f"on trades.csv, and the contract its row in contracts.csv")
+# A LEG IS ON ITS CONTRACT'S LINE: the contract names its code, and the leg's ticker is that code.
+_off_line = [t.id for t in trades if t.contract and CONTRACT_CODE.get(t.contract) != t.ticker]
+assert not _off_line, f"spread-bet legs {_off_line} name a contract on another line"
 
 # --- NAMING MIGRATION: remap tickers to real codes before the sort ---
 # ---- Exits: defined before the merged ledger, which is built from them ----
