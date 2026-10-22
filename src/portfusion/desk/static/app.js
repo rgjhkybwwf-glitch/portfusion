@@ -1486,8 +1486,8 @@ const ACTION_VIEW = {
   },
 };
 
-/* HOW MUCH IS HELD, BY TICKER. A share line is its count; a spread bet is its stake per point,
-   the way Trades reads one. */
+/* HOW MUCH IS HELD. A share line is its count; a spread bet is its stake per point, the way
+   Trades reads one; a company row is its shares, bets counted as share-equivalents. */
 const heldCell = (r) => r.stake_per_point != null
   ? `<td class="num">£${r.stake_per_point}/pt</td>`
   : r.qty != null ? `<td class="num">${r.qty.toLocaleString("en-GB")}</td>` : `<td class="num">—</td>`;
@@ -1609,9 +1609,8 @@ Object.assign(RENDER, {
                 ((r.reasons || []).some((x) => x.why_entered_owed) ? ` <span class="tag gap">owed</span>` : "") +
                 `</td>`,
               {name: "holdings", afterRow: (r, span) => detailRow(holdingDetail(r, d), span),
-               inserts: d.by === "ticker"
-                 ? [{after: "held_as", head: `<th class="num">${head("qty")}</th>`, cell: heldCell}]
-                 : []})}
+               inserts: [{after: "held_as", head: `<th class="num">${head("qty")}</th>`,
+                          cell: heldCell}]})}
       ${allocation(d)}`,
     });
   },
@@ -2990,7 +2989,8 @@ function setupForm(ev) {
     <select data-su="${name}"><option></option>${xs.map((x) =>
       `<option${x === chosen ? " selected" : ""}>${esc(x)}</option>`).join("")}</select></label>`;
   return `<div class="grid">${box("code")}${box("company", "", ' list="su-company"')}
-      ${pick("currency", choices("trades", "cur"))}${box("tv_symbol")}
+      ${pick("currency", choices("trades", "cur"))}${box("symbol")}${box("points_per_unit")}${
+        box("shares_per_unit")}
       ${box("sector", "", ' list="su-sector"', " data-su-new hidden")}${
         box("region", "", ' list="su-region"', " data-su-new hidden")}
       ${box("contract", ev.suffix || "")}${box("epic", ev.epic || "", " readonly")}
@@ -3011,7 +3011,8 @@ function setupEvent(ev, form) {
   const rows = [];
   if (!choices("trades", "ticker").includes(code)) {
     rows.push(row("securities", { code, company, kind: "spread bet", currency: got("currency"),
-      tv_symbol: got("tv_symbol") }));
+      symbol: got("symbol"), points_per_unit: got("points_per_unit"),
+      shares_per_unit: got("shares_per_unit") }));
   }
   if (!choices("securities", "company").includes(company)) {
     rows.push(row("issuers", { company, sector: got("sector"), region: got("region") }));

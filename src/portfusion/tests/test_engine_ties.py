@@ -257,9 +257,6 @@ def test_holdings_by_ticker_ties_to_the_book(book):
     ties(t["value"].sum(), book.total_exposure(), "ticker holdings vs total exposure")
     ties(t["cost"].sum(), book.portfolio_cost(), "ticker holdings vs portfolio cost")
     assert "qty" in t.columns and (t["qty"] > 0).all()
-    assert "qty" not in book.holdings(by="issuer").columns, (
-        "quantity must NOT appear on the issuer view — adding share counts to stakes per "
-        "point produces a number that means nothing")
 
 
 def test_the_live_position_count_is_the_ledgers_open_lines(book):
@@ -1190,3 +1187,64 @@ def test_a_flow_weighs_by_the_days_after_it(book, monkeypatch):
     assert book.weighted_flows("2026-09-30", "2026-09-30")[account] == 0.0, "no days, no weight"
 
 
+
+
+@needs("trades")
+def test_a_company_held_in_one_listing_reads_as_that_line(book):
+    """A COMPANY ROW IS ONE POSITION, so a company held only as shares of one listing reads as
+    that line: the same quantity, entry and current price, in the same currency."""
+    lines = book.holdings(by="ticker")
+    company = book.holdings(by="issuer").set_index("company")
+    single = lines.groupby("company").filter(lambda g: len(g) == 1)
+    single = single[single["held_as"] == "shares"]
+    if single.empty:
+        pytest.skip("no company in this book is held as one share line")
+    for r in single.to_dict("records"):
+        c = company.loc[r["company"]]
+        assert c["currency"] == r["currency"], r["company"]
+        assert c["qty"] == r["qty"], r["company"]
+        for f in ("entry_price", "current_price"):
+            ties(c[f], r[f], f"{r['company']} {f}")
+
+
+@needs("trades")
+def test_a_bet_counts_in_shares_on_its_companys_row(book):
+    """A SPREAD BET IS SHARE-EQUIVALENTS on its company's row: stake per point × points per unit ×
+    its currency's rate per pound on the deal date × shares per unit, added to the shares held,
+    in the share listing's currency wherever shares are held."""
+    L = book.ledger
+    ident = book._identity().set_index("code")
+    company = book.holdings(by="issuer").set_index("company")
+    lines = book.holdings(by="ticker")
+    checked = 0
+    for name, g in L[L["open_leg"]].groupby(L["ticker"].map(ident["company"])):
+        bets = g[g["held_as"] == "spread bet"]
+        if bets.empty or company.at[name, "qty"] != company.at[name, "qty"]:
+            continue
+        n = 0.0
+        for leg in bets.to_dict("records"):
+            cur = ident.at[leg["ticker"], "currency"]
+            rate = 1.0 if cur == "GBP" else book._close_on(cur, leg["date"])[1]
+            spu = pd.to_numeric(ident.at[leg["ticker"], "shares_per_unit"], errors="coerce")
+            n += (leg["qty"] * float(ident.at[leg["ticker"], "points_per_unit"]) * rate
+                  * (1.0 if spu != spu else float(spu)))
+        shares = lines[(lines["company"] == name) & (lines["held_as"] == "shares")]
+        assert company.at[name, "qty"] == round(shares["qty"].sum() + n), name
+        if not shares.empty:
+            assert company.at[name, "currency"] == shares.sort_values("value")["currency"].iloc[-1]
+            assert company.at[name, "current_price"] == shares.sort_values("value")[
+                "current_price"].iloc[-1], name
+        checked += 1
+    if not checked:
+        pytest.skip("no company in this book holds a bet with its points per unit on file")
+    assert not [g for g in book.findings()["gaps"] if g.startswith("points per unit owed")]
+
+
+def test_a_listing_is_translated_into_the_feeds_form():
+    """The record names a listing as its market does; the feed is asked in its own form, and a
+    market it is not mapped for is refused by name rather than asked for."""
+    from portfusion.feeds import tv
+    assert tv.tv_symbol("XLON:BRYC") == "LSE:BRYC"
+    assert tv.tv_symbol("XCSE:HALD B") == "OMXCOP:HALD_B"
+    with pytest.raises(ValueError, match="XHKG"):
+        tv.tv_symbol("XHKG:0700")

@@ -204,11 +204,20 @@ SECURITIES = Table(
         Field("company", "str"),           # joins to issuers.company
         Field("kind", "str", enum=KINDS),
         Field("currency", "str", required=True),   # a split by currency drops a blank one
-        # THE SYMBOL TRADINGVIEW KNOWS IT BY, and the unit TradingView quotes it in. A unit means the
-        # book prices it from TradingView; a spread bet has a symbol and no unit, because IG prices
-        # it, and it is on the flag lists as that symbol.
-        Field("tv_symbol", "str", null=True),
-        Field("tv_unit", "str", null=True),
+        # THE LISTING: the market's ISO code and the ticker as that market spells it
+        # (XLON:BRYC, XCSE:HALD B), and the unit the market quotes it in (GBX is pence). A unit
+        # means the book prices the line from a feed, which translates the symbol into its own
+        # form; a spread bet has a symbol, the listing it is a bet on, and no unit, because IG
+        # prices it.
+        Field("symbol", "str", null=True),
+        Field("quote_unit", "str", null=True),
+        # A SPREAD BET'S POINT AGAINST ITS LISTING'S PRICE: how many points make one unit of
+        # `currency` (100 where IG quotes the market in cents or pence), and how many of the
+        # company's shares one unit of the listing stands for (a depositary receipt's ratio;
+        # blank is one). Together with the stake they turn a bet into share-equivalents.
+        # Blank on a share.
+        Field("points_per_unit", "float", null=True),
+        Field("shares_per_unit", "float", null=True),
     ),
 )
 

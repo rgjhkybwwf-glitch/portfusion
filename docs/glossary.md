@@ -172,6 +172,7 @@ The three sum exactly to **Change (GBP)**; the order they are taken in is
 |---|---|---|
 | One buy row in the ledger | **Leg** | a spread-bet sale names the leg it closes |
 | One account's shares in one ticker, at their average cost | **Pool** | an emptied pool bought again is a new one |
+| A spread bet counted in the company's shares: stake × points per unit × rate per pound on the deal date × shares per unit | **Share-equivalent** | how a company row adds a bet to shares |
 | What a sale took off the cost held | **Cost released** | a pool's average for a share; the leg's cost for a spread bet |
 | Everything sold out of one holding, keyed `R-…` | **Realisation** | headed **Realisation ID** |
 | A realisation seen whole, entry to exit | **Round trip** | the Round Trips page |
@@ -312,7 +313,7 @@ asserted on import; the rest are held by the suite.
 | `quarter-snapshots.csv` | 11 | Every account's HOLDINGS, line by line, at each quarter end — the working behind quarter-nav |
 | `reasoning.csv` | 4 | WHY a position was taken and why it was closed — one row per DECISION: the ticker, the date of the trade or sale it explains, and the why |
 | `research-notes.csv` | 4 | WHICH RESEARCH NOTES COVER WHICH INSTRUMENT |
-| `securities.csv` | 6 | One row per CODE held, reserved or closed |
+| `securities.csv` | 8 | One row per CODE held, reserved or closed |
 | `settings.csv` | 2 | The book's own settings: one row per key in SETTING_KEYS |
 | `trades.csv` | 14 | THE LEDGER — one row per buy leg |
 

@@ -19,6 +19,8 @@ happened, never an instruction or how a figure was reached; those go in the comm
 |---|---|
 | `account` | one of the register's, `accounts.csv`; the loader refuses any other |
 | `kind` · `category` · `funding` | closed lists in `record/schema.py`, printed in the glossary's §9. A line's kind sits once, on its code's `securities.csv` row |
+| `symbol` · `quote_unit` | a listing as its market names it: the market's ISO code and its ticker (`XLON:BRYC`, `XCSE:HALD B`), and the unit it quotes in (`GBX` is pence). The price feed translates the symbol into its own form |
+| `points_per_unit` · `shares_per_unit` | on a spread-bet line: how many points make one unit of its listing's price (100 where IG quotes in cents or pence), and how many shares one unit of the listing stands for (blank is one; a depositary receipt's ratio). With the stake they make a bet's share-equivalents |
 | `cur` | on trades and exits, the currency the document states `price` in: `GBP` or the share's own |
 | `id` | `T-NNN`; a fill in several legs takes letter suffixes, `T-NNNA`, `T-NNNB` |
 | evidence class | `rules.EVIDENCE_CLASSES`, printed in the glossary's §9 |

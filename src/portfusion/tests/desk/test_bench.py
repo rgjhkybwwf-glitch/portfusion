@@ -1445,7 +1445,7 @@ def _set_up(code="NEWCO SB", contract="NEWCO-JUN27", company="Newco Inc.", ticke
             "account": SPREAD_BET_ACCOUNT, "what": "Newco Inc (24 Hours) · Buy · £1/pt · 50 pts",
             "values": trade, "with": [
                 row("securities", code=code, company=company, kind="spread bet",
-                    currency="USD", tv_symbol="NYSE:NEWCO"),
+                    currency="USD", symbol="XNYS:NEWCO", points_per_unit="100"),
                 row("issuers", company=company, sector="Industrials", region="US"),
                 row("contracts", contract=contract, epic="DM.D.NEWCOUS.JUN.IP", funding="dated",
                     code=code)]}

@@ -306,24 +306,43 @@ def connect() -> _Connection:
 # =================================================================================================
 # THE MAP — book ticker to TradingView symbol, with the unit TradingView quotes
 # =================================================================================================
+#: THE RECORD NAMES A LISTING AS ITS MARKET DOES: the market's ISO code (MIC) and the ticker as
+#: that market spells it (securities.csv's `symbol`). TradingView names some markets otherwise,
+#: and joins a ticker's words with an underscore; this is the one place that knows.
+MARKETS = {"XLON": "LSE", "XNYS": "NYSE", "XNAS": "NASDAQ", "XETR": "XETR", "XCSE": "OMXCOP",
+           "XSTO": "OMXSTO", "XPAR": "EURONEXT", "XAMS": "EURONEXT"}
+
+
+def tv_symbol(symbol: str) -> str:
+    """A listing as the record names it (XCSE:HALD B), as TradingView names it (OMXCOP:HALD_B).
+    Refuses a market not in MARKETS, naming it, rather than asking for a symbol that is not."""
+    market, _, ticker = symbol.partition(":")
+    if market not in MARKETS or not ticker:
+        raise ValueError(f"{symbol!r}: not a market TradingView is mapped for ({', '.join(MARKETS)}),"
+                         f" or no ticker after the colon")
+    return f"{MARKETS[market]}:{ticker.replace(' ', '_')}"
+
+
 #: `unit` is what TradingView says the line is quoted in — checked against the reply, so the pence
 #: trap is caught by the vendor's own word rather than a divisor typed here. The map itself is
-#: securities.csv's `tv_symbol` and `tv_unit`; `tests/test_tv.py` holds it against the prices.
+#: securities.csv's `symbol` and `quote_unit`; `tests/test_tv.py` holds it against the prices.
 def symbols(D=None) -> dict:
     """book code -> {"symbol", "unit"}, for every security the book prices from TradingView: the
-    ones securities.csv gives a unit."""
+    ones securities.csv gives a unit, each symbol in TradingView's form."""
     D = D or _rules()
     h = D.schema.TABLES["securities"].header
-    code, sym, unit = h.index("code"), h.index("tv_symbol"), h.index("tv_unit")
-    return {r[code]: {"symbol": r[sym], "unit": r[unit]} for r in D.SECURITIES if r[sym] and r[unit]}
+    code, sym, unit = h.index("code"), h.index("symbol"), h.index("quote_unit")
+    return {r[code]: {"symbol": tv_symbol(r[sym]), "unit": r[unit]}
+            for r in D.SECURITIES if r[sym] and r[unit]}
 
 
 def flag_symbols(D=None) -> dict:
-    """book key -> the symbol it is on the flag lists as. A security by its own `tv_symbol`; a
-    contract, which IG prices, by the symbol of the security its legs are in."""
+    """book key -> the symbol it is on the flag lists as, in TradingView's form. A security by its
+    own `symbol`; a contract, which IG prices, by the symbol of the security its legs are in."""
     D = D or _rules()
     h = D.schema.TABLES["securities"].header
-    out = {r[h.index("code")]: r[h.index("tv_symbol")] for r in D.SECURITIES if r[h.index("tv_symbol")]}
+    out = {r[h.index("code")]: tv_symbol(r[h.index("symbol")])
+           for r in D.SECURITIES if r[h.index("symbol")]}
     for t in D.trades:
         if t.contract and t.ticker in out:
             out.setdefault(t.contract, out[t.ticker])

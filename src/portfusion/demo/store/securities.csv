@@ -1,7 +1,7 @@
-code,company,kind,currency,tv_symbol,tv_unit
-BRYC.L,Bryncoed Minerals plc,shares,GBP,LSE:BRYC,GBX
-KELS.L,Kelstrand Foods plc,shares,GBP,LSE:KELS,GBX
-QNLR,Quenlan Robotics Inc.,shares,USD,NASDAQ:QNLR,USD
-TARN.L,Tarnwell Hotels plc,shares,GBP,,
-VELD SB,Veldrome Metals Inc.,spread bet,USD,NYSE:VELD,
-QNLR SB,Quenlan Robotics Inc.,spread bet,USD,NASDAQ:QNLR,
+code,company,kind,currency,symbol,quote_unit,points_per_unit,shares_per_unit
+BRYC.L,Bryncoed Minerals plc,shares,GBP,XLON:BRYC,GBX,,
+KELS.L,Kelstrand Foods plc,shares,GBP,XLON:KELS,GBX,,
+QNLR,Quenlan Robotics Inc.,shares,USD,XNAS:QNLR,USD,,
+TARN.L,Tarnwell Hotels plc,shares,GBP,,,,
+VELD SB,Veldrome Metals Inc.,spread bet,USD,XNYS:VELD,,100,
+QNLR SB,Quenlan Robotics Inc.,spread bet,USD,XNAS:QNLR,,100,

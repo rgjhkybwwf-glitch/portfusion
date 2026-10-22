@@ -180,8 +180,10 @@ BY_TAB = {
         "reference": "Reference",
         "retires": "Also retires",          # an IG contract the sale leaves with no open leg
         "kind": "Held as",                  # a new line's: shares or spread bet
-        "tv_symbol": "TradingView symbol",
-        "tv_unit": "TradingView unit",
+        "symbol": "Symbol",
+        "quote_unit": "Quote unit",
+        "points_per_unit": "Points per unit",
+        "shares_per_unit": "Shares per unit",
         "epic": "Epic",                     # the IG market a new contract is priced by
     },
     # A FOREIGN INCOME'S CONVERSION, beside the sterling the book adds up: the amount in the

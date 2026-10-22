@@ -837,8 +837,10 @@ class Book:
         AN ISSUER ROLL-UP IS NOT A PARTITION BY BASIS: summing cost or value by basis on it
         understates the owned figure. Pass `by="ticker"` for the split.
 
-        No quantity on the issuer view: a share count plus an effective-share count means nothing.
-        By ticker, a spread bet also carries `stake_per_point`; a share carries none.
+        BY ISSUER A ROW IS ONE POSITION (`company_positions()`): its quantity in shares, a bet's
+        stake counted as share-equivalents, its entry and current price per share and its
+        currency, the share listing's. By ticker, a spread bet also carries `stake_per_point`;
+        a share carries none.
         `weight` is a share of TOTAL MARKET EXPOSURE, not of cost.
         """
         L = self.ledger
@@ -946,7 +948,109 @@ class Book:
         if by == "ticker":
             out["current_price"] = out.apply(_current, axis=1)
             out["priced_at"] = out.apply(_priced_at, axis=1)
+        else:
+            # A COMPANY ROW IS ONE POSITION: its quantity, prices and currency are the company's,
+            # bets counted as share-equivalents (`company_positions()`), not its first line's.
+            pos = self.company_positions(rows, open_legs)
+            out = out.drop(columns=["currency", "entry_price"]).merge(
+                pos, left_on="company", right_index=True, how="left")
         return out.sort_values(key).reset_index(drop=True)
+
+    def company_positions(self, rows: pd.DataFrame, open_legs: pd.DataFrame) -> pd.DataFrame:
+        """EACH COMPANY HELD AS ONE POSITION, by company: `qty`, `entry_price`, `current_price`,
+        `priced_at` and `currency`. `rows` are `holdings()`'s valued rows and `open_legs` its open
+        buy legs, each with its company.
+
+        A SPREAD BET COUNTS AS SHARE-EQUIVALENTS: its stake per point, times the points that make
+        one unit of its listing's price (`points_per_unit`), times that currency's rate per pound on
+        the deal date, times the shares one unit of the listing stands for (`shares_per_unit`,
+        blank is one). Its entry is its level in the listing's price, per share.
+
+        THE POSITION'S CURRENCY is its share listing's: the line with the most value held where
+        the company has more than one. A company held only as bets takes the bets' currency.
+        Every entry is converted into it at its own deal date's close (`_close_on()`), and the
+        entry price is the mean over shares and share-equivalents. The current price is the
+        listing's live price; held only as bets, the bets' own marks over the same share-equivalents.
+
+        Blank, rather than a figure from part of the position, wherever a leg has no price, a bet
+        line no `points_per_unit`, or a deal date no close: the audit names the line or the date.
+        `qty` is whole share-equivalents. Side effects: none.
+        """
+        ident = self._identity().set_index("code")
+        own = self.deal_prices()["price_own"]
+        px = {r[0]: (r[1], r[3]) for r in self.D.CURRENT_PRICES}
+
+        def per_pound(ccy, day):
+            """`ccy` per pound at `day`'s close, the Friday's for a weekend day, or None."""
+            if ccy == "GBP":
+                return 1.0
+            on, rate = self._close_on(ccy, day)
+            day = pd.Timestamp(day)
+            served = day - pd.Timedelta(days=max(0, day.weekday() - 4))
+            return rate if on is not None and pd.Timestamp(on) >= served else None
+
+        def fact(code, name):
+            v = ident.at[code, name] if code in ident.index else None
+            return None if v is None or v != v or v == "" else float(v)
+
+        out = {}
+        for company, g in rows.groupby("company"):
+            shares = g[g["held_as"] == "shares"]
+            counts = shares.groupby("ticker")["qty"].sum()
+            counts = counts[counts > 0]
+            listing = (shares[shares["ticker"].isin(counts.index)].groupby("ticker")["gbp_value"]
+                       .sum().idxmax() if len(counts) else None)
+            legs = open_legs[open_legs["company"] == company]
+            bets = legs[legs["held_as"] == "spread bet"]
+            bet_ccys = sorted(set(bets["ticker"].map(ident["currency"])))
+            ccy = (ident.at[listing, "currency"] if listing
+                   else bet_ccys[0] if len(bet_ccys) == 1 else None)
+
+            weighted, n_total, equivalents, gap = 0.0, 0.0, [], ccy is None
+            for leg in legs.to_dict("records"):
+                code, day = leg["ticker"], leg["date"]
+                leg_ccy = ident.at[code, "currency"]
+                price = own.get(leg["id"])
+                price = None if price is None or price != price else float(price)
+                if leg["held_as"] == "spread bet":
+                    ppu, spu = fact(code, "points_per_unit"), fact(code, "shares_per_unit") or 1.0
+                    rate = per_pound(leg_ccy, day)
+                    if ppu is None or rate is None:
+                        gap = True
+                        continue
+                    n = leg["qty"] * ppu * rate * spu
+                    equivalents.append((leg["id"], n, ppu, spu))
+                    price = None if price is None else price / ppu / spu
+                else:
+                    n = leg["qty"]
+                convert = 1.0
+                if ccy is not None and leg_ccy != ccy:
+                    to, frm = per_pound(ccy, day), per_pound(leg_ccy, day)
+                    convert = None if to is None or frm is None else to / frm
+                if price is None or convert is None or ccy is None:
+                    gap = True
+                    continue
+                weighted += price * convert * n
+                n_total += n
+
+            bet_n = sum(e[1] for e in equivalents)
+            qty = float(round(counts.sum() + bet_n)) if len(equivalents) == len(bets) else None
+            entry = weighted / n_total if n_total and not gap else None
+
+            current, priced_at = None, None
+            if listing and listing in px:
+                current, priced_at = px[listing]
+            elif not listing and equivalents and len(equivalents) == len(bets):
+                marks = [(px[self.D.LEG_CONTRACT[i]], n, ppu, spu) for i, n, ppu, spu in equivalents
+                         if self.D.LEG_CONTRACT.get(i) in px]
+                if len(marks) == len(equivalents):
+                    current = sum(m[0] / ppu / spu * n for m, n, ppu, spu in marks) / bet_n
+                    priced_at = min(m[1] for m, *_ in marks)
+            out[company] = {"qty": qty, "entry_price": entry, "current_price": current,
+                            "priced_at": priced_at, "currency": ccy}
+        return pd.DataFrame.from_dict(out, orient="index",
+                                      columns=["qty", "entry_price", "current_price",
+                                               "priced_at", "currency"])
 
     # ---- THE JUDGEMENT  —  store/reasoning.csv, beside each position's numbers -------
 
@@ -2758,7 +2862,7 @@ class Book:
 
     def rate_gaps(self, today: str | None = None) -> list[dict]:
         """THE DATED RATES THE RECORD LACKS: each currency and date a dated figure
-        converts at with no TradingView close on file to serve it. Three kinds of date need one:
+        converts at with no TradingView close on file to serve it. These dates need one:
 
           quarter end   each quarter end on file, for every currency a share held then is priced in
           income        each income row paid in another currency, on its own date, unless its
@@ -2767,6 +2871,10 @@ class Book:
                         replaces
           deal          each share deal priced in sterling on a share in another currency, on its
                         own date: the close gives the share's own price (`deal_prices()`)
+          bet           each open spread-bet leg, on its own date, in its listing's currency
+                        and its company's share listings' where either is not sterling: the
+                        closes turn its stake into share-equivalents and its level into the
+                        shares' currency (`company_positions()`)
 
         A DATE IS SERVED BY ITS NEWEST SESSION'S CLOSE: the newest live spot rate on or before it
         is a close, dated that day or on the weekday before a weekend. A date not yet past is
@@ -2801,6 +2909,15 @@ class Book:
             cur = ident.at[ticker, "currency"] if ticker in ident.index else "GBP"
             if cur != "GBP":
                 wanted.setdefault((cur, date.date().isoformat()), "deal")
+        held = self.ledger[self.ledger["open_leg"]]
+        listed = held[held["held_as"].eq("shares")]["ticker"].map(ident["currency"]).groupby(
+            held["ticker"].map(ident["company"])).agg(set)
+        bets = held[held["held_as"].eq("spread bet")]
+        for ticker, date in zip(bets["ticker"], bets["date"]):
+            own = ident.at[ticker, "currency"] if ticker in ident.index else "GBP"
+            for cur in {own} | listed.get(ident.at[ticker, "company"], set()):
+                if cur != "GBP":
+                    wanted.setdefault((cur, date.date().isoformat()), "bet")
 
         def newest(cur: str, date: str):
             on = spot[(spot["currency"] == cur) & (spot["date"] <= date)]
@@ -3526,6 +3643,16 @@ class Book:
         notes.append(f"dated rates: {len(owed)} owed a TradingView close")
         gaps.extend(f"rate owed — {g['currency']} {g['date']} ({g['why']}): no TradingView "
                     f"close on file for it" for g in owed)
+
+        # ---- A BET LINE'S POINT: what turns a held bet into share-equivalents -----------
+        L = self.ledger
+        held_bets = sorted(set(L.loc[L["open_leg"] & L["held_as"].eq("spread bet"), "ticker"]))
+        ident = self._identity().set_index("code")
+        gaps.extend(f"points per unit owed — {code}: held, and securities.csv does not say how "
+                    f"many points make one unit of its price"
+                    for code in held_bets
+                    if code not in ident.index or pd.isna(pd.to_numeric(
+                        ident.at[code, "points_per_unit"], errors="coerce")))
 
         # ---- conversions: income in another currency, and its rate's age ---------------
         note, stale = self._conversion_state()

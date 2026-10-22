@@ -50,12 +50,12 @@ COLUMNS = ("ticker", "company", "held_as", "accounts", "currency", "entry_price"
            "current_price", "priced_at", "cost", "value", "gain", "gain_pct", "weight",
            "open_date", "days_held")
 
-#: WHAT ONLY A TICKER ROW HAS: the engine prices and names an instrument, and an issuer row can
-#: be several. Grouped by issuer these columns are not sent, rather than sent empty.
-BY_TICKER_ONLY = ("ticker", "current_price", "priced_at")
+#: WHAT ONLY A TICKER ROW HAS: an issuer row can be several instruments, so it has no single
+#: ticker. Grouped by issuer the column is not sent, rather than sent empty.
+BY_TICKER_ONLY = ("ticker",)
 
-#: How much is held, by ticker only: the engine gives an issuer row no quantity. A share line
-#: carries its count and a spread bet its stake per point, never both.
+#: How much is held. A share line carries its count and a spread bet its stake per point, never
+#: both; an issuer row is one position, its count in shares with bets as share-equivalents.
 HELD_COLUMNS = ("qty", "stake_per_point")
 
 #: The mark's own history, as the expansion shows it. `source` is the point of opening it: it

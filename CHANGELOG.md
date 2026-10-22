@@ -5,6 +5,20 @@ prints it.
 
 ## Unreleased
 
+- **A company held both ways reads as one position.** Grouped by company, Holdings gives each row
+  its quantity in shares, a spread bet counted as share-equivalents (stake per point × points per
+  unit × its currency's rate per pound on the deal date × shares per unit), its entry price as the
+  mean over shares and share-equivalents in the share listing's currency, the listing's current
+  price, and that currency, stated. A company held only as bets is priced from the bets' own marks.
+  The audit names a held bet line with no points per unit, and each bet deal date owed a close.
+- **`securities.csv`: `tv_symbol` and `tv_unit` become `symbol` and `quote_unit`, and it gains
+  `points_per_unit` and `shares_per_unit`.** A symbol is the market's ISO code and the ticker as
+  that market spells it (`XLON:BRYC`, `XNYS:VELD`, `XCSE:HALD B`); the price feed translates.
+  **A book's rows move by hand:** rename the two headers and add the two new ones at the end;
+  rewrite each symbol's market (`LSE`→`XLON`, `NYSE`→`XNYS`, `NASDAQ`→`XNAS`, `XETR` stays,
+  `OMXCOP`→`XCSE`, `OMXSTO`→`XSTO`) and an underscore in a ticker as the market's space; give
+  every spread-bet line its points per unit, and a shares per unit only where its listing is a
+  receipt for other than one share.
 - **A share sold out of every account stops being priced.** The sale that empties it banks its
   live price and takes it out of `current-prices.csv` in the same write, and the Bench's review
   says so before the press. The audit names any live price on a line nothing holds.
