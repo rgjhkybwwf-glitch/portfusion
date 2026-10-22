@@ -47,22 +47,35 @@ def test_an_empty_books_settings_name_every_key_and_date_its_record(tmp_path):
 
 def test_a_practice_book_is_the_demo_and_says_so(tmp_path):
     """Every file the demo ships, byte for byte, beside the folders a book works in — but for
-    one row, which says it is a practice book so that every run on it says so too."""
-    from portfusion.init import PRACTICE
+    one row, which says it is a practice book so that every run on it says so too, and that
+    row's journal entry."""
+    from portfusion.init import PRACTICE, PRACTICE_JOURNAL
     book = create(tmp_path / "book", practice=True)
     shipped = sorted(p.relative_to(schema.DEMO) for p in schema.DEMO.rglob("*")
                      if p.is_file() and "_inbox" not in p.parts)
-    settings = pathlib.Path("store/settings.csv")
+    settings, journal = pathlib.Path("store/settings.csv"), pathlib.Path("store/journal.csv")
     for rel in shipped:
-        demo = (schema.DEMO / rel).read_bytes()
+        demo, made = (schema.DEMO / rel).read_bytes(), (book / rel).read_bytes()
         if rel == settings:
             demo += (",".join(PRACTICE) + "\n").encode()
-        assert (book / rel).read_bytes() == demo, rel
+        if rel == journal:
+            made, entry = made[:len(demo)], made[len(demo):].decode()
+            assert entry.split(",", 1)[1] == PRACTICE_JOURNAL + "\n", entry
+        assert made == demo, rel
     assert (book / "_inbox").is_dir()
     run = subprocess.run([sys.executable, "-c", "from portfusion import about; "
                           "print(about.book_line())"], capture_output=True, text=True,
                          env={**os.environ, schema.ENV: str(book)})
     assert "a practice book" in run.stdout, run.stdout + run.stderr
+
+
+def test_a_practice_books_journal_accounts_for_every_row(tmp_path):
+    """A row no route accounts for is a hand edit the audit reports, and a new book has none."""
+    book = create(tmp_path / "book", practice=True)
+    run = subprocess.run([sys.executable, "-c", "from portfusion import engine; "
+                          "print(engine.Book().journal_unaccounted().empty)"],
+                         capture_output=True, text=True, env={**os.environ, schema.ENV: str(book)})
+    assert run.stdout.strip().endswith("True"), run.stdout + run.stderr
 
 
 def test_a_book_is_never_written_over(tmp_path):
