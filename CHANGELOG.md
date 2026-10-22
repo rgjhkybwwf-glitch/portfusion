@@ -11,6 +11,8 @@ prints it.
   `read_document.extract_file(path)`.
 - **A refused passkey is not described to the caller.** The door says the passkey was not
   accepted; the passkey library's reason goes to the sign-in log only.
+- **A practice book's journal accounts for its practice setting**, so a new practice book passes
+  its own audit.
 
 ## 0.2.0 — beta, 21 Oct 2026
 

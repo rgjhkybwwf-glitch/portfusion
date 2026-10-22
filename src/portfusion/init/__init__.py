@@ -154,6 +154,8 @@ def settings(begins: int) -> list[tuple[str, str]]:
 
 #: The setting a practice book carries, so every run on it says what it is (`about.book_line`).
 PRACTICE = ("practice", "yes")
+#: Its journal row, after the instant, so the journal accounts for every row the book holds.
+PRACTICE_JOURNAL = "hand,append,settings,1,portfusion init --practice,the practice setting"
 
 
 def create(folder, practice: bool = False, begins: int | None = None) -> pathlib.Path:
@@ -175,6 +177,8 @@ def create(folder, practice: bool = False, begins: int | None = None) -> pathlib
                         ignore=shutil.ignore_patterns("_inbox"))
         with (folder / "store" / "settings.csv").open("a", encoding="utf-8", newline="") as fh:
             fh.write(",".join(PRACTICE) + "\n")
+        with (folder / "store" / "journal.csv").open("a", encoding="utf-8", newline="") as fh:
+            fh.write(f"{schema.record_instant()},{PRACTICE_JOURNAL}\n")
     else:
         store = folder / "store"
         store.mkdir(parents=True)
