@@ -24,6 +24,7 @@ prints it.
 - **`contracts.csv` gains `code`**, the line each contract is on, and the sweep reads a bet's
   ticker from it. **A book's rows move by hand:** add `,code` to the header, and to each row the
   ticker its legs carry in `trades.csv`. Every leg on a contract must be on that contract's line.
+- **The report's footer names the commit an installed build came from**, as `release()` does.
 
 ## 0.2.0 — beta, 21 Oct 2026
 

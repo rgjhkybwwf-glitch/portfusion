@@ -72,7 +72,8 @@ def stamp(root: str | None = None, store: str | None = None) -> str:
     import hashlib
     import datetime
 
-    root = root or os.path.dirname(os.path.abspath(__file__))
+    code = release(root)            # asked before `root` defaults: installed, the package's
+    root = root or os.path.dirname(os.path.abspath(__file__))   # folder holds no commit
     built = datetime.date.today().isoformat()
 
     try:
@@ -87,7 +88,7 @@ def stamp(root: str | None = None, store: str | None = None) -> str:
     except Exception:
         facts = "unknown"
 
-    return f"built {built} · {release(root)} · store {facts}"
+    return f"built {built} · {code} · store {facts}"
 
 
 # =================================================================================================
