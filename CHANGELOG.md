@@ -5,6 +5,9 @@ prints it.
 
 ## Unreleased
 
+- **A share sold out of every account stops being priced.** The sale that empties it banks its
+  live price and takes it out of `current-prices.csv` in the same write, and the Bench's review
+  says so before the press. The audit names any live price on a line nothing holds.
 - **A document is read from the workbench by its bare name only.** `read_document.extract()` no
   longer reads an absolute path, which every route a browser reaches had to refuse for it; code
   that holds a path, such as a book's own check reading its archive, calls

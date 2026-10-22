@@ -358,65 +358,74 @@ def retire_paths() -> list:
             _pathlib.Path(PH._FILE.path), schema.TABLES["journal"].path]
 
 
-def retire(contracts: list[str], route: str, ref: str, at: str) -> list[str]:
-    """RETIRE AN IG CONTRACT NOTHING HOLDS: bank its live price, take it out of
-    current-prices.csv, and blank its epic in contracts.csv — the record's own definition of a
-    closed contract (`schema.CONTRACTS`: "nothing reads its level again"). Returns the contracts
-    retired.
+def retire(lines: list[str], route: str, ref: str, at: str) -> list[str]:
+    """RETIRE A LINE NOTHING HOLDS: bank its live price and take it out of current-prices.csv.
+    An IG contract also has its epic blanked in contracts.csv — the record's own definition of a
+    closed contract (`schema.CONTRACTS`: "nothing reads its level again"). A share has no epic:
+    the price going is the whole of it. Returns the lines retired, sorted.
 
     A MARK NOBODY NEEDS, which every refresh would go on fetching and the guard refuses. The sale
-    that closes a contract's last leg retires it in the same write (`commit.commit()`), so the
-    book never stands with a closed contract still priced, as one otherwise sat priced after its
-    last leg closed.
+    that closes a contract's last leg, or sells a share out of every account, retires it in the
+    same write (`commit.commit()`), so the book never stands with a line priced that nothing
+    holds.
 
     RUNS INSIDE THE CALLER'S ENVELOPE, holding `retire_paths()`, and opens none of its own: a
     refusal here raises, and the caller's `atomic()` restores every file. The outgoing price is
     banked first, as every replaced mark is; one that will not bank is not retired.
     """
-    contracts = sorted(set(contracts))
-    if not contracts:
+    lines = sorted(set(lines))
+    if not lines:
         return []
+    known = {r[0] for r in schema.load("contracts")}
+    contracts = [x for x in lines if x in known]
+    shares = [x for x in lines if x not in known]
     from portfusion.history import prices as PH
     try:
         PH.archive(verbose=False)
     except Exception as e:                          # noqa: BLE001 — reported, never swallowed
         raise Refused(f"the outgoing price could not be banked, so nothing was retired: {e}")
-    unbanked = sorted({m["ticker"] for m in PH.check()} & set(contracts))
+    unbanked = sorted({m["ticker"] for m in PH.check()} & set(lines))
     if unbanked:
         raise Refused(f"{', '.join(unbanked)}: the live price is not in the history, so it is "
                       f"not retired")
 
     prices = schema.TABLES["current-prices"].path
     was = len(schema.load("current-prices"))
-    lines, eol = commit.lines_and_eol(prices)
-    kept = [line for i, line in enumerate(lines)
-            if i == 0 or not line.strip() or next(csv.reader([line]))[0] not in contracts]
-    gone = len(lines) - len(kept)
+    rows, eol = commit.lines_and_eol(prices)
+    kept = [line for i, line in enumerate(rows)
+            if i == 0 or not line.strip() or next(csv.reader([line]))[0] not in lines]
+    gone = len(rows) - len(kept)
     prices.write_text(eol.join(kept) + eol, encoding="utf-8", newline="")
 
-    path = schema.TABLES["contracts"].path
-    out = []
-    lines, eol = commit.lines_and_eol(path)
-    for i, line in enumerate(lines):
-        cells = next(csv.reader([line])) if line.strip() else []
-        out.append(",".join([cells[0], "", *cells[2:]]) if i and cells and cells[0] in contracts
-                   else line)
-    path.write_text(eol.join(out) + eol, encoding="utf-8", newline="")
+    if contracts:
+        path = schema.TABLES["contracts"].path
+        out = []
+        rows, eol = commit.lines_and_eol(path)
+        for i, line in enumerate(rows):
+            cells = next(csv.reader([line])) if line.strip() else []
+            out.append(",".join([cells[0], "", *cells[2:]])
+                       if i and cells and cells[0] in contracts else line)
+        path.write_text(eol.join(out) + eol, encoding="utf-8", newline="")
 
     # VERIFY BY READING IT BACK, as every door does.
     loaded = schema.load("current-prices")
-    if len(loaded) != was - gone or any(r[0] in contracts for r in loaded):
-        raise Refused(f"current-prices.csv did not lose exactly {', '.join(contracts)}")
+    if len(loaded) != was - gone or any(r[0] in lines for r in loaded):
+        raise Refused(f"current-prices.csv did not lose exactly {', '.join(lines)}")
     epics = {r[0]: r[1] for r in schema.load("contracts")}
     if any(epics.get(c) for c in contracts) or not all(c in epics for c in contracts):
         raise Refused(f"contracts.csv did not close exactly {', '.join(contracts)}")
 
-    named = ", ".join(contracts)
-    commit.journal(([(route, "remove", "current-prices", gone, ref,
-                      f"{named}: live price retired, no leg on it stays open")] if gone else [])
-                   + [(route, "replace", "contracts", len(contracts), ref,
-                       f"{named}: epic blanked, a contract with no epic is closed")], at=at)
-    return contracts
+    entries = []
+    if gone:
+        said = [f"{', '.join(contracts)}: no leg on it stays open"] if contracts else []
+        said += [f"{', '.join(shares)}: no account holds it"] if shares else []
+        entries.append((route, "remove", "current-prices", gone, ref,
+                        "live price retired — " + "; ".join(said)))
+    if contracts:
+        entries.append((route, "replace", "contracts", len(contracts), ref,
+                        f"{', '.join(contracts)}: epic blanked, a contract with no epic is closed"))
+    commit.journal(entries, at=at)
+    return lines
 
 
 @commit.held
