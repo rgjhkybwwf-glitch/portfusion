@@ -805,7 +805,8 @@ def test_the_expansion_spans_the_whole_row_however_many_columns_there_are(repo_r
 #: reading keeps the figures once each and a figure kept is a figure shown.
 #: 482 → 480 (14 Oct 2026): the Price Refresh's "asking …" line is one template
 #: naming whom it asks, for the sweep and for the rates the record lacks alike.
-DESK_CHROME_WORDS = 480
+#: 480 → 458: an IG event's bench action says what it does in one sentence.
+DESK_CHROME_WORDS = 458
 
 
 def _chrome_words(repo_root):

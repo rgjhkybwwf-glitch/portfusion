@@ -322,6 +322,34 @@ def write(prices: list[dict] | None = None, rates: list[dict] | None = None) -> 
             "tables": sorted(by_table)}
 
 
+def first_paths() -> list:
+    """The files `first()` writes: the live prices and the journal. The caller holds them."""
+    return [schema.TABLES["current-prices"].path, schema.TABLES["journal"].path]
+
+
+def first(prices: list[dict], route: str, ref: str, at: str) -> list[str]:
+    """A NEW CONTRACT'S FIRST MARK, appended inside the caller's envelope with the bet it prices.
+    There is no price on file to bank or replace; the next refresh banks this one as it replaces
+    it. Complete as `write()` requires: price, date, source and instant. Returns the lines marked."""
+    for row in prices:
+        _require(row, ("ticker", "price", "as_of", "source"), f"price {row.get('ticker')!r}")
+        _require_instant(row, f"price {row.get('ticker')!r}")
+    named = [r["ticker"] for r in prices]
+    priced = sorted(set(named) & {r[0] for r in schema.load("current-prices")})
+    if priced:
+        raise Refused(f"{', '.join(priced)} has a mark already: the Price Refresh replaces it")
+    path = schema.TABLES["current-prices"].path
+    was = len(schema.load("current-prices"))
+    commit._append(path, path.read_bytes(), [commit._csv_line(
+        [r["ticker"], r["price"], r["currency"], r["as_of"], r["source"], r["struck"],
+         r.get("at") or ""]) for r in prices])
+    if len(schema.load("current-prices")) != was + len(prices):
+        raise Refused("current-prices.csv did not gain exactly the new marks")
+    commit.journal([(route, "append", "current-prices", len(prices), ref,
+                     f"{', '.join(named)}: first mark")], at=at)
+    return named
+
+
 def retire_paths() -> list:
     """The files `retire()` writes: the live prices, the contracts, the price history the
     outgoing price is banked into, and the journal. The caller holds them in its envelope."""
@@ -371,7 +399,8 @@ def retire(contracts: list[str], route: str, ref: str, at: str) -> list[str]:
     lines, eol = commit.lines_and_eol(path)
     for i, line in enumerate(lines):
         cells = next(csv.reader([line])) if line.strip() else []
-        out.append(f"{cells[0]},,{cells[2]}" if i and cells and cells[0] in contracts else line)
+        out.append(",".join([cells[0], "", *cells[2:]]) if i and cells and cells[0] in contracts
+                   else line)
     path.write_text(eol.join(out) + eol, encoding="utf-8", newline="")
 
     # VERIFY BY READING IT BACK, as every door does.

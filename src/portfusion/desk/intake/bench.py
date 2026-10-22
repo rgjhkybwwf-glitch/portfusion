@@ -63,7 +63,12 @@ TABLES = ("trades", "exits", "income", "capital-movements", "cash-observations")
 #: WHAT A ROW OF EACH TABLE IS, in the desk's words: a buy, a sale (the Trades page's Direction),
 #: income — a cost is negative income — money into or out of an account, and a cash reading.
 TABLE_LABELS = {"trades": "Buy", "exits": "Sale", "income": "Income",
-                "capital-movements": "Money in or out", "cash-observations": "Cash reading"}
+                "capital-movements": "Money in or out", "cash-observations": "Cash reading",
+                "securities": "New line", "issuers": "New company", "contracts": "New contract"}
+
+#: THE REGISTER: a line, its company and an IG contract. One rides on an item with the trade that
+#: first needs it and is written with it, so the register holds nothing no trade stands on.
+REGISTER = ("securities", "issuers", "contracts")
 
 #: A SPLIT OR CONSOLIDATION is a `trades` row that carries its ratio, `{"from": 20, "to": 1}`:
 #: 20 shares become 1. The owner gives the account, the ticker, the date and the ratio; the rest
@@ -230,7 +235,13 @@ def vocabulary() -> dict:
             # first trade in a new currency, and on a new book offered nothing at all.
             "cur": sorted({"GBP"} | {r[0] for r in D.fx_rows} | {t.cur for t in D.trades}),
             "category": list(D.schema.INCOME_CATEGORIES),
-            "ticker": sorted({t.ticker for t in D.trades}),
+            # THE REGISTER'S CODES, so a line set up and not yet traded is offered too.
+            "ticker": sorted({r[0] for r in D.SECURITIES} | {t.ticker for t in D.trades}),
+            "company": sorted({r[0] for r in D.COMPANY_MASTER}),
+            "sector": sorted({r[1] for r in D.COMPANY_MASTER}),
+            "region": sorted({r[2] for r in D.COMPANY_MASTER}),
+            "kind": list(D.schema.KINDS),
+            "funding": list(D.schema.FUNDINGS),
             "realisation": sorted({e.realisation for e in D.exits}),
             # CLOSED, and the one vocabulary that is a fact about PROVENANCE rather than about
             # the book's contents. A reading citing a class the record does not know has no
@@ -309,8 +320,8 @@ def form_for(table: str) -> list[dict]:
     the CSV header.
     """
     from portfusion.record import schema
-    if table not in TABLES:
-        raise KeyError(f"{table!r} is not a table the bench produces: {TABLES}")
+    if table not in TABLES + REGISTER:
+        raise KeyError(f"{table!r} is not a table the bench produces: {TABLES + REGISTER}")
     vocab = vocabulary()
     closed = closed_for(table)
     ids = next_ids()
@@ -408,6 +419,55 @@ def _size_clash(values: dict) -> list[str]:
         return _guarded(_load)
     except RecordUnavailable:
         return []
+
+
+def _register_problems(rows: list[dict]) -> list[str]:
+    """A new line, company or contract is new, agrees with the rows beside it, and stands with
+    the trade that first needs it."""
+    new = {t: [r["values"] for r in rows if r["table"] == t] for t in REGISTER}
+    if not any(new.values()):
+        return []
+
+    def _load():
+        from portfusion.record import rules as D
+        return ({r[0] for r in D.SECURITIES}, {r[0] for r in D.COMPANY_MASTER}, set(D.CONTRACTS))
+    codes, companies, contracts = _guarded(_load)
+    trades = [r["values"] for r in rows if r["table"] == "trades"]
+
+    def v(row, k):
+        return str(row.get(k) or "").strip()
+    new_codes = {v(r, "code") for r in new["securities"]}
+    new_companies = {v(r, "company") for r in new["issuers"]}
+    out = []
+    for code in sorted(new_codes & codes):
+        out.append(f"{code} is a line already")
+    for code in sorted(new_codes - {v(t, "ticker") for t in trades}):
+        out.append(f"{code}: a new line needs its trade")
+    for company in sorted(new_companies & companies):
+        out.append(f"{company} is a company already")
+    for company in sorted(new_companies - {v(r, "company") for r in new["securities"]}):
+        out.append(f"{company}: a new company needs its line")
+    for r in new["securities"]:
+        if v(r, "company") not in companies | new_companies:
+            out.append(f"{v(r, 'code')}: {v(r, 'company')} has no company row")
+    for r in new["contracts"]:
+        name = v(r, "contract")
+        if name in contracts:
+            out.append(f"{name} is a contract already")
+        if v(r, "code") not in codes | new_codes:
+            out.append(f"{name}: {v(r, 'code')} is not a line")
+        if not any(v(t, "contract") == name and v(t, "ticker") == v(r, "code") for t in trades):
+            out.append(f"{name}: a new contract needs its trade, on its line")
+    return out
+
+
+def _unmarked(item: dict) -> list[str]:
+    """The new contracts on an item, with an epic, that carry no first mark: the book will not
+    load an open bet on a contract it cannot value."""
+    marked = {str(m.get("ticker") or "") for m in item.get("marks") or []}
+    return sorted(str(r["values"].get("contract") or "") for r in item.get("rows") or []
+                  if r["table"] == "contracts" and str(r["values"].get("epic") or "").strip()
+                  and str(r["values"].get("contract") or "") not in marked)
 
 
 def _source_shape(item: dict, row: dict) -> list[str]:
@@ -709,7 +769,8 @@ def gates(item: dict) -> list[dict]:
         if is_adjustment(row):
             for p in adjustment_cells(item, row)[1]:
                 row_problems.append(f"row {i} (split or consolidation) — {p}")
-    row_problems += _repeated_ids(rows)
+    row_problems += _repeated_ids(rows) + _register_problems(rows) + [
+        f"{c}: a new contract needs its first mark" for c in _unmarked(item)]
     # NONE PROPOSED AND NONE LEFT ARE NOT THE SAME STATE. A document can be read in full and
     # yield nothing to enter: HL's Capital-side transaction list is every dealing line on the
     # account, and when every one is already in the record that document is not unfinished work
@@ -1041,7 +1102,7 @@ def read_here(item: dict) -> dict:
     return save(item)
 
 
-def for_event(event: dict, origin: str = "ig-events") -> dict:
+def for_event(event: dict, origin: str = "ig-events", marks: list[dict] | None = None) -> dict:
     """The bench item for one IG event — the existing one if there is one, else a new one.
 
     ONE EVENT, ONE ITEM. The alternative was one item per sweep carrying every missing row, and
@@ -1071,18 +1132,23 @@ def for_event(event: dict, origin: str = "ig-events") -> dict:
     # broker call — and it means the shape reaching the bench is whatever was sent. A table
     # this store does not have, or a row that does not fill exactly that table's columns, is
     # refused here rather than staged and discovered at commit.
-    def _shape():
+    def _shape(row, tables):
         from portfusion.record import schema
-        table = event.get("table")
-        if table not in schema.TABLES:
+        table = row.get("table")
+        if table not in tables:
             raise ValueError(f"{table!r} is not a table in this store")
         want = tuple(f.name for f in schema.TABLES[table].fields)
-        got = tuple((event.get("values") or {}))
+        got = tuple((row.get("values") or {}))
         if got != want:
             raise ValueError(f"an {table} row must fill exactly {want}, and this one has {got}")
         return True
 
-    _guarded(_shape)
+    from portfusion.record import schema as _schema
+    _guarded(lambda: _shape(event, _schema.TABLES))
+    # A SET-UP carries the new line, company and contract its trade stands on (`REGISTER`).
+    setup = list(event.get("with") or [])
+    for row in setup:
+        _guarded(lambda row=row: _shape(row, REGISTER))
 
     existing = item_for_event(ref)
     if existing:
@@ -1099,7 +1165,10 @@ def for_event(event: dict, origin: str = "ig-events") -> dict:
         "authority": "IG REST /history/activity",
         "reference": ref,
     }
-    item["rows"] = [row]
+    item["rows"] = [{"table": r["table"], "values": dict(r["values"])} for r in setup] + [row]
+    # A NEW CONTRACT'S FIRST MARK, read from IG on the owner's press and written with the bet.
+    if marks:
+        item["marks"] = [dict(m) for m in marks]
     return save(item)
 
 

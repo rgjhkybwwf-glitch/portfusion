@@ -318,12 +318,13 @@ FUNDINGS = ("daily", "dated")
 #: funds it. A contract with no epic is closed: nothing reads its level again.
 CONTRACTS = Table(
     name="contracts",
-    doc=("One row per IG contract a spread-bet leg names, with the epic that prices it and "
-         "how IG funds it."),
+    doc=("One row per IG contract a spread-bet leg names, with the epic that prices it, "
+         "how IG funds it, and the code of the line it is on."),
     fields=(
         Field("contract", "str"),
         Field("epic", "str", null=True),
         Field("funding", "str", enum=FUNDINGS),
+        Field("code", "str", required=True),
     ),
 )
 
@@ -867,6 +868,7 @@ REFERENCES = {
     ("capital-movements", "account"):    ("accounts", "account"),
     ("trades", "account"):               ("accounts", "account"),
     ("trades", "contract"):              ("contracts", "contract"),
+    ("contracts", "code"):               ("securities", "code"),
     ("exits", "account"):                ("accounts", "account"),
     ("exits", "closes"):                 ("trades", "id"),
     ("closed-positions", "realisation"): ("exits", "realisation"),

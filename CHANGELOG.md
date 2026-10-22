@@ -17,6 +17,13 @@ prints it.
   `tests/test_what_leaves.py` reads the loaded book and checks the checkout's files, the commits
   not yet on `main` and the branch's name. A push from a checkout runs it on the book
   `PORTFUSION_BOOK` names, and refuses one that names it.
+- **A first bet on a new contract is set up from the IG sweep.** The sweep offers it with its
+  epic; the Bench takes its line, company and contract with the trade, reads the contract's first
+  mark from IG, and writes all of them together. Any item can add a new line, company or
+  contract, and the Bench suggests every code in the register.
+- **`contracts.csv` gains `code`**, the line each contract is on, and the sweep reads a bet's
+  ticker from it. **A book's rows move by hand:** add `,code` to the header, and to each row the
+  ticker its legs carry in `trades.csv`. Every leg on a contract must be on that contract's line.
 
 ## 0.2.0 — beta, 21 Oct 2026
 

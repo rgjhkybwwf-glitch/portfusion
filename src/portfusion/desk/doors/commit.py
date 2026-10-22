@@ -334,10 +334,13 @@ def commit(item_id: str) -> dict:
     # the marks door — this door still only appends the event.
     from portfusion.desk.doors import marks
     retiring = contracts_closed_by(rows)
+    # A NEW CONTRACT'S FIRST MARK, read from IG when its set-up was pressed (`bench.for_event`).
+    marking = list(item.get("marks") or [])
     held = list(dict.fromkeys([path for path, _, _ in before.values()]
                               + ([reasoning_path] if targets else [])
                               + (_observations_paths() if reading else [])
                               + (marks.retire_paths() if retiring else [])
+                              + (marks.first_paths() if marking else [])
                               + [schema.TABLES["journal"].path]))
     with _record_follows_the_files(), atomic(*held):
         for table, cells in by_table.items():
@@ -378,6 +381,10 @@ def commit(item_id: str) -> dict:
             retired = marks.retire(retiring, "bench", item["id"], written_at) if retiring else []
         except marks.Refused as e:
             raise Refused(f"the contract could not be retired, so nothing was written — {e}") from e
+        try:
+            marked = marks.first(marking, "bench", item["id"], written_at) if marking else []
+        except marks.Refused as e:
+            raise Refused(f"the contract could not be marked, so nothing was written — {e}") from e
 
         # FILED, THEN THE READING, AND BOTH OR NEITHER. The readings door checks the document is
         # in _archive/statements/, so it is moved first; if the reading is refused it goes back
@@ -399,6 +406,8 @@ def commit(item_id: str) -> dict:
     item["written_to"] = {t: len(c) for t, c in by_table.items()}
     if retired:
         item["retired"] = retired
+    if marked:
+        item["marked"] = marked
     if targets:
         item["reasoning_written"] = targets
 
@@ -416,6 +425,7 @@ def commit(item_id: str) -> dict:
             "reading": item.get("reading_written"),
             "reasoning": sorted(targets),
             "retired": retired,
+            "marked": marked,
             "archived_to": _shown(ARCHIVE / f"{item['id']}.json")}
 
 

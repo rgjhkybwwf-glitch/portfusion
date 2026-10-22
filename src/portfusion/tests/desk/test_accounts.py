@@ -143,7 +143,8 @@ PANEL_COLUMNS = {
                          "stake", "val", "broker_ref", "note", "contract", "price", "rate",
                          "eid", "proceeds", "realisation", "closes", "category", "detail",
                          "amount", "currency", "local_amount", "as_of", "cash", "evidence",
-                         "reference"),
+                         "reference", "code", "company", "kind", "tv_symbol", "tv_unit",
+                         "sector", "region", "epic", "funding"),
         "REVIEW_COLUMNS": ("retires",),
     },
     "reconcile": {

@@ -300,7 +300,7 @@ asserted on import; the rest are held by the suite.
 | `capital-movements.csv` | 5 | External capital in and out, one row per event |
 | `cash-observations.csv` | 5 | HOW MUCH CASH AN ACCOUNT HELD, AND WHEN |
 | `closed-positions.csv` | 4 | What a realisation's events cannot say about it: the entry date where a leg carries prose, and the note written when it was realised |
-| `contracts.csv` | 3 | One row per IG contract a spread-bet leg names, with the epic that prices it and how IG funds it |
+| `contracts.csv` | 4 | One row per IG contract a spread-bet leg names, with the epic that prices it, how IG funds it, and the code of the line it is on |
 | `current-prices.csv` | 7 | What things are worth NOW — never what was paid, which is the ledger |
 | `exits.csv` | 15 | One row per sale |
 | `fx.csv` | 5 | The rate each currency is converted at NOW, one row per currency, as current-prices |

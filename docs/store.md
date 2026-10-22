@@ -38,8 +38,8 @@ happened, never an instruction or how a figure was reached; those go in the comm
   by Realisation ID.** Different keys on purpose.
 - **A spread bet's stake is the bet**: `stake` in £ per point, the level in points, no `qty`; its
   cost is stake × level. It is priced by contract: its row names the contract, and
-  `contracts.csv` gives the contract its epic. The write that closes a contract's last leg
-  retires it.
+  `contracts.csv` gives the contract its epic and the code of its line, which is the leg's
+  ticker. The write that closes a contract's last leg retires it.
 - **A mark has three axes**: `quality` (provenance), `status` (lifecycle) and `struck` (`close`
   or `live`). A blank `struck` compares with nothing.
 - **A frozen quarter end is restated, never edited.** `restate()` supersedes the rows and appends

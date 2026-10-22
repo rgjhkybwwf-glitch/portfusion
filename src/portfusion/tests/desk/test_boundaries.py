@@ -128,13 +128,15 @@ def test_every_reaching_action_is_pinned():
                          and the equity together are the point: struck an hour apart they
                          differed by tens of pounds, struck together they were identical to
                          the penny.
+      ig-setup-to-bench  asks IG for one new contract's level: the first mark its first bet is
+                         valued at, read on the press that sets the bet up.
 
     `ig-event-to-bench` IS DELIBERATELY NOT HERE. It carries an event the sweep already
     fetched onto the bench and opens no connection of its own — the distinction this axis
     exists to draw, applied to the action that most looks like it should be in the list.
     """
     assert {a.name for a in actions.reaching_actions()} == {
-        "refresh-fetch-all", "ig-events"}
+        "refresh-fetch-all", "ig-events", "ig-setup-to-bench"}
     assert actions.get("ig-event-to-bench").reaches is None, \
         "carrying a swept event onto the bench opens no connection — it reaches nothing"
 
