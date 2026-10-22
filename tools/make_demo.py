@@ -115,16 +115,16 @@ def _book() -> dict[str, list[dict]]:
     ]
     T["securities"] = [
         {"code": "BRYC.L", "company": "Bryncoed Minerals plc", "kind": "shares",
-         "currency": "GBP", "tv_symbol": "LSE:BRYC", "tv_unit": "GBX"},
+         "currency": "GBP", "symbol": "XLON:BRYC", "quote_unit": "GBX"},
         {"code": "KELS.L", "company": "Kelstrand Foods plc", "kind": "shares",
-         "currency": "GBP", "tv_symbol": "LSE:KELS", "tv_unit": "GBX"},
+         "currency": "GBP", "symbol": "XLON:KELS", "quote_unit": "GBX"},
         {"code": "QNLR", "company": "Quenlan Robotics Inc.", "kind": "shares",
-         "currency": "USD", "tv_symbol": "NASDAQ:QNLR", "tv_unit": "USD"},
+         "currency": "USD", "symbol": "XNAS:QNLR", "quote_unit": "USD"},
         {"code": "TARN.L", "company": "Tarnwell Hotels plc", "kind": "shares", "currency": "GBP"},
         {"code": "VELD SB", "company": "Veldrome Metals Inc.", "kind": "spread bet",
-         "currency": "USD", "tv_symbol": "NYSE:VELD"},
+         "currency": "USD", "symbol": "XNYS:VELD", "points_per_unit": 100},
         {"code": "QNLR SB", "company": "Quenlan Robotics Inc.", "kind": "spread bet",
-         "currency": "USD", "tv_symbol": "NASDAQ:QNLR"},
+         "currency": "USD", "symbol": "XNAS:QNLR", "points_per_unit": 100},
     ]
     T["accounts"] = [
         {"account": ISA, "holder": "Ms Nia Voss", "broker": "interactive investor",
@@ -403,6 +403,9 @@ def _histories() -> dict[str, tuple[list[str], list[dict]]]:
         {"currency": c, "date": d, "rate": r, "kind": "spot", "quality": "derived",
          "struck": s, "status": LIVE, "source": INVENTED}
         for c, d, r, s in (("USD", "2026-04-14", 1.3158, ""), ("USD", "2026-06-30", 1.32, "close"),
+                           ("USD", "2026-07-06", 1.325, "close"),
+                           ("USD", "2026-08-03", 1.31, "close"),
+                           ("USD", "2026-08-14", 1.318, "close"),
                            ("USD", "2026-09-30", 1.33, "close"), ("SEK", "2026-09-30", 12.4, ""))]
     unfunded_ig = {"account": SPREAD, "equity": 0.0, "source": UNFUNDED, "quality": "derived"}
     statements = []

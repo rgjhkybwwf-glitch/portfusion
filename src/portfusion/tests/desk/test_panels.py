@@ -237,16 +237,17 @@ def test_holdings_totals_tie_to_the_engine_on_every_grouping():
         assert d["notional"] == _shape.money(b.exposure()), f"notional, grouped by {by}"
 
 
-def test_an_issuer_row_is_sent_no_ticker_and_no_price():
-    """GROUPED BY ISSUER, ONE ROW CAN BE SEVERAL INSTRUMENTS — Orlant is ORLA and ORLA SB — so
-    it has no single ticker and no single price, and the engine gives it neither. Those columns
-    are left out rather than sent as a column of blanks; by ticker, each is sent and filled."""
+def test_an_issuer_row_is_sent_no_ticker():
+    """GROUPED BY ISSUER, ONE ROW CAN BE SEVERAL INSTRUMENTS, so it has no single ticker. The
+    column is left out rather than sent as a column of blanks; by ticker it is sent and filled.
+    An issuer row is one position, so its prices are sent."""
     from portfusion.desk.panels import holdings
     by_ticker, by_issuer = holdings.query(by="ticker"), holdings.query(by="issuer")
     for c in holdings.BY_TICKER_ONLY:
         assert c in by_ticker["columns"], f"{c} is not sent grouped by ticker"
         assert c not in by_issuer["columns"], f"{c} is sent grouped by issuer"
         assert all(r[c] is not None for r in by_ticker["rows"]), f"a ticker row has no {c}"
+    assert {"current_price", "priced_at"} <= set(by_issuer["columns"])
 
 
 @needs("trades")
@@ -681,8 +682,8 @@ def test_no_call_site_puts_anything_in_a_style_attribute(repo_root):
 def test_by_ticker_every_line_says_how_much_is_held_in_its_own_terms():
     """A share line carries the engine's count and no stake; a spread bet its stake per point.
 
-    BY ISSUER NEITHER: the engine gives an issuer row no quantity, because a share count plus a
-    bet's stake per point is no number at all, and the panel must not make one up.
+    BY ISSUER, ONE POSITION: the engine's count in shares, a bet as share-equivalents, and no
+    stake per point, which is a bet line's own measure.
     """
     b = engine.book()
     held = b.holdings(by="ticker").set_index("ticker")
@@ -699,8 +700,10 @@ def test_by_ticker_every_line_says_how_much_is_held_in_its_own_terms():
         else:
             assert row["qty"] == e["qty"] and row["stake_per_point"] is None, row["company"]
     assert all(seen.values()), f"a kind of line is missing, so half of this asserts nothing: {seen}"
+    companies = b.holdings(by="issuer").set_index("company")["qty"]
     for row in panels.get("holdings").query(by="issuer")["rows"]:
-        assert row["qty"] is None and row["stake_per_point"] is None, row["company"]
+        assert row["qty"] == companies[row["company"]] and row["stake_per_point"] is None, \
+            row["company"]
 
 
 @needs("trades")
