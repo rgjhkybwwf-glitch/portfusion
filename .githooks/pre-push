@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
 """THIS CHECKOUT'S GUARD ON MAIN: `portfusion/hooks/pre_push.py`, run from this checkout's own
 `src/`, so a push is checked before anything is installed. The guard's docstring says what it
-refuses. Held by tests/test_hooks.py.
+refuses; pushing this checkout, it also runs the leak test on the named book. Held by
+tests/test_hooks.py.
 """
 import pathlib
 import sys
 
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "src"))
+ROOT = pathlib.Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "src"))
 from portfusion.hooks.pre_push import main  # noqa: E402 — the checkout's own app
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:], sys.stdin.read().splitlines()))
+    sys.exit(main(sys.argv[1:], sys.stdin.read().splitlines(),
+                  checkout=ROOT if pathlib.Path.cwd().resolve() == ROOT else None))

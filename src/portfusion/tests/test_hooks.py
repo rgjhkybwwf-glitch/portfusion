@@ -6,6 +6,7 @@ FAKE credentials file. Nothing here reads the real one.
 
 A host may protect no branch, so `.githooks/pre-push` refuses a deletion or
 a rewrite of `main`. Its tests push for real, to a bare repository in a temporary folder.
+Pushing a checkout, it also runs the leak test on the named book.
 
 The fake values are assembled at run time. Written out whole, this file would be refused by the
 hook it tests.
@@ -220,6 +221,34 @@ def test_a_main_moved_on_github_and_not_fetched_is_never_overwritten(pushed, tmp
     assert _refused(result) and "has not fetched" in result.stderr and "git pull" in result.stderr
     assert "MAIN_REWRITE=" not in result.stderr
     assert _tip(pushed, "origin/main") == there
+
+
+# =====================================================================================
+# PRE-PUSH, from a checkout: what is pushed names nothing of the named book
+# =====================================================================================
+
+def _checkout(tmp_path, passes):
+    """A stand-in checkout whose leak test passes or fails."""
+    from portfusion.hooks.pre_push import LEAKS
+    test = tmp_path / "checkout" / LEAKS
+    test.parent.mkdir(parents=True)
+    test.write_text(f"def test_it():\n    assert {passes}\n")
+    return tmp_path / "checkout"
+
+
+@pytest.mark.parametrize("passes, status", [(True, 0), (False, 1)])
+def test_a_checkouts_push_is_refused_when_it_names_the_book(tmp_path, monkeypatch, passes, status):
+    from portfusion.hooks.pre_push import what_leaves
+    monkeypatch.setenv("PORTFUSION_BOOK", str(tmp_path / "book"))
+    assert what_leaves(_checkout(tmp_path, passes)) == status
+
+
+def test_with_no_book_named_the_push_goes_and_says_nothing_was_checked(tmp_path, monkeypatch,
+                                                                      capfd):
+    from portfusion.hooks.pre_push import what_leaves
+    monkeypatch.delenv("PORTFUSION_BOOK", raising=False)
+    assert what_leaves(_checkout(tmp_path, False)) == 0
+    assert "names no book" in "".join(capfd.readouterr())
 
 
 def test_the_suites_commits_are_never_signed(tmp_path):
