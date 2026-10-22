@@ -3,3 +3,4 @@
 desk/test_bench.py::test_a_sale_leaving_another_leg_open_retires_nothing
 desk/test_price_refresh.py::test_a_weekend_date_is_served_by_the_friday_close
 test_report.py::test_another_accounts_statement_does_not_put_this_one_on_file
+test_what_leaves.py::test_what_leaves_names_nothing_of_the_loaded_book

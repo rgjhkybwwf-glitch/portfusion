@@ -11,7 +11,6 @@ make, update the expectation and say why in the commit message. Do not delete a 
 a build pass.
 """
 import datetime as _dt
-import pathlib
 import re
 from collections import Counter, defaultdict
 from datetime import date as _date
@@ -911,58 +910,6 @@ def test_a_class_nothing_retrieves_is_never_marked_official(D):
     for e in D.EVIDENCE_CLASSES:
         if e.retrieval == "none":
             assert e.official is False, f"{e.key} is marked official"
-
-
-@needs("trades")
-def test_the_code_names_nobody_in_the_book_it_reads(book_names, repo_root, project_files):
-    """THE CODE IS THE APP'S AND THE STORE IS THE BOOK'S. No line of code, comment or docstring
-    names a holder, an account, an account's number, a feed's credential label, or a trade, sale
-    or parcel id of the book it reads, so the code can travel without the book. Name the thing by
-    its role ("the owner", "a spread-bet account") or invent an example.
-
-    The names come from the store, never from this test: the register's holders, accounts,
-    numbers and feed labels, each holder's names run together as a login spells them, and every
-    parcel id, plus the shape of a trade or sale id. A book with other holders is held to its own.
-    The guides and a book's own folders keep its data. The tests leave with the code, but a test
-    may use the demo's names, which on the demo are the loaded book's, so they are held by this
-    book's own check instead (`checks/test_book_names.py`).
-    """
-    words, joined, exact = book_names["words"], book_names["joined"], book_names["exact"]
-    numbers = book_names["numbers"]
-    named = re.compile(
-        r"(?i)(?<![A-Za-z])(" + "|".join(sorted(map(re.escape, words))) + r")(?![A-Za-z])"
-        r"|(?i:" + "|".join(sorted(map(re.escape, joined))) + r")"
-        r"|(?<![A-Za-z0-9-])(" + "|".join(sorted(map(re.escape, exact))) + r")(?![A-Za-z0-9])"
-        r"|(?<![A-Za-z0-9-])[TE]-\d{3}[A-Z0-9]*(?![A-Za-z0-9])"
-        # AN ACCOUNT NUMBER INSIDE A LONGER ONE IS STILL THE NUMBER: an example built around one
-        # (`2` + the number + `000`) once sat in a comment here, past the boundaries above.
-        r"|(" + "|".join(sorted(map(re.escape, numbers))) + r")")
-    from harness import TESTS
-    outside = ("docs/", "store/")
-    # THE DEMO'S GENERATOR IS THAT BOOK'S SOURCE, its rows in code form: with the demo loaded it
-    # names the demo, as demo/store does, and so it does with a copy of the demo loaded
-    # (`portfusion init --practice`), which holds the same register. With any other book it is code
-    # like the rest.
-    from portfusion.record import schema
-    register = pathlib.Path("store") / "accounts.csv"
-    if (schema.BOOK / register).read_bytes() == (schema.DEMO / register).read_bytes():
-        outside += ("tools/make_demo.py",)
-    # A book's own folders hold the book's data WHEREVER the book sits: the repo root's
-    # _archive, _inbox and checks, and equally the demo book's under demo/. The guard asks
-    # about the CODE, and an archived bench item or a check naming its own book's account is
-    # the book's business, not the app's.
-    books_own = {"_archive", "_inbox", "checks"}
-    # Code, the hooks and the configuration: everything but the guides and the binaries.
-    files = [p for p in project_files(".py", ".js", ".css", ".html", ".json", ".ini", ".txt", "")
-             if not p.relative_to(repo_root).as_posix().startswith(outside)
-             and not p.is_relative_to(TESTS)
-             and not books_own & set(p.relative_to(repo_root).parts)]
-    found = [f"{p.relative_to(repo_root).as_posix()}:{i}: {m.group(0)!r}"
-             for p in files for i, line in enumerate(p.read_text(encoding="utf-8").splitlines(), 1)
-             for m in [named.search(line)] if m]
-    assert words and exact and not found, (
-        "the code names this book's people, accounts or trades — say what the thing is, or invent "
-        "an example:\n  " + "\n  ".join(found))
 
 
 # =====================================================================================

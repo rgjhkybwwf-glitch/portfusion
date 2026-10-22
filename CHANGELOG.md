@@ -13,6 +13,10 @@ prints it.
   accepted; the passkey library's reason goes to the sign-in log only.
 - **A practice book's journal accounts for its practice setting**, so a new practice book passes
   its own audit.
+- **The guard holds what leaves to a book's holdings**, not only its people and accounts:
+  `tests/test_what_leaves.py` reads the loaded book and checks the checkout's files, the commits
+  not yet on `main` and the branch's name. A push from a checkout runs it on the book
+  `PORTFUSION_BOOK` names, and refuses one that names it.
 
 ## 0.2.0 — beta, 21 Oct 2026
 

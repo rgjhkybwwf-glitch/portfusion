@@ -27,9 +27,13 @@ THE GUARD IS THE APP'S, as the secret gate is: this checkout's `.githooks/pre-pu
 `src/`, and a book's, which `portfusion init` writes (`init.PUSH_HOOK`), runs it from the
 portfusion the book has installed.
 
+A PUSH OF THIS CHECKOUT ALSO NAMES NOTHING OF A BOOK: its hook runs `LEAKS` on the book
+`PORTFUSION_BOOK` names and refuses a push that names it. A book's own push does not.
+
 Held by tests/test_hooks.py.
 """
 import os
+import pathlib
 import subprocess
 import sys
 
@@ -70,7 +74,41 @@ def approved(remote_sha: str) -> bool:
     return len(named) >= 7 and remote_sha.startswith(named)
 
 
-def main(argv: list[str], lines: list[str]) -> int:
+#: The test a push from a checkout runs on the book `PORTFUSION_BOOK` names (CONTRIBUTING.md).
+LEAKS = "src/portfusion/tests/test_what_leaves.py"
+
+
+def what_leaves(checkout) -> int:
+    """Run `LEAKS` from `checkout` on the named book: 0 when it passes or no book is named, 1
+    when what is pushed names the book."""
+    book = os.environ.get("PORTFUSION_BOOK", "").strip()
+    if not book:
+        log.info("pre-push: PORTFUSION_BOOK names no book, so nothing checked this push for a "
+                 "book's names.")
+        return 0
+    # The checkout's own venv: the hook's python may have no pytest, and another checkout's
+    # install is refused by the suite (docs/environment.md).
+    venv = pathlib.Path(checkout) / ".venv" / "bin" / "python3"
+    python = str(venv) if venv.exists() else sys.executable
+    env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
+    run = subprocess.run([python, "-m", "pytest", "-q", "-rs", "-p", "no:cacheprovider", LEAKS],
+                         cwd=checkout, env=env, capture_output=True, text=True)
+    if run.returncode == 0:
+        for line in run.stdout.splitlines():
+            if line.startswith("SKIPPED"):
+                log.info(f"pre-push: {line.rsplit(': ', 1)[-1]}, so nothing was checked for it.")
+        return 0
+    said = [ln for ln in run.stdout.splitlines() if ln.startswith("E ")]
+    if said:
+        log.error(f"pre-push: REFUSED. What this push carries names the book at {book}.\n")
+    else:
+        log.error("pre-push: REFUSED. The leak test could not run:\n")
+    log.error("\n".join(said or (run.stdout + run.stderr).strip().splitlines()[-15:]))
+    return 1
+
+
+def main(argv: list[str], lines: list[str], checkout=None) -> int:
+    """`checkout`, given only by a checkout's own hook pushing that checkout, adds `what_leaves`."""
     remote = argv[0] if argv else "the remote"
     problems = []
     for line in lines:
@@ -82,7 +120,7 @@ def main(argv: list[str], lines: list[str]) -> int:
         if refused and not (refused[1] and approved(remote_sha)):
             problems.append((*refused, remote_sha))
     if not problems:
-        return 0
+        return what_leaves(checkout) if checkout else 0
     log.error(f"pre-push: REFUSED. This push to {remote} would take something away from main.\n")
     for why, _, _ in problems:
         log.error(f"  {why}")
