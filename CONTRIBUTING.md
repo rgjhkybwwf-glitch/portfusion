@@ -28,6 +28,7 @@ python3 tools/clean_room.py                # the app on its own: a copy, a new b
 | To add | Write it in | Held by |
 |---|---|---|
 | a table, or a value in a vocabulary | `record/schema.py` | `tests/test_schema.py` |
+| a table or column renamed or split | its move in `record/migrations.py` | `tests/test_migrations.py` |
 | a headline figure | a `Book` method and its entry in `Book.HEADLINE` | `tests/test_figures.py` |
 | a column heading | `house/headings.py` | `tests/test_figures.py` |
 | a desk panel | `desk/panels/<name>.py` | `tests/desk/test_panels.py` |

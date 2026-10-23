@@ -6,6 +6,7 @@ What each layer of the guard proves, how to write a test, and what to do when on
 ```bash
 portfusion check               # the code on the demo, then the loaded book opening, with its checks/
 portfusion record              # the audit: what the record needs today
+portfusion migrate             # a book carried to this release's store; --write moves it
 python3 -m pytest -m audit     # the audit set alone
 ```
 

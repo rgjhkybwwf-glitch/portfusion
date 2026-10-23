@@ -69,6 +69,8 @@ BUFFER_HINTS = ("buf", "stringio", "io.")
 #:                        allowlisted IG endpoint returns, so re-rendering the row would mean
 #:                        composing a value for a column the reading has no opinion about. A
 #:                        supplied value is a claim.
+#:   record/migrations.py a release's renames, read and written line by line as marks.py's are,
+#:                        on a book the loader cannot open yet (`portfusion migrate`).
 #:   desk/doors/freeze.py the same read in service of a SUPERSEDE. A restatement
 #:                        moves the `status` of the rows it replaces and nothing else, so every
 #:                        line it is not marking passes through as the bytes it read.
@@ -79,7 +81,7 @@ BUFFER_HINTS = ("buf", "stringio", "io.")
 #: cannot see one there. That is the scan being honest about what it can prove, and the module
 #: reads _inbox/, which is not the record.
 CSV_FILE_READERS = {
-    "record/schema.py", "engine.py",
+    "record/schema.py", "engine.py", "record/migrations.py",
     "desk/doors/marks.py", "desk/doors/observations.py", "desk/doors/freeze.py",
     "history/_appendonly.py",
 }
