@@ -57,7 +57,6 @@ _NOT_BROKER_DOCUMENTS = {
     "current-prices": "a feed mark. TradingView and IG levels are not broker documents",
     "fx":             "a feed rate, same reason",
     "quarter-snapshots": "a derived freeze of a composition the ledger already holds",
-    "baseline-reconstruction": "a reconstruction, and pre-baseline by definition",
     "quarter-nav":    "its source says how the figure was ARRIVED AT; `quality` says what it "
                       "rests on, and test_quarter_nav.py guards that",
     "cash-readings": "carries an explicit `evidence` COLUMN, so its class is structural "

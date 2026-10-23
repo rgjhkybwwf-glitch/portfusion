@@ -16,7 +16,7 @@ import pytest
 
 from portfusion.engine import Book
 from portfusion.history import prices as PH
-from quarter_support import frozen_quarters, perf_recon_q2_rows
+from quarter_support import frozen_quarters
 from portfusion.record import rules as D
 from harness import needs
 
@@ -145,13 +145,10 @@ def test_the_build_does_not_import_this(build_imports):
 #
 # The snapshot quarters are DERIVED from rules.QSNAP_FROZEN, so a new freeze is checked from
 # its first row — a hand-typed list would let the next quarter land unchecked.
-# PERF_RECON_Q2_ROWS is a different table and stays named.
 # ---------------------------------------------------------------------------------
 QUARTER_TABLES = [
     *(pytest.param(as_of, "quarter-snapshots", rows, 1, id=Book.quarter_label(as_of))
       for as_of, rows in frozen_quarters()),
-    pytest.param("2026-06-30", "PERF_RECON_Q2_ROWS", perf_recon_q2_rows(), 0,
-                 id="PERF_RECON_Q2_ROWS"),
 ]
 
 

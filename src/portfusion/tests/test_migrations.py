@@ -108,7 +108,7 @@ def test_a_book_out_of_date_order_is_put_in_it_and_numbered_by_it(tmp_path):
         fh.write("trade_id_floor,T-050\n")
 
     m, changes = M.plan(book)
-    assert m is M.MIGRATIONS[-1] and changes, "a book out of date order planned no move"
+    assert m is M.MIGRATIONS[1] and changes, "a book out of date order planned no move"
     M.write(changes)
     for p in sorted((schema.DEMO / "store").glob("*.csv")):
         if p.name != "journal.csv":
@@ -138,9 +138,46 @@ def test_a_book_two_moves_behind_is_carried_through_both_before_it_is_opened(tmp
     old = {p: p.read_bytes() for p in book.rglob("*") if p.is_file()}
 
     done, before = M.carry(book)
-    assert done == list(M.MIGRATIONS), [m.issue for m in done]
+    assert done == list(M.MIGRATIONS[:2]), [m.issue for m in done]
     assert (store / "sales.csv").read_bytes() == (schema.DEMO / "store" / "sales.csv").read_bytes()
     assert M.plan(book) == (None, [])
     M.put_back(before)
     assert {p: p.read_bytes() for p in book.rglob("*") if p.is_file()} == old
+
+
+def test_a_retired_table_leaves_with_the_journal_rows_that_name_it(tmp_path):
+    """A demo copy holding the two retired tables, as a book made before they went does, and
+    journal rows naming them: the files go and so do those rows, and the book is the demo again."""
+    book = tmp_path / "book"
+    for part in ("store", "_archive"):
+        shutil.copytree(schema.DEMO / part, book / part)
+    store = book / "store"
+    (store / "realisations.csv").write_text("ticker,realisation_id,opened,note\n", encoding="utf-8")
+    (store / "baseline-reconstruction.csv").write_text(
+        "as_of,ticker,qty,price,source,rate,quality\n", encoding="utf-8")
+    journal = store / "journal.csv"
+    lines = journal.read_text(encoding="utf-8").splitlines(keepends=True)
+    opening = next(ln for ln in lines if ",baseline,open," in ln)
+    journal.write_text("".join(lines[:2] + [
+        opening.replace(f",{opening.split(',')[3]},", f",{t},", 1)
+        for t in M.RETIRED] + lines[2:]), encoding="utf-8")
+
+    m, changes = M.plan(book)
+    assert m is M.MIGRATIONS[-1] and changes, "the retired tables planned no move"
+    M.write(changes)
+    for name in M.RETIRED:
+        assert not (store / f"{name}.csv").exists(), f"{name}.csv is still in the store"
+    assert journal.read_bytes() == (schema.DEMO / "store" / "journal.csv").read_bytes()
+    assert M.plan(book) == (None, []), "a book with no retired table still planned a move"
+
+
+def test_a_books_check_naming_a_retired_table_is_listed_to_move_by_hand(tmp_path):
+    """The book's own checks/ are its code: a line reading a retired table is listed, so the
+    owner hears of it before the moved book's guard does."""
+    (tmp_path / "checks").mkdir()
+    (tmp_path / "checks" / "test_mine.py").write_text(
+        'rows = schema.load("realisations")\nfirst = D.dec_rows[0]\nfine = D.sales\n',
+        encoding="utf-8")
+    assert M.named_in_checks(tmp_path) == [
+        'test_mine.py:1: rows = schema.load("realisations")', "test_mine.py:2: first = D.dec_rows[0]"]
 

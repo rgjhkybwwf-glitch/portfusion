@@ -5,6 +5,10 @@ prints it.
 
 ## Unreleased
 
+- **Two tables retire: `realisations` and `baseline-reconstruction`.** A round trip's entry date
+  and note come from its own buys and sales, which already said what the first table did, and
+  nothing read the second. `portfusion migrate` removes both files and the journal rows that name
+  them.
 - **On Trades, a sale's ID is headed Sale ID.** A row's detail read a sale's ID as its Trade ID;
   a buy's keeps Trade ID. Inside the engine, the ledger takes the store's names (#44): `event_id`
   for either side's ID, a buy's `cost` or `level_points`, a sale's `proceeds` and each side's

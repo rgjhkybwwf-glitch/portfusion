@@ -439,7 +439,7 @@ def test_the_record_exports_named_rows_not_bare_tuples(D):
     """
     expected = {
         "buys": "Buy", "sales": "Sale", "reasoning": "Reasoning",
-        "realisations": "RealisationRow", "ci_rows": "CostIncomeRow", "ac_rows": "AccountRow",
+        "ci_rows": "CostIncomeRow", "ac_rows": "AccountRow",
     }
     wrong = []
     for attr, cls in expected.items():

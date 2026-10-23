@@ -3,7 +3,6 @@ at,route,op,table,rows,ref,detail
 2026-09-30T18:00:00,baseline,open,securities,6,,rows on file when the journal opened
 2026-09-30T18:00:00,baseline,open,accounts,3,,rows on file when the journal opened
 2026-09-30T18:00:00,baseline,open,capital-movements,5,,rows on file when the journal opened
-2026-09-30T18:00:00,baseline,open,realisations,4,,rows on file when the journal opened
 2026-09-30T18:00:00,baseline,open,buys,11,,rows on file when the journal opened
 2026-09-30T18:00:00,baseline,open,sales,4,,rows on file when the journal opened
 2026-09-30T18:00:00,baseline,open,income,4,,rows on file when the journal opened
@@ -11,7 +10,6 @@ at,route,op,table,rows,ref,detail
 2026-09-30T18:00:00,baseline,open,quarter-snapshots,15,,rows on file when the journal opened
 2026-09-30T18:00:00,baseline,open,fx,1,,rows on file when the journal opened
 2026-09-30T18:00:00,baseline,open,current-prices,6,,rows on file when the journal opened
-2026-09-30T18:00:00,baseline,open,baseline-reconstruction,1,,rows on file when the journal opened
 2026-09-30T18:00:00,baseline,open,account-readings,1,,rows on file when the journal opened
 2026-09-30T18:00:00,baseline,open,reasoning,8,,rows on file when the journal opened
 2026-09-30T18:00:00,baseline,open,cash-readings,2,,rows on file when the journal opened

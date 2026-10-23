@@ -150,16 +150,6 @@ def _book() -> dict[str, list[dict]]:
         for d, a, v in (("2026-01-15", ISA, 6000.0), ("2026-02-27", TRADING, 1500.0),
                         ("2026-05-05", ISA, 3000.0), ("2026-07-01", SPREAD, 5000.0),
                         ("2026-08-05", SPREAD, 1500.0))]
-    T["realisations"] = [
-        {"ticker": "TARN.L", "realisation_id": "R-TARN", "opened": "2026-02-10",
-         "note": "Sold whole, 20 Jun 2026; nothing stays open."},
-        {"ticker": "KELS.L", "realisation_id": "R-KELS", "opened": "2026-05-20",
-         "note": "Half sold; 1,000 shares stay open."},
-        {"ticker": "VELD SB", "realisation_id": "R-VELDSB", "opened": "2026-07-06",
-         "note": "The September leg closed whole; December and March stay open."},
-        {"ticker": "QNLR SB", "realisation_id": "R-QNLRSB", "opened": "2026-08-14",
-         "note": "The smaller leg closed; the December leg stays open."},
-    ]
     shares = dict(source=NOT_ON_FILE, cur="GBP")
     bets = dict(source=NOT_ON_FILE, account=SPREAD, cur="GBP")
     T["buys"] = [
@@ -241,9 +231,6 @@ def _book() -> dict[str, list[dict]]:
             "source": _ig_bid(p), "struck": "live", "at": "2026-09-30T15:00Z"}
            for t, p in (("VELD-DEC26", 10610.0), ("VELD-MAR27", 10340.0),
                         ("QNLR-DEC26", 10480.0))])
-    T["baseline-reconstruction"] = [
-        {"as_of": "2025-12-31", "ticker": "BRYC.L", "qty": 1000, "price": 2.0,
-         "source": NOT_ON_FILE, "rate": 1.0, "quality": "derived"}]
     T["account-readings"] = [
         {"account": SPREAD, "as_of": "2026-09-30", "at": "2026-09-30T15:00Z", "funds": 6500.0,
          "equity": 8140.8, "evidence": "ig-accounts",

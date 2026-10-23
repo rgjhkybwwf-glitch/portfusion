@@ -29,9 +29,9 @@ from harness import SRC, needs
 
 # WHERE EACH TABLE HAS GOT TO. This is the migration's state, written down where the
 # tests can act on it, and it is the difference between a check and a tautology.
-FLIPPED = {"companies", "securities", "accounts", "capital-movements", "realisations",
+FLIPPED = {"companies", "securities", "accounts", "capital-movements",
            "buys", "sales", "income", "quarter-nav", "fx",
-           "current-prices", "baseline-reconstruction",
+           "current-prices",
            "quarter-snapshots", "account-readings", "reasoning",
            # Cash has its own table rather than account-statements.csv's `cash` column: that
            # column means cash AT THAT STATEMENT'S DATE, and accounts.at() reads those rows as
@@ -247,8 +247,8 @@ def test_the_number_kind_preserves_int_against_float():
 
 
 def test_a_date_comes_back_as_a_date():
-    """Not as a string that happens to look like one — `realisations.opened` holds real
-    date objects and the ledger compares against them."""
+    """Not as a string that happens to look like one — a date column holds real date objects
+    and the ledger compares against them."""
     assert _cell("date", "2026-06-30") == _dt.date(2026, 6, 30)
     with pytest.raises(ValueError):
         _cell("date", "30/06/2026")

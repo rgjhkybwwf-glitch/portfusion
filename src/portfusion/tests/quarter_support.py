@@ -18,12 +18,6 @@ def frozen_quarters():
     return [(as_of, [tuple(r[1:]) for r in rows if r[0] == as_of]) for as_of in D.QSNAP_FROZEN]
 
 
-def perf_recon_q2_rows():
-    """The reconstructed holdings at 30 June 2026, from baseline-reconstruction.csv: the
-    rows the published Q2 figure is built from, (ticker, qty, price, source, fx, quality)."""
-    return [tuple(r[1:]) for r in D.dec_rows if r[0] == "2026-06-30"]
-
-
 def book_in_the_next_year(frozen: bool):
     """A Book valued in the January after its own newest mark: the year end the record has not
     reached yet. `frozen` gives that 31 December the newest quarter end's rows, as a freeze

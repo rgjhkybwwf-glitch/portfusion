@@ -150,26 +150,6 @@ def test_round_trip_totals_reach_the_realised_figure_twice(book):
     assert t["sells"] == len(D.sales)
 
 
-def test_round_trips_reproduce_the_closed_table(book):
-    """THE ENTRY DATE ON EVERY ROW, derived rather than read.
-
-    A typed date label asserted against the ledger drifted three times; this derives the same
-    fact from the events — a share's holding opening (`share_pools()`), a spread bet's earliest
-    named leg — and compares it with the `closed` record, which is where the pre-2026 entry dates
-    live. Quantity and exit date are not kept there to compare: `round_trips()` derives them, and
-    the copy was overwritten by every sale that joined its parcel.
-
-    A position opened before the 2026 baseline and closed during 2026 is a complete round trip
-    and must read as one — entry date, price paid, exit, holding period. Most of the rows are
-    exactly that.
-    """
-    rt = book.round_trips().set_index("realisation_id")
-    for c in D.realisations:
-        row = rt.loc[c.realisation_id]
-        assert row["ticker"] == c.ticker, f"{c.realisation_id}: the row names {c.ticker}"
-        assert row["opened"].date() == c.opened, f"{c.realisation_id}: open date"
-
-
 def test_no_round_trip_is_missing_its_entry_date(book):
     """The entry date and the price paid are what demonstrate the return on a particular
     investment (the owner). a holding of many years; throwing its entry away would throw the point of

@@ -296,14 +296,14 @@ A value outside these fails **on load**, naming the table, the row and the colum
 |---|---|---|
 | `held_as` | `shares` · `spread bet` | `securities` · `accounts` |
 | `category` | `Dividend` · `Funding interest` · `Cash interest` · `Fee` | `income` |
-| `quality` | `sourced` · `derived` | `quarter-nav` · `quarter-snapshots` · `baseline-reconstruction` |
+| `quality` | `sourced` · `derived` | `quarter-nav` · `quarter-snapshots` |
 | `status` | `live` · `superseded` | `quarter-nav` · `quarter-snapshots` |
 | `struck` | `close` · `live` | `fx` · `current-prices` |
 | `key` | `record_begins` · `reasoning_owed_from` · `first_report` · `tv_list_live` · `tv_list_exit` · `tv_list_entry` · `rate_carried` · `hosted_origin` · `passkey_domain` · `deploy_repo` · `research_repo` · `insights_url` · `practice` | `settings` |
 | `funding` | `daily` · `dated` | `contracts` |
 | `route` | `baseline` · `bench` · `marks` · `freeze` · `hand` · `migrate` | `journal` |
 | `op` | `open` · `append` · `replace` · `remove` | `journal` |
-| `table` | the 20 record tables | `journal` |
+| `table` | the 18 record tables | `journal` |
 
 ### Vocabularies the record's rules hold
 
@@ -323,7 +323,6 @@ asserted on import; the rest are held by the suite.
 |---|---|---|
 | `account-readings.csv` | What the book holds each account to be worth RIGHT NOW, and the observation it rests on | `account` Account · `as_of` As at · `at` Recorded · `positions` · `stmt_value` · `recon_cash` · `funds` · `running_pl` · `equity` · `deposit` · `available` · `evidence` Document kind · `reference` Reference |
 | `accounts.csv` | The account register | `account` Account · `holder` Holder · `broker_firm` Broker firm · `number` Account no. · `code` Code · `held_as` Held as · `feed_key` Feed |
-| `baseline-reconstruction.csv` | Reconstructed holdings, line by line: the working behind an account's quarter-nav rows as FIRST FILED | `as_of` As at · `ticker` Ticker · `qty` Quantity · `price` Price · `source` Source · `rate` Rate (per £1) · `quality` Quality |
 | `buys.csv` | THE LEDGER — one row per buy leg | `trade_id` Trade ID · `date` Date · `source` Source · `account` Account · `ticker` Ticker · `cur` Deal ccy · `qty` Quantity · `stake` Stake (£/pt) · `cost` Cost (GBP) · `level_points` Level (points) · `broker_ref` Broker ref · `note` Notes · `contract` IG contract · `traded_price` Traded price · `rate` Rate (per £1) |
 | `capital-movements.csv` | External capital in and out, one row per event | `date` Date · `account` Account · `amount` Amount (GBP) · `source` Source · `detail` Detail |
 | `cash-readings.csv` | HOW MUCH CASH AN ACCOUNT HELD, AND WHEN | `account` Account · `as_of` As at · `cash` Cash (GBP) · `evidence` Document kind · `reference` Reference |
@@ -336,7 +335,6 @@ asserted on import; the rest are held by the suite.
 | `quarter-nav.csv` | Each account's CONTRIBUTION to net asset value at each quarter end | `as_of` As at · `account` Account · `amount` Amount (GBP) · `contribution` Contribution · `quality` Quality · `status` · `source` Source |
 | `quarter-results.csv` | Each closed quarter's six figures, for the book and for each account, as the engine gave them — what a closed quarter is HELD TO, never what a renderer shows | `as_of` As at · `account` Account · `opening_nav` Opening NAV · `capital_deployed` Capital deployed · `return_income` Income · `closing_nav` Closing NAV · `gain` Gain · `return` Return · `note` Notes |
 | `quarter-snapshots.csv` | Every account's HOLDINGS, line by line, at each quarter end — the working behind quarter-nav | `as_of` As at · `account` Account · `ticker` Ticker · `qty` Quantity · `price` Price · `currency` Ccy · `value` Value (GBP) · `cost` Cost (GBP) · `quality` Quality · `status` · `source` Source |
-| `realisations.csv` | What a realisation's events cannot say about it: the entry date where a leg carries prose, and the note written when it was realised | `ticker` Ticker · `realisation_id` Realisation ID · `opened` Entry date · `note` Notes |
 | `reasoning.csv` | WHY a position was taken and why it was closed — one row per DECISION: the ticker, the date of the trade or sale it explains, and the why | `ticker` Ticker · `date` Date · `why_entered` Why we entered · `why_exited` Why we exited |
 | `research-notes.csv` | WHICH RESEARCH NOTES COVER WHICH INSTRUMENT | `ticker` Ticker · `ref` Retrieves · `published` · `url` |
 | `sales.csv` | One row per sale | `sale_id` Sale ID · `date` Date · `account` Account · `ticker` Ticker · `qty` Quantity · `stake` Stake (£/pt) · `traded_price` Traded price · `cur` Deal ccy · `rate` Rate (per £1) · `proceeds` Proceeds (GBP) · `source` Source · `broker_ref` Broker ref · `realisation_id` Realisation ID · `closes` Closes trade · `note` Notes |

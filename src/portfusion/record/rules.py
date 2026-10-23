@@ -464,14 +464,6 @@ EXIT_LEG_MATCH = {e.sale_id: e.closes for e in sales if e.closes}
 # ticker traded in two accounts HAS a breakdown; a hand-kept list once missed one and nothing
 # failed. The tests check the derivation.
 
-class RealisationRow(NamedTuple):
-    ticker: str                 # the security's code, as securities.csv registers it
-    realisation_id: str         # the parcel it describes; quantity and exit date are derived
-    opened: _dt.date            # asserted against the ledger's earliest buy
-    note: str                   # what happened, where the sales do not say it
-
-realisations = [RealisationRow(*_r) for _r in schema.load("realisations")]
-
 
 # ==============================================================================================
 # STATEMENT-SOURCED FIGURES — costs, income, cash, reconstructions
@@ -728,10 +720,6 @@ if _reading_wrong:
 
 
 
-# RECONSTRUCTED BASELINE HOLDINGS, for an account with no statement at the baseline: the
-# quantities held then, at the nearest statement's prices. "Price" is GBP value per share as the
-# broker reports it, FX already embedded, so FX = 1.0. `schema.BASELINE_RECON` says more.
-dec_rows = schema.load("baseline-reconstruction")
 
 #: The journal's columns, for the engine's frame, FROM THE SCHEMA, so the engine names them without
 #: importing schema.py itself.
@@ -850,7 +838,6 @@ if _sized:
 REALISATION_FORM = _re.compile(r"R-[A-Z0-9]+(?:-[A-Z0-9]+)*")
 _misnamed = sorted({f"{name} ({where})" for name, where in
                     [(e.realisation_id, e.sale_id) for e in sales]
-                    + [(c.realisation_id, f"realisations {c.ticker}") for c in realisations]
                     if not REALISATION_FORM.fullmatch(str(name))})
 if _misnamed:
     raise ValueError("A REALISATION IS NOT NAMED IN THE RECORD'S FORM (R-ROOT, or R-ROOT-2 when "
