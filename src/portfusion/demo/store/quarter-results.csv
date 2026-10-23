@@ -1,21 +1,13 @@
 as_of,account,opening_nav,capital_deployed,return_income,closing_nav,gain,return,note
-2026-03-31,,2000.0,3025.0,0.0,5230.0,205.0,0.058363,
 2026-03-31,,2000.0,3025.0,0.0,5230.0,205.0,0.059956,"Restated: the return is day-weighted (modified Dietz), each flow weighted by the days from its date to the quarter end"
-2026-03-31,Voss ii ISA,2000.0,2000.0,0.0,4180.0,180.0,0.06,
 2026-03-31,Voss ii ISA,2000.0,2000.0,0.0,4180.0,180.0,0.058273,"Restated: the return is day-weighted (modified Dietz), each flow weighted by the days from its date to the quarter end"
-2026-03-31,Voss ii Trading,0.0,1025.0,0.0,1050.0,25.0,0.04878,
 2026-03-31,Voss ii Trading,0.0,1025.0,0.0,1050.0,25.0,0.075694,"Restated: the return is day-weighted (modified Dietz), each flow weighted by the days from its date to the quarter end"
 2026-03-31,Voss IG Spread bet,0.0,0.0,0.0,0.0,,,
-2026-06-30,,5230.0,4560.0,30.0,10477.27,717.27,0.095509,
 2026-06-30,,5230.0,4560.0,30.0,10477.27,717.27,0.0751,"Restated: the return is day-weighted (modified Dietz), each flow weighted by the days from its date to the quarter end"
-2026-06-30,Voss ii ISA,4180.0,4560.0,30.0,9377.27,667.27,0.103293,
 2026-06-30,Voss ii ISA,4180.0,4560.0,30.0,9377.27,667.27,0.078494,"Restated: the return is day-weighted (modified Dietz), each flow weighted by the days from its date to the quarter end"
 2026-06-30,Voss ii Trading,1050.0,0.0,0.0,1100.0,50.0,0.047619,
 2026-06-30,Voss IG Spread bet,0.0,0.0,0.0,0.0,,,
-2026-09-30,,10477.27,4700.0,12.5,17576.33,2411.56,0.188003,
 2026-09-30,,10477.27,4700.0,12.5,17576.33,2411.56,0.156826,"Restated: the return is day-weighted (modified Dietz), each flow weighted by the days from its date to the quarter end"
-2026-09-30,Voss ii ISA,9377.27,-1800.0,0.0,8260.53,683.26,0.080599,
 2026-09-30,Voss ii ISA,9377.27,-1800.0,0.0,8260.53,683.26,0.081161,"Restated: the return is day-weighted (modified Dietz), each flow weighted by the days from its date to the quarter end"
 2026-09-30,Voss ii Trading,1100.0,0.0,12.5,1175.0,87.5,0.079545,
-2026-09-30,Voss IG Spread bet,0.0,6500.0,0.0,8140.8,1640.8,0.504862,
 2026-09-30,Voss IG Spread bet,0.0,6500.0,0.0,8140.8,1640.8,0.280062,"Restated: the return is day-weighted (modified Dietz), each flow weighted by the days from its date to the quarter end"

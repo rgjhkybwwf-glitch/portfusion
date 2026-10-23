@@ -55,8 +55,8 @@ disagree, the code is right.
 | `derived` | anything else: computed or reconstructed by the book, or a figure nothing on file retrieves |
 
 A `derived` figure becomes `sourced` only when the evidence itself changes. The vocabulary is
-`schema.QUALITIES`, and each history declares its subset. `superseded` is not provenance but a
-lifecycle: the `status` column.
+`schema.QUALITIES`, and each history declares its subset. A figure put right replaces its row; git
+keeps what the row said.
 
 ## 4 · Time
 
@@ -73,8 +73,8 @@ not mean two things.
 A **Quarter** always carries its year (`Book.quarter_label()`), bounded by **Quarter start** and
 **Quarter end**. **Entry date**, **Exit date** and **Date** are when an event happened. **The
 freeze** writes a quarter end's rows (`Book.freeze_rows()`), and the quarter is then closed and
-held to its **Results** (`quarter-results.csv`); **a restatement** is a later row that moves
-them, with its reason. **The close** is the work around a freeze.
+held to its **Results** (`quarter-results.csv`); **a restatement** replaces those rows, with its
+reason. **The close** is the work around a freeze.
 
 ### The store's own names
 
@@ -95,7 +95,6 @@ One idea, one column name, in every table.
 | A share leg's settled sterling | `cost` |
 | A spread-bet leg's entry level, in points | `level_points` |
 | A frozen line's value | `value` |
-| A lifecycle | `status` — `live` · `superseded` |
 | An instant | `at` |
 
 ### The three clocks
@@ -297,7 +296,6 @@ A value outside these fails **on load**, naming the table, the row and the colum
 | `held_as` | `shares` · `spread bet` | `securities` · `accounts` |
 | `category` | `Dividend` · `Funding interest` · `Cash interest` · `Fee` | `income` |
 | `quality` | `sourced` · `derived` | `quarter-nav` · `quarter-snapshots` |
-| `status` | `live` · `superseded` | `quarter-nav` · `quarter-snapshots` |
 | `struck` | `close` · `live` | `fx` · `current-prices` |
 | `key` | `record_begins` · `reasoning_owed_from` · `first_report` · `tv_list_live` · `tv_list_exit` · `tv_list_entry` · `rate_carried` · `hosted_origin` · `passkey_domain` · `deploy_repo` · `research_repo` · `insights_url` · `practice` | `settings` |
 | `funding` | `daily` · `dated` | `contracts` |
@@ -332,9 +330,9 @@ asserted on import; the rest are held by the suite.
 | `fx.csv` | The rate each currency is converted at NOW, one row per currency, as current-prices | `currency` Ccy · `rate` Rate (per £1) · `as_of` As at · `source` Source · `struck` |
 | `income.csv` | Dividends, interest and fees | `date` Date · `account` Account · `category` Category · `detail` Detail · `amount` Amount (GBP) · `source` Source · `note` Notes · `currency` Ccy · `local_amount` Amount · `rate` Rate (per £1) · `ticker` Ticker |
 | `journal.csv` | RECORD TIME — when the book LEARNED a thing, as against when the thing HAPPENED | `at` Recorded · `route` Route · `op` Did · `table` Table · `rows` Rows · `ref` Retrieves · `detail` Detail |
-| `quarter-nav.csv` | Each account's CONTRIBUTION to net asset value at each quarter end | `as_of` As at · `account` Account · `amount` Amount (GBP) · `contribution` Contribution · `quality` Quality · `status` · `source` Source |
+| `quarter-nav.csv` | Each account's CONTRIBUTION to net asset value at each quarter end | `as_of` As at · `account` Account · `amount` Amount (GBP) · `contribution` Contribution · `quality` Quality · `source` Source |
 | `quarter-results.csv` | Each closed quarter's six figures, for the book and for each account, as the engine gave them — what a closed quarter is HELD TO, never what a renderer shows | `as_of` As at · `account` Account · `opening_nav` Opening NAV · `capital_deployed` Capital deployed · `return_income` Income · `closing_nav` Closing NAV · `gain` Gain · `return` Return · `note` Notes |
-| `quarter-snapshots.csv` | Every account's HOLDINGS, line by line, at each quarter end — the working behind quarter-nav | `as_of` As at · `account` Account · `ticker` Ticker · `qty` Quantity · `price` Price · `currency` Ccy · `value` Value (GBP) · `cost` Cost (GBP) · `quality` Quality · `status` · `source` Source |
+| `quarter-snapshots.csv` | Every account's HOLDINGS, line by line, at each quarter end — the working behind quarter-nav | `as_of` As at · `account` Account · `ticker` Ticker · `qty` Quantity · `price` Price · `currency` Ccy · `value` Value (GBP) · `cost` Cost (GBP) · `quality` Quality · `source` Source |
 | `reasoning.csv` | WHY a position was taken and why it was closed — one row per DECISION: the ticker, the date of the trade or sale it explains, and the why | `ticker` Ticker · `date` Date · `why_entered` Why we entered · `why_exited` Why we exited |
 | `research-notes.csv` | WHICH RESEARCH NOTES COVER WHICH INSTRUMENT | `ticker` Ticker · `ref` Retrieves · `published` · `url` |
 | `sales.csv` | One row per sale | `sale_id` Sale ID · `date` Date · `account` Account · `ticker` Ticker · `qty` Quantity · `stake` Stake (£/pt) · `traded_price` Traded price · `cur` Deal ccy · `rate` Rate (per £1) · `proceeds` Proceeds (GBP) · `source` Source · `broker_ref` Broker ref · `realisation_id` Realisation ID · `closes` Closes trade · `note` Notes |

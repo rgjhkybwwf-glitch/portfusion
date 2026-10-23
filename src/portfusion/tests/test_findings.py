@@ -330,7 +330,7 @@ def test_a_foreign_income_row_with_no_rate_on_file_is_a_problem(store_copy):
     21 Oct 2026). Both shapes, each a problem by name."""
     from portfusion.history import fx as FX
     from portfusion.record import schema
-    rates = [r for r in FX.load() if r["status"] == FX.LIVE]
+    rates = FX.load()
     if not rates:
         pytest.skip("the book holds no rate history")
     cur, rated = rates[-1]["currency"], rates[-1]["date"]

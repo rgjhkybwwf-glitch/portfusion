@@ -150,8 +150,7 @@ def _nearest(dates, day, window=7):
     from portfusion.engine import Book
     b = Book()
     b.store = {**b.store, "history.prices": pd.DataFrame({
-        "mark_key": "X", "date": dates, "price": [float(i) for i in range(len(dates))],
-        "status": b.D.LIVE_MARK})}
+        "mark_key": "X", "date": dates, "price": [float(i) for i in range(len(dates))]})}
     return b._marks_at(day, window)[0].get("X")
 
 
@@ -211,11 +210,11 @@ def _a_frozen_share_line():
 
 
 @needs("quarter-nav", "current-prices")
-def test_a_restatement_supersedes_appends_and_holds_the_quarter_again(store_copy, monkeypatch):
-    """No figure on file changes, at a quarter end either: the account's rows there are SUPERSEDED,
-    kept, and the new ones land beside them; the engine reads the new; the quarter gains a results
-    row saying why; and the journal accounts for every row. The engine's strike is moved by a fixed
-    £100 here, so the test holds the door's arithmetic on any book."""
+def test_a_restatement_replaces_the_rows_and_holds_the_quarter_again(store_copy, monkeypatch):
+    """A correction replaces, at a quarter end too: the account's rows there give way to the ones
+    struck again; the engine reads them; the quarter's results row is replaced, saying why; and the
+    journal accounts for every row, with the reason. The engine's strike is moved by a fixed £100
+    here, so the test holds the door's arithmetic on any book."""
     from portfusion.engine import Book
     from portfusion.record import schema
     from portfusion.desk.doors import freeze
@@ -236,30 +235,43 @@ def test_a_restatement_supersedes_appends_and_holds_the_quarter_again(store_copy
         return [dict(zip(hdr, r)) for r in schema.load("quarter-nav")
                 if str(r[0]) == q and r[1] == account]
 
-    before = mine()
-    was = [r for r in before if r["status"] == "live"]
+    def results():
+        return [dict(zip(schema.TABLES["quarter-results"].header, r))
+                for r in schema.load("quarter-results") if str(r[0]) == q and r[1] == account]
+
+    before, held = mine(), results()
     total = Book().quarter_nav_total()[q]
     # WHAT THE RECORD NOW STRIKES, which a frozen quarter end need not equal: the £100 is on top.
     delta = sum(r["amount"] for r in real(Book(), q, accounts=[account])["quarter_nav"]
                 if r["contribution"] != "notional") + 100.0 - sum(
-                    r["amount"] for r in was if r["contribution"] != "notional")
+                    r["amount"] for r in before if r["contribution"] != "notional")
 
     out = freeze.restate({q: [account]}, "a test moved it")
 
     now = mine()
-    assert [r["status"] for r in now] == ["superseded"] * len(before) + ["live"] * len(was)
-    assert [r["amount"] for r in now[:len(before)]] == [r["amount"] for r in before], \
-        "every row on file kept as it was"
-    assert all("restated on" in r["source"] for r in now[len(before):])
+    assert len(now) == len(before), "a restated row was kept beside the one replacing it"
+    assert all("restated on" in r["source"] for r in now)
     assert Book().quarter_nav_total()[q] == pytest.approx(total + delta, abs=0.01)
-    held = [dict(zip(schema.TABLES["quarter-results"].header, r))
-            for r in schema.load("quarter-results") if str(r[0]) == q and r[1] == account]
-    assert held[-1]["note"] == "Restated: a test moved it"
-    assert held[-1]["closing_nav"] == pytest.approx(held[-2]["closing_nav"] + delta, abs=0.01)
+    [result] = results()
+    assert result["note"] == "Restated: a test moved it"
+    assert result["closing_nav"] == pytest.approx(held[0]["closing_nav"] + delta, abs=0.01)
     assert out["quarter_results"] >= 2, "the account's row and the book's"
     assert Book().journal_unaccounted().empty, Book().journal_unaccounted()
-    assert {r[3] for r in schema.load("journal") if r[1] == "freeze" and r[5] == f"restated {q}"} \
-        == set(freeze.TABLES)
+    said = [r for r in schema.load("journal") if r[1] == "freeze" and r[5] == f"restated {q}"]
+    assert {r[3] for r in said} == set(freeze.TABLES)
+    assert all(r[6].endswith("a test moved it") for r in said), "the journal does not say why"
+
+
+def test_a_restatement_journals_a_changed_line_count_as_what_went_and_what_came():
+    """A REPLACE ADDS NO ROWS, so only an equal count is one: a quarter end restated with a line
+    more or fewer is journalled as the rows taken out and the rows put in, or the journal's count
+    would not close."""
+    from portfusion.desk.doors import freeze
+    assert freeze._journalled("quarter-nav", "r", 2, 2, "why") == [
+        ("freeze", "replace", "quarter-nav", 2, "r", "why")]
+    assert freeze._journalled("quarter-snapshots", "r", 3, 2, "why") == [
+        ("freeze", "remove", "quarter-snapshots", 3, "r", "why"),
+        ("freeze", "append", "quarter-snapshots", 2, "r", "why")]
 
 
 @needs("quarter-nav", "current-prices")
@@ -274,10 +286,9 @@ def test_a_restatement_that_moves_nothing_writes_nothing(store_copy, monkeypatch
     snap = [dict(zip(schema.TABLES["quarter-snapshots"].header, r))
             for r in schema.load("quarter-snapshots")]
     as_filed = {"off_date": [],
-                "quarter_nav": [r for r in nav if str(r["as_of"]) == q and r["account"] == account
-                                and r["status"] == "live"],
+                "quarter_nav": [r for r in nav if str(r["as_of"]) == q and r["account"] == account],
                 "quarter_snapshots": [r for r in snap if str(r["as_of"]) == q
-                                      and r["account"] == account and r["status"] == "live"]}
+                                      and r["account"] == account]}
     monkeypatch.setattr(Book, "freeze_rows", lambda self, *a, **k: as_filed)
     before = {t: schema.TABLES[t].path.read_bytes() for t in (*freeze.TABLES, "journal")}
     with pytest.raises(freeze.Refused, match="nothing would move"):
@@ -290,7 +301,7 @@ def test_a_composition_is_appended_where_there_was_none(store_copy):
     """THE OPENING'S COMPOSITION: the record's 31 Dec 2025 has net asset
     values and no lines, so its first quarter has no contributors. `lines_only` strikes the lines
     where none are frozen and appends them, and touches nothing else: no net asset value, no
-    result, nothing superseded; asked again, it refuses. Held here on the newest frozen quarter
+    result, nothing replaced; asked again, it refuses. Held here on the newest frozen quarter
     end with its lines taken out of the copy."""
     import csv
     import datetime as _dt
@@ -335,10 +346,12 @@ def test_the_records_opening_is_never_a_frozen_quarter(store_copy):
     path = schema.TABLES["quarter-snapshots"].path
     with path.open(newline="") as f:
         rows = list(csv.reader(f))
-    newest = max(D.QSNAP_FROZEN)
-    opening = [dict(zip(rows[0], [BASELINE_ASOF, *r[1:]])) for r in rows[1:] if r[0] == newest]
-    write_rows("quarter-snapshots", *opening)
-    D.reload_store()
+    # PLANTED WHERE NONE ARE ON FILE: a book with an opening composition already holds the case.
+    if not any(r[0] == BASELINE_ASOF for r in rows[1:]):
+        newest = max(D.QSNAP_FROZEN)
+        write_rows("quarter-snapshots", *[dict(zip(rows[0], [BASELINE_ASOF, *r[1:]]))
+                                          for r in rows[1:] if r[0] == newest])
+        D.reload_store()
     assert BASELINE_ASOF not in D.QSNAP_FROZEN
     assert not Book().quarter_lines(BASELINE_ASOF).empty
 

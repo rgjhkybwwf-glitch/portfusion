@@ -163,12 +163,51 @@ def test_a_retired_table_leaves_with_the_journal_rows_that_name_it(tmp_path):
         for t in M.RETIRED] + lines[2:]), encoding="utf-8")
 
     m, changes = M.plan(book)
-    assert m is M.MIGRATIONS[-1] and changes, "the retired tables planned no move"
+    assert m is M.MIGRATIONS[2] and changes, "the retired tables planned no move"
     M.write(changes)
     for name in M.RETIRED:
         assert not (store / f"{name}.csv").exists(), f"{name}.csv is still in the store"
     assert journal.read_bytes() == (schema.DEMO / "store" / "journal.csv").read_bytes()
     assert M.plan(book) == (None, []), "a book with no retired table still planned a move"
+
+
+def test_a_book_with_the_lifecycle_loses_the_column_and_every_row_it_kept_beside_another(tmp_path):
+    """A demo copy in the shape before a correction replaced its row: `status` in its five tables, a
+    superseded row beside a live one in a history and in quarter-nav, and a restated quarter's
+    first row before its restatement. The column goes, those rows with it, the journal says so of
+    the tables it counts, and the book is the demo again."""
+    book = tmp_path / "book"
+    for part in ("store", "_archive"):
+        shutil.copytree(schema.DEMO / part, book / part)
+    store = book / "store"
+    after = {"price-history": "struck", "fx-history": "struck", "account-statements": "quality",
+             "quarter-nav": "quality", "quarter-snapshots": "quality"}
+    for name, col in after.items():
+        rows = list(csv.reader(io.StringIO((store / f"{name}.csv").read_text(encoding="utf-8"))))
+        at = rows[0].index(col) + 1
+        rows = [rows[0][:at] + ["status"] + rows[0][at:]] + [r[:at] + ["live"] + r[at:] for r in rows[1:]]
+        if name in ("price-history", "quarter-nav"):
+            rows.insert(2, rows[1][:at] + ["superseded"] + rows[1][at + 1:])
+        out = io.StringIO()
+        csv.writer(out, lineterminator="\n").writerows(rows)
+        (store / f"{name}.csv").write_text(out.getvalue(), encoding="utf-8")
+    results = (store / "quarter-results.csv").read_text(encoding="utf-8").splitlines(keepends=True)
+    restated = next(i for i, ln in enumerate(results) if "Restated:" in ln)
+    results.insert(restated, results[restated].split('"Restated:')[0] + "\n")
+    (store / "quarter-results.csv").write_text("".join(results), encoding="utf-8")
+
+    m, changes = M.plan(book)
+    assert m is M.MIGRATIONS[3] and changes, "a book with the lifecycle planned no move"
+    M.write(changes)
+    for p in sorted((schema.DEMO / "store").glob("*.csv")):
+        if p.name != "journal.csv":
+            assert (store / p.name).read_bytes() == p.read_bytes(), f"{p.name} moved wrong"
+    said = (store / "journal.csv").read_text(encoding="utf-8")
+    assert said.startswith((schema.DEMO / "store" / "journal.csv").read_text(encoding="utf-8"))
+    added = [r for r in csv.reader(io.StringIO(said)) if r[1] == "migrate"]
+    assert {(r[2], r[3], r[4]) for r in added} == {
+        ("remove", "quarter-nav", "1"), ("remove", "quarter-results", "1")}, added
+    assert M.plan(book) == (None, []), "a book without the lifecycle still planned a move"
 
 
 def test_a_books_check_naming_a_retired_table_is_listed_to_move_by_hand(tmp_path):

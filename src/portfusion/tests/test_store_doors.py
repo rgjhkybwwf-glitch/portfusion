@@ -71,9 +71,9 @@ BUFFER_HINTS = ("buf", "stringio", "io.")
 #:                        supplied value is a claim.
 #:   record/migrations.py a release's renames, read and written line by line as marks.py's are,
 #:                        on a book the loader cannot open yet (`portfusion migrate`).
-#:   desk/doors/freeze.py the same read in service of a SUPERSEDE. A restatement
-#:                        moves the `status` of the rows it replaces and nothing else, so every
-#:                        line it is not marking passes through as the bytes it read.
+#:   desk/doors/freeze.py the same read in service of a RESTATEMENT, which takes out the rows
+#:                        it replaces, so every line it is not taking out passes through as the
+#:                        bytes it read.
 #:
 #: `desk/intake/read_document.py` READS DOCUMENTS AND IS NOT HERE. A UK broker's export is CP1252 and
 #: a strict utf-8 open raised on four of five real HL downloads, so it decodes the bytes itself
@@ -245,20 +245,14 @@ def _sentinel_store(tmp_path):
                       ("current-prices.csv", 4)):
         path = target / name
         lines = path.read_bytes().decode("utf-8").splitlines()
-        # A LIVE ROW: a superseded one stays on file and is no answer, so a reader that filters
-        # on the lifecycle rightly passes it by.
-        header = next(csv.reader([lines[0]]))
-        at = header.index("status") if "status" in header else None
-        i = next(i for i in range(1, len(lines))
-                 if at is None or next(csv.reader([lines[i]]))[at] == "live")
         # AS CSV, not split on commas: a quoted cell holding one — a mark's source — moved
         # every column after it.
         import io
-        cells = next(csv.reader([lines[i]]))
+        cells = next(csv.reader([lines[1]]))
         cells[col] = "ZZ-SENTINEL"
         out = io.StringIO()
         csv.writer(out, lineterminator="").writerow(cells)
-        lines[i] = out.getvalue()
+        lines[1] = out.getvalue()
         path.write_bytes(("\r\n".join(lines) + "\r\n").encode("utf-8"))
         planted[name] = "ZZ-SENTINEL"
     return target, planted

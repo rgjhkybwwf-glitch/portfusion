@@ -403,12 +403,6 @@ INCOME = Table(
 #: from here. Each history declares the subset it permits, held by a test.
 QUALITIES = ("sourced", "derived")
 
-#: WHETHER A ROW IS STILL THE ANSWER — a LIFECYCLE, not a provenance: a sourced figure can be
-#: superseded by a better sourced one, so the two need separate columns. `superseded` is kept on
-#: file with its own date and provenance, and is not what a lookup returns. Here for the
-#: reason QUALITIES is; `rules.MARK_STATUSES` and the histories read it.
-MARK_STATUSES = ("live", "superseded")
-
 #: WHAT INSTANT A MARK DESCRIBES. `close` is a session close — a settled figure for a named day
 #: that can be fetched again and got the same. `live` is a read struck at an instant that cannot
 #: be reproduced. Declared here for the same reason as QUALITIES; `history/prices.py` reads it.
@@ -432,8 +426,6 @@ QUARTER_NAV = Table(
         Field("contribution", "str"),      # positions at market | account equity
         # Declared to the loader, so a stray value fails at the door rather than in review.
         Field("quality", "str", enum=QUALITIES),
-        # A RESTATED ROW IS SUPERSEDED, NOT REPLACED, and the engine reads the live rows only.
-        Field("status", "str", enum=MARK_STATUSES),
         Field("source", "str"),
     ),
 )
@@ -506,7 +498,6 @@ QUARTER_SNAPSHOTS = Table(
         Field("value", "float"),
         Field("cost", "float"),
         Field("quality", "str", enum=QUALITIES),
-        Field("status", "str", enum=MARK_STATUSES),   # as quarter-nav's
         Field("source", "str"),
     ),
 )
@@ -641,9 +632,9 @@ QUARTER_RESULTS = Table(
     doc=("Each closed quarter's six figures, for the book and for each account, as the engine "
          "gave them — what a closed quarter is HELD TO, never what a renderer shows.\n\n"
          "Every renderer shows the engine's figure. `test_engine_ties.py` fails when that "
-         "figure stops matching the newest row here for its quarter end and account, so a "
-         "change to how a quarter is computed cannot move a closed one quietly: it appends a "
-         "RESTATEMENT, the new figures with a note saying why, and the row before it stays.\n\n"
+         "figure stops matching the row here for its quarter end and account, so a "
+         "change to how a quarter is computed cannot move a closed one quietly: a RESTATEMENT "
+         "replaces the row, its note saying why, the journal when, and git what it was.\n\n"
          "APPENDED BY desk/doors/freeze.py from Book.quarter_results(), once the inputs are in. A "
          "blank `account` is the book."),
     fields=(

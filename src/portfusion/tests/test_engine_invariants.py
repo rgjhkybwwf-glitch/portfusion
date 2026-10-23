@@ -449,7 +449,7 @@ def test_a_close_banked_after_the_live_mark_does_not_move_where_the_lines_end(st
     for key, (price, as_of, currency) in live.items():
         later = (pd.Timestamp(as_of) + pd.Timedelta(days=3)).date().isoformat()
         ahead.append([key, later, round(float(price) * 1.05, 4), currency, "sourced", "close",
-                      "live", f"a close banked after the live mark, {later}"])
+                      f"a close banked after the live mark, {later}"])
     with (store_copy / "price-history.csv").open("a", newline="", encoding="utf-8") as f:
         csv.writer(f, lineterminator="\n").writerows(ahead)
     book = Book()

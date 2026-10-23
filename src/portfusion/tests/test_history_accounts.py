@@ -61,11 +61,10 @@ def test_cash_is_never_in_nav_for_a_share_account(rows):
 
 @needs("account-statements")
 def test_no_duplicate_statement_per_account_per_date(rows):
-    """One LIVE reading per account per date: two would be two answers. A figure put right at the
-    same date is superseded and kept beside the one that replaced it."""
-    live = [r for r in rows if r["status"] == "live"]
-    dupes = [k for k, n in Counter((r["account"], r["as_of"]) for r in live).items() if n > 1]
-    assert not dupes, f"more than one live statement for: {dupes}"
+    """One reading per account per date: two would be two answers. A figure put right at the
+    same date replaces the row it puts right."""
+    dupes = [k for k, n in Counter((r["account"], r["as_of"]) for r in rows).items() if n > 1]
+    assert not dupes, f"more than one statement for: {dupes}"
 
 
 @needs("account-statements")
@@ -119,7 +118,7 @@ def test_show_prints_a_reading_with_no_net_asset_value_part(monkeypatch, capsys)
     share = next(a for a in D.ACCOUNT_ORDER if D.ACCOUNT_KIND.get(a) != "spread bet")
     row = {"account": share, "as_of": "2026-06-30", "positions_value": None, "cash": 12.0,
            "funds": None, "running_pl": None, "equity": None, "deposit": None,
-           "source": "a planted reading", "quality": "sourced", "status": D.LIVE_MARK}
+           "source": "a planted reading", "quality": "sourced"}
     monkeypatch.setattr(A, "load", lambda: [row])
     A.show()
     out = capsys.readouterr().out
@@ -211,7 +210,7 @@ def test_a_row_carrying_another_days_cash_does_not_reconcile(store_copy):
                 [f"{account},{day},{day}T14:05Z,1000.00,1250.00,250.00,,,,,,ii-statement,"
                  f"a reading" for day in days])
     append_rows(store_copy / "account-statements.csv",
-                [f"{account},{day},1000.00,{cash},,,,,Not on file: a test,derived,live"
+                [f"{account},{day},1000.00,{cash},,,,,Not on file: a test,derived"
                  for day, cash in zip(days, ("250.00", "240.00"))])
     D.reload_store()
     ours = [r for r in _reconciles() if r[0] == account and r[1] in days]
@@ -231,7 +230,7 @@ def test_a_row_carrying_another_days_cash_does_not_reconcile(store_copy):
 
 @pytest.mark.audit
 def test_every_live_observation_is_archived():
-    """If an observation is replaced without archiving, the superseded reading is gone.
+    """If an observation is replaced without archiving, the outgoing reading is gone.
     Fix: python3 -m portfusion.history.accounts --archive"""
     from portfusion.history import accounts as AH
     missing = AH.check()
@@ -273,12 +272,12 @@ def test_an_observation_that_cannot_be_filed_is_reported_not_skipped():
 
 
 @needs("account-statements")
-def test_a_same_day_re_reading_at_other_figures_is_banked_and_the_first_kept(store_copy):
+def test_a_same_day_re_reading_at_other_figures_replaces_the_first(store_copy):
     """A SECOND READING OF ONE DAY WAS NEVER BANKED. The history keyed on (as_of, account) alone,
     so a re-read of the same day at other figures found its day on file and appended nothing:
     account-statements.csv went on holding the earlier figures, and the reading the book then
-    showed was in no history (the review of 21 Oct 2026). Now the earlier row is superseded and
-    kept, and the new one lands live, as a corrected mark does."""
+    showed was in no history (the review of 21 Oct 2026). Now the new one takes the earlier row's
+    place, as a corrected mark does."""
     from portfusion.history import accounts as AH
     live = AH.live_observations()
     assert live, "the book has no bankable account reading"
@@ -288,10 +287,10 @@ def test_a_same_day_re_reading_at_other_figures_is_banked_and_the_first_kept(sto
     was = first[figure]
     moved = dict(first, **{figure: was + 1.0})
 
-    new, _, superseded = AH._FILE.bank([moved])
+    new, replaced = AH._FILE.bank([moved])
 
     rows = [r for r in AH.load() if (r["as_of"], r["account"]) == (first["as_of"], first["account"])]
-    assert [r[figure] for r in rows if r["status"] == "live"] == [was + 1.0], rows
-    assert [r[figure] for r in rows if r["status"] == "superseded"][-1:] == [was], rows
+    assert [r[figure] for r in rows] == [was + 1.0], rows
+    assert [r[figure] for r in replaced] == [was], replaced
     assert AH._FILE.unstruck([moved]) == [], "the re-reading still reads as unbanked"
     assert AH._FILE.unstruck([first]) == [first], "the reading it replaced reads as banked"

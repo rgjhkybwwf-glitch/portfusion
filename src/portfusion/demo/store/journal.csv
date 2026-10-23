@@ -28,4 +28,4 @@ at,route,op,table,rows,ref,detail
 2026-09-30T17:30:00,freeze,append,quarter-snapshots,6,2026-09-30,"6 row(s) freezing 2026-09-30, from the engine"
 2026-09-30T17:30:00,freeze,append,quarter-nav,4,2026-09-30,"4 row(s) freezing 2026-09-30, from the engine"
 2026-09-30T17:30:00,freeze,append,quarter-results,4,2026-09-30,"4 row(s) freezing 2026-09-30, from the engine"
-2026-10-13T20:31:10,hand,append,quarter-results,8,restatement 2026-10-13,"restatements of the three closed quarters, 8 rows: the return is day-weighted, so every return on a quarter with a flow moves and nothing else does"
+2026-10-13T20:31:10,hand,replace,quarter-results,8,restatement 2026-10-13,"restatements of the three closed quarters, 8 rows: the return is day-weighted, so every return on a quarter with a flow moves and nothing else does"

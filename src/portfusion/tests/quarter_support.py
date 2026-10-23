@@ -14,7 +14,7 @@ def frozen_quarters():
 
     Reads the store at call time, so it follows `rules.set_store()`.
     """
-    rows = D.live_rows("quarter-snapshots")
+    rows = D.schema.load("quarter-snapshots")
     return [(as_of, [tuple(r[1:]) for r in rows if r[0] == as_of]) for as_of in D.QSNAP_FROZEN]
 
 

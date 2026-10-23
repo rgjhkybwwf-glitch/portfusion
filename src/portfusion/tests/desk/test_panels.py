@@ -739,7 +739,6 @@ def test_each_row_opens_the_marks_behind_it_with_every_source_string():
             for mark in marks:
                 assert mark["source"], f"{row['company']} has a mark with no source string"
                 assert mark["mark_key"], "a mark arrives without the key it was banked under"
-                assert mark["status"], "a mark arrives without its lifecycle"
             dates = [m["date"] for m in marks]
             assert dates == sorted(dates, reverse=True), \
                 f"{row['company']}'s history is not newest-first"

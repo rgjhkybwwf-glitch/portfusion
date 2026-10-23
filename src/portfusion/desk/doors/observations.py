@@ -25,7 +25,7 @@ WHAT IT WILL NOT DO
     for.
   · REPLACE A READING WHOSE OUTGOING VALUE IS NOT BANKED. `history/accounts.py:archive()` runs
     FIRST and the replace does not happen if it fails. Same ordering as `marks.py`, and the same
-    reason: the superseded reading is a data point that cannot be recovered.
+    reason: the outgoing reading is a data point that cannot be recovered.
   · ADD A ROW. One row per account, replaced. A new account is a decision, not a reading.
   · LEAVE A HALF-WRITTEN STORE. `commit.atomic()` holds every target's bytes and restores all of
     them if anything raises.

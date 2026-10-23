@@ -343,7 +343,7 @@ def propose(item_id: str, reading: dict) -> dict:
                      "drafted": drafted})
 
     # A RE-READ REPLACES WHAT THE LAST READ PROPOSED AND NOTHING ELSE. Rows the owner added or
-    # corrected by hand are theirs and survive; rows the machine put there are superseded by the
+    # corrected by hand are theirs and survive; rows the machine put there are replaced by the
     # new reading. Appending unconditionally would have given two rows for one sale the second
     # time the button was pressed, and nothing would have said so.
     kept = [r for r in (item.get("rows") or []) if not r.get("machine")]

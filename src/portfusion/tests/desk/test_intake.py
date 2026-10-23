@@ -416,7 +416,7 @@ def test_a_price_the_page_prints_in_pence_is_stored_in_pounds(read_item):
 def test_reading_twice_replaces_the_reading_and_keeps_what_the_owner_added(read_item, monkeypatch):
     """Pressing the button twice on one document must not leave two rows for one sale — and it
     must not throw away a row the owner typed by hand either. A row carries `machine` when it came
-    from a reading; only those are superseded."""
+    from a reading; only those are replaced."""
     from portfusion.desk.intake import propose as P
     read_item["rows"] = [{"table": "income", "values": {"detail": "typed by hand"},
                           "sources": {}}]

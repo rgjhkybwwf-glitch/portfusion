@@ -6,8 +6,7 @@ worth on that date?" — which it could not do while CURRENT_PRICES was overwrit
 place on every refresh.
 
 These tests guard the properties that make it trustworthy rather than merely present:
-the live set is banked, no date carries two live marks, and a superseded mark never
-floats free of the mark that replaced it.
+the live set is banked, and no date carries two marks: a mark put right replaces its row.
 """
 import re
 from collections import Counter
@@ -32,7 +31,7 @@ def rows():
 
 @pytest.mark.audit
 def test_every_current_mark_is_archived():
-    """The whole point. If a refresh happens without archiving, the superseded mark is
+    """The whole point. If a refresh happens without archiving, the outgoing mark is
     gone for good — so this failing means data is about to be lost, not that a file is
     untidy. Fix: python3 -m portfusion.history.prices --archive"""
     missing = PH.check()
@@ -41,12 +40,11 @@ def test_every_current_mark_is_archived():
 
 
 @needs("price-history")
-def test_no_duplicate_live_marks(rows):
-    """One live price per instrument per date. A second one means two sources
-    disagreed and nobody chose between them."""
-    live = [(r["mark_key"], r["date"]) for r in rows if r["status"] == PH.LIVE]
-    dupes = [k for k, n in Counter(live).items() if n > 1]
-    assert not dupes, f"more than one live mark for: {dupes}"
+def test_no_duplicate_marks(rows):
+    """One price per instrument per date. A second one means two sources disagreed and nobody
+    chose between them."""
+    dupes = [k for k, n in Counter((r["mark_key"], r["date"]) for r in rows).items() if n > 1]
+    assert not dupes, f"more than one mark for: {dupes}"
 
 
 @needs("price-history")
@@ -65,47 +63,6 @@ def test_struck_values_are_known(rows):
 def test_qualities_are_known(rows):
     bad = {r["quality"] for r in rows} - set(PH.QUALITIES)
     assert not bad, f"unknown quality value(s): {bad}"
-    # THE SECOND AXIS. Supersession is a lifecycle, not a grade; a sourced mark replaced by a
-    # better sourced one keeps its provenance and changes its status.
-    bad = {r["status"] for r in rows} - set(PH.STATUSES)
-    assert not bad, f"unknown status value(s): {bad}"
-
-
-@needs("price-history")
-def test_superseded_marks_have_a_replacement(rows):
-    """A superseded mark is only meaningful beside the mark that replaced it. On its
-    own it is just a wrong number sitting in the record."""
-    live = {(r["mark_key"], r["date"]) for r in rows if r["status"] == PH.LIVE}
-    orphans = [(r["mark_key"], r["date"]) for r in rows
-               if r["status"] == "superseded" and (r["mark_key"], r["date"]) not in live]
-    assert not orphans, f"superseded marks with nothing replacing them: {orphans}"
-
-
-@needs("price-history")
-def test_the_engines_dated_lookup_returns_the_live_half_of_a_pair(rows):
-    """A defect this file's own vocabulary had already named.
-
-    `superseded` exists so a replaced mark can stay on file with its real date rather than be
-    deleted. Two rows therefore share a (ticker, date), and every reader has to say which one it
-    means. `history/` did, through `LIVE`. `Book._marks_at()` did not — it filtered on date
-    alone and returned whichever row it met last, which was the SUPERSEDED one for both pairs
-    then on file.
-
-    NO FIGURE IS WRITTEN DOWN HERE. The claim is that the engine agrees with the record about
-    which of the two is live, whatever the two are — a fixture would go stale the first time a
-    mark is superseded, which is precisely the event this guards.
-    """
-    from portfusion import engine
-    b = engine.Book()
-    live = {(r["mark_key"], r["date"]): r["price"] for r in rows if r["status"] == PH.LIVE}
-    pairs = sorted({(r["mark_key"], r["date"]) for r in rows if r["status"] == "superseded"})
-    assert pairs, "no superseded mark on file — this asserts nothing"
-    for ticker, date in pairs:
-        got = b._marks_at(date)[0].get(ticker)
-        assert got is not None, f"_marks_at({date}) has no mark for {ticker} at all"
-        assert got[1] == live[(ticker, date)], (
-            f"_marks_at({date}) values {ticker} at {got[1]} — the record's live mark is "
-            f"{live[(ticker, date)]}, and the other row is marked superseded")
 
 
 @needs("price-history")
@@ -163,8 +120,7 @@ def test_every_quarter_end_holding_has_a_price(date, table, rows, tick_idx):
     day, window = _dt.date.fromisoformat(date), _dt.timedelta(days=D.CLOSE_CHECK_WINDOW_DAYS)
     marked = {}
     for r in PH.load():
-        if r["status"] == PH.LIVE:
-            marked.setdefault(r["mark_key"], []).append(_dt.date.fromisoformat(r["date"][:10]))
+        marked.setdefault(r["mark_key"], []).append(_dt.date.fromisoformat(r["date"][:10]))
 
     def near(key):
         return any(abs(d - day) <= window for d in marked.get(key, []))
@@ -198,20 +154,19 @@ def _restrike(rows, price_delta=0.5):
 
 def _row(ticker, price, struck, source):
     return {"mark_key": ticker, "date": "2026-09-30", "price": price, "currency": "USD",
-            "quality": "sourced", "struck": struck, "status": PH.LIVE, "source": source}
+            "quality": "sourced", "struck": struck, "source": source}
 
 
-def test_a_same_day_restrike_replaces_a_live_read_and_supersedes_a_correction():
+def test_a_same_day_restrike_replaces_the_row_on_file():
     """THE HOLE THIS CLOSES. The identity is (ticker, date), so the second reading of a day
     found itself already banked and appended nothing — leaving price-history holding the
     morning's level while current-prices held the afternoon's. Two files disagreeing about one
     date is what makes changes_since() stop tying to the book, which is a failure two invariants
     are there to catch and a reader is not.
 
-    TWO OUTCOMES (the owner, 12 Oct 2026). A LIVE READ on file is dropped: the later read is the
-    same day seen later, and nothing reads the earlier one. Anything else on file — a close, a
-    statement's price — that a different figure replaces was wrong, and is SUPERSEDED, its
-    status moving and its provenance staying. Either way the new figure lands.
+    ONE OUTCOME (23 Oct 2026). A live read on file is the same day seen earlier; a close or a
+    statement's price a different figure replaces was wrong. Either way the row leaves the file
+    and the new figure takes its place: git keeps what it said, and no reader filters.
 
     In memory only: nothing here touches the store.
     """
@@ -220,14 +175,10 @@ def test_a_same_day_restrike_replaces_a_live_read_and_supersedes_a_correction():
     rows = [read, close]
     live = [{**read, "price": 10.5, "source": "an afternoon read — test"},
             {**close, "price": 20.5, "source": "another close — test"}]
-    dropped, superseded = PH._restruck(rows, live)
-    assert [r["mark_key"] for r in dropped] == ["AAA"], "a same-day live read was not replaced"
-    assert [r["mark_key"] for r in superseded] == ["BBB"], "a corrected close was not superseded"
-    assert close["status"] == "superseded" and close["source"] == "a close — test" \
-        and close["quality"] == "sourced", "the correction changed more than the lifecycle"
-    assert read["status"] == PH.LIVE, "a dropped read was marked rather than left for the caller"
-    kept = [r for r in rows if r is not read]
-    landing = sorted(m["mark_key"] for m in PH._FILE.unbanked(live, kept))
+    replaced = PH._FILE.restruck(rows, live)
+    assert [r["mark_key"] for r in replaced] == ["AAA", "BBB"], "a same-day re-strike was kept"
+    assert close == _row("BBB", 20.0, "close", "a close — test"), "a replaced row was edited"
+    landing = sorted(m["mark_key"] for m in PH._FILE.unbanked(live, []))
     assert landing == ["AAA", "BBB"], f"the new figures would not be appended: {landing}"
 
 
@@ -235,7 +186,7 @@ def test_a_same_day_reading_at_the_same_price_is_a_no_op():
     """Re-reading a closed market returns the same level. If that replaced anything, every
     reading would bank a replacement of itself and the history would churn every day."""
     rows = PH.load()
-    assert PH._restruck(rows, PH.current_marks()) == ([], []), \
+    assert PH._FILE.restruck(rows, PH.current_marks()) == [], \
         "an unchanged same-day mark was treated as a re-strike"
 
 
@@ -250,43 +201,6 @@ def test_a_restruck_mark_reads_as_unbanked(monkeypatch):
     monkeypatch.setattr(PH, "current_marks", lambda: live)
     assert [m["mark_key"] for m in PH.check()] == [ticker], \
         "a re-struck mark still reads as banked"
-
-
-def _synthetic_pair() -> list[dict]:
-    """Two live marks a day apart, with the first one's replacement between them.
-
-    SYNTHETIC ON PURPOSE. Asserted against the live record this would be an audit — it would
-    go red when the book gained or cleared a superseded mark, which is not a code change.
-    """
-    def row(date, price, status, source):
-        return {"mark_key": "AAA", "date": date, "price": price, "currency": "GBP",
-                "quality": "sourced", "struck": "close", "status": status, "source": source}
-    return [row("2026-01-02", 100.0, "live", "the reading that stood"),
-            row("2026-01-02", 90.0, "superseded", "the reading that was replaced"),
-            row("2026-01-03", 110.0, "live", "the next day")]
-
-
-def test_a_superseded_mark_is_not_listed_as_a_price_movement(monkeypatch, capsys):
-    """THE AXIS THIS LISTING READ. `show()` split its rows on `quality == "superseded"` — a
-    value that column stopped taking when the lifecycle moved to `status`. The superseded half
-    was therefore always empty, every replaced mark fell into the move chain, and a holding printed
-    a correction as a percentage move against the mark that replaced it. The comment two
-    lines above said doing so would lie.
-
-    A CORRECTION IS NOT A MOVEMENT. Two marks on one date are one reading superseding another;
-    printing the second as a percentage tells the reader the instrument moved when it did not.
-    """
-    monkeypatch.setattr(PH, "load", lambda: _synthetic_pair())
-    PH.show("AAA")
-    out = capsys.readouterr().out
-
-    replaced = [ln for ln in out.splitlines() if "90.0000" in ln]
-    assert len(replaced) == 1, f"the replaced mark is missing or printed twice: {replaced}"
-    assert "(superseded)" in replaced[0], \
-        f"a replaced mark was shown inside the move chain: {replaced[0]!r}"
-    assert "%" not in replaced[0], "a correction was printed as a percentage move"
-    assert "+10.00%" in out, "the move between the two LIVE marks is missing or wrong"
-    assert "(2 marks" in out, "the replaced mark was counted as part of the series"
 
 
 @needs("price-history")
@@ -333,6 +247,6 @@ def test_a_close_at_the_figure_of_its_days_live_read_still_replaces_it(store_cop
 
     PH.archive(verbose=False)
 
-    on_file = [r for r in PH.load() if (r["mark_key"], r["date"]) == key and r["status"] == PH.LIVE]
+    on_file = [r for r in PH.load() if (r["mark_key"], r["date"]) == key]
     assert [r["struck"] for r in on_file] == ["close"], on_file
     assert PH.check() == []

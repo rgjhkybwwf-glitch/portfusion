@@ -91,10 +91,9 @@ def load_store() -> dict[str, pd.DataFrame]:
         # load_store() is the ONE seam into the store.
         "history.prices": pd.read_csv(D.store_dir() / "price-history.csv", dtype={"date": str}),
         "history.fx":    pd.read_csv(D.store_dir() / "fx-history.csv", dtype={"date": str}),
-        # The account statements: what a broker said an account was worth, and when. The LIVE
-        # readings, without their lifecycle: a superseded one stays on file and is no reading.
-        "statements":    _live(pd.read_csv(D.store_dir() / "account-statements.csv",
-                                           dtype={"as_of": str})),
+        # The account statements: what a broker said an account was worth, and when.
+        "statements":    pd.read_csv(D.store_dir() / "account-statements.csv",
+                                     dtype={"as_of": str}),
         # Every account's CONTRIBUTION to net asset value at each 2026 quarter end.
         # `contribution` is a column here, not a footnote: a share account contributes its
         # POSITIONS AT MARKET and a spread-bet account its ACCOUNT EQUITY, never its
@@ -120,11 +119,6 @@ def _lookup(keys: pd.Series, by: pd.Series) -> pd.Series:
     """`keys.map(by)` for a `by` with a unique index. pandas cannot map through an EMPTY datetime
     series — it casts it to float and fails — and on a new book every such series is empty."""
     return pd.Series(by.reindex(keys).to_numpy(), index=keys.index)
-
-
-def _live(frame: pd.DataFrame) -> pd.DataFrame:
-    """A history's live rows, without the `status` column every reader would otherwise filter on."""
-    return frame[frame["status"] == D.LIVE_MARK].drop(columns="status").reset_index(drop=True)
 
 
 # =====================================================================================
@@ -2083,12 +2077,12 @@ class Book:
         return rate if on is not None and pd.Timestamp(on) >= served else None
 
     def _close_on(self, currency: str, date) -> tuple[str | None, float | None]:
-        """THE CLOSE A DATED CONVERSION TAKES: the newest live TradingView close of
+        """THE CLOSE A DATED CONVERSION TAKES: the newest TradingView close of
         `currency` on or before `date`, as (its date, its rate), or (None, None) when none is on
         file. A close, never a live read: a dated figure has to come out the same next year."""
         fh = self.store["history.fx"]
         on = fh[(fh["currency"] == currency) & (fh["kind"] == "spot")
-                & (fh["status"] == self.D.LIVE_MARK) & (fh["struck"] == "close")
+                & (fh["struck"] == "close")
                 & (fh["date"].astype(str) <= pd.Timestamp(date).date().isoformat())]
         if on.empty:
             return None, None
@@ -2337,7 +2331,7 @@ class Book:
         return True, "read in one pass"
 
     def _struck_at(self, as_of: str) -> dict:
-        """What instant each live mark on or before a date was struck at — `close` or `live`.
+        """What instant each mark on or before a date was struck at — `close` or `live`.
 
         Beside `_marks_at()`, not inside it: four callers unpack that one's (date, price) tuples
         positionally.
@@ -2346,7 +2340,7 @@ class Book:
         """
         ph = self.store["history.prices"]
         out: dict[str, tuple] = {}
-        for row in ph[(ph["date"] <= as_of) & (ph["status"] == self.D.LIVE_MARK)].itertuples():
+        for row in ph[ph["date"] <= as_of].itertuples():
             cur = out.get(row.mark_key)
             if cur is None or row.date >= cur[0]:
                 out[row.mark_key] = (row.date, str(getattr(row, "struck", "") or ""))
@@ -2948,7 +2942,7 @@ class Book:
     # valued at are dated rows in the histories, which only grow. Valuing a past quarter at today's
     # prices would give a number that changes every time it is asked for.
     def _marks_at(self, as_of: str, window: int | None = None) -> tuple[dict, dict]:
-        """Prices and FX as at a date — the newest LIVE mark ON OR BEFORE it, per instrument.
+        """Prices and FX as at a date — the newest mark ON OR BEFORE it, per instrument.
 
         On or before, because a mark does not exist for every instrument every day; never AFTER,
         which would value a quarter with information that did not exist yet.
@@ -2958,10 +2952,7 @@ class Book:
         a tie, and falls back to the newest on or before when none is that near — `freeze_rows()`
         names every line the window did not reach.
 
-        A SUPERSEDED MARK IS NOT AN ANSWER: this filters on `status` (`rules.LIVE_MARK`), the
-        lifecycle, and not on `quality`, the grade.
         """
-        live_status = self.D.LIVE_MARK
         day = pd.Timestamp(as_of)
 
         def pick(rows, key, value):
@@ -2978,8 +2969,8 @@ class Book:
 
         ph = self.store["history.prices"]
         fh = self.store["history.fx"]
-        px = pick(ph[ph["status"] == live_status], "mark_key", "price")
-        fx = pick(fh[(fh["kind"] == "spot") & (fh["status"] == live_status)], "currency", "rate")
+        px = pick(ph, "mark_key", "price")
+        fx = pick(fh[fh["kind"] == "spot"], "currency", "rate")
         return px, fx
 
     def _contracts_open_at(self, ticker: str, as_of: str) -> set[str]:
@@ -3148,14 +3139,14 @@ class Book:
                         closes turn its stake into share-equivalents and its level into the
                         shares' currency (`company_positions()`)
 
-        A DATE IS SERVED BY ITS NEWEST SESSION'S CLOSE: the newest live spot rate on or before it
+        A DATE IS SERVED BY ITS NEWEST SESSION'S CLOSE: the newest spot rate on or before it
         is a close, dated that day or on the weekday before a weekend. A date not yet past is
         owed nothing. Rows {currency, date, why, rate}, oldest first, as the audit and the Price
         Refresh name them. Side effects: none.
         """
         day = (pd.Timestamp(today) if today else pd.Timestamp.today()).normalize()
         fh = self.store["history.fx"]
-        spot = fh[(fh["kind"] == "spot") & (fh["status"] == self.D.LIVE_MARK)]
+        spot = fh[fh["kind"] == "spot"]
         ident = self._identity().set_index("ticker")
         wanted: dict[tuple[str, str], str] = {}
 
@@ -3408,7 +3399,6 @@ class Book:
 
         px, fx = self._marks_at(as_of, window)
         ph = self.store["history.prices"]
-        live = ph[(ph["status"] == self.D.LIVE_MARK)]
         order = [a for a in self.D.ACCOUNT_ORDER if accounts is None or a in accounts]
         # A SPREAD-BET ACCOUNT'S EQUITY is by_account()'s, which values every account: asked only
         # when one is wanted, so a share account can be struck on a day the others cannot.
@@ -3440,7 +3430,7 @@ class Book:
                         and r.currency not in self.D.RATE_CARRIED):
                     off.append(f"{account} {r.ticker}: its nearest {r.currency} rate is "
                                f"{fx[r.currency][0]}")
-                sources = [str(live[(live["mark_key"] == k) & (live["date"] == px[k][0])]["source"]
+                sources = [str(ph[(ph["mark_key"] == k) & (ph["date"] == px[k][0])]["source"]
                                .iloc[-1]) for k in keys]
                 snaps.append({"as_of": as_of, "account": account, "ticker": r.ticker,
                               "qty": int(r.qty) if float(r.qty).is_integer() else float(r.qty),

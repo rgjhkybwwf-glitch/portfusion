@@ -78,6 +78,12 @@ MIGRATIONS = (
         code=(r"\bD\.(realisations|dec_rows)\b", r"\bRealisationRow\b"),
         rows=lambda store: _retired(store),
     ),
+    Migration(
+        issue="a correction replaces its row, and the lifecycle column retires",
+        tables={}, columns={}, splits={}, marks={},
+        code=(r"\b(LIVE_MARK|MARK_STATUSES|live_rows)\b",),
+        rows=lambda store: _lifecycle(store),
+    ),
 )
 
 #: THE TABLES A RELEASE HAS RETIRED, and why: their files go, and the journal rows that name them
@@ -86,6 +92,13 @@ RETIRED = {
     "realisations": "a round trip's entry date and note come from its own buys and sales",
     "baseline-reconstruction": "the working behind quarter ends since restated, read by nothing",
 }
+
+
+#: THE TABLES THAT CARRIED A LIFECYCLE, `status`: a row live, or superseded and kept beside the one
+#: that replaced it. A correction now replaces its row, so the column goes, and any superseded row
+#: with it. True where the journal counts the table's rows.
+LIFECYCLE = {"price-history": False, "fx-history": False, "account-statements": False,
+             "quarter-nav": True, "quarter-snapshots": True}
 
 
 class Change(NamedTuple):
@@ -247,17 +260,55 @@ def _in_date_order(store: pathlib.Path) -> list[Change]:
                               ["settings.csv: trade_id_floor retired, an id being its place"]))
             journal.append(("remove", "settings", len(lines) - len(kept),
                             "trade_id_floor retired, an id being its place"))
-    # THE JOURNAL SAYS SO, or the rows a migration moved or removed are rows no route accounts for.
+    return out + _journalled(store, journal)
+
+
+def _journalled(store: pathlib.Path, journal: list[tuple]) -> list[Change]:
+    """THE JOURNAL SAYS SO, or the rows a migration moved or removed are rows no route accounts
+    for: `journal` as (op, table, rows, detail), appended to journal.csv."""
     path = store / "journal.csv"
-    if journal and path.is_file():
-        text = path.read_text(encoding="utf-8")
-        at = _dt.datetime.now(_dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-        eol = "\r\n" if "\r\n" in text else "\n"
-        text += "" if not text or text.endswith("\n") else eol
-        out.append(Change(path, path, text + "".join(
-            _line([at, "migrate", op, table, str(n), "portfusion migrate", detail], eol)
-            for op, table, n, detail in journal), [f"journal.csv: {len(journal)} row(s) say so"]))
-    return out
+    if not (journal and path.is_file()):
+        return []
+    text = path.read_text(encoding="utf-8")
+    at = _dt.datetime.now(_dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    eol = "\r\n" if "\r\n" in text else "\n"
+    text += "" if not text or text.endswith("\n") else eol
+    return [Change(path, path, text + "".join(
+        _line([at, "migrate", op, table, str(n), "portfusion migrate", detail], eol)
+        for op, table, n, detail in journal), [f"journal.csv: {len(journal)} row(s) say so"])]
+
+
+def _lifecycle(store: pathlib.Path) -> list[Change]:
+    """Each `LIFECYCLE` table without its `status` column and its superseded rows. Every line the
+    column leaves is written again, without that one cell."""
+    out, journal = [], []
+    for name, counted in LIFECYCLE.items():
+        path = store / f"{name}.csv"
+        if not path.is_file():
+            continue
+        _lines, rows, eol = _rows(path.read_text(encoding="utf-8"))
+        if "status" not in rows[0]:
+            continue
+        at = rows[0].index("status")
+        kept = [r[:at] + r[at + 1:] for r in rows if r is rows[0] or r[at] != "superseded"]
+        gone = len(rows) - len(kept)
+        out.append(Change(path, path, "".join(_line(r, eol) for r in kept), [
+            f"{path.name}: `status` retired"
+            + (f", {gone} superseded row(s) with it" if gone else "")]))
+        if gone and counted:
+            journal.append(("remove", name, gone, "superseded rows, retired with the lifecycle"))
+    # A RESTATED QUARTER WAS A SECOND ROW, the newest in force: it now replaces the one before.
+    path = store / "quarter-results.csv"
+    if path.is_file():
+        lines, rows, _eol = _rows(path.read_text(encoding="utf-8"))
+        last = {tuple(r[:2]): i for i, r in enumerate(rows[1:], 1)}
+        kept = lines[:1] + [ln for i, ln in enumerate(lines[1:], 1) if last[tuple(rows[i][:2])] == i]
+        if gone := len(lines) - len(kept):
+            out.append(Change(path, path, "".join(kept), [
+                f"quarter-results.csv: {gone} row(s) give way to their restatement"]))
+            journal.append(("remove", "quarter-results", gone,
+                            "rows a restatement replaced, retired with the lifecycle"))
+    return out + _journalled(store, journal)
 
 
 def _retired(store: pathlib.Path) -> list[Change]:

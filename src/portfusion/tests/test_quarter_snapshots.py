@@ -52,8 +52,7 @@ def held_at(date, account=None):
 # NONE IS OPEN. The last three — an account's Q1 snapshot (holdings missing, quantities from
 # before the ledger's corrections), its Q2 snapshot (a holding missing), and a holding filed
 # under another account's code — were cured on 14 Oct 2026, when the owner had the frozen
-# quarter ends restated and Marlow Group folded to one code. The rows
-# they described stay on file, superseded.
+# quarter ends restated and Marlow Group folded to one code.
 #
 # Anything NOT in this list fails. That is the point: the known set is fixed and
 # visible, so new drift cannot hide behind it.
