@@ -572,6 +572,8 @@ def test_movement_colour_is_used_and_scoped(repo_root):
       change price_effect fx_effect price_move_pct
                   all four are RESULTS — the sign says whether the book is better or worse off,
                   which is the test this list has always applied.
+      realised to_date total life_pct
+                  a company life's gains (Round Trips by company life): results, as `gain` is.
       transacted  NOT a result, and never to be added. Buying shares is not a
                   gain and selling them is not a loss. Same exclusion as
                   `difference`: money, often negative, carrying no judgement. Colouring it
@@ -587,7 +589,8 @@ def test_movement_colour_is_used_and_scoped(repo_root):
     assert m, "app.js no longer declares MOVEMENTCOL"
     cols = set(re.findall(r'"([^"]+)"', m.group(1)))
     assert cols == {"gain", "gain_pct", "return",
-                    "change", "price_effect", "fx_effect", "price_move_pct"}, \
+                    "change", "price_effect", "fx_effect", "price_move_pct",
+                    "realised", "to_date", "total", "life_pct"}, \
         f"MOVEMENTCOL is {sorted(cols)}"
 
     for excluded, why in (("difference", "a reconciliation gap is not a loss"),

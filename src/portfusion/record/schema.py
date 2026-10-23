@@ -404,6 +404,9 @@ INCOME = Table(
         Field("currency", "str"),          # the currency the income was PAID in
         Field("local_amount", "float", null=True),
         Field("rate", "float", null=True),  # units of the currency per £1, the broker's
+        # THE LINE A DIVIDEND WAS PAID ON, a code in securities.csv, so a company's life can count
+        # it. Blank on interest, fees and funding, which no one line earns.
+        Field("ticker", "str"),
     ),
 )
 

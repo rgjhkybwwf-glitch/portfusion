@@ -5,6 +5,11 @@ prints it.
 
 ## Unreleased
 
+- **Round Trips reads by company life**: a company's shares and bets from first purchase to the
+  day nothing is held, with dividends, daily funding and a net cost per share. The quarterly report
+  does not change.
+- **`income.csv` gains `ticker`.** A book's rows move by hand: add `,ticker` to the header and
+  each row, and give each dividend its line's code.
 - **A company held both ways reads as one position.** Grouped by company, Holdings gives each row
   its quantity in shares, a spread bet counted as share-equivalents (stake per point × points per
   unit × its currency's rate per pound on the deal date × shares per unit), its entry price as the

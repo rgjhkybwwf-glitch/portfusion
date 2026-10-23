@@ -62,6 +62,12 @@ def data() -> dict:
                 f"year's gains twice. The return since {since} links each full year's return "
                 f"with the year to date: (1 + one year) × (1 + the next) − 1, so each year's "
                 f"flows weigh only on that year.")},
+            {"topic": "A company's life — Round Trips by company life", "text": (
+                "First purchase, in any account or instrument, to the day nothing is held. "
+                "Life gain = realised + gain to date + dividends + daily funding. Net cost per "
+                "share = (cost of what is held − realised − dividends − funding) ÷ held, open "
+                "bets as share-equivalents: the break-even price. A percentage only for a life "
+                "of shares alone.")},
             {"topic": "Quarterly returns — one series", "text": (
                 "One series, on net asset value (Performance), by the same day-weighted formula "
                 "as the headline YTD return. Each quarter end's value says what it rests on: sourced "

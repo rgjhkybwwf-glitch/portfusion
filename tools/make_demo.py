@@ -209,14 +209,14 @@ def _book() -> dict[str, list[dict]]:
     ]
     T["income"] = [
         {"date": "2026-06-15", "account": ISA, "category": "Dividend",
-         "detail": "BRYC.L final dividend", "amount": 30.0, "source": NOT_ON_FILE},
+         "detail": "BRYC.L final dividend", "amount": 30.0, "source": NOT_ON_FILE, "ticker": "BRYC.L"},
         {"date": "2026-08-20", "account": SPREAD, "category": "Funding interest",
          "detail": "Long interest 06/07/26 to 31/08/26, ref CS00DEMO0000001", "amount": -1.2,
          "source": NOT_ON_FILE},
         {"date": "2026-09-25", "account": ISA, "category": "Cash interest",
          "detail": "Gross interest", "amount": 1.1, "source": NOT_ON_FILE},
         {"date": "2026-09-26", "account": TRADING, "category": "Dividend",
-         "detail": "BRYC.L interim dividend", "amount": 12.5, "source": NOT_ON_FILE},
+         "detail": "BRYC.L interim dividend", "amount": 12.5, "source": NOT_ON_FILE, "ticker": "BRYC.L"},
     ]
     T["quarter-nav"] = _quarter_nav()
     T["quarter-snapshots"] = _quarter_snapshots()
@@ -406,6 +406,9 @@ def _histories() -> dict[str, tuple[list[str], list[dict]]]:
                            ("USD", "2026-07-06", 1.325, "close"),
                            ("USD", "2026-08-03", 1.31, "close"),
                            ("USD", "2026-08-14", 1.318, "close"),
+                           ("USD", "2026-08-20", 1.321, "close"),
+                           ("USD", "2026-09-01", 1.317, "close"),
+                           ("USD", "2026-09-15", 1.322, "close"),
                            ("USD", "2026-09-30", 1.33, "close"), ("SEK", "2026-09-30", 12.4, ""))]
     unfunded_ig = {"account": SPREAD, "equity": 0.0, "source": UNFUNDED, "quality": "derived"}
     statements = []

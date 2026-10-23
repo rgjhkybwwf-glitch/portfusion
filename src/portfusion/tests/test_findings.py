@@ -340,7 +340,7 @@ def test_a_foreign_income_row_with_no_rate_on_file_is_a_problem(store_copy):
 
     def with_rows(*days):
         path.write_text(head + "".join(
-            f"{d},{account},Dividend,test dividend,7.50,test,,{cur},10.00,\n" for d in days),
+            f"{d},{account},Dividend,test dividend,7.50,test,,{cur},10.00,,\n" for d in days),
             encoding="utf-8")
         D.reload_store()
         return Book().findings()["problems"]

@@ -193,7 +193,8 @@ def test_every_filter_row_has_the_same_shape(repo_root):
 
     ONE ORDER, applying only the fields a panel has (S8, 14 Oct 2026: "arrange them for the best
     synergy across the desk pages"): account · company · ticker · dates, then the page's own
-    control. Account is the first box on every page, so a box two pages share sits in one place.
+    control. Account is the first box on every page that has one, so a box two pages share sits
+    in one place.
     No filter reads "all" on every page; a date is bounded to what is on file; and the grey boxes
     are only ever a filter row, never a form.
     """
@@ -202,16 +203,19 @@ def test_every_filter_row_has_the_same_shape(repo_root):
     assert 'class="controls"' not in js, (
         "a panel is still using the retired inline filter row")
 
-    order = ["account", "company", "ticker", "from", "to", "direction", "group by"]
+    order = ["account", "company", "ticker", "from", "to", "direction", "group by", "view"]
     # A row is drawn by `filters([...])`, or handed to the page template as
     # `filters: { fields: [...] }`, which calls the same helper.
     blocks = [_upto(js, m.end(), "]")
               for m in re.finditer(r"filters(?:\(\[|: \{[^\[]*fields: \[)", js)]
-    assert len(blocks) == 3, f"expected three filter rows, found {len(blocks)}"
+    assert len(blocks) == 4, f"expected four filter rows, found {len(blocks)}"
     for block in blocks:
-        got = re.findall(r'filterField\("([a-z ]+)"', block)
+        got = re.findall(r'filterField\("([a-z ]+)"', block) + (
+            ["view"] if "viewField(d)" in block else [])
         assert got, f"a filters([...]) block declares no fields: {block[:80]}"
-        assert got[0] == "account", f"account is not the first box: {got}"
+        # A COMPANY LIFE SPANS ACCOUNTS, so Round Trips' life view alone offers none.
+        assert got[0] == "account" or ("view" in got and "account" not in got), \
+            f"account is not the first box: {got}"
         if "ticker" in got:
             assert "company" in got, f"a row offers a ticker but no company to choose it by: {got}"
         ranks = [order.index(g.replace("closed ", "")) for g in got]
@@ -225,7 +229,7 @@ def test_every_filter_row_has_the_same_shape(repo_root):
     from portfusion.desk.panels import holdings
     assert set(holdings.GROUPING_WORDS) == set(holdings.GROUPINGS) and "d.grouping_words[g]" in js
     assert holdings.GROUPING_WORDS["issuer"] == "company", "the group by speaks the engine's word"
-    assert "d.company_tickers[co]" in js and 'co.addEventListener("change", () => { tk.value = ""' in js, \
+    assert "d.company_tickers[co]" in js and 'co.addEventListener("change", () => { if (tk) tk.value = ""' in js, \
         "a Ticker box does not follow the company chosen beside it"
 
 

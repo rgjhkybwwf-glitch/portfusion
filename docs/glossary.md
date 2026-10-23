@@ -176,6 +176,9 @@ The three sum exactly to **Change (GBP)**; the order they are taken in is
 | What a sale took off the cost held | **Cost released** | a pool's average for a share; the leg's cost for a spread bet |
 | Everything sold out of one holding, keyed `R-…` | **Realisation** | headed **Realisation ID** |
 | A realisation seen whole, entry to exit | **Round trip** | the Round Trips page |
+| A company's shares and bets, first purchase to the day nothing is held | **Company life** | Round Trips, by company life |
+| A life's realised gain, gain to date, dividends and daily funding together | **Life gain** | |
+| (cost of what is held − life gain taken) ÷ held, bets as share-equivalents | **Net cost per share** | the break-even price; not the pool's cost |
 | Every buy and sale on file | **Trades** | the Trades page |
 
 ### Running a refresh
@@ -305,7 +308,7 @@ asserted on import; the rest are held by the suite.
 | `current-prices.csv` | 7 | What things are worth NOW — never what was paid, which is the ledger |
 | `exits.csv` | 15 | One row per sale |
 | `fx.csv` | 5 | The rate each currency is converted at NOW, one row per currency, as current-prices |
-| `income.csv` | 10 | Dividends, interest and fees |
+| `income.csv` | 11 | Dividends, interest and fees |
 | `issuers.csv` | 3 | One row per ISSUER — the company, not the holding |
 | `journal.csv` | 7 | RECORD TIME — when the book LEARNED a thing, as against when the thing HAPPENED |
 | `quarter-nav.csv` | 7 | Each account's CONTRIBUTION to net asset value at each quarter end |

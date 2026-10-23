@@ -218,9 +218,17 @@ def test_the_query_routes_answer(client, url):
 
 
 def test_a_grouping_the_engine_refuses_is_a_400_carrying_its_reason(client):
-    r = client.get("/api/holdings?by=nonsense")
-    assert r.status_code == 400
-    assert "nonsense" in r.json()["detail"]
+    for url in ("/api/holdings?by=nonsense", "/api/round-trips?view=nonsense"):
+        r = client.get(url)
+        assert r.status_code == 400, url
+        assert "nonsense" in r.json()["detail"], url
+
+
+def test_round_trips_reads_by_company_life(client):
+    """The life view: the engine's lives and their totals, narrowed by company and close only."""
+    r = client.get("/api/round-trips?view=life").json()
+    assert r["view"] == "life" and r["columns"] and "account" not in r["columns"]
+    assert r["totals"]["lives"] == len(r["rows"])
 
 
 @pytest.mark.parametrize("method, url", [
