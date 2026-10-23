@@ -8,6 +8,7 @@ use, or lost a row's bytes on the way, fails here.
 import csv
 import io
 import json
+import re
 import shutil
 
 from portfusion.record import migrations as M, schema
@@ -65,7 +66,7 @@ def test_a_book_in_the_old_shape_is_carried_to_this_release_and_can_be_put_back(
     old = {p.relative_to(book): p.read_bytes() for p in book.rglob("*") if p.is_file()}
 
     m, changes = M.plan(book)
-    assert m is M.MIGRATIONS[-1] and changes, "the old shape planned no move"
+    assert m is M.MIGRATIONS[0] and changes, "the old shape planned no move"
     before = M.write(changes)
     for p in schema.DEMO.rglob("*"):
         if p.is_file() and p.relative_to(schema.DEMO).parts[0] in ("store", "_archive"):
@@ -80,3 +81,66 @@ def test_a_book_in_the_old_shape_is_carried_to_this_release_and_can_be_put_back(
     M.put_back(before)
     now = {p.relative_to(book): p.read_bytes() for p in book.rglob("*") if p.is_file()}
     assert now == old, "put_back() did not return the book to its old shape"
+
+
+def test_a_book_out_of_date_order_is_put_in_it_and_numbered_by_it(tmp_path):
+    """The record reads as it happened (`record/order.py`). A demo copy with its first buy moved to
+    the bottom, the sales out of order, and the retired `trade_id_floor` back in its settings is
+    carried to the demo exactly: every table in date order, every id its place, and a sale's
+    `closes` following the leg it named. Rows that tie on date, account and ticker keep their file
+    order, which is why the buy moved is one that ties with none."""
+    book = tmp_path / "book"
+    for part in ("store", "_archive"):
+        shutil.copytree(schema.DEMO / part, book / part)
+    store = book / "store"
+    buys = (store / "buys.csv").read_text(encoding="utf-8").splitlines(keepends=True)
+    sales = (store / "sales.csv").read_text(encoding="utf-8").splitlines(keepends=True)
+    # THE OLD NUMBERS: the first buy last and numbered after the rest, every other one down by one.
+    last = f"T-{len(buys) - 1:03d}"
+    old = {f"T-{n:03d}": f"T-{n - 1:03d}" for n in range(2, len(buys))} | {"T-001": last}
+    moved = [buys[0]] + [line.replace(line.split(",")[0], old[line.split(",")[0]], 1)
+                         for line in buys[2:] + buys[1:2]]
+    (store / "buys.csv").write_text("".join(moved), encoding="utf-8")
+    (store / "sales.csv").write_text(re.sub(r",(T-\d{3}),", lambda m: f",{old[m.group(1)]},",
+                                            "".join([sales[0], *reversed(sales[1:])])),
+                                     encoding="utf-8")
+    with (store / "settings.csv").open("a", encoding="utf-8") as fh:
+        fh.write("trade_id_floor,T-050\n")
+
+    m, changes = M.plan(book)
+    assert m is M.MIGRATIONS[-1] and changes, "a book out of date order planned no move"
+    M.write(changes)
+    for p in sorted((schema.DEMO / "store").glob("*.csv")):
+        if p.name != "journal.csv":
+            assert (store / p.name).read_bytes() == p.read_bytes(), f"{p.name} moved wrong"
+    # THE JOURNAL SAYS WHAT MOVED, after the demo's own rows, or the audit would find rows no
+    # route accounts for.
+    said = (store / "journal.csv").read_text(encoding="utf-8")
+    assert said.startswith((schema.DEMO / "store" / "journal.csv").read_text(encoding="utf-8"))
+    added = [r for r in csv.reader(io.StringIO(said)) if r[1] == "migrate"]
+    assert {(r[2], r[3]) for r in added} == {
+        ("replace", "buys"), ("replace", "sales"), ("remove", "settings")}, added
+    assert M.plan(book) == (None, []), "a book in date order still planned a move"
+
+
+def test_a_book_two_moves_behind_is_carried_through_both_before_it_is_opened(tmp_path):
+    """A book in the old names AND out of date order would not load between the two moves, so
+    `carry()` writes every one before the book is opened, each planned from the shape the last
+    left, and `put_back()` returns it whole."""
+    book = tmp_path / "book"
+    for part in ("store", "_archive"):
+        shutil.copytree(schema.DEMO / part, book / part)
+    store = book / "store"
+    sales = (store / "sales.csv").read_text(encoding="utf-8").splitlines(keepends=True)
+    (store / "sales.csv").write_text("".join([sales[0], *reversed(sales[1:])]), encoding="utf-8")
+    for m in M.MIGRATIONS:
+        _backwards(m, book)
+    old = {p: p.read_bytes() for p in book.rglob("*") if p.is_file()}
+
+    done, before = M.carry(book)
+    assert done == list(M.MIGRATIONS), [m.issue for m in done]
+    assert (store / "sales.csv").read_bytes() == (schema.DEMO / "store" / "sales.csv").read_bytes()
+    assert M.plan(book) == (None, [])
+    M.put_back(before)
+    assert {p: p.read_bytes() for p in book.rglob("*") if p.is_file()} == old
+

@@ -705,7 +705,6 @@ SETTING_KEYS = (
     "tv_list_exit",
     "tv_list_entry",
     "rate_carried",         # currencies whose live rate is not refreshed, space-separated
-    "trade_id_floor",       # no trade id is allocated below this; an id is never reused
     # WHERE THIS BOOK IS PUBLISHED AND WHAT IT READS BESIDE ITSELF. Each is optional: without one,
     # the feature that needs it declines and names the key, so a new book starts with none.
     "hosted_origin",        # the hosted desk's own origin, the one page whose writes the remote door takes
@@ -772,8 +771,8 @@ JOURNAL = Table(
         # appends an event, or research_notes.py, a published note's rows; `marks` is marks.py,
         # which replaces a mark; `freeze` is desk/doors/freeze.py, which appends a quarter end
         # from the engine; `hand` is a person editing the CSV and saying so, which
-        # docs/store.md allows.
-        Field("route", "str", enum=("baseline", "bench", "marks", "freeze", "hand")),
+        # docs/store.md allows; `migrate` is `portfusion migrate` moving a book's rows.
+        Field("route", "str", enum=("baseline", "bench", "marks", "freeze", "hand", "migrate")),
         # WHAT IT DID TO THE ROW COUNT: the desk's two words for its two doors.
         Field("op", "str", enum=("open", "append", "replace", "remove")),
         Field("table", "str", enum=tuple(sorted(t.name for t in _RECORD))),

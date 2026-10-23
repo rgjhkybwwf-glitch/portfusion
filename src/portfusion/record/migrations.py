@@ -11,16 +11,20 @@ NAMES, NOT FACTS. Beside the tables, the journal's `table` and the Bench's items
 open) carry table and column names, and move with them. A book's own `checks/` is its code: the
 lines that name an old one are listed, never edited.
 
-Imports nothing of the record: a book in the old shape will not load, which is why it is here.
+Imports nothing of the record but its order (`order.py`, which is pure): a book in the old shape
+will not load, which is why it is here.
 """
 from __future__ import annotations
 
 import csv
+import datetime as _dt
 import io
 import json
 import pathlib
 import re
-from typing import NamedTuple
+from typing import Callable, NamedTuple
+
+from portfusion.record import order
 
 
 class Migration(NamedTuple):
@@ -34,6 +38,8 @@ class Migration(NamedTuple):
     marks: dict[str, str]
     #: How a book's own `checks/` code may read an old name, beyond quoting it: patterns, listed.
     code: tuple[str, ...]
+    #: A MOVE OF ROWS, NOT NAMES: the store folder -> the changes it makes there.
+    rows: Callable[[pathlib.Path], list] | None = None
 
 
 MIGRATIONS = (
@@ -60,6 +66,11 @@ MIGRATIONS = (
         code=(r"\bD\.(trades|exits|closed|COMPANY_MASTER|cash_observations)\b",
               r"\b(CashObservation|ClosedPosition|Trade|Exit)\b",
               r"\.(eid|val|realisation|open_date|price|id)\b"),
+    ),
+    Migration(
+        issue="the record reads as it happened: every event table in date order, ids its place",
+        tables={}, columns={}, splits={}, marks={}, code=(),
+        rows=lambda store: _in_date_order(store),
     ),
 )
 
@@ -182,6 +193,59 @@ def _item(m: Migration, path: pathlib.Path, held_as: dict) -> Change | None:
     return Change(path, path, new, [f"bench item {path.name}"]) if new != raw else None
 
 
+def _in_date_order(store: pathlib.Path) -> list[Change]:
+    """Every event table into its date order and the buys and sales numbered by it
+    (`order.py`), and settings.csv's retired `trade_id_floor` gone. Untouched lines keep their
+    bytes."""
+    def read(name):
+        path = store / f"{name}.csv"
+        text = path.read_text(encoding="utf-8")
+        lines, rows, eol = _rows(text)
+        return path, text, rows[0], list(zip(rows[1:], lines[1:])), lines[0], eol
+
+    _p, _t, head, accounts, _h, _e = read("accounts")
+    accounts = [r[head.index("account")] for r, _ in accounts]
+    tables = {n: read(n) for n in order.DATED if (store / f"{n}.csv").is_file()}
+    rows = {n: order.placed(n, t[2], [r for r, _ in t[3]], [], accounts)
+            for n, t in tables.items()}
+    moves = {}
+    if "buys" in rows and "sales" in rows:
+        rows["buys"], rows["sales"], moves = order.renumbered(
+            (tables["buys"][2], rows["buys"]), (tables["sales"][2], rows["sales"]))
+    out, journal = [], []
+    for name, (path, text, _head, pairs, header, eol) in tables.items():
+        line_of = {id(r): line for r, line in pairs}
+        new = header + "".join(line_of.get(id(r)) or _line(r, eol) for r in rows[name])
+        if new != text:
+            moved = sum(1 for (r, _), s in zip(pairs, rows[name]) if r is not s)
+            said = order.said({name: moves.get(name)})
+            out.append(Change(path, path, new, [f"{path.name}: into date order"]
+                              + [f"  {s}" for s in said]))
+            journal.append(("replace", name, moved, "; ".join(
+                [f"{moved} row(s) into date order"] + said)))
+    settings = store / "settings.csv"
+    if settings.is_file():
+        text = settings.read_text(encoding="utf-8")
+        lines = [ln for ln in re.split(r"(?<=\n)", text) if ln]
+        kept = [ln for ln in lines if not ln.startswith("trade_id_floor,")]
+        if len(kept) != len(lines):
+            out.append(Change(settings, settings, "".join(kept),
+                              ["settings.csv: trade_id_floor retired, an id being its place"]))
+            journal.append(("remove", "settings", len(lines) - len(kept),
+                            "trade_id_floor retired, an id being its place"))
+    # THE JOURNAL SAYS SO, or the rows a migration moved or removed are rows no route accounts for.
+    path = store / "journal.csv"
+    if journal and path.is_file():
+        text = path.read_text(encoding="utf-8")
+        at = _dt.datetime.now(_dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        eol = "\r\n" if "\r\n" in text else "\n"
+        text += "" if not text or text.endswith("\n") else eol
+        out.append(Change(path, path, text + "".join(
+            _line([at, "migrate", op, table, str(n), "portfusion migrate", detail], eol)
+            for op, table, n, detail in journal), [f"journal.csv: {len(journal)} row(s) say so"]))
+    return out
+
+
 def plan(book: pathlib.Path) -> tuple[Migration | None, list[Change]]:
     """The first declared migration `book` still needs, and every change it makes, nothing
     written; (None, []) when the book is in the shape this release reads. ONE AT A TIME: a later
@@ -194,9 +258,31 @@ def plan(book: pathlib.Path) -> tuple[Migration | None, list[Change]]:
         for folder in (book / "_archive" / "bench", book / "_inbox" / ".bench"):
             out += [c for path in (sorted(folder.glob("*.json")) if folder.is_dir() else [])
                     if (c := _item(m, path, held_as))]
+        out += m.rows(store) if m.rows else []
         if out:
             return m, out
     return None, []
+
+
+def carry(book: pathlib.Path) -> tuple[list[Migration], dict[pathlib.Path, bytes | None]]:
+    """Write every migration `book` still needs, each planned from the shape the one before left,
+    and return them and what was there before, for `put_back()`. ALL OF THEM BEFORE THE BOOK IS
+    OPENED: a book two releases behind may not load between them. A plan that fails part-way puts
+    the book back itself."""
+    done: list[Migration] = []
+    before: dict[pathlib.Path, bytes | None] = {}
+    try:
+        for _ in MIGRATIONS:
+            m, changes = plan(book)
+            if m is None:
+                break
+            for path, data in write(changes).items():
+                before.setdefault(path, data)
+            done.append(m)
+    except BaseException:
+        put_back(before)
+        raise
+    return done, before
 
 
 def write(changes: list[Change]) -> dict[pathlib.Path, bytes | None]:

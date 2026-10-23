@@ -6,7 +6,7 @@ import types
 
 import pandas as pd
 import pytest
-from harness import needs
+from harness import needs, write_rows
 
 _DAY = "2026-09-24"      # the IG legs are already marked this day on file; the shares are banked
 
@@ -76,9 +76,10 @@ def test_a_quarter_end_is_frozen_from_the_engine_and_journalled(store_copy, monk
 
 
 @needs("quarter-nav", "current-prices")
-def test_a_freeze_appends_in_each_files_own_line_ending(store_copy, monkeypatch):
+def test_a_freeze_writes_in_each_files_own_line_ending(store_copy, monkeypatch):
     """The Q3 freeze rewrote quarter-snapshots.csv's CRLF lines as LF, a whole-file diff for a
-    few-row append. The bytes on file before must still lead the file after, untouched."""
+    few-row write. Every line on file before must be there after, byte for byte and in its order,
+    and every line in the file's own ending, wherever the new rows' dates put them."""
     from portfusion.record import schema
     from portfusion.desk.doors import freeze
     _bank_the_day()
@@ -87,10 +88,11 @@ def test_a_freeze_appends_in_each_files_own_line_ending(store_copy, monkeypatch)
     freeze.write(_DAY)
     for table, original in before.items():
         after = schema.TABLES[table].path.read_bytes()
-        assert after.startswith(original), f"{table}.csv was rewritten, not appended to"
         eol = b"\r\n" if original.count(b"\r\n") * 2 > original.count(b"\n") else b"\n"
-        tail = after[len(original):]
-        assert tail.count(b"\n") == tail.count(eol), f"{table}.csv appended in another ending"
+        assert after.count(b"\n") == after.count(eol), f"{table}.csv written in another ending"
+        lines = iter(after.split(eol))
+        assert all(line in lines for line in original.split(eol)), (
+            f"{table}.csv was rewritten: a line on file before is not there after, as it was")
 
 
 @needs("quarter-nav", "current-prices")
@@ -334,9 +336,8 @@ def test_the_records_opening_is_never_a_frozen_quarter(store_copy):
     with path.open(newline="") as f:
         rows = list(csv.reader(f))
     newest = max(D.QSNAP_FROZEN)
-    opening = [[BASELINE_ASOF, *r[1:]] for r in rows[1:] if r[0] == newest]
-    with path.open("a", newline="") as f:
-        csv.writer(f, lineterminator="\n").writerows(opening)
+    opening = [dict(zip(rows[0], [BASELINE_ASOF, *r[1:]])) for r in rows[1:] if r[0] == newest]
+    write_rows("quarter-snapshots", *opening)
     D.reload_store()
     assert BASELINE_ASOF not in D.QSNAP_FROZEN
     assert not Book().quarter_lines(BASELINE_ASOF).empty

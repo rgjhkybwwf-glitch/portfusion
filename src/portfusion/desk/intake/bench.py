@@ -254,9 +254,8 @@ def vocabulary() -> dict:
 
 
 def next_ids() -> dict:
-    """The next free row id per table. Allocated, never guessed.
-
-    Multi-leg fills take a letter suffix (T-nnnA), so the scan tolerates one.
+    """The next free row id per table: the name a proposed row goes by until the door writes it
+    at its place in date order, which may be another.
 
     IT READS THE STORE, WHICH DOES NOT MOVE BETWEEN ROWS. A statement carrying two sales would
     have both allocated one id, and committing would write one over the other — the second sale
@@ -333,7 +332,7 @@ def form_for(table: str) -> list[dict]:
                 "long": f.name in LONG}
         if f.name in ("trade_id", "sale_id"):
             spec["suggested"] = ids.get(table)
-            spec["help"] = "allocated from the store — the next free id"
+            spec["help"] = "given when written: its place in date order"
         out.append(spec)
     return out
 

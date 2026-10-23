@@ -1,9 +1,9 @@
 ticker,date,why_entered,why_exited
 TARN.L,2026-02-10,Invented for the demo: why the position was taken.,
-TARN.L,2026-06-20,,Invented for the demo: why the position was closed whole.
 QNLR,2026-04-14,Invented for the demo: why the position was taken.,
 KELS.L,2026-05-20,Invented for the demo: why the position was taken.,
-KELS.L,2026-08-12,,Invented for the demo: why half was sold.
+TARN.L,2026-06-20,,Invented for the demo: why the position was closed whole.
 VELD SB,2026-07-06,Invented for the demo: why the position was taken.,
+KELS.L,2026-08-12,,Invented for the demo: why half was sold.
 QNLR SB,2026-08-14,Invented for the demo: why the position was taken.,
 QNLR SB,2026-09-15,,Invented for the demo: why the smaller leg closed.

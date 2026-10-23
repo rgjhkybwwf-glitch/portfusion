@@ -324,12 +324,10 @@ def _supersede(table: str, keys: set) -> list[tuple]:
 
 
 def _append(table: str, rows: list[dict]) -> None:
-    """Rows onto one table, read back. IN THE FILE'S OWN LINE ENDING, through the Bench's helper:
-    a text round trip would turn a CRLF file's lines into LF."""
-    path = schema.TABLES[table].path
+    """Rows into one table where their dates put them, read back. IN THE FILE'S OWN LINE
+    ENDING, through the Bench's helper: a text round trip would turn a CRLF file's lines into LF."""
     before = len(schema.load(table))
-    commit._append(path, path.read_bytes(),
-                   [commit._csv_line(commit._rendered(table, r)) for r in rows])
+    commit.place({table: [commit._rendered(table, r) for r in rows]})
     if len(schema.load(table)) != before + len(rows):
         raise Refused(f"{table}.csv did not read back {len(rows)} new row(s)")
 

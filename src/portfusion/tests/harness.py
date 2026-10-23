@@ -73,6 +73,12 @@ def append_rows(path, lines) -> None:
                     encoding="utf-8")
 
 
+def write_rows(table: str, *rows: dict) -> None:
+    """`rows` written to the copied store as a door writes them (`commit.place()`)."""
+    from portfusion.desk.doors import commit
+    commit.place({table: [commit._rendered(table, r) for r in rows]})
+
+
 def holds(*found, what: str = "the rows this test is built from"):
     """Skip unless every one of `found` is there: a test built from the loaded book's own rows
     cannot run on a book that has none of them yet, and says so rather than failing. As a

@@ -144,7 +144,7 @@ not *realized*.
 | The year's income, fees and cash interest included | **YTD income** |
 | An income row's kind | **Category** |
 | Reasoning headings | **Why we entered · Why we exited** |
-| A Bench field | **Sale ID · Closes trade · Rate (per £1) · IG contract · Document kind · Reference · Also retires · Symbol · Quote unit · Points per unit · Shares per unit · Epic · Cash (GBP) · Amount** |
+| A Bench field | **Sale ID · Closes trade · Rate (per £1) · IG contract · Document kind · Reference · Also retires · Renumbers · Symbol · Quote unit · Points per unit · Shares per unit · Epic · Cash (GBP) · Amount** |
 | An account, as the register holds it | **Account · Account no. · Holder · Code · Feed** |
 | What a line is | **Sector · Region · Held as · Funding** — how IG funds a contract, daily or dated |
 | A deal's own terms | **Trade ID · Broker ref · Deal ccy · Stake (£/pt) · Level (points) · Entry level (points) · Exit level (points) · Trade value (GBP)** |
@@ -298,9 +298,9 @@ A value outside these fails **on load**, naming the table, the row and the colum
 | `quality` | `sourced` · `derived` | `quarter-nav` · `quarter-snapshots` · `baseline-reconstruction` |
 | `status` | `live` · `superseded` | `quarter-nav` · `quarter-snapshots` |
 | `struck` | `close` · `live` | `fx` · `current-prices` |
-| `key` | `record_begins` · `reasoning_owed_from` · `first_report` · `tv_list_live` · `tv_list_exit` · `tv_list_entry` · `rate_carried` · `trade_id_floor` · `hosted_origin` · `passkey_domain` · `deploy_repo` · `research_repo` · `insights_url` · `practice` | `settings` |
+| `key` | `record_begins` · `reasoning_owed_from` · `first_report` · `tv_list_live` · `tv_list_exit` · `tv_list_entry` · `rate_carried` · `hosted_origin` · `passkey_domain` · `deploy_repo` · `research_repo` · `insights_url` · `practice` | `settings` |
 | `funding` | `daily` · `dated` | `contracts` |
-| `route` | `baseline` · `bench` · `marks` · `freeze` · `hand` | `journal` |
+| `route` | `baseline` · `bench` · `marks` · `freeze` · `hand` · `migrate` | `journal` |
 | `op` | `open` · `append` · `replace` · `remove` | `journal` |
 | `table` | the 20 record tables | `journal` |
 

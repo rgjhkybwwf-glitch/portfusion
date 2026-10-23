@@ -147,7 +147,7 @@ PANEL_COLUMNS = {
                          "symbol", "quote_unit",
                          "points_per_unit", "shares_per_unit",
                          "sector", "region", "epic", "funding"),
-        "REVIEW_COLUMNS": ("retires",),
+        "REVIEW_COLUMNS": ("retires", "renumbers"),
     },
     "reconcile": {
         # WHAT THE BROKER'S SIDE RESTS ON (13 Oct 2026): the report's two columns, last.
@@ -487,8 +487,9 @@ def test_a_cash_observation_commits_and_reads_back(item, store_copy, tmp_path, m
     assert result["written"] == {"cash-readings": 1}
     rows = schema.load("cash-readings")
     assert len(rows) == was + 1
-    account, as_of, cash = rows[-1][0], rows[-1][1], rows[-1][2]
-    assert (account, as_of.isoformat(), cash) == (good["account"], after, 140.00)
+    # WHERE ITS DATE PUTS IT, which on a book with later readings is not the end.
+    written = [r[:3] for r in rows if (r[0], r[1].isoformat()) == (good["account"], after)]
+    assert written == [(good["account"], _dt.date.fromisoformat(after), 140.00)], written
 
 
 @needs("accounts", "account-readings", "buys")

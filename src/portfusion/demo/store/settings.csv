@@ -6,7 +6,6 @@ tv_list_live,100000001
 tv_list_exit,100000002
 tv_list_entry,100000003
 rate_carried,
-trade_id_floor,
 hosted_origin,https://desk.example.test
 passkey_domain,example.test
 deploy_repo,

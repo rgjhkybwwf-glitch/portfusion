@@ -1011,7 +1011,8 @@ async function reviewItems() {
     const marked = firstMarks(it);
     const whys = ["why_entered", "why_exited"].filter((w) => (said[w] || "").trim())
       .map((w) => `<dt>${head(w)}</dt><dd>${esc(said[w])}</dd>`).join("")
-      + ((d.retires || []).length ? `<dt>${head("retires")}</dt><dd>${esc(d.retires.join(", "))}</dd>` : "");
+      + ((d.retires || []).length ? `<dt>${head("retires")}</dt><dd>${esc(d.retires.join(", "))}</dd>` : "")
+      + ((d.renumbers || []).length ? `<dt>${head("renumbers")}</dt><dd>${esc(d.renumbers.join("; "))}</dd>` : "");
     return `<section class="review-item" data-item="${esc(it.id)}">
       <div class="row-head"><h2>${esc(it.title)}</h2></div>
       ${rows}${marked}${whys ? `<dl class="detail">${whys}</dl>` : ""}

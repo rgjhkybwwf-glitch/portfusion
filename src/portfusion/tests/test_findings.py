@@ -13,7 +13,7 @@ import pytest
 
 from portfusion.engine import Book
 from portfusion.record import rules as D
-from harness import needs
+from harness import needs, write_rows
 
 
 @pytest.fixture(scope="module")
@@ -339,9 +339,10 @@ def test_a_foreign_income_row_with_no_rate_on_file_is_a_problem(store_copy):
     head = path.read_text(encoding="utf-8")
 
     def with_rows(*days):
-        path.write_text(head + "".join(
-            f"{d},{account},Dividend,test dividend,7.50,test,,{cur},10.00,,\n" for d in days),
-            encoding="utf-8")
+        path.write_text(head, encoding="utf-8")
+        header = schema.TABLES["income"].header
+        write_rows("income", *(dict(zip(header, f"{d},{account},Dividend,test dividend,7.50,test,,"
+                                                 f"{cur},10.00,,".split(","))) for d in days))
         D.reload_store()
         return Book().findings()["problems"]
 

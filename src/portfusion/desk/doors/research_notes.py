@@ -67,8 +67,7 @@ def write(ref: str) -> dict:
     path = schema.TABLES[TABLE].path
     before = len(schema.load(TABLE))
     with commit.atomic(path, schema.TABLES["journal"].path):
-        commit._append(path, path.read_bytes(),
-                       [commit._csv_line(commit._rendered(TABLE, r)) for r in rows])
+        path.write_bytes(commit.placed({TABLE: [commit._rendered(TABLE, r) for r in rows]})[0][path])
         if len(schema.load(TABLE)) != before + len(rows):
             raise Refused(f"{TABLE}.csv did not read back {len(rows)} new row(s)")
         commit.journal([("bench", "append", TABLE, len(rows), ref,
