@@ -188,7 +188,7 @@ def test_an_ig_close_naming_its_leg_is_written_and_the_leg_stops_being_held(
     written = _commit.commit(item["id"])["ids"][_EID]     # its place in date order
     assert rules.EXIT_LEG_MATCH[written] == leg["trade_id"]
     ledger = engine.Book().ledger
-    assert not ledger.loc[ledger["id"] == leg["trade_id"], "open_leg"].iloc[0], \
+    assert not ledger.loc[ledger["event_id"] == leg["trade_id"], "open_leg"].iloc[0], \
         "the leg the sale closed is still held"
 
 

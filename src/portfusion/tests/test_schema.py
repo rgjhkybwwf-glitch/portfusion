@@ -417,7 +417,8 @@ def test_a_sale_s_reference_reaches_the_trades_cell():
     assert "broker_ref" in sells.columns
     # WIRED, not absent: each sell carries its own exit's reference, and is blank where that is.
     # That the historic ones ARE blank is test_no_historic_sale_was_backdated's to hold.
-    got = {i: r if isinstance(r, str) else None for i, r in zip(sells["id"], sells["broker_ref"])}
+    got = {i: r if isinstance(r, str) else None
+           for i, r in zip(sells["event_id"], sells["broker_ref"])}
     assert got == {e.sale_id: e.broker_ref for e in D.sales}, \
         "a sell row's broker_ref is not its exit's"
 

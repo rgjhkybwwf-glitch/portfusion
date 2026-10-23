@@ -837,9 +837,11 @@ def test_a_frozen_quarter_is_never_labelled_to_date(book):
 def _walk(monkeypatch, events):
     """`share_pools()` over one made-up holding: (id, day, direction, qty, cost, parcel)."""
     from portfusion import engine
-    rows = [{"id": i, "date": pd.Timestamp(day) if day else pd.NaT, "direction": way,
+    rows = [{"event_id": i, "date": pd.Timestamp(day) if day else pd.NaT, "direction": way,
              "held_as": "shares", "acct": "Voss ii ISA", "ticker": "TEST.L", "qty": qty,
-             "val": money, "mode": "cost"} for i, day, way, qty, money, _ in events]
+             "cost": money if way != "Sell" else None, "level_points": None,
+             "proceeds": money if way == "Sell" else None, "mode": "cost"}
+            for i, day, way, qty, money, _ in events]
     monkeypatch.setattr(engine.D, "REALISATION_BY_EXIT",
                         {i: rid for i, _, way, _, _, rid in events if way == "Sell"})
     return engine.share_pools(pd.DataFrame(rows))
@@ -901,8 +903,8 @@ def test_a_holdings_share_cost_is_its_buys_less_what_its_sales_released(book):
         held = book.holdings(account=acct, by="ticker").set_index("ticker")
         mine = shares[(shares["acct"] == acct) & shares["pool_emptied"].isna()]
         for ticker, g in mine.groupby("ticker"):
-            bought = g.loc[g["direction"] == "Buy", "val"].sum()
-            released = g.loc[g["direction"] == "Sell", "id"].map(book.cost_released).sum()
+            bought = g.loc[g["direction"] == "Buy", "cost"].sum()
+            released = g.loc[g["direction"] == "Sell", "event_id"].map(book.cost_released).sum()
             assert close(held.at[ticker, "cost"], bought - released), f"{acct} {ticker}"
 
 

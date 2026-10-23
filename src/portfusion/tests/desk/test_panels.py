@@ -165,7 +165,8 @@ def test_filtering_is_the_engines_not_the_panels():
     got = A.query(start=_MONTH[0], end=_MONTH[1], account=account)
     want = b.activity(start=_MONTH[0], end=_MONTH[1], account=account)
     assert 0 < got["total"] == len(want)
-    assert [r["trade_id"] for r in got["rows"]] == list(want["trade_id"])
+    assert [r["trade_id"] or r["sale_id"] for r in got["rows"]] == list(
+        want["trade_id"].fillna(want["sale_id"]))
 
 
 @needs("buys")
@@ -198,7 +199,7 @@ def test_a_note_is_one_line():
     reason for a trade is reasoning.csv's, never the note's."""
     from portfusion.desk.panels import trades as A
     rows = A.data()["rows"]
-    assert rows and not [r["trade_id"] for r in rows if "\n" in (r["note"] or "")]
+    assert rows and not [r["trade_id"] or r["sale_id"] for r in rows if "\n" in (r["note"] or "")]
 
 
 def test_price_precision_is_the_houses_not_reinvented(repo_root):

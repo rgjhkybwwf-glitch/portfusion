@@ -1510,7 +1510,8 @@ const pointsCell = (v) => `<td class="num">${points(v)}</td>`;
    what they opened differently — "why" over a trade's note, "detail" over its source, "note" or
    "why" on Round Trips, "marks" and "why" side by side on Holdings. */
 const DETAIL = ["why_entered", "why_exited", "research_notes", "note", "source", "quality",
-                "broker_ref", "trade_id", "realisation_id", "contract", "funding", "fx_at_trade",
+                "broker_ref", "trade_id", "sale_id", "realisation_id", "contract", "funding",
+                "fx_at_trade",
                 "fx_from", "marks", "realisations", "lines"];
 
 /* EACH WHY UNDER ITS HALF, oldest first, with the date of the trade it explains. An OWED half

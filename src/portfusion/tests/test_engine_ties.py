@@ -600,8 +600,13 @@ def test_trades_are_newest_first_with_a_stable_tie_break(book):
     order to whatever pandas saw first, so the page could reorder between reads with nothing in
     the record having changed — indistinguishable from a real edit."""
     rows = book.activity()
-    keys = list(zip(rows["date"], rows["trade_id"]))
-    assert keys == sorted(keys, reverse=True), "not newest-first with trade id breaking ties"
+    keys = list(zip(rows["date"], rows["trade_id"].fillna(rows["sale_id"])))
+    assert keys == sorted(keys, reverse=True), "not newest-first with the id breaking ties"
+
+
+def _by_id(activity):
+    """Activity by each row's own id: a buy's trade id, a sale's sale id."""
+    return activity.set_index(activity["trade_id"].fillna(activity["sale_id"]))
 
 
 def test_every_traded_price_is_local_or_absent(book):
@@ -609,7 +614,7 @@ def test_every_traded_price_is_local_or_absent(book):
     returns the GBP figure under a heading that says otherwise — a sterling price for a deal
     whose contract note gives it in euros. A deal priced in sterling on a foreign share reads at its
     day's close or not at all; a spread bet and a London deal take no rate."""
-    rows = book.activity().set_index("trade_id")
+    rows = _by_id(book.activity())
     deals = {t.trade_id: t for t in D.buys} | {e.sale_id: e for e in D.sales}
     for tid, r in rows.iterrows():
         d = deals[tid]
@@ -629,7 +634,7 @@ def test_the_contract_note_prices_come_from_the_record(book):
     recompute these from value/quantity and get the GBP figure instead. Reading the record
     rather than recomputing it is the whole point of having one. The loop derives from the
     store, so it covers however many deals the loaded book states a price for."""
-    rows = book.activity().set_index("trade_id")
+    rows = _by_id(book.activity())
     for d in [*D.buys, *D.sales]:
         i = getattr(d, "trade_id", None) or d.sale_id
         if d.traded_price is None or d.cur == "GBP" or i not in rows.index:
@@ -669,7 +674,7 @@ def test_the_price_date_comes_from_the_open_legs_not_the_last_one(book):
     as fresh as its stalest leg — and it must ignore contracts nothing holds any more."""
     from portfusion.record import rules as _D
     px = {r[0]: r[3] for r in _D.CURRENT_PRICES}
-    open_ids = set(book.ledger[book.ledger["open_leg"]]["id"])
+    open_ids = set(book.ledger[book.ledger["open_leg"]]["event_id"])
     expected = {}
     for t in _D.buys:
         if t.mode != "sb" or t.trade_id not in _D.LEG_CONTRACT or t.trade_id not in open_ids:
@@ -699,7 +704,7 @@ def test_a_closed_legs_contract_is_not_expected_to_be_priced(book):
     px = {r[0] for r in _D.CURRENT_PRICES}
     closed_only = set()
     by_contract = {}
-    open_ids = set(book.ledger[book.ledger["open_leg"]]["id"])
+    open_ids = set(book.ledger[book.ledger["open_leg"]]["event_id"])
     for t in _D.buys:
         if t.mode == "sb" and t.trade_id in _D.LEG_CONTRACT:
             by_contract.setdefault(_D.LEG_CONTRACT[t.trade_id], []).append(t.trade_id in open_ids)
