@@ -1384,7 +1384,7 @@ class Book:
         """EACH COMPANY LIFE (`_lives()`), one row; the by-holding view is `round_trips()`.
 
           total               realised + to_date (open lives) + dividends + funding, sterling
-          life_pct            total over every share bought, for a life of shares only
+          life_pct            total over what was bought: shares at cost, bets at entry size
           held                shares plus open bets as share-equivalents, whole
           net_cost_per_share  (cost of what is held − realised − dividends − funding) / held, in
                               the position's currency, dealing included, each sum at its own
@@ -1471,7 +1471,9 @@ class Book:
                     taken += amount * rate
                 net = (cost - taken) / whole if complete else None
 
-            bought = sum(r["val"] for r in buys if r["held_as"] == "shares")
+            # WHAT WAS BOUGHT: shares at their cost, bets at their size at entry (stake x level).
+            bought = sum(r["val"] if r["held_as"] == "shares" else r["qty"] * r["val"]
+                         for r in buys)
             accounts = sorted({r["acct"] for r in buys + sales}, key=lambda a: order.get(a, 99))
             rows.append({
                 "life": f"{name} · {life['opened']:%Y-%m-%d}",
@@ -1489,9 +1491,7 @@ class Book:
                 "dividends": dividends,
                 "funding": funding,
                 "total": realised + to_date + dividends + funding,
-                "life_pct": ((realised + to_date + dividends + funding) / bought
-                             if {r["held_as"] for r in buys + sales} == {"shares"} and bought
-                             else None),
+                "life_pct": (realised + to_date + dividends + funding) / bought if bought else None,
                 "shares_held": shares_held,
                 "held": float(round(whole)) if is_open and (bet_qty is not None or not len(
                     mine[mine["held_as"] == "spread bet"])) and whole else None,

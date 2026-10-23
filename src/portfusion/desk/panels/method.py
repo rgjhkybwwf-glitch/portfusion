@@ -66,8 +66,11 @@ def data() -> dict:
                 "First purchase, in any account or instrument, to the day nothing is held. "
                 "Life gain = realised + gain to date + dividends + daily funding. Net cost per "
                 "share = (cost of what is held − realised − dividends − funding) ÷ held, open "
-                "bets as share-equivalents: the break-even price. A percentage only for a life "
-                "of shares alone.")},
+                "bets as share-equivalents: the break-even price.")},
+            {"topic": "Gain %", "text": (
+                "Every gain % is over exposure at entry: shares at cost, bets at their size at "
+                "entry. Holdings measures what is held, Round Trips by holding what was sold, by "
+                "company life the whole life.")},
             {"topic": "Quarterly returns — one series", "text": (
                 "One series, on net asset value (Performance), by the same day-weighted formula "
                 "as the headline YTD return. Each quarter end's value says what it rests on: sourced "
