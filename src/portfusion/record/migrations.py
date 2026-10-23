@@ -72,14 +72,28 @@ MIGRATIONS = (
         tables={}, columns={}, splits={}, marks={}, code=(),
         rows=lambda store: _in_date_order(store),
     ),
+    Migration(
+        issue="two tables retired, each saying nothing its events do not",
+        tables={}, columns={}, splits={}, marks={},
+        code=(r"\bD\.(realisations|dec_rows)\b", r"\bRealisationRow\b"),
+        rows=lambda store: _retired(store),
+    ),
 )
+
+#: THE TABLES A RELEASE HAS RETIRED, and why: their files go, and the journal rows that name them
+#: with them, since the journal names only tables the record holds.
+RETIRED = {
+    "realisations": "a round trip's entry date and note come from its own buys and sales",
+    "baseline-reconstruction": "the working behind quarter ends since restated, read by nothing",
+}
 
 
 class Change(NamedTuple):
-    """One file's move: where it was, where it goes, its new text, and what moved, in words."""
+    """One file's move: where it was, where it goes, its new text (None removes it), and what
+    moved, in words."""
     was: pathlib.Path
     to: pathlib.Path
-    text: str
+    text: str | None
     said: list[str]
 
 
@@ -246,6 +260,21 @@ def _in_date_order(store: pathlib.Path) -> list[Change]:
     return out
 
 
+def _retired(store: pathlib.Path) -> list[Change]:
+    """Each `RETIRED` table's file removed, and the journal's rows naming one."""
+    out = [Change(path, path, None, [f"{path.name}: retired, {why}"])
+           for name, why in RETIRED.items() if (path := store / f"{name}.csv").is_file()]
+    journal = store / "journal.csv"
+    if journal.is_file():
+        lines, rows, _eol = _rows(journal.read_text(encoding="utf-8"))
+        at = rows[0].index("table")
+        kept = lines[:1] + [ln for ln, r in zip(lines[1:], rows[1:]) if r[at] not in RETIRED]
+        if len(kept) != len(lines):
+            out.append(Change(journal, journal, "".join(kept), [
+                f"journal.csv: {len(lines) - len(kept)} row(s) naming a retired table removed"]))
+    return out
+
+
 def plan(book: pathlib.Path) -> tuple[Migration | None, list[Change]]:
     """The first declared migration `book` still needs, and every change it makes, nothing
     written; (None, []) when the book is in the shape this release reads. ONE AT A TIME: a later
@@ -294,6 +323,9 @@ def write(changes: list[Change]) -> dict[pathlib.Path, bytes | None]:
             before.setdefault(p, p.read_bytes() if p.exists() else None)
     try:
         for c in changes:
+            if c.text is None:
+                c.was.unlink()
+                continue
             c.to.write_text(c.text, encoding="utf-8", newline="")
             if c.to != c.was:
                 c.was.unlink()
@@ -313,9 +345,9 @@ def put_back(before: dict[pathlib.Path, bytes | None]) -> None:
 
 
 def named_in_checks(book: pathlib.Path) -> list[str]:
-    """The lines of the book's own `checks/` that name an old table or column: the book's code,
-    listed for its owner to move by hand."""
-    old = {t for m in MIGRATIONS for t in m.tables} | {
+    """The lines of the book's own `checks/` that name an old or retired table or column: the
+    book's code, listed for its owner to move by hand."""
+    old = {t for m in MIGRATIONS for t in m.tables} | set(RETIRED) | {
         c for m in MIGRATIONS for cols in m.columns.values() for c in cols} | {
         s[0] for m in MIGRATIONS for s in m.splits.values()}
     pattern = re.compile("|".join([r"""(["'])(%s)(\.csv)?\1""" % "|".join(

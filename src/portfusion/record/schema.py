@@ -255,21 +255,6 @@ CAPITAL_MOVEMENTS = Table(
     ),
 )
 
-REALISATIONS = Table(
-    name="realisations",
-    doc=("What a realisation's events cannot say about it: the entry date where a leg "
-         "carries prose, and the note written when it was realised. One row per "
-         "realisation up to 1 Oct 2026; a later one needs none. Quantity and the exit "
-         "date are derived by `Book.round_trips()` and are not kept here, since a "
-         "second copy was overwritten by every sale that joined its parcel."),
-    fields=(
-        Field("ticker", "str"),
-        Field("realisation_id", "str"),    # R-xxx, the parcel this row describes — sales.csv's
-        Field("opened", "date"),
-        Field("note", "str"),
-    ),
-)
-
 BUYS = Table(
     name="buys",
     doc=("THE LEDGER — one row per buy leg. Every date in the book is entered here and "
@@ -494,26 +479,6 @@ CURRENT_PRICES = Table(
     ),
 )
 
-BASELINE_RECON = Table(
-    name="baseline-reconstruction",
-    doc=("Reconstructed holdings, line by line: the working behind an account's quarter-nav "
-         "rows as FIRST FILED. "
-         "Each date's lines sum to that row (qty × price ÷ rate). No figure is read from here, "
-         "and it is no longer edited.\n\n"
-         "A ROW IT JUSTIFIED MAY BE SUPERSEDED, and this stays as its audit trail: the engine "
-         "values a quarter end from the price and FX histories, and a restated quarter-nav "
-         "row stays on file marked superseded."),
-    fields=(
-        Field("as_of", "str"),
-        Field("ticker", "str"),
-        Field("qty", "int"),
-        Field("price", "float"),           # per share, in the line's currency; HL's prices embed FX
-        Field("source", "str"),
-        Field("rate", "float"),            # units of that currency per £1; 1.0 where HL embeds it
-        Field("quality", "str", enum=QUALITIES),
-    ),
-)
-
 QUARTER_SNAPSHOTS = Table(
     name="quarter-snapshots",
     doc=("Every account's HOLDINGS, line by line, at each quarter end — the working "
@@ -726,8 +691,8 @@ SETTINGS = Table(
 )
 
 _RECORD = (
-    COMPANIES, SECURITIES, ACCOUNTS, CAPITAL_MOVEMENTS, REALISATIONS, BUYS, SALES,
-    INCOME, QUARTER_NAV, QUARTER_SNAPSHOTS, FX, CURRENT_PRICES, BASELINE_RECON,
+    COMPANIES, SECURITIES, ACCOUNTS, CAPITAL_MOVEMENTS, BUYS, SALES,
+    INCOME, QUARTER_NAV, QUARTER_SNAPSHOTS, FX, CURRENT_PRICES,
     ACCOUNT_READINGS, REASONING, CASH_READINGS,
     RESEARCH_NOTES, QUARTER_RESULTS, SETTINGS, CONTRACTS)
 
@@ -883,7 +848,6 @@ REFERENCES = {
     ("contracts", "ticker"):             ("securities", "ticker"),
     ("sales", "account"):                ("accounts", "account"),
     ("sales", "closes"):                 ("buys", "trade_id"),
-    ("realisations", "realisation_id"):  ("sales", "realisation_id"),
     ("income", "account"):               ("accounts", "account"),
     ("quarter-nav", "account"):          ("accounts", "account"),
     ("quarter-snapshots", "account"):    ("accounts", "account"),

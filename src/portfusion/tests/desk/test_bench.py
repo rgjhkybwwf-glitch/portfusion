@@ -584,9 +584,8 @@ def _trimmed_pool():
     from portfusion import engine
     from portfusion.record import schema
     eh = schema.TABLES["sales"].header
-    cp = schema.TABLES["realisations"].header
-    realisation = {r[cp.index("ticker")]: r[cp.index("realisation_id")]
-                   for r in schema.load("realisations")}
+    realisation = {r[eh.index("ticker")]: r[eh.index("realisation_id")]
+                   for r in schema.load("sales")}
     b = engine.Book()
     for r in schema.load("sales"):
         t, a = r[eh.index("ticker")], r[eh.index("account")]
@@ -604,8 +603,8 @@ def _untrimmed_holding(account):
     another account also holds stays open at the ticker when one pool empties."""
     from portfusion import engine
     from portfusion.record import schema
-    cp = schema.TABLES["realisations"].header
-    tripped = {r[cp.index("ticker")] for r in schema.load("realisations")}
+    eh = schema.TABLES["sales"].header
+    tripped = {r[eh.index("ticker")] for r in schema.load("sales")}
     b = engine.Book()
     elsewhere = set()
     hh = schema.TABLES["accounts"].header
@@ -667,7 +666,7 @@ def _sell_shares(item, tmp_path, monkeypatch, ref, acct, ticker, qty, proceeds):
         cur="GBP", proceeds=f"{proceeds:.2f}", source="ii contract note 30 Sep 2026", broker_ref=ref,
         realisation_id=engine.Book().parcel(acct, ticker), closes="", note="n")}]
     _bench.save(item)
-    others = {t: schema.TABLES[t].path.read_bytes() for t in ("buys", "realisations")}
+    others = {t: schema.TABLES[t].path.read_bytes() for t in ("buys",)}
     out = _commit.commit(item["id"])
     return others, {**out["renumbered"], **out["ids"]}
 

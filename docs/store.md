@@ -42,8 +42,6 @@ happened, never an instruction or how a figure was reached; those go in the comm
   realised one at once. A spread-bet sale names the leg it closes in `closes`; a share sale names
   none. A realisation is one holding's (one account, one ticker), in the form
   `rules.REALISATION_FORM`.
-- **A prose-dated leg takes its date from `realisations.csv` by ticker; a round trip joins it
-  by Realisation ID.** Different keys on purpose.
 - **A spread bet's stake is the bet**: `stake` in £ per point, the level in points, no `qty`; its
   cost is stake × level. It is priced by contract: its row names the contract, and
   `contracts.csv` gives the contract its epic and the ticker of its line, which is the leg's.

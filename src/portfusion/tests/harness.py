@@ -625,6 +625,6 @@ def book_names(D):
         "words": {w for r in reg for w in str(r["holder"]).split() if w not in titles},
         "joined": {"".join(w for w in str(r["holder"]).split() if w not in titles) for r in reg},
         "exact": ({str(r["number"]) for r in reg} | {str(r["feed_key"]) for r in reg if r["feed_key"]}
-                  | {e.realisation_id for e in D.sales} | {c.realisation_id for c in D.realisations}),
+                  | {e.realisation_id for e in D.sales}),
         "numbers": {str(r["number"]) for r in reg if str(r["number"]).strip()},
     }

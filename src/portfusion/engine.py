@@ -1174,8 +1174,7 @@ class Book:
                      cost=("cost_released", "sum")))
 
         # Entry date: a share realisation's is the day its holding opened (`share_pools()`), a
-        # spread bet's the earliest leg its sales named. Falls back to the closed-position record,
-        # which is where the pre-2026 entries are stated.
+        # spread bet's the earliest leg its sales named.
         L = self.ledger
         sold = L[L["direction"] == "Sell"].sort_values(["date", "event_id"])
         legs = L[(L["direction"] == "Buy") & L["realisation_id"].notna()]
@@ -1183,23 +1182,17 @@ class Book:
                                sold.groupby("realisation_id")["pool_opened"].min())
         rt["opened"] = rt["opened"].fillna(
             _lookup(rt["realisation_id"], legs.groupby("realisation_id")["date"].min()))
-        closed_open = {c.realisation_id: pd.Timestamp(c.opened) for c in self.D.realisations}
-        rt["opened"] = rt["opened"].fillna(rt["realisation_id"].map(closed_open))
 
         rt["days_held"] = (rt["closed"] - rt["opened"]).dt.days
 
-        # EVERY ROUND TRIP IS NAMED ALIKE: its company from identity, its kind from its sales. The
-        # note comes from the `closed` record where it has the realisation's row — every one
-        # realised before 1 Oct 2026 — and from a later one's latest sale, whose note says what
-        # happened.
-        meta = {c.realisation_id: c for c in self.D.realisations}
+        # EVERY ROUND TRIP IS NAMED ALIKE: its company from identity, its kind from its sales, and
+        # its note from its latest sale, which says what happened.
         company_of = self._identity().set_index("ticker")["company"]
         kind = sold.groupby("realisation_id")["held_as"].first()
         last_note = sold.groupby("realisation_id")["note"].last()
         rt["company"] = rt["ticker"].map(company_of)
         rt["held_as"] = rt["realisation_id"].map(kind)
-        rt["note"] = [meta[r].note if r in meta else last_note.get(r)
-                      for r in rt["realisation_id"]]
+        rt["note"] = [last_note.get(r) for r in rt["realisation_id"]]
         # CLOSED OUT versus a PARTIAL TRIM — two different populations, and the book keeps
         # them apart deliberately: the realised total spans both, while trade counts and
         # holding-period statistics cover closed-out round trips only. A trim is a parcel out
