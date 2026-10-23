@@ -171,7 +171,7 @@ MEASURE_BASIS = {
     "exposure":       "notional",
     "nav":            "capital",
     "capital_employed": "capital",
-    "opening_capital": "capital",
+    "opening_nav": "capital",
     "capital_deployed": "capital",
     "return_income":  "capital",
     "capital_growth": "capital",
@@ -314,25 +314,30 @@ def share_pools(ledger: pd.DataFrame) -> pd.DataFrame:
 def build_ledger() -> pd.DataFrame:
     """The trade ledger with Direction and Realisation ID attached: one row per event, buys and
     sells. The spine everything else hangs off."""
-    buys = pd.DataFrame(D.trades, columns=D.Trade._fields)
+    # THE LEDGER'S OWN SHAPE: `id` is either side's, `price` the deal's, and `val` a buy's cost
+    # or a bet's level, where the store keeps the two in their own columns.
+    buys = pd.DataFrame(D.buys, columns=D.Buy._fields).rename(
+        columns={"trade_id": "id", "traded_price": "price"})
+    buys["val"] = buys["level_points"].fillna(buys["cost"])
+    buys = buys.drop(columns=["cost", "level_points"])
     buys["direction"] = "Buy"
     # HOW EACH LEG IS COSTED, from its code's kind (`rules.Trade.mode`): a frame of NamedTuples
     # carries their fields and not their properties.
-    buys["mode"] = [t.mode for t in D.trades]
+    buys["mode"] = [t.mode for t in D.buys]
     # THE LEDGER'S `qty` IS THE LINE'S SIZE IN ITS OWN UNIT: a share's count, a bet's stake per
     # point (`Trade.size`). The store keeps the two in their own columns; every roll-up here is
     # size x price, which on a bet is stake x level, the notional.
-    buys["qty"] = [t.size for t in D.trades]
+    buys["qty"] = [t.size for t in D.buys]
 
     # Exits map onto the ledger's own shape. One slot changes meaning on a sell row: `val` holds
     # the GBP proceeds. `price`, `cur` and `rate` are the sale's own, as a buy's are its.
     sells = pd.DataFrame([
-        {"id": e.eid, "date": e.date, "source": e.source, "acct": e.acct, "ticker": e.ticker,
+        {"id": e.sale_id, "date": e.date, "source": e.source, "acct": e.acct, "ticker": e.ticker,
          "cur": e.cur, "qty": e.size, "stake": e.stake,
          # `broker_ref` from its column: the reference that retrieves the sale.
-         "price": e.price, "rate": e.rate, "val": e.proceeds, "mode": "sell",
+         "price": e.traded_price, "rate": e.rate, "val": e.proceeds, "mode": "sell",
          "broker_ref": e.broker_ref, "note": e.note}
-        for e in D.exits
+        for e in D.sales
     ], columns=["id", "date", "source", "acct", "ticker", "cur", "qty", "stake", "price", "rate",
                 "val", "mode", "broker_ref", "note"])
     sells["direction"] = "Sell"
@@ -354,7 +359,7 @@ def build_ledger() -> pd.DataFrame:
     # A SHARE BUY BELONGS TO THE REALISATION THAT EMPTIED ITS HOLDING, and to none while the
     # holding is still held — a pool trim consumes no leg. A spread-bet leg to the sale naming it.
     pools = share_pools(ledger)
-    rid = {e.eid: D.REALISATION_BY_EXIT[e.eid] for e in D.exits}
+    rid = {e.sale_id: D.REALISATION_BY_EXIT[e.sale_id] for e in D.sales}
     rid.update(realised_legs())
     rid.update(pools["parcel"].dropna().to_dict())
     ledger["realisation_id"] = ledger["id"].map(rid)
@@ -393,21 +398,22 @@ def cost_released(ledger: pd.DataFrame) -> dict[str, float]:
                      the ledger's `released` column
       * leg-exact -- a spread-bet sale names the bet it closed, and releases that leg's cost
     """
-    by_id = {t.id: t for t in D.trades}
+    by_id = {t.trade_id: t for t in D.buys}
     released = ledger.set_index("id")["released"]
     out, unmatched = {}, []
-    for e in D.exits:
-        if pd.notna(released.get(e.eid)):
-            out[e.eid] = float(released[e.eid])
-        elif e.eid in D.EXIT_LEG_MATCH:
-            leg = by_id[D.EXIT_LEG_MATCH[e.eid]]
-            out[e.eid] = round(_buy_cost(leg.size, leg.val, leg.mode), 2)
+    for e in D.sales:
+        if pd.notna(released.get(e.sale_id)):
+            out[e.sale_id] = float(released[e.sale_id])
+        elif e.sale_id in D.EXIT_LEG_MATCH:
+            leg = by_id[D.EXIT_LEG_MATCH[e.sale_id]]
+            out[e.sale_id] = round(_buy_cost(
+                leg.size, leg.cost if leg.mode == "cost" else leg.level_points, leg.mode), 2)
         else:
-            unmatched.append(f"{e.eid} ({D.REALISATION_BY_EXIT[e.eid]})")
+            unmatched.append(f"{e.sale_id} ({D.REALISATION_BY_EXIT[e.sale_id]})")
     if unmatched:
         raise ValueError(
             f"{', '.join(unmatched)} released no cost: a spread-bet sale names the leg it closed "
-            f"in exits.csv `closes`, and only a share sale is released from its pool.")
+            f"in sales.csv `closes`, and only a share sale is released from its pool.")
     return out
 
 
@@ -463,7 +469,7 @@ def value_legs(ledger: pd.DataFrame) -> pd.DataFrame:
     # currency its price was stated in — sterling on an HL deal in a US share — so every leg is
     # priced in the currency its identity row quotes the holding in.
     _h = D.schema.TABLES["securities"].header
-    quote = {r[_h.index("code")]: r[_h.index("currency")] for r in D.SECURITIES}
+    quote = {r[_h.index("ticker")]: r[_h.index("currency")] for r in D.SECURITIES}
 
     def cost(r):
         """Cost attaches to OPEN BUY LEGS, and comes off by what each share sale from a holding
@@ -528,7 +534,7 @@ def marks_replaceable() -> dict:
 
     def _row(t: str, price: float, cur: str, as_of: str, src: str, struck: str, at: str) -> dict:
         age = int((today - pd.Timestamp(as_of)).days)
-        return {"ticker": t, "price": price, "currency": cur, "as_of": as_of, "source": src,
+        return {"mark_key": t, "price": price, "currency": cur, "as_of": as_of, "source": src,
                 "struck": struck, "at": at, "age_days": age, "stale": age > D.PRICE_AGE_LIMIT,
                 # AN IG CONTRACT'S PRICE IS A LEVEL IN POINTS, beside the market's currency.
                 "contract": t in D.CONTRACTS}
@@ -647,7 +653,7 @@ class Book:
 
     def realised(self) -> float:
         """Realised gain: proceeds less the cost each sale released."""
-        proceeds = sum(e.proceeds for e in self.D.exits)
+        proceeds = sum(e.proceeds for e in self.D.sales)
         return proceeds - sum(self.cost_released.values())
 
     #
@@ -789,7 +795,7 @@ class Book:
         With no mark to age — a new book — both dates are None and nothing is old.
         """
         p = self.store["prices"]
-        p = p[~p["ticker"].isin(set(self.D.STATEMENT_PRICED))]
+        p = p[~p["mark_key"].isin(set(self.D.STATEMENT_PRICED))]
         dates = pd.to_datetime(p["as_of"], errors="coerce").dropna()
         if dates.empty:
             return {"newest": None, "oldest": None, "spread_days": 0, "marks": 0, "age_days": 0}
@@ -807,18 +813,18 @@ class Book:
         open_legs = L[L["open_leg"]]
         held = set(open_legs.loc[open_legs["held_as"] == "shares", "ticker"])
         held |= {self.D.LEG_CONTRACT[i] for i in open_legs["id"] if i in self.D.LEG_CONTRACT}
-        return sorted(set(self.store["prices"]["ticker"]) - held)
+        return sorted(set(self.store["prices"]["mark_key"]) - held)
 
     # ---- IDENTITY  —  code -> issuer -> sector / region ------------------------------
 
     #
-    # Joined securities.company -> issuers.company, by full legal name, because one issuer can
+    # Joined securities.company -> companies.company, by full legal name, because one issuer can
     # hold several codes.
     def _identity(self) -> pd.DataFrame:
-        """code -> company, sector, region, kind. One row per holding code."""
+        """ticker -> company, sector, region, held_as. One row per line."""
         # COLUMNS FROM THE SCHEMA, never typed: a typed list broke the day the table grew one.
         sec = pd.DataFrame(self.D.SECURITIES, columns=list(self.D.schema.TABLES["securities"].header))
-        iss = pd.DataFrame(self.D.COMPANY_MASTER, columns=list(self.D.schema.TABLES["issuers"].header))
+        iss = pd.DataFrame(self.D.COMPANIES, columns=list(self.D.schema.TABLES["companies"].header))
         return sec.merge(iss[["company", "sector", "region"]], on="company", how="left")
 
     def codes_held(self) -> list[str]:
@@ -843,7 +849,7 @@ class Book:
 
         BY ISSUER A ROW IS ONE POSITION (`company_positions()`): its quantity in shares, a bet's
         stake counted as share-equivalents, its entry and current price per share and its
-        currency, the share listing's. By ticker, a spread bet also carries `stake_per_point`;
+        currency, the share listing's. By ticker, a spread bet also carries `stake`;
         a share carries none.
         `weight` is a share of TOTAL MARKET EXPOSURE, not of cost.
         """
@@ -852,7 +858,7 @@ class Book:
             L = L[L["acct"] == account]
 
         rows = L[L["valued"]].copy()
-        ident = self._identity().set_index("code")
+        ident = self._identity().set_index("ticker")
         rows["company"] = rows["ticker"].map(ident["company"])
         rows["sector"] = rows["ticker"].map(ident["sector"])
         rows["region"] = rows["ticker"].map(ident["region"])
@@ -894,16 +900,16 @@ class Book:
         order = {a: i for i, a in enumerate(self.D.ACCOUNT_ORDER)}
         meta["accounts"] = open_legs.groupby(key)["acct"].apply(
             lambda s: " · ".join(sorted(set(s), key=lambda a: order.get(a, 99))))
-        meta["open_date"] = first_buy
+        meta["opened"] = first_buy
         out = out.merge(meta, left_on=key, right_index=True, how="left")
-        out["gain"] = out["value"] - out["cost"]
-        out["gain_pct"] = (out["gain"] / out["cost"]).where(out["cost"] != 0)
+        out["unrealised"] = out["value"] - out["cost"]
+        out["unrealised_pct"] = (out["unrealised"] / out["cost"]).where(out["cost"] != 0)
         total = out["value"].sum()
         out["weight"] = out["value"] / total if total else float("nan")
-        out["days_held"] = (pd.Timestamp.today().normalize() - out["open_date"]).dt.days
+        out["days_held"] = (pd.Timestamp.today().normalize() - out["opened"]).dt.days
         if by != "issuer":
             # A bet's size in its own terms: the ledger's qty on a bet IS its stake per point.
-            out["stake_per_point"] = out["qty"].where(out["held_as"].eq("spread bet"))
+            out["stake"] = out["qty"].where(out["held_as"].eq("spread bet"))
 
         # ENTRY PRICE, in the holding's own currency: a QUANTITY-WEIGHTED MEAN of the legs still
         # held, each at its deal's price (`deal_prices()`), so a sold leg does not drag it. Blank
@@ -950,7 +956,7 @@ class Book:
             return px[row[key]][1] if row[key] in px else None
 
         if by == "ticker":
-            out["current_price"] = out.apply(_current, axis=1)
+            out["price"] = out.apply(_current, axis=1)
             out["priced_at"] = out.apply(_priced_at, axis=1)
         else:
             # A COMPANY ROW IS ONE POSITION: its quantity, prices and currency are the company's,
@@ -961,7 +967,7 @@ class Book:
         return out.sort_values(key).reset_index(drop=True)
 
     def company_positions(self, rows: pd.DataFrame, open_legs: pd.DataFrame) -> pd.DataFrame:
-        """EACH COMPANY HELD AS ONE POSITION, by company: `qty`, `entry_price`, `current_price`,
+        """EACH COMPANY HELD AS ONE POSITION, by company: `qty`, `entry_price`, `price`,
         `priced_at` and `currency`. `rows` are `holdings()`'s valued rows and `open_legs` its open
         buy legs, each with its company.
 
@@ -982,7 +988,7 @@ class Book:
         their share-equivalents and what they cost at entry in the position's currency, blank on
         any gap among the bets. Side effects: none.
         """
-        ident = self._identity().set_index("code")
+        ident = self._identity().set_index("ticker")
         own = self.deal_prices()["price_own"]
         px = {r[0]: (r[1], r[3]) for r in self.D.CURRENT_PRICES}
 
@@ -1048,17 +1054,17 @@ class Book:
                     current = sum(m[0] / ppu / spu * n for m, n, ppu, spu in marks) / bet_n
                     priced_at = min(m[1] for m, *_ in marks)
             bets_whole = not bet_gap and len(equivalents) == len(bets)
-            out[company] = {"qty": qty, "entry_price": entry, "current_price": current,
+            out[company] = {"qty": qty, "entry_price": entry, "price": current,
                             "priced_at": priced_at, "currency": ccy,
                             "bet_qty": bet_n if bets_whole else None,
                             "bet_cost": bet_cost if bets_whole else None}
         return pd.DataFrame.from_dict(out, orient="index",
-                                      columns=["qty", "entry_price", "current_price",
+                                      columns=["qty", "entry_price", "price",
                                                "priced_at", "currency", "bet_qty", "bet_cost"])
 
     # ---- THE JUDGEMENT  —  store/reasoning.csv, beside each position's numbers -------
 
-    def with_reasoning(self, frame: pd.DataFrame, opened: str = "open_date",
+    def with_reasoning(self, frame: pd.DataFrame, opened: str = "opened",
                        closed: str | None = None) -> pd.DataFrame:
         """`frame` with every why on each row's position beside it, and whether each half is OWED.
 
@@ -1108,7 +1114,7 @@ class Book:
         held = self.with_reasoning(self.holdings(by="ticker"))
         trips = self.with_reasoning(self.round_trips(), opened="opened", closed="closed")
         owed = [{"ticker": r["ticker"], "account": None, "half": "why we entered",
-                 "since": str(r["open_date"])[:10]}
+                 "since": str(r["opened"])[:10]}
                 for r in held[held["why_entered_owed"]].to_dict("records")]
         for half, field, col in (("why we entered", "why_entered", "opened"),
                                  ("why we exited", "why_exited", "closed")):
@@ -1156,9 +1162,9 @@ class Book:
         `start` and `end` bound the day a trip closed, and `start` counts its day, as the Round
         Trips page's From asks.
         """
-        ex = pd.DataFrame([{"eid": e.eid, "date": e.date, "account": e.acct,
-                            "ticker": e.ticker, "qty": e.size, "price": e.price,
-                            "proceeds": e.proceeds} for e in self.D.exits],
+        ex = pd.DataFrame([{"eid": e.sale_id, "date": e.date, "account": e.acct,
+                            "ticker": e.ticker, "qty": e.size, "price": e.traded_price,
+                            "proceeds": e.proceeds} for e in self.D.sales],
                           columns=["eid", "date", "account", "ticker", "qty", "price", "proceeds"])
         ex["realisation_id"] = ex["eid"].map(self.D.REALISATION_BY_EXIT)
         ex["cost_released"] = ex["eid"].map(self.cost_released)
@@ -1180,17 +1186,17 @@ class Book:
                                sold.groupby("realisation_id")["pool_opened"].min())
         rt["opened"] = rt["opened"].fillna(
             _lookup(rt["realisation_id"], legs.groupby("realisation_id")["date"].min()))
-        closed_open = {c.realisation: pd.Timestamp(c.open_date) for c in self.D.closed}
+        closed_open = {c.realisation_id: pd.Timestamp(c.opened) for c in self.D.realisations}
         rt["opened"] = rt["opened"].fillna(rt["realisation_id"].map(closed_open))
 
-        rt["held_days"] = (rt["closed"] - rt["opened"]).dt.days
+        rt["days_held"] = (rt["closed"] - rt["opened"]).dt.days
 
         # EVERY ROUND TRIP IS NAMED ALIKE: its company from identity, its kind from its sales. The
         # note comes from the `closed` record where it has the realisation's row — every one
         # realised before 1 Oct 2026 — and from a later one's latest sale, whose note says what
         # happened.
-        meta = {c.realisation: c for c in self.D.closed}
-        company_of = self._identity().set_index("code")["company"]
+        meta = {c.realisation_id: c for c in self.D.realisations}
+        company_of = self._identity().set_index("ticker")["company"]
         kind = sold.groupby("realisation_id")["held_as"].first()
         last_note = sold.groupby("realisation_id")["note"].last()
         rt["company"] = rt["ticker"].map(company_of)
@@ -1234,12 +1240,12 @@ class Book:
         # exit as levels in points, and sterling for a currency. Blank on a share.
         is_sb = rt["held_as"].eq("spread bet")
         rt["currency"] = rt["ticker"].map(
-            self._identity().set_index("code")["currency"]).where(~is_sb, "GBP")
-        rt["stake_per_point"] = rt["qty"].where(is_sb)
+            self._identity().set_index("ticker")["currency"]).where(~is_sb, "GBP")
+        rt["stake"] = rt["qty"].where(is_sb)
         rt["entry_level_points"] = rt["entry_price"].where(is_sb).round(2)
         rt["exit_level_points"] = rt["exit_price"].where(is_sb).round(2)
-        rt["gain"] = rt["proceeds"] - rt["cost"]
-        rt["gain_pct"] = rt["gain"] / rt["cost"]
+        rt["realised"] = rt["proceeds"] - rt["cost"]
+        rt["realised_pct"] = rt["realised"] / rt["cost"]
         rt["pre_baseline"] = rt["opened"] < self.baseline
         # BY EXIT DATE, MOST RECENT FIRST — a realisation log reads what happened lately first —
         # with a stable tie-break on the realisation id, as activity() uses: several realisations
@@ -1279,7 +1285,7 @@ class Book:
                 "quantity": float(rt["qty"].sum()),
                 "proceeds": round(float(rt["proceeds"].sum()), 2),
                 "cost": round(float(rt["cost"].sum()), 2),
-                "gain": round(float(rt["gain"].sum()), 2)}
+                "realised": round(float(rt["realised"].sum()), 2)}
 
     # ---- THE COMPANY LIFE  —  a company's shares and bets, first purchase to final sale ------
 
@@ -1292,7 +1298,7 @@ class Book:
         return self._lives_cache["walk"]
 
     def _walk_lives(self) -> list[dict]:
-        ident = self._identity().set_index("code")
+        ident = self._identity().set_index("ticker")
         L = self.ledger[self.ledger["direction"].isin(("Buy", "Sell"))]
         L = L.assign(company=L["ticker"].map(ident["company"]),
                      _sale=(L["direction"] == "Sell").astype(int))
@@ -1329,7 +1335,7 @@ class Book:
 
     def _life_income(self) -> tuple[dict, list]:
         """EACH LIFE'S DIVIDENDS AND FUNDING, {(company, opened): {"dividends": [(date, amount)],
-        "funding": [...]}}, and the income rows no life takes. A dividend goes to the life open on
+        "funding_interest": [...]}}, and the income rows no life takes. A dividend goes to the life open on
         its date, else the last one closed before it. Funding goes to the daily-funded legs held on
         the nights it names, split by entry size; a dated contract's is in its level already."""
         if "income" not in self._lives_cache:
@@ -1337,11 +1343,11 @@ class Book:
         return self._lives_cache["income"]
 
     def _attribute_income(self, lives: list[dict]) -> tuple[dict, list]:
-        ident = self._identity().set_index("code")
+        ident = self._identity().set_index("ticker")
         by_company: dict[str, list] = {}
         for lv in lives:
             by_company.setdefault(lv["company"], []).append(lv)
-        out = {(lv["company"], lv["opened"]): {"dividends": [], "funding": []} for lv in lives}
+        out = {(lv["company"], lv["opened"]): {"dividends": [], "funding_interest": []} for lv in lives}
         loose = []
 
         def life_on(company, day):
@@ -1375,7 +1381,7 @@ class Book:
                     continue
                 for leg, _ in pairs:
                     lv = life_of_leg[leg]
-                    out[(lv["company"], lv["opened"])]["funding"].append(
+                    out[(lv["company"], lv["opened"])]["funding_interest"].append(
                         (pd.Timestamp(r.date), r.amount * size.get(leg, 0.0) / weight))
         return out, loose
 
@@ -1383,12 +1389,13 @@ class Book:
                       end: str | None = None) -> pd.DataFrame:
         """EACH COMPANY LIFE (`_lives()`), one row; the by-holding view is `round_trips()`.
 
-          total               realised + to_date (open lives) + dividends + funding, sterling
-          life_pct            total over what was bought: shares at cost, bets at entry size
-          held                shares plus open bets as share-equivalents, whole
-          net_cost_per_share  (cost of what is held − realised − dividends − funding) / held, in
-                              the position's currency, dealing included, each sum at its own
-                              day's close: the break-even price of what is held
+          life_gain            realised + unrealised (open lives) + dividends + funding
+                               interest, sterling
+          life_pct             life_gain over exposure at entry: shares at cost, bets at notional
+          qty                  shares plus open bets as share-equivalents, whole
+          life_cost_per_share  (cost of what is held − realised − dividends − funding interest)
+                               / qty, in the position's currency, dealing included, each sum at
+                               its own day's close: the break-even price of what is held
 
         `pre_baseline`: opened before the record, so earlier dividends are not on file. `start` and
         `end` bound the close; either one drops open lives. Blank wherever a rate is not on file.
@@ -1408,7 +1415,7 @@ class Book:
 
     def _life_rows(self) -> pd.DataFrame:
         """`company_lives()`'s rows, every life, in its order."""
-        gain = {e.eid: e.proceeds - self.cost_released[e.eid] for e in self.D.exits}
+        gain = {e.sale_id: e.proceeds - self.cost_released[e.sale_id] for e in self.D.sales}
         lines = self.holdings(by="ticker")
         companies = self.holdings(by="issuer").set_index("company")
         order = {a: i for i, a in enumerate(self.D.ACCOUNT_ORDER)}
@@ -1421,12 +1428,12 @@ class Book:
             name, buys, sales = life["company"], life["buys"], life["sales"]
             earned = income[(name, life["opened"])]
             dividends = float(sum(a for _, a in earned["dividends"]))
-            funding = float(sum(a for _, a in earned["funding"]))
+            funding = float(sum(a for _, a in earned["funding_interest"]))
             is_open = life["closed"] is None
             kinds = {r["held_as"] for r in buys + sales}
             realised = float(sum(gain[r["id"]] for r in sales))
             mine = lines[lines["company"] == name] if is_open else lines.iloc[0:0]
-            to_date = float(mine["gain"].sum()) if is_open else 0.0
+            unrealised = float(mine["unrealised"].sum()) if is_open else 0.0
             held = mine[mine["held_as"] == "shares"]
             shares_held = float(held["qty"].sum()) if len(held) else None
             row = companies.loc[name] if is_open and name in companies.index else None
@@ -1463,7 +1470,7 @@ class Book:
                     cost += paid / n * h
                 taken = 0.0
                 for day, amount in ([(r["date"], gain[r["id"]]) for r in sales]
-                                    + earned["dividends"] + earned["funding"]):
+                                    + earned["dividends"] + earned["funding_interest"]):
                     rate = self._per_pound(ccy, day)
                     if rate is None or amount != amount:
                         complete = False
@@ -1482,22 +1489,22 @@ class Book:
                 "accounts": " · ".join(accounts),
                 "opened": life["opened"],
                 "closed": life["closed"],
-                "held_days": int(((life["closed"] if not is_open else today)
+                "days_held": int(((life["closed"] if not is_open else today)
                                   - life["opened"]).days),
                 "state": "closed" if not is_open else "part closed" if sales else "open",
                 "sales": len(sales),
                 "realised": realised,
-                "to_date": to_date if is_open else None,
+                "unrealised": unrealised if is_open else None,
                 "dividends": dividends,
-                "funding": funding,
-                "total": realised + to_date + dividends + funding,
-                "life_pct": (realised + to_date + dividends + funding) / bought if bought else None,
+                "funding_interest": funding,
+                "life_gain": realised + unrealised + dividends + funding,
+                "life_pct": (realised + unrealised + dividends + funding) / bought if bought else None,
                 "shares_held": shares_held,
-                "held": float(round(whole)) if is_open and (bet_qty is not None or not len(
+                "qty": float(round(whole)) if is_open and (bet_qty is not None or not len(
                     mine[mine["held_as"] == "spread bet"])) and whole else None,
-                "net_cost_per_share": net,
+                "life_cost_per_share": net,
                 "entry_price": row["entry_price"] if row is not None else None,
-                "current_price": row["current_price"] if row is not None else None,
+                "price": row["price"] if row is not None else None,
                 "currency": ccy,
                 "pre_baseline": life["opened"] < self.baseline,
                 "realisations": sorted({r["realisation_id"] for r in sales
@@ -1506,9 +1513,10 @@ class Book:
             })
 
         out = pd.DataFrame(rows, columns=[
-            "life", "company", "held_as", "accounts", "opened", "closed", "held_days", "state",
-            "sales", "realised", "to_date", "dividends", "funding", "total", "life_pct",
-            "shares_held", "held", "net_cost_per_share", "entry_price", "current_price", "currency", "pre_baseline",
+            "life", "company", "held_as", "accounts", "opened", "closed", "days_held", "state",
+            "sales", "realised", "unrealised", "dividends", "funding_interest", "life_gain", "life_pct",
+            "shares_held", "qty", "life_cost_per_share", "entry_price", "price", "currency",
+            "pre_baseline",
             "realisations", "lines"])
         out = out.assign(_open=out["closed"].isna(),
                          _when=out["closed"].fillna(out["opened"]))
@@ -1518,16 +1526,16 @@ class Book:
     def company_life_totals(self, company: str | None = None, start: str | None = None,
                             end: str | None = None) -> dict[str, float]:
         """Totals over every company life, or a selection of them. Unfiltered, `realised` is
-        realised() and `to_date` is unrealised(), reached by company rather than by line, and
-        `dividends` and `funding` are the income rows a life takes (`_life_income()`)."""
+        realised() and `unrealised` is unrealised(), reached by company rather than by line, and
+        `dividends` and `funding_interest` are the income rows a life takes (`_life_income()`)."""
         lv = self.company_lives(company=company, start=start, end=end)
         return {"lives": int(len(lv)),
                 "open": int(lv["closed"].isna().sum()),
                 "realised": round(float(lv["realised"].sum()), 2),
-                "to_date": round(float(lv["to_date"].fillna(0).sum()), 2),
+                "unrealised": round(float(lv["unrealised"].fillna(0).sum()), 2),
                 "dividends": round(float(lv["dividends"].sum()), 2),
-                "funding": round(float(lv["funding"].sum()), 2),
-                "total": round(float(lv["total"].sum()), 2)}
+                "funding_interest": round(float(lv["funding_interest"].sum()), 2),
+                "life_gain": round(float(lv["life_gain"].sum()), 2)}
 
     def parcel(self, account: str, ticker: str) -> str:
         """The realisation a sale from this holding is filed under — THE ONE ANSWER, which the
@@ -1545,7 +1553,7 @@ class Book:
         """
         L = self.ledger
         sold = L[(L["direction"] == "Sell") & (L["ticker"] == ticker)]
-        if any(t.ticker == ticker and t.mode == "sb" for t in self.D.trades):
+        if any(t.ticker == ticker and t.mode == "sb" for t in self.D.buys):
             mine = sold[sold["acct"] == account].sort_values("date")
             if not mine.empty:
                 last = mine.iloc[-1]
@@ -1586,9 +1594,9 @@ class Book:
         its sterling carries the dealing charge. A deal day's close the record lacks leaves
         the price blank, and `rate_gaps()` names the date. Side effects: none.
         """
-        currency = self._identity().set_index("code")["currency"]
+        currency = self._identity().set_index("ticker")["currency"]
         reg = self.account_register()
-        firm = dict(zip(reg["account"], reg["broker"]))
+        firm = dict(zip(reg["account"], reg["broker_firm"]))
         out = {}
         for r in self.ledger.to_dict("records"):
             own, rate, whose = None, None, None
@@ -1646,7 +1654,7 @@ class Book:
             .where(out["direction"] == "Sell")
         # On a sell row `val` carries GBP proceeds; on a buy it is the settled cost, or the
         # entry LEVEL for a spread bet. Reconstruct the money so one column means one thing.
-        sb = out["trade_id"].isin({t.id for t in self.D.trades if t.mode == "sb"})
+        sb = out["trade_id"].isin({t.trade_id for t in self.D.buys if t.mode == "sb"})
         out.loc[sb & (out["direction"] == "Buy"), "value"] *= out.loc[
             sb & (out["direction"] == "Buy"), "qty"]
 
@@ -1656,7 +1664,7 @@ class Book:
         # a London share, which needed no rate. A SPREAD BET TRADES AT PARITY whatever the
         # underlying's currency: its price is its level, and its currency sterling.
         deal = self.deal_prices()
-        out["currency"] = out["ticker"].map(self._identity().set_index("code")["currency"]) \
+        out["currency"] = out["ticker"].map(self._identity().set_index("ticker")["currency"]) \
             .where(out["held_as"].ne("spread bet"), "GBP")
         out["traded_price"] = out["trade_id"].map(deal["price_own"])
         out["fx_at_trade"] = out["trade_id"].map(deal["rate"])
@@ -1666,7 +1674,7 @@ class Book:
         # keeps them — the ledger's qty on a bet is its stake, and its prices are levels. Blank
         # on a share.
         is_sb = out["held_as"].eq("spread bet")
-        out["stake_per_point"] = out["qty"].where(is_sb)
+        out["stake"] = out["qty"].where(is_sb)
         out["level_points"] = out["traded_price"].where(is_sb).round(2)
         # NEWEST FIRST, then trade id: the event-log rule test_trades_are_newest_first_with_a_stable_tie_break holds,
         # with a stable tie-break so rows sharing a date cannot reorder between builds.
@@ -1723,7 +1731,7 @@ class Book:
         """Whether an account is a spread-bet one, and therefore on the exposure basis.
 
         THE ONE IMPLEMENTATION of the most consequential classification in the book — whether a
-        figure is money or notional. The register's `kind` says, for the record this Book was
+        figure is money or notional. The register's `held_as` says, for the record this Book was
         built from; never test an account's name.
         """
         return self.D.ACCOUNT_KIND.get(account) == "spread bet"
@@ -1775,7 +1783,7 @@ class Book:
 
         Columns, and the basis each one is measured on (see MEASURE_BASIS):
           exposure          NOTIONAL  market exposure now — SB accounts at contract value
-          opening_capital   money     NAV at `ytd_opens()`, from QUARTER_NAV; BLANK until that
+          opening_nav   money     NAV at `ytd_opens()`, from QUARTER_NAV; BLANK until that
                                       quarter end is frozen
           capital_deployed  money     the year's money INTO POSITIONS — purchases less sale
                                       proceeds for shares, funds for spread bets. NOT cash
@@ -1800,7 +1808,7 @@ class Book:
 
         # WHICH EXITS HAD HAPPENED. Unbounded for the live book; bounded by date for a dated
         # one, because a sale made after `as_of` had realised nothing at `as_of`.
-        exits = [e for e in self.D.exits
+        exits = [e for e in self.D.sales
                  if as_of is None or str(e.date)[:10] <= str(as_of)[:10]]
 
         # Market value of what the account holds, and the cost of the legs still open; SB accounts
@@ -1850,7 +1858,7 @@ class Book:
         by_after = [e.acct for e in after]
         realised_since = (per_account(pd.Series([e.proceeds for e in after], index=by_after,
                                                 dtype=float).groupby(level=0).sum())
-                          - per_account(pd.Series([self.cost_released[e.eid] for e in after],
+                          - per_account(pd.Series([self.cost_released[e.sale_id] for e in after],
                                                   index=by_after, dtype=float)
                                         .groupby(level=0).sum()))
         nav = exposure.where(~is_sb, employed_since + realised_since
@@ -1878,7 +1886,7 @@ class Book:
             "account": order,
             "held_as": ["spread bet" if is_sb[a] else "shares" for a in order],
             "exposure": exposure.values,
-            "opening_capital": opening.values,
+            "opening_nav": opening.values,
             "capital_deployed": deployed.values,
             "capital_employed": capital_employed.values,
             "nav": nav.values,
@@ -1891,17 +1899,17 @@ class Book:
         weighted = per_account(self.weighted_flows(start=opens, end=as_of or self.valued_at()))
         out["ytd"] = [self._dietz_row(bv, ev, cf, wcf, inc)["return"]
                       for bv, ev, cf, wcf, inc in zip(opening, nav, deployed, weighted, ret_income)]
-        out["opened_in_period"] = (out["opening_capital"] == 0) & out["ytd"].notna()
+        out["opened_in_period"] = (out["opening_nav"] == 0) & out["ytd"].notna()
         return out
 
     def totals(self) -> dict[str, float]:
         """The ALL ACCOUNTS row. Money measures only — exposure is asked for separately."""
         by = self.by_account()
-        t = roll_up(by, "opening_capital", "capital_deployed", "capital_employed",
+        t = roll_up(by, "opening_nav", "capital_deployed", "capital_employed",
                     "nav", "capital_growth", "income", "return_income")
         # THE ONE FORMULA, as every account row: the year's flows weighted to the newest mark.
         weighted = float(self.weighted_flows(start=self.ytd_opens(), end=self.valued_at()).sum())
-        t["ytd"] = self._dietz_row(t["opening_capital"], t["nav"], t["capital_deployed"],
+        t["ytd"] = self._dietz_row(t["opening_nav"], t["nav"], t["capital_deployed"],
                                    weighted, t["return_income"])["return"]
         return t
 
@@ -2341,9 +2349,9 @@ class Book:
         ph = self.store["history.prices"]
         out: dict[str, tuple] = {}
         for row in ph[(ph["date"] <= as_of) & (ph["status"] == self.D.LIVE_MARK)].itertuples():
-            cur = out.get(row.ticker)
+            cur = out.get(row.mark_key)
             if cur is None or row.date >= cur[0]:
-                out[row.ticker] = (row.date, str(getattr(row, "struck", "") or ""))
+                out[row.mark_key] = (row.date, str(getattr(row, "struck", "") or ""))
         return {k: v[1] for k, v in out.items()}
 
     #
@@ -2680,33 +2688,33 @@ class Book:
             raise KeyError(f"{quarter_end} has no frozen composition")
         # An account frozen with nothing open carries one placeholder row with no quantity.
         held = [r for r in at if r[3] not in (None, "") and r[3] == r[3]]
-        df = pd.DataFrame(held, columns=["as_of", "account", "ticker", "qty", "local_price",
+        df = pd.DataFrame(held, columns=["as_of", "account", "ticker", "qty", "price",
                                          "currency", "value", "cost", "quality", "source"])
         order = list(self.D.ACCOUNT_ORDER)
         out = df.groupby("ticker", as_index=False).agg(
             value=("value", "sum"), cost=("cost", "sum"),
             accounts=("account", lambda s: " · ".join(a for a in order if a in set(s))))
-        ident = self._identity().set_index("code")
+        ident = self._identity().set_index("ticker")
         out["company"] = out["ticker"].map(ident["company"]).fillna(out["ticker"])
         out["sector"] = out["ticker"].map(ident["sector"])
         out["region"] = out["ticker"].map(ident["region"])
         out["currency"] = out["ticker"].map(ident["currency"])
-        out["held_as"] = out["ticker"].map(ident["kind"])
-        out["gain"] = out["value"] - out["cost"]
+        out["held_as"] = out["ticker"].map(ident["held_as"])
+        out["unrealised"] = out["value"] - out["cost"]
         out["weight"] = out["value"] / out["value"].sum()
         return (out.sort_values(["company", "ticker"]).reset_index(drop=True)
                    [["ticker", "company", "sector", "region", "currency", "held_as", "accounts",
-                     "cost", "value", "gain", "weight"]])
+                     "cost", "value", "unrealised", "weight"]])
 
     def quarter_lines_total(self, quarter_end: str) -> dict[str, float]:
-        """The frozen composition's total row: the `cost`, `value` and `gain` of `quarter_lines()`,
+        """The frozen composition's total row: the `cost`, `value` and `unrealised` of `quarter_lines()`,
         and the `gap`, how far that value falls short of the exposure frozen beside it. The gap is
         nothing, to the penny, where one valuation froze both — every quarter end the freeze wrote;
         a composition reconstructed by hand can be short a line. KeyError if never frozen."""
         lines = self.quarter_lines(quarter_end)
         value = float(lines["value"].sum())
         return {"cost": float(lines["cost"].sum()), "value": value,
-                "gain": float(lines["gain"].sum()),
+                "unrealised": float(lines["unrealised"].sum()),
                 "gap": round(float(self.quarter_exposure_total()[quarter_end]) - value, 2)}
 
     # ---- THE RETURNS  —  every period measured one way -------------------------------
@@ -2873,10 +2881,10 @@ class Book:
         navs = self.quarter_nav_total()
         prev = max(d for d in navs.index if d < quarter_end)
         before, after = self.quarter_lines(prev), self.quarter_lines(quarter_end)
-        opening = before.set_index("ticker")["gain"]
-        closing = after.set_index("ticker")["gain"]
-        exits = [e for e in self.D.exits if prev < str(e.date)[:10] <= quarter_end]
-        sold = [{"ticker": e.ticker, "realised": e.proceeds - self.cost_released[e.eid]}
+        opening = before.set_index("ticker")["unrealised"]
+        closing = after.set_index("ticker")["unrealised"]
+        exits = [e for e in self.D.sales if prev < str(e.date)[:10] <= quarter_end]
+        sold = [{"ticker": e.ticker, "realised": e.proceeds - self.cost_released[e.sale_id]}
                 for e in exits]
         # HELD AS, so a company held both ways reads as two lines: from either end's
         # composition, and for a line bought and sold inside the quarter from its account.
@@ -2890,7 +2898,7 @@ class Book:
         out["contribution"] = out["closing"] - out["opening"] + out["realised"]
         out.index.name = "ticker"
         out = out.reset_index()
-        out["company"] = out["ticker"].map(self._identity().set_index("code")["company"]) \
+        out["company"] = out["ticker"].map(self._identity().set_index("ticker")["company"]) \
             .fillna(out["ticker"])
         out["held_as"] = out["ticker"].map(held_as)
         return (out.sort_values(["contribution", "ticker"]).reset_index(drop=True)
@@ -2972,17 +2980,17 @@ class Book:
 
         ph = self.store["history.prices"]
         fh = self.store["history.fx"]
-        px = pick(ph[ph["status"] == live_status], "ticker", "price")
+        px = pick(ph[ph["status"] == live_status], "mark_key", "price")
         fx = pick(fh[(fh["kind"] == "spot") & (fh["status"] == live_status)], "currency", "rate")
         return px, fx
 
     def _contracts_open_at(self, ticker: str, as_of: str) -> set[str]:
         """Which spread-bet contracts this ticker had open on a date."""
         out = set()
-        for t in self.D.trades:
+        for t in self.D.buys:
             if t.ticker != ticker or t.mode != "sb":
                 continue
-            c = self.D.LEG_CONTRACT.get(t.id)
+            c = self.D.LEG_CONTRACT.get(t.trade_id)
             if c and str(t.date) <= as_of:
                 out.add(c)
         return out
@@ -3092,7 +3100,7 @@ class Book:
     def _converts_from(ticker: str, ident: pd.DataFrame) -> str | None:
         """The currency a line's local value is converted from at a date, or None: a spread bet
         is £/point at parity, so NO FX applies, and a sterling line needs no rate."""
-        if ident.at[ticker, "kind"] == "spread bet":
+        if ident.at[ticker, "held_as"] == "spread bet":
             return None
         cur = ident.at[ticker, "currency"] if ticker in ident.index else "GBP"
         return None if cur == "GBP" else cur
@@ -3108,7 +3116,7 @@ class Book:
         """
         held = self.as_of(as_of).set_index("ticker")
         px, fx = self._marks_at(as_of)
-        ident = self._identity().set_index("code")
+        ident = self._identity().set_index("ticker")
         prices, rates, other = set(), set(), []
         for ticker, r in held.iterrows():
             try:
@@ -3135,7 +3143,7 @@ class Book:
                         own date: the close gives the share's own price (`deal_prices()`)
           life          each sale, share leg still held, dividend and funding charge of an open
                         company life priced in another currency, on its own date: the close
-                        puts it into that currency (`company_lives()`'s net cost per share)
+                        puts it into that currency (`company_lives()`'s life cost per share)
           bet           each open spread-bet leg, on its own date, in its listing's currency
                         and its company's share listings' where either is not sterling: the
                         closes turn its stake into share-equivalents and its level into the
@@ -3149,7 +3157,7 @@ class Book:
         day = (pd.Timestamp(today) if today else pd.Timestamp.today()).normalize()
         fh = self.store["history.fx"]
         spot = fh[(fh["kind"] == "spot") & (fh["status"] == self.D.LIVE_MARK)]
-        ident = self._identity().set_index("code")
+        ident = self._identity().set_index("ticker")
         wanted: dict[tuple[str, str], str] = {}
 
         # A quarter end: the currencies of the shares held that day, from the ledger, so a date
@@ -3193,7 +3201,7 @@ class Book:
                 days = ([r["date"] for r in life["sales"]]
                         + [r["date"] for r in life["buys"]
                            if r["held_as"] == "shares" and r["open_leg"]]
-                        + [d for d, _ in inc["dividends"] + inc["funding"]])
+                        + [d for d, _ in inc["dividends"] + inc["funding_interest"]])
                 for d in days:
                     wanted.setdefault((cur, pd.Timestamp(d).date().isoformat()), "life")
 
@@ -3244,7 +3252,7 @@ class Book:
         """
         held = self.as_of(as_of, account).set_index("ticker")
         px, fx = self._marks_at(as_of, window)
-        ident = self._identity().set_index("code")
+        ident = self._identity().set_index("ticker")
 
         rows = []
         for ticker, r in held.iterrows():
@@ -3263,14 +3271,14 @@ class Book:
             rows.append({"ticker": ticker, "company": ident.at[ticker, "company"],
                          "sector": ident.at[ticker, "sector"],
                          "region": ident.at[ticker, "region"], "currency": cur,
-                         "held_as": ident.at[ticker, "kind"],
+                         "held_as": ident.at[ticker, "held_as"],
                          "qty": r["qty"], "cost": r["cost"], "value": value,
                          "priced_at": priced_at})
         # NAMED COLUMNS, so an account holding nothing that day is an empty frame rather than a
         # KeyError on "value": an IG account not yet funded at a quarter end could not be frozen.
         out = pd.DataFrame(rows, columns=["ticker", "company", "sector", "region", "currency",
                                           "held_as", "qty", "cost", "value", "priced_at"])
-        out["gain"] = out["value"] - out["cost"]
+        out["unrealised"] = out["value"] - out["cost"]
         total = out["value"].sum()
         out["weight"] = out["value"] / total if total else float("nan")
         return out.sort_values("company").reset_index(drop=True)
@@ -3414,8 +3422,8 @@ class Book:
             sb = self.is_spread_bet(account)
             if held.empty:
                 snaps.append({"as_of": as_of, "account": account, "ticker": "(no positions)",
-                              "qty": None, "local_price": None, "currency": None, "gbp_value": 0.0,
-                              "gbp_cost": 0.0, "quality": "derived",
+                              "qty": None, "price": None, "currency": None, "value": 0.0,
+                              "cost": 0.0, "quality": "derived",
                               "source": f"No open position at {as_of}, {where}"})
             for r in held.itertuples(index=False):
                 lots = self._marks_for(r.ticker, as_of, px, r.qty, account)
@@ -3432,13 +3440,13 @@ class Book:
                         and r.currency not in self.D.RATE_CARRIED):
                     off.append(f"{account} {r.ticker}: its nearest {r.currency} rate is "
                                f"{fx[r.currency][0]}")
-                sources = [str(live[(live["ticker"] == k) & (live["date"] == px[k][0])]["source"]
+                sources = [str(live[(live["mark_key"] == k) & (live["date"] == px[k][0])]["source"]
                                .iloc[-1]) for k in keys]
                 snaps.append({"as_of": as_of, "account": account, "ticker": r.ticker,
                               "qty": int(r.qty) if float(r.qty).is_integer() else float(r.qty),
-                              "local_price": round(local / r.qty, 6), "currency": r.currency,
-                              "gbp_value": round(float(r.value), 2),
-                              "gbp_cost": round(float(r.cost), 2), "quality": "derived",
+                              "price": round(local / r.qty, 6), "currency": r.currency,
+                              "value": round(float(r.value), 2),
+                              "cost": round(float(r.cost), 2), "quality": "derived",
                               "source": " + ".join(sources)})
             value = round(float(held["value"].sum()), 2) if not held.empty else 0.0
             if sb:
@@ -3522,8 +3530,8 @@ class Book:
             # the next caller's answer.
             return self._changes_cache[cache_key].copy()
         prices = self.store["history.prices"]
-        dates_of = {k: sorted(set(g["date"])) for k, g in prices.groupby("ticker")}
-        ident = self._identity().set_index("code")
+        dates_of = {k: sorted(set(g["date"])) for k, g in prices.groupby("mark_key")}
+        ident = self._identity().set_index("ticker")
 
         # AN EXIT BELONGS TO THE MARK KEY ITS REALISATION'S BUY LEGS SAT ON. A pool sale
         # consumed no named leg, so it falls back to the ticker — which is right, because a
@@ -3537,15 +3545,15 @@ class Book:
             if k:
                 rid_keys.setdefault(rid, set()).add(k)
 
-        by_id = {t.id: t for t in self.D.trades}
+        by_id = {t.trade_id: t for t in self.D.buys}
 
         def _exit_key(e):
             # A SALE THAT NAMES ITS LEG SAT ON THAT LEG'S LINE, whatever else its parcel held.
-            leg = by_id.get(self.D.EXIT_LEG_MATCH.get(e.eid))
+            leg = by_id.get(self.D.EXIT_LEG_MATCH.get(e.sale_id))
             if leg is not None:
-                return (self.D.LEG_CONTRACT.get(leg.id) if leg.mode == "sb" else leg.ticker) \
+                return (self.D.LEG_CONTRACT.get(leg.trade_id) if leg.mode == "sb" else leg.ticker) \
                     or e.ticker
-            ks = rid_keys.get(self.D.REALISATION_BY_EXIT.get(e.eid), set())
+            ks = rid_keys.get(self.D.REALISATION_BY_EXIT.get(e.sale_id), set())
             return next(iter(ks)) if len(ks) == 1 else e.ticker
 
         # THE POPULATION IS THE LIVE BOOK'S OWN LINES, which makes the totals tie back to owned()
@@ -3556,7 +3564,7 @@ class Book:
             if k:
                 live_keys.add(k)
 
-        live_on = {r["ticker"]: str(r["as_of"])[:10] for r in self.store["prices"].to_dict("records")}
+        live_on = {r["mark_key"]: str(r["as_of"])[:10] for r in self.store["prices"].to_dict("records")}
 
         windows: dict[str, tuple] = {}
         for key, dates in sorted(dates_of.items()):
@@ -3573,7 +3581,7 @@ class Book:
             windows[key] = (t0, t1)
 
         sales: dict[str, list] = {}
-        for e in self.D.exits:
+        for e in self.D.sales:
             if account is None or e.acct == account:
                 sales.setdefault(_exit_key(e), []).append(e)
 
@@ -3613,12 +3621,12 @@ class Book:
                 else (pd.Timestamp(t1) - pd.Timedelta(days=1)).date().isoformat())
             p0 = px0[key][1] if key in px0 else None
             # A CLOSED LINE'S LAST LEVEL IS ITS CLOSE, in the units its marks are struck in.
-            p1 = (float(sorted(sold, key=lambda e: str(e.date)[:10])[-1].price) if ended
+            p1 = (float(sorted(sold, key=lambda e: str(e.date)[:10])[-1].traded_price) if ended
                   else px1[key][1])
 
             ticker = next(iter((legs1 or legs0).values()))["ticker"]
             known = ticker in ident.index
-            synthetic = known and ident.at[ticker, "kind"] == "spread bet"
+            synthetic = known and ident.at[ticker, "held_as"] == "spread bet"
             cur = ident.at[ticker, "currency"] if known else "GBP"
             # A spread bet is sterling at parity, so no rate applies at either end. `rate1` is the
             # LIVE rate and `rate0` the rate the book HELD the line at — see the docstring.
@@ -3648,7 +3656,7 @@ class Book:
 
             change = value_to - value_from
             rows.append({
-                "key": key, "ticker": ticker,
+                "mark_key": key, "ticker": ticker,
                 "company": ident.at[ticker, "company"] if known else ticker,
                 "held_as": "spread bet" if synthetic else "shares",
                 "currency": cur,
@@ -3663,7 +3671,7 @@ class Book:
                 "price_move_pct": (p1 / p0 - 1) if p0 else None})
 
         out = pd.DataFrame(rows, columns=[
-            "key", "ticker", "company", "held_as", "currency", "priced_from", "priced_at",
+            "mark_key", "ticker", "company", "held_as", "currency", "priced_from", "priced_at",
             "qty_from", "qty_to", "value_from", "value_to", "change", "price_effect", "fx_effect",
             "transacted", "price_move_pct"])
         if not out.empty:
@@ -3730,7 +3738,7 @@ class Book:
         price in the line's currency: a contract's, and a bet's own ticker-keyed ones.
         """
         if by == "issuer":
-            company = self._identity().set_index("code")["company"]
+            company = self._identity().set_index("ticker")["company"]
             tickers = {code for code, name in company.items() if name == key}
         else:
             tickers = {key}
@@ -3743,9 +3751,7 @@ class Book:
                 keys.add(leg["key"])
 
         prices = self.store["history.prices"]
-        # `ticker` is renamed at the door: in this table it is a MARK KEY, not an instrument code.
-        out = (prices[prices["ticker"].isin(keys)]
-               .rename(columns={"ticker": "mark_key"}))
+        out = prices[prices["mark_key"].isin(keys)].copy()
         out["level"] = [k in self.D.CONTRACTS or self.D.KIND_OF_CODE.get(k) == "spread bet"
                         for k in out["mark_key"]]
         return out.sort_values(["date", "mark_key"], ascending=[False, True]) \
@@ -3930,7 +3936,7 @@ class Book:
         # ---- A BET LINE'S POINT: what turns a held bet into share-equivalents -----------
         L = self.ledger
         held_bets = sorted(set(L.loc[L["open_leg"] & L["held_as"].eq("spread bet"), "ticker"]))
-        ident = self._identity().set_index("code")
+        ident = self._identity().set_index("ticker")
         gaps.extend(f"points per unit owed — {code}: held, and securities.csv does not say how "
                     f"many points make one unit of its price"
                     for code in held_bets
@@ -4022,8 +4028,8 @@ class Book:
                 return "evidence: _archive/statements/ is empty or absent — limb 3 unverifiable", None
             # THE ROW'S ACCOUNT TRAVELS WITH IT: a trade's source names the document's kind and
             # date only, and a date is not a document until the account narrows it.
-            rows = ([(t.id, t.source, t.broker_ref, t.acct) for t in self.D.trades]
-                    + [(e.eid, e.source, e.broker_ref, e.acct) for e in self.D.exits])
+            rows = ([(t.trade_id, t.source, t.broker_ref, t.acct) for t in self.D.buys]
+                    + [(e.sale_id, e.source, e.broker_ref, e.acct) for e in self.D.sales])
             cites, gaps, absent = 0, [], 0
             for rid, src, ref, acct in rows:
                 ev = self.D.evidence_from_source(src)

@@ -78,16 +78,16 @@ def named(D, book_names):
     if not book_names["words"]:
         pytest.skip("the loaded book names nobody yet")
     exact = (book_names["exact"] | set(D.ACCOUNT_ORDER) | set(schema.filed_statements())
-             | {r["code"] for r in _rows(schema, "securities")}
+             | {r["ticker"] for r in _rows(schema, "securities")}
              # A LISTING AS ITS MARKET SPELLS IT, whole and as its ticker: a code and a symbol
              # can differ (a code's hyphen is a market's space).
              | {v for r in _rows(schema, "securities") if r.get("symbol")
                 for v in (r["symbol"], r["symbol"].partition(":")[2]) if len(v) >= 3}
-             | {r["company"] for r in _rows(schema, "issuers")}
+             | {r["company"] for r in _rows(schema, "companies")}
              | {v for r in _rows(schema, "contracts") for v in (r["contract"], r["epic"]) if v}
-             | {r[k] for t, k in (("trades", "broker_ref"), ("exits", "broker_ref"),
-                                  ("cash-observations", "reference"),
-                                  ("account-observations", "reference"))
+             | {r[k] for t, k in (("buys", "broker_ref"), ("sales", "broker_ref"),
+                                  ("cash-readings", "reference"),
+                                  ("account-readings", "reference"))
                 for r in _rows(schema, t) if r[k] and len(r[k]) >= 5 and " " not in r[k]})
     return re.compile(
         r"(?i:(?<![A-Za-z])(" + _either(book_names["words"]) + r")(?![A-Za-z]))"

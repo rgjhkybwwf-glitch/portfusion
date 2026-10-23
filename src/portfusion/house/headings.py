@@ -5,10 +5,10 @@ desk kept its own map in `app.js`, the report typed its `<th>` inline, and "Entr
 two figures on the desk alone. The words are `docs/glossary.md` §5's with one sterling suffix,
 `(GBP)`. This list is the authority.
 
-KEYED BY TAB AND FIELD, because a field name alone is not a column: `gain` is unrealised on
-Holdings, realised on Round Trips and a quarter's gain on Performance. `COMMON` holds a field
-that reads the same wherever it is shown; `BY_TAB` holds the ones whose meaning is the tab's. The
-tab is the desk panel's title.
+KEYED BY TAB AND FIELD. `COMMON` holds a field that reads the same wherever it is shown, a store
+column under its own name (#43); `BY_TAB` holds the ones only one tab shows, or that a tab heads
+in its own words (Dashboard's `currency`, a category). The tab is the desk panel's title. One
+heading names one field (`tests/test_figures.py`).
 
 WHAT IS REGISTERED is every field the desk or the report shows, and nothing else: `tests/test_figures.py`
 refuses a heading typed anywhere else, and a heading here that no renderer heads (13 Oct 2026), since a column retired from its page left its word behind four times in the desk
@@ -31,9 +31,11 @@ COMMON = {
     "sector": "Sector",
     "region": "Region",
     "currency": "Ccy",
+    "cur": "Deal ccy",                      # the currency a deal's price is stated in (glossary §4)
     "held_as": "Held as",
     "direction": "Direction",
     "trade_id": "Trade ID",
+    "sale_id": "Sale ID",
     "realisation_id": "Realisation ID",
     "broker_ref": "Broker ref",
     "contract": "IG contract",              # a bet leg's; on the Price Refresh, whether a line is one
@@ -43,22 +45,19 @@ COMMON = {
     "as_of": "As at",
     # ONE WORD FOR WHEN A POSITION WAS ENTERED: a holding's first buy still held, a round trip's
     # first leg beside its exit date (glossary §5).
-    "open_date": "Entry date",
     "opened": "Entry date",
     "closed": "Exit date",
     "days_held": "Days held",
-    "held_days": "Days held",
     "priced_at": "Price as at",
     "age_days": "Age (days)",
     "quarter": "Quarter",
     # ---- how much -----------------------------------------------------------------------------
     "qty": "Quantity",
-    "stake_per_point": "Stake (£/pt)",
+    "stake": "Stake (£/pt)",
     "level_points": "Level (points)",
-    "price": "Price",
     # A LOCAL PRICE IS NAMED BY THE Ccy COLUMN BESIDE IT, so its heading carries no unit
     # ("(local)" retired 12 Oct 2026). house/precision.py's LOCAL_PRICE_FIELDS lists them.
-    "current_price": "Price",              # a holding's mark today, beside its entry price
+    "price": "Price",                       # a line's mark, beside its entry price
     "entry_price": "Entry price",
     "traded_price": "Traded price",
     "exit_price": "Exit price",
@@ -66,14 +65,16 @@ COMMON = {
     "value": "Value (GBP)",
     "proceeds": "Proceeds (GBP)",
     "amount": "Amount (GBP)",
+    "unrealised": "Unrealised gain (GBP)",
+    "unrealised_pct": "Unrealised gain (%)",
     "realised": "Realised gain (GBP)",
+    "realised_pct": "Realised gain (%)",
     "quarter_gain": "Quarter gain (GBP)",
     "weight": "Weight",
     "share": "% of book",
     "total": "Total",
     "nav": "Net asset value",
     "exposure": "Market exposure",
-    "opening_capital": "Opening NAV",       # the year's opening NAV, the quarter's word for it
     "capital_employed": "Capital employed",
     "capital_growth": "Capital growth",
     "ytd": "YTD return",
@@ -86,7 +87,8 @@ COMMON = {
     "contribution": "Contribution",         # how an account counts towards NAV (§2)
     # ---- against the broker -------------------------------------------------------------------
     "book": "Book",
-    "broker": "Broker",
+    "broker": "Broker",                     # the broker's figure; the firm is `broker_firm`
+    "broker_firm": "Broker firm",
     "difference": "Difference",
     "verdict": "Verdict",
     "last_check": "Last broker check",
@@ -112,28 +114,21 @@ COMMON = {
 }
 
 BY_TAB = {
-    "Holdings": {
-        "gain": "Unrealised gain (GBP)",
-        "gain_pct": "Unrealised gain (%)",
-    },
+    "Holdings": {},
     "Dashboard": {
         "currency": "Currency",             # a currency as a category, not a line's quote
     },
     "Round Trips": {
-        "gain": "Realised gain (GBP)",
-        "gain_pct": "Realised gain (%)",
         # A spread bet's two per-share cells read as its levels in points (BET_COLUMNS).
         "entry_level_points": "Entry level (points)",
         "exit_level_points": "Exit level (points)",
         # A COMPANY LIFE (the life view, Book.company_lives()).
         "state": "State",
-        "to_date": "Gain to date (GBP)",
         "dividends": "Dividends (GBP)",
-        "funding": "Funding (GBP)",
-        "total": "Life gain (GBP)",
+        "funding_interest": "Funding interest (GBP)",
+        "life_gain": "Life gain (GBP)",
         "life_pct": "Life gain (%)",
-        "held": "Held",
-        "net_cost_per_share": "Net cost per share",
+        "life_cost_per_share": "Life cost per share",
         "realisations": "Round trips",
         "lines": "Lines",
     },
@@ -145,7 +140,6 @@ BY_TAB = {
     },
     # THE REFRESH GRID: each line's mark on file beside the one fetched, a pair of dates apart.
     "Price Refresh": {
-        "line": "Line",
         "was": "Was",
         "was_at": "Was as at",
         "new": "New",
@@ -155,7 +149,6 @@ BY_TAB = {
     },
     # A WINDOW, from one mark to the next: its own pair of times.
     "What Changed": {
-        "key": "Line",
         "price_move_pct": "Mark move (%)",
         "price_effect": "From price (GBP)",
         "fx_effect": "From FX (GBP)",
@@ -174,15 +167,8 @@ BY_TAB = {
         "ref": "Retrieves",
     },
     # THE BENCH'S FORMS, one field per store column (`desk/intake/bench.py:form_for()`). A field the
-    # pages already head reads the same here; these are the ones only a form shows. A spread bet's
-    # `val` and `price` are its level in points, so the share and the bet rows share one column.
+    # pages already head reads the same here; these are the ones only a form shows.
     "Bench": {
-        "id": "Trade ID",
-        "eid": "Sale ID",
-        "cur": "Ccy",
-        "stake": "Stake (£/pt)",
-        "val": "Trade value (GBP), or a bet's level (points)",
-        "realisation": "Realisation ID",
         "closes": "Closes trade",
         "local_amount": "Amount",
         "rate": "Rate (per £1)",
@@ -190,7 +176,6 @@ BY_TAB = {
         "evidence": "Document kind",
         "reference": "Reference",
         "retires": "Also retires",          # an IG contract the sale leaves with no open leg
-        "kind": "Held as",                  # a new line's: shares or spread bet
         "symbol": "Symbol",
         "quote_unit": "Quote unit",
         "points_per_unit": "Points per unit",
@@ -204,8 +189,6 @@ BY_TAB = {
         "rate_date": "FX rate as at",
         "cash": "Cash / Funds (GBP)",      # an IG row's is its funds, from its reading
         "cash_read": "Read from",           # the document, then its day, as Reconcile names one
-        # THE FIRM, never the figure: Reconcile's "Broker" is what the broker says (glossary §5).
-        "broker": "Broker firm",
         "feed_key": "Feed",
     },
     # WHO OPENS THE HOSTED DESK, on the Mac's Access page. `at` is when a sign-in was tried, so
@@ -222,7 +205,7 @@ BY_TAB = {
         "last_used": "Last used",
         "at": "At",
         "result": "Result",
-        "address": "From",
+        "address": "Address",               # where a sign-in came from
         "label": "Named as",
     },
     # PAGES WITH NO HEADING OF THEIR OWN, named so that a tab nobody named is refused rather than
@@ -231,6 +214,28 @@ BY_TAB = {
     "Reconcile": {},
     "Reports": {},
 }
+
+
+#: STORE COLUMNS NO PAGE HEADS, each with why; `table.column` where the name heads another idea.
+#: Every other store column is headed under its own name (#43, `tests/test_figures.py`).
+STORE_ONLY: dict[str, str] = {
+    "struck": "whether a mark can be fetched again; the marks door reads it, no page since 13 Oct",
+    "status": "keeps a replaced row on file; the engine reads only live rows",
+    "published": "a research note's date, inside the Research notes link",
+    "url": "a research note's address, the Research notes link's",
+    "settings.key": "a setting's name", "settings.value": "a setting's value, not sterling",
+    **{c: "the broker's own figure on a reading (glossary §2b)" for c in (
+        "positions", "stmt_value", "recon_cash", "funds", "running_pl", "equity", "deposit",
+        "available")},
+}
+
+
+def store_heading(table: str, column: str) -> str | None:
+    """What a store column is headed, or None for one on STORE_ONLY or headed nowhere."""
+    if f"{table}.{column}" in STORE_ONLY or column in STORE_ONLY:
+        return None
+    return COMMON.get(column) or BY_TAB["Bench"].get(column) or next(
+        (m[column] for m in BY_TAB.values() if column in m), None)
 
 
 def heading(tab: str, field: str) -> str:

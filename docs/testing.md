@@ -38,7 +38,7 @@ audit, never in a book's `checks/`.
 - **Find a figure by its field or its label, never by position.** A column added in front
   breaks a positional read silently.
 - **Assert a relationship or a shape, never an expected figure.** A real trade moves a number.
-- **Say which rows a test is built from.** `needs("trades", …)` skips it on a book with none
+- **Say which rows a test is built from.** `needs("buys", …)` skips it on a book with none
   yet, saying so; never assume a row is there. A book lists the skips it expects in its
   `checks/skips.txt`, and any other skip there fails the run.
 - **Write to a copy, never the loaded book.** `store_copy`, `item`, `workbench` and `inbox` give

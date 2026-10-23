@@ -34,7 +34,7 @@ TITLE = "What Changed"
 #: writes the marks and this says what they did. The write itself lands you here.
 ORDER = 27
 
-#: What each row shows. `key` is the MARK KEY — the contract for a spread bet, the ticker for a
+#: What each row shows. `mark_key` is the MARK KEY — the contract for a spread bet, the ticker for a
 #: share — because that is where a price lives; `company` is beside it so a reader meets Halvard
 #: rather than only HALV-MAR27.
 #:
@@ -42,7 +42,7 @@ ORDER = 27
 #: pounds it made, then the other two parts, then `change`, their sum, then where the line
 #: landed. The two dates come last: they are the row's provenance, not its subject, and they
 #: differ per line because the marks can.
-COLUMNS = ("key", "company", "price_move_pct", "price_effect", "fx_effect", "transacted",
+COLUMNS = ("mark_key", "company", "price_move_pct", "price_effect", "fx_effect", "transacted",
            "change", "value_to", "priced_from", "priced_at")
 
 #: A SPREAD BET HAS NO FX PART. It is sterling at parity, so its From FX is nought on every line

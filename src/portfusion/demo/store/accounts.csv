@@ -1,4 +1,4 @@
-account,holder,broker,number,code,kind,feed_key
+account,holder,broker_firm,number,code,held_as,feed_key
 Voss ii ISA,Ms Nia Voss,interactive investor,7421950,A1,shares,
 Voss ii Trading,Ms Nia Voss,interactive investor,7421951,A2,shares,
 Voss IG Spread bet,Ms Nia Voss,IG Index Ltd,XK9P3,A3,spread bet,VOSS_IG

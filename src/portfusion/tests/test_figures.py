@@ -58,7 +58,7 @@ def report_figures():
 # GUARD 1 · REGISTRY CLOSURE — no renderer may show a label the engine does not know
 # =====================================================================================
 
-@needs("trades")
+@needs("buys")
 def test_every_rendered_label_is_in_the_registry(desk_figures, report_figures):
     """A label nobody registered may not be shown. `basis_of()` refuses one when a renderer asks
     for its basis; this names every one a renderer shows, whether it asked or not.
@@ -71,7 +71,7 @@ def test_every_rendered_label_is_in_the_registry(desk_figures, report_figures):
         f"Register the figure — its basis and its unit — before showing it.")
 
 
-@needs("trades")
+@needs("buys")
 def test_both_renderers_list_the_registry_in_its_order(desk_figures, report_figures):
     """ONE ORDER, THE REGISTRY'S. The Dashboard typed the sixteen labels a second time, in an order
     of its own, until step 5: three sat away from the order HEADLINE says a list reads in, and its
@@ -81,7 +81,7 @@ def test_both_renderers_list_the_registry_in_its_order(desk_figures, report_figu
     assert list(report_figures) == [k for k, v in Book.HEADLINE.items() if v["point_in_time"]]
 
 
-@needs("trades")
+@needs("buys")
 def test_the_registry_is_not_a_graveyard(desk_figures, report_figures):
     """The other direction. A registered label nothing renders is a figure that was retired
     without the registry being told, and the next renderer will resurrect it by accident."""
@@ -94,7 +94,7 @@ def test_the_registry_is_not_a_graveyard(desk_figures, report_figures):
 # GUARD 2 · VALUE AGREEMENT — every renderer's number is the engine's number
 # =====================================================================================
 
-@needs("trades")
+@needs("buys")
 def test_the_desk_renders_the_engines_figures(engine, desk_figures):
     live = engine.headline()
     for label, fig in desk_figures.items():
@@ -105,7 +105,7 @@ def test_the_desk_renders_the_engines_figures(engine, desk_figures):
             f"desk {label!r}: engine {live[label]:,.6f} vs desk {fig['value']:,.6f}")
 
 
-@needs("trades")
+@needs("buys")
 def test_the_report_renders_the_engines_figures(engine, report_figures):
     """THE CONTRACT THAT CATCHES THE GAP. The report reconstructed exposure from the
     ledger instead of reading the store's quarter rows, and published it under the engine's name
@@ -119,7 +119,7 @@ def test_the_report_renders_the_engines_figures(engine, report_figures):
             f"report {label!r}: engine {at_quarter[label]:,.2f} vs report {fig['value']:,.2f}")
 
 
-@needs("trades")
+@needs("buys")
 def test_the_report_quotes_the_quarters_own_totals(engine, report_figures):
     """The report's exposure and net asset value are the quarter end's, not today's."""
     assert report_figures["Total market exposure"]["value"] == \
@@ -128,7 +128,7 @@ def test_the_report_quotes_the_quarters_own_totals(engine, report_figures):
         pytest.approx(engine.quarter_nav_total()[QUARTER], abs=PENNY)
 
 
-@needs("trades")
+@needs("buys")
 def test_a_dated_page_cannot_quote_a_year_to_date_figure(engine):
     """"YTD return (MWR)" and "YTD income" have no value AT A DATE — they are year-to-date by
     construction. headline(date) does not return them, so a Q2 page cannot show one by
@@ -140,7 +140,7 @@ def test_a_dated_page_cannot_quote_a_year_to_date_figure(engine):
             f"{'is' if label in at_quarter else 'is not'} in headline({QUARTER})")
 
 
-@needs("trades")
+@needs("buys")
 def test_the_parts_add_up_to_the_whole_at_a_quarter_end(engine):
     """"— of which" has to mean it. Both components and the total come from ONE call to
     quarter_nav_rows(), split by is_spread_bet(), so they cannot be sourced differently —
@@ -174,7 +174,7 @@ def test_a_basis_is_the_registrys_or_nothing():
     assert Book.NOTIONAL_BASES <= {spec["basis"] for spec in Book.HEADLINE.values()}
 
 
-@needs("trades")
+@needs("buys")
 def test_the_report_states_the_registrys_basis(report_figures):
     for label, fig in report_figures.items():
         assert fig["basis"] == Book.basis_of(label)
@@ -278,18 +278,15 @@ GLOSSARY_NOT_HEADINGS: dict[str, str] = {
 
 @needs_checkout
 def test_the_glossarys_headings_are_the_registrys():
-    """GLOSSARY §5 AND house/headings.py SAY THE SAME WORDS (the owner, 1 Oct 2026).
-
-    §5 records which word was agreed for each concept; the list is what every
-    renderer draws. Two places hold the agreed words, so this holds the first to the second: each
-    word §5 sets in bold is a heading the list holds. A word renamed in the list and not in §5
-    fails here.
+    """GLOSSARY §5 AND house/headings.py SAY THE SAME WORDS, BOTH WAYS (the owner, 1 and 23 Oct
+    2026). A word renamed in one and not the other fails, and so does a heading added without a
+    word agreed in §5: "Gain to date" reached the desk that way, beside an agreed "Unrealised gain".
     """
     import re
     from portfusion.house.headings import BY_TAB, COMMON
     shown = set(COMMON.values()).union(*(m.values() for m in BY_TAB.values()))
     text = (ROOT / "docs" / "glossary.md").read_text()
-    section = text[text.index("## 5 ·"):text.index("### What a sale closes")]
+    section = text[text.index("## 5 ·"):text.index("## 5b ·")]
     agreed = {word for line in section.splitlines() if line.startswith("| ")
               for bold in re.findall(r"\*\*(.+?)\*\*", line.split(" | ")[1] if " | " in line else "")
               if "`" not in bold for word in bold.split(" · ")}
@@ -298,6 +295,34 @@ def test_the_glossarys_headings_are_the_registrys():
     assert not missing, (
         f"glossary §5 agrees {missing}, which no renderer heads a column with. Rename it in §5 "
         f"or in house/headings.py, so the two say one word.")
+    unagreed = sorted(shown - agreed)
+    assert not unagreed, f"headed on a page but agreed nowhere in glossary §5: {unagreed}"
+
+
+def test_every_store_column_is_headed_under_its_own_name():
+    """ONE NAME FROM THE STORE TO THE PAGE (#43): a column a reader can meet is headed under the
+    name the store gives it, so the store and the desk cannot call one thing two names."""
+    from portfusion.house.headings import STORE_ONLY, registered
+    from portfusion.record import schema
+    pairs = {(n, f.name) for n, t in schema.TABLES.items() for f in t.fields}
+    unheaded = sorted(f"{n}.{c}" for n, c in pairs if c not in registered()
+                      and c not in STORE_ONLY and f"{n}.{c}" not in STORE_ONLY)
+    assert not unheaded, f"store columns with no heading under their own name: {unheaded}"
+    gone = set(STORE_ONLY) - {c for _, c in pairs} - {f"{n}.{c}" for n, c in pairs}
+    assert not gone, f"store-only, but no longer in the store: {sorted(gone)}"
+
+
+def test_one_heading_names_one_field():
+    """ONE IDEA, ONE NAME (#43): two fields under one heading are one idea under two names, as
+    `kind` and `held_as` were, or two ideas under one word, as `cur` and `currency` were."""
+    from collections import defaultdict
+    from portfusion.house.headings import BY_TAB, COMMON
+    fields = defaultdict(set)
+    for words in (COMMON, *BY_TAB.values()):
+        for field, word in words.items():
+            fields[word].add(field)
+    shared = {w: sorted(f) for w, f in fields.items() if len(f) > 1}
+    assert not shared, f"one heading over several fields: {shared}"
 
 
 def test_every_desk_column_has_a_heading_for_its_tab(repo_root):
@@ -317,6 +342,11 @@ def test_every_desk_column_has_a_heading_for_its_tab(repo_root):
     assert not re.search(r"const HEADS\s*=\s*\{", js), "app.js has its own heading map again"
     literal = set(re.findall(r"<th[^>]*>([^<$]+)</th>", js))
     assert not literal, f"app.js types {sorted(literal)} as a table head; draw it with head()"
+    # A FIELD head() IS ASKED FOR BY NAME IS REGISTERED: an unregistered one prints its own name,
+    # as the refresh grid's "line" did after the field became `mark_key` (#43).
+    from portfusion.house.headings import registered
+    asked = set(re.findall(r'\b(?:head|box|pick)\("([a-z_]+)"', js))
+    assert not asked - registered(), f"app.js heads {sorted(asked - registered())}, named nowhere"
 
 
 def test_app_js_draws_a_table_from_the_panels_own_columns(repo_root):
@@ -329,7 +359,7 @@ def test_app_js_draws_a_table_from_the_panels_own_columns(repo_root):
     assert not typed, f"app.js types a table's columns: {typed}; send the panel's *COLUMNS"
 
 
-@needs("trades")
+@needs("buys")
 def test_the_desks_allocation_is_headed_as_the_reports():
     """WHERE THE EXPOSURE SITS IS DRAWN BY BOTH RENDERERS — the report's section, and Holdings
     under its table since 12 Oct 2026 — so the axes, their order and their words are one. The
@@ -365,7 +395,7 @@ def test_every_percentage_is_printed_to_the_houses_places(repo_root):
     assert desk_app.panel("holdings")["precision"]["pct_dp"] == precision.PCT_DP
 
 
-@needs("trades")
+@needs("buys")
 def test_every_report_heading_is_the_registrys():
     """The report's heads are the registry's words, or an income category, which is data."""
     import re
@@ -419,7 +449,7 @@ def test_the_valuation_date_is_the_engines(desk_figures):
     assert panels.get("dashboard").data()["valued_at"] == Book().valued_at()
 
 
-@needs("trades")
+@needs("buys")
 def test_net_asset_value_leads_wherever_the_figures_are_listed(desk_figures):
     """NAV FIRST, then exposure and its parts (the owner, 12 Oct 2026): the book's own capital, and
     what the return is measured on. The report's summary led with it already; the Dashboard led
@@ -433,7 +463,7 @@ def test_net_asset_value_leads_wherever_the_figures_are_listed(desk_figures):
     assert page.index('class="k">Net asset value') < page.index('class="k">Total market exposure')
 
 
-@needs("trades")
+@needs("buys")
 def test_the_open_quarter_reaches_the_desk():
     """A row one renderer shows and another lacks is the many-renderers problem.
     The report is deliberately NOT in this: a quarterly report is a document about a closed
@@ -522,7 +552,7 @@ def test_every_desk_page_is_a_tab_the_headings_know():
         H.heading("Holding", "ticker")
 
 
-@needs("trades")
+@needs("buys")
 def test_the_headings_registry_is_not_a_graveyard(monkeypatch):
     """13 Oct 2026: Sells, Pre-baseline, Struck and Status left their pages in
     the desk review and their words stayed registered: a heading nothing heads is a column that

@@ -164,10 +164,10 @@ class Table(NamedTuple):
 # ONE ISSUER CAN HOLD SEVERAL CODES, which is why these are two tables and not one.
 # Orlant is `ORLA` and `ORLA SB`; Askel is the Copenhagen line and the NYSE ADR.
 # Collapsing them loses the company-level exposure view, so the join runs
-# securities.company -> issuers.company rather than the two being merged.
+# securities.company -> companies.company rather than the two being merged.
 
-ISSUERS = Table(
-    name="issuers",
+COMPANIES = Table(
+    name="companies",
     doc=("One row per ISSUER — the company, not the holding. The sole source of sector "
          "and region; every holding code inherits them through securities.company, so a "
          "code cannot carry a sector its issuer disagrees with."),
@@ -194,15 +194,15 @@ INCOME_CATEGORIES = ("Dividend", "Funding interest", "Cash interest", "Fee")
 
 SECURITIES = Table(
     name="securities",
-    doc=("One row per CODE held, reserved or closed. Carries `kind`, the distinction the "
+    doc=("One row per CODE held, reserved or closed. Carries `held_as`, the distinction the "
          "whole book turns on, in the register's own two words (KINDS): a share is money "
          "owned, a spread bet is exposure through a contract. THE ONE PLACE THE FACT IS "
          "STORED PER LINE: a leg takes its kind from its code, and the load holds it to its "
-         "account's. A reader sees the stored word under Held as."),
+         "account's."),
     fields=(
-        Field("code", "str"),
-        Field("company", "str"),           # joins to issuers.company
-        Field("kind", "str", enum=KINDS),
+        Field("ticker", "str"),
+        Field("company", "str"),           # joins to companies.company
+        Field("held_as", "str", enum=KINDS),
         Field("currency", "str", required=True),   # a split by currency drops a blank one
         # THE LISTING: the market's ISO code and the ticker as that market spells it
         # (XLON:BRYC, XCSE:HALD B), and the unit the market quotes it in (GBX is pence). A unit
@@ -228,12 +228,12 @@ ACCOUNTS = Table(
     fields=(
         Field("account", "str"),
         Field("holder", "str"),
-        Field("broker", "str"),
+        Field("broker_firm", "str"),
         Field("number", "str"),            # STRING, not int — "0123456" keeps its zero
         # WHAT THE ACCOUNT IS CALLED TO ANYONE BUT THE OWNER: A1, A2… in register order, never
         # reused (decided 6 Oct 2026). `Book.account_codes()` gives each its label.
         Field("code", "str", required=True),
-        Field("kind", "str", enum=KINDS, required=True),
+        Field("held_as", "str", enum=KINDS, required=True),
         # THE LABEL OF THE ACCOUNT'S BLOCK IN credentials.json, for an account a feed reads.
         Field("feed_key", "str", null=True),
     ),
@@ -255,8 +255,8 @@ CAPITAL_MOVEMENTS = Table(
     ),
 )
 
-CLOSED_POSITIONS = Table(
-    name="closed-positions",
+REALISATIONS = Table(
+    name="realisations",
     doc=("What a realisation's events cannot say about it: the entry date where a leg "
          "carries prose, and the note written when it was realised. One row per "
          "realisation up to 1 Oct 2026; a later one needs none. Quantity and the exit "
@@ -264,21 +264,21 @@ CLOSED_POSITIONS = Table(
          "second copy was overwritten by every sale that joined its parcel."),
     fields=(
         Field("ticker", "str"),
-        Field("realisation", "str"),       # R-xxx, the parcel this row describes — exits.csv's
-        Field("open_date", "date"),
+        Field("realisation_id", "str"),    # R-xxx, the parcel this row describes — sales.csv's
+        Field("opened", "date"),
         Field("note", "str"),
     ),
 )
 
-TRADES = Table(
-    name="trades",
+BUYS = Table(
+    name="buys",
     doc=("THE LEDGER — one row per buy leg. Every date in the book is entered here and "
          "nowhere else; everything else derives from it.\n\n"
          "a leg's kind (its code's, securities.csv) is why several columns are nullable rather than a shape defect. A SHARE "
-         "leg records its quantity in `qty` and the settled GBP total in `val`; a SPREAD-BET "
-         "leg records its stake in `stake` and its entry level in points in `val`, as IG "
-         "states them, and its cost is stake x level. The columns only one kind fills — qty "
-         "on a share; stake and contract on a bet — are absent on the other "
+         "leg records its quantity in `qty` and the settled GBP total in `cost`; a SPREAD-BET "
+         "leg records its stake in `stake` and its entry level in points in `level_points`, as "
+         "IG states them, and its notional is stake x level. The columns only one kind fills — qty "
+         "and cost on a share; stake, level and contract on a bet — are absent on the other "
          "because they do not exist for it — a GAP, not a zero.\n\n"
          "`broker_ref` IS NOT ONE OF THEM. One column holds every broker reference: IG bet "
          "ref, ii contract number, HL ref. `source` says what KIND of document and its date, "
@@ -286,7 +286,7 @@ TRADES = Table(
          "Never a SEDOL, which HL statements print beside each deal, so two deals would "
          "share one; the movements downloads print each deal's own reference."),
     fields=(
-        Field("id", "str"),
+        Field("trade_id", "str"),
         Field("date", "str", required=True),   # ISO; tests/test_record.py holds it; never blank
         # `source`: WHAT DOCUMENT IS THIS ROW'S EVIDENCE — its kind and its date, "ii contract
         # note 14 Apr 2026" (`rules.trade_source()`) — the provenance line every other table
@@ -295,13 +295,14 @@ TRADES = Table(
         Field("source", "str"),
         Field("account", "str"),
         Field("ticker", "str"),            # the security's code in securities.csv
-        # `cur`: THE CURRENCY `price` IS STATED IN — the share's own where the broker dealt in it,
+        # `cur`: THE CURRENCY `traded_price` IS STATED IN — the share's own where the broker dealt in it,
         # GBP where it priced the deal in sterling (HL, in pence) and on a spread bet, IG's
         # "Curr £". Never the share's currency by default: securities.csv holds that.
         Field("cur", "str"),
         Field("qty", "int", null=True),    # shares; blank on a spread bet, whose size is its stake
         Field("stake", "number", null=True),      # £ per point, a bet's size; blank on a share
-        Field("val", "float"),             # shares: settled GBP. spread bets: the entry level in points
+        Field("cost", "float", null=True),          # a share's settled GBP; blank on a bet
+        Field("level_points", "float", null=True),  # a bet's entry level in points; blank on a share
         Field("broker_ref", "str", null=True),
         Field("note", "str"),
         # WHICH IG CONTRACT A SPREAD-BET LEG IS ON — what prices it, open or closed. Blank on a
@@ -309,9 +310,9 @@ TRADES = Table(
         Field("contract", "str", null=True),
         # THE DEAL'S OWN PRICE, per share in `cur` (HL's pence as pounds), and the broker's RATE
         # where the document gives one, units of the share's currency per £1. Never worked out
-        # from `val`: that carries the dealing charge. Empty when nothing filed
-        # gives it, and on a spread bet, whose level is `val`.
-        Field("price", "float", null=True),
+        # from `cost`: that carries the dealing charge. Empty when nothing filed
+        # gives it, and on a spread bet, whose level is `level_points`.
+        Field("traded_price", "float", null=True),
         Field("rate", "float", null=True),
     ),
 )
@@ -328,24 +329,24 @@ FUNDINGS = ("daily", "dated")
 CONTRACTS = Table(
     name="contracts",
     doc=("One row per IG contract a spread-bet leg names, with the epic that prices it, "
-         "how IG funds it, and the code of the line it is on."),
+         "how IG funds it, and the ticker of the line it is on."),
     fields=(
         Field("contract", "str"),
         Field("epic", "str", null=True),
         Field("funding", "str", enum=FUNDINGS),
-        Field("code", "str", required=True),
+        Field("ticker", "str", required=True),
     ),
 )
 
-EXITS = Table(
-    name="exits",
+SALES = Table(
+    name="sales",
     doc=("One row per sale. `proceeds` is the sterling settled — every sale in this book "
-         "settles in sterling. `price` is stated in `cur`, as the sale's document states "
+         "settles in sterling. `traded_price` is stated in `cur`, as the sale's document states "
          "it, with the broker's `rate` beside a price in the share's own currency; the "
          "engine reads a round trip's entry and exit in the share's currency.\n\n"
-         "`price` IS THE EXECUTION PRICE off the contract note, NOT "
+         "`traded_price` IS THE EXECUTION PRICE off the contract note, NOT "
          "net proceeds / qty. Every commissioned sale carries the traded price, so "
-         "`price x qty` reads GROSS and the gap to `proceeds` is the DEALING COST. Keeping "
+         "`traded_price x qty` reads GROSS and the gap to `proceeds` is the DEALING COST. Keeping "
          "the sourced figure: net/qty is a derivation, and smearing a commission "
          "into a price hides both the price and the cost.\n\n"
          "THAT GAP IS NOT AN UNRECORDED COST. `proceeds` is NET of dealing costs on every "
@@ -355,14 +356,14 @@ EXITS = Table(
          "management fees, funding interest. Booking a dealing commission there as well "
          "would subtract it twice."),
     fields=(
-        Field("eid", "str"),
+        Field("sale_id", "str"),
         Field("date", "str", required=True),   # an event is dated
         Field("account", "str"),
         Field("ticker", "str"),            # the security's code in securities.csv
         Field("qty", "int", null=True),    # shares; blank on a spread-bet sale
         Field("stake", "number", null=True),      # £ per point, a bet sale's size; blank on a share
-        Field("price", "float"),           # per share, or a bet's closing level in points
-        Field("cur", "str", required=True),  # the currency `price` is stated in, as trades.cur
+        Field("traded_price", "float"),    # per share, or a bet's closing level in points
+        Field("cur", "str", required=True),  # the currency `traded_price` is stated in, as buys.cur
         Field("rate", "float", null=True),   # the broker's, where the document states one
         Field("proceeds", "float"),        # GBP, always
         Field("source", "str"),
@@ -374,7 +375,7 @@ EXITS = Table(
         # WHICH PARCEL THIS SALE BELONGS TO — stated per row, never inferred. A realisation is a
         # PARCEL and accumulates sales over time (a trimmed pool, a bet closed leg by leg); it, not
         # the ticker, is the join.
-        Field("realisation", "str", required=True),
+        Field("realisation_id", "str", required=True),
         # THE BUY LEG THIS SALE CLOSED, by the book's own id, when the broker names one: an IG
         # close names the opening deal, which is a leg's `broker_ref`. The sale then releases that
         # leg's own entry cost. Blank for a pooled or apportioned sale.
@@ -483,7 +484,7 @@ CURRENT_PRICES = Table(
          "is a date, so its `at` is blank. They were read back out of `source` until 29 Sep "
          "2026; the feed is the only party that knows, so it now says so in a column."),
     fields=(
-        Field("ticker", "str"),            # ticker, or a spread-bet CONTRACT key
+        Field("mark_key", "str"),          # a share's ticker, or a spread bet's CONTRACT
         Field("price", "float"),
         Field("currency", "str"),
         Field("as_of", "str"),
@@ -497,7 +498,7 @@ BASELINE_RECON = Table(
     name="baseline-reconstruction",
     doc=("Reconstructed holdings, line by line: the working behind an account's quarter-nav "
          "rows as FIRST FILED. "
-         "Each date's lines sum to that row (qty × price ÷ fx). No figure is read from here, "
+         "Each date's lines sum to that row (qty × price ÷ rate). No figure is read from here, "
          "and it is no longer edited.\n\n"
          "A ROW IT JUSTIFIED MAY BE SUPERSEDED, and this stays as its audit trail: the engine "
          "values a quarter end from the price and FX histories, and a restated quarter-nav "
@@ -508,7 +509,7 @@ BASELINE_RECON = Table(
         Field("qty", "int"),
         Field("price", "float"),           # per share, in the line's currency; HL's prices embed FX
         Field("source", "str"),
-        Field("fx", "float"),              # units of that currency per £1; 1.0 where HL embeds it
+        Field("rate", "float"),            # units of that currency per £1; 1.0 where HL embeds it
         Field("quality", "str", enum=QUALITIES),
     ),
 )
@@ -521,7 +522,7 @@ QUARTER_SNAPSHOTS = Table(
          "NOT THE SAME QUESTION AS quarter-nav.csv, which carries each account's CONTRIBUTION "
          "to net asset value and enforces the basis rule. This is the composition underneath "
          "it. A spread-bet account's legs appear here at NOTIONAL, as Holdings shows them — "
-         "`qty` the stake per point, `local_price` the level in points — while "
+         "`qty` the stake per point, `price` the level in points — while "
          "quarter-nav.csv carries its equity.\n\n"
          "APPENDED BY desk/doors/freeze.py from Book.freeze_rows(), from the Q3 2026 close: the "
          "rows before it were typed off Holdings.\n\n"
@@ -532,21 +533,21 @@ QUARTER_SNAPSHOTS = Table(
         Field("ticker", "str"),            # "(no positions)" for an account holding none
         # NULLABLE, and only on the "(no positions)" rows: an account holding nothing has no
         # quantity, price or currency to state. Blank, never zero — a zero quantity is a holding
-        # of nothing, a different claim. gbp_value and gbp_cost are 0.0 there, rightly: the
+        # of nothing, a different claim. value and cost are 0.0 there, rightly: the
         # account adds nothing to either total.
         Field("qty", "number", null=True),
-        Field("local_price", "float", null=True),
+        Field("price", "float", null=True),
         Field("currency", "str", null=True),
-        Field("gbp_value", "float"),
-        Field("gbp_cost", "float"),
+        Field("value", "float"),
+        Field("cost", "float"),
         Field("quality", "str", enum=QUALITIES),
         Field("status", "str", enum=MARK_STATUSES),   # as quarter-nav's
         Field("source", "str"),
     ),
 )
 
-ACCOUNT_OBSERVATIONS = Table(
-    name="account-observations",
+ACCOUNT_READINGS = Table(
+    name="account-readings",
     doc=("What the book holds each account to be worth RIGHT NOW, and the observation it "
          "rests on. The Accounts tab reconciles these against the broker.\n\n"
          "MOVED OUT OF CODE 1 September 2026 (contradiction H). It was `ac_rows` in "
@@ -586,7 +587,7 @@ ACCOUNT_OBSERVATIONS = Table(
         Field("deposit", "float", null=True),     # IG's word for the margin
         Field("available", "float", null=True),   # the feed's; a statement prints none
         # PROVENANCE, STRUCTURALLY: the evidence class and the reference, the same pair
-        # cash-observations.csv carries. Without them nothing could bank an observation into
+        # cash-readings.csv carries. Without them nothing could bank an observation into
         # history (a banked row needs a source and a quality) or colour a row from its own file.
         # `quality` is DERIVED from the class, never stored beside it, and so is the source line
         # a banked row carries. REQUIRED: this is the figure the reconciliation is judged against,
@@ -620,8 +621,8 @@ RESEARCH_NOTES = Table(
     ),
 )
 
-CASH_OBSERVATIONS = Table(
-    name="cash-observations",
+CASH_READINGS = Table(
+    name="cash-readings",
     doc=("HOW MUCH CASH AN ACCOUNT HELD, AND WHEN. Append-only: a new reading adds a row and "
          "never replaces one. The Accounts tab's 'Cash now' is the NEWEST row per account.\n\n"
          "MOVED OUT OF CODE 2 September 2026. It was `CASH_ROWS` in rules.py — a hand-edited "
@@ -641,13 +642,13 @@ CASH_OBSERVATIONS = Table(
          "Cash left the return on 2 Sep 2026 and the plan to add it to NAV on 30 Sep was dropped "
          "the same day. This is a RECORD of cash and a cell on a tab.\n\n"
          "NOT FOR A SPREAD-BET ACCOUNT (13 Oct 2026). Its funds are on its reading, under IG's "
-         "own name (account-observations.funds), and the Accounts page reads them there; a row "
+         "own name (account-readings.funds), and the Accounts page reads them there; a row "
          "here for one was the same figure under a second name."),
     fields=(
         Field("account", "str"),
         Field("as_of", "date"),
         Field("cash", "float"),
-        # REQUIRED, with account-observations' matching pair.
+        # REQUIRED, with account-readings' matching pair.
         Field("evidence", "str", required=True),   # an EVIDENCE_CLASSES id
         Field("reference", "str", required=True),   # what retrieves it: a statement, or the query
     ),
@@ -726,9 +727,9 @@ SETTINGS = Table(
 )
 
 _RECORD = (
-    ISSUERS, SECURITIES, ACCOUNTS, CAPITAL_MOVEMENTS, CLOSED_POSITIONS, TRADES, EXITS,
+    COMPANIES, SECURITIES, ACCOUNTS, CAPITAL_MOVEMENTS, REALISATIONS, BUYS, SALES,
     INCOME, QUARTER_NAV, QUARTER_SNAPSHOTS, FX, CURRENT_PRICES, BASELINE_RECON,
-    ACCOUNT_OBSERVATIONS, REASONING, CASH_OBSERVATIONS,
+    ACCOUNT_READINGS, REASONING, CASH_READINGS,
     RESEARCH_NOTES, QUARTER_RESULTS, SETTINGS, CONTRACTS)
 
 JOURNAL = Table(
@@ -878,17 +879,17 @@ def _render(field: Field, value) -> str:
 # the authority, so adding an account is one edit.
 REFERENCES = {
     ("capital-movements", "account"):    ("accounts", "account"),
-    ("trades", "account"):               ("accounts", "account"),
-    ("trades", "contract"):              ("contracts", "contract"),
-    ("contracts", "code"):               ("securities", "code"),
-    ("exits", "account"):                ("accounts", "account"),
-    ("exits", "closes"):                 ("trades", "id"),
-    ("closed-positions", "realisation"): ("exits", "realisation"),
+    ("buys", "account"):                 ("accounts", "account"),
+    ("buys", "contract"):                ("contracts", "contract"),
+    ("contracts", "ticker"):             ("securities", "ticker"),
+    ("sales", "account"):                ("accounts", "account"),
+    ("sales", "closes"):                 ("buys", "trade_id"),
+    ("realisations", "realisation_id"):  ("sales", "realisation_id"),
     ("income", "account"):               ("accounts", "account"),
     ("quarter-nav", "account"):          ("accounts", "account"),
     ("quarter-snapshots", "account"):    ("accounts", "account"),
-    ("account-observations", "account"): ("accounts", "account"),
-    ("cash-observations", "account"):    ("accounts", "account"),
+    ("account-readings", "account"):     ("accounts", "account"),
+    ("cash-readings", "account"):        ("accounts", "account"),
 }
 
 

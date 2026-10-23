@@ -168,8 +168,8 @@ def record_values() -> set[str]:
         return {str(row[position]).strip() for row in schema.load(table) if row[position]}
 
     return (column("accounts", "account") | column("accounts", "holder")
-            | column("accounts", "number") | column("securities", "code")
-            | column("securities", "company") | column("trades", "ticker"))
+            | column("accounts", "number") | column("securities", "ticker")
+            | column("securities", "company") | column("buys", "ticker"))
 
 
 #: A record value this short is an ordinary word in the shell's own prose — a ticker `ON`, `ALL` or

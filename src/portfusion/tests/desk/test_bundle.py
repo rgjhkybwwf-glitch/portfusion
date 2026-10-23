@@ -76,7 +76,7 @@ def test_the_bundle_carries_nothing_from_the_record(files):
 
     values = publish.record_values()
     assert column("accounts", "account") <= values, "an account name is not being scanned for"
-    assert column("securities", "code") <= values, "a security code is not being scanned for"
+    assert column("securities", "ticker") <= values, "a security code is not being scanned for"
     assert publish.leaks(files) == []
 
 

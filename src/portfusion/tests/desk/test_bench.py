@@ -23,7 +23,7 @@ from harness import SRC, needs, free_id
 
 #: The ids a test's own sale takes: the book's next free ones, never typed (a book that has reached
 #: E-099 holds one).
-_EID, _EID_NEXT = free_id("exits"), free_id("exits", 1)
+_EID, _EID_NEXT = free_id("sales"), free_id("sales", 1)
 
 
 GOOD_INCOME = {
@@ -33,7 +33,7 @@ GOOD_INCOME = {
 }
 
 
-@needs("accounts", "trades")
+@needs("accounts", "buys")
 def test_a_committed_item_lands_in_the_store_and_is_archived(item, store_copy, tmp_path,
                                                              monkeypatch):
     """END TO END. The row is in the CSV, it reads back through the loader, and the item has
@@ -41,14 +41,14 @@ def test_a_committed_item_lands_in_the_store_and_is_archived(item, store_copy, t
     from portfusion.record import schema
     from portfusion.desk.doors import commit as _commit
     monkeypatch.setattr(_commit, "ARCHIVE", tmp_path / "archive")
-    was = len(schema.load("trades"))
+    was = len(schema.load("buys"))
 
     result = _commit.commit(_bench.save(_ready(item))["id"])
 
-    assert result["written"] == {"trades": 1}
-    rows = schema.load("trades")
+    assert result["written"] == {"buys": 1}
+    rows = schema.load("buys")
     assert len(rows) == was + 1
-    assert rows[-1][0] == GOOD_TRADE["id"], "the committed row is not the last row of the table"
+    assert rows[-1][0] == GOOD_TRADE["trade_id"], "the committed row is not the last row of the table"
 
     assert not list((_bench.BENCH_DIR).glob("*.json")), "the item is still on the bench"
     archived = json.loads((tmp_path / "archive" / f"{item['id']}.json").read_text())
@@ -56,7 +56,7 @@ def test_a_committed_item_lands_in_the_store_and_is_archived(item, store_copy, t
     assert archived["written_at"]
 
 
-@needs("accounts", "trades")
+@needs("accounts", "buys")
 def test_the_why_lands_in_the_reasoning_table(item, store_copy, tmp_path, monkeypatch):
     """THE POINT OF THE WHOLE ROUND. The owner types the thesis once, at the document, and it
     reaches the table Holdings and Round Trips read — instead of being archived into a bench
@@ -83,7 +83,7 @@ def test_the_why_lands_in_the_reasoning_table(item, store_copy, tmp_path, monkey
     schema.load("reasoning")            # and it still loads through the ordinary door
 
 
-@needs("accounts", "trades")
+@needs("accounts", "buys")
 def test_a_second_why_is_added_beside_the_first(item, store_copy, tmp_path, monkeypatch):
     """A WHY IS APPENDED, NEVER REPLACED. The thesis a position was opened on must still be there
     when the position is trimmed: replaced, it would survive only in git, and the desk would show
@@ -107,10 +107,10 @@ def test_a_second_why_is_added_beside_the_first(item, store_copy, tmp_path, monk
     (tmp_path / "_inbox" / "Contract_Note_TESTREF2.pdf").write_bytes(b"%PDF-1.4")
     second["document"] = {"name": "Contract_Note_TESTREF2.pdf"}
     second["why"] = {"why_entered": "", "why_exited": "Booked to release cash."}
-    second["rows"] = [{"table": "exits", "values": dict(
-        eid=_EID, date="2026-09-01", account=GOOD_TRADE["account"],
-        ticker=GOOD_TRADE["ticker"], qty="10", price="1.00", cur="GBP", proceeds="10.00",
-        source="ii contract note 01 Sep 2026", broker_ref="", realisation="R-TESTWHY", closes="",
+    second["rows"] = [{"table": "sales", "values": dict(
+        sale_id=_EID, date="2026-09-01", account=GOOD_TRADE["account"],
+        ticker=GOOD_TRADE["ticker"], qty="10", traded_price="1.00", cur="GBP", proceeds="10.00",
+        source="ii contract note 01 Sep 2026", broker_ref="", realisation_id="R-TESTWHY", closes="",
         note="n")}]
     _bench.save(second)
     _commit.commit(second["id"])
@@ -128,7 +128,7 @@ def test_a_second_why_is_added_beside_the_first(item, store_copy, tmp_path, monk
     assert exited[0]["date"] == "2026-09-01", "the exit's why is filed under the sale's date"
 
 
-@needs("accounts", "trades")
+@needs("accounts", "buys")
 def test_a_sale_the_book_cannot_load_is_refused_and_nothing_moves(item, store_copy, tmp_path,
                                                                   monkeypatch):
     """29 SEP 2026: the bench's first sale passed the schema and stopped `Book()`, and
@@ -146,16 +146,16 @@ def test_a_sale_the_book_cannot_load_is_refused_and_nothing_moves(item, store_co
     held_here = set(_engine.Book().holdings(account=GOOD_TRADE["account"],
                                           by="ticker")["ticker"])
     sh = schema.TABLES["securities"].header
-    unheld = next(r[sh.index("code")] for r in schema.load("securities")
-                  if r[sh.index("kind")] == "shares"
-                  and r[sh.index("code")] not in held_here)
-    item["rows"] = [{"table": "exits", "values": dict(
-        eid=_EID, date="2026-09-01", account=GOOD_TRADE["account"],
-        ticker=unheld, qty="10", price="1.00", cur="GBP", proceeds="10.00",
-        source="ii contract note 01 Sep 2026", broker_ref="", realisation="R-NOTHING", closes="",
+    unheld = next(r[sh.index("ticker")] for r in schema.load("securities")
+                  if r[sh.index("held_as")] == "shares"
+                  and r[sh.index("ticker")] not in held_here)
+    item["rows"] = [{"table": "sales", "values": dict(
+        sale_id=_EID, date="2026-09-01", account=GOOD_TRADE["account"],
+        ticker=unheld, qty="10", traded_price="1.00", cur="GBP", proceeds="10.00",
+        source="ii contract note 01 Sep 2026", broker_ref="", realisation_id="R-NOTHING", closes="",
         note="n")}]
     _bench.save(item)
-    before = {t: schema.TABLES[t].path.read_bytes() for t in ("exits", "journal", "reasoning")}
+    before = {t: schema.TABLES[t].path.read_bytes() for t in ("sales", "journal", "reasoning")}
 
     with pytest.raises(_commit.Refused) as e:
         _commit.commit(item["id"])
@@ -178,17 +178,17 @@ def test_an_ig_close_naming_its_leg_is_written_and_the_leg_stops_being_held(
     item["evidence_class"] = "ig-api"
     item["why"] = {"why_entered": "", "why_exited": "Trimmed to manage margin."}
     leg = _open_sb_leg_with_parcel()
-    item["rows"] = [{"table": "exits", "values": dict(
-        eid=_EID, date="2026-09-29", account=leg["account"], ticker=leg["ticker"],
-        qty="", stake=str(leg["stake"]), price="80.0", cur="GBP", proceeds="2000.00",
+    item["rows"] = [{"table": "sales", "values": dict(
+        sale_id=_EID, date="2026-09-29", account=leg["account"], ticker=leg["ticker"],
+        qty="", stake=str(leg["stake"]), traded_price="80.0", cur="GBP", proceeds="2000.00",
         source="IG REST /history/activity 29 Sep 2026", broker_ref="DIAAAATESTCLOSE",
-        realisation=leg["realisation"], closes=leg["id"], note="n")}]
+        realisation_id=leg["realisation_id"], closes=leg["trade_id"], note="n")}]
     _bench.save(item)
 
     _commit.commit(item["id"])
-    assert rules.EXIT_LEG_MATCH[_EID] == leg["id"]
+    assert rules.EXIT_LEG_MATCH[_EID] == leg["trade_id"]
     ledger = engine.Book().ledger
-    assert not ledger.loc[ledger["id"] == leg["id"], "open_leg"].iloc[0], \
+    assert not ledger.loc[ledger["id"] == leg["trade_id"], "open_leg"].iloc[0], \
         "the leg the sale closed is still held"
 
 
@@ -204,25 +204,25 @@ def test_a_close_filed_under_another_holdings_realisation_is_refused(
     from portfusion.desk.doors import commit as _commit
     monkeypatch.setattr(_commit, "ARCHIVE", tmp_path / "archive")
     leg = _open_sb_leg_with_parcel()
-    other = next(e.realisation for e in rules.exits
+    other = next(e.realisation_id for e in rules.sales
                  if (e.acct, e.ticker) != (leg["account"], leg["ticker"]))
     item["evidence"] = dict(GOOD_EVIDENCE, reference="TESTREF5")
     item["evidence_class"] = "ig-api"
     item["why"] = {"why_entered": "", "why_exited": "Trimmed to manage margin."}
-    item["rows"] = [{"table": "exits", "values": dict(
-        eid=_EID, date="2026-09-29", account=leg["account"], ticker=leg["ticker"],
-        qty="", stake=str(leg["stake"]), price="80.0", cur="GBP", proceeds="2000.00",
+    item["rows"] = [{"table": "sales", "values": dict(
+        sale_id=_EID, date="2026-09-29", account=leg["account"], ticker=leg["ticker"],
+        qty="", stake=str(leg["stake"]), traded_price="80.0", cur="GBP", proceeds="2000.00",
         source="IG REST /history/activity 29 Sep 2026", broker_ref="DIAAAATESTCLOSE",
-        realisation=other, closes=leg["id"], note="n")}]
+        realisation_id=other, closes=leg["trade_id"], note="n")}]
     _bench.save(item)
     rows = next(g for g in _bench.gates(item) if g["name"] == "rows")
     assert not rows["ok"] and f"realisation: {other} is" in rows["detail"], rows["detail"]
 
-    path = schema.TABLES["exits"].path
+    path = schema.TABLES["sales"].path
     was = path.read_bytes()
     with pytest.raises(_commit.Refused):
         _commit.commit(item["id"])
-    assert path.read_bytes() == was, "exits.csv moved on a refused commit"
+    assert path.read_bytes() == was, "sales.csv moved on a refused commit"
 
     eol = b"\r\n" if b"\r\n" in was else b"\n"
     path.write_bytes(was + _bench.paste_block(item)[0]["line"].encode() + eol)
@@ -238,21 +238,21 @@ def test_a_realisation_in_another_form_is_refused(item, store_copy, tmp_path, mo
     from portfusion.desk.doors import commit as _commit
     monkeypatch.setattr(_commit, "ARCHIVE", tmp_path / "archive")
     leg = _open_sb_leg_with_parcel()
-    typo = leg["realisation"] + "=2"
+    typo = leg["realisation_id"] + "=2"
     assert not rules.REALISATION_FORM.fullmatch(typo)
     item["evidence"] = dict(GOOD_EVIDENCE, reference="TESTREF6")
     item["evidence_class"] = "ig-api"
     item["why"] = {"why_entered": "", "why_exited": "Trimmed to manage margin."}
-    item["rows"] = [{"table": "exits", "values": dict(
-        eid=_EID, date="2026-09-29", account=leg["account"], ticker=leg["ticker"],
-        qty="", stake=str(leg["stake"]), price="80.0", cur="GBP", proceeds="2000.00",
+    item["rows"] = [{"table": "sales", "values": dict(
+        sale_id=_EID, date="2026-09-29", account=leg["account"], ticker=leg["ticker"],
+        qty="", stake=str(leg["stake"]), traded_price="80.0", cur="GBP", proceeds="2000.00",
         source="IG REST /history/activity 29 Sep 2026", broker_ref="DIAAAATESTCLOSE",
-        realisation=typo, closes=leg["id"], note="n")}]
+        realisation_id=typo, closes=leg["trade_id"], note="n")}]
     _bench.save(item)
     rows = next(g for g in _bench.gates(item) if g["name"] == "rows")
     assert not rows["ok"] and "not in the record's form" in rows["detail"], rows["detail"]
 
-    path = schema.TABLES["exits"].path
+    path = schema.TABLES["sales"].path
     was = path.read_bytes()
     eol = b"\r\n" if b"\r\n" in was else b"\n"
     path.write_bytes(was + _bench.paste_block(item)[0]["line"].encode() + eol)
@@ -298,7 +298,7 @@ def test_the_authority_box_is_shown_and_not_typed(repo_root):
 
 def test_the_bench_speaks_the_desks_words_not_the_stores(item, repo_root):
     """The owner, 12 Oct 2026: the form labelled every field with its store name — "Cur", "Fx_key",
-    "Eid", "Close_level" — headed a row "exits", offered "+ capital-movements", and named a check
+    "Eid", "Close_level" — headed a row "sales", offered "+ capital-movements", and named a check
     owed "why_exited". Every field is headed for the Bench tab in house/headings.py (the panel's
     FORM_COLUMNS, so test_every_desk_column_has_a_heading_for_its_tab holds each one), every table
     has its word, and a gate a why blocks reads the why's heading."""
@@ -348,13 +348,13 @@ def _open_legs_by_contract():
     """{contract: [open leg rows]} for every IG contract still mapped to an epic, from the
     loaded book's own files."""
     from portfusion.record import schema
-    th, eh = schema.TABLES["trades"].header, schema.TABLES["exits"].header
-    closed = {r[eh.index("closes")] for r in schema.load("exits") if r[eh.index("closes")]}
+    th, eh = schema.TABLES["buys"].header, schema.TABLES["sales"].header
+    closed = {r[eh.index("closes")] for r in schema.load("sales") if r[eh.index("closes")]}
     epics = {r[0]: r[1] for r in schema.load("contracts")}
     out = {}
-    for r in schema.load("trades"):
+    for r in schema.load("buys"):
         row = dict(zip(th, r))
-        if row["contract"] and epics.get(row["contract"]) and row["id"] not in closed:
+        if row["contract"] and epics.get(row["contract"]) and row["trade_id"] not in closed:
             out.setdefault(row["contract"], []).append(row)
     return out
 
@@ -366,17 +366,17 @@ def _closing(item, legs, ref):
     item["evidence_class"] = "ig-api"
     item["evidence"] = dict(GOOD_EVIDENCE, reference=ref)
     item["why"] = {"why_entered": "", "why_exited": "Closed to manage margin."}
-    item["rows"] = [{"table": "exits", "values": dict(
-        eid=f"E-9{n:02d}", date="2026-09-29", account=leg["account"], ticker=leg["ticker"],
-        qty="", stake=str(leg["stake"]), price="80.0", cur="GBP", proceeds="2000.00",
+    item["rows"] = [{"table": "sales", "values": dict(
+        sale_id=f"E-9{n:02d}", date="2026-09-29", account=leg["account"], ticker=leg["ticker"],
+        qty="", stake=str(leg["stake"]), traded_price="80.0", cur="GBP", proceeds="2000.00",
         source="IG REST /history/activity 29 Sep 2026", broker_ref=f"DIAAAATEST{n:02d}",
-        realisation=b.parcel(leg["account"], leg["ticker"]), closes=leg["id"], note="n")}
+        realisation_id=b.parcel(leg["account"], leg["ticker"]), closes=leg["trade_id"], note="n")}
         for n, leg in enumerate(legs)]
     _bench.save(item)
     return item
 
 
-@needs("accounts", "trades")
+@needs("accounts", "buys")
 def test_a_retirement_the_marks_door_refuses_is_the_commits_refusal(
         item, store_copy, tmp_path, monkeypatch):
     """A RETIREMENT THE MARKS DOOR REFUSES REFUSES THE COMMIT, by the commit's own refusal, so the
@@ -386,17 +386,17 @@ def test_a_retirement_the_marks_door_refuses_is_the_commits_refusal(
     monkeypatch.setattr(_commit, "ARCHIVE", tmp_path / "archive")
     _, legs = next(iter(sorted(_open_legs_by_contract().items())))
     _closing(item, legs, "TESTREF8")
-    before = schema.TABLES["exits"].path.read_bytes()
+    before = schema.TABLES["sales"].path.read_bytes()
 
     def refuses(*a, **k):
         raise marks.Refused("the outgoing price could not be banked")
     monkeypatch.setattr(marks, "retire", refuses)
     with pytest.raises(_commit.Refused, match="could not be retired"):
         _commit.commit(item["id"])
-    assert schema.TABLES["exits"].path.read_bytes() == before
+    assert schema.TABLES["sales"].path.read_bytes() == before
 
 
-@needs("accounts", "trades")
+@needs("accounts", "buys")
 def test_a_sale_closing_a_contracts_last_leg_retires_it_in_the_same_write(
         item, store_copy, tmp_path, monkeypatch):
     """The owner, 12 Oct 2026: a sale closed a contract's last open leg and the contract stayed
@@ -419,14 +419,14 @@ def test_a_sale_closing_a_contracts_last_leg_retires_it_in_the_same_write(
     assert not {r[0]: r[1] for r in schema.load("contracts")}[contract], "still has its epic"
     assert {r[0]: r[3] for r in schema.load("contracts")}[contract] == line, \
         "the closed contract lost its line"
-    assert any(r["ticker"] == contract for r in PH.load()), "its last price was not banked"
+    assert any(r["mark_key"] == contract for r in PH.load()), "its last price was not banked"
     jh = schema.TABLES["journal"].header
     said = [dict(zip(jh, r)) for r in schema.load("journal") if r[jh.index("ref")] == item["id"]]
     assert {(j["op"], j["table"]) for j in said} >= {("remove", "current-prices"),
                                                        ("replace", "contracts")}, said
 
 
-@needs("accounts", "trades")
+@needs("accounts", "buys")
 def test_a_retirement_writes_crlf_tables_back_in_crlf(item, store_copy, tmp_path, monkeypatch):
     """The retirement rewrote current-prices.csv and contracts.csv with "\\n" whatever it found
     (the code review of 2 Oct 2026; latent while the store is LF)."""
@@ -488,17 +488,17 @@ def _selling(item, ticker, held, ref):
         parcels.append(parcel)
     item["evidence"] = dict(GOOD_EVIDENCE, reference=ref)
     item["why"] = {"why_entered": "", "why_exited": "Sold to release cash."}
-    item["rows"] = [{"table": "exits", "values": dict(
-        eid=free_id("exits", n), date="2026-09-29", account=acct, ticker=ticker, qty=str(qty),
-        stake="", price="1.00", cur="GBP", rate="", proceeds=f"{qty:.2f}",
-        source="ii contract note 29 Sep 2026", broker_ref="", realisation=parcel,
+    item["rows"] = [{"table": "sales", "values": dict(
+        sale_id=free_id("sales", n), date="2026-09-29", account=acct, ticker=ticker, qty=str(qty),
+        stake="", traded_price="1.00", cur="GBP", rate="", proceeds=f"{qty:.2f}",
+        source="ii contract note 29 Sep 2026", broker_ref="", realisation_id=parcel,
         closes="", note="n")}
         for n, ((acct, qty), parcel) in enumerate(zip(sorted(held.items()), parcels))]
     _bench.save(item)
     return item
 
 
-@needs("accounts", "trades")
+@needs("accounts", "buys")
 def test_a_sale_emptying_a_share_in_every_account_retires_its_price_in_the_same_write(
         item, store_copy, tmp_path, monkeypatch):
     """A share sold out kept its live price, so every refresh went on fetching a quote nothing
@@ -517,7 +517,7 @@ def test_a_sale_emptying_a_share_in_every_account_retires_its_price_in_the_same_
     done = _commit.commit(item["id"])
     assert done["retired"] == [ticker]
     assert ticker not in {r[0] for r in schema.load("current-prices")}, "still priced"
-    assert any(r["ticker"] == ticker for r in PH.load()), "its last price was not banked"
+    assert any(r["mark_key"] == ticker for r in PH.load()), "its last price was not banked"
     jh = schema.TABLES["journal"].header
     said = [dict(zip(jh, r)) for r in schema.load("journal") if r[jh.index("ref")] == item["id"]]
     assert ("remove", "current-prices") in {(j["op"], j["table"]) for j in said}, said
@@ -526,7 +526,7 @@ def test_a_sale_emptying_a_share_in_every_account_retires_its_price_in_the_same_
     assert engine.Book().priced_unheld() == []
 
 
-@needs("accounts", "trades")
+@needs("accounts", "buys")
 def test_a_share_still_held_in_another_account_keeps_its_price(
         item, store_copy, tmp_path, monkeypatch):
     """The other half: a price is per ticker, so one account selling out retires nothing while
@@ -552,10 +552,10 @@ def test_a_share_bought_back_in_the_same_item_is_not_retired():
     if held is None:
         pytest.skip("no sterling share line with a live price")
     ticker, by_account = held
-    sales = [{"table": "exits", "values": {"ticker": ticker, "qty": str(q)}}
+    sales = [{"table": "sales", "values": {"ticker": ticker, "qty": str(q)}}
              for q in by_account.values()]
     assert commit.retired_by(sales) == [ticker], "the premise: the sales empty it"
-    buy = {"table": "trades", "values": {"ticker": ticker, "qty": "10"}}
+    buy = {"table": "buys", "values": {"ticker": ticker, "qty": "10"}}
     assert commit.retired_by(sales + [buy]) == []
 
 
@@ -565,7 +565,7 @@ def test_an_event_is_dated_on_the_bench_and_on_load():
     undated event. No row on file in either book lacked one. The date is required in the schema,
     so the loader refuses a blank on every route and the Bench's form follows it."""
     from portfusion.record import schema
-    for table in ("trades", "exits", "income", "capital-movements"):
+    for table in ("buys", "sales", "income", "capital-movements"):
         date = next(f for f in schema.TABLES[table].fields if f.name == "date")
         with pytest.raises(ValueError):
             schema._parse(date, "", table, 0)
@@ -583,17 +583,17 @@ def _trimmed_pool():
     held — the loaded book's own PENR shape."""
     from portfusion import engine
     from portfusion.record import schema
-    eh = schema.TABLES["exits"].header
-    cp = schema.TABLES["closed-positions"].header
-    realisation = {r[cp.index("ticker")]: r[cp.index("realisation")]
-                   for r in schema.load("closed-positions")}
+    eh = schema.TABLES["sales"].header
+    cp = schema.TABLES["realisations"].header
+    realisation = {r[cp.index("ticker")]: r[cp.index("realisation_id")]
+                   for r in schema.load("realisations")}
     b = engine.Book()
-    for r in schema.load("exits"):
+    for r in schema.load("sales"):
         t, a = r[eh.index("ticker")], r[eh.index("account")]
         if str(t).endswith(" SB") or t not in realisation:
             continue
         if t in set(b.holdings(account=a, by="ticker")["ticker"]):
-            ids = [x[eh.index("eid")] for x in schema.load("exits")
+            ids = [x[eh.index("sale_id")] for x in schema.load("sales")
                    if x[eh.index("ticker")] == t]
             return a, t, ids, realisation[t]
     pytest.skip("no trimmed pool is still held in this book")
@@ -604,13 +604,13 @@ def _untrimmed_holding(account):
     another account also holds stays open at the ticker when one pool empties."""
     from portfusion import engine
     from portfusion.record import schema
-    cp = schema.TABLES["closed-positions"].header
-    tripped = {r[cp.index("ticker")] for r in schema.load("closed-positions")}
+    cp = schema.TABLES["realisations"].header
+    tripped = {r[cp.index("ticker")] for r in schema.load("realisations")}
     b = engine.Book()
     elsewhere = set()
     hh = schema.TABLES["accounts"].header
     for a in (r[hh.index("account")] for r in schema.load("accounts")
-              if r[hh.index("kind")] == "shares" and r[hh.index("account")] != account):
+              if r[hh.index("held_as")] == "shares" and r[hh.index("account")] != account):
         elsewhere |= set(b.holdings(account=a, by="ticker")["ticker"])
     h = b.holdings(account=account, by="ticker")
     return next(t for t in h["ticker"]
@@ -622,28 +622,28 @@ def _open_sb_leg_with_parcel():
     with its quantity and that holding's parcel — the latest such sale's. The parcel is the
     holding's, not the ticker's: two accounts may bet on the same ticker."""
     from portfusion.record import schema
-    th = schema.TABLES["trades"].header
-    eh = schema.TABLES["exits"].header
-    exits = schema.load("exits")
+    th = schema.TABLES["buys"].header
+    eh = schema.TABLES["sales"].header
+    exits = schema.load("sales")
     closed = {r[eh.index("closes")] for r in exits if r[eh.index("closes")]}
-    for r in schema.load("trades"):
-        tid, t, acct = r[th.index("id")], r[th.index("ticker")], r[th.index("account")]
-        sales = sorted((str(e[eh.index("date")]), e[eh.index("realisation")]) for e in exits
+    for r in schema.load("buys"):
+        tid, t, acct = r[th.index("trade_id")], r[th.index("ticker")], r[th.index("account")]
+        sales = sorted((str(e[eh.index("date")]), e[eh.index("realisation_id")]) for e in exits
                        if e[eh.index("account")] == acct and e[eh.index("ticker")] == t
                        and str(e[eh.index("date")]) >= str(r[th.index("date")]))
         if str(t).endswith(" SB") and tid not in closed and sales:
-            return {"id": tid, "ticker": t, "account": acct,
-                    "stake": r[th.index("stake")], "realisation": sales[-1][1]}
+            return {"trade_id": tid, "ticker": t, "account": acct,
+                    "stake": r[th.index("stake")], "realisation_id": sales[-1][1]}
     pytest.skip("no open spread-bet leg with a parcel on file in this book")
 
 
 def _recorded_share_sale():
-    """(row, reference) for a share sale really in the loaded book's exits.csv — the subject
+    """(row, reference) for a share sale really in the loaded book's sales.csv — the subject
     of the duplicate guards. The reference is the row's own broker_ref, or the document
     token its source line carries (one sale's note reference lived in the source)."""
     from portfusion.record import rules as D, schema
-    eh = schema.TABLES["exits"].header
-    rows = [dict(zip(eh, r)) for r in schema.load("exits")
+    eh = schema.TABLES["sales"].header
+    rows = [dict(zip(eh, r)) for r in schema.load("sales")
             if not str(r[eh.index("ticker")]).endswith(" SB")]
     assert rows, "no share sale on file — the premise is gone"
     def ref_of(r):
@@ -661,12 +661,12 @@ def _sell_shares(item, tmp_path, monkeypatch, ref, acct, ticker, qty, proceeds):
     monkeypatch.setattr(_commit, "ARCHIVE", tmp_path / "archive")
     item["evidence"] = dict(GOOD_EVIDENCE, reference=ref)
     item["why"] = {"why_entered": "", "why_exited": "Sold to fund a new position."}
-    item["rows"] = [{"table": "exits", "values": dict(
-        eid=_EID, date="2026-09-30", account=acct, ticker=ticker, qty=str(qty), price="1.00",
+    item["rows"] = [{"table": "sales", "values": dict(
+        sale_id=_EID, date="2026-09-30", account=acct, ticker=ticker, qty=str(qty), traded_price="1.00",
         cur="GBP", proceeds=f"{proceeds:.2f}", source="ii contract note 30 Sep 2026", broker_ref=ref,
-        realisation=engine.Book().parcel(acct, ticker), closes="", note="n")}]
+        realisation_id=engine.Book().parcel(acct, ticker), closes="", note="n")}]
     _bench.save(item)
-    others = {t: schema.TABLES[t].path.read_bytes() for t in ("trades", "closed-positions")}
+    others = {t: schema.TABLES[t].path.read_bytes() for t in ("buys", "realisations")}
     _commit.commit(item["id"])
     return others
 
@@ -697,9 +697,9 @@ def test_a_further_trim_of_a_pool_is_one_row_and_moves_no_earlier_sale(
         assert schema.TABLES[t].path.read_bytes() == b, f"{t}.csv was written for a share sale"
 
 
-@needs("accounts", "trades")
+@needs("accounts", "buys")
 def test_a_full_exit_is_one_row_and_the_holding_is_gone(item, store_copy, tmp_path, monkeypatch):
-    """No leg switched to Closed, no ticker listed, no closed-positions row: the pool empties and
+    """No leg switched to Closed, no ticker listed, no realisations row: the pool empties and
     the round trip reads its cost, company and entry date from the events."""
     from portfusion import engine
     account = GOOD_TRADE["account"]
@@ -715,7 +715,7 @@ def test_a_full_exit_is_one_row_and_the_holding_is_gone(item, store_copy, tmp_pa
     rt = now.round_trips().set_index("realisation_id") \
             .loc[now.D.REALISATION_BY_EXIT[_EID]]
     assert round(rt["cost"], 2) == round(held["cost"], 2)
-    assert rt["company"] == held["company"] and rt["opened"] == held["open_date"]
+    assert rt["company"] == held["company"] and rt["opened"] == held["opened"]
     assert rt["fully_closed"]
 
 
@@ -728,7 +728,7 @@ def test_a_sale_from_one_account_leaves_the_others_holdings_alone(
     b0 = engine.Book()
     hh = _schema.TABLES["accounts"].header
     shares_accounts = [r[hh.index("account")] for r in _schema.load("accounts")
-                       if r[hh.index("kind")] == "shares"]
+                       if r[hh.index("held_as")] == "shares"]
     holders = {}
     for a in shares_accounts:
         for t in b0.holdings(account=a, by="ticker")["ticker"]:
@@ -768,12 +768,12 @@ def test_the_bench_fills_a_share_sales_parcel_from_the_book(item, monkeypatch):
     sb = _open_sb_leg_with_parcel()
     cases = ((trimmed_acct, trimmed), (GOOD_TRADE["account"], fresh),
              (sb["account"], sb["ticker"]))
-    parcel = {t: propose._derived(item, "exits", a, ticker=t).get("realisation")
+    parcel = {t: propose._derived(item, "sales", a, ticker=t).get("realisation_id")
               for a, t in cases}
     # A fresh holding's parcel is NAMED FOR ITS TICKER — the convention restated here on
     # purpose, so a renamed proposer cannot vouch for itself.
     named = "R-" + fresh.split(".")[0].replace(" ", "")
-    assert parcel == {trimmed: trimmed_parcel, fresh: named, sb["ticker"]: sb["realisation"]}
+    assert parcel == {trimmed: trimmed_parcel, fresh: named, sb["ticker"]: sb["realisation_id"]}
 
 
 def test_a_refused_commit_leaves_no_thesis_behind(item, store_copy, tmp_path, monkeypatch):
@@ -800,15 +800,15 @@ def test_commit_is_refused_until_every_gate_is_green(item, store_copy):
     approved by hand is still refused, and the store is not touched."""
     from portfusion.record import schema
     from portfusion.desk.doors import commit as _commit
-    item["rows"] = [{"table": "trades", "values": dict(GOOD_TRADE)}]
+    item["rows"] = [{"table": "buys", "values": dict(GOOD_TRADE)}]
     item["state"] = "approved"                      # a lie, told deliberately
     _bench.save(item)
-    before = (schema.TABLES["trades"].path).read_bytes()
+    before = (schema.TABLES["buys"].path).read_bytes()
 
     with pytest.raises(_commit.Refused) as e:
         _commit.commit(item["id"])
     assert "not approved" in str(e.value)
-    assert (schema.TABLES["trades"].path).read_bytes() == before
+    assert (schema.TABLES["buys"].path).read_bytes() == before
 
 
 
@@ -816,24 +816,24 @@ def test_two_rows_of_one_item_under_one_id_are_refused(item):
     """AN ID ONCE. Two exits proposed as one eid both passed every gate, and the commit wrote
     both (the review of 21 Oct 2026, reproduced on the demo)."""
     _ready(item)
-    item["rows"].append({"table": "trades", "values": dict(GOOD_TRADE, broker_ref="TESTREF2")})
+    item["rows"].append({"table": "buys", "values": dict(GOOD_TRADE, broker_ref="TESTREF2")})
     rows = next(g for g in _bench.gates(item) if g["name"] == "rows")
-    assert not rows["ok"] and f"id {GOOD_TRADE['id']} is row 1's too" in rows["detail"], rows
+    assert not rows["ok"] and f"id {GOOD_TRADE['trade_id']} is row 1's too" in rows["detail"], rows
 
 
-@needs("accounts", "trades")
+@needs("accounts", "buys")
 def test_the_record_refuses_two_rows_under_one_id(store_copy):
     """THE SAME RULE, ON THE STORE: a hand edit that repeats an id stops the record loading, as
     any other malformed row does, rather than becoming two legs nothing can tell apart."""
     from portfusion.record import rules, schema
-    path = schema.TABLES["exits"].path
+    path = schema.TABLES["sales"].path
     lines = path.read_text(encoding="utf-8").splitlines()
     path.write_text("\n".join(lines + [lines[-1]]) + "\n", encoding="utf-8")
     with pytest.raises(AssertionError, match="ids must be distinct"):
         rules.reload_store()
 
 
-@needs("accounts", "trades")
+@needs("accounts", "buys")
 def test_committing_twice_is_refused(item, store_copy, tmp_path, monkeypatch):
     """An event happened once. The second write would be a duplicate the schema cannot see,
     because nothing in it says a trade id may not repeat across a re-run."""
@@ -866,7 +866,7 @@ def test_a_failure_on_the_SECOND_table_rolls_the_FIRST_one_back(item, store_copy
     item["evidence"] = dict(GOOD_EVIDENCE)
     item["why"] = {"why_entered": "Entered on the services margin story, which the hardware "
                                  "cycle masks.", "why_exited": ""}
-    item["rows"] = [{"table": "trades", "values": dict(GOOD_TRADE)},
+    item["rows"] = [{"table": "buys", "values": dict(GOOD_TRADE)},
                     {"table": "income", "values": dict(GOOD_INCOME)}]
     _bench.save(item)
 
@@ -874,7 +874,7 @@ def test_a_failure_on_the_SECOND_table_rolls_the_FIRST_one_back(item, store_copy
     monkeypatch.setattr(_commit, "_rendered",
                         lambda t, v: real(t, v)[:-1] if t == "income" else real(t, v))
 
-    before = {t: schema.TABLES[t].path.read_bytes() for t in ("trades", "income")}
+    before = {t: schema.TABLES[t].path.read_bytes() for t in ("buys", "income")}
     with pytest.raises(Exception):
         _commit.commit(item["id"])
     for t, original in before.items():
@@ -1057,7 +1057,7 @@ def test_the_bench_writes_only_inside_its_own_directory(item, tmp_path, monkeypa
         "a store CSV was modified by working a bench item"
 
 
-@needs("accounts", "trades")
+@needs("accounts", "buys")
 def test_THE_SAME_SALE_CANNOT_BE_ENTERED_TWICE_UNNOTICED(item, store_copy):
     """THE DEFECT THIS SUITE MISSED, pinned by name and by the real row.
 
@@ -1075,25 +1075,25 @@ def test_THE_SAME_SALE_CANNOT_BE_ENTERED_TWICE_UNNOTICED(item, store_copy):
     assert ref, "no recorded sale carries a reference — the premise is gone"
     item["evidence"] = {"dated": str(sale["date"]), "authority": "ii contract note",
                         "reference": ref}
-    item["rows"] = [{"table": "exits", "values": {
-        "eid": _EID, "date": str(sale["date"]), "account": sale["account"],
-        "ticker": sale["ticker"], "qty": str(sale["qty"]), "price": str(sale["price"]), "cur": "GBP",
+    item["rows"] = [{"table": "sales", "values": {
+        "sale_id": _EID, "date": str(sale["date"]), "account": sale["account"],
+        "ticker": sale["ticker"], "qty": str(sale["qty"]), "traded_price": str(sale["traded_price"]), "cur": "GBP",
         "proceeds": str(sale["proceeds"]),
         "source": f"ii contract note {ref}",
         "broker_ref": ref, "note": "n"}}]
     findings = _bench.already_in_the_record(item)
 
-    assert any(f"{ref} already appears in exits.csv" in f for f in findings), findings
+    assert any(f"{ref} already appears in sales.csv" in f for f in findings), findings
     # The archive signal fires only where the cited document is actually filed.
     if any(ref.lower() in n.lower() for n in _schema.filed_statements()):
         assert any("_archive/statements/" in f for f in findings), findings
-    assert any(f"already in the record as {sale['eid']}" in f for f in findings), findings
+    assert any(f"already in the record as {sale['sale_id']}" in f for f in findings), findings
 
     gate = next(g for g in _bench.gates(item) if g["name"] == "not already in the record")
     assert not gate["ok"], "the duplicate sale passed the gate"
 
 
-@needs("accounts", "trades")
+@needs("accounts", "buys")
 def test_a_duplicate_is_acknowledged_and_not_silently_overridden(item):
     """IT CANNOT BE A REFUSAL (`bench.already_in_the_record` says why), so it costs a
     deliberate acknowledgement — and acknowledging one finding must not pre-approve
@@ -1110,15 +1110,15 @@ def test_a_duplicate_is_acknowledged_and_not_silently_overridden(item):
                 if g["name"] == "not already in the record")["ok"]
 
     # A NEW FINDING RAISES IT AGAIN. The acknowledgement is per finding, not a switch.
-    item["rows"].append({"table": "exits", "values": {
-        "eid": _EID_NEXT, "date": str(sale["date"]), "account": sale["account"],
-        "ticker": sale["ticker"], "qty": str(sale["qty"]), "price": str(sale["price"]), "cur": "GBP",
+    item["rows"].append({"table": "sales", "values": {
+        "sale_id": _EID_NEXT, "date": str(sale["date"]), "account": sale["account"],
+        "ticker": sale["ticker"], "qty": str(sale["qty"]), "traded_price": str(sale["traded_price"]), "cur": "GBP",
         "proceeds": str(sale["proceeds"]), "source": "s", "broker_ref": "", "note": "n"}})
     assert not next(g for g in _bench.gates(item)
                     if g["name"] == "not already in the record")["ok"]
 
 
-@needs("accounts", "trades")
+@needs("accounts", "buys")
 def test_the_screen_shows_the_whys_already_on_file(item):
     """A new why is added beside the ones on file, so the screen shows them as the record so far,
     each with its date: the thesis an addition builds on, the reason a trim departs from. Written
@@ -1127,7 +1127,7 @@ def test_the_screen_shows_the_whys_already_on_file(item):
     from portfusion.record import schema as _schema
     rh = _schema.TABLES["reasoning"].header
     why = next(dict(zip(rh, r)) for r in _schema.load("reasoning") if r[rh.index("why_exited")])
-    item["rows"] = [{"table": "exits", "values": {"ticker": why["ticker"]}}]
+    item["rows"] = [{"table": "sales", "values": {"ticker": why["ticker"]}}]
     _bench.save(item)
     existing = panel.detail(item["id"])["existing_why"]
     assert [r["date"] for r in existing[why["ticker"]]
@@ -1181,7 +1181,7 @@ def test_a_sale_owes_an_exit_reason(item):
     _ready(item)
     assert next(g for g in _bench.gates(item) if g["name"] == "why_exited")["ok"], \
         "a purchase was asked for an exit reason"
-    item["rows"] = [{"table": "exits", "values": {"ticker": "PENR.L"}}]
+    item["rows"] = [{"table": "sales", "values": {"ticker": "PENR.L"}}]
     assert not next(g for g in _bench.gates(item) if g["name"] == "why_exited")["ok"]
 
 
@@ -1202,7 +1202,7 @@ def test_a_reason_is_never_refused_for_its_length(item):
     assert gate["ok"], gate
 
 
-@needs("accounts", "trades")
+@needs("accounts", "buys")
 def test_a_closed_vocabulary_refuses_an_invented_spelling(item):
     """Accounts, types, currencies, modes and statuses are closed. A value outside them is a typo
     every time — and record/schema.py checks a cell's TYPE, not its VALUE, so a mistyped account
@@ -1214,17 +1214,17 @@ def test_a_closed_vocabulary_refuses_an_invented_spelling(item):
 
 def test_an_open_vocabulary_accepts_a_value_the_record_has_never_seen(item):
     """A FIRST-EVER PURCHASE OF A NEW COMPANY MUST NOT BE REFUSED, and it once was: every
-    derived list was enforced, so a ticker not yet in trades.csv failed the gate — which would
+    derived list was enforced, so a ticker not yet in buys.csv failed the gate — which would
     have blocked precisely the event the bench exists for. Tickers and income categories grow
     in the ordinary course of business; accounts and currencies do not."""
     assert _bench.approved(_ready(item, ticker="NEVER-HELD.L"))
 
 
-@needs("accounts", "trades")
+@needs("accounts", "buys")
 def test_a_row_id_already_in_the_store_is_refused(item):
     """A duplicate id is a silent overwrite waiting to happen."""
     from portfusion.record import rules as D
-    _ready(item, id=D.trades[0].id)
+    _ready(item, trade_id=D.buys[0].trade_id)
     gate = next(g for g in _bench.gates(item) if g["name"] == "rows")
     assert not gate["ok"] and "already in the store" in gate["detail"]
 
@@ -1232,11 +1232,11 @@ def test_a_row_id_already_in_the_store_is_refused(item):
 def test_the_next_id_is_allocated_from_the_store_not_guessed(item):
     from portfusion.record import rules as D
     ids = _bench.next_ids()
-    assert ids["trades"] not in {t.id for t in D.trades}
-    assert ids["exits"] not in {e.eid for e in D.exits}
+    assert ids["buys"] not in {t.trade_id for t in D.buys}
+    assert ids["sales"] not in {e.sale_id for e in D.sales}
 
 
-@needs("accounts", "trades")
+@needs("accounts", "buys")
 def test_every_gate_is_reported_not_just_the_first(item):
     """A form that stops at the first problem makes the reader find them one at a time.
 
@@ -1245,8 +1245,8 @@ def test_every_gate_is_reported_not_just_the_first(item):
     proved nothing: it only worked while the bench demanded columns the store is happy to leave
     blank.
     """
-    item["rows"] = [{"table": "exits", "values": {
-        "eid": "E-999", "date": "2026-09-01", "account": "XXX", "ticker": GOOD_TRADE["ticker"],
+    item["rows"] = [{"table": "sales", "values": {
+        "sale_id": "E-999", "date": "2026-09-01", "account": "XXX", "ticker": GOOD_TRADE["ticker"],
         "qty": "", "price": "not-a-number", "cur": "GBP", "proceeds": "",
         "source": "s", "broker_ref": "", "note": ""}}]
     gate = next(g for g in _bench.gates(item) if g["name"] == "rows")
@@ -1283,7 +1283,7 @@ def test_a_currency_with_a_rate_is_offered_before_anything_trades_in_it(monkeypa
     a rate on file for one nothing had traded in yet still refused the trade, and a new book —
     nothing traded — offered no currency at all (the review of 21 Oct 2026)."""
     from portfusion.record import rules
-    monkeypatch.setattr(rules, "trades", [])
+    monkeypatch.setattr(rules, "buys", [])
     monkeypatch.setattr(rules, "fx_rows", [("JPY", 190.0, "2026-09-30", "test", "close")])
     assert _bench.vocabulary()["cur"] == ["GBP", "JPY"]
 
@@ -1303,9 +1303,9 @@ def test_the_paste_block_is_a_row_the_store_would_accept(item):
     from portfusion.record import schema
     _ready(item)
     block = _bench.paste_block(item)
-    assert len(block) == 1 and block[0]["target"] == "store/trades.csv"
+    assert len(block) == 1 and block[0]["target"] == "store/buys.csv"
     cells = next(csv.reader(io.StringIO(block[0]["line"])))
-    assert len(cells) == len(schema.TABLES["trades"].fields)
+    assert len(cells) == len(schema.TABLES["buys"].fields)
 
 
 def test_discarding_an_item_never_touches_a_document(item, tmp_path):
@@ -1402,12 +1402,12 @@ def test_the_book_works_with_no_research_repo_at_all(tmp_path, monkeypatch):
 # The event's numbers are canned (an API reply is checked for shape, not against holdings);
 # its ACCOUNT and TICKER are the loaded book's, because the closed vocabulary refuses others.
 _IG_CLOSE = {
-    "table": "exits", "ref": "DIAAAATESTCLOSE", "kind": "close",
+    "table": "sales", "ref": "DIAAAATESTCLOSE", "kind": "close",
     "account": SPREAD_BET_ACCOUNT, "what": f"{SYNTHETIC_TICKER} · Sell · £3/pt · 4,210 pts",
-    "values": {"eid": _EID, "date": "2026-08-28", "account": SPREAD_BET_ACCOUNT,
-               "ticker": SYNTHETIC_TICKER, "qty": "", "stake": 3, "price": 4210.0,
+    "values": {"sale_id": _EID, "date": "2026-08-28", "account": SPREAD_BET_ACCOUNT,
+               "ticker": SYNTHETIC_TICKER, "qty": "", "stake": 3, "traded_price": 4210.0,
                "cur": "GBP", "rate": "", "proceeds": 12630.0, "source": "IG REST /history/activity 28 Aug 2026",
-               "broker_ref": "DIAAAATESTCLOSE", "realisation": "R-TEST99", "closes": "",
+               "broker_ref": "DIAAAATESTCLOSE", "realisation_id": "R-TEST99", "closes": "",
                "note": "Closes DIAAAAOLD"},
 }
 
@@ -1433,31 +1433,32 @@ def _set_up(code="NEWCO SB", contract="NEWCO-JUN27", company="Newco Inc.", ticke
     """A first bet on a contract the book lacks, as the sweep's set-up sends it: the trade, with
     its new line, company and contract. Invented names; the account is the loaded book's."""
     from portfusion.record import schema
-    trade = {"id": free_id("trades"), "date": "2026-08-12",
+    trade = {"trade_id": free_id("buys"), "date": "2026-08-12",
              "source": _rules.trade_source("ig-api", "2026-08-12", endpoint="/history/activity"),
              "account": SPREAD_BET_ACCOUNT, "ticker": code if ticker is None else ticker,
-             "cur": "GBP", "qty": "", "stake": 1, "val": 50.0, "broker_ref": "DIAAAATESTNEWOPEN",
-             "note": "", "contract": contract, "price": "", "rate": ""}
+             "cur": "GBP", "qty": "", "stake": 1, "cost": "", "level_points": 50.0,
+             "broker_ref": "DIAAAATESTNEWOPEN", "note": "", "contract": contract,
+             "traded_price": "", "rate": ""}
 
     def row(table, **v):
         return {"table": table, "values": {f.name: v.get(f.name, "") for f in schema.TABLES[table].fields}}
-    return {"table": "trades", "ref": "DIAAAATESTNEWOPEN", "kind": "open",
+    return {"table": "buys", "ref": "DIAAAATESTNEWOPEN", "kind": "open",
             "account": SPREAD_BET_ACCOUNT, "what": "Newco Inc (24 Hours) · Buy · £1/pt · 50 pts",
             "values": trade, "with": [
-                row("securities", code=code, company=company, kind="spread bet",
+                row("securities", ticker=code, company=company, held_as="spread bet",
                     currency="USD", symbol="XNYS:NEWCO", points_per_unit="100"),
-                row("issuers", company=company, sector="Industrials", region="US"),
+                row("companies", company=company, sector="Industrials", region="US"),
                 row("contracts", contract=contract, epic="DM.D.NEWCOUS.JUN.IP", funding="dated",
-                    code=code)]}
+                    ticker=code)]}
 
 
 #: The new contract's first mark, as the set-up press reads it from IG.
-_FIRST_MARK = {"ticker": "NEWCO-JUN27", "price": 50.4, "currency": "USD", "as_of": "2026-08-12",
+_FIRST_MARK = {"mark_key": "NEWCO-JUN27", "price": 50.4, "currency": "USD", "as_of": "2026-08-12",
                "source": "IG REST LIVE DM.D.NEWCOUS.JUN.IP, bid 50.4", "struck": "live",
                "at": "2026-08-12T10:00:00Z"}
 
 
-@needs("accounts", "trades")
+@needs("accounts", "buys")
 def test_a_set_up_writes_its_line_company_contract_and_trade_together(swept, store_copy,
                                                                       tmp_path, monkeypatch):
     """The first bet on a new contract lands with everything it stands on, in one write, and
@@ -1471,7 +1472,7 @@ def test_a_set_up_writes_its_line_company_contract_and_trade_together(swept, sto
     assert [g["name"] for g in _bench.gates(item) if not g["ok"]] == []
 
     done = _commit.commit(item["id"])
-    assert done["written"] == {"securities": 1, "issuers": 1, "contracts": 1, "trades": 1}
+    assert done["written"] == {"securities": 1, "companies": 1, "contracts": 1, "buys": 1}
     assert done["marked"] == ["NEWCO-JUN27"]
     assert schema.load("contracts")[-1][0::3] == ("NEWCO-JUN27", "NEWCO SB")
     assert _rules.CONTRACT_CODE["NEWCO-JUN27"] == "NEWCO SB"
@@ -1562,7 +1563,7 @@ def test_an_event_whose_row_does_not_fit_its_table_is_refused(swept):
     back — so it is checked rather than trusted. A half-filled row must not be staged and then
     discovered at commit."""
     from portfusion.desk.intake import bench as _b
-    half = dict(_IG_CLOSE, values={"eid": _EID})
+    half = dict(_IG_CLOSE, values={"sale_id": _EID})
     with pytest.raises(ValueError) as e:
         _b.for_event(half)
     assert "must fill exactly" in str(e.value)
@@ -1793,7 +1794,7 @@ def test_the_bench_accepts_the_source_line_every_trade_already_carries():
     value the store already holds on every row, the bench is wrong and not the store.
 
     When `trades.basis` was renamed to `trades.evidence`, `evidence` — closed, for the
-    EVIDENCE_CLASSES key on `cash-observations` — began refusing the provenance PROSE that
+    EVIDENCE_CLASSES key on `cash-readings` — began refusing the provenance PROSE that
     trades column held, and every trade the bench could produce failed the rows gate. A
     carve-out mended it until 1 Oct 2026, when the trades column became `source`, as every
     other table spells the provenance line.
@@ -1801,13 +1802,13 @@ def test_the_bench_accepts_the_source_line_every_trade_already_carries():
     from portfusion.record import rules as D
     from portfusion.desk.intake import bench
     refused = []
-    for t in D.trades:
+    for t in D.buys:
         if not (t.source or "").strip():
             continue
-        row = {"id": free_id("trades"), "date": "2026-09-05", "source": t.source,
+        row = {"trade_id": free_id("buys"), "date": "2026-09-05", "source": t.source,
                "account": t.acct, "ticker": t.ticker, "cur": t.cur,
-               "qty": t.qty, "val": t.val}
-        if [p for p in bench.validate_row("trades", row) if p.startswith("source:")]:
+               "qty": t.qty, "cost": t.cost}
+        if [p for p in bench.validate_row("buys", row) if p.startswith("source:")]:
             refused.append(t.source)
     assert not refused, (
         f"the bench would refuse the source line on {len(refused)} row(s) the store already "
@@ -1815,18 +1816,18 @@ def test_the_bench_accepts_the_source_line_every_trade_already_carries():
 
 
 def test_the_cash_observation_evidence_is_still_a_closed_class_key():
-    """THE OTHER HALF. On `cash-observations` `evidence` holds an EVIDENCE_CLASSES KEY, and
+    """THE OTHER HALF. On `cash-readings` `evidence` holds an EVIDENCE_CLASSES KEY, and
     `test_record.py` refuses a row citing a class the record does not know — so a free text box
     there would let the bench build a row the suite then rejects. No table may use the name
     for anything else."""
     from portfusion.desk.intake import bench
-    complaints = bench.validate_row("cash-observations", {
+    complaints = bench.validate_row("cash-readings", {
         "account": "Rowe HL ISA", "as_of": "2026-09-08", "cash": 1.0, "evidence": "made-up"})
     assert any(c.startswith("evidence:") for c in complaints), \
-        "cash-observations.evidence no longer refuses a class the record does not know"
-    assert "evidence" in bench.closed_for("cash-observations")
+        "cash-readings.evidence no longer refuses a class the record does not know"
+    assert "evidence" in bench.closed_for("cash-readings")
     from portfusion.record import schema
-    assert "evidence" not in schema.TABLES["trades"].header, \
+    assert "evidence" not in schema.TABLES["buys"].header, \
         "trades has an `evidence` column again — its provenance line is `source`"
 
 
@@ -1836,7 +1837,7 @@ def test_a_free_prose_column_offers_no_choices_either(repo_root):
     whole job is naming the document. The browser renders a `choices` list as a combobox
     whatever `closed` says."""
     from portfusion.desk.intake import bench
-    spec = {f["name"]: f for f in bench.form_for("trades")}["source"]
+    spec = {f["name"]: f for f in bench.form_for("buys")}["source"]
     assert spec["choices"] is None and spec["closed"] is False, \
         f"trades.source offers a vocabulary: {spec}"
 
@@ -1908,7 +1909,7 @@ def test_a_recognised_document_prefills_only_what_it_states(tmp_path, monkeypatc
     assert item["recognised"]["instant"] == "2025-03-03 14:10"
 
 
-@needs("accounts", "trades")
+@needs("accounts", "buys")
 def test_a_contract_note_fills_all_three_limbs_from_its_own_text(tmp_path, monkeypatch):
     """A CONTRACT NOTE STATES ALL THREE: who issued it, when the trade was dealt, and its
     number. A copy of a filed note opened on the bench fills each from the document. The date
@@ -1981,7 +1982,7 @@ def test_a_document_read_in_full_that_yields_nothing_can_still_be_closed():
                          "reference": "Capital, 3 Mar 2025 14:08"},
             "rows": [], "acknowledged": [],
             "examined": [{"line": "B000000011 Kappel", "why": "already in the record as T-999",
-                          "in_record": "trades"}]}
+                          "in_record": "buys"}]}
     gate = next(g for g in bench.gates(read) if g["name"] == "rows")
     assert gate["ok"], gate
     assert "none of them new" in gate["detail"]
@@ -2116,7 +2117,7 @@ def test_a_document_gone_before_it_is_filed_writes_nothing(item, store_copy, tmp
     from portfusion.desk.doors import commit as _commit
     monkeypatch.setattr(_commit, "ARCHIVE", tmp_path / "archive")
     _bench.save(_ready(item))
-    held = {t: schema.TABLES[t].path.read_bytes() for t in ("trades", "reasoning", "journal")}
+    held = {t: schema.TABLES[t].path.read_bytes() for t in ("buys", "reasoning", "journal")}
     # The gates as they read with the document still there, so only the door stands in the way.
     passed = _bench.gates(item)
     assert all(g["ok"] for g in passed), passed
@@ -2222,7 +2223,7 @@ def test_a_page_drawn_before_a_reading_cannot_save_over_it(item):
     drawn = client.get(url).json()["item"].get("revision", 0)
 
     read = _bench.get(item["id"])                 # the session's hand-in, as propose.py saves it
-    read["rows"] = [{"table": "exits", "values": {"ticker": "READ"}, "machine": True}]
+    read["rows"] = [{"table": "sales", "values": {"ticker": "READ"}, "machine": True}]
     _bench.save(read)
 
     stale = client.put(url, json={"rows": [], "revision": drawn})
@@ -2242,13 +2243,13 @@ def _a_held_share():
     """(account, ticker, held, the day after its last event) for a share the loaded book holds."""
     import datetime as dt
     from portfusion.record import rules as D
-    for acct, ticker in dict.fromkeys((t.acct, t.ticker) for t in D.trades):
+    for acct, ticker in dict.fromkeys((t.acct, t.ticker) for t in D.buys):
         if D.KIND_OF_CODE.get(ticker) != "shares":
             continue
-        held = (sum(t.qty or 0 for t in D.trades if (t.acct, t.ticker) == (acct, ticker))
-                - sum(e.qty or 0 for e in D.exits if (e.acct, e.ticker) == (acct, ticker)))
-        days = [d for d in [t.date for t in D.trades if (t.acct, t.ticker) == (acct, ticker)]
-                + [e.date for e in D.exits if (e.acct, e.ticker) == (acct, ticker)] if d]
+        held = (sum(t.qty or 0 for t in D.buys if (t.acct, t.ticker) == (acct, ticker))
+                - sum(e.qty or 0 for e in D.sales if (e.acct, e.ticker) == (acct, ticker)))
+        days = [d for d in [t.date for t in D.buys if (t.acct, t.ticker) == (acct, ticker)]
+                + [e.date for e in D.sales if (e.acct, e.ticker) == (acct, ticker)] if d]
         if held > 0 and days:
             return acct, ticker, held, (dt.date.fromisoformat(max(days)) + dt.timedelta(1)).isoformat()
     pytest.skip("the loaded book holds no share")
@@ -2258,7 +2259,7 @@ def _adjusted(item, old, new):
     acct, ticker, held, day = _a_held_share()
     item["evidence_class"] = GOOD_CLASS
     item["evidence"] = dict(GOOD_EVIDENCE)
-    item["rows"] = [{"table": "trades", "adjustment": {"from": old, "to": new},
+    item["rows"] = [{"table": "buys", "adjustment": {"from": old, "to": new},
                      "values": {"account": acct, "ticker": ticker, "date": day}}]
     return held
 
@@ -2269,10 +2270,10 @@ def test_a_split_or_consolidation_is_derived_from_the_holding_and_its_ratio(item
     held = _adjusted(item, old, new)
     row = propose.refresh_derived(item)["rows"][0]
     after = held * new // old
-    assert int(row["values"]["qty"]) == after - held and row["values"]["val"] == "0"
+    assert int(row["values"]["qty"]) == after - held and row["values"]["cost"] == "0"
     assert row["values"]["source"].startswith(f"Derived: {old}-to-{new} ")
     assert row["values"]["note"].endswith(f"{held:,} shares became {after:,}."), row["values"]["note"]
-    assert row["values"]["id"] and {"qty", "val", "source", "id"} <= set(row["derived"])
+    assert row["values"]["trade_id"] and {"qty", "cost", "source", "trade_id"} <= set(row["derived"])
     gates = {g["name"]: g for g in _bench.gates(item)}
     assert gates["rows"]["ok"], gates["rows"]["detail"]
     assert not _bench._why_needed(item, "why_entered"), "a split owes nobody's reason"
@@ -2298,11 +2299,11 @@ def test_a_written_consolidation_moves_the_holding_alone_and_reads_as_an_adjustm
     deployed = engine.Book().capital_deployed()
     held = _adjusted(item, 2, 1)
     acct, ticker = item["rows"][0]["values"]["account"], item["rows"][0]["values"]["ticker"]
-    written = _bench.save(propose.refresh_derived(item))["rows"][0]["values"]["id"]
-    assert _commit.commit(item["id"])["written"] == {"trades": 1}
+    written = _bench.save(propose.refresh_derived(item))["rows"][0]["values"]["trade_id"]
+    assert _commit.commit(item["id"])["written"] == {"buys": 1}
 
-    now = (sum(t.qty or 0 for t in D.trades if (t.acct, t.ticker) == (acct, ticker))
-           - sum(e.qty or 0 for e in D.exits if (e.acct, e.ticker) == (acct, ticker)))
+    now = (sum(t.qty or 0 for t in D.buys if (t.acct, t.ticker) == (acct, ticker))
+           - sum(e.qty or 0 for e in D.sales if (e.acct, e.ticker) == (acct, ticker)))
     assert now == held // 2
     b = engine.Book()
     assert b.capital_deployed().equals(deployed), "a consolidation moved money"
@@ -2316,7 +2317,7 @@ def test_a_contract_reopened_in_the_same_item_is_not_retired():
     Retired, its live price went and the item was refused whole."""
     from portfusion.desk.doors import commit
     from portfusion.record import rules as D
-    closed = {e.closes for e in D.exits if e.closes}
+    closed = {e.closes for e in D.sales if e.closes}
     epics = {r[0] for r in D.schema.load("contracts") if r[1]}     # as the door reads them
     legs = {}
     for leg, c in D.LEG_CONTRACT.items():
@@ -2326,9 +2327,9 @@ def test_a_contract_reopened_in_the_same_item_is_not_retired():
     if pick is None:
         pytest.skip("no contract with an epic and one open leg")
     contract, leg = pick
-    sale = {"table": "exits", "values": {"closes": leg}}
+    sale = {"table": "sales", "values": {"closes": leg}}
     assert commit.retired_by([sale]) == [contract], "the premise: the sale closes it"
-    reopen = {"table": "trades", "values": {"id": "T-NEWLEG", "contract": contract}}
+    reopen = {"table": "buys", "values": {"trade_id": "T-NEWLEG", "contract": contract}}
     assert commit.retired_by([sale, reopen]) == []
 
 
@@ -2371,6 +2372,6 @@ def test_a_dated_statement_filed_before_is_named_as_filed(monkeypatch):
     monkeypatch.setattr(schema, "filed_statements", lambda: [filed])
     item = {"evidence_class": "hl-valuation",
             "evidence": {"reference": "3 Mar 2025 14:05"},
-            "rows": [{"table": "account-observations", "values": {"account": account}}]}
+            "rows": [{"table": "account-readings", "values": {"account": account}}]}
     said = _bench.already_in_the_record(item)
     assert any("already filed" in s and filed in s for s in said), said

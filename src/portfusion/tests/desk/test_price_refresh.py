@@ -38,7 +38,7 @@ def test_a_mark_is_replaced_and_the_row_count_does_not_move(store_copy):
     from portfusion.desk.doors import marks
 
     was = schema.load("current-prices")
-    row = {"ticker": TICK, "price": 91.5, "currency": TICK_CUR, "as_of": "2026-09-04",
+    row = {"mark_key": TICK, "price": 91.5, "currency": TICK_CUR, "as_of": "2026-09-04",
            "source": f"TradingView 1D {TICK}, session 2026-09-04 close — test", "struck": "close"}
 
     result = marks.write(prices=[row])
@@ -58,7 +58,7 @@ def test_a_crlf_table_is_written_back_in_crlf(store_copy):
     from portfusion.desk.doors import marks
     to_crlf("current-prices")
     before = schema.TABLES["current-prices"].path.read_bytes().split(b"\r\n")
-    marks.write(prices=[{"ticker": TICK, "price": 91.5, "currency": TICK_CUR,
+    marks.write(prices=[{"mark_key": TICK, "price": 91.5, "currency": TICK_CUR,
                          "as_of": "2026-09-04", "struck": "close",
                          "source": f"TradingView 1D {TICK}, session 2026-09-04 close — test"}])
     assert all_crlf("current-prices"), "the marks door wrote a CRLF table back as LF"
@@ -118,7 +118,7 @@ def test_a_mark_without_a_source_and_a_date_together_is_refused(store_copy):
     """
     from portfusion.desk.doors import marks
     for missing in ("as_of", "source"):
-        row = {"ticker": TICK, "price": 91.5, "currency": TICK_CUR,
+        row = {"mark_key": TICK, "price": 91.5, "currency": TICK_CUR,
                "as_of": "2026-09-04", "source": "a source", "struck": "close"}
         row[missing] = ""
         with pytest.raises(marks.Refused) as e:
@@ -131,7 +131,7 @@ def test_a_price_that_does_not_say_which_instant_it_describes_is_refused(store_c
     is typed; a live read without its instant, or with one on another day, is the
     stale-level-wearing-a-fresh-date failure in a new column."""
     from portfusion.desk.doors import marks
-    base = {"ticker": TICK, "price": 91.5, "currency": TICK_CUR, "as_of": "2026-09-04",
+    base = {"mark_key": TICK, "price": 91.5, "currency": TICK_CUR, "as_of": "2026-09-04",
             "source": "a source"}
     for over, says in (
         ({}, "struck"),
@@ -149,7 +149,7 @@ def test_a_live_read_is_dated_by_its_uk_day_and_lands_with_its_instant(store_cop
     kept in UTC, exactly as the feed gave it."""
     from portfusion.record import schema
     from portfusion.desk.doors import marks
-    marks.write(prices=[{"ticker": TICK, "price": 91.5, "currency": TICK_CUR,
+    marks.write(prices=[{"mark_key": TICK, "price": 91.5, "currency": TICK_CUR,
                          "as_of": "2026-09-04", "source": "a live read — test",
                          "struck": "live", "at": "2026-09-03T23:30:00Z"}])
     landed = dict(zip(schema.TABLES["current-prices"].header,
@@ -166,7 +166,7 @@ def test_a_refused_write_leaves_every_file_byte_identical(store_copy):
     before = {p: p.read_bytes() for p in paths}
 
     with pytest.raises(marks.Refused):
-        marks.write(prices=[{"ticker": TICK, "price": 91.5, "currency": TICK_CUR,
+        marks.write(prices=[{"mark_key": TICK, "price": 91.5, "currency": TICK_CUR,
                              "as_of": "2026-09-04", "source": "fine", "struck": "close"}],
                     rates=[{"currency": "XXX", "as_of": "2026-09-04", "rate": 1.0,
                             "source": "names no row", "struck": "live"}])
@@ -183,13 +183,13 @@ def test_a_refused_write_takes_back_the_banking_too(store_copy):
     The outgoing mark is unbanked here, so the bank has something to do."""
     from portfusion.history import prices as PH
     from portfusion.desk.doors import marks
-    live = {(m["ticker"], m["date"]) for m in PH.current_marks() if m["ticker"] == TICK}
-    PH.save([r for r in PH.load() if (r["ticker"], r["date"]) not in live])
+    live = {(m["mark_key"], m["date"]) for m in PH.current_marks() if m["mark_key"] == TICK}
+    PH.save([r for r in PH.load() if (r["mark_key"], r["date"]) not in live])
     history = store_copy / PH.CSV_NAME
     before = history.read_bytes()
 
     with pytest.raises(marks.Refused):
-        marks.write(prices=[{"ticker": TICK, "price": 91.5, "currency": TICK_CUR,
+        marks.write(prices=[{"mark_key": TICK, "price": 91.5, "currency": TICK_CUR,
                              "as_of": "2026-09-04", "source": "fine", "struck": "close"}],
                     rates=[{"currency": "XXX", "as_of": "2026-09-04", "rate": 1.0,
                             "source": "names no row", "struck": "live"}])
@@ -216,7 +216,7 @@ def test_a_fault_mid_write_puts_back_the_files_and_the_record_in_memory(store_co
     monkeypatch.setattr(marks, "write", write_then_fail)
 
     out = price_refresh._write(prices=[{
-        "ticker": TICK, "price": was + 1, "currency": TICK_CUR, "as_of": "2026-09-04",
+        "mark_key": TICK, "price": was + 1, "currency": TICK_CUR, "as_of": "2026-09-04",
         "struck": "close", "source": f"TradingView 1D {TICK}, session 2026-09-04 close — test"}])
 
     assert out["ok"] is False and "the disk went away" in out["refused"], out
@@ -232,15 +232,15 @@ def test_the_outgoing_mark_is_banked_before_the_new_one_lands(store_copy):
     from portfusion.history import prices as PH
     from portfusion.desk.doors import marks
 
-    outgoing = {(m["ticker"], m["date"]) for m in PH.current_marks()}
-    marks.write(prices=[{"ticker": TICK, "price": 91.5, "currency": TICK_CUR,
+    outgoing = {(m["mark_key"], m["date"]) for m in PH.current_marks()}
+    marks.write(prices=[{"mark_key": TICK, "price": 91.5, "currency": TICK_CUR,
                          "as_of": "2026-09-04", "source": "test", "struck": "close"}])
 
-    banked = {(r["ticker"], r["date"]) for r in PH.load()}
+    banked = {(r["mark_key"], r["date"]) for r in PH.load()}
     assert outgoing <= banked, "an outgoing mark was replaced without being banked first"
     # THE FIGURE, not just the day: the book may already hold a banked close for this line on
     # this date, and (ticker, date) alone would then pass with the write's own bank skipped.
-    assert any(r["ticker"] == TICK and r["date"] == "2026-09-04" and r["price"] == 91.5
+    assert any(r["mark_key"] == TICK and r["date"] == "2026-09-04" and r["price"] == 91.5
                for r in PH.load()), "the incoming mark was not banked after the write"
 
 
@@ -255,7 +255,7 @@ def test_the_written_mark_is_visible_to_the_engine_without_a_restart(store_copy)
     from portfusion.record import rules as _rules
     from portfusion.desk.doors import marks
 
-    marks.write(prices=[{"ticker": TICK, "price": 91.5, "currency": TICK_CUR,
+    marks.write(prices=[{"mark_key": TICK, "price": 91.5, "currency": TICK_CUR,
                          "as_of": "2026-09-04", "source": "test", "struck": "close"}])
 
     live = {r[0]: r[1] for r in _rules.CURRENT_PRICES}
@@ -344,7 +344,7 @@ def test_a_committed_item_lands_in_the_journal_as_well_as_the_record(
         item, store_copy, tmp_path, monkeypatch):
     """RECORD TIME IS WRITTEN BY THE SAME OPERATION THAT WRITES THE RECORD.
 
-    An item that reached `trades.csv` without reaching the journal would make the check report
+    An item that reached `buys.csv` without reaching the journal would make the check report
     a hand edit that never happened — and worse, it would make the journal's silence
     meaningless, because a missing row could mean either "nobody wrote this" or "the door
     forgot". The whole table is only worth having if this cannot happen.
@@ -371,7 +371,7 @@ def test_a_committed_item_lands_in_the_journal_as_well_as_the_record(
     # trade AND appends its thesis to reasoning.csv. Unjournalled, the check would find a row no
     # route accounts for — which is what ORLA SB's first thesis did on 29 Sep 2026.
     assert {(r["op"], r["table"], r["rows"]) for r in new} == {
-        ("append", "trades", 1), ("append", "reasoning", 1)}
+        ("append", "buys", 1), ("append", "reasoning", 1)}
     from portfusion.record import rules
     from portfusion import engine
     rules.reload_store()
@@ -413,7 +413,7 @@ def test_a_replaced_mark_is_journalled_as_a_replace_and_not_as_an_arrival(store_
     from portfusion.record import schema
     from portfusion.desk.doors import marks
     was = len(_journal(store_copy))
-    marks.write(prices=[{"ticker": TICK, "price": 91.5, "currency": TICK_CUR,
+    marks.write(prices=[{"mark_key": TICK, "price": 91.5, "currency": TICK_CUR,
                          "as_of": "2026-09-04", "source": "AV close 4 Sep", "struck": "close"}])
 
     rows = _journal(store_copy)
@@ -433,7 +433,7 @@ def test_a_refused_mark_write_leaves_the_journal_exactly_as_it_was(store_copy):
     from portfusion.desk.doors import marks
     before = schema.TABLES["journal"].path.read_bytes()
     with pytest.raises(marks.Refused):
-        marks.write(prices=[{"ticker": "NOT-A-ROW", "price": 1.0, "currency": RATE_CUR,
+        marks.write(prices=[{"mark_key": "NOT-A-ROW", "price": 1.0, "currency": RATE_CUR,
                              "as_of": "2026-09-04", "source": "test", "struck": "close"}])
     assert schema.TABLES["journal"].path.read_bytes() == before
 
@@ -521,7 +521,7 @@ def test_a_refused_write_does_not_even_move_the_mtime(store_copy):
     before = path.stat().st_mtime_ns
 
     with pytest.raises(marks.Refused):
-        marks.write(prices=[{"ticker": "NOT-A-ROW", "price": 1.0, "currency": RATE_CUR,
+        marks.write(prices=[{"mark_key": "NOT-A-ROW", "price": 1.0, "currency": RATE_CUR,
                              "as_of": "2026-09-07", "source": "names a row that is not there", "struck": "close"}])
 
     assert path.stat().st_mtime_ns == before, \
@@ -580,9 +580,9 @@ def test_a_carried_price_leaves_the_replaceable_set_and_says_why(one_carried_pri
     nobody made."""
     from portfusion import engine
     can = engine.marks_replaceable()
-    assert one_carried_price not in [r["ticker"] for r in can["replaceable"]], \
+    assert one_carried_price not in [r["mark_key"] for r in can["replaceable"]], \
         "a carried line is still being offered for replacement"
-    held = {r["ticker"]: r for r in can["held"]}
+    held = {r["mark_key"]: r for r in can["held"]}
     assert one_carried_price in held, "a carried line reached neither population"
     assert held[one_carried_price]["why"], "a carried line arrived with no reason on it"
 
@@ -592,7 +592,7 @@ def test_the_bay_cannot_tick_a_carried_line(one_carried_price, one_carried_rate)
     one thing to hold is that it never reaches a tickable list — a price or a rate."""
     from portfusion.desk.panels import price_refresh
     q = price_refresh.query()
-    assert one_carried_price not in [r["line"] for r in q["prices"]], \
+    assert one_carried_price not in [r["mark_key"] for r in q["prices"]], \
         "the bay offers a carried line in the tickable list"
     assert one_carried_rate not in [r["currency"] for r in q["rates"]], \
         "the bay offers a carried rate in the tickable list"
@@ -604,7 +604,7 @@ def test_a_carried_price_write_is_refused_by_name_and_by_reason(store_copy, one_
     from portfusion.desk.doors import marks
     assert one_carried_price in marks.carried()
     with pytest.raises(marks.Refused) as e:
-        marks.write(prices=[{"ticker": one_carried_price, "price": 1.0, "currency": "GBP",
+        marks.write(prices=[{"mark_key": one_carried_price, "price": 1.0, "currency": "GBP",
                              "as_of": "2026-09-08", "source": "test", "struck": "close"}])
     assert one_carried_price in str(e.value) and "carried" in str(e.value), \
         "the refusal does not name the line or say why it is held"
@@ -628,7 +628,7 @@ _DAY = "2026-09-25"
 
 
 def _close(ticker=TICK, price=250.0, currency=TICK_CUR, **over):
-    row = {"ticker": ticker, "price": price, "currency": currency, "as_of": _DAY,
+    row = {"mark_key": ticker, "price": price, "currency": currency, "as_of": _DAY,
            "source": f"TradingView 1D {ticker}, session {_DAY} close — test",
            "struck": "close", "at": ""}
     row.update(over)
@@ -677,7 +677,7 @@ def test_a_past_days_closes_are_banked_and_the_live_marks_do_not_move(store_copy
 
     assert out["banked"] == {"prices": 1, "rates": 1}, out
     assert all(schema.TABLES[t].path.read_bytes() == b for t, b in live.items())
-    row = next(r for r in PH.load() if r["ticker"] == line and r["date"] == _DAY)
+    row = next(r for r in PH.load() if r["mark_key"] == line and r["date"] == _DAY)
     assert (row["struck"], row["price"]) == ("close", 250.0)
     after = Book().holdings_at(_DAY, account).set_index("ticker")["value"][line]
     assert after != before and abs(after - qty * 250.0 / 1.34) < 0.01, (before, after)
@@ -720,7 +720,7 @@ def test_what_is_not_that_days_close_is_refused_and_nothing_is_written(store_cop
 
 
 def _live_read(ticker, price=249.0):
-    return {"ticker": ticker, "price": price, "currency": RATE_CUR, "as_of": _DAY,
+    return {"mark_key": ticker, "price": price, "currency": RATE_CUR, "as_of": _DAY,
             "source": f"TradingView {ticker} quote, live — test", "struck": "live",
             "at": f"{_DAY}T13:45:00Z"}
 
@@ -742,7 +742,7 @@ def test_a_close_outranks_its_days_live_read_and_the_next_bank_leaves_it(store_c
     assert out["superseded"] == [f"{line} {_DAY}: the live read 249.0 is replaced by that "
                                  f"day's close 250.0"]
     refresh.bank()
-    day = [r for r in PH.load() if (r["ticker"], r["date"]) == (line, _DAY)]
+    day = [r for r in PH.load() if (r["mark_key"], r["date"]) == (line, _DAY)]
     assert sorted((r["struck"], r["status"], r["price"]) for r in day) == [
         ("close", "live", 250.0)]
     assert PH.check() == [] and marks.banked()["ok"]
@@ -769,13 +769,13 @@ def test_a_live_read_its_close_outranks_needs_no_banking(store_copy, monkeypatch
     read is not owed to the history and the archive step neither files it nor strikes it over the
     close (until 12 Oct 2026 it was filed, superseded)."""
     from portfusion.history import prices as PH
-    read = {"ticker": TICK, "date": _DAY, "price": 249.0, "currency": TICK_CUR,
+    read = {"mark_key": TICK, "date": _DAY, "price": 249.0, "currency": TICK_CUR,
             "quality": "sourced", "struck": "live", "status": PH.LIVE, "source": "a read — test"}
     PH.save(PH.load() + [{**read, "price": 250.0, "struck": "close", "source": "a close — test"}])
     monkeypatch.setattr(PH, "current_marks", lambda: [read])
     assert PH.check() == []
     PH.archive(verbose=False)
-    day = [r for r in PH.load() if (r["ticker"], r["date"]) == (TICK, _DAY)]
+    day = [r for r in PH.load() if (r["mark_key"], r["date"]) == (TICK, _DAY)]
     assert sorted((r["struck"], r["status"]) for r in day) == [("close", "live")]
     assert PH.check() == []
 
@@ -859,7 +859,7 @@ def _reading(account=SPREAD_BET_ACCOUNT, **over):
 
 def _level(contract=None, **over):
     contract, epic = (contract, contract) if contract else _mapped_contract()
-    row = {"ticker": contract, "price": 7690.0, "currency": _BY_TICKER[contract][2],
+    row = {"mark_key": contract, "price": 7690.0, "currency": _BY_TICKER[contract][2],
            "as_of": "2026-09-08",
            "source": f"IG REST live {epic}, bid 7690.0 — test",
            "struck": "live", "at": "2026-09-08T14:02:11Z"}
@@ -882,8 +882,8 @@ def test_a_reading_writes_its_levels_beside_its_equity(store_copy):
     assert (out["prices"], out["readings"]) == (1, 1)
     landed = next(r for r in schema.load("current-prices") if r[0] == contract)
     assert landed[1] == 7690.0, "the contract mark was not replaced"
-    read = next(r for r in schema.load("account-observations") if r[0] == SPREAD_BET_ACCOUNT)
-    assert read[schema.TABLES["account-observations"].header.index("equity")] == 23000.0, \
+    read = next(r for r in schema.load("account-readings") if r[0] == SPREAD_BET_ACCOUNT)
+    assert read[schema.TABLES["account-readings"].header.index("equity")] == 23000.0, \
         "the reading was not replaced"
 
 
@@ -994,7 +994,7 @@ def test_each_group_of_the_grid_runs_a_to_z_by_its_line():
     shares and two London lines at the foot. A-Z by line puts each contract beside its company."""
     from portfusion.desk.panels import price_refresh
     q = price_refresh.query()
-    for rows, key in ((q["prices"], "line"), (q["rates"], "currency"), (q["readings"], "account")):
+    for rows, key in ((q["prices"], "mark_key"), (q["rates"], "currency"), (q["readings"], "account")):
         said = [str(r[key]) for r in rows]
         assert said == sorted(said, key=str.upper), f"{key}s are not A-Z: {said}"
 

@@ -60,7 +60,7 @@ _NOT_BROKER_DOCUMENTS = {
     "baseline-reconstruction": "a reconstruction, and pre-baseline by definition",
     "quarter-nav":    "its source says how the figure was ARRIVED AT; `quality` says what it "
                       "rests on, and test_quarter_nav.py guards that",
-    "cash-observations": "carries an explicit `evidence` COLUMN, so its class is structural "
+    "cash-readings": "carries an explicit `evidence` COLUMN, so its class is structural "
                          "rather than parsed — guarded by test_record.py",
 }
 
@@ -70,7 +70,7 @@ def _provenance_rows(D):
 
     THE TABLE LIST IS DERIVED FROM THE SCHEMA, never typed. A typed list covered trades and
     exits — two of the ten tables carrying provenance — and `feeds/ig.py` wrote thirty
-    unclassified lines into income, cash-observations and account-statements without it
+    unclassified lines into income, cash-readings and account-statements without it
     noticing. A guard that watches two of ten doors is not a guard, it is a sample.
 
     A new table with a `source` column joins by EXISTING. Opting one out means adding a
@@ -180,8 +180,8 @@ def test_every_trade_names_its_document_in_one_format(D):
     account. A row that cites no document (not on file, a derivation) says what it is instead."""
     import re
     wrong, unnumbered = [], []
-    for row in list(D.trades) + list(D.exits):
-        rid = getattr(row, "id", None) or row.eid
+    for row in list(D.buys) + list(D.sales):
+        rid = getattr(row, "trade_id", None) or row.sale_id
         ev = D.evidence_from_source(row.source)
         if ev is None or ev.retrieval == "none":
             continue

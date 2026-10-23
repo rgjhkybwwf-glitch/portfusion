@@ -108,7 +108,7 @@ def write_call(node) -> str | None:
 
 
 def free_id(table: str, step: int = 0) -> str:
-    """The loaded book's next free id for `table` ("trades", "exits"), or the one `step` after it.
+    """The loaded book's next free id for `table` ("buys", "sales"), or the one `step` after it.
     A typed id — T-999, E-099 — is one a book reaching it already holds."""
     from portfusion.record import rules
     prefix, number = rules.next_free_ids()[table].split("-")
@@ -377,7 +377,7 @@ def store_copy(tmp_path, monkeypatch):
     the copy for this test.
 
     EVERY test that writes to the store uses this and never the record — a test that
-    appended a row to `store/trades.csv` would be a fabricated trade in the book.
+    appended a row to `store/buys.csv` would be a fabricated trade in the book.
 
     IT MOVES THE WHOLE BOOK, not the store alone. Redirecting `schema.STORE` was once all a
     copy did, while `engine.py` read three histories off the repo's own path and `history/*`
@@ -611,6 +611,6 @@ def book_names(D):
         "words": {w for r in reg for w in str(r["holder"]).split() if w not in titles},
         "joined": {"".join(w for w in str(r["holder"]).split() if w not in titles) for r in reg},
         "exact": ({str(r["number"]) for r in reg} | {str(r["feed_key"]) for r in reg if r["feed_key"]}
-                  | {e.realisation for e in D.exits} | {c.realisation for c in D.closed}),
+                  | {e.realisation_id for e in D.sales} | {c.realisation_id for c in D.realisations}),
         "numbers": {str(r["number"]) for r in reg if str(r["number"]).strip()},
     }

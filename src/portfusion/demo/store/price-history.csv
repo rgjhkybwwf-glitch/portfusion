@@ -1,4 +1,4 @@
-ticker,date,price,currency,quality,struck,status,source
+mark_key,date,price,currency,quality,struck,status,source
 BRYC.L,2025-12-31,2.0,GBP,derived,close,live,Invented for the demo
 BRYC.L,2026-03-31,2.1,GBP,derived,close,live,Invented for the demo
 TARN.L,2026-03-31,2.6,GBP,derived,close,live,Invented for the demo

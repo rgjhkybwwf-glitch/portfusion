@@ -37,7 +37,7 @@ def notes(tmp_path, monkeypatch):
     return codes
 
 
-@needs("trades", "securities")
+@needs("buys", "securities")
 def test_a_note_on_a_held_company_is_owed_a_row_for_each_code_it_covers(notes):
     from portfusion.desk.doors import research_notes
     owed = research_notes.owed()
@@ -46,7 +46,7 @@ def test_a_note_on_a_held_company_is_owed_a_row_for_each_code_it_covers(notes):
     assert owed[0]["url"] == "https://example.test/insights/held-co-2026-10/"
 
 
-@needs("trades", "securities")
+@needs("buys", "securities")
 def test_a_press_writes_the_rows_and_journals_them_once(store_copy, notes):
     from portfusion.record import rules as D
     from portfusion.record import schema
@@ -66,7 +66,7 @@ def test_a_press_writes_the_rows_and_journals_them_once(store_copy, notes):
     assert research_notes.owed() == [], "a note recorded is still owed"
 
 
-@needs("trades", "securities")
+@needs("buys", "securities")
 @pytest.mark.parametrize("ref", [_REF, _NEVER, "NOTE-0000"])
 def test_what_is_owed_nothing_is_refused_and_every_file_is_left_as_it_was(store_copy, notes,
                                                                          ref):
@@ -84,7 +84,7 @@ def test_what_is_owed_nothing_is_refused_and_every_file_is_left_as_it_was(store_
 
 
 
-@needs("trades", "securities")
+@needs("buys", "securities")
 def test_the_bench_lists_what_is_owed_and_the_route_writes_it(store_copy, notes):
     from portfusion.desk import app
     from portfusion.desk.panels import bench
@@ -98,7 +98,7 @@ def test_the_bench_lists_what_is_owed_and_the_route_writes_it(store_copy, notes)
     assert client.post(url).status_code == 409, "a second press wrote again"
 
 
-@needs("trades", "securities")
+@needs("buys", "securities")
 def test_the_codes_held_are_those_open_at_the_baseline_or_dealt_in_since():
     """`Book.codes_held()`, the rule's other half. A line dealt in only before the record began
     covers no note; one dealt in since, or open when it began, does. Two invented lines are laid

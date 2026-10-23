@@ -27,13 +27,13 @@ T_ID, T_DATE, T_SOURCE, T_ACCOUNT, T_TICKER, T_CCY = 0, 1, 2, 3, 4, 5
 
 def test_trade_ids_are_unique(D):
     """A duplicated ID makes DIRECTION and REALISATION_ID collide silently."""
-    dupes = [i for i, n in Counter(t[T_ID] for t in D.trades).items() if n > 1]
+    dupes = [i for i, n in Counter(t[T_ID] for t in D.buys).items() if n > 1]
     assert not dupes, f"duplicate trade IDs: {dupes}"
 
 
 def test_exit_ids_are_unique(D):
     """A duplicated exit ID makes REALISATION_BY_EXIT keep one sale's parcel and drop the other's."""
-    dupes = [i for i, n in Counter(e.eid for e in D.exits).items() if n > 1]
+    dupes = [i for i, n in Counter(e.sale_id for e in D.sales).items() if n > 1]
     assert not dupes, f"duplicate exit IDs: {dupes}"
 
 
@@ -44,7 +44,7 @@ def test_every_trade_account_is_a_known_account(D):
     quietly disappears from its account breakdown.
     """
     known = set(D.ACCOUNT_ORDER)
-    unknown = {t[T_ACCOUNT] for t in D.trades} - known
+    unknown = {t[T_ACCOUNT] for t in D.buys} - known
     assert not unknown, f"trades reference accounts not in ACCOUNT_ORDER: {sorted(unknown)}"
 
 
@@ -68,7 +68,7 @@ def test_an_account_is_named_by_its_code_without_its_holder():
 def test_every_account_has_a_dated_cash_reading(D):
     """The Accounts tab reads both; a mismatch drops an account off one side.
 
-    store/cash-observations.csv is APPEND-ONLY — several readings per account over time — so
+    store/cash-readings.csv is APPEND-ONLY — several readings per account over time — so
     the question is about the NEWEST reading per account, which is what the tab renders. A
     SPREAD-BET ACCOUNT'S CASH IS ITS FUNDS, on its own reading under IG's name (13 Oct 2026),
     and it has no row here.
@@ -76,7 +76,7 @@ def test_every_account_has_a_dated_cash_reading(D):
     latest = D.cash_latest()
     shares = {a for a in D.ACCOUNT_ORDER if D.ACCOUNT_KIND[a] != "spread bet"}
     assert set(latest) == shares, (
-        f"cash-observations vs the share accounts: {set(latest) ^ shares}")
+        f"cash-readings vs the share accounts: {set(latest) ^ shares}")
     for a in D.ACCOUNT_ORDER:
         if D.ACCOUNT_KIND[a] == "spread bet":
             r = next((x for x in D.ac_rows if x.acct == a), None)
@@ -91,7 +91,7 @@ def test_a_cash_reading_names_an_evidence_class_that_exists(D):
     was nothing to check: 'HL app, read 20 Aug' and 'ii statement of transactions' were the
     same kind of thing as far as any code could tell, though they sit on different rungs.
     """
-    for o in D.cash_observations:
+    for o in D.cash_readings:
         assert o.evidence in D.EVIDENCE_BY_KEY, (
             f"{o.account} at {o.as_of} cites unknown evidence class {o.evidence!r}")
         assert o.reference.strip(), (
@@ -139,7 +139,7 @@ def test_every_trade_date_is_a_date(D):
     12 Oct 2026 with the machinery that read them, so any other string is a mistyped date, which
     the engine would otherwise refuse to load."""
     bad = []
-    for t in D.trades:
+    for t in D.buys:
         try:
             _dt.date.fromisoformat(t[T_DATE])
         except (ValueError, TypeError):
@@ -152,7 +152,7 @@ def test_no_trade_is_dated_in_the_future(D):
     today = _dt.date.today()
     future = [
         (t[T_ID], t[T_DATE])
-        for t in D.trades
+        for t in D.buys
         if _dt.date.fromisoformat(t[T_DATE]) > today
     ]
     assert not future, f"trades dated in the future: {future}"
@@ -234,11 +234,11 @@ def test_no_duplicate_price_instruments(D):
 
 def test_a_contract_is_named_only_on_a_spread_bet_leg(D):
     """Spread bets are priced by contract; shares are priced by ticker."""
-    wrong = sorted(t[T_ID] for t in D.trades if t.contract and t.mode != "sb")
-    assert not wrong, f"trades.csv names a contract on legs that are not spread bets: {wrong}"
+    wrong = sorted(t[T_ID] for t in D.buys if t.contract and t.mode != "sb")
+    assert not wrong, f"buys.csv names a contract on legs that are not spread bets: {wrong}"
 
 
-@needs("trades")
+@needs("buys")
 def test_a_spread_bet_with_no_contract_is_refused_on_load(store_copy):
     """THE GAP FOUND ON 8 OCT 2026. A spread-bet leg with no contract was
     valued at nothing: on a scratch copy one new open HALV leg lowered net asset value by its whole
@@ -246,13 +246,30 @@ def test_a_spread_bet_with_no_contract_is_refused_on_load(store_copy):
     stops the bench committing one."""
     import csv
     from portfusion.record import rules
-    path = store_copy / "trades.csv"
+    path = store_copy / "buys.csv"
     rows = list(csv.DictReader(path.open(newline="", encoding="utf-8")))
     leg = next(dict(r) for r in rows if r["contract"])
-    leg.update(id=free_id("trades"), contract="")
+    leg.update(trade_id=free_id("buys"), contract="")
     with path.open("a", newline="", encoding="utf-8") as f:
         csv.DictWriter(f, fieldnames=list(rows[0]), lineterminator="\n").writerow(leg)
     with pytest.raises(AssertionError, match="name no contract"):
+        rules.reload_store()
+
+
+@needs("buys")
+@pytest.mark.parametrize("bet", [False, True])
+def test_a_buy_whose_figure_is_in_the_other_kinds_column_is_refused_on_load(store_copy, bet):
+    """`val` was one column a share and a bet both filled; split by kind (#43), a share's cost in
+    the level column, or a bet's level in the cost one, would roll up as nothing."""
+    import csv
+    from portfusion.record import rules
+    path = store_copy / "buys.csv"
+    rows = list(csv.DictReader(path.open(newline="", encoding="utf-8")))
+    leg = next(dict(r) for r in rows if bool(r["contract"]) == bet and r["cost"] != "0.0")
+    leg.update(trade_id=free_id("buys"), cost=leg["level_points"], level_points=leg["cost"])
+    with path.open("a", newline="", encoding="utf-8") as f:
+        csv.DictWriter(f, fieldnames=list(rows[0]), lineterminator="\n").writerow(leg)
+    with pytest.raises(ValueError, match="a level and no cost" if bet else "a cost and no level"):
         rules.reload_store()
 
 
@@ -260,7 +277,7 @@ def test_a_spread_bet_with_no_contract_is_refused_on_load(store_copy):
 # Funding interest is the contract's
 # =====================================================================================
 
-@needs("trades")
+@needs("buys")
 def test_a_funding_row_with_no_daily_funded_leg_on_its_nights_is_refused(store_copy):
     """IG charges funding on a daily funded bet, nightly, and on a dated bet never. A row charging
     nights on which the account held no daily leg is a row about nothing the book holds, and the
@@ -280,7 +297,7 @@ def test_a_funding_row_with_no_daily_funded_leg_on_its_nights_is_refused(store_c
         rules.reload_store()
 
 
-@needs("trades")
+@needs("buys")
 def test_the_audit_names_a_night_a_daily_funded_leg_was_held_uncharged(store_copy):
     """The other direction: every night a daily leg was held has its row, or the audit says
     which night has none. Built on a copy by making one dated contract daily — by preference one
@@ -292,7 +309,7 @@ def test_the_audit_names_a_night_a_daily_funded_leg_was_held_uncharged(store_cop
     path = store_copy / "contracts.csv"
     rows = list(csv.DictReader(path.open(newline="", encoding="utf-8")))
     charged = {r.account for r in rules.ci_rows if r.category == "Funding interest"}
-    account_of = {t.contract: t.acct for t in rules.trades if t.contract}
+    account_of = {t.contract: t.acct for t in rules.buys if t.contract}
     candidates = [r for r in rows if r["funding"] == "dated" and r["contract"] in account_of]
     victim = next((r for r in candidates if account_of[r["contract"]] not in charged),
                   candidates[0])
@@ -302,7 +319,7 @@ def test_the_audit_names_a_night_a_daily_funded_leg_was_held_uncharged(store_cop
         w.writeheader()
         w.writerows(rows)
     rules.reload_store()
-    its_legs = {t.id for t in rules.trades if t.contract == victim["contract"]}
+    its_legs = {t.trade_id for t in rules.buys if t.contract == victim["contract"]}
     gaps = engine.Book().funding_gaps()
     named = {leg for _a, leg, _n in gaps}
     assert named and named <= its_legs, (named, its_legs)
@@ -318,7 +335,7 @@ def test_research_note_tickers_resolve_to_something_held(D):
     RESEARCH_NOTES is keyed by the security's code ("HALV SB", not "HALV"). A key in
     another form, or a typo, links the note to nothing, with no error anywhere.
     """
-    display = {t[T_TICKER] for t in D.trades}
+    display = {t[T_TICKER] for t in D.buys}
     unresolved = sorted(set(D.RESEARCH_NOTES) - display)
     assert not unresolved, (
         f"RESEARCH_NOTES keys match no ticker in the book: {unresolved} "
@@ -329,7 +346,7 @@ def test_research_note_tickers_resolve_to_something_held(D):
 # =====================================================================================
 # Ledger classification
 #
-# A share sale is one exits.csv row, and the pool derives what it released. A trade row with a
+# A share sale is one sales.csv row, and the pool derives what it released. A trade row with a
 # negative quantity would be summed as a BUY by every quantity and cost figure.
 # =====================================================================================
 
@@ -341,7 +358,7 @@ def test_a_deleted_trade_id_is_never_handed_out_again(D):
     used, so a deleted row's number is not reused by the bench or the IG sweep."""
     floor = D.SETTINGS.get("trade_id_floor")
     if floor:
-        assert int(D.next_free_ids()["trades"][2:]) >= int(floor[2:])
+        assert int(D.next_free_ids()["buys"][2:]) >= int(floor[2:])
 
 
 def test_a_record_that_does_not_begin_on_a_1_january_is_refused(store_copy):
@@ -361,9 +378,9 @@ def test_a_negative_quantity_carries_no_value(D):
     """A share consolidation changes the count and not the cost, so it is the one kind of trade row
     with a negative quantity, and it carries no value. A negative row WITH a value is a sale written
     the old way: it would rebuild cleanly and be counted as a buy."""
-    bad = [(t[T_ID], t[T_QTY], t.val) for t in D.trades
-           if t[T_QTY] is not None and t[T_QTY] < 0 and t.val != 0]
-    assert not bad, (f"negative-quantity trades carrying a value — a sale is one exits.csv row, "
+    bad = [(t[T_ID], t[T_QTY], t.cost) for t in D.buys
+           if t[T_QTY] is not None and t[T_QTY] < 0 and t.cost != 0]
+    assert not bad, (f"negative-quantity trades carrying a value — a sale is one sales.csv row, "
                      f"not a negative trade: {bad}")
 
 
@@ -379,8 +396,8 @@ def test_a_brokers_rate_stands_beside_a_foreign_price(D):
     needed none. The load refuses both (`rules._misstated`); this names the rows if it ever
     stops."""
     bad = sorted(i for i, cur, price, rate in
-                 [(t.id, t.cur, t.price, t.rate) for t in D.trades]
-                 + [(e.eid, e.cur, e.price, e.rate) for e in D.exits]
+                 [(t.trade_id, t.cur, t.traded_price, t.rate) for t in D.buys]
+                 + [(e.sale_id, e.cur, e.traded_price, e.rate) for e in D.sales]
                  if rate is not None and (price is None or cur == "GBP"))
     assert not bad, f"a rate beside no foreign price: {bad}"
 
@@ -388,8 +405,8 @@ def test_a_brokers_rate_stands_beside_a_foreign_price(D):
 def test_every_stated_price_and_rate_is_a_positive_number(D):
     """A deal's price and its broker's rate are figures off a document: positive, or blank."""
     bad = [(i, f, v) for i, price, rate in
-           [(t.id, t.price, t.rate) for t in D.trades]
-           + [(e.eid, e.price, e.rate) for e in D.exits]
+           [(t.trade_id, t.traded_price, t.rate) for t in D.buys]
+           + [(e.sale_id, e.traded_price, e.rate) for e in D.sales]
            for f, v in (("price", price), ("rate", rate))
            if v is not None and not (isinstance(v, (int, float)) and v > 0)]
     assert not bad, f"a stated price or rate that is not a positive number: {bad}"
@@ -401,8 +418,8 @@ def test_exit_leg_match_joins_real_rows(D):
     pointing at nothing means the cost released falls back to pool apportionment
     silently, on a parcel where a statement actually names the leg.
     """
-    exit_ids = {e[0] for e in D.exits}
-    buy_ids = {t[T_ID] for t in D.trades}
+    exit_ids = {e[0] for e in D.sales}
+    buy_ids = {t[T_ID] for t in D.buys}
     bad = []
     for eid, tid in D.EXIT_LEG_MATCH.items():
         if eid not in exit_ids:
@@ -420,7 +437,7 @@ def test_exit_leg_match_joins_real_rows(D):
 # a declaration alone does not.
 # =====================================================================================
 
-@needs("trades")
+@needs("buys")
 def test_the_record_exports_named_rows_not_bare_tuples(D):
     """
     Bare tuples are what the wrong field comment was documenting. If a container
@@ -428,8 +445,8 @@ def test_the_record_exports_named_rows_not_bare_tuples(D):
     at best — and a silent positional misread if someone "fixes" it back to indexes.
     """
     expected = {
-        "trades": "Trade", "exits": "Exit", "reasoning": "Reasoning",
-        "closed": "ClosedPosition", "ci_rows": "CostIncomeRow", "ac_rows": "AccountRow",
+        "buys": "Buy", "sales": "Sale", "reasoning": "Reasoning",
+        "realisations": "RealisationRow", "ci_rows": "CostIncomeRow", "ac_rows": "AccountRow",
     }
     wrong = []
     for attr, cls in expected.items():
@@ -442,13 +459,13 @@ def test_the_record_exports_named_rows_not_bare_tuples(D):
     assert not wrong, f"containers no longer carrying their declared row type: {wrong}"
 
 
-@needs("trades")
+@needs("buys")
 def test_whether_a_leg_is_still_held_comes_from_the_sales(D, book):
     """A leg's `status` was once a column the engine read, and then a column nothing read; it is
     retired. Which legs are still held comes from the sales alone: a leg an IG close names is not
     held, and neither is any leg of a ticker no account holds any more."""
     buys = book.ledger[book.ledger["direction"] == "Buy"].set_index("id")
-    named = sorted({e.closes for e in D.exits if e.closes})
+    named = sorted({e.closes for e in D.sales if e.closes})
     assert named and not buys.loc[named, "open_leg"].any(), "a leg a sale closed still reads as held"
     held = set(book.holdings(by="ticker")["ticker"])
     gone = buys[~buys["ticker"].isin(held)]
@@ -457,7 +474,7 @@ def test_whether_a_leg_is_still_held_comes_from_the_sales(D, book):
 
 def test_dead_cash_slot_on_account_rows_stays_dead(D):
     """
-    ac_rows' third field is a retired cash slot; cash lives in store/cash-observations.csv so
+    ac_rows' third field is a retired cash slot; cash lives in store/cash-readings.csv so
     that a balance carries its own date and source. The build asserts it is None. A value
     reappearing here is cash with no date — the exact defect that move fixed.
     """
@@ -485,7 +502,7 @@ def test_every_traded_ticker_has_an_identity_row(D):
     ledger with no identity row is a gap, not a default.
     """
     sec_codes = {r[0] for r in D.SECURITIES}
-    traded = {t.ticker for t in D.trades} | {e.ticker for e in D.exits}
+    traded = {t.ticker for t in D.buys} | {e.ticker for e in D.sales}
     missing = sorted(traded - sec_codes)
     assert not missing, (
         f"tickers in the ledger with no SECURITIES row: {missing} — every traded code needs "
@@ -502,8 +519,8 @@ def test_every_open_share_has_a_price_route(D):
     not by ticker, which is a different route with its own guards.
     """
     priced = {r[0] for r in D.CURRENT_PRICES} | set(D.STATEMENT_PRICED)
-    sold = {e.ticker for e in D.exits}
-    open_shares = {t.ticker for t in D.trades if t.mode != "sb"}
+    sold = {e.ticker for e in D.sales}
+    open_shares = {t.ticker for t in D.buys if t.mode != "sb"}
     missing = sorted(open_shares - priced - sold)
     assert not missing, (
         f"open share holdings with no sourced price and no STATEMENT_PRICED entry: {missing}"
@@ -566,10 +583,10 @@ def test_the_implied_dealing_cost_on_every_sale_is_plausible(D):
     """price x qty - proceeds is the dealing cost. It is never stored, so this is the
     only thing standing between a mis-keyed sell row and a wrong realised gain. A price in the
     share's own currency comes to sterling at the broker's rate beside it."""
-    bad = [f"{e.eid} {e.ticker}: {msg}" for e in D.exits
+    bad = [f"{e.sale_id} {e.ticker}: {msg}" for e in D.sales
            if (e.cur == "GBP" or e.rate)
            and (msg := _implausible_dealing_cost(
-               e.size, e.price, e.proceeds, None if e.cur == "GBP" else e.rate))]
+               e.size, e.traded_price, e.proceeds, None if e.cur == "GBP" else e.rate))]
     assert not bad, (
         "implausible dealing cost implied by a sell row — check the price and the "
         "proceeds against the contract note:\n  " + "\n  ".join(bad))
@@ -579,10 +596,10 @@ def test_the_implied_dealing_cost_on_every_priced_buy_is_plausible(D):
     """THE SAME GUARD, FACING THE OTHER WAY: a buy settles price x qty PLUS its costs, so the
     sterling paid less the price's worth is the commission, stamp duty and any FX charge. Every
     price on a buy is a document's, so a mis-keyed one shows here."""
-    bad = [f"{t.id} {t.ticker}: {msg}" for t in D.trades
-           if t.price is not None and t.qty and (t.cur == "GBP" or t.rate)
+    bad = [f"{t.trade_id} {t.ticker}: {msg}" for t in D.buys
+           if t.traded_price is not None and t.qty and (t.cur == "GBP" or t.rate)
            and (msg := _implausible_dealing_cost(
-               t.qty, -t.price, -t.val, None if t.cur == "GBP" else t.rate))]
+               t.qty, -t.traded_price, -t.cost, None if t.cur == "GBP" else t.rate))]
     assert not bad, (
         "implausible dealing cost implied by a priced buy — check the price and the sterling "
         "paid against the document:\n  " + "\n  ".join(bad))
@@ -608,9 +625,9 @@ def test_the_dealing_cost_guard_actually_catches_a_fat_finger(D):
 def test_a_spread_bet_sale_implies_no_dealing_cost(D):
     """A closing LEVEL is at parity and carries no commission, so proceeds must be
     exactly stake x level. Any gap is an error, not a fee."""
-    off = [(e.eid, round(e.stake * e.price - e.proceeds, 2))
-           for e in D.exits if " SB" in e.ticker
-           and abs(e.stake * e.price - e.proceeds) > 0.005]
+    off = [(e.sale_id, round(e.stake * e.traded_price - e.proceeds, 2))
+           for e in D.sales if " SB" in e.ticker
+           and abs(e.stake * e.traded_price - e.proceeds) > 0.005]
     assert not off, f"spread-bet exits implying a dealing cost: {off}"
 
 
@@ -1020,10 +1037,10 @@ def test_every_hl_code_seen_on_a_real_export_classifies(D):
         "OVR CR":     ("income", "Dividend"),
         "MANAGE FEE": ("income", "Fee"),
         "INTEREST":   ("income", "Cash interest"),
-        "B000000011": ("trades", ""),
-        "B000000012": ("trades", ""),
-        "S000000013": ("exits", ""),
-        "S000000014": ("exits", ""),
+        "B000000011": ("buys", ""),
+        "B000000012": ("buys", ""),
+        "S000000013": ("sales", ""),
+        "S000000014": ("sales", ""),
         "DRI0000001": (None, ""),
         "DRI0000002": (None, ""),
     }
@@ -1066,7 +1083,7 @@ def test_every_income_code_names_a_category_the_record_knows(D):
 
 
 def test_an_account_has_exactly_one_observation_row(D):
-    """`account-observations.csv` holds the CURRENT observation per account, and a second row
+    """`account-readings.csv` holds the CURRENT observation per account, and a second row
     for one account is silently ignored rather than preferred.
 
     `Book.reconciliation()` reads it with `next(x for x in D.ac_rows if x.acct == a)` — the
@@ -1075,7 +1092,7 @@ def test_an_account_has_exactly_one_observation_row(D):
     out against an old anchor after a newer baseline had been written.
 
     THE TABLE'S ROUTE IS `replace`, not `append`, and the journal has always said so. This is
-    the check that makes the convention hold on its own: `cash-observations.csv` is the
+    the check that makes the convention hold on its own: `cash-readings.csv` is the
     append-only one and it has `cash_latest()` to pick by date, which this table does not need
     because it never has two rows to choose between.
     """

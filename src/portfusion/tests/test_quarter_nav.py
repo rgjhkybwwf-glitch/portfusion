@@ -19,7 +19,7 @@ from harness import needs
 #: The register's spread-bet accounts, BY KIND — B2 moved kind onto the register, and a
 #: tuple of this book's names would judge another book's table against the wrong accounts.
 SPREAD_BET = tuple(r[0] for r in D.register
-                   if r[D.schema.TABLES["accounts"].header.index("kind")] == "spread bet")
+                   if r[D.schema.TABLES["accounts"].header.index("held_as")] == "spread bet")
 
 
 # The engine is the one implementation of these. These names keep the tests below reading as

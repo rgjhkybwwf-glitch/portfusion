@@ -220,15 +220,15 @@ def _holdings(lines, total, exposure) -> str:
         f'<td class="dim">{esc(str(r.sector)) if r.sector == r.sector else ""}</td>'
         f'<td class="dim">{r.currency}</td><td class="n">{pct(r.weight)}</td>'
         f'<td class="n">{_money(r.cost)}</td><td class="n">{_money(r.value)}</td>'
-        f'<td class="n {_sign(r.gain)}">{r.gain:+,.0f}</td></tr>'
+        f'<td class="n {_sign(r.unrealised)}">{r.unrealised:+,.0f}</td></tr>'
         for r in lines.itertuples())
     return f"""  <div class="scroll"><table>
     {_head("Holdings", "ticker", "company", "held_as", "sector", "currency",
-           *((f, ' class="n"') for f in ("weight", "cost", "value", "gain")))}
+           *((f, ' class="n"') for f in ("weight", "cost", "value", "unrealised")))}
     <tbody>{hold}
       <tr class="total"><td>Total</td><td></td><td></td><td></td><td></td><td class="n">{pct(1)}</td>
         <td class="n">{_money(total["cost"])}</td><td class="n">{_money(total["value"])}</td>
-        <td class="n">{total["gain"]:+,.0f}</td></tr></tbody></table></div>
+        <td class="n">{total["unrealised"]:+,.0f}</td></tr></tbody></table></div>
   <p {_NOTE}>Spread bets at notional.{"" if round(total["gap"]) == 0 else
     f" These lines total &pound;{_money(total['value'])}; Section 1&rsquo;s exposure is &pound;{_money(exposure)}."}</p>"""
 
@@ -277,7 +277,7 @@ def _bet(r) -> bool:
 def _size(r) -> str:
     """A trade's size in its own unit, as the desk prints it: a share's count, or a spread bet's
     stake per point."""
-    return f"&pound;{r.stake_per_point:g}/pt" if _bet(r) else f"{r.qty:,.0f}"
+    return f"&pound;{r.stake:g}/pt" if _bet(r) else f"{r.qty:,.0f}"
 
 
 def _activity(b, quarter_end, names) -> str:

@@ -91,9 +91,9 @@ def test_a_path_in_the_filename_cannot_escape_the_inbox(inbox):
     """The name arrives from the browser, so it is data. Traversal is not rejected but
     REDUCED — the leaf is a perfectly good filename and refusing it would teach nothing."""
     from portfusion.desk.intake import dropoff
-    got = dropoff.accept("../../../store/trades.csv", b"x,y\n")
-    assert got["name"] == "trades.csv"
-    assert (inbox / "trades.csv").is_file()
+    got = dropoff.accept("../../../store/buys.csv", b"x,y\n")
+    assert got["name"] == "buys.csv"
+    assert (inbox / "buys.csv").is_file()
     assert not (inbox.parent / "store").exists()
 
 
@@ -285,7 +285,7 @@ def read_item(item, monkeypatch):
     return item
 
 
-def _reading(cells, table="exits", **extra):
+def _reading(cells, table="sales", **extra):
     """One reading of DOCUMENT, in the shape a session hands in."""
     body = {"kind": "contract note", "rows": [{"table": table, "cells": cells}],
             "not_found": [], "directives": []}
@@ -347,29 +347,29 @@ def test_a_zero_must_stand_in_its_quote_like_any_other_number():
     that it appears in its own quote, whatever the quote said."""
     from portfusion.desk.intake import verify as V
     doc = "Consideration GBP 965.12 Commission GBP 0.00"
-    assert V.check({"field": "val", "value": "0", "quote": "Consideration GBP 965.12"},
+    assert V.check({"field": "cost", "value": "0", "quote": "Consideration GBP 965.12"},
                    "float", doc) is not None
-    assert V.check({"field": "val", "value": "0", "quote": "Commission GBP 0.00"},
+    assert V.check({"field": "cost", "value": "0", "quote": "Commission GBP 0.00"},
                    "float", doc) is None
 
 
 def test_PENCE_STORED_AS_POUNDS_SURVIVES_THE_CHECK(read_item, monkeypatch):
     """THE REGRESSION THAT WOULD HAVE MADE THE CHECK USELESS, so it is pinned by name.
 
-    LSE prices are quoted in pence and stored as pounds: the note says 19.30p and exits.csv
+    LSE prices are quoted in pence and stored as pounds: the note says 19.30p and sales.csv
     holds 0.1930. A check demanding the value appear in its quote as written would reject that
     CORRECT transcription every time — and a check that rejects correct work is a check
     somebody eventually switches off. So `_digits` tolerates the decimal point moving, and
     nothing else."""
     from portfusion.desk.intake import propose as P
     reading = _reading([
-        {"field": "price", "value": "0.1930", "quote": "at 19.30p"},
+        {"field": "traded_price", "value": "0.1930", "quote": "at 19.30p"},
         {"field": "qty", "value": "5000", "quote": "Sold 5,000 PENR.L"},
     ])
     P.propose(read_item["id"], reading)
     row = _bench.get(read_item["id"])["rows"][0]
     quoted = {k: v for k, v in row["values"].items() if k not in row["derived"]}
-    assert quoted == {"price": "0.1930", "qty": "5000"}, quoted
+    assert quoted == {"traded_price": "0.1930", "qty": "5000"}, quoted
 
     # ...and the tolerance is a DECIMAL SHIFT, not a free pass on digits.
     from portfusion.desk.intake import verify as V
@@ -390,12 +390,12 @@ def test_A_TABLE_ROW_IS_TWO_NUMBERS_NOT_ONE(read_item, monkeypatch):
     assert V._numbers_in("5,000 0.193000") == {"5000", "193000"}
     reading = _reading([
         {"field": "qty", "value": "5,000", "quote": "Sold 5,000 PENR.L"},
-        {"field": "price", "value": "0.1930", "quote": "at 19.30p"},
+        {"field": "traded_price", "value": "0.1930", "quote": "at 19.30p"},
     ])
     out = P.propose(read_item["id"], reading)
     assert out["dropped"] == [], out["dropped"]
     row = _bench.get(read_item["id"])["rows"][0]
-    assert set(row["values"]) - set(row["derived"]) == {"qty", "price"}
+    assert set(row["values"]) - set(row["derived"]) == {"qty", "traded_price"}
 
 
 
@@ -406,11 +406,11 @@ def test_a_price_the_page_prints_in_pence_is_stored_in_pounds(read_item):
     note says so. A figure the reader already gave in pounds is left as it is (the test above)."""
     from portfusion.desk.intake import propose as P
     P.propose(read_item["id"], _reading([
-        {"field": "price", "value": "19.30", "quote": "at 19.30p"},
+        {"field": "traded_price", "value": "19.30", "quote": "at 19.30p"},
         {"field": "qty", "value": "5000", "quote": "Sold 5,000 PENR.L"}]))
     row = _bench.get(read_item["id"])["rows"][0]
-    assert row["values"]["price"] == "0.193", row["values"]
-    assert "19.30p stored as £0.193" in row["values"]["note"], row["values"]["note"]
+    assert row["values"]["traded_price"] == "0.193", row["values"]
+    assert "traded_price 19.30p stored as £0.193" in row["values"]["note"], row["values"]["note"]
 
 
 def test_reading_twice_replaces_the_reading_and_keeps_what_the_owner_added(read_item, monkeypatch):
@@ -438,13 +438,13 @@ def test_a_re_read_does_not_hand_out_an_id_a_kept_row_holds(read_item):
     store alone, so the fresh row took the next free id — the one the owner's row already held
     — and the item carried two rows of one name (the review of 21 Oct 2026)."""
     from portfusion.desk.intake import propose as P
-    taken = _bench.next_ids()["exits"]
-    read_item["rows"] = [{"table": "exits", "values": {"eid": taken, "detail": "typed by hand"},
+    taken = _bench.next_ids()["sales"]
+    read_item["rows"] = [{"table": "sales", "values": {"sale_id": taken, "detail": "typed by hand"},
                           "sources": {}}]
     _bench.save(read_item)
     P.propose(read_item["id"], _reading([
         {"field": "qty", "value": "5000", "quote": "Sold 5,000 PENR.L"}]))
-    ids = [r["values"].get("eid") for r in _bench.get(read_item["id"])["rows"]]
+    ids = [r["values"].get("sale_id") for r in _bench.get(read_item["id"])["rows"]]
     assert ids[0] == taken and len(ids) == 2 and ids[1] and ids[1] != taken, ids
 
 
@@ -456,7 +456,7 @@ def test_a_note_mentioning_a_derived_fields_name_in_passing_is_kept(read_item):
     from portfusion.desk.intake import propose as P
     out = P.propose(read_item["id"], _reading(
         [{"field": "qty", "value": "5000", "quote": "Sold 5,000 PENR.L"}],
-        not_found=["the price of the Heidelberg line", "eid"]))
+        not_found=["the price of the Heidelberg line", "sale_id"]))
     assert out["not_found"] == ["the price of the Heidelberg line"], out["not_found"]
 
 
@@ -480,8 +480,8 @@ def test_a_figure_is_stored_the_way_the_store_can_read_it(read_item, monkeypatch
     # THE PROOF: it goes through the loader's own parser without raising, which is the door
     # the CSV loader uses and the door it failed at on the first real read.
     from portfusion.record import schema
-    field = {f.name: f for f in schema.TABLES["exits"].fields}["qty"]
-    assert schema._parse(field, row["values"]["qty"], "exits", 0) == 5000
+    field = {f.name: f for f in schema.TABLES["sales"].fields}["qty"]
+    assert schema._parse(field, row["values"]["qty"], "sales", 0) == 5000
 
 
 def test_the_record_supplies_what_the_document_cannot(read_item, monkeypatch):
@@ -499,10 +499,10 @@ def test_the_record_supplies_what_the_document_cannot(read_item, monkeypatch):
     P.propose(read_item["id"], reading)
 
     row = _bench.get(read_item["id"])["rows"][0]
-    assert row["values"]["eid"] == _bench.next_ids()["exits"]
+    assert row["values"]["sale_id"] == _bench.next_ids()["sales"]
     assert row["values"]["source"] == "ii contract note 01 Sep 2026"
     assert row["values"]["broker_ref"] == GOOD_EVIDENCE["reference"]
-    assert set(row["derived"]) == {"eid", "source", "broker_ref"}
+    assert set(row["derived"]) == {"sale_id", "source", "broker_ref"}
 
 
 def test_the_provenance_line_fills_when_the_evidence_does(read_item, monkeypatch):
@@ -527,10 +527,10 @@ def test_the_provenance_line_fills_when_the_evidence_does(read_item, monkeypatch
 
 
 def _recorded_sale():
-    """A share sale really in the loaded book's exits.csv — the duplicate guards' subject."""
+    """A share sale really in the loaded book's sales.csv — the duplicate guards' subject."""
     from portfusion.record import schema
-    eh = schema.TABLES["exits"].header
-    rows = [dict(zip(eh, r)) for r in schema.load("exits")
+    eh = schema.TABLES["sales"].header
+    rows = [dict(zip(eh, r)) for r in schema.load("sales")
             if not str(r[eh.index("ticker")]).endswith(" SB")]
     assert rows, "no share sale on file — the premise is gone"
     return rows[0]
@@ -555,7 +555,7 @@ def test_a_row_the_document_did_not_evidence_is_not_created(read_item, monkeypat
 
 
 
-@needs("accounts", "trades")
+@needs("accounts", "buys")
 def test_A_LINE_ALREADY_IN_THE_BOOK_IS_NOT_PROPOSED_AGAIN(read_item, monkeypatch):
     """THE OWNER'S ASK, after dropping a cash statement. A statement of transactions covers a
     window and most of that window is already recorded — one ISA statement yielded seven
@@ -574,7 +574,7 @@ def test_A_LINE_ALREADY_IN_THE_BOOK_IS_NOT_PROPOSED_AGAIN(read_item, monkeypatch
     d = str(sale["date"])
     uk = f"{d[8:10]}/{d[5:7]}/{d[0:4]}"
     real = (f"ii CONTRACT NOTE\nDATE {uk}\n{sale['ticker']}\n"
-            f"Sold {sale['qty']} at {sale['price']}\nTOTAL {sale['proceeds']} GBP\n")
+            f"Sold {sale['qty']} at {sale['traded_price']}\nTOTAL {sale['proceeds']} GBP\n")
     monkeypatch.setattr(_bench, "document_text",
                         lambda name: {"name": name, "text": real, "scanned": False})
     reading = _reading([
@@ -586,22 +586,22 @@ def test_A_LINE_ALREADY_IN_THE_BOOK_IS_NOT_PROPOSED_AGAIN(read_item, monkeypatch
     ])
     out = P.propose(read_item["id"], reading)
     assert _bench.get(read_item["id"])["rows"] == [], "an already-recorded sale was proposed"
-    assert any(f"already in the record as {sale['eid']}" in d_ for d_ in out["dropped"]), \
+    assert any(f"already in the record as {sale['sale_id']}" in d_ for d_ in out["dropped"]), \
         out["dropped"]
 
 
-@needs("accounts", "trades")
+@needs("accounts", "buys")
 def test_a_duplicate_is_found_even_when_the_account_is_still_blank():
     """A row whose account is blank — because the document named a NUMBER and not a name —
     would compare "" against "Voss ii ISA" and miss a duplicate it plainly is. Date, holding,
     size and money identify a sale perfectly well on their own, so the comparison uses the
     columns that are FILLED and requires at least three of them."""
     sale = _recorded_sale()
-    assert _bench.matching_row("exits", {
+    assert _bench.matching_row("sales", {
         "date": str(sale["date"]), "ticker": sale["ticker"], "qty": str(sale["qty"]),
-        "proceeds": str(sale["proceeds"])}) == sale["eid"]
+        "proceeds": str(sale["proceeds"])}) == sale["sale_id"]
     # Fewer than three is not an identification, it is a coincidence waiting to happen.
-    assert _bench.matching_row("exits", {"date": str(sale["date"]),
+    assert _bench.matching_row("sales", {"date": str(sale["date"]),
                                          "ticker": sale["ticker"]}) is None
 
 
@@ -609,11 +609,11 @@ def test_an_unreadable_row_is_reported_and_not_silently_skipped():
     """HOW TWO ALREADY-RECORDED SALES GOT THROUGH: their proceeds carried a "£", `float()`
     raised, and the check quietly moved on. A row the parser cannot read is a row the duplicate
     check cannot see, and that must be said rather than swallowed."""
-    assert _bench.matching_row("exits", {
+    assert _bench.matching_row("sales", {
         "date": "2026-03-12", "account": "Voss ii ISA", "ticker": "PENR.L",
         "qty": "5000", "proceeds": "£965.12"}) == "unreadable"
 
-    item = {"evidence": {}, "rows": [{"table": "exits", "values": {
+    item = {"evidence": {}, "rows": [{"table": "sales", "values": {
         "date": "2026-03-12", "account": "Voss ii ISA", "ticker": "PENR.L",
         "qty": "5000", "proceeds": "£965.12"}}]}
     assert any("could not be checked" in f for f in _bench.already_in_the_record(item))
@@ -629,7 +629,7 @@ def test_a_currency_symbol_is_not_part_of_the_number():
     assert V.as_stored("£1,200", "number") == "1200"
 
 
-@needs("accounts", "trades")
+@needs("accounts", "buys")
 def test_a_document_s_ticker_becomes_the_record_s_when_it_is_unambiguous():
     """A document says PENR and the book says PENR.L. Telling a reader to use the record's
     spelling works most of the time and is NOT deterministic — one reading returned PENR.L and
@@ -644,8 +644,8 @@ def test_a_document_s_ticker_becomes_the_record_s_when_it_is_unambiguous():
     sh = schema.TABLES["securities"].header
     # THE POSITIVE CASES ARE THE BOOK'S OWN suffixed holdings (the incident pair was
     # PENR -> PENR.L and STRM -> STRM.DE); the negative cases are invented and travel.
-    dotted = [r[sh.index("code")] for r in schema.load("securities")
-              if "." in r[sh.index("code")]]
+    dotted = [r[sh.index("ticker")] for r in schema.load("securities")
+              if "." in r[sh.index("ticker")]]
     assert dotted, "no suffixed ticker on file — the positive premise is gone"
     for code in dotted[:2]:
         stem = code.split(".")[0]
@@ -675,12 +675,12 @@ def test_two_rows_in_one_item_do_not_get_the_same_id(read_item, monkeypatch):
     P.propose(read_item["id"], {
         "kind": "statement", "not_found": [], "directives": [],
         "rows": [
-            {"table": "exits", "note": "first", "cells": [
+            {"table": "sales", "note": "first", "cells": [
                 {"field": "qty", "value": "5000", "quote": "Sold 5,000 PENR.L"}]},
-            {"table": "exits", "note": "second", "cells": [
+            {"table": "sales", "note": "second", "cells": [
                 {"field": "qty", "value": "150", "quote": "at 19.30p"}]},
         ]})
-    ids = [r["values"]["eid"] for r in _bench.get(read_item["id"])["rows"]]
+    ids = [r["values"]["sale_id"] for r in _bench.get(read_item["id"])["rows"]]
     assert len(set(ids)) == len(ids) == 2, f"two rows share one id: {ids}"
 
 
@@ -691,10 +691,10 @@ def test_a_third_row_steps_past_every_id_taken_whatever_their_order(read_item):
     the third row the second row's id. They are passed here in that order, so the old walk
     fails every time rather than in most processes."""
     from portfusion.desk.intake import propose as P
-    first = P.next_ids()["exits"]
+    first = P.next_ids()["sales"]
     prefix, _, number = first.rpartition("-")
     second = f"{prefix}-{int(number) + 1:03d}"
-    eid = P._derived(read_item, "exits", taken=[second, first])["eid"]
+    eid = P._derived(read_item, "sales", taken=[second, first])["sale_id"]
     assert eid not in (first, second), f"the third row was given {eid}, an id already taken"
 
 
@@ -767,7 +767,7 @@ def test_every_class_still_owes_all_three_limbs():
         assert ev.reference_is.strip(), f"{ev.key} says nothing about what retrieves it"
 
 
-@needs("accounts", "trades")
+@needs("accounts", "buys")
 def test_the_account_number_on_a_note_resolves_to_the_account(read_item, monkeypatch):
     """THE RECORD ANSWERS, NOT THE MODEL. `store/accounts.csv` has held a `number` column all
     along, beside each account's name, so mapping the number a contract note prints onto the
@@ -806,7 +806,7 @@ def test_the_account_number_on_a_note_resolves_to_the_account(read_item, monkeyp
     assert str(pairs[0][0]) in row["sources"]["account"]
 
 
-@needs("accounts", "trades")
+@needs("accounts", "buys")
 def test_a_derived_account_still_passes_the_closed_vocabulary():
     """The whole point of deriving it rather than translating it: the value comes OUT of the
     record, so it is by construction an account the record allows."""
@@ -816,15 +816,15 @@ def test_a_derived_account_still_passes_the_closed_vocabulary():
     number = next(r[h.index("number")] for r in schema.load("accounts") if str(r[h.index("number")]).strip())
     name, _ = P.account_from(f"ACCOUNT NUMBER {number}")
     assert name, "the register's first number resolved to no account"
-    assert not _bench.validate_row("exits", {"account": name}) or all(
-        "account" not in p for p in _bench.validate_row("exits", {"account": name}))
+    assert not _bench.validate_row("sales", {"account": name}) or all(
+        "account" not in p for p in _bench.validate_row("sales", {"account": name}))
 
 
 def test_prose_fields_are_declared_long_so_the_screen_can_size_them():
     """`note` is the cell the machine wrote and the one the owner most has to read before approving
     it. A one-line input made it a short box to scroll sideways, which is exactly backwards.
     The SCREEN does not decide which fields are prose — the form spec says so."""
-    spec = {f["name"]: f for f in _bench.form_for("exits")}
+    spec = {f["name"]: f for f in _bench.form_for("sales")}
     assert spec["note"]["long"] is True
     assert spec["qty"]["long"] is False
     assert {f["name"] for f in _bench.form_for("income") if f["long"]} == {"note", "detail"}
@@ -842,7 +842,7 @@ def test_the_reader_is_told_which_columns_each_table_has(capsys, monkeypatch):
     account `account` on every table since 1 Oct 2026; the old `acct` must not come back."""
     from portfusion.desk.intake import propose as P
     columns = P._columns()
-    exits_cols = columns.split("exits —")[1].split("columns:")[1].split("\n")[0]
+    exits_cols = columns.split("sales —")[1].split("columns:")[1].split("\n")[0]
     assert "account" in exits_cols and "acct" not in exits_cols
     assert "One row per sale" in columns, "the table's PURPOSE is stated, not only its columns"
     assert "SIGNS: money LEAVING is negative" in columns
@@ -864,20 +864,20 @@ def test_ordinary_customer_boilerplate_is_not_reported_as_a_directive():
     assert "notices to the account holder" in P.RULES
 
 
-@needs("accounts", "trades")
+@needs("accounts", "buys")
 def test_the_reasoning_and_the_row_id_can_never_be_proposed(read_item, monkeypatch):
     """`note` is the REASONING — the one field no document supplies, and the reason the bench
     exists at all. `eid`/`id` are allocated from the store. Neither is in the tool's schema, and
     neither survives if a reading carries it anyway."""
     from portfusion.desk.intake import propose as P
-    assert "note" not in P._proposable()["trades"]
-    assert "id" not in P._proposable()["trades"] and "eid" not in P._proposable()["exits"]
+    assert "note" not in P._proposable()["buys"]
+    assert "trade_id" not in P._proposable()["buys"] and "sale_id" not in P._proposable()["sales"]
 
     from portfusion.record import rules as D
-    taken = D.exits[0].eid
+    taken = D.sales[0].sale_id
     reading = _reading([
         {"field": "note", "value": "a thesis the reader invented", "quote": "ii  CONTRACT NOTE"},
-        {"field": "eid", "value": taken, "quote": "Reference ABD789"},
+        {"field": "sale_id", "value": taken, "quote": "Reference ABD789"},
         {"field": "qty", "value": "5000", "quote": "Sold 5,000 PENR.L"},
     ])
     P.propose(read_item["id"], reading)
@@ -885,8 +885,8 @@ def test_the_reasoning_and_the_row_id_can_never_be_proposed(read_item, monkeypat
     assert set(row["values"]) - set(row["derived"]) == {"qty"}, row["values"]
     # The reading offered a sale id already in the store. What landed is the next
     # free id ALLOCATED FROM THE RECORD — proposed and derived are not the same thing.
-    assert "eid" in row["derived"]
-    assert row["values"]["eid"] == _bench.next_ids()["exits"] != taken
+    assert "sale_id" in row["derived"]
+    assert row["values"]["sale_id"] == _bench.next_ids()["sales"] != taken
 
 
 def test_a_directive_in_the_document_is_reported_and_never_obeyed(read_item):
@@ -970,8 +970,8 @@ def test_a_quote_survives_the_round_trip_through_the_store(read_item, monkeypatc
 @pytest.mark.parametrize("bad, why", [
     ([], "not a JSON object"),
     ({"rows": "two sales"}, "`rows` must be a list"),
-    ({"rows": [{"table": "exits"}]}, "no list of `cells`"),
-    ({"rows": [{"table": "exits", "cells": [{"field": "qty", "value": 5000,
+    ({"rows": [{"table": "sales"}]}, "no list of `cells`"),
+    ({"rows": [{"table": "sales", "cells": [{"field": "qty", "value": 5000,
                                              "quote": "Sold 5,000 PENR.L"}]}]}, "three strings"),
     ({"rows": [], "directives": "none"}, "`directives` must be a list"),
 ])
@@ -1006,7 +1006,7 @@ def test_the_session_door_fills_the_item_and_says_what_it_dropped(read_item, tmp
 
     assert P.main([read_item["id"], str(path)]) == 0
     said = capsys.readouterr().out
-    assert "1 row(s)" in said and "dropped: exits.proceeds" in said, said
+    assert "1 row(s)" in said and "dropped: sales.proceeds" in said, said
     saved = _bench.get(read_item["id"])
     assert saved["rows"][0]["machine"] is True
     assert saved["proposed"]["by"] == P.READER
@@ -1030,7 +1030,7 @@ def test_the_guide_is_the_rules_the_columns_and_what_is_waiting(read_item, monke
 
 # --- the archive name -----------------------------------------------------------------------
 
-@needs("accounts", "trades")
+@needs("accounts", "buys")
 def test_a_committed_document_is_filed_under_the_folder_s_own_convention(item, store_copy,
                                                                         tmp_path, monkeypatch):
     """THE GAP THAT WOULD HAVE BITTEN ON THE FIRST REAL COMMIT.
@@ -1145,7 +1145,7 @@ def test_the_withdraw_button_calls_the_route_that_exists():
 # READING A PDF
 # =====================================================================================
 
-@needs("accounts", "trades")
+@needs("accounts", "buys")
 def test_every_archived_contract_note_reads_back_its_own_reference():
     """The PDF half of `read_document.extract()` once never ran in the suite — every document
     the bench tests read was a CSV — while the archive's PDFs sat one folder away. A contract
@@ -1189,7 +1189,7 @@ def test_opening_a_readable_csv_reads_it_here_and_never_asks_for_a_reading(tmp_p
     assert it["proposed"]["local"] and it["evidence_class"] == "ii-transactions"
     assert it["evidence"]["reference"] == "GBP 11 Jan-25 Feb 2025"
     assert it["evidence"]["dated"], "an undated ledger is dated by its download"
-    assert {r["table"] for r in it["rows"]} >= {"income", "capital-movements", "cash-observations"}
+    assert {r["table"] for r in it["rows"]} >= {"income", "capital-movements", "cash-readings"}
 
     # A LINE IT COULD NOT READ HOLDS THE ITEM until a person says it is dealt with.
     gate = next(g for g in _bench.gates(it) if g["name"] == "every line read")

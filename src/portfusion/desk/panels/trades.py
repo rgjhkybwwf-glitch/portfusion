@@ -28,7 +28,7 @@ COLUMNS = ("ticker", "direction", "account", "currency", "qty", "traded_price", 
 
 #: A SPREAD BET IN ITS OWN TERMS, for the Quantity and Traded price cells: a stake per point at
 #: a level in points, as the record keeps them.
-BET_COLUMNS = ("stake_per_point", "level_points")
+BET_COLUMNS = ("stake", "level_points")
 
 #: WHAT A ROW'S DETAIL OPENS, under app.js's one desk-wide order: the whys on the trade, the
 #: note, then where it came from and what it belongs to — a bet leg's contract and how IG funds

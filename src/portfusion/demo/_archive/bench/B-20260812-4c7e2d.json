@@ -20,31 +20,31 @@
   },
   "rows": [
     {
-      "table": "exits",
+      "table": "sales",
       "values": {
-        "eid": "E-002",
+        "sale_id": "E-002",
         "date": "2026-08-12",
         "account": "Voss ii ISA",
         "ticker": "KELS.L",
         "qty": "1000",
-        "price": "1.8",
+        "traded_price": "1.8",
         "cur": "GBP",
         "proceeds": "1800.0",
         "source": "ii contract note 12 Aug 2026",
         "broker_ref": "DMW5ZG",
-        "realisation": "R-KELS"
+        "realisation_id": "R-KELS"
       },
       "sources": {
         "date": "DATE 12/08/2026 TIME 09:47",
         "qty": "1,000 1.80 1,800.00",
-        "price": "1,000 1.80 1,800.00",
+        "traded_price": "1,000 1.80 1,800.00",
         "proceeds": "1,000 1.80 1,800.00",
         "broker_ref": "CONTRACT No. DMW5ZG"
       },
       "derived": [
         "account",
-        "eid",
-        "realisation"
+        "realisation_id",
+        "sale_id"
       ],
       "machine": true,
       "drafted": []
@@ -73,7 +73,7 @@
   },
   "written_at": "2026-08-12T10:03:15",
   "written_to": {
-    "exits": 1
+    "sales": 1
   },
   "reasoning_written": {
     "KELS.L": {

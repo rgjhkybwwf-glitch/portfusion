@@ -31,7 +31,7 @@ COMPLETE = next((q for q in sorted((str(d)[:10] for d in Book().quarter_nav_tota
 NOT_YET = Book.quarter_to_close().date().isoformat()   # the quarter the next close is for
 
 
-@needs("quarter-nav", "trades")
+@needs("quarter-nav", "buys")
 def test_a_closed_quarter_is_reportable():
     assert completeness(COMPLETE) == [], \
         f"{COMPLETE} should be complete: {completeness(COMPLETE)}"
@@ -51,7 +51,7 @@ def test_the_engine_names_every_price_and_rate_a_date_lacks():
     for q in [x["quarter_end"] for x in engine.reports()["quarters"]]:
         gaps = b.valuation_gaps(q)
         px, fx = b._marks_at(q)
-        ident = b._identity().set_index("code")
+        ident = b._identity().set_index("ticker")
         lacking, rates = set(), set()
         for ticker, r in b.as_of(q).set_index("ticker").iterrows():
             try:
@@ -77,7 +77,7 @@ def test_the_gate_asks_for_the_frozen_composition_the_page_reads(monkeypatch):
     assert "marks" not in said, said
 
 
-@needs("quarter-nav", "trades")
+@needs("quarter-nav", "buys")
 def test_the_gate_asks_for_the_quarters_opening():
     """The page reads the quarter's opening as well as its end: its return runs from the previous
     quarter end's net asset value. The record's opening has none before it, so however much is
@@ -98,7 +98,7 @@ def test_the_gate_and_the_page_read_no_mark(monkeypatch):
         render(d)
 
 
-@needs("quarter-nav", "trades")
+@needs("quarter-nav", "buys")
 def test_an_unclosed_quarter_is_refused_and_says_why():
     """Naming what is missing is half the value. 'Not ready' on its own sends someone
     hunting through four stores.
@@ -142,7 +142,7 @@ def test_the_report_is_rendered_and_never_written(tmp_path, monkeypatch):
     assert list(tmp_path.iterdir()) == []
 
 
-@needs("quarter-nav", "trades")
+@needs("quarter-nav", "buys")
 def test_a_page_asks_one_engine(monkeypatch):
     """ONE PAGE, ONE `Book()`. Its headline figures came from a second engine, built inside
     `summary_figures()`, so every page loaded the record twice; the Beta page's re-cut of the
@@ -171,7 +171,7 @@ def test_the_cli_says_not_ready_and_exits_nonzero():
     assert "Traceback" not in r.stderr, "it refused by crashing, not by refusing"
 
 
-@needs("quarter-nav", "trades")
+@needs("quarter-nav", "buys")
 def test_the_page_carries_the_statements_that_must_travel_with_the_figures():
     """WHAT MUST TRAVEL WITH THE FIGURES, and it is no longer a warning.
 
@@ -190,7 +190,7 @@ def test_the_page_carries_the_statements_that_must_travel_with_the_figures():
     assert {f["basis"] for f in summary_figures(COMPLETE)} & {"notional", "capital"}
 
 
-@needs("quarter-nav", "trades")
+@needs("quarter-nav", "buys")
 def test_every_report_says_the_positions_are_the_firms_own():
     """What `notice()` says reaches the page, both halves of it."""
     page = render(COMPLETE)
@@ -198,7 +198,7 @@ def test_every_report_says_the_positions_are_the_firms_own():
     assert "not a reported period" in page
 
 
-@needs("quarter-nav", "trades")
+@needs("quarter-nav", "buys")
 @pytest.mark.parametrize("quarter_end", [COMPLETE, FIRST_REPORTED])
 def test_the_report_names_every_account_by_its_code_and_no_holder(quarter_end):
     """THE REPORT IS THE DOCUMENT THAT LEAVES THE BOOK (the owner, 6 Oct 2026), so wherever it is
@@ -214,7 +214,7 @@ def test_the_report_names_every_account_by_its_code_and_no_holder(quarter_end):
         assert label in page, f"{label} is not on the page"
 
 
-@needs("quarter-nav", "trades")
+@needs("quarter-nav", "buys")
 def test_a_reported_quarter_does_not_claim_to_be_unreported():
     """The narrower fact drops away from Q3; the standing one must not, in 2027 or after.
 
@@ -228,7 +228,7 @@ def test_a_reported_quarter_does_not_claim_to_be_unreported():
     assert "not a recommendation" in notice("2027-12-31")
 
 
-@needs("quarter-nav", "trades")
+@needs("quarter-nav", "buys")
 def test_the_report_is_reproducible():
     """THE POINT OF FREEZING THE INPUTS. Two renderings of the same quarter are identical."""
     assert render(COMPLETE) == render(COMPLETE)
@@ -286,7 +286,7 @@ def _account_rows(page: str) -> list[tuple[str, str, str]]:
         _section(page, "By account"))
 
 
-@needs("quarter-nav", "trades")
+@needs("quarter-nav", "buys")
 def test_the_by_account_amount_and_its_basis_come_from_the_same_row():
     """THE DEFECT THIS EXISTS FOR: the report took the amount by dict comprehension (last
     row wins) and the basis by next() (FIRST row wins) over quarter-nav. A spread-bet account held
@@ -306,7 +306,7 @@ def test_the_by_account_amount_and_its_basis_come_from_the_same_row():
             f"{account}: page says {amount}, the record says {want_amount}"
 
 
-@needs("quarter-nav", "trades")
+@needs("quarter-nav", "buys")
 def test_a_net_asset_value_column_never_shows_an_exposure_basis():
     """The general form of the defect above. The By account amount is headed "Net asset value",
     so every basis beside it must be one the engine is willing to SUM INTO NAV. `notional` is
@@ -317,7 +317,7 @@ def test_a_net_asset_value_column_never_shows_an_exposure_basis():
             f"{account} shows basis '{basis}' under Net asset value — not in NAV_BASES"
 
 
-@needs("quarter-nav", "trades")
+@needs("quarter-nav", "buys")
 def test_the_by_account_rows_total_to_the_engines_net_asset_value():
     page = render(COMPLETE)
     rows = _account_rows(page)
@@ -326,7 +326,7 @@ def test_the_by_account_rows_total_to_the_engines_net_asset_value():
     assert total == pytest.approx(Book().quarter_nav_total()[COMPLETE], abs=len(rows))
 
 
-@needs("quarter-nav", "trades")
+@needs("quarter-nav", "buys")
 def test_the_activity_section_covers_the_quarter_and_nothing_before_it():
     """It was hand-rolled as first-of-month minus 62 days, which is 1 MARCH for a Q2 page.
     The Q2 report rendered a 25 Mar trade under a heading that says Q2."""
@@ -349,7 +349,7 @@ def test_the_quarter_start_is_derived_not_typed():
     assert Book.quarter_start("2026-12-31") == "2026-10-01"
 
 
-@needs("quarter-nav", "trades")
+@needs("quarter-nav", "buys")
 def test_a_quarter_opens_where_the_last_one_closed():
     """ONE NAME, ONE DATE. `Book.quarter_start()` is a quarter's first day; the day its return is
     measured FROM is the quarter end before, which the returns carry as `opens`, the engine's word
@@ -394,7 +394,7 @@ def test_a_quarter_the_freeze_wrote_adds_up_to_its_exposure():
     for d in _engine_frozen():
         lines, total = b.quarter_lines(d), b.quarter_lines_total(d)
         assert total["gap"] == pytest.approx(0.0, abs=0.05), d
-        for f in ("cost", "value", "gain"):
+        for f in ("cost", "value", "unrealised"):
             assert total[f] == pytest.approx(lines[f].sum(), abs=0.005), (d, f)
         assert total["value"] + total["gap"] == pytest.approx(b.quarter_exposure_total()[d], abs=0.005)
         assert lines["weight"].sum() == pytest.approx(1.0)
@@ -413,7 +413,7 @@ def test_a_quarter_end_counts_the_positions_it_froze():
         assert f"{len(D.ACCOUNT_ORDER)} / {n:,.0f}" in render(d), d
 
 
-@needs("quarter-nav", "trades")
+@needs("quarter-nav", "buys")
 def test_a_composition_apart_from_its_exposure_says_both_figures(monkeypatch):
     """A gap either way reads true: the lines' total beside Section 1's exposure. A negative one
     once printed as "£-500 short"."""
@@ -476,7 +476,7 @@ def test_the_contributions_close_on_the_lines_and_the_sales():
     b = Book()
     for d in _engine_frozen():
         c = b.quarter_contributions(d).set_index("ticker")
-        lines = b.quarter_lines(d).set_index("ticker")["gain"]
+        lines = b.quarter_lines(d).set_index("ticker")["unrealised"]
         assert (c.loc[lines.index, "closing"] - lines).abs().max() < 0.01, d
         prev = b.quarter_returns().set_index("quarter_end").loc[d, "opens"]
         act = b.activity(start=prev, end=d)
@@ -497,7 +497,7 @@ def test_the_income_table_is_the_income_the_return_counts_and_the_rest():
         assert list(t.index) == list(D.ACCOUNT_ORDER) + ["Total"]
 
 
-@needs("quarter-nav", "trades")
+@needs("quarter-nav", "buys")
 def test_the_year_to_a_quarter_is_the_quarters_own_measure():
     """Over the first quarter the year and the quarter are the same span, so one formula must
     give one answer."""
@@ -534,7 +534,7 @@ def test_what_a_figure_rests_on_is_decided_by_the_engine_not_the_page():
             assert name not in src, f"report/{path.name} uses {name}; ask Book.quarter_evidence()"
 
 
-@needs("quarter-nav", "trades")
+@needs("quarter-nav", "buys")
 def test_the_archive_decides_on_file_and_a_live_read_needs_none():
     """The same checks against an empty archive and the real one: a cited document is on file
     only where the archive holds it, and a live read is one either way."""
@@ -549,7 +549,7 @@ def test_the_archive_decides_on_file_and_a_live_read_needs_none():
 
 
 
-@needs("quarter-nav", "trades")
+@needs("quarter-nav", "buys")
 def test_another_accounts_statement_does_not_put_this_one_on_file():
     """A DATE IS NOT A DOCUMENT, AND NEITHER IS A DATE AND A BROKER. The reconciliation asked
     whether a reading's statement was filed without saying whose reading it was, so a line naming
@@ -570,7 +570,7 @@ def test_another_accounts_statement_does_not_put_this_one_on_file():
     assert "on file" not in set(held), held.to_dict()
 
 
-@needs("quarter-nav", "trades")
+@needs("quarter-nav", "buys")
 def test_no_check_answers_none_never_nan():
     """No reading at all answers None in every column. A missing str came back NaN once — pandas 3
     stores one so, and NaN is truthy — and the page printed "nan" in place of the words."""
@@ -595,7 +595,7 @@ def test_a_quarter_end_cites_a_broker_check_or_says_there_is_none():
         assert ("no broker check" in page) == any(r["as_of"] is None for r in rows), d
 
 
-@needs("quarter-nav", "trades")
+@needs("quarter-nav", "buys")
 def test_the_reports_footer_says_whose_it_is():
     """The owner, 12 Oct 2026: the desk's footer says whose it is, and the report, the document
     that leaves the book, says it too, in the same words from the book's brand, beside the stamp

@@ -382,7 +382,7 @@ def epics(D=None) -> dict:
     contracts.csv gives an epic. A closed contract has none, and nothing reads its level again."""
     D = D or _record()
     label_of = {v: k for k, v in account_names(D).items()}
-    acct_of = {t.contract: t.acct for t in D.trades if t.contract}
+    acct_of = {t.contract: t.acct for t in D.buys if t.contract}
     return {c: (label_of.get(acct_of.get(c)), epic) for c, epic in sorted(D.CONTRACTS.items()) if epic}
 
 # IG quotes spread bets in POINTS and the record keeps the level as IG states it (10000.5 stays
@@ -709,10 +709,10 @@ def _epic_to_ticker(D):
 #: carried ten values for an eleven-column table. tests/test_ig.py asserts these against
 #: schema.TABLES; this module does not import schema, so the sweep runs without the build.
 ROW_COLUMNS = {
-    "trades": ("id", "date", "source", "account", "ticker", "cur", "qty", "stake",
-               "val", "broker_ref", "note", "contract", "price", "rate"),
-    "exits": ("eid", "date", "account", "ticker", "qty", "stake", "price", "cur", "rate",
-              "proceeds", "source", "broker_ref", "realisation", "closes", "note"),
+    "buys": ("trade_id", "date", "source", "account", "ticker", "cur", "qty", "stake", "cost",
+             "level_points", "broker_ref", "note", "contract", "traded_price", "rate"),
+    "sales": ("sale_id", "date", "account", "ticker", "qty", "stake", "traded_price", "cur",
+              "rate", "proceeds", "source", "broker_ref", "realisation_id", "closes", "note"),
     # IG bills funding interest in the account currency, so a swept row leaves `currency`,
     # `local_amount` and `rate` blank, and `ticker`, since funding is no one line's — named
     # explicitly, or the paste misaligns.
@@ -852,18 +852,18 @@ def ig_events(since=None):
     to = today.isoformat()
     tick_of = _epic_to_ticker(D)
 
-    known_open = {t.broker_ref for t in D.trades if t.broker_ref}
+    known_open = {t.broker_ref for t in D.buys if t.broker_ref}
     # A CLOSE IS KNOWN BY ITS broker_ref, the closing deal IG gave it.
-    known_close = {str(e.broker_ref).strip() for e in D.exits if str(e.broker_ref or "").strip()}
+    known_close = {str(e.broker_ref).strip() for e in D.sales if str(e.broker_ref or "").strip()}
     # WHAT AN EVENT ALREADY IN THE BOOK IS, said from the book's own row.
-    buy_of = {t.broker_ref: t for t in D.trades if t.broker_ref}
-    sale_of = {str(e.broker_ref).strip(): e for e in D.exits if str(e.broker_ref or "").strip()}
+    buy_of = {t.broker_ref: t for t in D.buys if t.broker_ref}
+    sale_of = {str(e.broker_ref).strip(): e for e in D.sales if str(e.broker_ref or "").strip()}
     # WHAT A CLOSE BELONGS TO, from IG's own ids: the leg is the one whose broker_ref is the deal
     # the close names. The parcel is its ACCOUNT's holding's, `Book.parcel()`, the answer a
     # share sale on the bench gets: two accounts may bet on the same ticker, and a parcel named
     # by ticker alone would put one account's close into the other account's round trip. Asked
     # once per holding, so a second close in the same sweep joins the first.
-    leg_of = {t.broker_ref: t.id for t in D.trades if t.broker_ref}
+    leg_of = {t.broker_ref: t.trade_id for t in D.buys if t.broker_ref}
     parcel_of, engine = {}, []
 
     def _parcel(acct, tk):
@@ -877,7 +877,7 @@ def ig_events(since=None):
     known_moves = {(m[0], round(m[2], 2)) for m in D.movements}
 
     free = D.next_free_ids()
-    nt, ne = int(free["trades"][2:]) - 1, int(free["exits"][2:]) - 1
+    nt, ne = int(free["buys"][2:]) - 1, int(free["sales"][2:]) - 1
     contract_of = {epic: c for c, (_holder, epic) in epics(D).items()}
 
     matched, rows_t, rows_e, rows_i, rows_m, skipped, setups = [], [], [], [], [], [], []
@@ -924,9 +924,9 @@ def ig_events(since=None):
                     # AN EPIC NO CONTRACT CARRIES is the first bet on a contract: offered for
                     # set-up with its line and contract, never filed against a guessed ticker.
                     (rows_t if tk else setups).append(_event(
-                        "trades", ref, "open", acct,
+                        "buys", ref, "open", acct,
                         _said(tk or market, "Buy", size, level), {
-                            "id": f"T-{nt:03d}", "date": day,
+                            "trade_id": f"T-{nt:03d}", "date": day,
                             # ONE FORMAT FOR A TRADE: the read and its day; the dealId is broker_ref.
                             "source": D.trade_source("ig-api", to, endpoint="/history/activity"),
                             "account": acct, "ticker": tk or "",
@@ -934,10 +934,10 @@ def ig_events(since=None):
                             # currency; the market's own currency is the code's, on securities.csv.
                             "cur": "GBP", "qty": "",
                             "stake": size,
-                            "val": level,
+                            "cost": "", "level_points": level,
                             "broker_ref": ref, "note": "",
                             "contract": contract_of.get(a["epic"], ""),
-                            "price": "", "rate": ""}))
+                            "traded_price": "", "rate": ""}))
                     if not tk:
                         setups[-1].update(epic=a["epic"], market=market,
                                           **contract_suffix(a["epic"], day))
@@ -947,14 +947,14 @@ def ig_events(since=None):
                     # The deal id goes in broker_ref, which is what the column is for: a close
                     # whose note omitted it would otherwise be proposed a second time.
                     rows_e.append(_event(
-                        "exits", ref, "close", acct,
+                        "sales", ref, "close", acct,
                         _said(tk, "Sell", size, level), {
-                            "eid": f"E-{ne:03d}", "date": day, "account": acct, "ticker": tk,
-                            "qty": "", "stake": size, "price": level, "cur": "GBP", "rate": "",
+                            "sale_id": f"E-{ne:03d}", "date": day, "account": acct, "ticker": tk,
+                            "qty": "", "stake": size, "traded_price": level, "cur": "GBP", "rate": "",
                             "proceeds": round(size * level, 2),
                             "source": D.trade_source("ig-api", to, endpoint="/history/activity"),
                             "broker_ref": ref,
-                            "realisation": _parcel(acct, tk),
+                            "realisation_id": _parcel(acct, tk),
                             "closes": leg_of.get(closed, ""),
                             "note": ""}))
 
@@ -1031,8 +1031,8 @@ def cmd_events(since=None):
     log.info(f"\n  --- ALREADY IN THE BOOK: {len(matched)} event(s) ---")
     for m in matched:
         log.info(f"    {m}")
-    block("MISSING opens", r["opens"], "store/trades.csv")
-    block("MISSING closes", r["closes"], "store/exits.csv")
+    block("MISSING opens", r["opens"], "store/buys.csv")
+    block("MISSING closes", r["closes"], "store/sales.csv")
     block("MISSING costs", r["costs"], "store/income.csv")
     block("MISSING capital", r["capital"], "store/capital-movements.csv")
 

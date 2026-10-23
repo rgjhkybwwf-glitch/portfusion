@@ -43,7 +43,7 @@ from portfusion.desk.doors import commit
 
 #: The two tables a refresh replaces, and which column identifies a row in each: a line's price
 #: by its ticker, a currency's rate by the currency. Every row of both is live.
-KEYED_BY = {"current-prices": "ticker", "fx": "currency"}
+KEYED_BY = {"current-prices": "mark_key", "fx": "currency"}
 
 
 class Refused(Exception):
@@ -204,7 +204,7 @@ def _require_instant(row: dict, what: str) -> None:
 def write(prices: list[dict] | None = None, rates: list[dict] | None = None) -> dict:
     """Bank the outgoing marks, then replace them. ONE operation, or none of it.
 
-    `prices` are `{ticker, price, currency, as_of, source, struck, at}`; `rates` are
+    `prices` are `{mark_key, price, currency, as_of, source, struck, at}`; `rates` are
     `{currency, rate, as_of, source, struck}` — each table's own columns, so nothing here has to
     know a shape the schema does not already hold.
 
@@ -222,10 +222,10 @@ def write(prices: list[dict] | None = None, rates: list[dict] | None = None) -> 
 
     held = carried()
     for row in prices:
-        _require(row, ("ticker", "price", "as_of", "source"), f"price {row.get('ticker')!r}")
-        _require_instant(row, f"price {row.get('ticker')!r}")
-        if row["ticker"] in held:
-            raise Refused(f"{row['ticker']} is carried, not refreshed: {held[row['ticker']]['why']}")
+        _require(row, ("mark_key", "price", "as_of", "source"), f"price {row.get('mark_key')!r}")
+        _require_instant(row, f"price {row.get('mark_key')!r}")
+        if row["mark_key"] in held:
+            raise Refused(f"{row['mark_key']} is carried, not refreshed: {held[row['mark_key']]['why']}")
     for row in rates:
         _require(row, ("currency", "rate", "as_of", "source"), f"rate {row.get('currency')!r}")
         if row["currency"] in held:
@@ -237,7 +237,7 @@ def write(prices: list[dict] | None = None, rates: list[dict] | None = None) -> 
 
     by_table = {}
     if prices:
-        by_table["current-prices"] = {r["ticker"]: [r["ticker"], r["price"], r["currency"],
+        by_table["current-prices"] = {r["mark_key"]: [r["mark_key"], r["price"], r["currency"],
                                                     r["as_of"], r["source"], r["struck"],
                                                     r.get("at") or ""] for r in prices}
     if rates:
@@ -332,16 +332,16 @@ def first(prices: list[dict], route: str, ref: str, at: str) -> list[str]:
     There is no price on file to bank or replace; the next refresh banks this one as it replaces
     it. Complete as `write()` requires: price, date, source and instant. Returns the lines marked."""
     for row in prices:
-        _require(row, ("ticker", "price", "as_of", "source"), f"price {row.get('ticker')!r}")
-        _require_instant(row, f"price {row.get('ticker')!r}")
-    named = [r["ticker"] for r in prices]
+        _require(row, ("mark_key", "price", "as_of", "source"), f"price {row.get('mark_key')!r}")
+        _require_instant(row, f"price {row.get('mark_key')!r}")
+    named = [r["mark_key"] for r in prices]
     priced = sorted(set(named) & {r[0] for r in schema.load("current-prices")})
     if priced:
         raise Refused(f"{', '.join(priced)} has a mark already: the Price Refresh replaces it")
     path = schema.TABLES["current-prices"].path
     was = len(schema.load("current-prices"))
     commit._append(path, path.read_bytes(), [commit._csv_line(
-        [r["ticker"], r["price"], r["currency"], r["as_of"], r["source"], r["struck"],
+        [r["mark_key"], r["price"], r["currency"], r["as_of"], r["source"], r["struck"],
          r.get("at") or ""]) for r in prices])
     if len(schema.load("current-prices")) != was + len(prices):
         raise Refused("current-prices.csv did not gain exactly the new marks")
@@ -384,7 +384,7 @@ def retire(lines: list[str], route: str, ref: str, at: str) -> list[str]:
         PH.archive(verbose=False)
     except Exception as e:                          # noqa: BLE001 — reported, never swallowed
         raise Refused(f"the outgoing price could not be banked, so nothing was retired: {e}")
-    unbanked = sorted({m["ticker"] for m in PH.check()} & set(lines))
+    unbanked = sorted({m["mark_key"] for m in PH.check()} & set(lines))
     if unbanked:
         raise Refused(f"{', '.join(unbanked)}: the live price is not in the history, so it is "
                       f"not retired")
@@ -499,30 +499,30 @@ def bank_closes(day: str, prices: list[dict] | None = None,
         was["status"] = "superseded"
 
     rows_p, rows_f = PH.load(), FX.load()
-    on_file_p = {(r["ticker"], r["date"]): r for r in rows_p if r["status"] == PH.LIVE}
+    on_file_p = {(r["mark_key"], r["date"]): r for r in rows_p if r["status"] == PH.LIVE}
     new_p, superseded, same, dropped = [], [], 0, []
     for row in prices:
-        _require(row, ("ticker", "price", "currency", "as_of", "source"),
-                 f"close {row.get('ticker')!r}")
-        if row["ticker"] in held:
-            raise Refused(f"{row['ticker']} is carried, not refreshed: "
-                          f"{held[row['ticker']]['why']}")
+        _require(row, ("mark_key", "price", "currency", "as_of", "source"),
+                 f"close {row.get('mark_key')!r}")
+        if row["mark_key"] in held:
+            raise Refused(f"{row['mark_key']} is carried, not refreshed: "
+                          f"{held[row['mark_key']]['why']}")
         if row.get("struck") != "close":
-            raise Refused(f"{row['ticker']}: struck {row.get('struck')!r}, not a session close. "
+            raise Refused(f"{row['mark_key']}: struck {row.get('struck')!r}, not a session close. "
                           f"A live read is an instant, and a quarter is valued at closes.")
         date, price = str(row["as_of"])[:10], float(row["price"])
-        said = _settle(row["ticker"], row["ticker"], date, ("price", price), on_file_p,
+        said = _settle(row["mark_key"], row["mark_key"], date, ("price", price), on_file_p,
                        lambda r: r.get("struck"))
         if said == "same":
             same += 1
         else:
             if said:
-                _supersede(said, "price", price, row["ticker"])
-            new_p.append({"ticker": row["ticker"], "date": date, "price": price,
+                _supersede(said, "price", price, row["mark_key"])
+            new_p.append({"mark_key": row["mark_key"], "date": date, "price": price,
                           "currency": row["currency"], "quality": "sourced", "struck": "close",
                           "status": PH.LIVE, "source": row["source"]})
             # A LINE TWICE IN ONE WRITE: its twin is then "same", and another figure refused.
-            on_file_p[(row["ticker"], date)] = new_p[-1]
+            on_file_p[(row["mark_key"], date)] = new_p[-1]
 
     on_file_f = {(r["currency"], r["date"]): r for r in rows_f
                  if r["status"] == FX.LIVE and r["kind"] == "spot"}

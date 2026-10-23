@@ -331,7 +331,7 @@ def _sweep(conn, now):
 def test_a_trading_line_is_a_live_read_at_its_own_instant_and_a_shut_one_its_last_session():
     """14:00 UK: Europe trading, the US not yet open. Each line says which, and when."""
     r = _sweep(_conn(), NOW_1400_UK)
-    by = {p["ticker"]: p for p in r["prices"]}
+    by = {p["mark_key"]: p for p in r["prices"]}
     assert (by[US]["struck"], by[US]["as_of"], by[US]["at"]) == ("close", "2026-09-28", "")
     assert by[US]["price"] == _px(US, 150.25)
     assert (by[PENCE]["struck"], by[PENCE]["at"]) == ("live", "2026-09-29T13:00:00Z")
@@ -344,7 +344,7 @@ def test_a_trading_line_is_a_live_read_at_its_own_instant_and_a_shut_one_its_las
 def test_a_live_read_is_the_quote_and_never_a_part_formed_bar():
     """A line quoting 50.0p can have an unfinished day bar reading 49.7p."""
     r = _sweep(_conn(), NOW_1400_UK)
-    assert next(p for p in r["prices"] if p["ticker"] == PENCE)["raw"] == 50.0
+    assert next(p for p in r["prices"] if p["mark_key"] == PENCE)["raw"] == 50.0
 
 
 @HOLDS_LINES
@@ -354,14 +354,14 @@ def test_a_venue_that_shut_today_prices_at_todays_close():
     same session still prices the same."""
     r = _sweep(_conn(), NOW_1715_UK)
     assert not r["failed"]
-    by = {p["ticker"]: p for p in r["prices"]}
+    by = {p["mark_key"]: p for p in r["prices"]}
     assert (by[PENCE]["struck"], by[PENCE]["as_of"], by[PENCE]["raw"]) == \
         ("close", "2026-09-29", 49.7)
     assert (by[THIRD]["struck"], by[THIRD]["as_of"], by[THIRD]["price"]) == \
         ("close", "2026-09-29", _px(THIRD, 30.4))
 
     after_midnight = dt.datetime(2026, 9, 29, 23, 30, tzinfo=UTC)     # 00:30 BST on 30 Sep
-    by = {p["ticker"]: p for p in _sweep(_conn(), after_midnight)["prices"]}
+    by = {p["mark_key"]: p for p in _sweep(_conn(), after_midnight)["prices"]}
     assert (by[THIRD]["struck"], by[THIRD]["as_of"], by[THIRD]["at"],
             by[THIRD]["price"]) == ("close", "2026-09-29", "", _px(THIRD, 30.4))
 
@@ -371,7 +371,7 @@ def test_when_the_quote_screen_refuses_the_trading_lines_are_unpriced_and_named(
     """THE TWENTY MINUTES OF 29 SEP. Shut lines still price from completed bars; a trading line
     has no honest price without the quote, so it is reported — never filled from a bar."""
     r = _sweep(_conn(refuse="tradingview api: …/scan: 429: "), NOW_1400_UK)
-    assert [p["ticker"] for p in r["prices"]] == [US]
+    assert [p["mark_key"] for p in r["prices"]] == [US]
     assert {f["key"] for f in r["failed"]} == {PENCE, THIRD}
     assert all("429" in f["why"] for f in r["failed"])
     assert r["quote_screen"].startswith("refused")
@@ -404,7 +404,7 @@ def test_a_quote_screen_that_does_not_answer_costs_only_the_lines_still_trading(
     def no_answer(_):
         raise tv.TVError("TradingView tools/call: HTTP 429")
     r = _sweep(_quote_screen_answers(_conn(), no_answer), NOW_1400_UK)
-    assert [p["ticker"] for p in r["prices"]] == [US]
+    assert [p["mark_key"] for p in r["prices"]] == [US]
     assert {f["key"] for f in r["failed"]} == {PENCE, THIRD}
     assert all("it did not answer — TradingView tools/call: HTTP 429" in f["why"]
                for f in r["failed"])
@@ -428,7 +428,7 @@ def test_a_partial_reply_is_not_ok_and_a_line_it_left_out_carries_the_vendors_re
                 "missing": missing,
                 "data": {s: q for s, q in reply["data"].items() if s != SYM[THIRD]}}
     r = _sweep(_quote_screen_answers(_conn(), partial), NOW_1400_UK)
-    assert {p["ticker"]: p["struck"] for p in r["prices"]} == {US: "close", PENCE: "live"}
+    assert {p["mark_key"]: p["struck"] for p in r["prices"]} == {US: "close", PENCE: "live"}
     (f,) = r["failed"]
     assert f["key"] == THIRD and "market unavailable" in f["why"]
     assert r["quote_screen"] == "partial: germany: 503"
@@ -462,7 +462,7 @@ def test_the_lines_are_asked_five_at_a_time_and_read_in_the_books_order():
     r = tv.sweep(tickers=list(tv.symbols()), currencies=tv.rate_currencies(), now=saturday,
                  conn=conn)
     assert not r["failed"]
-    assert [p["ticker"] for p in r["prices"]] == list(tv.symbols())
+    assert [p["mark_key"] for p in r["prices"]] == list(tv.symbols())
     assert [x["currency"] for x in r["rates"]] == tv.rate_currencies()
     assert 1 < conn.most <= tv.AT_ONCE
 
@@ -501,7 +501,7 @@ def test_when_the_quote_screen_refuses_a_trading_line_takes_its_last_minute_bar(
                SYM[THIRD]: [_minute("2026-09-29T12:44:00", 30.6)]}
     r = _sweep(_conn(refuse="tradingview api: …/uk/scan: 429: ", minutes=minutes), NOW_1400_UK)
     assert not r["failed"]
-    by = {p["ticker"]: p for p in r["prices"]}
+    by = {p["mark_key"]: p for p in r["prices"]}
     assert (by[PENCE]["struck"], by[PENCE]["at"], by[PENCE]["price"]) == \
         ("live", "2026-09-29T12:46:00Z", 0.501)
     assert by[PENCE]["source"] == (f"TradingView 1m bar {SYM[PENCE]} 50.1 GBX / 100, "
@@ -542,7 +542,7 @@ def test_the_pence_trap_is_caught_by_the_vendors_own_unit():
     """PENR in GBX is divided by 100; an PENR quote in GBP would be a hundredfold error, refused —
     and not papered over by the minute bars, which a wrong unit in the map would make wrong too."""
     ok = _sweep(_conn(), NOW_1400_UK)
-    assert next(p for p in ok["prices"] if p["ticker"] == PENCE)["price"] == 0.5
+    assert next(p for p in ok["prices"] if p["mark_key"] == PENCE)["price"] == 0.5
     quotes = dict(_conn().quotes, **{SYM[PENCE]: {"close": 0.5, "currency": "GBP",
                                                   "update_mode": "streaming"}})
     bad = _sweep(_conn(quotes=quotes, minutes={SYM[PENCE]: [_minute("2026-09-29T12:45:00", 50.1)]}),

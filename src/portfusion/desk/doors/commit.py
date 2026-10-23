@@ -234,7 +234,7 @@ def _reasoning_targets(item: dict) -> dict:
         ticker = str(values.get("ticker", "") or "").strip()
         if not ticker:
             continue
-        half = {"trades": "why_entered", "exits": "why_exited"}.get(row["table"])
+        half = {"buys": "why_entered", "sales": "why_exited"}.get(row["table"])
         if half and said.get(half, "").strip():
             target = out.setdefault(ticker, {"date": ""})
             target[half] = said[half].strip()
@@ -266,18 +266,18 @@ def retired_by(rows: list[dict]) -> list[str]:
     These rows' own buys count, so a line reopened in the same item stays. Read from the files,
     so it answers before a write (the Bench's review) and inside one (`commit()`) alike."""
     from portfusion.record import schema
-    sales = [r.get("values") or {} for r in rows if r.get("table") == "exits"]
-    buys = [r.get("values") or {} for r in rows if r.get("table") == "trades"]
-    th, eh = schema.TABLES["trades"].header, schema.TABLES["exits"].header
+    sales = [r.get("values") or {} for r in rows if r.get("table") == "sales"]
+    buys = [r.get("values") or {} for r in rows if r.get("table") == "buys"]
+    th, eh = schema.TABLES["buys"].header, schema.TABLES["sales"].header
     out = []
 
     named = {str(v.get("closes") or "").strip() for v in sales} - {""}
     if named:
-        closed = {r[eh.index("closes")] for r in schema.load("exits")
+        closed = {r[eh.index("closes")] for r in schema.load("sales")
                   if r[eh.index("closes")]} | named
-        contract_of = {r[th.index("id")]: r[th.index("contract")] for r in schema.load("trades")}
-        contract_of.update({str(v.get("id") or "").strip(): str(v.get("contract") or "").strip()
-                            for v in buys if str(v.get("id") or "").strip()})
+        contract_of = {r[th.index("trade_id")]: r[th.index("contract")] for r in schema.load("buys")}
+        contract_of.update({str(v.get("trade_id") or "").strip(): str(v.get("contract") or "").strip()
+                            for v in buys if str(v.get("trade_id") or "").strip()})
         epics = {r[0]: r[1] for r in schema.load("contracts")}
         touched = {contract_of.get(leg) for leg in named} - {None, ""}
         out += [c for c in touched if epics.get(c)
@@ -286,13 +286,13 @@ def retired_by(rows: list[dict]) -> list[str]:
     sold = {str(v.get("ticker") or "").strip() for v in sales} - {""}
     if sold:
         sh = schema.TABLES["securities"].header
-        sold &= ({r[sh.index("code")] for r in schema.load("securities")
-                  if r[sh.index("kind")] == "shares"}
+        sold &= ({r[sh.index("ticker")] for r in schema.load("securities")
+                  if r[sh.index("held_as")] == "shares"}
                  & {r[0] for r in schema.load("current-prices")})
         held = dict.fromkeys(sold, 0)
         # A CORPORATE ACTION IS A BUY OF NIL COST, its quantity signed, so buys less sales is the
         # quantity held whatever the holding went through.
-        for table, h, sign, mine in (("trades", th, 1, buys), ("exits", eh, -1, sales)):
+        for table, h, sign, mine in (("buys", th, 1, buys), ("sales", eh, -1, sales)):
             ticker, qty = h.index("ticker"), h.index("qty")
             for r in schema.load(table):
                 if r[ticker] in held:

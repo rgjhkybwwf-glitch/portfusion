@@ -57,7 +57,7 @@ def test_a_why_belongs_to_the_life_it_was_written_in(book, monkeypatch):
         D.Reasoning("ZZZ", old + dt.timedelta(days=30), None, "the first exit"),
         D.Reasoning("ZZZ", new, "the second thesis", None)])
     held = book.with_reasoning(pd.DataFrame([("ZZZ", pd.Timestamp(new))],
-                                            columns=["ticker", "open_date"]))
+                                            columns=["ticker", "opened"]))
     assert [w["text"] for w in held.loc[0, "whys"]] == ["the second thesis"]
     trip = book.with_reasoning(pd.DataFrame([("ZZZ", pd.Timestamp(old),
                                               pd.Timestamp(old + dt.timedelta(days=30)))],
@@ -80,7 +80,7 @@ def test_the_reasoning_is_the_records(book):
     opened is there, in date order, and none from before it."""
     out = book.with_reasoning(book.holdings(by="ticker"))
     for r in out.to_dict("records"):
-        opened = pd.Timestamp(r["open_date"])
+        opened = pd.Timestamp(r["opened"])
         on_file = [(x.date.isoformat(), half, text) for x in D.REASONING.get(r["ticker"], [])
                    if pd.isna(opened) or pd.Timestamp(x.date) >= opened
                    for half, text in (("why_entered", x.why_entered), ("why_exited", x.why_exited))
@@ -88,7 +88,7 @@ def test_the_reasoning_is_the_records(book):
         assert [(w["date"], w["half"], w["text"]) for w in r["whys"]] == on_file, r["ticker"]
 
 
-@needs("trades", "current-prices")
+@needs("buys", "current-prices")
 def test_theses_owed_names_each_missing_half(book, monkeypatch):
     """Moving the cut-off back puts every position in scope, and every blank half then owes."""
     monkeypatch.setattr(book.D, "REVIEW_FROM", dt.date(2000, 1, 1))
@@ -109,7 +109,7 @@ def test_findings_are_data_and_hardcode_no_figure(book):
     assert any(n.startswith("evidence:") for n in f["notes"])
 
 
-@needs("trades", "current-prices")
+@needs("buys", "current-prices")
 def test_prices_past_the_age_limit_are_a_problem(book):
     """Fired at a day far enough past the oldest mark that the book's own prices are too old."""
     oldest = pd.Timestamp(book.price_ageing()["oldest"])
@@ -119,7 +119,7 @@ def test_prices_past_the_age_limit_are_a_problem(book):
     assert not any("days old" in p for p in book.findings(today=fresh)["problems"])
 
 
-@needs("trades", "current-prices")
+@needs("buys", "current-prices")
 def test_the_dashboard_and_the_audit_read_one_price_age(book):
     """THE AGE IS WHAT TURNS INTO A PROBLEM, so the Dashboard's Prices line leads with it (the owner,
     12 Oct 2026). `portfusion record` printed "13 days" while the desk gave only the dates; both
@@ -134,7 +134,7 @@ def test_the_dashboard_and_the_audit_read_one_price_age(book):
     assert book.findings(today=later)["prices"][1].startswith("5 days ")
 
 
-@needs("trades", "current-prices")
+@needs("buys", "current-prices")
 def test_a_reconciliation_past_its_band_is_a_problem(book, monkeypatch):
     rec = book.reconciliation()
     ig = rec[rec["comparable"] == True].index[0]                       # noqa: E712
@@ -143,7 +143,7 @@ def test_a_reconciliation_past_its_band_is_a_problem(book, monkeypatch):
     assert any(p.startswith("reconciliation failed") for p in book.findings()["problems"])
 
 
-@needs("trades", "current-prices")
+@needs("buys", "current-prices")
 def test_a_difference_that_rounds_to_nothing_carries_no_sign(book, monkeypatch):
     """On 15 Oct 2026 the Dashboard and the audit said an IG account's book and broker "agree to
     -0.00": the subtraction left less than a penny, and its sign outlived the rounding."""
@@ -157,7 +157,7 @@ def test_a_difference_that_rounds_to_nothing_carries_no_sign(book, monkeypatch):
         assert line.startswith(agree + "0.00 ("), line
 
 
-@needs("trades", "current-prices")
+@needs("buys", "current-prices")
 def test_an_account_with_no_statement_is_a_gap_not_a_problem(book, monkeypatch):
     rec = book.reconciliation()
     rec.loc[0, "statement"] = float("nan")
@@ -174,7 +174,7 @@ def test_the_evidence_line_survives_an_absent_archive(book, monkeypatch, tmp_pat
     assert "unverifiable" in note and problem is None
 
 
-@needs("trades", "current-prices")
+@needs("buys", "current-prices")
 def test_owed_reasoning_is_a_gap(book, monkeypatch):
     monkeypatch.setattr(book.D, "REVIEW_FROM", dt.date(2000, 1, 1))
     assert any(g.startswith("reasoning owed") for g in book.findings()["gaps"])
@@ -228,7 +228,7 @@ def test_price_freshness_flags_a_stale_and_a_straggling_set(book, monkeypatch):
     import datetime as dt
     from portfusion.record import rules as B
     today = dt.date.today()
-    fed = book.store["prices"][~book.store["prices"]["ticker"].isin(set(B.STATEMENT_PRICED))]
+    fed = book.store["prices"][~book.store["prices"]["mark_key"].isin(set(B.STATEMENT_PRICED))]
     if len(fed) < 2:
         pytest.skip("the book holds fewer than two market-fed marks")
     real = book.store["prices"]

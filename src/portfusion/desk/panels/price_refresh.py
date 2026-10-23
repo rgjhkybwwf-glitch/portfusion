@@ -79,7 +79,7 @@ def query() -> dict:
         # `marks.write()` refuses one by name either way.
         # EACH GROUP RUNS A-Z BY ITS LINE, which puts an IG contract beside its company.
         "prices": sorted(_shape.rows(_frame(can["replaceable"]), PRICE_COLUMNS),
-                         key=lambda r: str(r["line"]).upper()),
+                         key=lambda r: str(r["mark_key"]).upper()),
         # THE OUTGOING MARK'S SOURCE STAYS HOME: a line's banked marks, sources and all, are its
         # Holdings detail's Mark history. A carried rate is left off, so `carried` says nothing.
         "rates": sorted(({k: v for k, v in r.items() if k not in ("source", "carried", "why")}
@@ -94,19 +94,19 @@ def query() -> dict:
     }
 
 
-#: A LINE IS A MARK'S KEY, as the grid heads it: a share's ticker, or an IG contract for a bet,
+#: THE MARK KEY, as the grid heads it: a share's ticker, or an IG contract for a bet,
 #: whose price is a level in points (`contract`, the engine's word on the row).
-PRICE_COLUMNS = ("line", "price", "currency", "as_of", "age_days", "stale", "contract")
+PRICE_COLUMNS = ("mark_key", "price", "currency", "as_of", "age_days", "stale", "contract")
 
 #: The refresh grid's heads, one row per line: the mark on file, then the one fetched.
-GRID_COLUMNS = ("line", "was", "was_at", "new", "new_at", "source", "origin", "take")
+GRID_COLUMNS = ("mark_key", "was", "was_at", "new", "new_at", "source", "origin", "take")
 
 
 def _frame(rows: list[dict]):
     """A list of dicts as something `_shape.rows` can take. The engine already shaped these; the
     mark's key is named for what it is here."""
     import pandas as pd
-    return pd.DataFrame(rows).rename(columns={"ticker": "line"}) if rows else pd.DataFrame()
+    return pd.DataFrame(rows) if rows else pd.DataFrame()
 
 
 def _banked(marks) -> dict:
@@ -217,7 +217,7 @@ def _write(prices=None, rates=None, readings=None, close_of=None):
                 raise marks.Refused("a past day's closes carry no account reading: equity is "
                                     "read live, with the levels, or not at all")
             return {"ok": True, **marks.bank_closes(close_of, prices=prices, rates=rates)}
-        if readings and not any(p.get("ticker") in contracts for p in prices):
+        if readings and not any(p.get("mark_key") in contracts for p in prices):
             raise marks.Refused("an IG account's equity is written with the contract levels "
                                 "read in the same pass, and none is among the ticked lines")
         with commit.atomic(*marks.paths(), *observations.paths()):

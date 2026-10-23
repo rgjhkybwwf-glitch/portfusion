@@ -13,7 +13,7 @@ ticked like them, and are banked by `marks.bank_closes()`, the one door for a pa
 WHAT IT WILL NOT DO:
 
   · PLACE A POSITION BY ITS NAME. A statement names the market, which is the same for every
-    expiry. The deal reference is unique, and the record already holds it: `trades.csv`
+    expiry. The deal reference is unique, and the record already holds it: `buys.csv`
     `broker_ref` -> the trade -> `rules.LEG_CONTRACT`. A deal the book does not hold is reported.
   · CHOOSE BETWEEN TWO LEVELS. IG values every position on one contract at one level; two
     different levels for one contract are reported, and neither is used.
@@ -46,8 +46,8 @@ def closes(on: str) -> dict:
     """
     day = _dt.date.fromisoformat(on)
     label = f"{day:%d %b %Y}"
-    contract_of = {t.broker_ref: (D.LEG_CONTRACT[t.id], t.acct) for t in D.trades
-                   if D.LEG_CONTRACT.get(t.id) and t.broker_ref}
+    contract_of = {t.broker_ref: (D.LEG_CONTRACT[t.trade_id], t.acct) for t in D.buys
+                   if D.LEG_CONTRACT.get(t.trade_id) and t.broker_ref}
     found, read, problems = {}, [], []
     for name in schema.filed_statements():
         if not fnmatch.fnmatchcase(name, f"{label}*IG statement*.pdf"):
