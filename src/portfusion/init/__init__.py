@@ -105,7 +105,8 @@ def pin() -> str:
 PIN = """\
 # THE PORTFUSION THIS BOOK RUNS, written by `portfusion init`. Its venv installs it with
 #   python3 -m venv .venv && .venv/bin/python3 -m pip install -r requirements.txt
-# A new release is taken by changing this line, then installing it and running the guard.
+# A new release is taken by changing this line, then as PortFusion's README says (Taking a new
+# release): reinstall it, `portfusion migrate`, and the guard.
 {pin}
 """
 

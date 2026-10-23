@@ -7,7 +7,9 @@ prints it.
 
 - **`portfusion migrate` carries a book to this release's store** (#12): it shows every move,
   and on `--write` makes it, opens the book and audits it, and puts every file back if either
-  fails. Moves are declared in `record/migrations.py`. It never commits.
+  fails. Moves are declared in `record/migrations.py`. It never commits. The README's *Taking a
+  new release* now forces the install, since two commits can share a version, and migrates before
+  the guard; a new book's requirements.txt points there.
 - **One name for one idea, from the store to the desk** (#43). The store's names are the desk's,
   and the suite refuses a heading the glossary has not agreed or a column with no heading.
   `portfusion migrate` moves a book's store:

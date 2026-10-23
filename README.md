@@ -34,15 +34,19 @@ A book names the release it runs in its own requirements.txt, and moves only whe
 that line. Read the release's entry in `CHANGELOG.md`, change the line, then in the book's folder:
 
 ```bash
-.venv/bin/python3 -m pip install -r requirements.txt
+.venv/bin/python3 -m pip install --force-reinstall --no-deps -r requirements.txt   # the pinned code
+.venv/bin/python3 -m pip install -r requirements.txt                               # what it needs
+portfusion migrate                   # what the release moves in the store; --write moves it
 portfusion check                     # the guard, on this book
 portfusion record                    # the audit
-portfusion migrate                   # a book carried to a new release's store
 ```
 
-A release that changes a table's columns says in its changelog entry how to move a book's rows;
-until they are moved, the record names the table and will not load. Restart the desk afterwards:
-it does not notice an upgraded package (`docs/desk-app.md`). A book holds no code, so a change to
+The first install is forced because two commits can carry one version number, and a plain install
+keeps the old code. Until a release's store moves are made, the record names the table and will not
+load; `portfusion migrate --write` makes them, opens and audits the book, and puts every file back
+if either fails. The lines of the book's `checks/` it lists are moved by hand before the guard, and
+the move is committed as the book's own change. Restart the desk afterwards: it does not
+notice an upgraded package (`docs/desk-app.md`). A book holds no code, so a change to
 PortFusion is made in PortFusion, as `CONTRIBUTING.md` says.
 
 ## Where everything is
