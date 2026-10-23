@@ -269,23 +269,36 @@ def test_a_replace_leaves_the_reconciliation_where_it_was(store_copy):
         f"{before_replaced} -> {after_replaced}")
 
 
-@pytest.mark.audit
-def test_the_seeded_rows_are_a_record_and_never_an_input(store_copy):
-    """THE ONE THAT WOULD HAVE BEEN WRONG FROM THE FIRST RUN.
+def test_a_row_written_before_the_opening_is_inside_it(store_copy):
+    """A ROW DATED BEFORE THE OPENING COUNT IS ALREADY INSIDE IT. A journal opened over a store
+    some door had already written carries those writes in its opening figures; read into the
+    arithmetic as well, they would be counted twice, and every table they touched would report a
+    surplus that is not there. The reconciliation reads only rows at or after the opening
+    instant.
 
-    The six seeded bench rows are dated 2 and 3 September and the journal opened on the 7th,
-    so those writes are ALREADY INSIDE every opening count. Read into the arithmetic they would
-    double-count six rows and every affected table would report a phantom surplus. The
-    reconciliation takes only rows at or after the opening instant; this asserts that boundary
-    rather than trusting the comment on it.
+    WRITTEN HERE, ON EITHER SIDE OF THE INSTANT, rather than looked for in the loaded book: a
+    book holds such rows only if its journal was seeded from writes made before it, and a test
+    that needed them stopped testing on every other book, a new one included. The row before
+    must not count; the row after must, which is what shows the check can fail.
     """
-    b = _book()
-    opened = b.journal_opened()
-    seeded = [r for r in _rows() if r["route"] == "bench" and r["at"] < opened]
-    assert seeded, "no seeded rows predate the opening count — this test has stopped testing"
-    assert b.journal_unaccounted().empty, (
-        f"{len(seeded)} seeded row(s) predate the journal's opening and are being counted "
-        f"against it; they are already inside those opening figures")
+    import datetime as dt
+    opened = dt.datetime.fromisoformat(_book().journal_opened().replace("Z", "+00:00"))
+    path = schema.TABLES["journal"].path
+    clean = path.read_text(encoding="utf-8")
+
+    def written(seconds: int) -> None:
+        at = (opened + dt.timedelta(seconds=seconds)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        path.write_text(clean + f"{at},bench,append,companies,1,B-TEST,a write\n",
+                        encoding="utf-8")
+
+    written(-1)
+    assert _book().journal_unaccounted().empty, (
+        "a row written before the journal opened is being counted against the opening "
+        "figures, which already hold it")
+    written(+1)
+    assert not _book().journal_unaccounted().empty, (
+        "a row written after the journal opened went uncounted: the reconciliation is not "
+        "reading the journal at all")
 
 
 def test_the_journal_reads_one_clock_whichever_wrote_a_row(store_copy):
