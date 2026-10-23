@@ -35,7 +35,7 @@ BET_COLUMNS = ("stake", "level_points")
 #: it among them (schema.FUNDINGS), the fact its funding-interest rows rest on — and a foreign
 #: deal's rate with whose it is.
 DETAIL_COLUMNS = ("why_entered", "why_exited", "note", "source", "broker_ref", "trade_id",
-                  "realisation_id", "contract", "funding", "fx_at_trade", "fx_from")
+                  "sale_id", "realisation_id", "contract", "funding", "fx_at_trade", "fx_from")
 
 
 def data() -> dict:

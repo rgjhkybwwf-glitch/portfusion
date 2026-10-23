@@ -50,9 +50,9 @@ def test_every_dividend_and_funding_charge_is_one_lifes_or_named(book):
 def test_every_deal_sits_in_exactly_one_life(book):
     """Each buy and each sale belongs to one life, and every company held now to one open life."""
     lives = book._lives()
-    deals = [r["id"] for lv in lives for r in lv["buys"] + lv["sales"]]
+    deals = [r["event_id"] for lv in lives for r in lv["buys"] + lv["sales"]]
     L = book.ledger
-    assert sorted(deals) == sorted(L.loc[L["direction"].isin(("Buy", "Sell")), "id"])
+    assert sorted(deals) == sorted(L.loc[L["direction"].isin(("Buy", "Sell")), "event_id"])
     held = set(book.holdings(by="ticker")["company"])
     open_ = [lv["company"] for lv in lives if lv["closed"] is None]
     assert sorted(open_) == sorted(held), "a company held now has no open life, or two"

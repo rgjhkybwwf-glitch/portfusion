@@ -107,9 +107,11 @@ def test_the_trades_ticker_box_is_the_chosen_companys(b):
 
 def test_trades_are_the_engines(b):
     rows, frame = trades.data()["rows"], b.activity().to_dict("records")
-    assert [r["trade_id"] for r in rows] == [f["trade_id"] for f in frame]
+    for key in ("trade_id", "sale_id"):
+        assert [r[key] for r in rows] == [f[key] if isinstance(f[key], str) else None
+                                          for f in frame], key
     for r, f in zip(rows, frame):
-        assert _same(r["value"], f["value"]), f["trade_id"]
+        assert _same(r["value"], f["value"]), r["trade_id"] or r["sale_id"]
 
 
 def test_the_accounts_page_keeps_the_engines_order(b):

@@ -457,7 +457,7 @@ def test_whether_a_leg_is_still_held_comes_from_the_sales(D, book):
     """A leg's `status` was once a column the engine read, and then a column nothing read; it is
     retired. Which legs are still held comes from the sales alone: a leg an IG close names is not
     held, and neither is any leg of a ticker no account holds any more."""
-    buys = book.ledger[book.ledger["direction"] == "Buy"].set_index("id")
+    buys = book.ledger[book.ledger["direction"] == "Buy"].set_index("event_id")
     named = sorted({e.closes for e in D.sales if e.closes})
     assert named and not buys.loc[named, "open_leg"].any(), "a leg a sale closed still reads as held"
     held = set(book.holdings(by="ticker")["ticker"])

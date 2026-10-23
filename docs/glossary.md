@@ -130,6 +130,7 @@ not *realized*.
 | Sterling | `… (GBP)` on every sterling column of a table that also shows a local figure; elsewhere each cell prints its £ |
 | How many are held | **Quantity** |
 | The key of a realisation | **Realisation ID** |
+| A buy's trade ID or a sale's sale ID, on the engine's ledger | `event_id`, never shown |
 | When a position was entered | **Entry date** |
 | Weighted entry price | **Entry price**, in the line's own currency |
 | A line's mark, and its date | **Price · Price as at** |

@@ -5,6 +5,10 @@ prints it.
 
 ## Unreleased
 
+- **On Trades, a sale's ID is headed Sale ID.** A row's detail read a sale's ID as its Trade ID;
+  a buy's keeps Trade ID. Inside the engine, the ledger takes the store's names (#44): `event_id`
+  for either side's ID, a buy's `cost` or `level_points`, a sale's `proceeds` and each side's
+  `traded_price`. No figure moves.
 - **The record reads as it happened, and a buy's or a sale's id is its place.** Every event table
   is in date order, then the account's place in the register, then ticker. A row entered late goes
   where its date puts it, and the buys or sales after it are renumbered, a sale's `closes` and an

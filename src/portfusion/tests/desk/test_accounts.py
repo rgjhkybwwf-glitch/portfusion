@@ -225,10 +225,11 @@ PANEL_COLUMNS = {
                     "value", "date"),
         "BET_COLUMNS": ("stake", "level_points"),
         # A BET LEG'S CONTRACT AND ITS FUNDING (13 Oct 2026): where the funding-interest rows rest.
-        # A FOREIGN DEAL'S RATE AND WHOSE IT IS (14 Oct 2026).
+        # A FOREIGN DEAL'S RATE AND WHOSE IT IS (14 Oct 2026). A SALE'S OWN ID UNDER ITS OWN NAME,
+        # where it read as a trade id (#44).
         "DETAIL_COLUMNS": ("why_entered", "why_exited", "note", "source", "broker_ref",
-                           "trade_id", "realisation_id", "contract", "funding", "fx_at_trade",
-                           "fx_from"),
+                           "trade_id", "sale_id", "realisation_id", "contract", "funding",
+                           "fx_at_trade", "fx_from"),
     },
 }
 
