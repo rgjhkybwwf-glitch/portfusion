@@ -78,12 +78,9 @@ def test_a_companys_lives_follow_one_another(book):
 
 @needs("trades")
 def test_a_lifes_figures_are_shown_only_where_they_mean_something(book):
-    """A percentage only for a life of shares alone; a net cost per share only while something
-    is held; gain to date only while the life is open; the record's start marks a life opened
-    before it."""
+    """A net cost per share only while something is held; gain to date only while the life is
+    open; the record's start marks a life opened before it."""
     for r in book.company_lives().to_dict("records"):
-        if r["held_as"] != "shares":
-            assert pd.isna(r["life_pct"]), r["life"]
         if pd.isna(r["held"]) or not r["held"]:
             assert pd.isna(r["net_cost_per_share"]), r["life"]
         if r["state"] == "closed":
@@ -214,7 +211,7 @@ def test_the_owners_example_reads_both_ways(store_copy):
     ties(life["to_date"], 10.0, "gain to date")
     ties(life["total"], 40.0, "the life to date")
     ties(life["net_cost_per_share"], 0.70, "net cost per share")
-    assert pd.isna(life["life_pct"]), "a life that held a bet shows no percentage"
+    ties(life["life_pct"], 40 / 180, "£40 over £100 of shares and an £80 bet at entry")
 
 
 @needs("accounts")
@@ -292,4 +289,5 @@ def test_a_life_of_bets_alone_has_no_cost_per_share(store_copy):
     [life] = _lives(_reloaded(), co.name)
     assert life["held_as"] == "spread bet" and life["state"] == "closed"
     ties(life["realised"], 20.0, "two pounds a point over ten points")
-    assert pd.isna(life["net_cost_per_share"]) and pd.isna(life["life_pct"]), "nothing is held"
+    assert pd.isna(life["net_cost_per_share"]), "nothing is held"
+    ties(life["life_pct"], 20 / 180, "£20 over a £180 bet at entry")

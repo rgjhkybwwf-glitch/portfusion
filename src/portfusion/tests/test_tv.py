@@ -281,7 +281,9 @@ NOW_1715_UK = dt.datetime(2026, 9, 29, 16, 15, tzinfo=UTC)     # 17:15 BST: Euro
 # The quotes and bars stay CANNED and invented — only the names are the
 # book's, so the same claims bite on any book that carries the wiring.
 def _three_lines():
-    syms = tv.symbols()
+    # LINES THE BOOK PRICES: a sold-out share keeps its symbol, and has no price to sweep.
+    priced = {r[0] for r in tv._rules().CURRENT_PRICES}
+    syms = {t: s for t, s in tv.symbols().items() if t in priced}
     us = next((t for t, s in syms.items() if s["symbol"].split(":")[0] in ("NASDAQ", "NYSE")),
               None)
     pence = next((t for t, s in syms.items() if s["unit"] == "GBX"), None)
@@ -567,15 +569,18 @@ def test_a_live_fx_source_never_reads_as_a_close_and_a_bar_always_does():
 # THE MAP AGAINST THE RECORD
 # =====================================================================================
 
-def test_every_share_the_book_prices_has_a_symbol_and_every_symbol_is_a_share_it_prices():
-    """THE BOOK DECIDES WHAT IS PRICED. A share with no symbol is a line left unpriced forever; a
-    symbol for nothing held is a call spent on nothing."""
+def test_every_share_the_book_prices_has_a_symbol_and_a_symbol_left_unpriced_is_held_by_nothing(book):
+    """THE BOOK DECIDES WHAT IS PRICED. A share with no symbol is a line left unpriced forever. A
+    symbol outlives its price: a share sold out keeps its listing, and nothing holds it."""
     from portfusion.record import rules as D
     contracts = set(D.LEG_CONTRACT.values())
     shares = {r[0]: r[2] for r in D.CURRENT_PRICES
               if r[0] not in contracts and r[0] not in D.STATEMENT_PRICED}
-    assert set(shares) == set(tv.symbols())
-    for ticker, spec in tv.symbols().items():
+    assert set(shares) <= set(tv.symbols())
+    unpriced = set(tv.symbols()) - set(shares) - set(D.STATEMENT_PRICED)
+    held = set(book.holdings(by="ticker")["ticker"])
+    assert not unpriced & held, f"held with a symbol and no price: {sorted(unpriced & held)}"
+    for ticker, spec in ((t, s) for t, s in tv.symbols().items() if t in shares):
         assert tv._record_unit(spec["unit"])[0] == shares[ticker], (
             f"{ticker} is quoted in {spec['unit']} and held in {shares[ticker]}")
 
