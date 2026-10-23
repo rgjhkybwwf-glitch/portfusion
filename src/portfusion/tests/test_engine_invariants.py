@@ -291,7 +291,11 @@ def test_the_lines_end_where_the_book_is(book):
     """
     for held_as, published in (("shares", book.owned()), ("spread bet", book.exposure())):
         totals = book.change_totals(held_as=held_as)
-        assert totals["lines"], f"no {held_as} lines at all — nothing is being asserted"
+        if not totals["lines"]:
+            # A BOOK THAT HOLDS NONE OF THIS KIND publishes nothing for it, and must say so.
+            assert close(0.0, published), (
+                f"no {held_as} lines, but the book publishes {published:,.2f} for them")
+            continue
         assert close(totals["value_to"], published), (
             f"{held_as} lines end at {totals['value_to']:,.2f} but the book publishes "
             f"{published:,.2f}")

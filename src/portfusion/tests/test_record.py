@@ -163,6 +163,7 @@ def test_no_trade_is_dated_in_the_future(D):
 # =====================================================================================
 
 @pytest.mark.audit
+@needs("current-prices")
 def test_each_feed_shares_one_date(D):
     """
     ONE DATE PER MARKET, and every market within PRICE_SPREAD_LIMIT of the others.

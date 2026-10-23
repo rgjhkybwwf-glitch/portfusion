@@ -16,7 +16,7 @@ import pytest
 
 from portfusion.history import accounts as A
 from portfusion.record import rules as D           # RECONCILES is derived from the record, below
-from harness import needs
+from harness import an_account, append_rows, holds, needs
 
 ISO = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
@@ -161,23 +161,63 @@ def test_the_build_does_not_import_this(build_imports):
 #
 # The list GROWS BY ITSELF when a share account gets a statement value, which is the whole
 # point — a hand-written version would silently keep checking the accounts it started with.
-RECONCILES = [(r.acct, r.as_of.isoformat(), r.stmt_value)
-              for r in D.ac_rows if r.equity is None and r.stmt_value is not None]
+def _reconciles():
+    return [(r.acct, r.as_of.isoformat(), r.stmt_value)
+            for r in D.ac_rows if r.equity is None and r.stmt_value is not None]
+
+
+RECONCILES = _reconciles()
+
+
+def _unreconciled(reconciles, statements):
+    """Each of `reconciles` its own day's statement row does not add up to, as a sentence."""
+    st = {(r["account"], r["as_of"]): r for r in statements}
+    out = []
+    for account, date, total in reconciles:
+        r = st.get((account, date))
+        missing = ("no row" if r is None else "no positions value"
+                   if r["positions_value"] is None else "no cash" if r["cash"] is None else "")
+        if missing:
+            out.append(f"{account} at {date}: {missing} to reconcile")
+            continue
+        got = r["positions_value"] + r["cash"]
+        if abs(got - total) >= 0.01:
+            out.append(
+                f"{account} at {date}: positions {r['positions_value']:,.2f} + cash "
+                f"{r['cash']:,.2f} = {got:,.2f}, but the account totalled {total:,.2f}. "
+                f"A cash figure from another date is the usual cause.")
+    return out
 
 
 def test_cash_on_a_row_reconciles_that_row():
-    from portfusion.history import accounts as A
-    st = {(r["account"], r["as_of"]): r for r in A.load()}
-    for account, date, total in RECONCILES:
-        r = st.get((account, date))
-        assert r is not None, f"no {account} row at {date}"
-        assert r["positions_value"] is not None, f"{account} {date} has no positions value"
-        assert r["cash"] is not None, f"{account} {date} has no cash to reconcile"
-        got = r["positions_value"] + r["cash"]
-        assert abs(got - total) < 0.01, (
-            f"{account} at {date}: positions {r['positions_value']:,.2f} + cash "
-            f"{r['cash']:,.2f} = {got:,.2f}, but the account totalled {total:,.2f}. "
-            f"A cash figure from another date is the usual cause.")
+    if not RECONCILES:
+        pytest.skip("the book holds no share reading with a statement total yet")
+    problems = _unreconciled(RECONCILES, A.load())
+    assert not problems, "\n".join(problems)
+
+
+@holds(an_account("shares"), what="a share account")
+def test_a_row_carrying_another_days_cash_does_not_reconcile(store_copy):
+    """THE CHECK ABOVE, SHOWN TO FAIL, on any book: two days' readings with a statement total
+    written to a copy, one whose row adds up and one whose row carries other cash. Only the
+    second is named."""
+    import datetime as dt
+    account = an_account("shares")
+    on_file = [r["as_of"] for r in A.load() if r["account"] == account]
+    on_file += [r.as_of.isoformat() for r in D.ac_rows if r.acct == account]
+    newest = dt.date.fromisoformat(max(on_file, default="2026-01-01"))
+    days = [(newest + dt.timedelta(days=n)).isoformat() for n in (1, 2)]
+    append_rows(store_copy / "account-readings.csv",
+                [f"{account},{day},{day}T14:05Z,1000.00,1250.00,250.00,,,,,,ii-statement,"
+                 f"a reading" for day in days])
+    append_rows(store_copy / "account-statements.csv",
+                [f"{account},{day},1000.00,{cash},,,,,Not on file: a test,derived,live"
+                 for day, cash in zip(days, ("250.00", "240.00"))])
+    D.reload_store()
+    ours = [r for r in _reconciles() if r[0] == account and r[1] in days]
+    assert len(ours) == 2, f"the two written readings are not reconciled at all: {ours}"
+    problems = _unreconciled(ours, A.load())
+    assert len(problems) == 1 and problems[0].startswith(f"{account} at {days[1]}"), problems
 
 
 # =====================================================================================

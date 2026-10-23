@@ -282,9 +282,11 @@ def test_a_row_written_before_the_opening_is_inside_it(store_copy):
     must not count; the row after must, which is what shows the check can fail.
     """
     import datetime as dt
-    opened = dt.datetime.fromisoformat(_book().journal_opened().replace("Z", "+00:00"))
+    opening = _book().journal_opened()
+    assert opening, "the journal has no opening count, so nothing can be measured from it"
+    opened = dt.datetime.fromisoformat(opening.replace("Z", "+00:00"))
     path = schema.TABLES["journal"].path
-    clean = path.read_text(encoding="utf-8")
+    clean = path.read_text(encoding="utf-8").rstrip("\n") + "\n"
 
     def written(seconds: int) -> None:
         at = (opened + dt.timedelta(seconds=seconds)).strftime("%Y-%m-%dT%H:%M:%SZ")
