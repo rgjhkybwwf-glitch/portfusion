@@ -286,9 +286,9 @@ def holdings(request: Request, by: str = "", account: str = ""):
 
 @door.get("/api/round-trips")
 def round_trips(request: Request, ticker: str = "", account: str = "", start: str = "",
-                end: str = "", company: str = ""):
+                end: str = "", company: str = "", view: str = "holding"):
     return _as_read(request, local.round_trips(ticker=ticker, account=_account(request, account),
-                                               start=start, end=end, company=company))
+                                               start=start, end=end, company=company, view=view))
 
 
 @door.get("/api/trades")

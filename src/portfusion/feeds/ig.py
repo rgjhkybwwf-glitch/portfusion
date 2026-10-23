@@ -714,9 +714,10 @@ ROW_COLUMNS = {
     "exits": ("eid", "date", "account", "ticker", "qty", "stake", "price", "cur", "rate",
               "proceeds", "source", "broker_ref", "realisation", "closes", "note"),
     # IG bills funding interest in the account currency, so a swept row leaves `currency`,
-    # `local_amount` and `rate` blank — named explicitly, or the paste misaligns.
+    # `local_amount` and `rate` blank, and `ticker`, since funding is no one line's — named
+    # explicitly, or the paste misaligns.
     "income": ("date", "account", "category", "detail", "amount", "source", "note",
-               "currency", "local_amount", "rate"),
+               "currency", "local_amount", "rate", "ticker"),
     "capital-movements": ("date", "account", "amount", "source", "detail"),
 }
 
@@ -977,7 +978,8 @@ def ig_events(since=None):
                         "detail": r["instrumentName"], "amount": amt,
                         "source": D.evidence_source("ig-api", r["reference"],
                                                    endpoint="/history/transactions"),
-                        "note": "", "currency": "", "local_amount": "", "rate": ""}))
+                        "note": "", "currency": "", "local_amount": "", "rate": "",
+                        "ticker": ""}))
             elif r["transactionType"] in ("DEPO", "WITH"):
                 if (day, round(amt, 2)) in known_moves:
                     matched.append(f"{r['instrumentName']} · £{amt:,.2f} · {day} · in the book")

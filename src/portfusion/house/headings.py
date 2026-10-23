@@ -125,6 +125,17 @@ BY_TAB = {
         # A spread bet's two per-share cells read as its levels in points (BET_COLUMNS).
         "entry_level_points": "Entry level (points)",
         "exit_level_points": "Exit level (points)",
+        # A COMPANY LIFE (the life view, Book.company_lives()).
+        "state": "State",
+        "to_date": "Gain to date (GBP)",
+        "dividends": "Dividends (GBP)",
+        "funding": "Funding (GBP)",
+        "total": "Life gain (GBP)",
+        "life_pct": "Life gain (%)",
+        "held": "Held",
+        "net_cost_per_share": "Net cost per share",
+        "realisations": "Round trips",
+        "lines": "Lines",
     },
     "Performance": {
         "gain": "Gain",

@@ -205,6 +205,11 @@ PANEL_COLUMNS = {
         # A SPREAD BET IN ITS OWN TERMS (13 Oct 2026): its stake per point for a
         # quantity, and its entry and exit as levels in points, as Trades reads one.
         "BET_COLUMNS": ("stake_per_point", "entry_level_points", "exit_level_points"),
+        # A COMPANY LIFE (23 Oct 2026, #37): Round Trips' second view.
+        "LIFE_COLUMNS": ("company", "held_as", "accounts", "state", "opened", "closed",
+                         "held_days", "realised", "to_date", "dividends", "funding", "total",
+                         "life_pct", "held", "net_cost_per_share", "current_price", "currency"),
+        "LIFE_DETAIL_COLUMNS": ("realisations", "lines"),
     },
     "accounts": {
         "REGISTER_COLUMNS": ("code", "account", "holder", "broker", "number", "feed_key", "cash",

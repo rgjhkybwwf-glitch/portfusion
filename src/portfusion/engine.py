@@ -619,6 +619,10 @@ class Book:
         # and both basis totals. Keyed by what the answer depends on, as above.
         self._changes_cache: dict[tuple[str | None, str | None], pd.DataFrame] = {}
 
+        # The company lives walk the whole ledger and their income, and the Round Trips life view,
+        # its totals and rate_gaps() all ask: walked once per Book, which is built once per store.
+        self._lives_cache: dict[str, object] = {}
+
     # ---- THE HEADLINE FIGURES, for every renderer ------------------------------------
 
     def owned(self) -> float:
@@ -974,20 +978,13 @@ class Book:
 
         Blank, rather than a figure from part of the position, wherever a leg has no price, a bet
         line no `points_per_unit`, or a deal date no close: the audit names the line or the date.
-        `qty` is whole share-equivalents. Side effects: none.
+        `qty` is whole share-equivalents. `bet_qty` and `bet_cost` are the open bets' part, unrounded:
+        their share-equivalents and what they cost at entry in the position's currency, blank on
+        any gap among the bets. Side effects: none.
         """
         ident = self._identity().set_index("code")
         own = self.deal_prices()["price_own"]
         px = {r[0]: (r[1], r[3]) for r in self.D.CURRENT_PRICES}
-
-        def per_pound(ccy, day):
-            """`ccy` per pound at `day`'s close, the Friday's for a weekend day, or None."""
-            if ccy == "GBP":
-                return 1.0
-            on, rate = self._close_on(ccy, day)
-            day = pd.Timestamp(day)
-            served = day - pd.Timedelta(days=max(0, day.weekday() - 4))
-            return rate if on is not None and pd.Timestamp(on) >= served else None
 
         def fact(code, name):
             v = ident.at[code, name] if code in ident.index else None
@@ -1007,6 +1004,7 @@ class Book:
                    else bet_ccys[0] if len(bet_ccys) == 1 else None)
 
             weighted, n_total, equivalents, gap = 0.0, 0.0, [], ccy is None
+            bet_cost, bet_gap = 0.0, ccy is None
             for leg in legs.to_dict("records"):
                 code, day = leg["ticker"], leg["date"]
                 leg_ccy = ident.at[code, "currency"]
@@ -1014,9 +1012,9 @@ class Book:
                 price = None if price is None or price != price else float(price)
                 if leg["held_as"] == "spread bet":
                     ppu, spu = fact(code, "points_per_unit"), fact(code, "shares_per_unit") or 1.0
-                    rate = per_pound(leg_ccy, day)
+                    rate = self._per_pound(leg_ccy, day)
                     if ppu is None or rate is None:
-                        gap = True
+                        gap = bet_gap = True
                         continue
                     n = leg["qty"] * ppu * rate * spu
                     equivalents.append((leg["id"], n, ppu, spu))
@@ -1025,13 +1023,16 @@ class Book:
                     n = leg["qty"]
                 convert = 1.0
                 if ccy is not None and leg_ccy != ccy:
-                    to, frm = per_pound(ccy, day), per_pound(leg_ccy, day)
+                    to, frm = self._per_pound(ccy, day), self._per_pound(leg_ccy, day)
                     convert = None if to is None or frm is None else to / frm
                 if price is None or convert is None or ccy is None:
                     gap = True
+                    bet_gap = bet_gap or leg["held_as"] == "spread bet"
                     continue
                 weighted += price * convert * n
                 n_total += n
+                if leg["held_as"] == "spread bet":
+                    bet_cost += price * convert * n
 
             bet_n = sum(e[1] for e in equivalents)
             qty = float(round(counts.sum() + bet_n)) if len(equivalents) == len(bets) else None
@@ -1046,11 +1047,14 @@ class Book:
                 if len(marks) == len(equivalents):
                     current = sum(m[0] / ppu / spu * n for m, n, ppu, spu in marks) / bet_n
                     priced_at = min(m[1] for m, *_ in marks)
+            bets_whole = not bet_gap and len(equivalents) == len(bets)
             out[company] = {"qty": qty, "entry_price": entry, "current_price": current,
-                            "priced_at": priced_at, "currency": ccy}
+                            "priced_at": priced_at, "currency": ccy,
+                            "bet_qty": bet_n if bets_whole else None,
+                            "bet_cost": bet_cost if bets_whole else None}
         return pd.DataFrame.from_dict(out, orient="index",
                                       columns=["qty", "entry_price", "current_price",
-                                               "priced_at", "currency"])
+                                               "priced_at", "currency", "bet_qty", "bet_cost"])
 
     # ---- THE JUDGEMENT  —  store/reasoning.csv, beside each position's numbers -------
 
@@ -1276,6 +1280,254 @@ class Book:
                 "proceeds": round(float(rt["proceeds"].sum()), 2),
                 "cost": round(float(rt["cost"].sum()), 2),
                 "gain": round(float(rt["gain"].sum()), 2)}
+
+    # ---- THE COMPANY LIFE  —  a company's shares and bets, first purchase to final sale ------
+
+    def _lives(self) -> list[dict]:
+        """EVERY COMPANY LIFE: {company, opened, closed, buys, sales}, `closed` None while held.
+        A purchase while nothing of the company is held opens one; the day nothing is held closes
+        it. A day's buys come before its sales, as in `share_pools()`."""
+        if "walk" not in self._lives_cache:
+            self._lives_cache["walk"] = self._walk_lives()
+        return self._lives_cache["walk"]
+
+    def _walk_lives(self) -> list[dict]:
+        ident = self._identity().set_index("code")
+        L = self.ledger[self.ledger["direction"].isin(("Buy", "Sell"))]
+        L = L.assign(company=L["ticker"].map(ident["company"]),
+                     _sale=(L["direction"] == "Sell").astype(int))
+        leg_of = self.D.EXIT_LEG_MATCH
+        out = []
+        for company, g in L.sort_values(["date", "_sale", "id"], kind="stable").groupby(
+                "company", sort=True):
+            shares, bets, life = {}, set(), None
+            for day, d in g.groupby("date", sort=True):
+                for r in d.to_dict("records"):
+                    held = bets or any(q > 0 for q in shares.values())
+                    if r["direction"] == "Buy" and life is None and not held:
+                        life = {"company": company, "opened": day, "closed": None,
+                                "buys": [], "sales": []}
+                    if life is None:
+                        raise ValueError(f"{r['id']} sells {r['ticker']} on {day:%Y-%m-%d} with "
+                                         f"nothing of {company} held")
+                    if r["held_as"] == "shares":
+                        key = (r["acct"], r["ticker"])
+                        shares[key] = shares.get(key, 0) + (
+                            r["qty"] if r["direction"] == "Buy" else -r["qty"])
+                    elif r["direction"] == "Buy":
+                        bets.add(r["id"])
+                    else:
+                        bets.discard(leg_of.get(r["id"]))
+                    life["buys" if r["direction"] == "Buy" else "sales"].append(r)
+                if life and not bets and not any(q > 0 for q in shares.values()):
+                    life["closed"] = day
+                    out.append(life)
+                    life = None
+            if life:
+                out.append(life)
+        return out
+
+    def _life_income(self) -> tuple[dict, list]:
+        """EACH LIFE'S DIVIDENDS AND FUNDING, {(company, opened): {"dividends": [(date, amount)],
+        "funding": [...]}}, and the income rows no life takes. A dividend goes to the life open on
+        its date, else the last one closed before it. Funding goes to the daily-funded legs held on
+        the nights it names, split by entry size; a dated contract's is in its level already."""
+        if "income" not in self._lives_cache:
+            self._lives_cache["income"] = self._attribute_income(self._lives())
+        return self._lives_cache["income"]
+
+    def _attribute_income(self, lives: list[dict]) -> tuple[dict, list]:
+        ident = self._identity().set_index("code")
+        by_company: dict[str, list] = {}
+        for lv in lives:
+            by_company.setdefault(lv["company"], []).append(lv)
+        out = {(lv["company"], lv["opened"]): {"dividends": [], "funding": []} for lv in lives}
+        loose = []
+
+        def life_on(company, day):
+            day = pd.Timestamp(day)
+            held = [lv for lv in by_company.get(company, []) if lv["opened"] <= day
+                    and (lv["closed"] is None or day <= lv["closed"])]
+            after = [lv for lv in by_company.get(company, [])
+                     if lv["closed"] is not None and lv["closed"] < day]
+            return held[0] if held else after[-1] if after else None
+
+        life_of_leg = {r["id"]: lv for lv in lives for r in lv["buys"]}
+        size = {r["id"]: abs(r["qty"] * r["val"]) for lv in lives for r in lv["buys"]
+                if r["held_as"] == "spread bet"}
+        for r in self.D.ci_rows:
+            if r.category == "Dividend":
+                company = ident.at[r.ticker, "company"] if r.ticker in ident.index else None
+                lv = life_on(company, r.date) if company else None
+                if lv is None:
+                    loose.append(r)
+                    continue
+                out[(lv["company"], lv["opened"])]["dividends"].append(
+                    (pd.Timestamp(r.date), r.amount))
+            elif r.category == "Funding interest":
+                pairs = [(leg, n) for n in self.D.funding_nights(r.detail, r.date)
+                         for account, leg, opened, closed in self.D.DAILY_FUNDED_LEGS
+                         if account == r.account and opened <= n and (closed is None or n < closed)
+                         and leg in life_of_leg]
+                weight = sum(size.get(leg, 0.0) for leg, _ in pairs)
+                if not pairs or not weight:
+                    loose.append(r)
+                    continue
+                for leg, _ in pairs:
+                    lv = life_of_leg[leg]
+                    out[(lv["company"], lv["opened"])]["funding"].append(
+                        (pd.Timestamp(r.date), r.amount * size.get(leg, 0.0) / weight))
+        return out, loose
+
+    def company_lives(self, company: str | None = None, start: str | None = None,
+                      end: str | None = None) -> pd.DataFrame:
+        """EACH COMPANY LIFE (`_lives()`), one row; the by-holding view is `round_trips()`.
+
+          total               realised + to_date (open lives) + dividends + funding, sterling
+          life_pct            total over every share bought, for a life of shares only
+          held                shares plus open bets as share-equivalents, whole
+          net_cost_per_share  (cost of what is held − realised − dividends − funding) / held, in
+                              the position's currency, dealing included, each sum at its own
+                              day's close: the break-even price of what is held
+
+        `pre_baseline`: opened before the record, so earlier dividends are not on file. `start` and
+        `end` bound the close; either one drops open lives. Blank wherever a rate is not on file.
+        """
+        if "frame" not in self._lives_cache:
+            self._lives_cache["frame"] = self._life_rows()
+        out = self._lives_cache["frame"]
+        if company:
+            out = out[out["company"] == company]
+        if start or end:
+            out = out[out["closed"].notna()]
+        if start:
+            out = out[out["closed"] >= pd.Timestamp(start)]
+        if end:
+            out = out[out["closed"] <= pd.Timestamp(end)]
+        return out.reset_index(drop=True)
+
+    def _life_rows(self) -> pd.DataFrame:
+        """`company_lives()`'s rows, every life, in its order."""
+        gain = {e.eid: e.proceeds - self.cost_released[e.eid] for e in self.D.exits}
+        lines = self.holdings(by="ticker")
+        companies = self.holdings(by="issuer").set_index("company")
+        order = {a: i for i, a in enumerate(self.D.ACCOUNT_ORDER)}
+        today = pd.Timestamp.today().normalize()
+
+        lives = self._lives()
+        income, _ = self._life_income()
+        rows = []
+        for life in lives:
+            name, buys, sales = life["company"], life["buys"], life["sales"]
+            earned = income[(name, life["opened"])]
+            dividends = float(sum(a for _, a in earned["dividends"]))
+            funding = float(sum(a for _, a in earned["funding"]))
+            is_open = life["closed"] is None
+            kinds = {r["held_as"] for r in buys + sales}
+            realised = float(sum(gain[r["id"]] for r in sales))
+            mine = lines[lines["company"] == name] if is_open else lines.iloc[0:0]
+            to_date = float(mine["gain"].sum()) if is_open else 0.0
+            held = mine[mine["held_as"] == "shares"]
+            shares_held = float(held["qty"].sum()) if len(held) else None
+            row = companies.loc[name] if is_open and name in companies.index else None
+            ccy = row["currency"] if row is not None else None
+
+            bet_qty = row["bet_qty"] if row is not None else None
+            bet_qty = None if bet_qty is None or bet_qty != bet_qty else float(bet_qty)
+            whole = (shares_held or 0.0) + (bet_qty or 0.0)
+            net = None
+            if whole and ccy and (bet_qty is not None or not mine["held_as"].eq("spread bet").any()):
+                cost, complete = (float(row["bet_cost"]) if bet_qty else 0.0), True
+                # EACH ACCOUNT'S POOL AT ITS OWN AVERAGE: its open legs' cost over their quantity,
+                # times what that account holds, as `share_pools()` keeps a pool.
+                pools: dict[tuple, list] = {}
+                for r in buys + sales:
+                    if r["held_as"] == "shares":
+                        pools.setdefault((r["acct"], r["ticker"]), []).append(r)
+                for rs in pools.values():
+                    h = sum(r["qty"] if r["direction"] == "Buy" else -r["qty"] for r in rs)
+                    legs = [r for r in rs if r["direction"] == "Buy" and r["open_leg"]]
+                    n = sum(r["qty"] for r in legs)
+                    if h <= 0:
+                        continue
+                    paid = 0.0
+                    for r in legs:
+                        rate = self._per_pound(ccy, r["date"])
+                        if rate is None:
+                            complete = False
+                            break
+                        paid += r["val"] * rate
+                    if not complete or not n:
+                        complete = False
+                        break
+                    cost += paid / n * h
+                taken = 0.0
+                for day, amount in ([(r["date"], gain[r["id"]]) for r in sales]
+                                    + earned["dividends"] + earned["funding"]):
+                    rate = self._per_pound(ccy, day)
+                    if rate is None or amount != amount:
+                        complete = False
+                        break
+                    taken += amount * rate
+                net = (cost - taken) / whole if complete else None
+
+            bought = sum(r["val"] for r in buys if r["held_as"] == "shares")
+            accounts = sorted({r["acct"] for r in buys + sales}, key=lambda a: order.get(a, 99))
+            rows.append({
+                "life": f"{name} · {life['opened']:%Y-%m-%d}",
+                "company": name,
+                "held_as": kinds.pop() if len(kinds) == 1 else "mixed",
+                "accounts": " · ".join(accounts),
+                "opened": life["opened"],
+                "closed": life["closed"],
+                "held_days": int(((life["closed"] if not is_open else today)
+                                  - life["opened"]).days),
+                "state": "closed" if not is_open else "part closed" if sales else "open",
+                "sales": len(sales),
+                "realised": realised,
+                "to_date": to_date if is_open else None,
+                "dividends": dividends,
+                "funding": funding,
+                "total": realised + to_date + dividends + funding,
+                "life_pct": ((realised + to_date + dividends + funding) / bought
+                             if {r["held_as"] for r in buys + sales} == {"shares"} and bought
+                             else None),
+                "shares_held": shares_held,
+                "held": float(round(whole)) if is_open and (bet_qty is not None or not len(
+                    mine[mine["held_as"] == "spread bet"])) and whole else None,
+                "net_cost_per_share": net,
+                "entry_price": row["entry_price"] if row is not None else None,
+                "current_price": row["current_price"] if row is not None else None,
+                "currency": ccy,
+                "pre_baseline": life["opened"] < self.baseline,
+                "realisations": sorted({r["realisation_id"] for r in sales
+                                        if isinstance(r["realisation_id"], str)}),
+                "lines": sorted(mine["ticker"]),
+            })
+
+        out = pd.DataFrame(rows, columns=[
+            "life", "company", "held_as", "accounts", "opened", "closed", "held_days", "state",
+            "sales", "realised", "to_date", "dividends", "funding", "total", "life_pct",
+            "shares_held", "held", "net_cost_per_share", "entry_price", "current_price", "currency", "pre_baseline",
+            "realisations", "lines"])
+        out = out.assign(_open=out["closed"].isna(),
+                         _when=out["closed"].fillna(out["opened"]))
+        return (out.sort_values(["_open", "_when", "life"], ascending=[False, False, True])
+                   .drop(columns=["_open", "_when"]).reset_index(drop=True))
+
+    def company_life_totals(self, company: str | None = None, start: str | None = None,
+                            end: str | None = None) -> dict[str, float]:
+        """Totals over every company life, or a selection of them. Unfiltered, `realised` is
+        realised() and `to_date` is unrealised(), reached by company rather than by line, and
+        `dividends` and `funding` are the income rows a life takes (`_life_income()`)."""
+        lv = self.company_lives(company=company, start=start, end=end)
+        return {"lives": int(len(lv)),
+                "open": int(lv["closed"].isna().sum()),
+                "realised": round(float(lv["realised"].sum()), 2),
+                "to_date": round(float(lv["to_date"].fillna(0).sum()), 2),
+                "dividends": round(float(lv["dividends"].sum()), 2),
+                "funding": round(float(lv["funding"].sum()), 2),
+                "total": round(float(lv["total"].sum()), 2)}
 
     def parcel(self, account: str, ticker: str) -> str:
         """The realisation a sale from this holding is filed under — THE ONE ANSWER, which the
@@ -1813,6 +2065,16 @@ class Book:
         df = df.sort_values(["_o", "date"], ascending=[True, False], kind="stable").drop(columns="_o")
         df["rate_date"] = self._income_rates()["rate_date"].reindex(df.index)
         return df.reset_index(drop=True)
+
+    def _per_pound(self, currency: str, day) -> float | None:
+        """`currency` per pound at `day`'s close, the Friday's for a weekend day, or None when
+        the record holds no such close (`rate_gaps()` names the date). One for sterling."""
+        if currency == "GBP":
+            return 1.0
+        on, rate = self._close_on(currency, day)
+        day = pd.Timestamp(day)
+        served = day - pd.Timedelta(days=max(0, day.weekday() - 4))
+        return rate if on is not None and pd.Timestamp(on) >= served else None
 
     def _close_on(self, currency: str, date) -> tuple[str | None, float | None]:
         """THE CLOSE A DATED CONVERSION TAKES: the newest live TradingView close of
@@ -2871,6 +3133,9 @@ class Book:
                         replaces
           deal          each share deal priced in sterling on a share in another currency, on its
                         own date: the close gives the share's own price (`deal_prices()`)
+          life          each sale, share leg still held, dividend and funding charge of an open
+                        company life priced in another currency, on its own date: the close
+                        puts it into that currency (`company_lives()`'s net cost per share)
           bet           each open spread-bet leg, on its own date, in its listing's currency
                         and its company's share listings' where either is not sterling: the
                         closes turn its stake into share-equivalents and its level into the
@@ -2918,6 +3183,19 @@ class Book:
             for cur in {own} | listed.get(ident.at[ticker, "company"], set()):
                 if cur != "GBP":
                     wanted.setdefault((cur, date.date().isoformat()), "bet")
+
+        priced_in = self.holdings(by="issuer").set_index("company")["currency"]
+        earned, _ = self._life_income()
+        for life in self._lives():
+            cur = priced_in.get(life["company"])
+            if life["closed"] is None and cur not in (None, "GBP"):
+                inc = earned[(life["company"], life["opened"])]
+                days = ([r["date"] for r in life["sales"]]
+                        + [r["date"] for r in life["buys"]
+                           if r["held_as"] == "shares" and r["open_leg"]]
+                        + [d for d, _ in inc["dividends"] + inc["funding"]])
+                for d in days:
+                    wanted.setdefault((cur, pd.Timestamp(d).date().isoformat()), "life")
 
         def newest(cur: str, date: str):
             on = spot[(spot["currency"] == cur) & (spot["date"] <= date)]
@@ -3643,6 +3921,11 @@ class Book:
         notes.append(f"dated rates: {len(owed)} owed a TradingView close")
         gaps.extend(f"rate owed — {g['currency']} {g['date']} ({g['why']}): no TradingView "
                     f"close on file for it" for g in owed)
+
+        # ---- A DIVIDEND'S LINE: what lets a company's life count it ---------------------
+        gaps.extend(f"dividend not assigned to a line — {r.date} {r.account}: {r.detail}"
+                    for r in self.D.ci_rows if r.category == "Dividend" and not r.ticker
+                    and pd.Timestamp(r.date) >= self.baseline)
 
         # ---- A BET LINE'S POINT: what turns a held bet into share-equivalents -----------
         L = self.ledger

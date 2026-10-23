@@ -1047,13 +1047,13 @@ def test_a_fetched_line_says_beside_its_date_whether_it_is_a_close_or_a_time(rep
 
 def test_every_rate_the_record_lacks_is_a_past_foreign_date_it_converts_at():
     """What `Book.rate_gaps()` names is work the record owes: a currency the book converts, a
-    date already past, one of the four kinds of date, and the rate it converts at today."""
+    date already past, one of the six kinds of date, and the rate it converts at today."""
     import pandas as pd
     from portfusion.engine import Book
     today = pd.Timestamp.today().normalize()
     for g in Book().rate_gaps():
         assert g["currency"] != "GBP" and pd.Timestamp(g["date"]) < today, g
-        assert g["why"] in ("quarter end", "income", "typed", "deal"), g
+        assert g["why"] in ("quarter end", "income", "typed", "deal", "bet", "life"), g
 
 
 def _a_lacking_date(store_copy):

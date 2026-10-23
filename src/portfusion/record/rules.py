@@ -492,6 +492,7 @@ class CostIncomeRow(NamedTuple):
     currency: str = ""
     local_amount: float | None = None
     rate: float | None = None   # the broker's, where its document states one; else the day's close
+    ticker: str = ""            # the line a dividend was paid on; blank on every other row
 
 ci_rows = [CostIncomeRow(*_r) for _r in schema.load("income")]
 
@@ -810,6 +811,12 @@ _crossed = ([f"{t.id} {t.ticker} is {KIND_OF_CODE[t.ticker]!r} in {t.acct}, a "
 if _unregistered or _crossed:
     raise ValueError("A LINE'S KIND IS NOT ITS ACCOUNT'S:\n  " + "\n  ".join(
         [f"{c} is on no securities.csv row, so has no kind" for c in _unregistered] + _crossed))
+# AN INCOME ROW'S LINE IS A REGISTERED CODE, or a company's life could not count the dividend.
+_unlined = [f"{r.date} {r.account} {r.detail!r}: ticker {r.ticker!r}" for r in ci_rows
+            if r.ticker and r.ticker not in KIND_OF_CODE]
+if _unlined:
+    raise ValueError("AN INCOME ROW NAMES A LINE securities.csv DOES NOT HOLD:\n  "
+                     + "\n  ".join(_unlined))
 # AND A SALE RELEASES COST BY ITS KIND: a spread-bet sale names the leg it
 # closed and releases that leg's entry cost; a share sale names none, because a pool has no legs,
 # and releases the pool's average (`engine.share_pools()`). Either the wrong way round loads and

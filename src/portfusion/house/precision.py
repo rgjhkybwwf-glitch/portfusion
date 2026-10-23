@@ -20,7 +20,8 @@ printing only.
 Imports nothing, so the desk reads it without loading the record.
 """
 
-LOCAL_PRICE_FIELDS = ("entry_price", "exit_price", "current_price", "traded_price")
+LOCAL_PRICE_FIELDS = ("entry_price", "exit_price", "current_price", "traded_price",
+                      "net_cost_per_share")
 
 LOCAL_PRICE_DP = {"USD": 2, "EUR": 2, "DKK": 2, "GBP": 4}
 DEFAULT_LOCAL_PRICE_DP = 2

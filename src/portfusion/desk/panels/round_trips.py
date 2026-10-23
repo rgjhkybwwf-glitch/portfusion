@@ -51,12 +51,26 @@ OWED = ("why_entered_owed", "why_exited_owed")
 DETAIL_COLUMNS = ("why_entered", "why_exited", "research_notes", "note")
 
 
+#: TWO VIEWS, kept apart: each holding's own sales at its own cost, or each company's life,
+#: shares and bets in every account from the first purchase to the final sale (`company_lives()`).
+VIEWS = ("holding", "life")
+VIEW_WORDS = {"holding": "holding", "life": "company life"}
+
+#: A COMPANY LIFE IN ITS OWN TERMS: what it is, when, what it made and how, then what is held and
+#: at what net cost. Its round trips and lines open in the detail.
+LIFE_COLUMNS = ("company", "held_as", "accounts", "state", "opened", "closed", "held_days",
+                "realised", "to_date", "dividends", "funding", "total", "life_pct", "held",
+                "net_cost_per_share", "current_price", "currency")
+LIFE_DETAIL_COLUMNS = ("realisations", "lines")
+
+
 def data() -> dict:
     return query()
 
 
 def query(ticker: str | None = None, account: str | None = None,
-          start: str | None = None, end: str | None = None, company: str | None = None) -> dict:
+          start: str | None = None, end: str | None = None, company: str | None = None,
+          view: str = VIEWS[0]) -> dict:
     """Narrow the closed positions. SELECTION, and the ENGINE does it.
 
     THE TOTALS FOLLOW THE SELECTION: narrowing to an account must change the
@@ -69,6 +83,10 @@ def query(ticker: str | None = None, account: str | None = None,
 
     `whole` is still carried so the screen can say what the selection is a part of.
     """
+    if view not in VIEWS:
+        raise ValueError(f"view {view!r}; Round Trips reads {VIEWS}")
+    if view == "life":
+        return _lives(start=start, end=end, company=company)
     b = engine.book()
     pick = dict(ticker=ticker, account=account, start=start, end=end, company=company)
     frame = b.with_reasoning(b.round_trips(**pick), opened="opened", closed="closed")
@@ -101,4 +119,35 @@ def query(ticker: str | None = None, account: str | None = None,
         "span": {"first": _shape.iso(every["closed"].min()),
                  "last": _shape.iso(every["closed"].max())},
         "total": len(frame),
+        **_views("holding"),
+    }
+
+
+def _views(view: str) -> dict:
+    return {"view": view, "views": list(VIEWS), "view_words": VIEW_WORDS}
+
+
+def _lives(start=None, end=None, company=None) -> dict:
+    """THE LIFE VIEW. A life spans accounts and codes, so it is narrowed by company and by the
+    day it closed only; the engine selects and totals."""
+    b = engine.book()
+    pick = dict(start=start, end=end, company=company)
+    frame = b.company_lives(**pick)
+    every = b.company_lives()
+    return {
+        "rows": _shape.rows(frame, ("life",) + LIFE_COLUMNS + LIFE_DETAIL_COLUMNS + ("pre_baseline",),
+                            dates=("opened", "closed")),
+        "columns": list(LIFE_COLUMNS),
+        "detail": list(LIFE_DETAIL_COLUMNS),
+        "totals": {k: _shape.plain(v) for k, v in b.company_life_totals(**pick).items()},
+        "whole": {k: _shape.plain(v) for k, v in b.company_life_totals().items()},
+        "narrowed": any(pick.values()),
+        "company": company or "",
+        "start": start or "",
+        "end": end or "",
+        "companies": sorted(set(every["company"])),
+        "span": {"first": _shape.iso(every["closed"].min()),
+                 "last": _shape.iso(every["closed"].max())},
+        "total": len(frame),
+        **_views("life"),
     }

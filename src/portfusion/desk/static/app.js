@@ -1078,8 +1078,9 @@ const MONEYCOL = ["cost", "value", "gain", "proceeds",
                   "opening_nav", "closing_nav", "capital_deployed", "return_income",
                   "change", "price_effect", "fx_effect", "transacted", "value_to",
                   "exposure", "nav", "opening_capital", "capital_employed", "capital_growth",
-                  "income", "amount", "cash"];
-const PCTCOL = ["gain_pct", "weight", "return", "price_move_pct", "ytd"];
+                  "income", "amount", "cash", "realised", "to_date", "dividends", "funding",
+                  "total"];
+const PCTCOL = ["gain_pct", "weight", "return", "price_move_pct", "ytd", "life_pct"];
 
 /* MOVEMENT, WHICH IS NOT PROVENANCE — house/palette.py's own words, over the two constants these
    colours come from. The word matters: "direction" is already a COLUMN on Trades holding
@@ -1101,7 +1102,8 @@ const PCTCOL = ["gain_pct", "weight", "return", "price_move_pct", "ytd"];
    that is the defect that got figures.py deleted. Colour's job here is scanning a column, and
    the Dashboard is a summary list rather than a table you scan. */
 const MOVEMENTCOL = ["gain", "gain_pct", "return",
-                     "change", "price_effect", "fx_effect", "price_move_pct"];
+                     "change", "price_effect", "fx_effect", "price_move_pct",
+                     "realised", "to_date", "total", "life_pct"];
 
 /* THE FOUR ADDED 6 SEP 2026 FOR What Changed, AND THE ONE HELD BACK. `change`, `price_effect`,
    `fx_effect` and `price_move_pct` are results: their sign says whether the book is better or
@@ -1508,7 +1510,7 @@ const pointsCell = (v) => `<td class="num">${points(v)}</td>`;
    "why" on Round Trips, "marks" and "why" side by side on Holdings. */
 const DETAIL = ["why_entered", "why_exited", "research_notes", "note", "source", "quality",
                 "broker_ref", "trade_id", "realisation_id", "contract", "funding", "fx_at_trade",
-                "fx_from", "marks"];
+                "fx_from", "marks", "realisations", "lines"];
 
 /* EACH WHY UNDER ITS HALF, oldest first, with the date of the trade it explains. An OWED half
    says so in words; a blank before the cut-off says nothing, because nothing is owed — the
@@ -1520,7 +1522,11 @@ const whyPart = (half) => (x) => {
                     `<dd>${esc(w.text)}</dd>`).join("")
     : x[`${half}_owed`] ? `<dt>${head(half)}</dt><dd><span class="tag gap">owed</span></dd>` : "";
 };
+const listPart = (c) => (x) => !(x[c] || []).length ? "" :
+  `<dt>${head(c)}</dt><dd>${x[c].map(esc).join(" · ")}</dd>`;
 const DETAIL_PART = {
+  realisations: listPart("realisations"),
+  lines: listPart("lines"),
   why_entered: whyPart("why_entered"),
   why_exited: whyPart("why_exited"),
   research_notes: (x) => !(x.research_notes || []).length ? "" :
@@ -1562,6 +1568,43 @@ const holdingDetail = (r, d) => {
     (r.reasons.length > 1 ? `<p><strong>${esc(x.ticker)}</strong></p>` : "") + h).join("")
     + detailList(r, ["marks"].filter((c) => d.detail.includes(c)), d.mark_columns);
 };
+
+/* ROUND TRIPS' TWO VIEWS, in the engine's words. */
+const viewField = (d) => filterField("view", `<select id="rt-view">${d.views.map((v) =>
+  `<option value="${esc(v)}"${v === d.view ? " selected" : ""}>${esc(d.view_words[v])}</option>`)
+  .join("")}</select>`);
+
+/* A COMPANY LIFE, Round Trips' second view: its shares and bets in every account, first purchase
+   to final sale. A life spans accounts and codes, so only company and dates narrow it. */
+function companyLives(d) {
+  const t = d.totals, w = d.whole;
+  return page({
+    scope: "each company, first purchase to final sale, shares and bets together",
+    status: d.narrowed ? [{ state: "note", tag: "selected", label: "Whole book",
+      body: quiet(`${w.lives} lives · life gain ${money(w.total)}`) }] : null,
+    figures: [["Lives", t.lives], ["Open", t.open],
+              ["Realised gain", money(t.realised)], ["Life gain", money(t.total)]],
+    filters: { clear: "rt-clear", fields: [
+      filterField("company", `<select id="rt-company"><option value="">all</option>${d.companies.map((c) =>
+        `<option${c === d.company ? " selected" : ""}>${esc(c)}</option>`).join("")}</select>`),
+      filterField("closed from", `<input type="date" id="rt-from" value="${esc(d.start)}"
+             min="${esc(d.span.first || "")}" max="${esc(d.span.last || "")}">`),
+      filterField("closed to", `<input type="date" id="rt-to" value="${esc(d.end)}"
+             min="${esc(d.span.first || "")}" max="${esc(d.span.last || "")}">`),
+      viewField(d),
+    ] },
+    work: table(d.rows, d.columns, "<th></th>",
+                (r) => `<td class="nowrap"><button class="link" data-trades="${esc(r.company)}">trades</button>${
+                  detailLink(detailList(r, d.detail))}</td>`,
+                { name: "company lives", afterRow: (r, span) => detailRow(detailList(r, d.detail), span),
+                  cells: {
+                    opened: (r) => `<td class="nowrap">${esc(day(r.opened))}${r.pre_baseline
+                      ? ` <span class="tag">before the record</span>` : ""}</td>`,
+                    held: (r) => `<td class="num">${r.held == null ? "—"
+                      : r.held.toLocaleString("en-GB")}</td>`,
+                    currency: (r) => r.currency == null ? `<td>—</td>` : cell("currency", r.currency) } }),
+  });
+}
 
 /* WHERE THE EXPOSURE SITS, under Holdings' table: the report's split by currency, region and
    sector, in its words, one bar per slice, largest first. The bar is drawn on a 0–1 scale, so
@@ -1616,6 +1659,7 @@ Object.assign(RENDER, {
   },
 
   "round-trips"(d) {
+    if (d.view === "life") return companyLives(d);
     /* THE FIGURES ARE THE SELECTION'S. They were the whole book's with the
        filtered ones relegated to a line underneath, so narrowing to an account changed the
        table and left the three headline numbers answering a question nobody had asked. When a
@@ -1641,6 +1685,7 @@ Object.assign(RENDER, {
                min="${esc(d.span.first || "")}" max="${esc(d.span.last || "")}">`),
         filterField("closed to", `<input type="date" id="rt-to" value="${esc(d.end)}"
                min="${esc(d.span.first || "")}" max="${esc(d.span.last || "")}">`),
+        viewField(d),
       ] },
       /* THE SAME "trades" LINK AS HOLDINGS', by company: the sales a round trip took, and the
          buys before them, are Trades' to show (Sells and Realisation ID left the page for it,
@@ -2707,13 +2752,16 @@ function wireStage5(name, fresh = true) {
   };
   /* THE FILTERS HELD FOR THIS PAGE are asked for again on arrival — only then, and only when
      they differ from what was drawn, so the redraw that answers them cannot ask again. */
+  /* A VIEW MAY DRAW FEWER BOXES (Round Trips by company life has no account or ticker), so
+     both read only the boxes on the page. */
   const hold = (ids) => {
-    HELD_FILTERS[name] = Object.fromEntries(ids.map((id) => [id, $(`#${id}`).value]));
+    HELD_FILTERS[name] = Object.fromEntries(ids.filter((id) => $(`#${id}`))
+      .map((id) => [id, $(`#${id}`).value]));
   };
   const restore = (ids, go) => {
     const held = HELD_FILTERS[name];
-    const els = ids.map((id) => $(`#${id}`));
-    if (!fresh || !held || els.some((el) => !el)) return;
+    const els = ids.map((id) => $(`#${id}`)).filter(Boolean);
+    if (!fresh || !held || !els.length) return;
     if (els.every((el) => el.value === (held[el.id] ?? ""))) return;
     els.forEach((el) => { el.value = held[el.id] ?? ""; });
     go();
@@ -2736,28 +2784,30 @@ function wireStage5(name, fresh = true) {
   }
   if (name === "round-trips") {
     const tk = $("#rt-ticker"), acct = $("#rt-acct"), co = $("#rt-company");
-    const from = $("#rt-from"), to = $("#rt-to"), clear = $("#rt-clear");
-    const ids = ["rt-acct", "rt-company", "rt-ticker", "rt-from", "rt-to"];
+    const from = $("#rt-from"), to = $("#rt-to"), clear = $("#rt-clear"), view = $("#rt-view");
+    const ids = ["rt-view", "rt-acct", "rt-company", "rt-ticker", "rt-from", "rt-to"];
     const go = () => {
       hold(ids);
-      reload(`/api/round-trips?ticker=${encodeURIComponent(tk.value)}`
+      reload(`/api/round-trips?view=${encodeURIComponent(view ? view.value : "holding")}`
+        + `&ticker=${encodeURIComponent(tk ? tk.value : "")}`
         + `&company=${encodeURIComponent(co ? co.value : "")}`
-        + `&account=${encodeURIComponent(acct.value)}`
+        + `&account=${encodeURIComponent(acct ? acct.value : "")}`
         + `&start=${encodeURIComponent(from ? from.value : "")}`
         + `&end=${encodeURIComponent(to ? to.value : "")}`);
     };
+    if (view) view.addEventListener("change", go);
     if (tk) tk.addEventListener("change", go);
     if (acct) acct.addEventListener("change", go);
     /* A COMPANY CHOSEN STARTS ITS TICKER AFRESH, and the page comes back with that company's
        codes in the Ticker box (14 Oct 2026). */
-    if (co) co.addEventListener("change", () => { tk.value = ""; go(); });
+    if (co) co.addEventListener("change", () => { if (tk) tk.value = ""; go(); });
     /* `change` and not `input`: a date input fires on every keystroke while a year is being
        typed, and each one would be a request for a range nobody meant. */
     if (from) from.addEventListener("change", go);
     if (to) to.addEventListener("change", go);
     if (clear) clear.addEventListener("click", () => {
       delete HELD_FILTERS[name];
-      reload("/api/round-trips");
+      reload(`/api/round-trips?view=${encodeURIComponent(view ? view.value : "holding")}`);
     });
     restore(ids, go);
   }
