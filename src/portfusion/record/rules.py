@@ -21,6 +21,7 @@ from typing import NamedTuple
 # schema.TABLES: a new table cannot be left out.
 # ==============================================================================================
 from portfusion.record import schema         # THE SCHEMA — column types, and it validates on load
+from portfusion.record import order as _order
 
 if not schema.STORE.is_dir():
     raise SystemExit(
@@ -726,6 +727,7 @@ if _reading_wrong:
     raise ValueError("AN ACCOUNT READING IS NOT ITS KIND'S:\n  " + "\n  ".join(_reading_wrong))
 
 
+
 # RECONSTRUCTED BASELINE HOLDINGS, for an account with no statement at the baseline: the
 # quantities held then, at the nearest statement's prices. "Price" is GBP value per share as the
 # broker reports it, FX already embedded, so FX = 1.0. `schema.BASELINE_RECON` says more.
@@ -737,19 +739,12 @@ JOURNAL_FIELDS = tuple(f.name for f in schema.TABLES["journal"].fields)
 
 
 def next_free_ids() -> dict:
-    """The next free row id per table: one above the highest on file, and never below settings.csv's
-    `trade_id_floor`, so a deleted row's id is not handed out again. A multi-leg fill takes a letter
-    suffix (T-nnnA), so the scan tolerates one.
+    """The next free row id per table, one above the last: what a proposed row is called until it
+    is written, when the door gives it its place in date order (`record/order.py`).
 
-    ONE ALLOCATOR, for the bench and the IG sweep alike: two copies of it had drifted, and only one
-    of them knew the floor.
+    ONE ALLOCATOR, for the bench and the IG sweep alike: two copies of it had drifted.
     """
-    nt = max((int(m.group(1)) for t in buys if (m := _re.fullmatch(r"T-(\d+)[A-Z0-9]*", t.trade_id))),
-             default=0)
-    if (floor := _re.fullmatch(r"T-(\d+)", SETTINGS.get("trade_id_floor", ""))):
-        nt = max(nt, int(floor.group(1)) - 1)
-    ne = max((int(m.group(1)) for e in sales if (m := _re.fullmatch(r"E-(\d+)", e.sale_id))), default=0)
-    return {"buys": f"T-{nt + 1:03d}", "sales": f"E-{ne + 1:03d}"}
+    return {"buys": f"T-{len(buys) + 1:03d}", "sales": f"E-{len(sales) + 1:03d}"}
 
 
 def store_rows() -> dict:
@@ -945,3 +940,16 @@ def reload_store() -> None:
 # `Book.quarter_lines()` reads.
 QSNAP_ROWS = [tuple(r) for r in _qsnap]
 
+# THE RECORD READS AS IT HAPPENED (`record/order.py`): every event table in its date order, and a
+# buy's or a sale's id its place in it. The doors write so; a hand edit that does not stops here.
+# LAST, so a row that is wrong in itself is named for that before it is named for where it sits.
+_out_of_order = []
+for _t in _order.DATED:
+    _h, _rows = schema.TABLES[_t].header, schema.load(_t)
+    if (_at := _order.out_of_order(_t, _h, _rows, ACCOUNT_ORDER)) is not None:
+        _out_of_order.append(f"{_t}.csv row {_at} is dated before the row above it")
+    elif _t in _order.NUMBERED and (_at := _order.misnumbered(_t, _h, _rows)) is not None:
+        _out_of_order.append(f"{_t}.csv row {_at}'s id is not its place in date order")
+if _out_of_order:
+    raise ValueError("THE RECORD IS NOT IN DATE ORDER; `portfusion migrate` puts a book in it:\n  "
+                     + "\n  ".join(_out_of_order))

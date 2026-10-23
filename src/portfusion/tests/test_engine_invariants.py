@@ -26,7 +26,7 @@ import pytest
 
 from portfusion.record import rules as D
 from portfusion.engine import BASELINE_ASOF, MEASURE_BASIS, BasisError, Book, roll_up
-from harness import needs
+from harness import needs, write_rows
 
 PENNY = 0.01
 
@@ -393,7 +393,6 @@ def test_a_line_sold_outright_inside_the_window_lands_at_nothing(store_copy):
 
     Built on a copy: the one-account share line with the newest mark sold outright on that
     mark's day, at 90% of its previous mark."""
-    import csv
     from portfusion.record import rules
     book = Book()
     frame = book.changes_since()
@@ -411,10 +410,10 @@ def test_a_line_sold_outright_inside_the_window_lands_at_nothing(store_copy):
     price = round(previous * 0.9, 6)
     proceeds = round(line["value_to"] * price / now, 2)      # at the rate the line ends at
     cur = book._identity().set_index("ticker")["currency"][line["ticker"]]   # the mark's currency
-    with (store_copy / "sales.csv").open("a", newline="", encoding="utf-8") as fh:
-        csv.writer(fh, lineterminator="\n").writerow(
-            ["E-999", line["priced_at"], account, line["ticker"], qty, "", price, cur, "",
-             proceeds, "a test sale", "", book.parcel(account, line["ticker"]), "", ""])
+    write_rows("sales", {
+        "sale_id": "E-999", "date": line["priced_at"], "account": account, "ticker": line["ticker"],
+        "qty": qty, "traded_price": price, "cur": cur, "proceeds": proceeds,
+        "source": "a test sale", "realisation_id": book.parcel(account, line["ticker"])})
     rules.reload_store()
     after = Book()
     rows = {r["mark_key"]: r for r in after.changes_since().to_dict("records")}

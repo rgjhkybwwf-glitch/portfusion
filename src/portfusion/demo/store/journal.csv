@@ -17,7 +17,7 @@ at,route,op,table,rows,ref,detail
 2026-09-30T18:00:00,baseline,open,cash-readings,2,,rows on file when the journal opened
 2026-09-30T18:00:00,baseline,open,research-notes,0,,rows on file when the journal opened
 2026-09-30T18:00:00,baseline,open,quarter-results,12,,rows on file when the journal opened
-2026-09-30T18:00:00,baseline,open,settings,13,,rows on file when the journal opened
+2026-09-30T18:00:00,baseline,open,settings,12,,rows on file when the journal opened
 2026-09-30T18:00:00,baseline,open,contracts,4,,rows on file when the journal opened
 2026-03-31T17:30:00,freeze,append,quarter-snapshots,4,2026-03-31,"4 row(s) freezing 2026-03-31, from the engine"
 2026-03-31T17:30:00,freeze,append,quarter-nav,4,2026-03-31,"4 row(s) freezing 2026-03-31, from the engine"

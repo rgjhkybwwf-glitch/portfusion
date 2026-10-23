@@ -185,8 +185,8 @@ def test_an_ig_close_naming_its_leg_is_written_and_the_leg_stops_being_held(
         realisation_id=leg["realisation_id"], closes=leg["trade_id"], note="n")}]
     _bench.save(item)
 
-    _commit.commit(item["id"])
-    assert rules.EXIT_LEG_MATCH[_EID] == leg["trade_id"]
+    written = _commit.commit(item["id"])["ids"][_EID]     # its place in date order
+    assert rules.EXIT_LEG_MATCH[written] == leg["trade_id"]
     ledger = engine.Book().ledger
     assert not ledger.loc[ledger["id"] == leg["trade_id"], "open_leg"].iloc[0], \
         "the leg the sale closed is still held"
@@ -654,7 +654,8 @@ def _recorded_share_sale():
 
 def _sell_shares(item, tmp_path, monkeypatch, ref, acct, ticker, qty, proceeds):
     """Commit one share sale through the bench, as a contract note gives it: one exits row, its
-    parcel from `Book.parcel()`, no leg. Returns the store's other tables as they were."""
+    parcel from `Book.parcel()`, no leg. Returns the store's other tables as they were, and every
+    sale id as it now is (`{was: now}`): the new sale's under `_EID`, and those its date moved."""
     from portfusion import engine
     from portfusion.record import schema
     from portfusion.desk.doors import commit as _commit
@@ -667,8 +668,8 @@ def _sell_shares(item, tmp_path, monkeypatch, ref, acct, ticker, qty, proceeds):
         realisation_id=engine.Book().parcel(acct, ticker), closes="", note="n")}]
     _bench.save(item)
     others = {t: schema.TABLES[t].path.read_bytes() for t in ("buys", "realisations")}
-    _commit.commit(item["id"])
-    return others
+    out = _commit.commit(item["id"])
+    return others, {**out["renumbered"], **out["ids"]}
 
 
 def test_a_further_trim_of_a_pool_is_one_row_and_moves_no_earlier_sale(
@@ -684,13 +685,15 @@ def test_a_further_trim_of_a_pool_is_one_row_and_moves_no_earlier_sale(
     earlier = {e: was.cost_released[e] for e in earlier_ids}
     qty = int(held["qty"] // 2)
 
-    others = _sell_shares(item, tmp_path, monkeypatch, "TESTREF5", account, ticker,
-                          qty, 4990.00)
+    others, now_id = _sell_shares(item, tmp_path, monkeypatch, "TESTREF5", account, ticker,
+                                  qty, 4990.00)
 
     now = engine.Book()
-    assert now.D.REALISATION_BY_EXIT[_EID] == parcel, "the trim did not join its holding"
-    assert now.cost_released[_EID] == round(held["cost"] * qty / held["qty"], 2)
-    assert {e: now.cost_released[e] for e in earlier} == earlier, "an earlier sale moved"
+    sale = now_id[_EID]
+    assert now.D.REALISATION_BY_EXIT[sale] == parcel, "the trim did not join its holding"
+    assert now.cost_released[sale] == round(held["cost"] * qty / held["qty"], 2)
+    assert {e: now.cost_released[now_id.get(e, e)] for e in earlier} == earlier, \
+        "an earlier sale moved"
     after = now.holdings(account=account, by="ticker").set_index("ticker").loc[ticker]
     assert after["qty"] == held["qty"] - qty
     for t, b in others.items():
@@ -707,13 +710,13 @@ def test_a_full_exit_is_one_row_and_the_holding_is_gone(item, store_copy, tmp_pa
     was = engine.Book()
     held = was.holdings(account=account, by="ticker").set_index("ticker").loc[ticker]
 
-    _sell_shares(item, tmp_path, monkeypatch, "TESTREF6", account, ticker,
-                 int(held["qty"]), 6000.00)
+    _others, now_id = _sell_shares(item, tmp_path, monkeypatch, "TESTREF6", account, ticker,
+                                   int(held["qty"]), 6000.00)
 
     now = engine.Book()
     assert ticker not in set(now.holdings(account=account, by="ticker")["ticker"])
     rt = now.round_trips().set_index("realisation_id") \
-            .loc[now.D.REALISATION_BY_EXIT[_EID]]
+            .loc[now.D.REALISATION_BY_EXIT[now_id[_EID]]]
     assert round(rt["cost"], 2) == round(held["cost"], 2)
     assert rt["company"] == held["company"] and rt["opened"] == held["opened"]
     assert rt["fully_closed"]
@@ -2299,8 +2302,10 @@ def test_a_written_consolidation_moves_the_holding_alone_and_reads_as_an_adjustm
     deployed = engine.Book().capital_deployed()
     held = _adjusted(item, 2, 1)
     acct, ticker = item["rows"][0]["values"]["account"], item["rows"][0]["values"]["ticker"]
-    written = _bench.save(propose.refresh_derived(item))["rows"][0]["values"]["trade_id"]
-    assert _commit.commit(item["id"])["written"] == {"buys": 1}
+    proposed = _bench.save(propose.refresh_derived(item))["rows"][0]["values"]["trade_id"]
+    out = _commit.commit(item["id"])
+    assert out["written"] == {"buys": 1}
+    written = out["ids"][proposed]
 
     now = (sum(t.qty or 0 for t in D.buys if (t.acct, t.ticker) == (acct, ticker))
            - sum(e.qty or 0 for e in D.sales if (e.acct, e.ticker) == (acct, ticker)))
@@ -2309,6 +2314,42 @@ def test_a_written_consolidation_moves_the_holding_alone_and_reads_as_an_adjustm
     assert b.capital_deployed().equals(deployed), "a consolidation moved money"
     a = b.activity()
     assert a.loc[a["trade_id"] == written, "direction"].tolist() == ["Adjustment"]
+
+
+def test_a_backdated_row_renumbers_what_follows_and_the_review_says_so_first(
+        item, store_copy, tmp_path, monkeypatch):
+    """A buy written before others already on file takes its place in date order, every buy after
+    it moves up one, and a sale's `closes` follows the leg it named. The Bench's review names the
+    moves before the press; the journal and the archived item say what was written."""
+    import json
+    from portfusion.desk.doors import commit as _commit
+    from portfusion.desk.intake import propose
+    from portfusion.desk.panels import bench as panel
+    from portfusion.record import rules as D, schema
+    monkeypatch.setattr(_commit, "ARCHIVE", tmp_path / "archive")
+    _adjusted(item, 2, 1)
+    day = item["rows"][0]["values"]["date"]
+    after = [t.trade_id for t in D.buys if str(t.date) > day]
+    if not after:
+        pytest.skip("no buy on file is dated after the loaded book's first held share's last event")
+    leg_of = {e.sale_id: e.closes for e in D.sales if e.closes}
+    _bench.save(propose.refresh_derived(item))
+    said = panel.detail(item["id"])["renumbers"]
+    assert said and said[0].startswith(f"{after[0]} "), said
+
+    out = _commit.commit(item["id"])
+    up = {t: f"T-{int(t[2:]) + 1:03d}" for t in after}
+    assert [t.trade_id for t in D.buys] == [f"T-{n:03d}" for n in range(1, len(D.buys) + 1)]
+    assert {e.sale_id: e.closes for e in D.sales if e.closes} == {
+        s: up.get(leg, leg) for s, leg in leg_of.items()}, "a sale lost the leg it closes"
+    written = out["ids"][next(iter(out["ids"]))]
+    assert written == f"T-{int(after[0][2:]):03d}", "the new buy took the first moved place"
+    replaced = {r[3]: r[4] for r in schema.load("journal") if r[1:3] == ("bench", "replace")}
+    assert replaced.get("buys") == len(after), replaced
+    if any(leg in up for leg in leg_of.values()):
+        assert replaced.get("sales"), "a sale's closes moved and the journal does not say so"
+    archived = json.loads((tmp_path / "archive" / f"{item['id']}.json").read_text())
+    assert archived["rows"][0]["values"]["trade_id"] == written
 
 
 def test_a_contract_reopened_in_the_same_item_is_not_retired():

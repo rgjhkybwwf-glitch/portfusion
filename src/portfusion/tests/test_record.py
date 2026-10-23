@@ -354,14 +354,6 @@ def test_research_note_tickers_resolve_to_something_held(D):
 T_QTY = 7
 
 
-def test_a_deleted_trade_id_is_never_handed_out_again(D):
-    """settings.csv's `trade_id_floor` holds the next free trade id above every id the book has
-    used, so a deleted row's number is not reused by the bench or the IG sweep."""
-    floor = D.SETTINGS.get("trade_id_floor")
-    if floor:
-        assert int(D.next_free_ids()["buys"][2:]) >= int(floor[2:])
-
-
 def test_a_record_that_does_not_begin_on_a_1_january_is_refused(store_copy):
     """The year's return is measured from the 31 December before it, so a record beginning on any
     other day is refused on load, rather than as a KeyError on the first page asking for a return."""

@@ -5,6 +5,15 @@ prints it.
 
 ## Unreleased
 
+- **The record reads as it happened, and a buy's or a sale's id is its place.** Every event table
+  is in date order, then the account's place in the register, then ticker. A row entered late goes
+  where its date puts it, and the buys or sales after it are renumbered, a sale's `closes` and an
+  id a note quotes following; the Bench's review names the ids that move before the press. The
+  loader refuses a table out of order or an id not its place, and `portfusion migrate` sorts and
+  renumbers a book, journalling what it moved under a new `migrate` route. `settings.csv`'s
+  `trade_id_floor` and the letter suffixes of a fill in several legs are retired.
+- **`portfusion migrate --write` carries a book through every move it still needs** before
+  opening and auditing it, so a book more than one release behind is not refused between them.
 - **A new book passes its own audit**: the change-totals audit asks only of the kinds a book
   holds, and the price-feed audit waits for a book's first prices.
 - **The journal's opening boundary is tested on any book**: a book with no rows written before

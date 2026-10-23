@@ -7,6 +7,10 @@ table `record/schema.py` registers, and the three append-only histories.
 Python literal. **A new column or table is a `record/schema.py` change**, not a CSV one: the
 schema checks every row on load, and a bad cell fails naming its table, row and column.
 
+**Every event table reads as it happened**: by date, then the account's place in the register,
+then ticker (`record/order.py`). A door writes a row where its date puts it; the loader refuses a
+table out of that order, and `portfusion migrate` puts a book in it.
+
 **`journal.csv` is about the record, not part of it**: one row per write, never an input to a
 figure. A hand edit is allowed, and carries a `hand` journal row saying what it was.
 
@@ -24,7 +28,7 @@ happened, never an instruction or how a figure was reached; those go in the comm
 | `points_per_unit` · `shares_per_unit` | on a spread-bet line: how many points make one unit of its listing's price (100 where IG quotes in cents or pence), and how many shares one unit of the listing stands for (blank is one; a depositary receipt's ratio). With the stake they make a bet's share-equivalents |
 | `cur` | on buys and sales, the currency the document states `traded_price` in: `GBP` or the share's own |
 | `cost` · `level_points` | on a buy: a share's settled sterling, or a spread bet's entry level in points; the other is blank |
-| `trade_id` · `sale_id` | `T-NNN` and `E-NNN`; a fill in several legs takes letter suffixes, `T-NNNA`, `T-NNNB` |
+| `trade_id` · `sale_id` | `T-NNN` and `E-NNN`, the row's place in date order: given when the row is written, and moved, with every `closes` and note that names it, when an earlier-dated row is written before it |
 | evidence class | `rules.EVIDENCE_CLASSES`, printed in the glossary's §9 |
 | `broker_ref` | the deal's own reference (a contract number, a deal id), never a SEDOL; blank where no document prints one. The `source` then names only the document's kind and date (`trade_source()`) |
 

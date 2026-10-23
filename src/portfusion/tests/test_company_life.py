@@ -12,7 +12,7 @@ import csv
 import pandas as pd
 import pytest
 
-from harness import an_account, free_id, needs
+from harness import an_account, free_id, needs, write_rows
 from portfusion.engine import BASELINE, Book
 
 
@@ -97,13 +97,8 @@ def _on(days: int) -> str:
 
 
 def _write(store, table: str, *rows: dict) -> None:
-    """Append `rows` to the copy's `table`, each in the table's own column order."""
-    from portfusion.record import schema
-    header = schema.TABLES[table].header
-    with (store / f"{table}.csv").open("a", newline="", encoding="utf-8") as fh:
-        w = csv.writer(fh, lineterminator="\n")
-        for r in rows:
-            w.writerow(["" if r.get(c) is None else r.get(c) for c in header])
+    """`rows` into the copy's `table`, as a door writes them."""
+    write_rows(table, *rows)
 
 
 class _Company:
@@ -114,7 +109,7 @@ class _Company:
     def __init__(self, store, root: str, price: float):
         self.store, self.root = store, root
         self.name, self.share, self.bet = f"{root.title()} Mills plc", f"{root}.L", f"{root} SB"
-        self.trades, self.exits = 0, 0
+        self.trades, self.exits, self.legs = 0, 0, {}
         _write(store, "companies", {"company": self.name, "sector": "Industrials", "region": "UK"})
         _write(store, "securities",
                {"ticker": self.share, "company": self.name, "held_as": "shares", "currency": "GBP",
@@ -156,7 +151,17 @@ class _Company:
         _write(self.store, "buys", {
             "trade_id": tid, "date": day, "source": self.SOURCE, "account": an_account("spread bet"),
             "ticker": self.bet, "cur": "GBP", "stake": stake, "level_points": level, "contract": contract})
+        self.legs[tid] = (day, contract, level)
         return tid
+
+    def _leg_now(self, leg: str) -> str:
+        """The id `leg` holds now: an id is its place in date order, and a row written since may
+        have moved it."""
+        day, contract, level = self.legs[leg]
+        with (self.store / "buys.csv").open(newline="", encoding="utf-8") as fh:
+            return next(r["trade_id"] for r in csv.DictReader(fh)
+                        if (r["date"], r["contract"], float(r["level_points"] or 0))
+                        == (day, contract, float(level)))
 
     def bet_close(self, day, stake, level, leg, parcel) -> str:
         eid = free_id("sales", self.exits)
@@ -164,7 +169,7 @@ class _Company:
         _write(self.store, "sales", {
             "sale_id": eid, "date": day, "account": an_account("spread bet"), "ticker": self.bet,
             "stake": stake, "traded_price": level, "cur": "GBP", "proceeds": round(stake * level, 2),
-            "source": self.SOURCE, "realisation_id": parcel, "closes": leg})
+            "source": self.SOURCE, "realisation_id": parcel, "closes": self._leg_now(leg)})
         return eid
 
 

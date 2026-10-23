@@ -341,8 +341,9 @@ def test_a_book_answers_from_the_store_it_was_built_from(tmp_path):
     # reading and it has no row in the cash readings.
     observed = {o.account for o in rules.cash_readings}
     account = next(a for a in rules.ACCOUNT_ORDER if a in observed)
-    # AFTER EVERY READING OF EITHER KIND, so the planted cash is the account's newest.
-    newest = max([o.as_of for o in rules.cash_readings if o.account == account]
+    # AFTER EVERY READING OF EITHER KIND, so the planted cash is the account's newest, and after
+    # every account's cash, so it is in date order at the file's end.
+    newest = max([o.as_of for o in rules.cash_readings]
                  + [r.as_of for r in rules.ac_rows if r.acct == account and r.as_of])
     after = (newest + _dt.timedelta(days=1)).isoformat()
     with (target / "cash-readings.csv").open("a", encoding="utf-8", newline="") as fh:

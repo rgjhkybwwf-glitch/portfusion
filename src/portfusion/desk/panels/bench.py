@@ -19,8 +19,8 @@ FORM_COLUMNS = tuple(dict.fromkeys(f.name for t in bench.TABLES + bench.REGISTER
                                    for f in _schema.TABLES[t].fields))
 
 #: WHAT THE REVIEW SAYS BESIDE AN ITEM'S ROWS: an IG contract its sale leaves with no open leg,
-#: whose live price the same write retires.
-REVIEW_COLUMNS = ("retires",)
+#: whose live price the same write retires, and the ids a backdated row moves.
+REVIEW_COLUMNS = ("retires", "renumbers")
 
 
 def data() -> dict:
@@ -121,6 +121,7 @@ def detail(item_id: str) -> dict:
     item = bench.get(item_id)
     return {"item": item, "gates": bench.gates(item),
             "retires": _guarded(lambda: commit.retired_by(item.get("rows") or [])),
+            "renumbers": _guarded(lambda: commit.renumbering(item.get("rows") or [])),
             # THE REST OF THE BENCH, in its order, each ready or not — so a finished item can
             # offer the next one still owed, or the review once none is.
             "bench": [{"id": s["id"], "title": s["title"], "ready": s["ready"]}

@@ -11,7 +11,7 @@ What keeps that honest is structural:
     never taken as evidence of approval.
   - EVERY ROW GOES THROUGH `schema`, the loader's own door. A row that would not load is not
     written.
-  - THE WRITE IS VERIFIED AND ROLLED BACK. Every target's bytes are held, the rows appended and
+  - THE WRITE IS VERIFIED AND ROLLED BACK. Every target's bytes are held, the rows placed and
     the table reloaded. A failed reload, a row count that moved by anything but the rows added,
     or a row that does not read back identically restores EVERY touched file and refuses.
   - THE BOOK MUST STILL LOAD, or nothing is written: `_the_book_loads()`, last in the envelope.
@@ -19,13 +19,15 @@ What keeps that honest is structural:
     inbox, so writing and archiving are one operation and `written` exists only in memory
     between them. `tests/test_inbox.py` fails on any item left on disk in that state.
 
-It never edits or deletes a row. A mistake is corrected by a further row, or by a hand edit
-with a commit message saying why; `git revert` is the undo, which is why the store is tracked.
+It never deletes a row, and edits one only to move its id when an earlier-dated row takes its
+place (`record/order.py`). A mistake is corrected by a further row, or by a hand edit with a
+commit message saying why; `git revert` is the undo, which is why the store is tracked.
 """
 from __future__ import annotations
 
 import contextlib
 import csv
+from collections import Counter
 import datetime as _dt
 import functools
 import io
@@ -35,7 +37,7 @@ import re
 import shutil
 
 from portfusion.desk.intake import bench
-from portfusion.record import schema
+from portfusion.record import order, schema
 
 #: The book this door writes to (`schema.BOOK`): its inbox, its archive.
 BOOK = schema.BOOK
@@ -53,7 +55,7 @@ TERMINAL = ("written", "archived")
 def atomic(*paths: pathlib.Path):
     """Hold these files' bytes, and restore EVERY one of them if the block raises.
 
-    Both store doors use it: `commit()` for an append, `marks.py` for a replace.
+    Both store doors use it: `commit()` to place a row, `marks.py` to replace one.
 
     IT LIVES HERE, NOT IN A MODULE OF ITS OWN, FOR THE GUARD'S SAKE. The scan in
     `tests/desk/test_boundaries.py` finds store writes by resolving each write's target back to
@@ -136,6 +138,89 @@ def _append(path: pathlib.Path, original: bytes, lines: list[str]) -> None:
     eol = _eol(original)
     head = original if not original or original.endswith(b"\n") else original + eol
     path.write_bytes(head + b"".join(line.encode("utf-8") + eol for line in lines))
+
+
+def paths_placing(tables) -> list[pathlib.Path]:
+    """What `place()` may write for these tables: them, and both of the buys and sales when
+    either is among them, since a new buy renumbers what follows it in both."""
+    names = set(tables)
+    if names & set(order.NUMBERED):
+        names |= set(order.NUMBERED)
+    return [schema.TABLES[t].path for t in sorted(names)]
+
+
+def place(new: dict[str, list[list[str]]]) -> tuple[dict, dict]:
+    """Write each table's `new` rows (rendered cells) into their places, renumbering as
+    `record/order.py` says. A table with no date order takes them at its end. Returns the ids
+    that moved, `{table: [(was, now)]}` (a new row's `was` is the id it was proposed with), and
+    how many rows already on file each table had rewritten, `{table: n}`.
+
+    Inside the caller's `atomic()`, which holds `paths_placing()`. An untouched line keeps its
+    bytes, and the file its own line ending."""
+    files, moves, rewritten = placed(new)
+    for path, data in files.items():
+        if data != path.read_bytes():
+            path.write_bytes(data)
+    return moves, rewritten
+
+
+def renumbering(rows: list[dict]) -> list[str]:
+    """The ids these Bench rows would move, in words, nothing written: what the Bench's review
+    shows before the press."""
+    new = {}
+    for row in rows:
+        if row.get("table") in order.NUMBERED and (row.get("values") or {}).get("date"):
+            new.setdefault(row["table"], []).append(_rendered(row["table"], row.get("values") or {}))
+    if not new:
+        return []
+    return order.said(_renumbered_only(new, placed(new)[1]))
+
+
+def _renumbered_only(new: dict, moves: dict) -> dict:
+    """`moves` without the new rows' own ids: a new row is added, and only a row already on file
+    is renumbered."""
+    proposed = {c[schema.TABLES[t].header.index(order.NUMBERED[t][0])]
+                for t, cells in new.items() if t in order.NUMBERED for c in cells}
+    return {t: kept for t, pairs in moves.items()
+            if (kept := [p for p in pairs if p[0] not in proposed])}
+
+
+def placed(new: dict[str, list[list[str]]]):
+    """`place()`'s answer, nothing written: `({path: bytes}, moves, rewritten)`, each file as it
+    would be. A door that writes for itself writes these bytes. Raises ValueError on a file with
+    a cell that spans lines, which is moved by hand."""
+    from portfusion.record import rules
+    accounts = list(rules.ACCOUNT_ORDER) + [c[0] for c in new.get("accounts", [])]
+    files = {}
+    for path in paths_placing(new):
+        table = path.stem
+        original = path.read_bytes()
+        text = original.decode("utf-8")
+        lines = text.splitlines()
+        kept = [ln for ln in lines[1:] if ln.strip()]
+        rows = list(csv.reader(io.StringIO(text)))[1:]
+        rows = [r for r in rows if r]
+        if len(rows) != len(kept):
+            raise ValueError(f"{path.name} holds a cell that spans lines: move it by hand")
+        line_of = {id(r): line for r, line in zip(rows, kept)}
+        header = schema.TABLES[table].header
+        rows = (order.placed(table, header, rows, new.get(table, []), accounts)
+                if table in order.DATED else rows + new.get(table, []))
+        files[table] = [path, original, lines[0] if lines else "", rows, line_of]
+    moves: dict[str, list] = {}
+    if set(order.NUMBERED) <= set(files):
+        files["buys"][3], files["sales"][3], moves = order.renumbered(
+            (schema.TABLES["buys"].header, files["buys"][3]),
+            (schema.TABLES["sales"].header, files["sales"][3]))
+    out, rewritten = {}, {}
+    for table, (path, original, head, rows, line_of) in files.items():
+        eol = _eol(original).decode()
+        out[path] = (eol.join([head] + [line_of.get(id(r)) or _csv_line(r) for r in rows])
+                     + eol).encode("utf-8")
+        # EVERY ROW NOT ITS OLD LINE, less the new ones: rows on file a renumbering rewrote.
+        if n := sum(1 for r in rows if id(r) not in line_of) - len(new.get(table, [])):
+            rewritten[table] = n
+    return out, {t: m for t, m in moves.items() if m}, rewritten
 
 
 class Refused(Exception):
@@ -245,15 +330,12 @@ def _reasoning_targets(item: dict) -> dict:
 def _write_reasoning(targets: dict) -> list[str]:
     """Append one `store/reasoning.csv` row per ticker in `targets`, and return the tickers.
 
-    APPENDED, NEVER REPLACED, as every event table is. A second why on a name is a row of its
-    own beside the first, so the thesis a position was opened on is still there when it is added
+    ADDED, NEVER REPLACED, as every event table is, where its date puts it. A second why on a name
+    is a row of its own beside the first, so the thesis a position was opened on is still there when it is added
     to or trimmed, and the desk shows both.
     """
-    from portfusion.record import schema
-    path = schema.TABLES["reasoning"].path
-    original = path.read_bytes()
-    _append(path, original, [_csv_line(_rendered("reasoning", {"ticker": ticker, **values}))
-                             for ticker, values in sorted(targets.items())])
+    place({"reasoning": [_rendered("reasoning", {"ticker": ticker, **values})
+                         for ticker, values in sorted(targets.items())]})
     return sorted(targets)
 
 
@@ -342,7 +424,7 @@ def commit(item_id: str) -> dict:
     before: dict = {}
     for table in by_table:
         path = schema.TABLES[table].path
-        before[table] = (path, path.read_bytes(), len(schema.load(table)))
+        before[table] = (path, path.read_bytes(), schema.load(table))
 
     # The why shares the envelope, so no thesis can outlive a trade that failed to land.
     targets = _reasoning_targets(item)
@@ -362,31 +444,42 @@ def commit(item_id: str) -> dict:
     # A NEW CONTRACT'S FIRST MARK, read from IG when its set-up was pressed (`bench.for_event`).
     marking = list(item.get("marks") or [])
     held = list(dict.fromkeys([path for path, _, _ in before.values()]
+                              + paths_placing(by_table)
                               + ([reasoning_path] if targets else [])
                               + (_observations_paths() if reading else [])
                               + (marks.retire_paths() if retiring else [])
                               + (marks.first_paths() if marking else [])
                               + [schema.TABLES["journal"].path]))
     with _record_follows_the_files(), atomic(*held):
+        # EACH ROW IN ITS PLACE (`place()`).
+        try:
+            moved, rewritten = place(by_table)
+        except ValueError as e:
+            raise Refused(f"nothing was written — {e}") from e
+        final = {was: now for pairs in moved.values() for was, now in pairs}
+        moved = _renumbered_only(by_table, moved)
         for table, cells in by_table.items():
-            path, original, _ = before[table]
-            _append(path, original, [_csv_line(c) for c in cells])
+            cells[:] = [order.followed(table, schema.TABLES[table].header, row, final)
+                        for row in cells]
 
         # VERIFY BY READING IT BACK, through the loader the build uses.
         for table, cells in by_table.items():
             _, _, was = before[table]
             loaded = schema.load(table)
-            if len(loaded) != was + len(cells):
-                raise Refused(f"{table}.csv went from {was} to {len(loaded)} rows, expected "
-                              f"{was + len(cells)}")
+            if len(loaded) != len(was) + len(cells):
+                raise Refused(f"{table}.csv went from {len(was)} to {len(loaded)} rows, expected "
+                              f"{len(was) + len(cells)}")
             fields = schema.TABLES[table].fields
-            for wrote, back in zip(cells, loaded[-len(cells):]):
-                # Compared as VALUES: "3197.00" reads back as 3197.0. Still catches a cell in
-                # the wrong column, a row split by an unquoted comma, a lost field.
-                expect = tuple(schema._parse(f, c, table, 0) for f, c in zip(fields, wrote))
-                if tuple(back) != expect:
-                    raise Refused(f"{table}.csv row did not read back as written:\n"
-                                  f"  wrote {expect}\n  read  {tuple(back)}")
+            # Compared as VALUES: "3197.00" reads back as 3197.0. Still catches a cell in the
+            # wrong column, a row split by an unquoted comma, a lost field. WHAT WAS ADDED, row
+            # for row, where no id moved; where one did, each row by its id, which is unique.
+            expect = Counter(tuple(schema._parse(f, c, table, 0) for f, c in zip(fields, wrote))
+                             for wrote in cells)
+            got = Counter(loaded) if table in moved or table in rewritten else (
+                Counter(loaded) - Counter(was))
+            if expect - got:
+                raise Refused(f"{table}.csv row did not read back as written:\n"
+                              f"  wrote {sorted(expect - got)}")
         # AFTER the events and their read-back, so the why never outlives a refused row.
         reasoned = _write_reasoning(targets) if targets else []
         if targets:
@@ -396,6 +489,10 @@ def commit(item_id: str) -> dict:
         # reaching the journal. `ref` is the item id, which retrieves its archived evidence.
         entries = ([("bench", "append", table, len(cells), item["id"], _title(item))
                     for table, cells in sorted(by_table.items())]
+                   + [("bench", "replace", table, n, item["id"],
+                       "; ".join(order.said({table: moved.get(table)})
+                                 or ["followed the renumbered rows it names"]))
+                      for table, n in sorted(rewritten.items())]
                    + ([("bench", "append", "reasoning", len(reasoned), item["id"],
                         "why for " + ", ".join(reasoned))] if reasoned else []))
         if entries:
@@ -426,6 +523,17 @@ def commit(item_id: str) -> dict:
             _unfile(item, document)
             raise
 
+    # THE ARCHIVED ITEM NAMES ITS ROWS AS THEY WERE WRITTEN, by the ids they took.
+    ids = {}
+    for row in rows:
+        values = row.get("values") or {}
+        for k in ("trade_id", "sale_id", "closes"):
+            if values.get(k):
+                if k != "closes":
+                    ids[values[k]] = final.get(values[k], values[k])
+                values[k] = final.get(values[k], values[k])
+    if moved:
+        item["renumbered"] = {t: order.said({t: p}) for t, p in moved.items()}
     item["state"] = "written"
     item["written_at"] = written_at
     item["written_to"] = {t: len(c) for t, c in by_table.items()}
@@ -446,6 +554,8 @@ def commit(item_id: str) -> dict:
     bench.discard(item["id"])
 
     return {"id": item["id"], "written": item["written_to"], "written_at": written_at,
+            "ids": ids,
+            "renumbered": {was: now for pairs in moved.values() for was, now in pairs},
             "document": item.get("document_archived_to"),
             "reading": item.get("reading_written"),
             "reasoning": sorted(targets),

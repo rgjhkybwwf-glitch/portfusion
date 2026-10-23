@@ -176,6 +176,7 @@ BY_TAB = {
         "evidence": "Document kind",
         "reference": "Reference",
         "retires": "Also retires",          # an IG contract the sale leaves with no open leg
+        "renumbers": "Renumbers",           # the ids a backdated row moves, in date order
         "symbol": "Symbol",
         "quote_unit": "Quote unit",
         "points_per_unit": "Points per unit",

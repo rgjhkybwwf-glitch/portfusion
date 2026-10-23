@@ -370,7 +370,8 @@ def test_a_committed_item_lands_in_the_journal_as_well_as_the_record(
     # TWO ROWS, AND THE SECOND ONE IS THE POINT. This item opens a position, so it writes the
     # trade AND appends its thesis to reasoning.csv. Unjournalled, the check would find a row no
     # route accounts for — which is what ORLA SB's first thesis did on 29 Sep 2026.
-    assert {(r["op"], r["table"], r["rows"]) for r in new} == {
+    # A `replace` beside them is a renumbering, where the trade's date falls before others.
+    assert {(r["op"], r["table"], r["rows"]) for r in new if r["op"] == "append"} == {
         ("append", "buys", 1), ("append", "reasoning", 1)}
     from portfusion.record import rules
     from portfusion import engine

@@ -38,6 +38,7 @@ import tempfile
 # THE HISTORIES' FILES, NOT THE HISTORIES: those import the record, which loads a book, and this
 # runs to write one — after a schema change, before any book holds the new shape.
 from portfusion.history import files as history_files
+from portfusion.record import order
 from portfusion.record import rules_evidence as D
 from portfusion.record import schema
 
@@ -78,6 +79,16 @@ def _allocate(rows: list[dict], key: str, prefix: str) -> None:
     """Ids in the order the rows were dealt, as the store hands them out: none is typed here."""
     for n, row in enumerate(rows, 1):
         row[key] = f"{prefix}-{n:03d}"
+
+
+def _in_order(T: dict) -> None:
+    """Every event table in the record's one order (`record/order.py`), before an id is given:
+    the store keeps them so, and a buy's id is its place."""
+    accounts = [a["account"] for a in T["accounts"]]
+    for table in order.DATED:
+        header = schema.TABLES[table].header
+        of = order.key(table, header, accounts)
+        T[table].sort(key=lambda row: of([row.get(c) for c in header]))
 
 
 def _settle(T: dict) -> tuple[list, dict]:
@@ -261,7 +272,7 @@ def _book() -> dict[str, list[dict]]:
         ("record_begins", "2026-01-01"), ("reasoning_owed_from", "2026-04-01"),
         ("first_report", "2026-09-30"), ("tv_list_live", "100000001"),
         ("tv_list_exit", "100000002"), ("tv_list_entry", "100000003"),
-        ("rate_carried", ""), ("trade_id_floor", ""),
+        ("rate_carried", ""),
         # An invented hosted desk on a reserved test domain; no deploy or research repository,
         # so --publish and the research notes decline on the demo, as on a new book.
         ("hosted_origin", "https://desk.example.test"), ("passkey_domain", "example.test"),
@@ -643,6 +654,7 @@ def build(into: pathlib.Path) -> list[str]:
     """Write the demo book's store and archive under `into`. Returns the paths written,
     relative to it."""
     T = _book()
+    _in_order(T)
     noted, stated = _settle(T)
     item = _bench_item(T)
     for row in T["buys"] + T["sales"]:

@@ -283,17 +283,18 @@ def _writes_under_desk(repo_root):
 #: MARK is replaced by design and is safe only because its outgoing value is banked first. A
 #: single code path that could do either is a code path that can confuse them.
 STORE_DOORS_UNDER_DESK = {
-    "doors/commit.py": "appends an event",
+    # AN EVENT GOES WHERE ITS DATE PUTS IT (`commit.place()`), whichever door adds it.
+    "doors/commit.py": "adds an event where its date puts it",
     "doors/marks.py": "replaces a mark, or retires a contract nothing holds",
     # An account reading is a MARK — the marks rule names "live equity" in as many words — so it is
     # replaced, banked first, like a price.
     "doors/observations.py": "replaces an account reading",
     # A quarter end, derived by Book.freeze_rows() and appended to quarter-snapshots.csv and
     # quarter-nav.csv once. It replaced a hand copy off HOLDINGS.
-    "doors/freeze.py": "appends a frozen quarter end, or restates one, superseding its rows",
+    "doors/freeze.py": "adds a frozen quarter end, or restates one, superseding its rows",
     # A published research note's rows, one per code it covers, from the research repo's own
-    # frontmatter on the Bench's press (12 Oct 2026). Nothing wrote the table before.
-    "doors/research_notes.py": "appends a published research note",
+    # frontmatter on the Bench's press (12 Oct 2026), placed by `commit.placed()`.
+    "doors/research_notes.py": "adds a published research note",
 }
 
 
