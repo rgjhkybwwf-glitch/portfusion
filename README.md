@@ -37,6 +37,7 @@ that line. Read the release's entry in `CHANGELOG.md`, change the line, then in 
 .venv/bin/python3 -m pip install -r requirements.txt
 portfusion check                     # the guard, on this book
 portfusion record                    # the audit
+portfusion migrate                   # a book carried to a new release's store
 ```
 
 A release that changes a table's columns says in its changelog entry how to move a book's rows;

@@ -1,10 +1,11 @@
-"""`portfusion` — the app's one command, and its five actions.
+"""`portfusion` — the app's one command, and its six actions.
 
     portfusion init       a new book: empty, or a practice book  (init/__main__.py)
     portfusion desk       the desk, in a browser               (desk/__main__.py)
     portfusion check      the guard: the code, and the book opening (check/__main__.py)
     portfusion record     the audit: is the record in good order (record/__main__.py)
     portfusion report     whether a quarter is ready to report  (report/__main__.py)
+    portfusion migrate    a book moved to this release's names  (migrate/__main__.py)
 
     portfusion -q <action>     warnings and errors only
     portfusion -v <action>     and the debug lines too
@@ -27,8 +28,8 @@ import sys
 
 from portfusion.log import log, setup
 
-#: The five actions, each its package's `__main__.main(argv)`.
-ACTIONS = ("init", "desk", "check", "record", "report")
+#: The six actions, each its package's `__main__.main(argv)`.
+ACTIONS = ("init", "desk", "check", "record", "report", "migrate")
 
 
 #: How much an action says, set before it starts (`log.py`).

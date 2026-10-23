@@ -62,3 +62,11 @@ def check(args: list[str] = ()) -> int:
     if book == 5 and args:
         book = 0
     return code or book
+
+
+def migrated(book: str) -> int:
+    """After `portfusion migrate --write`: the book opens and the record's audit passes, its own
+    `checks/` left out — the book's code, which a migration lists and does not move. As `check()`,
+    an exit code and pytest's own reports."""
+    quiet = ["-q", "--no-header", "--tb=line"]
+    return _pytest([str(OPENS)], quiet, book) or _pytest([str(TESTS)], ["-m", "audit", *quiet], book)

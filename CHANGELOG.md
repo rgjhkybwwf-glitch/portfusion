@@ -5,9 +5,12 @@ prints it.
 
 ## Unreleased
 
+- **`portfusion migrate` carries a book to this release's store** (#12): it shows every move,
+  and on `--write` makes it, opens the book and audits it, and puts every file back if either
+  fails. Moves are declared in `record/migrations.py`. It never commits.
 - **One name for one idea, from the store to the desk** (#43). The store's names are the desk's,
   and the suite refuses a heading the glossary has not agreed or a column with no heading.
-  A book's store moves:
+  `portfusion migrate` moves a book's store:
   - tables: `trades` → `buys`, `exits` → `sales`, `closed-positions` → `realisations`, `issuers`
     → `companies`, `account-observations` → `account-readings`, `cash-observations` →
     `cash-readings`; the journal's `table` and the Bench archive's keys follow;
@@ -22,7 +25,8 @@ prints it.
 
   On the desk: Unrealised gain, Funding interest, Quantity and Life cost per share replace Gain to
   date, Funding, Held and Net cost per share on Round Trips by company life; a deal's `cur` is
-  headed Deal ccy; What Changed and Price Refresh head a mark's key Mark key, not Line. The report's figures do not change.
+  headed Deal ccy; What Changed and Price Refresh head a mark's key Mark key, not Line. The
+  report's figures do not change.
 - **Round Trips reads by company life**: a company's shares and bets from first purchase to the
   day nothing is held, with dividends, daily funding, a net cost per share and a gain % over
   exposure at entry. The quarterly report does not change.
