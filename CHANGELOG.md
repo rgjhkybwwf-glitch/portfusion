@@ -5,6 +5,8 @@ prints it.
 
 ## Unreleased
 
+- **The journal's opening boundary is tested on any book**: a book with no rows written before
+  its journal opened, a new one included, no longer fails the audit.
 - **`portfusion migrate` carries a book to this release's store** (#12): it shows every move,
   and on `--write` makes it, opens the book and audits it, and puts every file back if either
   fails. Moves are declared in `record/migrations.py`. It never commits. The README's *Taking a
