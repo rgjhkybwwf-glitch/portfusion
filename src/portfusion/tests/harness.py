@@ -65,6 +65,14 @@ def an_account(kind: str) -> str | None:
     return next((a for a in D.ACCOUNT_ORDER if D.ACCOUNT_KIND[a] == kind), None)
 
 
+def append_rows(path, lines) -> None:
+    """Append `lines` to a copied store's CSV at `path`, each on its own line, whether or not
+    the file ends in a newline: one that does not would join the first row to its last."""
+    text = path.read_text(encoding="utf-8")
+    path.write_text(text.rstrip("\n") + "\n" + "".join(f"{ln}\n" for ln in lines),
+                    encoding="utf-8")
+
+
 def holds(*found, what: str = "the rows this test is built from"):
     """Skip unless every one of `found` is there: a test built from the loaded book's own rows
     cannot run on a book that has none of them yet, and says so rather than failing. As a

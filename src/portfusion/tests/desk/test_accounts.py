@@ -8,7 +8,7 @@ from portfusion.record import rules as _rules
 from portfusion.desk import actions, app, panels, engine
 from desk_support import _static
 from portfusion.desk.intake import bench as _bench
-from harness import SRC, needs
+from harness import SRC, append_rows, needs
 
 
 # =====================================================================================
@@ -933,11 +933,21 @@ def test_a_reading_off_a_document_that_states_no_cash_is_its_stock_alone(store_c
     read = next(dict(zip(header, r)) for r in schema.load("account-readings")
                 if r[0] == account)
     assert (read["positions"], read["stmt_value"], read["recon_cash"]) == (40000.00, None, None), read
+    # CASH DATED AFTER THE READING, and after any on file, is the account's newest cash, a
+    # different fact, and moves nothing at the reading.
+    _rules.reload_store()
+    on_file = _rules.cash_latest().get(account)
+    later = max(_dt.date(2026, 10, 1), on_file.as_of if on_file else _dt.date.min)
+    later += _dt.timedelta(days=1)
+    append_rows(store_copy / "cash-readings.csv",
+                [f"{account},{later},9999.99,ii-transactions,a later cash reading"])
     _rules.reload_store()
     held = _rules.cash_latest(on=_dt.date(2026, 10, 1))[account]
     row = Book().reconciliation().set_index("account").loc[account]
     assert (row["cash_at_recon"], row["cash_at_recon_at"]) == (held.cash, held.as_of.isoformat())
     assert row["statement"] == round(40000.00 + held.cash, 2)
+    newest = Book().newest_cash().set_index("account").loc[account]
+    assert (newest["cash"], newest["as_of"]) == (9999.99, later.isoformat()), newest
 
 
 @needs("accounts", "account-readings", "buys")

@@ -5,6 +5,8 @@ prints it.
 
 ## Unreleased
 
+- **A new book passes its own audit**: the change-totals audit asks only of the kinds a book
+  holds, and the price-feed audit waits for a book's first prices.
 - **The journal's opening boundary is tested on any book**: a book with no rows written before
   its journal opened, a new one included, no longer fails the audit.
 - **`portfusion migrate` carries a book to this release's store** (#12): it shows every move,
