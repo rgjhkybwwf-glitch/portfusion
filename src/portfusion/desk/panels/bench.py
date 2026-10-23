@@ -236,7 +236,7 @@ def _set_up(event: dict) -> dict:
     level = got["result"]["rows"][0]
     if not level["priced"]:
         return {"ok": False, "error": f"IG gave no level for {epic}: {level['status']}"}
-    mark = {"ticker": contract, "price": level["level"], "currency": level["currency"],
+    mark = {"mark_key": contract, "price": level["level"], "currency": level["currency"],
             "as_of": level["as_of"], "source": level["source"], "struck": level["struck"],
             "at": level["at"]}
     return _to_bench(event, marks=[mark])

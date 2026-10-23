@@ -168,7 +168,7 @@ def _print(r: dict) -> None:
     if not tv["ok"]:
         log.info(f"  {tv['error']}")
     for row in tv.get("prices", []):
-        log.info(f"  {row['ticker']:<14}{row['price']:>12} {row['currency']}  {row['struck']:<5}  "
+        log.info(f"  {row['mark_key']:<14}{row['price']:>12} {row['currency']}  {row['struck']:<5}  "
               f"{row['source']}")
     for row in tv.get("rates", []):
         # A RATE ROW NAMES ITS CURRENCY: both producers drop `key`, so printing it raised once

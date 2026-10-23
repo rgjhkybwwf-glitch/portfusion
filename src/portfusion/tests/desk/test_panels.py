@@ -18,7 +18,7 @@ def _a_month() -> tuple[str, str] | None:
     """The calendar month of the loaded book's newest trade: a window it did something in. Typed
     as August 2026, it was one only a book of that year acted in."""
     from portfusion.record import rules
-    days = sorted(str(t.date)[:10] for t in rules.trades)
+    days = sorted(str(t.date)[:10] for t in rules.buys)
     if not days:
         return None
     first = days[-1][:8] + "01"
@@ -50,7 +50,7 @@ def test_a_panel_has_one_name():
             f"{stem}.py is served at /{mod.NAME} and titled {mod.TITLE!r}: one name, please")
 
 
-@needs("trades")
+@needs("buys")
 def test_the_snapshot_ties_to_the_engine():
     """THE TIE-CHECK, APPLIED TO THE SECOND RENDERER. Every figure on the panel against the
     engine's own answer. The desk formats; it must never calculate."""
@@ -68,7 +68,7 @@ def test_the_snapshot_ties_to_the_engine():
     assert figs[b.SINCE_START] == _blank(b.since_start())
 
 
-@needs("trades")
+@needs("buys")
 def test_a_blank_year_reaches_the_desk_as_a_blank(monkeypatch):
     """Until a new year's 31 December is frozen its return is blank (the owner, 2 Oct 2026), and a
     NaN would stop the Dashboard rather than show a dash: JSON has no NaN, so the panel route
@@ -84,7 +84,7 @@ def test_a_blank_year_reaches_the_desk_as_a_blank(monkeypatch):
     assert figs["Capital employed (opening + deployed)"] is None
 
 
-@needs("trades")
+@needs("buys")
 def test_the_dashboard_says_which_year_ytd_is_and_why_it_is_blank(monkeypatch):
     """K8 (the owner, 12 Oct 2026): the page said neither which year a year-to-date figure is of nor
     why one is blank. The newest mark's date cannot say it, because the year rolls at a new
@@ -153,7 +153,7 @@ def test_the_report_and_the_desk_agree_about_what_is_notional_basis():
 # ACTIVITY — the ledger, interrogable.
 # =====================================================================================
 
-@needs("trades")
+@needs("buys")
 def test_filtering_is_the_engines_not_the_panels():
     """book.activity(start, end, account) already takes those arguments. Re-implementing a date
     comparison in the panel would be a second answer to a question the engine answers."""
@@ -168,7 +168,7 @@ def test_filtering_is_the_engines_not_the_panels():
     assert [r["trade_id"] for r in got["rows"]] == list(want["trade_id"])
 
 
-@needs("trades")
+@needs("buys")
 def test_one_holding_can_be_followed_across_its_whole_life():
     """A holding's whole life is one query, whatever its span — a pre-record opening
     included, because entry dates older than the record are load-bearing.
@@ -192,7 +192,7 @@ def test_one_holding_can_be_followed_across_its_whole_life():
     assert {r["direction"] for r in q["rows"]} == {"Buy", "Sell"}
 
 
-@needs("trades")
+@needs("buys")
 def test_a_note_is_one_line():
     """A note says what happened that the row's own columns do not, in one line, or is blank. The
     reason for a trade is reasoning.csv's, never the note's."""
@@ -247,10 +247,10 @@ def test_an_issuer_row_is_sent_no_ticker():
         assert c in by_ticker["columns"], f"{c} is not sent grouped by ticker"
         assert c not in by_issuer["columns"], f"{c} is sent grouped by issuer"
         assert all(r[c] is not None for r in by_ticker["rows"]), f"a ticker row has no {c}"
-    assert {"current_price", "priced_at"} <= set(by_issuer["columns"])
+    assert {"price", "priced_at"} <= set(by_issuer["columns"])
 
 
-@needs("trades")
+@needs("buys")
 def test_an_issuer_held_both_ways_reads_mixed_and_the_panel_adds_no_marker():
     """Reported rather than hidden, in the one word: grouped by issuer, a company held as shares
     and as a bet is one row held as `mixed`, the engine's word, so a reader looking at one line
@@ -271,7 +271,7 @@ def test_a_per_account_holdings_split_never_calls_notional_money():
     assert holdings.query(account=SHARES_ACCOUNT)["notional"] == 0.0
 
 
-@needs("trades")
+@needs("buys")
 def test_round_trip_totals_follow_the_selection():
     """THE TOTALS FOLLOW THE SELECTION (the owner: "sorting by account does not change the headline
     figures to reflect the accounts selected").
@@ -289,7 +289,7 @@ def test_round_trip_totals_follow_the_selection():
     whole = round_trips.data()
     assert whole["narrowed"] is False
     assert whole["totals"] == whole["whole"]
-    assert whole["totals"]["gain"] == round(b.round_trip_totals()["gain"], 2)
+    assert whole["totals"]["realised"] == round(b.round_trip_totals()["realised"], 2)
 
     acct = whole["accounts"][0]
     one = round_trips.query(account=acct)
@@ -301,7 +301,7 @@ def test_round_trip_totals_follow_the_selection():
     assert one["whole"] == whole["totals"], "the whole book stays available as context"
 
 
-@needs("trades")
+@needs("buys")
 def test_round_trips_can_be_narrowed_to_a_range_of_exit_dates():
     """The owner: a date-range filter on the tab. `closed` is the date a round trip is filed under,
     and the SELECTION IS THE ENGINE'S — book.round_trips() takes start and end for the same
@@ -312,8 +312,8 @@ def test_round_trips_can_be_narrowed_to_a_range_of_exit_dates():
     want = b.round_trips(start=_MONTH[0], end=_MONTH[1])
     assert got["total"] == len(want)
     assert [r["realisation_id"] for r in got["rows"]] == list(want["realisation_id"])
-    assert got["totals"]["gain"] == round(b.round_trip_totals(
-        start=_MONTH[0], end=_MONTH[1])["gain"], 2)
+    assert got["totals"]["realised"] == round(b.round_trip_totals(
+        start=_MONTH[0], end=_MONTH[1])["realised"], 2)
     # and the picker bounds itself on the record's own span
     assert got["span"]["first"] <= got["span"]["last"]
 
@@ -328,7 +328,7 @@ def test_performance_says_which_basis_every_return_is_on():
     assert any("exposure" in c["detail"] for c in d["caveats"])
 
 
-@needs("trades")
+@needs("buys")
 def test_the_opened_on_nothing_caveat_appears_when_the_condition_does():
     """A spread-bet account whose first quarter opens on a zero balance has its return on the
     money put in, weighted by the days it was in, and the page must say so. The condition is
@@ -421,7 +421,7 @@ def test_the_refresh_panel_shows_the_two_bases_apart():
                 f"figure is a second answer to something engine.py already decided")
 
 
-@needs("trades")
+@needs("buys")
 def test_the_notional_block_leaves_out_only_what_is_nought():
     """A SPREAD BET HAS NO FX PART, so the notional block draws no From FX column or total —
     and that is only safe while the engine agrees: every spread-bet line's fx_effect is nought.
@@ -464,7 +464,7 @@ def test_the_refresh_panel_says_which_clock_each_block_is_on():
     assert "forward-only" in d["record"]["caveat"].lower()
 
 
-@needs("trades")
+@needs("buys")
 def test_the_record_block_covers_the_span_the_marks_do():
     """RECORD TIME OVER THE SAME SPAN AS MARKET TIME. The block listed every write since the
     journal opened, most of the page within weeks, and grew with every write.
@@ -481,7 +481,7 @@ def test_the_record_block_covers_the_span_the_marks_do():
         "a write is in neither half of the record block")
 
 
-@needs("trades")
+@needs("buys")
 def test_an_accounts_quarter_names_what_its_closing_nav_rests_on():
     """THE RECORD SAYS WHAT EACH QUARTER END RESTS ON and no page showed it: a
     statement, a reconstruction, a freeze from the engine — and whether that is sourced or
@@ -505,7 +505,7 @@ def test_an_accounts_quarter_names_what_its_closing_nav_rests_on():
     assert all(r.get("source") is None for r in d["firm"]), "a book row has an account's source"
 
 
-@needs("trades")
+@needs("buys")
 def test_a_year_row_rebuilds_its_own_return():
     """THE YEAR TABLE SHOWED ALL INCOME BESIDE A RETURN BUILT ON POSITION INCOME:
     fees and cash interest reached its income column and never its return, so no row could be
@@ -520,12 +520,12 @@ def test_a_year_row_rebuilds_its_own_return():
     weighted = b.weighted_flows(b.ytd_opens(), b.valued_at())
     for r in rows:
         wcf = float(weighted.sum() if r["account"] == "The book" else weighted[r["account"]])
-        rebuilt = (r["capital_growth"] + r["return_income"]) / (r["opening_capital"] + wcf)
+        rebuilt = (r["capital_growth"] + r["return_income"]) / (r["opening_nav"] + wcf)
         assert abs(rebuilt - r["ytd"]) < 1e-9, (
             f"{r['account']}: the row rebuilds to {rebuilt:.4%}, the page says {r['ytd']:.4%}")
 
 
-@needs("trades")
+@needs("buys")
 def test_the_refresh_panel_names_every_window_the_engine_drew():
     """The heading names every window it drew from, however many the marks make, and gets
     them from the engine rather than deriving them. Whether each line keeps its OWN window is
@@ -572,8 +572,8 @@ def test_movement_colour_is_used_and_scoped(repo_root):
       change price_effect fx_effect price_move_pct
                   all four are RESULTS — the sign says whether the book is better or worse off,
                   which is the test this list has always applied.
-      realised to_date total life_pct
-                  a company life's gains (Round Trips by company life): results, as `gain` is.
+      unrealised unrealised_pct realised realised_pct life_gain life_pct
+                  a holding's, a round trip's and a company life's gains: results, as `gain` is.
       transacted  NOT a result, and never to be added. Buying shares is not a
                   gain and selling them is not a loss. Same exclusion as
                   `difference`: money, often negative, carrying no judgement. Colouring it
@@ -588,9 +588,9 @@ def test_movement_colour_is_used_and_scoped(repo_root):
     m = re.search(r"const MOVEMENTCOL = \[(.*?)\]", js, re.S)
     assert m, "app.js no longer declares MOVEMENTCOL"
     cols = set(re.findall(r'"([^"]+)"', m.group(1)))
-    assert cols == {"gain", "gain_pct", "return",
+    assert cols == {"gain", "unrealised", "unrealised_pct", "realised_pct", "return",
                     "change", "price_effect", "fx_effect", "price_move_pct",
-                    "realised", "to_date", "total", "life_pct"}, \
+                    "realised", "life_gain", "life_pct"}, \
         f"MOVEMENTCOL is {sorted(cols)}"
 
     for excluded, why in (("difference", "a reconciliation gap is not a loss"),
@@ -681,7 +681,7 @@ def test_no_call_site_puts_anything_in_a_style_attribute(repo_root):
 # A HOLDINGS ROW: HOW MUCH IS HELD, AND THE MARKS BEHIND IT
 # =====================================================================================
 
-@needs("trades")
+@needs("buys")
 def test_by_ticker_every_line_says_how_much_is_held_in_its_own_terms():
     """A share line carries the engine's count and no stake; a spread bet its stake per point.
 
@@ -699,17 +699,17 @@ def test_by_ticker_every_line_says_how_much_is_held_in_its_own_terms():
         e = next(x for x in by_company[row["company"]] if x["held_as"] == row["held_as"])
         seen[row["held_as"]] += 1
         if row["held_as"] == "spread bet":
-            assert row["stake_per_point"] == e["stake_per_point"], row["company"]
+            assert row["stake"] == e["stake"], row["company"]
         else:
-            assert row["qty"] == e["qty"] and row["stake_per_point"] is None, row["company"]
+            assert row["qty"] == e["qty"] and row["stake"] is None, row["company"]
     assert all(seen.values()), f"a kind of line is missing, so half of this asserts nothing: {seen}"
     companies = b.holdings(by="issuer").set_index("company")["qty"]
     for row in panels.get("holdings").query(by="issuer")["rows"]:
-        assert row["qty"] == companies[row["company"]] and row["stake_per_point"] is None, \
+        assert row["qty"] == companies[row["company"]] and row["stake"] is None, \
             row["company"]
 
 
-@needs("trades")
+@needs("buys")
 def test_every_holdings_row_says_what_it_is_held_as():
     """A spread bet's value is NOTIONAL (rules.SPREAD_BET), and a reader must not meet the figure
     without the word beside it: every row's Held as is one of the record's two words, or `mixed`
@@ -746,10 +746,10 @@ def test_each_row_opens_the_marks_behind_it_with_every_source_string():
                 f"{row['company']} shows {len(set(dates))} refreshes"
 
 
-@needs("trades")
+@needs("buys")
 def test_a_multi_contract_line_opens_both_contracts():
     """HALV SB is priced by two contracts at two levels, and its marks show both."""
-    keys = engine.book().changes_since().groupby("ticker")["key"].apply(set)
+    keys = engine.book().changes_since().groupby("ticker")["mark_key"].apply(set)
     several = {t: k for t, k in keys.items() if len(k) > 1}
     assert several, "no line sits on two mark keys — this asserts nothing"
     rows = {r["company"]: r for r in panels.get("holdings").query(by="ticker")["rows"]}
@@ -1113,7 +1113,7 @@ def test_the_desk_says_notional_too(repo_root):
         + "\n  ".join(offenders))
 
 
-@needs("trades")
+@needs("buys")
 def test_the_judgement_reaches_holdings_and_round_trips():
     """THE REASONING IS SHOWN WHERE THE POSITION IS: under each row of Holdings and Round Trips,
     from Book.with_reasoning() — an issuer row carrying every instrument it collapses."""
@@ -1133,7 +1133,7 @@ def test_the_judgement_reaches_holdings_and_round_trips():
     assert {"opened", "whys", "research_notes", "why_entered_owed", "why_exited_owed"} <= set(trip)
 
 
-@needs("trades")
+@needs("buys")
 def test_a_trade_carries_its_source():
     """Every figure traces to a named source, and the reader can see which."""
     from portfusion.desk.panels import trades
@@ -1141,7 +1141,7 @@ def test_a_trade_carries_its_source():
     assert rows and all(r["source"] for r in rows)
 
 
-@needs("trades")
+@needs("buys")
 def test_the_accounts_page_and_the_year_are_the_engines():
     """The register, external capital, the year's income and the year so far per account are
     each the engine's frame, row for row; nothing on the page is summed."""

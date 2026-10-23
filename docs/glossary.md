@@ -23,7 +23,7 @@ disagree, the code is right.
 | What kind of number is this? | **`basis`** | `capital` · `notional` · `mixed` · `count` | `Book.HEADLINE`, `MEASURE_BASIS` |
 | What document is this row's evidence? | **`source`** | free text | every table |
 | How does this account contribute to net asset value? | **`contribution`** | `positions at market` · `account equity` · `notional` | `quarter-nav.csv` |
-| Do we own it, or have exposure to it? | **`kind`**, shown as **Held as** | `shares` · `spread bet` | `schema.KINDS`; `held_as` on every frame |
+| Do we own it, or have exposure to it? | **`held_as`**, shown as **Held as** | `shares` · `spread bet`; `mixed` on a company row holding both | `schema.KINDS`; every table and frame |
 | Which set of measures? | **`measure=`** | `nav` · `exposure` | `quarter_nav_rows()` |
 | What unit is this price quoted in? | **Price unit** | points · GBP | the column heading |
 | The accounting sense | **cost basis** | — | — |
@@ -43,7 +43,7 @@ disagree, the code is right.
 
 | Sense | Spelling |
 |---|---|
-| A broker-side figure for an account, at an instant | **reading** — a row of `account-observations.csv` |
+| A broker-side figure for an account, at an instant | **reading** — a row of `account-readings.csv` |
 | A document retrieved by asking again, for a new instant | **`reading`**, one of `rules.RETRIEVAL_KINDS` |
 | What a Claude session hands the Bench after transcribing a document | **proposal** — `desk/intake/propose.py` |
 
@@ -64,7 +64,7 @@ lifecycle: the `status` column.
 |---|---|
 | What a reader reads | **As at** — the date a value was measured, when it is not a quarter boundary |
 | A column or a Python name | **`as_of`** |
-| The instant a figure was read | **`at`**, ISO and UTC, on `current-prices.csv` and `account-observations.csv`; the journal's `at` is local time |
+| The instant a figure was read | **`at`**, ISO and UTC, on `current-prices.csv` and `account-readings.csv`; the journal's `at` is local time |
 | What instant a mark describes | **`struck`** — `close`, a session close that can be fetched again, or `live`, a read that cannot |
 
 **"As at" is a label; `as_of` is a name.** A name need not be what a reader sees, but it must
@@ -83,16 +83,18 @@ One idea, one column name, in every table.
 | Idea | Column |
 |---|---|
 | An account | `account` |
-| A deal's price, as its document states it | `price` |
+| A deal's price, as its document states it | `traded_price` |
+| A mark: what a line is worth | `price`, filed under its `mark_key`: a share's ticker, a bet's contract |
 | The broker's rate, where its document states one | `rate` — units of the other currency per £1 |
 | An instrument's currency | `currency` |
 | The currency a deal's price is stated in | `cur` — not always the instrument's |
 | The provenance line | `source` |
 | An evidence-class key | `evidence`, on the two observation tables only |
-| Owned, or exposure | `kind` |
+| Owned, or exposure | `held_as` |
 | A sterling amount on an event | `amount` |
-| A trade leg's own figure | `val` — cost on a share leg, entry level on a spread bet |
-| A frozen line's value | `gbp_value` |
+| A share leg's settled sterling | `cost` |
+| A spread-bet leg's entry level, in points | `level_points` |
+| A frozen line's value | `value` |
 | A lifecycle | `status` — `live` · `superseded` |
 | An instant | `at` |
 
@@ -142,7 +144,21 @@ not *realized*.
 | The year's income, fees and cash interest included | **YTD income** |
 | An income row's kind | **Category** |
 | Reasoning headings | **Why we entered · Why we exited** |
-| A Bench field | **Sale ID · Closes trade · Rate (per £1) · IG contract · Document kind** |
+| A Bench field | **Sale ID · Closes trade · Rate (per £1) · IG contract · Document kind · Reference · Also retires · Symbol · Quote unit · Points per unit · Shares per unit · Epic · Cash (GBP) · Amount** |
+| An account, as the register holds it | **Account · Account no. · Holder · Code · Feed** |
+| What a line is | **Sector · Region · Held as · Funding** — how IG funds a contract, daily or dated |
+| A deal's own terms | **Trade ID · Broker ref · Deal ccy · Stake (£/pt) · Level (points) · Entry level (points) · Exit level (points) · Trade value (GBP)** |
+| When | **Date · As at · Exit date · Days held · Age (days) · Quarter** |
+| Money and measures | **Cost (GBP) · Value (GBP) · Proceeds (GBP) · Amount (GBP) · Weight · % of book · Market exposure · Capital employed · Capital growth · Income · Return · YTD return · Gain · Contribution** |
+| A round trip, and a company life | **Closed out · State · Dividends (GBP) · Funding interest (GBP) · Life gain (GBP) · Life gain (%) · Life cost per share · Round trips · Lines** |
+| Against the broker | **Difference · Verdict · Last broker check · Document · Cash / Funds (GBP) · Read from · FX rate as at** |
+| A mark, and a window from one to the next | **Mark key** — a share's ticker, or a bet's contract · **Quality · Stale · Priced · Was priced · Value now (GBP) · Change (GBP)** |
+| The refresh grid | **Was · Was as at · New · New as at · From · Take** |
+| The journal | **Recorded · Route · Did · Table · Rows · Retrieves** |
+| Where a figure came from | **Source · FX at trade · FX from · Notes** |
+| The judgement | **Why · Research notes** |
+| Who opens the hosted desk | **Reader · Level · Since · Devices · Last signed in · Now · Device · Enrolled · Last used · At · Result · Address · Named as** |
+| A currency as a category, on the Dashboard | **Currency** |
 | What a row opens to | **Detail** — one link, in one order (`DETAIL` in `app.js`) |
 
 **Entry price and Traded price are different quantities**: the first is the weighted mean of the
@@ -166,6 +182,11 @@ The three sum exactly to **Change (GBP)**; the order they are taken in is
 | How far a line's mark moved, against its own previous mark | **Mark move (%)** | not the change in value |
 | Every banked mark behind one line | **Mark history** | the end of a Holdings row's detail |
 
+## 5b · The book's concepts
+
+Words for what the record holds, which a reader meets in prose and page names rather than as
+column headings.
+
 ### What a sale closes
 
 | Concept | Canonical | Note |
@@ -177,8 +198,9 @@ The three sum exactly to **Change (GBP)**; the order they are taken in is
 | Everything sold out of one holding, keyed `R-…` | **Realisation** | headed **Realisation ID** |
 | A realisation seen whole, entry to exit | **Round trip** | the Round Trips page |
 | A company's shares and bets, first purchase to the day nothing is held | **Company life** | Round Trips, by company life |
-| A life's realised gain, gain to date, dividends and daily funding together | **Life gain** | |
-| (cost of what is held − life gain taken) ÷ held, bets as share-equivalents | **Net cost per share** | the break-even price; not the pool's cost |
+| A life's realised gain, unrealised gain, dividends and funding interest together | **Life gain** | |
+| (cost of what is held − realised − dividends − funding interest) ÷ quantity, bets as share-equivalents | **Life cost per share** | the break-even price; not the pool's cost |
+| Shares at cost, spread bets at notional (stake × level) when entered | **Exposure at entry** | every gain %'s denominator |
 | Every buy and sale on file | **Trades** | the Trades page |
 
 ### Running a refresh
@@ -271,7 +293,7 @@ A value outside these fails **on load**, naming the table, the row and the colum
 
 | Column | Values | Tables |
 |---|---|---|
-| `kind` | `shares` · `spread bet` | `securities` · `accounts` |
+| `held_as` | `shares` · `spread bet` | `securities` · `accounts` |
 | `category` | `Dividend` · `Funding interest` · `Cash interest` · `Fee` | `income` |
 | `quality` | `sourced` · `derived` | `quarter-nav` · `quarter-snapshots` · `baseline-reconstruction` |
 | `status` | `live` · `superseded` | `quarter-nav` · `quarter-snapshots` |
@@ -296,29 +318,29 @@ asserted on import; the rest are held by the suite.
 
 ### The store, table by table
 
-| Table | Columns | What it holds |
+| Table | What it holds | Columns, as the desk heads them |
 |---|---|---|
-| `account-observations.csv` | 13 | What the book holds each account to be worth RIGHT NOW, and the observation it rests on |
-| `accounts.csv` | 7 | The account register |
-| `baseline-reconstruction.csv` | 7 | Reconstructed holdings, line by line: the working behind an account's quarter-nav rows as FIRST FILED |
-| `capital-movements.csv` | 5 | External capital in and out, one row per event |
-| `cash-observations.csv` | 5 | HOW MUCH CASH AN ACCOUNT HELD, AND WHEN |
-| `closed-positions.csv` | 4 | What a realisation's events cannot say about it: the entry date where a leg carries prose, and the note written when it was realised |
-| `contracts.csv` | 4 | One row per IG contract a spread-bet leg names, with the epic that prices it, how IG funds it, and the code of the line it is on |
-| `current-prices.csv` | 7 | What things are worth NOW — never what was paid, which is the ledger |
-| `exits.csv` | 15 | One row per sale |
-| `fx.csv` | 5 | The rate each currency is converted at NOW, one row per currency, as current-prices |
-| `income.csv` | 11 | Dividends, interest and fees |
-| `issuers.csv` | 3 | One row per ISSUER — the company, not the holding |
-| `journal.csv` | 7 | RECORD TIME — when the book LEARNED a thing, as against when the thing HAPPENED |
-| `quarter-nav.csv` | 7 | Each account's CONTRIBUTION to net asset value at each quarter end |
-| `quarter-results.csv` | 9 | Each closed quarter's six figures, for the book and for each account, as the engine gave them — what a closed quarter is HELD TO, never what a renderer shows |
-| `quarter-snapshots.csv` | 11 | Every account's HOLDINGS, line by line, at each quarter end — the working behind quarter-nav |
-| `reasoning.csv` | 4 | WHY a position was taken and why it was closed — one row per DECISION: the ticker, the date of the trade or sale it explains, and the why |
-| `research-notes.csv` | 4 | WHICH RESEARCH NOTES COVER WHICH INSTRUMENT |
-| `securities.csv` | 8 | One row per CODE held, reserved or closed |
-| `settings.csv` | 2 | The book's own settings: one row per key in SETTING_KEYS |
-| `trades.csv` | 14 | THE LEDGER — one row per buy leg |
+| `account-readings.csv` | What the book holds each account to be worth RIGHT NOW, and the observation it rests on | `account` Account · `as_of` As at · `at` Recorded · `positions` · `stmt_value` · `recon_cash` · `funds` · `running_pl` · `equity` · `deposit` · `available` · `evidence` Document kind · `reference` Reference |
+| `accounts.csv` | The account register | `account` Account · `holder` Holder · `broker_firm` Broker firm · `number` Account no. · `code` Code · `held_as` Held as · `feed_key` Feed |
+| `baseline-reconstruction.csv` | Reconstructed holdings, line by line: the working behind an account's quarter-nav rows as FIRST FILED | `as_of` As at · `ticker` Ticker · `qty` Quantity · `price` Price · `source` Source · `rate` Rate (per £1) · `quality` Quality |
+| `buys.csv` | THE LEDGER — one row per buy leg | `trade_id` Trade ID · `date` Date · `source` Source · `account` Account · `ticker` Ticker · `cur` Deal ccy · `qty` Quantity · `stake` Stake (£/pt) · `cost` Cost (GBP) · `level_points` Level (points) · `broker_ref` Broker ref · `note` Notes · `contract` IG contract · `traded_price` Traded price · `rate` Rate (per £1) |
+| `capital-movements.csv` | External capital in and out, one row per event | `date` Date · `account` Account · `amount` Amount (GBP) · `source` Source · `detail` Detail |
+| `cash-readings.csv` | HOW MUCH CASH AN ACCOUNT HELD, AND WHEN | `account` Account · `as_of` As at · `cash` Cash (GBP) · `evidence` Document kind · `reference` Reference |
+| `companies.csv` | One row per ISSUER — the company, not the holding | `company` Company · `sector` Sector · `region` Region |
+| `contracts.csv` | One row per IG contract a spread-bet leg names, with the epic that prices it, how IG funds it, and the ticker of the line it is on | `contract` IG contract · `epic` Epic · `funding` Funding · `ticker` Ticker |
+| `current-prices.csv` | What things are worth NOW — never what was paid, which is the ledger | `mark_key` Mark key · `price` Price · `currency` Ccy · `as_of` As at · `source` Source · `struck` · `at` Recorded |
+| `fx.csv` | The rate each currency is converted at NOW, one row per currency, as current-prices | `currency` Ccy · `rate` Rate (per £1) · `as_of` As at · `source` Source · `struck` |
+| `income.csv` | Dividends, interest and fees | `date` Date · `account` Account · `category` Category · `detail` Detail · `amount` Amount (GBP) · `source` Source · `note` Notes · `currency` Ccy · `local_amount` Amount · `rate` Rate (per £1) · `ticker` Ticker |
+| `journal.csv` | RECORD TIME — when the book LEARNED a thing, as against when the thing HAPPENED | `at` Recorded · `route` Route · `op` Did · `table` Table · `rows` Rows · `ref` Retrieves · `detail` Detail |
+| `quarter-nav.csv` | Each account's CONTRIBUTION to net asset value at each quarter end | `as_of` As at · `account` Account · `amount` Amount (GBP) · `contribution` Contribution · `quality` Quality · `status` · `source` Source |
+| `quarter-results.csv` | Each closed quarter's six figures, for the book and for each account, as the engine gave them — what a closed quarter is HELD TO, never what a renderer shows | `as_of` As at · `account` Account · `opening_nav` Opening NAV · `capital_deployed` Capital deployed · `return_income` Income · `closing_nav` Closing NAV · `gain` Gain · `return` Return · `note` Notes |
+| `quarter-snapshots.csv` | Every account's HOLDINGS, line by line, at each quarter end — the working behind quarter-nav | `as_of` As at · `account` Account · `ticker` Ticker · `qty` Quantity · `price` Price · `currency` Ccy · `value` Value (GBP) · `cost` Cost (GBP) · `quality` Quality · `status` · `source` Source |
+| `realisations.csv` | What a realisation's events cannot say about it: the entry date where a leg carries prose, and the note written when it was realised | `ticker` Ticker · `realisation_id` Realisation ID · `opened` Entry date · `note` Notes |
+| `reasoning.csv` | WHY a position was taken and why it was closed — one row per DECISION: the ticker, the date of the trade or sale it explains, and the why | `ticker` Ticker · `date` Date · `why_entered` Why we entered · `why_exited` Why we exited |
+| `research-notes.csv` | WHICH RESEARCH NOTES COVER WHICH INSTRUMENT | `ticker` Ticker · `ref` Retrieves · `published` · `url` |
+| `sales.csv` | One row per sale | `sale_id` Sale ID · `date` Date · `account` Account · `ticker` Ticker · `qty` Quantity · `stake` Stake (£/pt) · `traded_price` Traded price · `cur` Deal ccy · `rate` Rate (per £1) · `proceeds` Proceeds (GBP) · `source` Source · `broker_ref` Broker ref · `realisation_id` Realisation ID · `closes` Closes trade · `note` Notes |
+| `securities.csv` | One row per CODE held, reserved or closed | `ticker` Ticker · `company` Company · `held_as` Held as · `currency` Ccy · `symbol` Symbol · `quote_unit` Quote unit · `points_per_unit` Points per unit · `shares_per_unit` Shares per unit |
+| `settings.csv` | The book's own settings: one row per key in SETTING_KEYS | `key` · `value` |
 
 <!-- END DERIVED -->
 

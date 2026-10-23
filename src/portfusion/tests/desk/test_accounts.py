@@ -67,7 +67,7 @@ def test_the_accounts_panel_asks_that_function_rather_than_deciding():
         assert rows[r.account]["verdict"] == expected["verdict"]
 
 
-@needs("accounts", "account-observations", "trades")
+@needs("accounts", "account-readings", "buys")
 def test_each_reconcile_row_names_the_reading_its_broker_side_rests_on():
     """NEITHER SIDE WAS DATED AND NO DOCUMENT WAS NAMED : a reader met a
     broker figure without the day it was read or what it was read from. Each row now carries the
@@ -139,11 +139,12 @@ PANEL_COLUMNS = {
     # THE BENCH'S FORMS (12 Oct 2026): every column of the five tables it writes, each headed in
     # the desk's words rather than its store name. Derived from the schema, so a new column joins.
     "bench": {
-        "FORM_COLUMNS": ("id", "date", "source", "account", "ticker", "cur", "qty",
-                         "stake", "val", "broker_ref", "note", "contract", "price", "rate",
-                         "eid", "proceeds", "realisation", "closes", "category", "detail",
-                         "amount", "currency", "local_amount", "as_of", "cash", "evidence",
-                         "reference", "code", "company", "kind", "symbol", "quote_unit",
+        "FORM_COLUMNS": ("trade_id", "date", "source", "account", "ticker", "cur", "qty",
+                         "stake", "cost", "level_points", "broker_ref", "note", "contract",
+                         "traded_price", "rate", "sale_id", "proceeds", "realisation_id",
+                         "closes", "category", "detail", "amount", "currency", "local_amount",
+                         "as_of", "cash", "evidence", "reference", "company", "held_as",
+                         "symbol", "quote_unit",
                          "points_per_unit", "shares_per_unit",
                          "sector", "region", "epic", "funding"),
         "REVIEW_COLUMNS": ("retires",),
@@ -155,18 +156,18 @@ PANEL_COLUMNS = {
     },
     "price-refresh": {
         # The grid's heads were typed in app.js until 2 Oct 2026; the columns are not new.
-        "GRID_COLUMNS": ("line", "was", "was_at", "new", "new_at", "source", "origin", "take"),
-        "PRICE_COLUMNS": ("line", "price", "currency", "as_of", "age_days", "stale", "contract"),
+        "GRID_COLUMNS": ("mark_key", "was", "was_at", "new", "new_at", "source", "origin", "take"),
+        "PRICE_COLUMNS": ("mark_key", "price", "currency", "as_of", "age_days", "stale", "contract"),
     },
     "what-changed": {
         "COLUMNS": (
-            "key", "company", "price_move_pct", "price_effect", "fx_effect", "transacted",
+            "mark_key", "company", "price_move_pct", "price_effect", "fx_effect", "transacted",
             "change", "value_to", "priced_from", "priced_at"
         ),
         "JOURNAL_COLUMNS": ("at", "route", "op", "table", "rows", "ref", "detail"),
         # A SPREAD BET HAS NO FX PART (13 Oct 2026): the notional block drops From FX.
         "NOTIONAL_COLUMNS": (
-            "key", "company", "price_move_pct", "price_effect", "transacted", "change",
+            "mark_key", "company", "price_move_pct", "price_effect", "transacted", "change",
             "value_to", "priced_from", "priced_at"
         ),
     },
@@ -179,16 +180,16 @@ PANEL_COLUMNS = {
             "account", "quarter", "opening_nav", "capital_deployed", "return_income",
             "closing_nav", "gain", "return"
         ),
-        "YEAR_COLUMNS": ("account", "opening_capital", "capital_deployed", "return_income",
+        "YEAR_COLUMNS": ("account", "opening_nav", "capital_deployed", "return_income",
                          "nav", "capital_growth", "ytd", "capital_employed", "exposure",
                          "held_as"),
     },
     "holdings": {
-        "HELD_COLUMNS": ("qty", "stake_per_point"),
+        "HELD_COLUMNS": ("qty", "stake"),
         "COLUMNS": (
             "ticker", "company", "held_as", "accounts", "currency", "entry_price",
-            "current_price", "priced_at", "cost", "value", "gain", "gain_pct", "weight",
-            "open_date", "days_held"
+            "price", "priced_at", "cost", "value", "unrealised", "unrealised_pct", "weight",
+            "opened", "days_held"
         ),
         "MARK_COLUMNS": ("date", "mark_key", "price", "currency", "source"),
         "REASON_COLUMNS": ("whys", "research_notes"),
@@ -198,21 +199,21 @@ PANEL_COLUMNS = {
         "COLUMNS": (
             "ticker", "company", "held_as", "account", "currency", "qty", "entry_price",
             "exit_price", "cost",
-            "proceeds", "gain", "gain_pct", "opened", "closed", "held_days", "fully_closed"
+            "proceeds", "realised", "realised_pct", "opened", "closed", "days_held", "fully_closed"
         ),
         "REASON_COLUMNS": ("whys", "research_notes"),
         "DETAIL_COLUMNS": ("why_entered", "why_exited", "research_notes", "note"),
         # A SPREAD BET IN ITS OWN TERMS (13 Oct 2026): its stake per point for a
         # quantity, and its entry and exit as levels in points, as Trades reads one.
-        "BET_COLUMNS": ("stake_per_point", "entry_level_points", "exit_level_points"),
+        "BET_COLUMNS": ("stake", "entry_level_points", "exit_level_points"),
         # A COMPANY LIFE (23 Oct 2026, #37): Round Trips' second view.
         "LIFE_COLUMNS": ("company", "held_as", "accounts", "state", "opened", "closed",
-                         "held_days", "realised", "to_date", "dividends", "funding", "total",
-                         "life_pct", "held", "net_cost_per_share", "current_price", "currency"),
+                         "days_held", "realised", "unrealised", "dividends", "funding_interest",
+                         "life_gain", "life_pct", "qty", "life_cost_per_share", "price", "currency"),
         "LIFE_DETAIL_COLUMNS": ("realisations", "lines"),
     },
     "accounts": {
-        "REGISTER_COLUMNS": ("code", "account", "holder", "broker", "number", "feed_key", "cash",
+        "REGISTER_COLUMNS": ("code", "account", "holder", "broker_firm", "number", "feed_key", "cash",
                              "cash_read"),
         "MOVEMENT_COLUMNS": ("date", "account", "amount", "source", "detail"),
         "SUMMARY_COLUMNS": ("account", "total"),
@@ -222,7 +223,7 @@ PANEL_COLUMNS = {
     "trades": {
         "COLUMNS": ("ticker", "direction", "account", "currency", "qty", "traded_price",
                     "value", "date"),
-        "BET_COLUMNS": ("stake_per_point", "level_points"),
+        "BET_COLUMNS": ("stake", "level_points"),
         # A BET LEG'S CONTRACT AND ITS FUNDING (13 Oct 2026): where the funding-interest rows rest.
         # A FOREIGN DEAL'S RATE AND WHOSE IT IS (14 Oct 2026).
         "DETAIL_COLUMNS": ("why_entered", "why_exited", "note", "source", "broker_ref",
@@ -363,7 +364,7 @@ def test_the_registry_answers_without_being_primed():
 # CASH REACHES THE CELL
 #
 # "Cash now" on the Accounts tab derives from the newest dated reading in
-# store/cash-observations.csv, and this is the route that writes one. An ii transactions
+# store/cash-readings.csv, and this is the route that writes one. An ii transactions
 # download carries a Running Balance whose top row is dated and sourced; without a route from
 # that row to that cell, the cell could not move without a hand edit.
 #
@@ -378,7 +379,7 @@ def _shares_register():
     from portfusion.record import schema
     h = schema.TABLES["accounts"].header
     return [(r[h.index("account")], r[h.index("number")])
-            for r in schema.load("accounts") if r[h.index("kind")] == "shares"]
+            for r in schema.load("accounts") if r[h.index("held_as")] == "shares"]
 
 
 def _book_units(account, date="2026-09-30"):
@@ -406,28 +407,28 @@ def _after_the_newest_reading(account) -> str:
     asks whether it is a duplicate, dates it here: a fixed date would collide with — or be
     outranked by — a real reading as the record grows, and go red on a correct record."""
     from portfusion.record import schema
-    held = [r[1] for r in schema.load("cash-observations") if r[0] == account]
+    held = [r[1] for r in schema.load("cash-readings") if r[0] == account]
     return (max(held) + _dt.timedelta(days=1)).isoformat()
 
 
 def test_the_bench_can_produce_a_cash_observation():
     """Its form is GENERATED from the schema, so the columns appear by existing."""
-    names = [f["name"] for f in _bench.form_for("cash-observations")]
+    names = [f["name"] for f in _bench.form_for("cash-readings")]
     assert names == ["account", "as_of", "cash", "evidence", "reference"]
-    assert "cash-observations" in _bench.TABLES
+    assert "cash-readings" in _bench.TABLES
 
 
 def test_the_evidence_class_is_a_closed_vocabulary_on_the_form():
     """A reading citing a class the record does not know has no stated authority and no
     reference shape — limbs 2 and 3. A free text box here would let the bench build a row
     that test_record.py then rejects, which is a defect discovered too late."""
-    ev = next(f for f in _bench.form_for("cash-observations") if f["name"] == "evidence")
+    ev = next(f for f in _bench.form_for("cash-readings") if f["name"] == "evidence")
     assert ev["closed"] is True
     assert "ii-transactions" in ev["choices"] and "not-on-file" in ev["choices"]
-    assert _bench.validate_row("cash-observations", dict(GOOD_CASH, evidence="invented"))
+    assert _bench.validate_row("cash-readings", dict(GOOD_CASH, evidence="invented"))
 
 
-@needs("accounts", "account-observations", "trades")
+@needs("accounts", "account-readings", "buys")
 def test_a_second_reading_for_one_account_on_one_date_is_a_duplicate():
     """ONE ACCOUNT HAS ONE CASH BALANCE ON A DATE. A second row for that pair is a
     re-reading, not a second fact.
@@ -438,40 +439,40 @@ def test_a_second_reading_for_one_account_on_one_date_is_a_duplicate():
     which is the exact case this gate exists to catch. The figure below is wrong on purpose.
     """
     from portfusion.record import schema
-    on_file = schema.load("cash-observations")
+    on_file = schema.load("cash-readings")
     assert on_file, "no cash reading on file — nothing to collide with"
     account, as_of = on_file[0][0], on_file[0][1].isoformat()
     held = {"account": account, "as_of": as_of, "cash": "999.99",
             "evidence": "ii-transactions", "reference": "x", "source": "y"}
-    assert _bench.matching_row("cash-observations", held) == account
+    assert _bench.matching_row("cash-readings", held) == account
     fresh = _good_cash(as_of=_after_the_newest_reading(_shares_register()[0][0]))
-    assert _bench.matching_row("cash-observations", fresh) is None, \
+    assert _bench.matching_row("cash-readings", fresh) is None, \
         "a reading on a NEW date is not a duplicate"
 
 
-@needs("accounts", "account-observations", "trades")
+@needs("accounts", "account-readings", "buys")
 def test_a_two_column_signature_is_required_in_full():
     """THE REGRESSION THIS WAS FOUND BY. matching_row() required at least THREE filled
     signature columns before it would compare — right for a five-column event signature, where
-    three filled is enough to be sure. cash-observations has TWO, so the minimum could never be
+    three filled is enough to be sure. cash-readings has TWO, so the minimum could never be
     met and the gate was SILENTLY DISABLED for the table: every duplicate came back None.
 
     The rule was never "three columns", it was "all of the ones that identify this thing".
     Adding `cash` to reach three would have been the wrong fix — see the test above.
     """
-    assert len(_bench.SIGNATURE["cash-observations"]) == 2
-    assert _bench.matching_row("cash-observations",
+    assert len(_bench.SIGNATURE["cash-readings"]) == 2
+    assert _bench.matching_row("cash-readings",
                                {"account": _shares_register()[0][0], "cash": "1"}) is None, \
         "without a date it cannot identify anything, and must not guess"
 
 
-@needs("accounts", "account-observations", "trades")
+@needs("accounts", "account-readings", "buys")
 def test_a_cash_observation_commits_and_reads_back(item, store_copy, tmp_path, monkeypatch):
     """END TO END, against a COPY of the store — never the record itself."""
     from portfusion.record import schema
     from portfusion.desk.doors import commit as _commit
     monkeypatch.setattr(_commit, "ARCHIVE", tmp_path / "archive")
-    was = len(schema.load("cash-observations"))
+    was = len(schema.load("cash-readings"))
     good = _good_cash()
     after = _after_the_newest_reading(good["account"])
 
@@ -480,17 +481,17 @@ def test_a_cash_observation_commits_and_reads_back(item, store_copy, tmp_path, m
     # already holds. Same reason GOOD_TRADE carries TESTREF1.
     item["evidence"] = {"dated": after, "authority": "ii transactions download",
                         "reference": "TESTCASHREF1"}
-    item["rows"] = [{"table": "cash-observations", "values": dict(good, as_of=after)}]
+    item["rows"] = [{"table": "cash-readings", "values": dict(good, as_of=after)}]
     result = _commit.commit(_bench.save(item)["id"])
 
-    assert result["written"] == {"cash-observations": 1}
-    rows = schema.load("cash-observations")
+    assert result["written"] == {"cash-readings": 1}
+    rows = schema.load("cash-readings")
     assert len(rows) == was + 1
     account, as_of, cash = rows[-1][0], rows[-1][1], rows[-1][2]
     assert (account, as_of.isoformat(), cash) == (good["account"], after, 140.00)
 
 
-@needs("accounts", "account-observations", "trades")
+@needs("accounts", "account-readings", "buys")
 def test_the_committed_reading_becomes_the_newest_cash(store_copy, item, tmp_path, monkeypatch):
     """THE WHOLE POINT: the cell moves. `rules.cash_latest()` reads the NEWEST dated reading
     per account, so committing a reading dated after every one on file must displace them —
@@ -504,11 +505,11 @@ def test_the_committed_reading_becomes_the_newest_cash(store_copy, item, tmp_pat
 
     item["evidence"] = {"dated": after, "authority": "ii transactions download",
                         "reference": "TESTCASHREF1"}
-    item["rows"] = [{"table": "cash-observations", "values": dict(good, as_of=after)}]
+    item["rows"] = [{"table": "cash-readings", "values": dict(good, as_of=after)}]
     _commit.commit(_bench.save(item)["id"])
 
     newest = {}
-    for r in schema.load("cash-observations"):
+    for r in schema.load("cash-readings"):
         if r[0] not in newest or r[1] > newest[r[0]][1]:
             newest[r[0]] = r
     assert newest[good["account"]][2] == 140.00
@@ -576,7 +577,7 @@ def test_the_shared_shaping_is_tolerant_where_a_panel_needs_it():
 # =====================================================================================
 
 
-@needs("accounts", "account-observations", "trades")
+@needs("accounts", "account-readings", "buys")
 def test_the_bay_says_what_it_can_replace_rather_than_what_is_due(repo_root):
     """THE LABEL WAS THE DEFECT. `marks_due()` returned every replaceable mark whatever its age,
     so step 3 read "N price(s) due" with some of them fetched minutes earlier by a reading on
@@ -659,9 +660,9 @@ def _ensure_prior_reading(store_copy, account):
     new account is a decision. The real register's accounts all have one; a book whose
     account has not been observed yet gets a minimal prior row in the COPY."""
     from portfusion.record import schema, rules
-    if any(r[0] == account for r in schema.load("account-observations")):
+    if any(r[0] == account for r in schema.load("account-readings")):
         return
-    with (store_copy / "account-observations.csv").open("a", encoding="utf-8",
+    with (store_copy / "account-readings.csv").open("a", encoding="utf-8",
                                                         newline="") as fh:
         fh.write(f"{account},2026-09-28,,1.00,2.00,1.00,,,,,,not-on-file,"
                  f"a prior reading for the replace door\n")
@@ -710,7 +711,7 @@ def _write(readings):
 
 
 
-@needs("accounts", "account-observations", "trades")
+@needs("accounts", "account-readings", "buys")
 def test_a_failed_reading_takes_back_the_banking_too(store_copy, monkeypatch):
     """THE HISTORY IS INSIDE THE ENVELOPE, as on the marks door: the outgoing readings were
     banked before `atomic()`, so a reading that failed after the bank still moved
@@ -753,7 +754,7 @@ def test_a_field_the_new_reading_does_not_carry_is_blank_not_the_old_value():
     assert [merged[c] for c in ("at", "stmt_value", "recon_cash", "available")] == [""] * 4, merged
 
 
-@needs("accounts", "account-observations", "trades")
+@needs("accounts", "account-readings", "buys")
 def test_a_share_reading_is_written_and_banked_with_its_account(store_copy):
     """The hand edit this replaces was two steps — the observation, then `history.accounts
     --archive` — and the report reads the second. One write does both, and the banked row
@@ -764,8 +765,8 @@ def test_a_share_reading_is_written_and_banked_with_its_account(store_copy):
     out = _write([_share()])
 
     assert out["ok"] is True, out.get("refused")
-    h = schema.TABLES["account-observations"].header
-    read = next(r for r in schema.load("account-observations") if r[0] == account)
+    h = schema.TABLES["account-readings"].header
+    read = next(r for r in schema.load("account-readings") if r[0] == account)
     assert tuple(read[h.index(c)] for c in ("positions", "stmt_value", "recon_cash")) \
         == (50000.00, 50250.00, 250.00), read
     from portfusion.history import accounts as AH
@@ -773,19 +774,19 @@ def test_a_share_reading_is_written_and_banked_with_its_account(store_copy):
     assert banked and f"({account})" in banked[0]["source"], banked
 
 
-@needs("accounts", "account-observations", "trades")
+@needs("accounts", "account-readings", "buys")
 def test_a_reading_writes_a_crlf_table_back_in_crlf(store_copy):
-    """The readings door rebuilt account-observations.csv with "\\n" whatever it found (the code
+    """The readings door rebuilt account-readings.csv with "\\n" whatever it found (the code
     review of 2 Oct 2026; latent while the store is LF)."""
     from desk_support import all_crlf, to_crlf
     _share_filed(store_copy)
-    to_crlf("account-observations")
+    to_crlf("account-readings")
     out = _write([_share()])
     assert out["ok"] is True, out.get("refused")
-    assert all_crlf("account-observations"), "the readings door wrote a CRLF table back as LF"
+    assert all_crlf("account-readings"), "the readings door wrote a CRLF table back as LF"
 
 
-@needs("accounts", "account-observations", "trades")
+@needs("accounts", "account-readings", "buys")
 def test_a_share_reading_whose_units_differ_from_the_book_is_refused_by_name(store_copy,
                                                                             monkeypatch):
     """The owner, 30 Sep 2026: a share account is checked on units. A contract note brings every
@@ -808,7 +809,7 @@ def test_a_share_reading_whose_units_differ_from_the_book_is_refused_by_name(sto
     assert all(p.read_bytes() == b for p, b in before.items()), "a refused write moved a file"
 
 
-@needs("accounts", "account-observations", "trades")
+@needs("accounts", "account-readings", "buys")
 def test_a_share_reading_needs_no_pull_time(store_copy):
     """Units are what is checked, and a close does not move them, so the time the document was
     pulled decides nothing and is not asked for."""
@@ -817,7 +818,7 @@ def test_a_share_reading_needs_no_pull_time(store_copy):
     assert out["ok"] is True, out.get("refused")
 
 
-@needs("accounts", "account-observations", "trades")
+@needs("accounts", "account-readings", "buys")
 def test_a_share_reading_that_does_not_add_up_is_refused_and_writes_nothing(store_copy,
                                                                             monkeypatch):
     """Stock plus cash is the total on the document, so a reading where it is not has one
@@ -832,7 +833,7 @@ def test_a_share_reading_that_does_not_add_up_is_refused_and_writes_nothing(stor
     assert all(p.read_bytes() == b for p, b in before.items()), "a refused write moved a file"
 
 
-@needs("accounts", "account-observations", "trades")
+@needs("accounts", "account-readings", "buys")
 def test_a_share_reading_whose_document_is_not_filed_is_refused(store_copy, monkeypatch):
     """Refused at the door: a baseline citing a document nobody filed is a figure nothing
     retrieves. An IG statement of the same day is not the HL valuation."""
@@ -843,7 +844,7 @@ def test_a_share_reading_whose_document_is_not_filed_is_refused(store_copy, monk
     assert out["ok"] is False and "filed on the Bench" in out["refused"], out
 
 
-@needs("accounts", "account-observations", "trades")
+@needs("accounts", "account-readings", "buys")
 def test_a_share_baseline_rests_only_on_the_brokers_own_holdings_document(store_copy,
                                                                           monkeypatch):
     """Not the totals line, which restates the valuation; not a closed class."""
@@ -909,7 +910,7 @@ def _ii(**over):
     return row
 
 
-@needs("accounts", "account-observations", "trades")
+@needs("accounts", "account-readings", "buys")
 def test_a_reading_off_a_document_that_states_no_cash_is_its_stock_alone(store_copy):
     """The owner, 2 Oct 2026: a reading off ii's holdings export is the stock, and its blank cash
     and total CLEAR what the account's previous reading carried (`observations.SHARE_CASH`).
@@ -918,7 +919,7 @@ def test_a_reading_off_a_document_that_states_no_cash_is_its_stock_alone(store_c
     from portfusion.engine import Book
     account = _ii_filed(store_copy)
     # THE PRIOR READING, CARRYING CASH it had no document for — what the 2 Oct copy did.
-    path = store_copy / "account-observations.csv"
+    path = store_copy / "account-readings.csv"
     with path.open("a", encoding="utf-8", newline="") as fh:
         fh.write(f"{account},2026-09-29,2026-09-29T14:05Z,1.00,41200.00,1200.00,,,,,,"
                  f"not-on-file,carried by the copy this test retires\n")
@@ -928,8 +929,8 @@ def test_a_reading_off_a_document_that_states_no_cash_is_its_stock_alone(store_c
                       reference="1 Oct 2026 08:31")])
 
     assert out["ok"] is True, out.get("refused")
-    header = schema.TABLES["account-observations"].header
-    read = next(dict(zip(header, r)) for r in schema.load("account-observations")
+    header = schema.TABLES["account-readings"].header
+    read = next(dict(zip(header, r)) for r in schema.load("account-readings")
                 if r[0] == account)
     assert (read["positions"], read["stmt_value"], read["recon_cash"]) == (40000.00, None, None), read
     _rules.reload_store()
@@ -939,7 +940,7 @@ def test_a_reading_off_a_document_that_states_no_cash_is_its_stock_alone(store_c
     assert row["statement"] == round(40000.00 + held.cash, 2)
 
 
-@needs("accounts", "account-observations", "trades")
+@needs("accounts", "account-readings", "buys")
 def test_a_cash_figure_on_a_reading_whose_document_states_none_is_refused(store_copy):
     """The copy removed on 2 Oct 2026, refused at the door. A cash figure on an ii export's reading is the
     account's ledger's, wearing the export's evidence."""
@@ -952,7 +953,7 @@ def test_a_cash_figure_on_a_reading_whose_document_states_none_is_refused(store_
     assert all(p.read_bytes() == b for p, b in before.items()), "a refused write moved a file"
 
 
-@needs("accounts", "account-observations", "trades")
+@needs("accounts", "account-readings", "buys")
 def test_a_reading_off_a_document_that_states_its_cash_still_needs_it(store_copy):
     """The other half: HL's export states its cash and its total, so a reading off it without
     them is short of figures the document holds."""
@@ -993,7 +994,7 @@ def holdings_on_the_bench(store_copy, tmp_path, monkeypatch):
 
 
 
-@needs("accounts", "account-observations", "trades")
+@needs("accounts", "account-readings", "buys")
 def test_a_reading_whose_document_has_left_the_workbench_fails_its_gate(holdings_on_the_bench):
     """THE DOCUMENT GONE IS ONE GATE FAILING. The reading's gate reads the document from the
     workbench, and a file moved or withdrawn meanwhile raised through `gates()`: the Bench
@@ -1006,7 +1007,7 @@ def test_a_reading_whose_document_has_left_the_workbench_fails_its_gate(holdings
     assert not gate["ok"] and "no longer on the workbench" in gate["detail"], gate
 
 
-@needs("accounts", "account-observations", "trades")
+@needs("accounts", "account-readings", "buys")
 def test_a_holdings_export_is_filed_with_its_reading_in_one_step(holdings_on_the_bench):
     from portfusion.record import schema
     from portfusion.desk.doors import commit
@@ -1028,13 +1029,13 @@ def test_a_holdings_export_is_filed_with_its_reading_in_one_step(holdings_on_the
 
     assert out["reading"] == account and not (inbox / "summary.csv").exists()
     assert [p.name for p in statements.iterdir()], "the document was not filed"
-    h = schema.TABLES["account-observations"].header
-    read = next(r for r in schema.load("account-observations") if r[0] == account)
+    h = schema.TABLES["account-readings"].header
+    read = next(r for r in schema.load("account-readings") if r[0] == account)
     assert tuple(read[h.index(c)] for c in ("positions", "stmt_value", "recon_cash")) \
         == (50000.00, 50250.00, 250.00), read
 
 
-@needs("accounts", "account-observations", "trades")
+@needs("accounts", "account-readings", "buys")
 def test_a_document_goes_back_to_the_workbench_when_the_book_will_not_load(
         holdings_on_the_bench, monkeypatch):
     """The document is filed before the reading, because the readings door asks for it in the
@@ -1057,7 +1058,7 @@ def test_a_document_goes_back_to_the_workbench_when_the_book_will_not_load(
     assert (inbox / "summary.csv").exists() and not list(statements.iterdir())
 
 
-@needs("accounts", "account-observations", "trades")
+@needs("accounts", "account-readings", "buys")
 @pytest.mark.parametrize("typed", ["30 Sep 2026", "30 September 2026"])
 def test_a_reading_dated_in_words_reads_its_date(holdings_on_the_bench, typed):
     """THE DATE AS THE FILING READS IT. Its first ten characters were taken until 14 Oct 2026, so
@@ -1071,7 +1072,7 @@ def test_a_reading_dated_in_words_reads_its_date(holdings_on_the_bench, typed):
     assert gate["ok"], gate["detail"]
 
 
-@needs("accounts", "account-observations", "trades")
+@needs("accounts", "account-readings", "buys")
 def test_a_reading_whose_date_will_not_read_is_refused_by_name(holdings_on_the_bench):
     """A date that reads as no date is a refusal that names it, never an error, and never the
     misleading one a blank date led to (a filed name nobody would look for)."""
@@ -1082,7 +1083,7 @@ def test_a_reading_whose_date_will_not_read_is_refused_by_name(holdings_on_the_b
     assert not gate["ok"] and "'end of September'" in gate["detail"], gate["detail"]
 
 
-@needs("accounts", "account-observations", "trades")
+@needs("accounts", "account-readings", "buys")
 def test_a_holdings_export_whose_units_differ_is_not_filed(holdings_on_the_bench, monkeypatch):
     """The gate asks the readings door before anything moves, and names the holding."""
     from portfusion.desk.doors import commit
@@ -1104,7 +1105,7 @@ def test_a_holdings_export_whose_units_differ_is_not_filed(holdings_on_the_bench
     assert (inbox / "summary.csv").exists() and not list(statements.iterdir())
 
 
-@needs("accounts", "account-observations", "trades")
+@needs("accounts", "account-readings", "buys")
 def test_an_ii_holdings_export_on_the_bench_reads_its_stock_alone(holdings_on_the_bench):
     """The reading the Bench files off ii's export is the stock alone, cash and total blank —
     never a cash reading copied in when the export was opened (the owner, 2 Oct 2026)."""
@@ -1126,7 +1127,7 @@ def test_an_ii_holdings_export_on_the_bench_reads_its_stock_alone(holdings_on_th
     assert gate["ok"] and gate["detail"].endswith("stock 40000.00"), gate["detail"]
 
 
-@needs("accounts", "account-observations", "trades")
+@needs("accounts", "account-readings", "buys")
 def test_an_ii_item_read_before_the_cash_came_off_is_told_to_read_it_again(holdings_on_the_bench):
     """An ii item read before 2 Oct 2026 still holds the cash and total the Bench then copied in.
     The readings door refuses them, rightly, and until 14 Oct 2026 said nothing of the one thing
@@ -1144,7 +1145,7 @@ def test_an_ii_item_read_before_the_cash_came_off_is_told_to_read_it_again(holdi
     assert not gate["ok"] and gate["detail"].endswith("Read it again."), gate["detail"]
 
 
-@needs("accounts", "account-observations", "trades")
+@needs("accounts", "account-readings", "buys")
 def test_a_cash_of_nothing_is_still_shown_as_a_cash(holdings_on_the_bench):
     """`or ''` read a cash of 0 as none, and the gate's line dropped the cash and the total. The
     reader stores figures as text, where "0.00" is truthy; a saved item can hold the number."""

@@ -186,7 +186,7 @@ def ledger(tmp_path, monkeypatch):
     from portfusion.desk.intake import bench
     monkeypatch.setattr(read_document, "INBOX", str(tmp_path))
     monkeypatch.setattr(read_rows, "bench_matching", lambda table, values: None)
-    monkeypatch.setattr(read_rows, "_in_record", lambda ref: "exits" if ref == "ABC123" else "")
+    monkeypatch.setattr(read_rows, "_in_record", lambda ref: "sales" if ref == "ABC123" else "")
     monkeypatch.setattr(bench, "accounts_citing",
                         lambda ref: {"Voss ii Trading"} if ref == "ABC123" else set())
     monkeypatch.setattr(read_rows, "bench_currencies", lambda account: {"GBP"})
@@ -206,14 +206,14 @@ def test_an_ii_ledger_is_read_line_by_line_by_how_each_description_begins(ledger
     assert rows[("income", "Cash interest")]["date"] == "2025-02-25"
     # THE DEALING LINE IS REPORTED AGAINST ITS CONTRACT NOTE, never entered from the ledger.
     dealing = [s for s in out["seen"] if "ABC123" in s["line"]]
-    assert dealing and dealing[0]["in_record"] == "exits"
+    assert dealing and dealing[0]["in_record"] == "sales"
     # A LINE IT DOES NOT KNOW IS LEFT FOR A PERSON, never guessed.
     assert any("Transfer in from somewhere" in u for u in out["unrecognised"])
 
 
 def test_a_gbp_only_accounts_closing_balance_is_its_cash(ledger):
     out = read_rows.read(ledger)
-    cash = [r["values"] for r in out["rows"] if r["table"] == "cash-observations"]
+    cash = [r["values"] for r in out["rows"] if r["table"] == "cash-readings"]
     assert cash and cash[0]["cash"] == "950.00", "the newest line's running balance"
 
 
@@ -221,7 +221,7 @@ def test_an_account_with_other_currency_cash_gets_no_cash_row_from_one_ledger(le
     """An account paid interest in EUR holds EUR cash: a GBP ledger's balance is half of it."""
     monkeypatch.setattr(read_rows, "bench_currencies", lambda account: {"GBP", "EUR"})
     out = read_rows.read(ledger)
-    assert not [r for r in out["rows"] if r["table"] == "cash-observations"]
+    assert not [r for r in out["rows"] if r["table"] == "cash-readings"]
     assert any("EUR" in s["why"] for s in out["seen"])
 
 

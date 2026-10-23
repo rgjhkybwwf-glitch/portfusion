@@ -648,7 +648,7 @@ function field(spec, value, quote, drafted) {
    so shown with it. */
 function firstMarks(it) {
   return (it.marks || []).map((m) => `<div class="row-card"><div class="row-head">
-      <strong>First mark</strong></div><dl class="detail">${["ticker", "price", "currency", "as_of",
+      <strong>First mark</strong></div><dl class="detail">${["mark_key", "price", "currency", "as_of",
       "source"].map((k) => `<dt>${head(k)}</dt><dd>${esc(m[k] ?? "")}</dd>`).join("")}</dl></div>`)
     .join("");
 }
@@ -866,7 +866,7 @@ function drawItem(d) {
       rows: [...collect(), { table: b.dataset.addrow, values: {} }] })));
   $("#item").querySelectorAll("[data-addadjustment]").forEach((b) =>
     b.addEventListener("click", () => benchSave({
-      rows: [...collect(), { table: "trades", adjustment: { from: "", to: "" }, values: {} }] })));
+      rows: [...collect(), { table: "buys", adjustment: { from: "", to: "" }, values: {} }] })));
   $("#item").querySelectorAll("[data-delrow]").forEach((b) =>
     b.addEventListener("click", () => benchSave({
       rows: collect().filter((_, i) => i !== +b.dataset.delrow) })));
@@ -1074,13 +1074,13 @@ let HEADS = {};
    window. The words stay the list's. */
 const head = (c) => esc(sentence(HEADS[c] || c.replace(/_/g, " "))).replace(/\//g, "/<wbr>");
 
-const MONEYCOL = ["cost", "value", "gain", "proceeds",
+const MONEYCOL = ["cost", "value", "gain", "unrealised", "proceeds",
                   "opening_nav", "closing_nav", "capital_deployed", "return_income",
                   "change", "price_effect", "fx_effect", "transacted", "value_to",
-                  "exposure", "nav", "opening_capital", "capital_employed", "capital_growth",
-                  "income", "amount", "cash", "realised", "to_date", "dividends", "funding",
-                  "total"];
-const PCTCOL = ["gain_pct", "weight", "return", "price_move_pct", "ytd", "life_pct"];
+                  "exposure", "nav", "capital_employed", "capital_growth",
+                  "income", "amount", "cash", "realised", "dividends", "funding_interest",
+                  "total", "life_gain"];
+const PCTCOL = ["unrealised_pct", "realised_pct", "weight", "return", "price_move_pct", "ytd", "life_pct"];
 
 /* MOVEMENT, WHICH IS NOT PROVENANCE — house/palette.py's own words, over the two constants these
    colours come from. The word matters: "direction" is already a COLUMN on Trades holding
@@ -1101,9 +1101,9 @@ const PCTCOL = ["gain_pct", "weight", "return", "price_move_pct", "ytd", "life_p
    Book.HEADLINE, because a renderer must not decide what a figure MEANS by reading its label —
    that is the defect that got figures.py deleted. Colour's job here is scanning a column, and
    the Dashboard is a summary list rather than a table you scan. */
-const MOVEMENTCOL = ["gain", "gain_pct", "return",
+const MOVEMENTCOL = ["gain", "unrealised", "unrealised_pct", "realised_pct", "return",
                      "change", "price_effect", "fx_effect", "price_move_pct",
-                     "realised", "to_date", "total", "life_pct"];
+                     "realised", "life_gain", "life_pct"];
 
 /* THE FOUR ADDED 6 SEP 2026 FOR What Changed, AND THE ONE HELD BACK. `change`, `price_effect`,
    `fx_effect` and `price_move_pct` are results: their sign says whether the book is better or
@@ -1342,7 +1342,7 @@ const table = (rows, cols, extraHead = "", extraCell = () => "", opts = {}) => {
       at(c).map((i) => i.head).join("")).join("")}${extraHead}</tr></thead>
     <tbody>${(sort ? sortOrder(rows, key) : rows.map((r, i) => i)).map((n) => [rows[n], n]).map(([r, n]) =>
       `<tr${sort ? ` data-i="${n}"` : ""}${rowClass && rowClass(r) ? ` class="${rowClass(r)}"` : ""}>${cols.map((c) => (cells[c] ? cells[c](r)
-                               : local.has(c) ? (r.stake_per_point != null ? pointsCell(r[c])
+                               : local.has(c) ? (r.stake != null ? pointsCell(r[c])
                                                  : `<td class="num">${localPrice(r[c], r.currency)}</td>`)
                                : draw(c, r[c])) + at(c).map((i) => i.cell(r)).join("")).join("")}` +
       `${extraCell(r)}</tr>` + (afterRow ? afterRow(r, span) : "")).join("")}</tbody>
@@ -1490,8 +1490,8 @@ const ACTION_VIEW = {
 
 /* HOW MUCH IS HELD. A share line is its count; a spread bet is its stake per point, the way
    Trades reads one; a company row is its shares, bets counted as share-equivalents. */
-const heldCell = (r) => r.stake_per_point != null
-  ? `<td class="num">£${r.stake_per_point}/pt</td>`
+const heldCell = (r) => r.stake != null
+  ? `<td class="num">£${r.stake}/pt</td>`
   : r.qty != null ? `<td class="num">${r.qty.toLocaleString("en-GB")}</td>` : `<td class="num">—</td>`;
 
 /* A LEVEL IN POINTS, as IG states it: a bet's entry, traded, exit or current level. A row that
@@ -1581,9 +1581,9 @@ function companyLives(d) {
   return page({
     scope: "each company, first purchase to final sale, shares and bets together",
     status: d.narrowed ? [{ state: "note", tag: "selected", label: "Whole book",
-      body: quiet(`${w.lives} lives · life gain ${money(w.total)}`) }] : null,
+      body: quiet(`${w.lives} lives · life gain ${money(w.life_gain)}`) }] : null,
     figures: [["Lives", t.lives], ["Open", t.open],
-              ["Realised gain", money(t.realised)], ["Life gain", money(t.total)]],
+              ["Realised gain", money(t.realised)], ["Life gain", money(t.life_gain)]],
     filters: { clear: "rt-clear", fields: [
       filterField("company", `<select id="rt-company"><option value="">all</option>${d.companies.map((c) =>
         `<option${c === d.company ? " selected" : ""}>${esc(c)}</option>`).join("")}</select>`),
@@ -1600,8 +1600,8 @@ function companyLives(d) {
                   cells: {
                     opened: (r) => `<td class="nowrap">${esc(day(r.opened))}${r.pre_baseline
                       ? ` <span class="tag">before the record</span>` : ""}</td>`,
-                    held: (r) => `<td class="num">${r.held == null ? "—"
-                      : r.held.toLocaleString("en-GB")}</td>`,
+                    qty: (r) => `<td class="num">${r.qty == null ? "—"
+                      : r.qty.toLocaleString("en-GB")}</td>`,
                     currency: (r) => r.currency == null ? `<td>—</td>` : cell("currency", r.currency) } }),
   });
 }
@@ -1669,11 +1669,11 @@ Object.assign(RENDER, {
       scope: "every closed position, gain net of dealing commission",
       status: d.narrowed ? [{ state: "note", tag: "selected", label: "Whole book",
         body: quiet(`${w.realisations} realisation(s) · proceeds ${money(w.proceeds)}
-          · gain ${money(w.gain)}`) }] : null,
+          · realised gain ${money(w.realised)}`) }] : null,
       figures: [["Realisations", t.realisations],
                 ["Closed out", t.closed_out],
                 ["Proceeds", money(t.proceeds)],
-                ["Realised gain", money(t.gain)]],
+                ["Realised gain", money(t.realised)]],
       filters: { clear: "rt-clear", fields: [
         filterField("account", `<select id="rt-acct"><option value="">all</option>${d.accounts.map((a) =>
           `<option${a === d.account ? " selected" : ""}>${esc(a)}</option>`).join("")}</select>`),
@@ -1700,13 +1700,13 @@ Object.assign(RENDER, {
                        for a quantity, its entry and exit as levels in points, and no currency
                        of its own. A share's prices are in the Ccy column's currency. */
                     cells: {
-                      currency: (r) => r.stake_per_point == null ? cell("currency", r.currency)
+                      currency: (r) => r.stake == null ? cell("currency", r.currency)
                                                                  : `<td>—</td>`,
                       qty: heldCell,
-                      entry_price: (r) => r.stake_per_point != null
+                      entry_price: (r) => r.stake != null
                         ? pointsCell(r.entry_level_points)
                         : `<td class="num">${localPrice(r.entry_price, r.currency)}</td>`,
-                      exit_price: (r) => r.stake_per_point != null
+                      exit_price: (r) => r.stake != null
                         ? pointsCell(r.exit_level_points)
                         : `<td class="num">${localPrice(r.exit_price, r.currency)}</td>` } }),
     });
@@ -2265,8 +2265,8 @@ RENDER_LATE = {
        how the difference stops being visible, and the difference is the whole of the glossary's
        provenance section. A DERIVED mark may never be labelled sourced. */
     const priceRow = (r) => `
-      <tr data-kind="price" data-key="${esc(r.line)}">
-        <td class="oneline">${esc(r.line)}</td>
+      <tr data-kind="price" data-key="${esc(r.mark_key)}">
+        <td class="oneline">${esc(r.mark_key)}</td>
         <td class="num muted">${r.price} ${r.contract ? "pts" : esc(r.currency)}</td>
         <td class="small ${r.stale ? "stale" : "muted"}">${esc(day(r.as_of))} · ${r.age_days}d</td>
         <td class="num"><input data-f="price" readonly size="10"></td>
@@ -2372,7 +2372,7 @@ RENDER_LATE = {
             and a select-all that could tick one would be a way round `docs/prices.md` rule 1
             dressed up as a shortcut. The count beside it says what it took and what it left. */ ""}
       <div class="scroll" id="rb-form"><table>
-        <thead><tr><th>${head("line")}</th><th class="num">${head("was")}</th>
+        <thead><tr><th>${head("mark_key")}</th><th class="num">${head("was")}</th>
           <th>${head("was_at")}</th><th class="num">${head("new")}</th><th>${head("new_at")}</th>
           <th>${head("source")}</th><th>${head("origin")}</th><th>${head("take")}</th></tr></thead>
         ${group("Prices", "price", d.prices.map(priceRow))}
@@ -2564,7 +2564,7 @@ RENDER_LATE = {
         notes.push(`<span class="stale">TradingView: ${failed(tv.error)}</span>`);
       } else {
         (tv.prices || []).forEach((row) => {
-          fill(row.ticker, "price",
+          fill(row.mark_key, "price",
                    { price: row.price, as_of: row.as_of, source: row.source,
                      struck: row.struck, at: row.at }, "fetched");
         });
@@ -2681,8 +2681,8 @@ RENDER_LATE = {
           payload.rates.push({ currency: tr.dataset.currency, as_of: v.as_of, rate: v.rate,
                                source: v.source, struck: tr.dataset.struck });
         } else if (tr.dataset.kind === "price") {
-          const was = d.prices.find((r) => r.line === tr.dataset.key);
-          payload.prices.push({ ticker: tr.dataset.key, price: v.price,
+          const was = d.prices.find((r) => r.mark_key === tr.dataset.key);
+          payload.prices.push({ mark_key: tr.dataset.key, price: v.price,
                                 currency: was.currency, as_of: v.as_of, source: v.source,
                                 struck: tr.dataset.struck, at: tr.dataset.at });
         } else {
@@ -3006,7 +3006,7 @@ function wireIgEvents() {
     if (!ev) { b.textContent = "sweep again — this event is stale"; return; }
     await toBench(b, ev);
   });
-  /* THE CONTRACT FOLLOWS THE CODE until it is typed itself: the code's root and the epic's
+  /* THE CONTRACT FOLLOWS THE TICKER until it is typed itself: the ticker's root and the epic's
      month. A company not in the register asks for its sector and region. */
   main.addEventListener("input", (e) => {
     const form = e.target.closest("[data-setup-form]");
@@ -3015,7 +3015,7 @@ function wireIgEvents() {
     const ev = IG_EVENTS[form.dataset.setupForm] || {};
     const contract = form.querySelector('[data-su="contract"]');
     if (name === "contract") contract.dataset.typed = "1";
-    if (name === "code" && !contract.dataset.typed) {
+    if (name === "ticker" && !contract.dataset.typed) {
       contract.value = e.target.value.trim().replace(/ SB$/i, "").toUpperCase() + (ev.suffix || "");
     }
     if (name === "company") {
@@ -3038,15 +3038,15 @@ function setupForm(ev) {
   const pick = (name, xs, chosen = "") => `<label class="f"><span>${head(name)}</span>
     <select data-su="${name}"><option></option>${xs.map((x) =>
       `<option${x === chosen ? " selected" : ""}>${esc(x)}</option>`).join("")}</select></label>`;
-  return `<div class="grid">${box("code")}${box("company", "", ' list="su-company"')}
-      ${pick("currency", choices("trades", "cur"))}${box("symbol")}${box("points_per_unit")}${
+  return `<div class="grid">${box("ticker")}${box("company", "", ' list="su-company"')}
+      ${pick("currency", choices("buys", "cur"))}${box("symbol")}${box("points_per_unit")}${
         box("shares_per_unit")}
       ${box("sector", "", ' list="su-sector"', " data-su-new hidden")}${
         box("region", "", ' list="su-region"', " data-su-new hidden")}
       ${box("contract", ev.suffix || "")}${box("epic", ev.epic || "", " readonly")}
       ${pick("funding", choices("contracts", "funding"), ev.funding)}</div>
     ${options("su-company", choices("securities", "company"))}${options("su-sector",
-      choices("issuers", "sector"))}${options("su-region", choices("issuers", "region"))}
+      choices("companies", "sector"))}${options("su-region", choices("companies", "region"))}
     <p><button class="link" data-setup-go="${esc(ev.ref)}">work it</button></p>`;
 }
 
@@ -3057,18 +3057,18 @@ function setupEvent(ev, form) {
   const choices = (t, f) => ((BENCH.forms[t] || []).find((s) => s.name === f) || {}).choices || [];
   const row = (table, v) => ({ table, values: Object.fromEntries(
     (BENCH.forms[table] || []).map((s) => [s.name, v[s.name] ?? ""])) });
-  const code = got("code"), company = got("company"), contract = got("contract");
+  const ticker = got("ticker"), company = got("company"), contract = got("contract");
   const rows = [];
-  if (!choices("trades", "ticker").includes(code)) {
-    rows.push(row("securities", { code, company, kind: "spread bet", currency: got("currency"),
+  if (!choices("buys", "ticker").includes(ticker)) {
+    rows.push(row("securities", { ticker, company, held_as: "spread bet", currency: got("currency"),
       symbol: got("symbol"), points_per_unit: got("points_per_unit"),
       shares_per_unit: got("shares_per_unit") }));
   }
   if (!choices("securities", "company").includes(company)) {
-    rows.push(row("issuers", { company, sector: got("sector"), region: got("region") }));
+    rows.push(row("companies", { company, sector: got("sector"), region: got("region") }));
   }
-  rows.push(row("contracts", { contract, epic: got("epic"), funding: got("funding"), code }));
-  return { ...ev, values: { ...ev.values, ticker: code, contract }, with: rows };
+  rows.push(row("contracts", { contract, epic: got("epic"), funding: got("funding"), ticker }));
+  return { ...ev, values: { ...ev.values, ticker, contract }, with: rows };
 }
 
 async function toBench(b, ev, action = "ig-event-to-bench") {

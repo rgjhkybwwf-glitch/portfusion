@@ -83,13 +83,13 @@ def _allocate(rows: list[dict], key: str, prefix: str) -> None:
 def _settle(T: dict) -> tuple[list, dict]:
     """Resolve what the rows point at and file each row under its document: returns each
     (side, row, note), and each IG statement's rows by its date, for the archive."""
-    _allocate(T["trades"], "id", "T")
-    _allocate(T["exits"], "eid", "E")
+    _allocate(T["buys"], "trade_id", "T")
+    _allocate(T["sales"], "sale_id", "E")
     noted, stated = [], {}
-    for table, side in (("trades", "BOUGHT"), ("exits", "SOLD")):
+    for table, side in (("buys", "BOUGHT"), ("sales", "SOLD")):
         for row in T[table]:
             if "_closes" in row:
-                row["closes"] = row.pop("_closes")["id"]
+                row["closes"] = row.pop("_closes")["trade_id"]
             if "_note" in row:
                 row.update(source=D.trade_source("ii-contract-note", row["date"]),
                            broker_ref=row["_note"]["ref"])
@@ -106,7 +106,7 @@ def _settle(T: dict) -> tuple[list, dict]:
 
 def _book() -> dict[str, list[dict]]:
     T = {}
-    T["issuers"] = [
+    T["companies"] = [
         {"company": "Bryncoed Minerals plc", "sector": "Mining", "region": "UK"},
         {"company": "Kelstrand Foods plc", "sector": "Consumer Staples", "region": "UK"},
         {"company": "Quenlan Robotics Inc.", "sector": "Industrials", "region": "US"},
@@ -114,97 +114,97 @@ def _book() -> dict[str, list[dict]]:
         {"company": "Veldrome Metals Inc.", "sector": "Materials", "region": "US"},
     ]
     T["securities"] = [
-        {"code": "BRYC.L", "company": "Bryncoed Minerals plc", "kind": "shares",
+        {"ticker": "BRYC.L", "company": "Bryncoed Minerals plc", "held_as": "shares",
          "currency": "GBP", "symbol": "XLON:BRYC", "quote_unit": "GBX"},
-        {"code": "KELS.L", "company": "Kelstrand Foods plc", "kind": "shares",
+        {"ticker": "KELS.L", "company": "Kelstrand Foods plc", "held_as": "shares",
          "currency": "GBP", "symbol": "XLON:KELS", "quote_unit": "GBX"},
-        {"code": "QNLR", "company": "Quenlan Robotics Inc.", "kind": "shares",
+        {"ticker": "QNLR", "company": "Quenlan Robotics Inc.", "held_as": "shares",
          "currency": "USD", "symbol": "XNAS:QNLR", "quote_unit": "USD"},
-        {"code": "TARN.L", "company": "Tarnwell Hotels plc", "kind": "shares", "currency": "GBP"},
-        {"code": "VELD SB", "company": "Veldrome Metals Inc.", "kind": "spread bet",
+        {"ticker": "TARN.L", "company": "Tarnwell Hotels plc", "held_as": "shares", "currency": "GBP"},
+        {"ticker": "VELD SB", "company": "Veldrome Metals Inc.", "held_as": "spread bet",
          "currency": "USD", "symbol": "XNYS:VELD", "points_per_unit": 100},
-        {"code": "QNLR SB", "company": "Quenlan Robotics Inc.", "kind": "spread bet",
+        {"ticker": "QNLR SB", "company": "Quenlan Robotics Inc.", "held_as": "spread bet",
          "currency": "USD", "symbol": "XNAS:QNLR", "points_per_unit": 100},
     ]
     T["accounts"] = [
-        {"account": ISA, "holder": "Ms Nia Voss", "broker": "interactive investor",
-         "number": "7421950", "code": "A1", "kind": "shares"},
-        {"account": TRADING, "holder": "Ms Nia Voss", "broker": "interactive investor",
-         "number": "7421951", "code": "A2", "kind": "shares"},
-        {"account": SPREAD, "holder": "Ms Nia Voss", "broker": "IG Index Ltd",
-         "number": "XK9P3", "code": "A3", "kind": "spread bet", "feed_key": "VOSS_IG"},
+        {"account": ISA, "holder": "Ms Nia Voss", "broker_firm": "interactive investor",
+         "number": "7421950", "code": "A1", "held_as": "shares"},
+        {"account": TRADING, "holder": "Ms Nia Voss", "broker_firm": "interactive investor",
+         "number": "7421951", "code": "A2", "held_as": "shares"},
+        {"account": SPREAD, "holder": "Ms Nia Voss", "broker_firm": "IG Index Ltd",
+         "number": "XK9P3", "code": "A3", "held_as": "spread bet", "feed_key": "VOSS_IG"},
     ]
     T["capital-movements"] = [
         {"date": d, "account": a, "amount": v, "source": NOT_ON_FILE, "detail": "Deposit"}
         for d, a, v in (("2026-01-15", ISA, 6000.0), ("2026-02-27", TRADING, 1500.0),
                         ("2026-05-05", ISA, 3000.0), ("2026-07-01", SPREAD, 5000.0),
                         ("2026-08-05", SPREAD, 1500.0))]
-    T["closed-positions"] = [
-        {"ticker": "TARN.L", "realisation": "R-TARN", "open_date": "2026-02-10",
+    T["realisations"] = [
+        {"ticker": "TARN.L", "realisation_id": "R-TARN", "opened": "2026-02-10",
          "note": "Sold whole, 20 Jun 2026; nothing stays open."},
-        {"ticker": "KELS.L", "realisation": "R-KELS", "open_date": "2026-05-20",
+        {"ticker": "KELS.L", "realisation_id": "R-KELS", "opened": "2026-05-20",
          "note": "Half sold; 1,000 shares stay open."},
-        {"ticker": "VELD SB", "realisation": "R-VELDSB", "open_date": "2026-07-06",
+        {"ticker": "VELD SB", "realisation_id": "R-VELDSB", "opened": "2026-07-06",
          "note": "The September leg closed whole; December and March stay open."},
-        {"ticker": "QNLR SB", "realisation": "R-QNLRSB", "open_date": "2026-08-14",
+        {"ticker": "QNLR SB", "realisation_id": "R-QNLRSB", "opened": "2026-08-14",
          "note": "The smaller leg closed; the December leg stays open."},
     ]
     shares = dict(source=NOT_ON_FILE, cur="GBP")
     bets = dict(source=NOT_ON_FILE, account=SPREAD, cur="GBP")
-    T["trades"] = [
-        {"date": "2025-11-10", "account": ISA, "ticker": "BRYC.L", "qty": 1000, "val": 2000.0,
-         "price": 2.0, **shares,
+    T["buys"] = [
+        {"date": "2025-11-10", "account": ISA, "ticker": "BRYC.L", "qty": 1000, "cost": 2000.0,
+         "traded_price": 2.0, **shares,
          "_note": _note("DMQ4TA", "09:42", "12/11/2025", "BRYNCOED MINERALS PLC", "ORD GBP0.10")},
-        {"date": "2026-02-10", "account": ISA, "ticker": "TARN.L", "qty": 800, "val": 2000.0,
-         "price": 2.5, **shares,
+        {"date": "2026-02-10", "account": ISA, "ticker": "TARN.L", "qty": 800, "cost": 2000.0,
+         "traded_price": 2.5, **shares,
          "_note": _note("DMR8KB", "10:05", "12/02/2026", "TARNWELL HOTELS PLC", "ORD GBP0.25")},
-        {"date": "2026-03-02", "account": TRADING, "ticker": "BRYC.L", "qty": 500, "val": 1025.0,
-         "price": 2.05, **shares,
+        {"date": "2026-03-02", "account": TRADING, "ticker": "BRYC.L", "qty": 500, "cost": 1025.0,
+         "traded_price": 2.05, **shares,
          "_note": _note("DMS2LC", "14:20", "04/03/2026", "BRYNCOED MINERALS PLC", "ORD GBP0.10")},
-        {"date": "2026-04-14", "account": ISA, "ticker": "QNLR", "qty": 50, "val": 3800.0,
-         "price": 100.0, "rate": 1.3158, **shares, "cur": "USD",
+        {"date": "2026-04-14", "account": ISA, "ticker": "QNLR", "qty": 50, "cost": 3800.0,
+         "traded_price": 100.0, "rate": 1.3158, **shares, "cur": "USD",
          "_note": _note("DMT6WD", "15:31", "16/04/2026", "QUENLAN ROBOTICS INC", "COM USD0.001",
                         commission=0.03)},
-        {"date": "2026-05-20", "account": ISA, "ticker": "KELS.L", "qty": 2000, "val": 3000.0,
-         "price": 1.5, **shares,
+        {"date": "2026-05-20", "account": ISA, "ticker": "KELS.L", "qty": 2000, "cost": 3000.0,
+         "traded_price": 1.5, **shares,
          "_note": _note("DMU3XE", "11:12", "22/05/2026", "KELSTRAND FOODS PLC", "ORD GBP0.05")},
-        {"date": "2026-07-06", "ticker": "VELD SB", "stake": 1, "val": 9850.0,
+        {"date": "2026-07-06", "ticker": "VELD SB", "stake": 1, "level_points": 9850.0,
          "contract": "VELD-SEP26", **bets, "broker_ref": "DIAAAADEMOVELD06",
          "_statement": "2026-07-06"},
-        {"date": "2026-07-06", "ticker": "VELD SB", "stake": 1, "val": 9900.0,
+        {"date": "2026-07-06", "ticker": "VELD SB", "stake": 1, "level_points": 9900.0,
          "contract": "VELD-DEC26", **bets, "broker_ref": "DIAAAADEMOVELD07",
          "_statement": "2026-07-06"},
-        {"date": "2026-08-03", "ticker": "VELD SB", "stake": 0.8, "val": 10100.0,
+        {"date": "2026-08-03", "ticker": "VELD SB", "stake": 0.8, "level_points": 10100.0,
          "contract": "VELD-MAR27", **bets},
-        {"date": "2026-08-14", "ticker": "QNLR SB", "stake": 0.5, "val": 10200.0,
+        {"date": "2026-08-14", "ticker": "QNLR SB", "stake": 0.5, "level_points": 10200.0,
          "contract": "QNLR-DEC26", **bets},
-        {"date": "2026-08-14", "ticker": "QNLR SB", "stake": 0.3, "val": 10300.0,
+        {"date": "2026-08-14", "ticker": "QNLR SB", "stake": 0.3, "level_points": 10300.0,
          "contract": "QNLR-DEC26", **bets},
     ]
     # A CONSOLIDATION, so the shipping check walks one: Tarnwell's 2-to-1 between its quarter-end
     # mark and its sale, the row the Bench derives (`bench.adjustment_cells`), and the sale takes
     # the new count at twice the price, so no figure moves.
-    tarn = next(t for t in T["trades"] if t["ticker"] == "TARN.L")
-    T["trades"].append(
+    tarn = next(t for t in T["buys"] if t["ticker"] == "TARN.L")
+    T["buys"].append(
         {"date": "2026-05-11", "account": ISA, "ticker": "TARN.L", "qty": tarn["qty"] // 2 - tarn["qty"],
-         "val": 0.0, "cur": "GBP",
+         "cost": 0.0, "cur": "GBP",
          "source": "Derived: 2-to-1 consolidation of TARN.L, effective 11 May 2026, invented for the demo",
          "note": f"2-to-1 share consolidation: {tarn['qty']:,} shares became {tarn['qty'] // 2:,}."})
 
     def leg(contract, stake):
-        return next(t for t in T["trades"] if t.get("contract") == contract and t["stake"] == stake)
+        return next(t for t in T["buys"] if t.get("contract") == contract and t["stake"] == stake)
 
     # The sale of 20 Jun 2026 fell on a Saturday, so no note is invented for it.
-    T["exits"] = [
-        {"date": "2026-06-20", "account": ISA, "ticker": "TARN.L", "qty": 400, "price": 5.6,
-         "proceeds": 2240.0, "broker_ref": "WDEMO441", "realisation": "R-TARN", **shares},
-        {"date": "2026-08-12", "account": ISA, "ticker": "KELS.L", "qty": 1000, "price": 1.8,
-         "proceeds": 1800.0, "realisation": "R-KELS", **shares, "_benched": True,
+    T["sales"] = [
+        {"date": "2026-06-20", "account": ISA, "ticker": "TARN.L", "qty": 400, "traded_price": 5.6,
+         "proceeds": 2240.0, "broker_ref": "WDEMO441", "realisation_id": "R-TARN", **shares},
+        {"date": "2026-08-12", "account": ISA, "ticker": "KELS.L", "qty": 1000, "traded_price": 1.8,
+         "proceeds": 1800.0, "realisation_id": "R-KELS", **shares, "_benched": True,
          "_note": _note("DMW5ZG", "09:47", "14/08/2026", "KELSTRAND FOODS PLC", "ORD GBP0.05")},
-        {"date": "2026-09-01", "ticker": "VELD SB", "stake": 1, "price": 10420.0,
-         "proceeds": 10420.0, "realisation": "R-VELDSB", "_closes": leg("VELD-SEP26", 1), **bets},
-        {"date": "2026-09-15", "ticker": "QNLR SB", "stake": 0.3, "price": 10400.0,
-         "proceeds": 3120.0, "realisation": "R-QNLRSB", "_closes": leg("QNLR-DEC26", 0.3),
+        {"date": "2026-09-01", "ticker": "VELD SB", "stake": 1, "traded_price": 10420.0,
+         "proceeds": 10420.0, "realisation_id": "R-VELDSB", "_closes": leg("VELD-SEP26", 1), **bets},
+        {"date": "2026-09-15", "ticker": "QNLR SB", "stake": 0.3, "traded_price": 10400.0,
+         "proceeds": 3120.0, "realisation_id": "R-QNLRSB", "_closes": leg("QNLR-DEC26", 0.3),
          **bets},
     ]
     T["income"] = [
@@ -223,17 +223,17 @@ def _book() -> dict[str, list[dict]]:
     T["fx"] = [{"currency": "USD", "rate": 1.33, "as_of": "2026-09-30", "source": INVENTED,
                 "struck": "close"}]
     T["current-prices"] = (
-        [{"ticker": t, "price": p, "currency": c, "as_of": "2026-09-30", "source": INVENTED,
+        [{"mark_key": t, "price": p, "currency": c, "as_of": "2026-09-30", "source": INVENTED,
           "struck": "close"}
          for t, p, c in (("BRYC.L", 2.35, "GBP"), ("KELS.L", 1.7, "GBP"), ("QNLR", 112.0, "USD"))]
-        + [{"ticker": t, "price": p, "currency": "USD", "as_of": "2026-09-30",
+        + [{"mark_key": t, "price": p, "currency": "USD", "as_of": "2026-09-30",
             "source": _ig_bid(p), "struck": "live", "at": "2026-09-30T15:00Z"}
            for t, p in (("VELD-DEC26", 10610.0), ("VELD-MAR27", 10340.0),
                         ("QNLR-DEC26", 10480.0))])
     T["baseline-reconstruction"] = [
         {"as_of": "2025-12-31", "ticker": "BRYC.L", "qty": 1000, "price": 2.0,
-         "source": NOT_ON_FILE, "fx": 1.0, "quality": "derived"}]
-    T["account-observations"] = [
+         "source": NOT_ON_FILE, "rate": 1.0, "quality": "derived"}]
+    T["account-readings"] = [
         {"account": SPREAD, "as_of": "2026-09-30", "at": "2026-09-30T15:00Z", "funds": 6500.0,
          "equity": 8140.8, "evidence": "ig-accounts",
          "reference": "XK9P3, read 2026-09-30 at 16:00"}]
@@ -251,7 +251,7 @@ def _book() -> dict[str, list[dict]]:
             ("QNLR SB", "2026-09-15", False,
              "Invented for the demo: why the smaller leg closed."),
         )]
-    T["cash-observations"] = [
+    T["cash-readings"] = [
         {"account": a, "as_of": "2026-09-30", "cash": c, "evidence": "not-on-file",
          "reference": "invented for the demo"}
         for a, c in ((ISA, 4271.1), (TRADING, 487.5))]
@@ -268,10 +268,10 @@ def _book() -> dict[str, list[dict]]:
         ("deploy_repo", ""), ("research_repo", ""),
         ("insights_url", "https://example.test/insights"))]
     T["contracts"] = [
-        {"contract": "VELD-SEP26", "funding": "daily", "code": "VELD SB"},
-        {"contract": "VELD-DEC26", "epic": "DM.D.VELDUS.DEC.IP", "funding": "dated", "code": "VELD SB"},
-        {"contract": "VELD-MAR27", "epic": "DM.D.VELDUS.MAR.IP", "funding": "dated", "code": "VELD SB"},
-        {"contract": "QNLR-DEC26", "epic": "DM.D.QNLRUS.DEC.IP", "funding": "dated", "code": "QNLR SB"},
+        {"contract": "VELD-SEP26", "funding": "daily", "ticker": "VELD SB"},
+        {"contract": "VELD-DEC26", "epic": "DM.D.VELDUS.DEC.IP", "funding": "dated", "ticker": "VELD SB"},
+        {"contract": "VELD-MAR27", "epic": "DM.D.VELDUS.MAR.IP", "funding": "dated", "ticker": "VELD SB"},
+        {"contract": "QNLR-DEC26", "epic": "DM.D.QNLRUS.DEC.IP", "funding": "dated", "ticker": "QNLR SB"},
     ]
     return T
 
@@ -317,12 +317,12 @@ def _quarter_nav() -> list[dict]:
 def _quarter_snapshots() -> list[dict]:
     def held(as_of, account, ticker, qty, price, value, cost, currency="GBP", source=INVENTED):
         return {"as_of": as_of, "account": account, "ticker": ticker, "qty": qty,
-                "local_price": price, "currency": currency, "gbp_value": value,
-                "gbp_cost": cost, "source": source}
+                "price": price, "currency": currency, "value": value,
+                "cost": cost, "source": source}
 
     def empty(as_of):
-        return {"as_of": as_of, "account": SPREAD, "ticker": "(no positions)", "gbp_value": 0.0,
-                "gbp_cost": 0.0, "source": f"No open position at {as_of}, frozen from the "
+        return {"as_of": as_of, "account": SPREAD, "ticker": "(no positions)", "value": 0.0,
+                "cost": 0.0, "source": f"No open position at {as_of}, frozen from the "
                                            f"engine at the marks nearest {as_of}"}
     rows = [
         held("2026-03-31", ISA, "BRYC.L", 1000, 2.1, 2100.0, 2000.0),
@@ -385,7 +385,7 @@ def _quarter_results() -> list[dict]:
 def _histories() -> dict[str, tuple[list[str], list[dict]]]:
     """The three append-only histories, by file name: (their columns, their rows)."""
     prices = [
-        {"ticker": t, "date": d, "price": p, "currency": c, "quality": "derived",
+        {"mark_key": t, "date": d, "price": p, "currency": c, "quality": "derived",
          "struck": "close", "status": s, "source": INVENTED}
         for t, d, p, c, s in (
             ("BRYC.L", "2025-12-31", 2.0, "GBP", LIVE), ("BRYC.L", "2026-03-31", 2.1, "GBP", LIVE),
@@ -396,7 +396,7 @@ def _histories() -> dict[str, tuple[list[str], list[dict]]]:
             ("QNLR", "2026-09-30", 111.5, "USD", "superseded"),
             ("QNLR", "2026-09-30", 112.0, "USD", LIVE))
     ] + [
-        {"ticker": t, "date": "2026-09-30", "price": p, "currency": "USD", "quality": "derived",
+        {"mark_key": t, "date": "2026-09-30", "price": p, "currency": "USD", "quality": "derived",
          "struck": "live", "status": LIVE, "source": _ig_bid(p)}
         for t, p in (("VELD-DEC26", 10610.0), ("VELD-MAR27", 10340.0), ("QNLR-DEC26", 10480.0))]
     fx = [
@@ -442,15 +442,16 @@ def _histories() -> dict[str, tuple[list[str], list[dict]]]:
 def _bench_item(T: dict) -> dict:
     """The last contract note, worked through the bench: read by a Claude session
     (`desk/intake/propose.py`), approved and written (`desk/doors/commit.py`)."""
-    row = next(r for r in T["exits"] if r.get("_benched"))
+    row = next(r for r in T["sales"] if r.get("_benched"))
     note = row["_note"]
     day = row["date"]
     instant = f"{day} {note['time']}"
     why = next(r["why_exited"] for r in T["reasoning"]
                if r["ticker"] == row["ticker"] and r["date"] == day)
-    line = f"{row['qty']:,} {row['price']:.2f} {row['proceeds']:,.2f}"
-    values = {k: _cell(row[k]) for k in ("eid", "date", "account", "ticker", "qty", "price", "cur",
-                                         "proceeds", "source", "broker_ref", "realisation")}
+    line = f"{row['qty']:,} {row['traded_price']:.2f} {row['proceeds']:,.2f}"
+    values = {k: _cell(row[k]) for k in ("sale_id", "date", "account", "ticker", "qty",
+                                         "traded_price", "cur", "proceeds", "source", "broker_ref",
+                                         "realisation_id")}
     ev = D.EVIDENCE_BY_KEY["ii-contract-note"]
     return {
         "id": BENCH_ID,
@@ -464,11 +465,11 @@ def _bench_item(T: dict) -> dict:
         "evidence_class": ev.key,
         "evidence": {"dated": day, "authority": ev.authority, "reference": note["ref"]},
         "why": {"why_entered": "", "why_exited": why},
-        "rows": [{"table": "exits", "values": values,
+        "rows": [{"table": "sales", "values": values,
                   "sources": {"date": f"DATE {_ddmmyyyy(day)} TIME {note['time']}",
-                              "qty": line, "price": line, "proceeds": line,
+                              "qty": line, "traded_price": line, "proceeds": line,
                               "broker_ref": f"CONTRACT No. {note['ref']}"},
-                  "derived": ["account", "eid", "realisation"], "machine": True, "drafted": []}],
+                  "derived": ["account", "realisation_id", "sale_id"], "machine": True, "drafted": []}],
         "recognised": {"name": BENCHED_AS, "classes": [ev.key], "instant": instant,
                        "instant_from": "document", "reference": note["ref"], "encoding": None,
                        "scanned": False, "why": ""},
@@ -476,7 +477,7 @@ def _bench_item(T: dict) -> dict:
                      "document": BENCHED_AS, "kind": "ii contract note", "not_found": [],
                      "dropped": [], "directives": []},
         "written_at": WRITTEN_AT,
-        "written_to": {"exits": 1},
+        "written_to": {"sales": 1},
         "reasoning_written": {row["ticker"]: {"date": day, "why_exited": why}},
         "document_archived_to": f"_archive/statements/{_note_name(row, note)}",
     }
@@ -495,7 +496,7 @@ def _journal(T: dict, item: dict) -> list[dict]:
     for as_of in ("2026-03-31", "2026-06-30", "2026-08-12", "2026-09-30"):
         if as_of == item["written_at"][:10]:
             writes += [{"at": item["written_at"], "route": "bench", "op": "append",
-                        "table": "exits", "rows": 1, "ref": item["id"], "detail": item["title"]},
+                        "table": "sales", "rows": 1, "ref": item["id"], "detail": item["title"]},
                        {"at": item["written_at"], "route": "bench", "op": "append",
                         "table": "reasoning", "rows": 1, "ref": item["id"],
                         "detail": "why for " + ", ".join(item["reasoning_written"])}]
@@ -558,9 +559,9 @@ def _note_lines(row: dict, note: dict, account_number: str, side: str) -> list[s
     """What an invented ii contract note prints, in the order ii prints it. Its fingerprint, its
     number line and its dealing line are what `rules` reads; the rest makes it a document."""
     usd = row.get("cur") == "USD"
-    qty, price = row["qty"], row["price"]
+    qty, price = row["qty"], row["traded_price"]
     gross = qty * price
-    sterling = row.get("val", row.get("proceeds"))
+    sterling = row.get("cost", row.get("proceeds"))
     commission = note["commission"]
     amount = f"{gross:,.2f} {'USD' if usd else 'GBP'}"
     lines = [
@@ -606,7 +607,7 @@ def _statement_lines(day: str, rows: list[dict], account_number: str) -> list[st
              "Date Deal ID Market Direction Size Opening level"]
     for row in rows:
         lines.append(f"{_ddmmyyyy(row['date'])} {row['broker_ref']} {row['contract']} Buy "
-                     f"{row['stake']} {row['val']}")
+                     f"{row['stake']} {row['level_points']}")
     return lines
 
 
@@ -644,7 +645,7 @@ def build(into: pathlib.Path) -> list[str]:
     T = _book()
     noted, stated = _settle(T)
     item = _bench_item(T)
-    for row in T["trades"] + T["exits"]:
+    for row in T["buys"] + T["sales"]:
         for key in [k for k in row if k.startswith("_")]:
             del row[key]
     histories = _histories()

@@ -331,7 +331,7 @@ def symbols(D=None) -> dict:
     ones securities.csv gives a unit, each symbol in TradingView's form."""
     D = D or _rules()
     h = D.schema.TABLES["securities"].header
-    code, sym, unit = h.index("code"), h.index("symbol"), h.index("quote_unit")
+    code, sym, unit = h.index("ticker"), h.index("symbol"), h.index("quote_unit")
     return {r[code]: {"symbol": tv_symbol(r[sym]), "unit": r[unit]}
             for r in D.SECURITIES if r[sym] and r[unit]}
 
@@ -341,9 +341,9 @@ def flag_symbols(D=None) -> dict:
     own `symbol`; a contract, which IG prices, by the symbol of the security its legs are in."""
     D = D or _rules()
     h = D.schema.TABLES["securities"].header
-    out = {r[h.index("code")]: tv_symbol(r[h.index("symbol")])
+    out = {r[h.index("ticker")]: tv_symbol(r[h.index("symbol")])
            for r in D.SECURITIES if r[h.index("symbol")]}
-    for t in D.trades:
+    for t in D.buys:
         if t.contract and t.ticker in out:
             out.setdefault(t.contract, out[t.ticker])
     return out
@@ -587,7 +587,7 @@ def sweep(tickers=None, currencies=None, now=None, conn=None) -> dict:
             failed.append(done[t])
         else:
             row = done[t]
-            row["ticker"] = row.pop("key")
+            row["mark_key"] = row.pop("key")
             prices.append(row)
     for c in currencies:
         row = done[c]
@@ -675,7 +675,7 @@ def closes(on: str, tickers=None, currencies=None, conn=None) -> dict:
                "struck": "close", "at": "",
                "source": (f"TradingView 1D {symbol}, session {day} close {raw} {unit}"
                           + (f" / {divisor}" if divisor != 1 else ""))}
-        prices.append({**row, "ticker": key, "price": round(raw / divisor, 6)})
+        prices.append({**row, "mark_key": key, "price": round(raw / divisor, 6)})
     return {"on": on, "prices": prices, "rates": rates, "failed": failed}
 
 

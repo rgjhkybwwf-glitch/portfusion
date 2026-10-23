@@ -52,7 +52,7 @@ DETAIL_COLUMNS = ("source", "quality")
 #: IN THE QUARTER TABLE'S ORDER (the first formatting pass): what it opened at, what went in,
 #: what it earned, where it stands, and the growth and return those make — then what only the
 #: year carries: capital employed, market exposure and the account's kind.
-YEAR_COLUMNS = ("account", "opening_capital", "capital_deployed", "return_income", "nav",
+YEAR_COLUMNS = ("account", "opening_nav", "capital_deployed", "return_income", "nav",
                 "capital_growth", "ytd", "capital_employed", "exposure", "held_as")
 
 

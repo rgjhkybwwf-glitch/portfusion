@@ -2,7 +2,7 @@
 THE STORE — the CSV files, and the schema that validates them on load.
 
 EVERY TABLE HAS FLIPPED: record/rules.py loads the CSV, and the literals it once held are gone.
-So `schema.load("issuers") == D.COMPANY_MASTER` is TRIVIALLY TRUE — they are the same object —
+So `schema.load("companies") == D.COMPANIES` is TRIVIALLY TRUE — they are the same object —
 and a test that kept asserting it would look like a check and prove nothing, the most
 expensive kind of test there is.
 
@@ -29,15 +29,15 @@ from harness import SRC, needs
 
 # WHERE EACH TABLE HAS GOT TO. This is the migration's state, written down where the
 # tests can act on it, and it is the difference between a check and a tautology.
-FLIPPED = {"issuers", "securities", "accounts", "capital-movements", "closed-positions",
-           "trades", "exits", "income", "quarter-nav", "fx",
+FLIPPED = {"companies", "securities", "accounts", "capital-movements", "realisations",
+           "buys", "sales", "income", "quarter-nav", "fx",
            "current-prices", "baseline-reconstruction",
-           "quarter-snapshots", "account-observations", "reasoning",
+           "quarter-snapshots", "account-readings", "reasoning",
            # Cash has its own table rather than account-statements.csv's `cash` column: that
            # column means cash AT THAT STATEMENT'S DATE, and accounts.at() reads those rows as
            # the latest STATEMENT, so a cash-only row there would have fed None into the
            # quarter-NAV cross-check the first time it was the newest thing on file — at a close.
-           "cash-observations",
+           "cash-readings",
            # Research notes are a table so a NEW note can be recorded at all. The research repo
            # stays the source of truth for a REF; this is the record of what the book cites, and
            # test_record.py ties the two together.
@@ -130,9 +130,9 @@ def test_the_table_loads_and_is_not_empty(name):
 def test_issuer_names_are_unique():
     """`company` is the join key. A duplicate would make the join ambiguous and the
     sector a coin toss."""
-    names = [r[0] for r in schema.load("issuers")]
+    names = [r[0] for r in schema.load("companies")]
     dupes = sorted({n for n in names if names.count(n) > 1})
-    assert not dupes, f"issuers.csv has duplicate companies: {dupes}"
+    assert not dupes, f"companies.csv has duplicate companies: {dupes}"
 
 
 def test_security_codes_are_unique():
@@ -144,9 +144,9 @@ def test_security_codes_are_unique():
 def test_every_security_joins_to_an_issuer():
     """THE JOIN IS BY FULL LEGAL NAME, not by ticker — which is the one thing the
     removed header comment said that no column carries. A security whose company does
-    not appear in issuers.csv silently loses its sector and region.
+    not appear in companies.csv silently loses its sector and region.
     """
-    issuers = {r[0] for r in schema.load("issuers")}
+    issuers = {r[0] for r in schema.load("companies")}
     orphans = sorted({(r[0], r[1]) for r in schema.load("securities") if r[1] not in issuers})
     assert not orphans, f"securities with no issuer row: {orphans}"
 
@@ -167,7 +167,7 @@ def test_a_spread_bet_code_carries_the_suffix():
     two are stated once each and can disagree, so they are held together."""
     sh = schema.TABLES["securities"].header
     for r in schema.load("securities"):
-        code, kind = r[sh.index("code")], r[sh.index("kind")]
+        code, kind = r[sh.index("ticker")], r[sh.index("held_as")]
         if code.endswith(" SB"):
             assert kind == "spread bet", f"{code} is a spread bet marked {kind!r}"
         elif kind == "spread bet":
@@ -247,7 +247,7 @@ def test_the_number_kind_preserves_int_against_float():
 
 
 def test_a_date_comes_back_as_a_date():
-    """Not as a string that happens to look like one — `closed.open_date` holds real
+    """Not as a string that happens to look like one — `realisations.opened` holds real
     date objects and the ledger compares against them."""
     assert _cell("date", "2026-06-30") == _dt.date(2026, 6, 30)
     with pytest.raises(ValueError):
@@ -264,8 +264,8 @@ def test_the_error_names_the_table_row_and_column():
     """A validation failure has to say WHERE. 'invalid literal for int()' on a
     400-row store is not a diagnosis."""
     with pytest.raises(ValueError) as exc:
-        schema._parse(schema.Field("qty", "int", False), "twelve", "trades", 47)
-    assert "trades.csv row 47" in str(exc.value) and "'qty'" in str(exc.value)
+        schema._parse(schema.Field("qty", "int", False), "twelve", "buys", 47)
+    assert "buys.csv row 47" in str(exc.value) and "'qty'" in str(exc.value)
 
 
 def test_writing_none_into_a_non_nullable_column_is_refused():
@@ -279,13 +279,13 @@ def test_writing_none_into_a_non_nullable_column_is_refused():
 def test_a_short_row_is_refused(tmp_path, monkeypatch):
     """A hand-edited CSV with a missing comma must FAIL, not shift every column left.
     Written to a real file and loaded, because that is the path a real edit takes."""
-    table = schema.TABLES["issuers"]
+    table = schema.TABLES["companies"]
     monkeypatch.setattr(schema, "STORE", tmp_path)
     n = len(table.header)
     table.path.write_text(",".join(table.header) + "\n" + ",".join(["x"] * (n - 1)) + "\n",
                           encoding="utf-8")
     with pytest.raises(ValueError, match=f"{n - 1} cells, expected {n}"):
-        schema.load("issuers")
+        schema.load("companies")
 
 
 def test_a_renamed_column_is_refused(tmp_path, monkeypatch):
@@ -361,7 +361,7 @@ def test_there_is_one_reasoning_and_both_pages_read_it(repo_root):
         assert "with_reasoning" in (SRC / "desk" / "panels" / page).read_text(), page
 
 
-@needs("trades", "reasoning")
+@needs("buys", "reasoning")
 def test_the_reasoning_round_trips_through_the_loader():
     """It is a store table like any other: the loader is the only door in, and a blank column
     reads back as None rather than as an empty string — a position still open has no
@@ -391,7 +391,7 @@ def test_a_sale_can_carry_its_own_broker_reference():
     sell-to-buy linkage an IG close needs — the closing deal is this row's reference, the
     opening deal it closes is a relationship between two rows.
     """
-    fields = {f.name: f for f in schema.TABLES["exits"].fields}
+    fields = {f.name: f for f in schema.TABLES["sales"].fields}
     assert "broker_ref" in fields, "a sale has nowhere to record its reference again"
     assert fields["broker_ref"].null, (
         "exits.broker_ref must be nullable — a sale read off a statement has no deal "
@@ -402,7 +402,7 @@ def test_a_sales_deal_reference_is_in_its_column_never_its_note():
     """The closing deal is `broker_ref`'s, and the feed matches a close by it. A deal id in a
     note is the same fact in two places, and the feed no longer reads notes."""
     from portfusion.record import rules as D
-    in_notes = [e.eid for e in D.exits if "DIAAAA" in str(e.note or "")]
+    in_notes = [e.sale_id for e in D.sales if "DIAAAA" in str(e.note or "")]
     assert not in_notes, f"these sales name a deal in their note: {in_notes}"
 
 
@@ -413,12 +413,12 @@ def test_a_sale_s_reference_reaches_the_trades_cell():
     from portfusion.record import rules as D
     ledger = engine.Book().ledger
     sells = ledger[ledger["direction"] == "Sell"]
-    assert len(sells) == len(D.exits)
+    assert len(sells) == len(D.sales)
     assert "broker_ref" in sells.columns
     # WIRED, not absent: each sell carries its own exit's reference, and is blank where that is.
     # That the historic ones ARE blank is test_no_historic_sale_was_backdated's to hold.
     got = {i: r if isinstance(r, str) else None for i, r in zip(sells["id"], sells["broker_ref"])}
-    assert got == {e.eid: e.broker_ref for e in D.exits}, \
+    assert got == {e.sale_id: e.broker_ref for e in D.sales}, \
         "a sell row's broker_ref is not its exit's"
 
 
@@ -428,13 +428,13 @@ def _wrong_leg_cases():
     naming none, and a share sale naming one. The incident rows were a spread-bet close and a
     share sale."""
     from portfusion.record import schema
-    th = schema.TABLES["trades"].header
-    eh = schema.TABLES["exits"].header
+    th = schema.TABLES["buys"].header
+    eh = schema.TABLES["sales"].header
     sh = schema.TABLES["securities"].header
-    synthetic = {r[sh.index("code")] for r in schema.load("securities")
-                 if r[sh.index("kind")] == "spread bet"}
-    trades = [dict(zip(th, r)) for r in schema.load("trades")]
-    exits = [dict(zip(eh, r)) for r in schema.load("exits")]
+    synthetic = {r[sh.index("ticker")] for r in schema.load("securities")
+                 if r[sh.index("held_as")] == "spread bet"}
+    trades = [dict(zip(th, r)) for r in schema.load("buys")]
+    exits = [dict(zip(eh, r)) for r in schema.load("sales")]
     try:
         sb_sale = next(e for e in exits if e["ticker"] in synthetic and e["closes"])
         share_sale = next(e for e in exits if e["ticker"] not in synthetic)
@@ -442,19 +442,19 @@ def _wrong_leg_cases():
                                            key=lambda t: t["account"] != sb_sale["account"])
                          if t["ticker"] in synthetic and t["ticker"] != sb_sale["ticker"])
         closed_other = next(e["closes"] for e in exits
-                            if e["closes"] and e["eid"] != sb_sale["eid"])
-        leg_any = next(t["id"] for t in trades if t["ticker"] in synthetic)
+                            if e["closes"] and e["sale_id"] != sb_sale["sale_id"])
+        leg_any = next(t["trade_id"] for t in trades if t["ticker"] in synthetic)
     except StopIteration:         # a book without the sales to poison: the test skips, empty
         return []
     return [
-        (sb_sale["eid"], other_leg["id"],
+        (sb_sale["sale_id"], other_leg["trade_id"],
          f"a {other_leg['account']} {other_leg['ticker']} leg, but sells "
          f"{sb_sale['account']} {sb_sale['ticker']}"),
-        (sb_sale["eid"], closed_other, f"{closed_other} is closed by more than one sale"),
-        (sb_sale["eid"], "",
-         f"{sb_sale['eid']} sells the spread bet {sb_sale['ticker']} and names no leg"),
-        (share_sale["eid"], leg_any,
-         f"{share_sale['eid']} sells the share {share_sale['ticker']} and names the leg "
+        (sb_sale["sale_id"], closed_other, f"{closed_other} is closed by more than one sale"),
+        (sb_sale["sale_id"], "",
+         f"{sb_sale['sale_id']} sells the spread bet {sb_sale['ticker']} and names no leg"),
+        (share_sale["sale_id"], leg_any,
+         f"{share_sale['sale_id']} sells the share {share_sale['ticker']} and names the leg "
          f"{leg_any}"),
     ]
 
@@ -467,10 +467,10 @@ def test_a_sale_naming_the_wrong_leg_is_refused_on_load(store_copy, eid, closes,
     Each is refused when the record loads, on every route in, the bench's included."""
     import csv
     from portfusion.record import rules
-    path = store_copy / "exits.csv"
+    path = store_copy / "sales.csv"
     with path.open(newline="", encoding="utf-8") as fh:
         rows = list(csv.DictReader(fh))
-    next(r for r in rows if r["eid"] == eid)["closes"] = closes
+    next(r for r in rows if r["sale_id"] == eid)["closes"] = closes
     with path.open("w", newline="", encoding="utf-8") as fh:
         w = csv.DictWriter(fh, fieldnames=list(rows[0]))
         w.writeheader()
@@ -498,7 +498,7 @@ def test_every_account_reference_is_in_the_register():
     schema.check_references()
 
 
-@needs("trades", "reasoning")
+@needs("buys", "reasoning")
 def test_the_reference_check_actually_catches_a_bad_name(tmp_path, monkeypatch):
     """A guard that cannot fire is worth nothing, and this one runs at import where a
     silent pass would be invisible. The mistyped name is the real one from the defect."""
@@ -548,11 +548,11 @@ def test_a_required_string_refuses_a_blank_at_the_loader():
     import pytest
     from portfusion.record import schema
     plain = schema.Field("note", "str")
-    assert schema._parse(plain, "", "trades", 1) == "", \
+    assert schema._parse(plain, "", "buys", 1) == "", \
         "an ordinary string column stopped accepting a blank"
     needed = schema.Field("reference", "str", required=True)
     with pytest.raises(ValueError) as e:
-        schema._parse(needed, "", "cash-observations", 1)
+        schema._parse(needed, "", "cash-readings", 1)
     assert "may not be" in str(e.value)
 
 
@@ -561,7 +561,7 @@ def test_every_line_has_a_place_in_each_split():
     out of it: the line stays in the holdings and leaves the bars, on the report's Section 3 and
     the Dashboard alike (14 Oct 2026). The loader refuses the blank instead."""
     from portfusion.record import schema
-    for table, names in (("issuers", ("sector", "region")), ("securities", ("currency",))):
+    for table, names in (("companies", ("sector", "region")), ("securities", ("currency",))):
         fields = {f.name: f for f in schema.TABLES[table].fields}
         for name in names:
             assert fields[name].required, f"{table}.{name} would let a line leave the splits"
@@ -575,7 +575,7 @@ def test_the_two_provenance_pairs_are_required_in_the_schema():
     record/schema.py imports nothing. This half is the one a hand edit meets first.
     """
     from portfusion.record import schema
-    for table in ("account-observations", "cash-observations"):
+    for table in ("account-readings", "cash-readings"):
         fields = {f.name: f for f in schema.TABLES[table].fields}
         for name in ("evidence", "reference"):
             assert fields[name].required, \

@@ -172,20 +172,20 @@ def read(name: str) -> dict:
         if key == "hl-valuation":
             cash = _labelled(text, "Total cash:")
             if cash and out["account"]:
-                # The row's columns and no more: cash-observations carries its provenance
+                # The row's columns and no more: cash-readings carries its provenance
                 # as evidence + reference, and a stray "source" key is refused at commit —
                 # the column left the schema and this writer had kept it.
                 values = {"account": out["account"], "as_of": (out["instant"] or "")[:10],
                           "cash": _number(cash), "evidence": key,
                           "reference": out["reference"]}
-                already = bench_matching("cash-observations", values)
+                already = bench_matching("cash-readings", values)
                 line = f"Total cash: {cash}"
                 if already and already != "unreadable":
                     out["seen"].append({"line": line, "in_record": already,
-                                        "why": _on_file("cash-observations", already)})
+                                        "why": _on_file("cash-readings", already)})
                 else:
                     out["rows"].append({
-                        "table": "cash-observations", "values": values,
+                        "table": "cash-readings", "values": values,
                         "sources": {k: line for k in values},
                         "machine": True, "derived": [], "drafted": []})
         return out
@@ -391,12 +391,12 @@ def _ii_cash(lines: list, out: dict, account: str) -> None:
         return
     values = {"account": account, "as_of": (out["instant"] or str(newest["when"]))[:10],
               "cash": balance, "evidence": "ii-transactions", "reference": out["reference"]}
-    already = bench_matching("cash-observations", values)
+    already = bench_matching("cash-readings", values)
     if already and already != "unreadable":
         out["seen"].append({"line": line, "in_record": already,
-                            "why": _on_file("cash-observations", already)})
+                            "why": _on_file("cash-readings", already)})
         return
-    out["rows"].append({"table": "cash-observations", "values": values,
+    out["rows"].append({"table": "cash-readings", "values": values,
                         "sources": {k: line for k in values}, "machine": True,
                         "derived": [], "drafted": []})
 

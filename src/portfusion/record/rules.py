@@ -225,13 +225,13 @@ from portfusion.record.rules_brokers import *     # noqa: F401,F403
 # ==============================================================================================
 # IDENTITY — who the securities are
 # ----------------------------------------------------------------------------------------------
-# COMPANY_MASTER is one row per issuer and is the single source for names, sectors and regions.
+# COMPANIES is one row per issuer and is the single source for names, sectors and regions.
 # SECURITIES maps each code held, reserved or closed to its issuer and its kind.
 # ==============================================================================================
 
 
 # ============================================================================
-# IDENTITY, from the store: issuers.csv (one row per ISSUER) and securities.csv (one row per CODE
+# IDENTITY, from the store: companies.csv (one row per ISSUER) and securities.csv (one row per CODE
 # held, reserved or closed). Two tables because ONE ISSUER CAN HOLD SEVERAL CODES — Orlant is
 # ORLA and ORLA SB, Askel the Copenhagen line and the NYSE ADR — joined by full legal name.
 #
@@ -239,11 +239,11 @@ from portfusion.record.rules_brokers import *     # noqa: F401,F403
 # data; the tickers were source-verified against Yahoo Finance and the exchanges. Rows stay tuples
 # in file order, so positional reads downstream are unchanged.
 # ============================================================================
-COMPANY_MASTER = schema.load("issuers")
+COMPANIES = schema.load("companies")
 SECURITIES = schema.load("securities")
 #: THE ONE PLACE A LINE'S KIND IS STORED: code -> shares | spread bet (schema.KINDS). A leg reads
 #: its kind here; the register's kind for its account is checked against it below.
-KIND_OF_CODE = {r[0]: r[schema.TABLES["securities"].header.index("kind")] for r in SECURITIES}
+KIND_OF_CODE = {r[0]: r[schema.TABLES["securities"].header.index("held_as")] for r in SECURITIES}
 
 
 # ==============================================================================================
@@ -325,30 +325,31 @@ for _r in schema.load("research-notes"):
 # WHETHER A LEG IS STILL HELD IS DERIVED, never stored: which legs a sale consumed comes from
 # `engine.share_pools()` and `EXIT_LEG_MATCH`, and the ledger's `open_leg` says it.
 # ==============================================================================================
-class Trade(NamedTuple):
-    id: str                     # T-nnn, never renumbered and never reused
+class Buy(NamedTuple):
+    trade_id: str               # T-nnn, never renumbered and never reused
     date: str                   # ISO
     source: str                 # the NAMED source: document + broker ref. One of the seven fields.
                                 # What DOCUMENT backs this row — never what kind of
                                 # number it is (glossary §2).
     acct: str                   # must be in ACCOUNT_ORDER — matched as a STRING by every SUMIFS
     ticker: str                 # the security's code, as securities.csv registers it; its kind
-    cur: str                    # the currency `price` is stated in; GBP on a spread bet, IG's
+    cur: str                    # the currency `traded_price` is stated in; GBP on a spread bet, IG's
                                 # "Curr £" — the stake's, never the market's
     qty: int | None             # shares; blank on a spread bet, whose size is its stake
     stake: int | float | None   # £ per point, spread bets only. MIXED, deliberately — see schema.py
-    val: float                  # GBP cost — or, on a spread bet, its entry level in points, as IG states it
+    cost: float | None          # a share leg's settled GBP; blank on a spread bet
+    level_points: float | None  # a spread bet's entry level in points, as IG states it
     broker_ref: str | None      # the BROKER's reference — IG bet ref, ii contract no., HL ref.
-                                # The broker's reference; `id` (T-nnn) is the book's own.
+                                # The broker's reference; `trade_id` (T-nnn) is the book's own.
     note: str                   # what happened, where the row's own columns do not say it
     contract: str | None        # the IG contract a spread-bet leg is on; contracts.csv holds its epic
-    price: float | None         # per share in `cur`, as the deal's document states it
+    traded_price: float | None  # per share in `cur`, as the deal's document states it
     rate: float | None          # the broker's rate, where the document states one
 
     @property
     def mode(self) -> str:
-        """HOW THE LEG IS COSTED, from its code's kind: `sb` when `val` is a spread bet's entry
-        level, `cost` when it is a settled GBP total."""
+        """HOW THE LEG IS COSTED, from its code's kind: `sb` for a spread bet's entry level,
+        `cost` for a settled GBP total."""
         return "sb" if KIND_OF_CODE.get(self.ticker) == "spread bet" else "cost"
 
     @property
@@ -357,7 +358,7 @@ class Trade(NamedTuple):
         store keeps the two apart (`qty`, `stake`); the ledger rolls up on this."""
         return self.qty if self.qty is not None else self.stake
 
-trades = [Trade(*_r) for _r in schema.load("trades")]
+buys = [Buy(*_r) for _r in schema.load("buys")]
 
 #: THE IG CONTRACTS, contract -> epic (None once closed), from store/contracts.csv; and how IG
 #: funds each, contract -> daily | dated (schema.FUNDINGS).
@@ -368,47 +369,47 @@ CONTRACT_FUNDING = {_r[0]: _r[2] for _r in _contract_rows}
 CONTRACT_CODE = {_r[0]: _r[3] for _r in _contract_rows}
 
 # WHICH CONTRACT EACH SPREAD-BET LEG IS ON, read off the legs themselves: trade id -> contract.
-LEG_CONTRACT = {t.id: t.contract for t in trades if t.contract}
+LEG_CONTRACT = {t.trade_id: t.contract for t in buys if t.contract}
 
 # A SPREAD-BET LEG IS PRICED BY ITS CONTRACT, open or closed. One naming none would be valued at
 # nothing and read as a loss of its whole entry notional.
-_unpriced = [t.id for t in trades if t.mode == "sb" and not t.contract]
+_unpriced = [t.trade_id for t in buys if t.mode == "sb" and not t.contract]
 assert not _unpriced, (f"spread-bet legs {_unpriced} name no contract: give each its contract "
-                       f"on trades.csv, and the contract its row in contracts.csv")
+                       f"on buys.csv, and the contract its row in contracts.csv")
 # A LEG IS ON ITS CONTRACT'S LINE: the contract names its code, and the leg's ticker is that code.
-_off_line = [t.id for t in trades if t.contract and CONTRACT_CODE.get(t.contract) != t.ticker]
+_off_line = [t.trade_id for t in buys if t.contract and CONTRACT_CODE.get(t.contract) != t.ticker]
 assert not _off_line, f"spread-bet legs {_off_line} name a contract on another line"
 
 # --- NAMING MIGRATION: remap tickers to real codes before the sort ---
 # ---- Exits: defined before the merged ledger, which is built from them ----
-class Exit(NamedTuple):
-    eid: str                    # E-nnn
+class Sale(NamedTuple):
+    sale_id: str                # E-nnn
     date: str
     acct: str
     ticker: str                 # the security's code, as securities.csv registers it
     qty: int | None             # shares; blank on a spread-bet sale
     stake: int | float | None   # £ per point, a spread-bet sale's size; blank on a share sale
-    price: float                # the execution price as its document states it, or a bet's closing level
-    cur: str                    # the currency `price` is stated in, as `Trade.cur`
+    traded_price: float         # the execution price as its document states it, or a bet's closing level
+    cur: str                    # the currency `traded_price` is stated in, as `Buy.cur`
     rate: float | None          # the broker's rate, where the document states one
     proceeds: float             # GBP. Every exit in the book is GBP-denominated, spread bets included
     source: str
     broker_ref: str | None      # the reference that retrieves THIS sale: an IG close's deal
-    realisation: str            # R-..., the parcel this sale belongs to — schema.py says what that is
+    realisation_id: str         # R-..., the parcel this sale belongs to — schema.py says what that is
     closes: str | None          # T-nnn, the buy leg it closed, when the broker names one
     note: str
 
     @property
     def size(self) -> int | float:
-        """How much the sale is, in its own unit: shares, or £ per point (`Trade.size`)."""
+        """How much the sale is, in its own unit: shares, or £ per point (`Buy.size`)."""
         return self.qty if self.qty is not None else self.stake
 
-exits = [Exit(*_r) for _r in schema.load("exits")]
+sales = [Sale(*_r) for _r in schema.load("sales")]
 
 # AN EVENT'S ID IS ITS NAME: an exit names the leg it closes by one, and a sale the parcel it
 # realises. Two rows under one id are one row too many, with nothing to say which. Nothing refused
 # it until 21 Oct 2026, so a bench item proposing two exits as one id reached the store.
-for _table, _ids in (("trades", [t.id for t in trades]), ("exits", [e.eid for e in exits])):
+for _table, _ids in (("buys", [t.trade_id for t in buys]), ("sales", [e.sale_id for e in sales])):
     assert len(set(_ids)) == len(_ids), (
         f"{_table}.csv ids must be distinct: "
         f"{sorted({i for i in _ids if _ids.count(i) > 1})} appear more than once")
@@ -418,8 +419,8 @@ for _table, _ids in (("trades", [t.id for t in trades]), ("exits", [e.eid for e 
 _CURRENCY_OF = {r[0]: r[schema.TABLES["securities"].header.index("currency")] for r in SECURITIES}
 _misstated = [
     i for i, code, cur, price, rate in
-    [(t.id, t.ticker, t.cur, t.price, t.rate) for t in trades]
-    + [(e.eid, e.ticker, e.cur, e.price, e.rate) for e in exits]
+    [(t.trade_id, t.ticker, t.cur, t.traded_price, t.rate) for t in buys]
+    + [(e.sale_id, e.ticker, e.cur, e.traded_price, e.rate) for e in sales]
     if cur not in ("GBP", _CURRENCY_OF.get(code))
     or (KIND_OF_CODE.get(code) == "spread bet" and cur != "GBP")
     or (rate is not None and (cur == "GBP" or price is None))]
@@ -447,28 +448,28 @@ for _r in sorted(reasoning, key=lambda r: r.date):
 
 # ---- REALISATIONS: which sells belong together, and what cost each released ----
 # A realisation is one closed parcel: the sell(s) that closed it, plus the buy cost they released.
-# MEMBERSHIP IS STATED ON THE SALE'S OWN ROW — `exits.csv` `realisation` and `closes` — so the
+# MEMBERSHIP IS STATED ON THE SALE'S OWN ROW — `sales.csv` `realisation` and `closes` — so the
 # bench writes it with the sale, and nothing about a sale lives where the bench cannot reach.
 #
 #   REALISATION_BY_EXIT  exit_id -> the parcel it belongs to
 #   EXIT_LEG_MATCH       exit_id -> the spread-bet leg it closed, whose own entry cost it releases.
 #                        A share sale names none: it releases its pool's average, and
 #                        `engine.share_pools()` says which realisation emptied which buy.
-REALISATION_BY_EXIT = {e.eid: e.realisation for e in exits}
-EXIT_LEG_MATCH = {e.eid: e.closes for e in exits if e.closes}
+REALISATION_BY_EXIT = {e.sale_id: e.realisation_id for e in sales}
+EXIT_LEG_MATCH = {e.sale_id: e.closes for e in sales if e.closes}
 
 # ACCOUNT-LEVEL BREAKDOWN: a ticker held in more than one account shows a row per account under its
 # aggregate, each summing back to it. DERIVED from the ledger (see the foot of this file), so a
 # ticker traded in two accounts HAS a breakdown; a hand-kept list once missed one and nothing
 # failed. The tests check the derivation.
 
-class ClosedPosition(NamedTuple):
+class RealisationRow(NamedTuple):
     ticker: str                 # the security's code, as securities.csv registers it
-    realisation: str            # the parcel it describes; quantity and exit date are derived
-    open_date: _dt.date         # asserted against the ledger's earliest buy
+    realisation_id: str         # the parcel it describes; quantity and exit date are derived
+    opened: _dt.date            # asserted against the ledger's earliest buy
     note: str                   # what happened, where the sales do not say it
 
-closed = [ClosedPosition(*_r) for _r in schema.load("closed-positions")]
+realisations = [RealisationRow(*_r) for _r in schema.load("realisations")]
 
 
 # ==============================================================================================
@@ -535,10 +536,10 @@ def funding_nights(detail: str, dated) -> list[_dt.date]:
 
 #: EVERY LEG ON A DAILY FUNDED CONTRACT, built once with the tables: (account, leg, opened,
 #: closed — None while held). A table of the record, so a Book pins it like the rest.
-_sold_on = {e.eid: _dt.date.fromisoformat(str(e.date)[:10]) for e in exits}
+_sold_on = {e.sale_id: _dt.date.fromisoformat(str(e.date)[:10]) for e in sales}
 _closed_on = {tid: _sold_on[eid] for eid, tid in EXIT_LEG_MATCH.items()}
-DAILY_FUNDED_LEGS = [(t.acct, t.id, _dt.date.fromisoformat(str(t.date)[:10]), _closed_on.get(t.id))
-                     for t in trades if t.contract and CONTRACT_FUNDING.get(t.contract) == "daily"]
+DAILY_FUNDED_LEGS = [(t.acct, t.trade_id, _dt.date.fromisoformat(str(t.date)[:10]), _closed_on.get(t.trade_id))
+                     for t in buys if t.contract and CONTRACT_FUNDING.get(t.contract) == "daily"]
 
 
 def _held_overnight(account: str, night: _dt.date) -> bool:
@@ -579,7 +580,7 @@ FX_RATE_AGE_LIMIT_DAYS = 14
 # understate cash with no check to catch it. A spread-bet account's figure is FUNDS, already inside
 # its equity — never add the two. Cash is recorded and never enters NAV.
 # ==============================================================================================
-class CashObservation(NamedTuple):
+class CashReading(NamedTuple):
     account: str
     as_of: _dt.date
     cash: float
@@ -587,15 +588,15 @@ class CashObservation(NamedTuple):
     reference: str       # what retrieves it a second time
 
 
-cash_observations = [CashObservation(*r) for r in schema.load("cash-observations")]
+cash_readings = [CashReading(*r) for r in schema.load("cash-readings")]
 
 
-def cash_latest(on: _dt.date | None = None) -> dict[str, CashObservation]:
+def cash_latest(on: _dt.date | None = None) -> dict[str, CashReading]:
     """The NEWEST cash reading per account, which `Book.newest_cash()` weighs against the
     account's own reading. With `on`, the newest dated on or before it — the cash an account
     held at a reading that states none of its own."""
-    out: dict[str, CashObservation] = {}
-    for o in cash_observations:
+    out: dict[str, CashReading] = {}
+    for o in cash_readings:
         if on is not None and o.as_of > on:
             continue
         cur = out.get(o.account)
@@ -623,7 +624,7 @@ class AccountRow(NamedTuple):
     available: float | None = None
 
 
-# ACCOUNT OBSERVATIONS, from store/account-observations.csv, read BY NAME. The retired cash slot
+# ACCOUNT OBSERVATIONS, from store/account-readings.csv, read BY NAME. The retired cash slot
 # is supplied as None, and `asof` is a display string rebuilt from the date and the UK time of the
 # instant.
 #
@@ -632,8 +633,8 @@ class AccountRow(NamedTuple):
 # dropped out of every per-account figure.
 schema.check_references()
 
-_ac = [dict(zip(schema.TABLES["account-observations"].header, r))
-       for r in schema.load("account-observations")]
+_ac = [dict(zip(schema.TABLES["account-readings"].header, r))
+       for r in schema.load("account-readings")]
 ac_rows = [
     AccountRow(acct=r["account"], positions=r["positions"], cash_retired=None,
                equity=r["equity"], stmt_value=r["stmt_value"],
@@ -697,7 +698,7 @@ QUARTER_NAV = [QuarterNAV(*_r) for _r in live_rows("quarter-nav")]
 
 #: THE ACCOUNTS, in the register's own order, and what kind each is.
 ACCOUNT_ORDER = [r[0] for r in register]
-ACCOUNT_KIND = {r[0]: r[schema.TABLES["accounts"].header.index("kind")] for r in register}
+ACCOUNT_KIND = {r[0]: r[schema.TABLES["accounts"].header.index("held_as")] for r in register}
 
 # A READING IS ITS ACCOUNT'S KIND, AND IG'S ARITHMETIC HOLDS. A spread-bet reading is IG's five
 # figures and no share figure; a share reading carries none of IG's. Where a spread-bet reading
@@ -743,12 +744,12 @@ def next_free_ids() -> dict:
     ONE ALLOCATOR, for the bench and the IG sweep alike: two copies of it had drifted, and only one
     of them knew the floor.
     """
-    nt = max((int(m.group(1)) for t in trades if (m := _re.fullmatch(r"T-(\d+)[A-Z0-9]*", t.id))),
+    nt = max((int(m.group(1)) for t in buys if (m := _re.fullmatch(r"T-(\d+)[A-Z0-9]*", t.trade_id))),
              default=0)
     if (floor := _re.fullmatch(r"T-(\d+)", SETTINGS.get("trade_id_floor", ""))):
         nt = max(nt, int(floor.group(1)) - 1)
-    ne = max((int(m.group(1)) for e in exits if (m := _re.fullmatch(r"E-(\d+)", e.eid))), default=0)
-    return {"trades": f"T-{nt + 1:03d}", "exits": f"E-{ne + 1:03d}"}
+    ne = max((int(m.group(1)) for e in sales if (m := _re.fullmatch(r"E-(\d+)", e.sale_id))), default=0)
+    return {"buys": f"T-{nt + 1:03d}", "sales": f"E-{ne + 1:03d}"}
 
 
 def store_rows() -> dict:
@@ -773,7 +774,7 @@ def journal_rows() -> list:
 
 # THE QUARTER-END COMPOSITIONS — every account's holdings, line by line, at each quarter end, from
 # store/quarter-snapshots.csv; `as_of` lets one table hold every quarter.
-# Tuple shape: (account, ticker, qty, local_price, currency, gbp_value, gbp_cost, quality, source)
+# Tuple shape: (account, ticker, qty, price, currency, value, cost, quality, source)
 _qsnap             = live_rows("quarter-snapshots")
 
 # WHICH QUARTER ENDS ARE FROZEN — asked by the build's close reminder, answered from `as_of`. The
@@ -790,23 +791,23 @@ QUARTER_RESULTS    = schema.load("quarter-results")
 # A SALE THAT NAMES ITS LEG MUST NAME ONE OF ITS OWN, ONCE. `schema.REFERENCES` holds that the leg
 # exists; this holds that it is the same account and ticker, and that no leg is closed twice — a
 # wrong leg releases the wrong cost and loads without complaint.
-_legs = {t.id: t for t in trades}
-_wrong = [f"{e.eid} closes {e.closes}, a {_legs[e.closes].acct} {_legs[e.closes].ticker} leg, "
+_legs = {t.trade_id: t for t in buys}
+_wrong = [f"{e.sale_id} closes {e.closes}, a {_legs[e.closes].acct} {_legs[e.closes].ticker} leg, "
           f"but sells {e.acct} {e.ticker}"
-          for e in exits if e.closes
+          for e in sales if e.closes
           and (_legs[e.closes].acct, _legs[e.closes].ticker) != (e.acct, e.ticker)]
-_twice = sorted({e.closes for e in exits if e.closes
-                 and sum(x.closes == e.closes for x in exits) > 1})
+_twice = sorted({e.closes for e in sales if e.closes
+                 and sum(x.closes == e.closes for x in sales) > 1})
 # A LEG'S CODE IS ITS ACCOUNT'S KIND, AND EVERY CODE IS REGISTERED. The fact is stored once per
 # code (securities.kind) and once per account (accounts.kind); this is the check that the two
 # agree on every leg and every sale, so the engine may decide a line from either.
-_unregistered = sorted({t.ticker for t in trades if t.ticker not in KIND_OF_CODE}
-                       | {e.ticker for e in exits if e.ticker not in KIND_OF_CODE})
-_crossed = ([f"{t.id} {t.ticker} is {KIND_OF_CODE[t.ticker]!r} in {t.acct}, a "
-             f"{ACCOUNT_KIND.get(t.acct)!r} account" for t in trades
+_unregistered = sorted({t.ticker for t in buys if t.ticker not in KIND_OF_CODE}
+                       | {e.ticker for e in sales if e.ticker not in KIND_OF_CODE})
+_crossed = ([f"{t.trade_id} {t.ticker} is {KIND_OF_CODE[t.ticker]!r} in {t.acct}, a "
+             f"{ACCOUNT_KIND.get(t.acct)!r} account" for t in buys
              if t.ticker in KIND_OF_CODE and KIND_OF_CODE[t.ticker] != ACCOUNT_KIND.get(t.acct)]
-            + [f"{e.eid} {e.ticker} is {KIND_OF_CODE[e.ticker]!r} in {e.acct}, a "
-               f"{ACCOUNT_KIND.get(e.acct)!r} account" for e in exits
+            + [f"{e.sale_id} {e.ticker} is {KIND_OF_CODE[e.ticker]!r} in {e.acct}, a "
+               f"{ACCOUNT_KIND.get(e.acct)!r} account" for e in sales
                if e.ticker in KIND_OF_CODE and KIND_OF_CODE[e.ticker] != ACCOUNT_KIND.get(e.acct)])
 if _unregistered or _crossed:
     raise ValueError("A LINE'S KIND IS NOT ITS ACCOUNT'S:\n  " + "\n  ".join(
@@ -821,24 +822,28 @@ if _unlined:
 # closed and releases that leg's entry cost; a share sale names none, because a pool has no legs,
 # and releases the pool's average (`engine.share_pools()`). Either the wrong way round loads and
 # releases a cost by the other rule.
-_bets = {t.ticker for t in trades if t.mode == "sb"}
-_kind = ([f"{e.eid} sells the spread bet {e.ticker} and names no leg — it closes one"
-          for e in exits if e.ticker in _bets and not e.closes]
-         + [f"{e.eid} sells the share {e.ticker} and names the leg {e.closes} — a share sale "
+_bets = {t.ticker for t in buys if t.mode == "sb"}
+_kind = ([f"{e.sale_id} sells the spread bet {e.ticker} and names no leg — it closes one"
+          for e in sales if e.ticker in _bets and not e.closes]
+         + [f"{e.sale_id} sells the share {e.ticker} and names the leg {e.closes} — a share sale "
             f"releases its pool's average and names none"
-            for e in exits if e.ticker not in _bets and e.closes])
+            for e in sales if e.ticker not in _bets and e.closes])
 if _wrong or _twice or _kind:
     raise ValueError("A SALE NAMES THE WRONG LEG:\n  " + "\n  ".join(
         _wrong + [f"{leg} is closed by more than one sale" for leg in _twice] + _kind))
 # A SHARE HAS A QUANTITY AND A BET A STAKE, on a leg and on a sale alike: never both, never
 # neither. The two are the record's own columns, so a bet's size is its stake per point as IG
 # states it and a share's its count; a row filled the other way would roll up as the wrong thing.
-_sized = ([f"{r.id if hasattr(r, 'id') else r.eid} {r.ticker}: a share row has a quantity and no stake"
-           for r in [*trades, *exits] if KIND_OF_CODE.get(r.ticker) != "spread bet"
+_sized = ([f"{r.trade_id if hasattr(r, 'trade_id') else r.sale_id} {r.ticker}: a share row has a quantity and no stake"
+           for r in [*buys, *sales] if KIND_OF_CODE.get(r.ticker) != "spread bet"
            and (r.qty is None or r.stake is not None)]
-          + [f"{r.id if hasattr(r, 'id') else r.eid} {r.ticker}: a spread-bet row has a stake and no quantity"
-             for r in [*trades, *exits] if KIND_OF_CODE.get(r.ticker) == "spread bet"
+          + [f"{r.trade_id if hasattr(r, 'trade_id') else r.sale_id} {r.ticker}: a spread-bet row has a stake and no quantity"
+             for r in [*buys, *sales] if KIND_OF_CODE.get(r.ticker) == "spread bet"
              and (r.stake is None or r.qty is not None)])
+# AND A BUY'S FIGURE TOO: a share's settled cost, a bet's entry level, never both, never neither.
+_sized += [f"{t.trade_id} {t.ticker}: a {'spread-bet' if t.mode == 'sb' else 'share'} buy has "
+           f"{'a level and no cost' if t.mode == 'sb' else 'a cost and no level'}"
+           for t in buys if (t.level_points is None, t.cost is None) != (t.mode != "sb", t.mode == "sb")]
 if _sized:
     raise ValueError("A ROW'S SIZE IS NOT IN ITS KIND'S COLUMN:\n  " + "\n  ".join(_sized))
 
@@ -849,8 +854,8 @@ if _sized:
 #: on 12 Oct 2026, caught only by reading it.
 REALISATION_FORM = _re.compile(r"R-[A-Z0-9]+(?:-[A-Z0-9]+)*")
 _misnamed = sorted({f"{name} ({where})" for name, where in
-                    [(e.realisation, e.eid) for e in exits]
-                    + [(c.realisation, f"closed-positions {c.ticker}") for c in closed]
+                    [(e.realisation_id, e.sale_id) for e in sales]
+                    + [(c.realisation_id, f"realisations {c.ticker}") for c in realisations]
                     if not REALISATION_FORM.fullmatch(str(name))})
 if _misnamed:
     raise ValueError("A REALISATION IS NOT NAMED IN THE RECORD'S FORM (R-ROOT, or R-ROOT-2 when "
@@ -862,8 +867,8 @@ if _misnamed:
 # would propose (`Book.parcel()` names it by holding).
 # Two shares' sales under one are `engine.share_pools()`'s to refuse, which walks their pools.
 _holdings = {}
-for e in exits:
-    _holdings.setdefault(e.realisation, set()).add((e.acct, e.ticker))
+for e in sales:
+    _holdings.setdefault(e.realisation_id, set()).add((e.acct, e.ticker))
 _spans = sorted(f"{r} spans two holdings — {' and '.join(f'{a} {t}' for a, t in sorted(h))}"
                 for r, h in _holdings.items()
                 if len(h) > 1 and any(t in _bets for _, t in h))

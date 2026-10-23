@@ -63,7 +63,7 @@ BUFFER_HINTS = ("buf", "stringio", "io.")
 #:                        a diff nobody can read, and this store is CSV so that a diff can be
 #:                        read.
 #:   desk/doors/observations.py the same read in service of the same replace, for a different
-#:                        table. It reads account-observations.csv line by line because a
+#:                        table. It reads account-readings.csv line by line because a
 #:                        reading replaces the MONEY columns of a row and must leave the rest
 #:                        exactly as it found them: `positions` there is NOTIONAL, which no
 #:                        allowlisted IG endpoint returns, so re-rendering the row would mean
@@ -232,14 +232,14 @@ def _sentinel_store(tmp_path):
     for csv_file in schema.STORE.glob("*.csv"):
         shutil.copy2(csv_file, target / csv_file.name)
     # THE COLUMN MATTERS. The first three are read with pandas and join to nothing, so the
-    # key column takes the sentinel. `account-observations.csv` IS in schema.TABLES and its
+    # key column takes the sentinel. `account-readings.csv` IS in schema.TABLES and its
     # `account` joins to the register, so a sentinel there is refused at the door — rightly.
     # It goes in `reference`, which is free text.
     # THE LIVE MARKS TOO, in their free-text `source`: the test that the record is put back looks
     # for the sentinel there, and with none planted it could not fail.
     planted = {}
     for name, col in (("price-history.csv", 0), ("fx-history.csv", 0),
-                      ("account-statements.csv", 0), ("account-observations.csv", -1),
+                      ("account-statements.csv", 0), ("account-readings.csv", -1),
                       ("current-prices.csv", 4)):
         path = target / name
         lines = path.read_bytes().decode("utf-8").splitlines()
@@ -262,7 +262,7 @@ def _sentinel_store(tmp_path):
     return target, planted
 
 
-@needs("trades", "current-prices")
+@needs("buys", "current-prices")
 def test_moving_the_store_moves_every_table_the_engine_reads(tmp_path):
     """THE THREE THE SEAM USED TO MISS. Each is read with pandas rather than schema.load(),
     which is deliberate — the engine wants frames — but it must still be the same folder."""
@@ -280,7 +280,7 @@ def test_moving_the_store_moves_every_table_the_engine_reads(tmp_path):
                 f"at. That table is reading a path of its own again.")
 
 
-@needs("trades", "current-prices")
+@needs("buys", "current-prices")
 def test_moving_the_store_moves_the_three_append_only_histories(tmp_path):
     """`history/*` writes the record. A write that does not follow the store writes the
     REAL one while a test believes it is sandboxed — which is worse than a wrong read."""
@@ -297,7 +297,7 @@ def test_moving_the_store_moves_the_three_append_only_histories(tmp_path):
                 f"at import instead of asking where the record is.")
 
 
-@needs("trades", "current-prices")
+@needs("buys", "current-prices")
 def test_the_record_is_put_back_when_the_block_ends(tmp_path):
     """`store_at()` is what makes the seam safe to use in a test at all."""
     from portfusion.record import rules
@@ -316,7 +316,7 @@ def test_the_record_is_put_back_when_the_block_ends(tmp_path):
         "the sentinel store is still loaded — reload_store() did not run on the way out"
 
 
-@needs("trades", "current-prices")
+@needs("buys", "current-prices")
 def test_a_book_answers_from_the_store_it_was_built_from(tmp_path):
     """A BOOK HOLDS ONE RECORD: the one it was built from, however the process's record moves.
 
@@ -337,17 +337,17 @@ def test_a_book_answers_from_the_store_it_was_built_from(tmp_path):
     # Any account with a cash reading — the probe is the planting, not the account's name.
     # A share account's, since 13 Oct 2026: a spread-bet account's funds are on its own
     # reading and it has no row in the cash readings.
-    observed = {o.account for o in rules.cash_observations}
+    observed = {o.account for o in rules.cash_readings}
     account = next(a for a in rules.ACCOUNT_ORDER if a in observed)
     # AFTER EVERY READING OF EITHER KIND, so the planted cash is the account's newest.
-    newest = max([o.as_of for o in rules.cash_observations if o.account == account]
+    newest = max([o.as_of for o in rules.cash_readings if o.account == account]
                  + [r.as_of for r in rules.ac_rows if r.acct == account and r.as_of])
     after = (newest + _dt.timedelta(days=1)).isoformat()
-    with (target / "cash-observations.csv").open("a", encoding="utf-8", newline="") as fh:
+    with (target / "cash-readings.csv").open("a", encoding="utf-8", newline="") as fh:
         fh.write(f"{account},{after},12345.67,ii-transactions,TESTPINREF1\n")
 
     built = Book(store_dir=target)
-    assert not [o for o in rules.cash_observations if o.reference == "TESTPINREF1"], (
+    assert not [o for o in rules.cash_readings if o.reference == "TESTPINREF1"], (
         "Book(store_dir=...) left the process's record pointing at the other store")
 
     def cash_now(book):
@@ -473,7 +473,7 @@ def test_a_store_that_will_not_load_leaves_the_record_where_it_was(tmp_path):
     was = schema.STORE
     bad = tmp_path / "store"
     shutil.copytree(schema.STORE, bad)
-    trades = bad / "trades.csv"
+    trades = bad / "buys.csv"
     lines = trades.read_text(encoding="utf-8").splitlines()
     trades.write_text("\n".join([lines[0], "not,a,trade"]) + "\n", encoding="utf-8")
     with pytest.raises(Exception):

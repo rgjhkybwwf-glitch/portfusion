@@ -64,13 +64,15 @@ def data() -> dict:
                 f"flows weigh only on that year.")},
             {"topic": "A company's life — Round Trips by company life", "text": (
                 "First purchase, in any account or instrument, to the day nothing is held. "
-                "Life gain = realised + gain to date + dividends + daily funding. Net cost per "
-                "share = (cost of what is held − realised − dividends − funding) ÷ held, open "
-                "bets as share-equivalents: the break-even price.")},
+                "Life gain = realised + unrealised + dividends + funding interest. Life cost per "
+                "share = (cost of what is held − realised − dividends − funding interest) ÷ "
+                "quantity, open bets as share-equivalents: the break-even price.")},
             {"topic": "Gain %", "text": (
-                "Every gain % is over exposure at entry: shares at cost, bets at their size at "
-                "entry. Holdings measures what is held, Round Trips by holding what was sold, by "
-                "company life the whole life.")},
+                "Every gain % is over exposure at entry: shares at cost, bets at notional at "
+                "entry. Holdings divides by what is still held, Round Trips by holding by what "
+                "was sold, by company life by everything bought in the life. A bet taken beside "
+                "the shares adds its exposure, so the life's % reads lower even when the bet "
+                "gains.")},
             {"topic": "Quarterly returns — one series", "text": (
                 "One series, on net asset value (Performance), by the same day-weighted formula "
                 "as the headline YTD return. Each quarter end's value says what it rests on: sourced "

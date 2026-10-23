@@ -64,7 +64,7 @@ def test_a_spread_bet_account_contributes_equity_to_nav_and_notional_to_exposure
 # THE QUARTER-END SERIES
 # =====================================================================================
 
-@needs("trades")
+@needs("buys")
 def test_quarter_end_navs_are_per_account_and_roll_up(book):
     """Per account AND in total, from one set of numbers.
 
@@ -91,7 +91,7 @@ def test_quarter_end_navs_are_per_account_and_roll_up(book):
             f"{date}: an account contributes nothing to NAV, which understates it silently")
 
 
-@needs("trades")
+@needs("buys")
 def test_exposure_and_nav_are_the_same_at_every_date_but_one(book):
     """The two quarter series differ ONLY where a spread bet was open, and by exactly its
     notional less its equity. Anywhere else a difference appears, a securities account has
@@ -109,11 +109,11 @@ def test_exposure_and_nav_are_the_same_at_every_date_but_one(book):
     assert any(exp[d] > nav[d] for d in levered), "exposure exceeds money once leverage is on"
 
 
-@needs("trades")
+@needs("buys")
 def test_the_baseline_nav_is_the_opening_capital_the_return_measures_from(book):
     """One number, reached two ways. The quarter series' baseline total and the
     account block's opening capital are the same money and must agree exactly."""
-    ties(book.quarter_nav_total()[BASELINE_ASOF], book.totals()["opening_capital"],
+    ties(book.quarter_nav_total()[BASELINE_ASOF], book.totals()["opening_nav"],
          "baseline NAV vs opening capital")
 
 
@@ -136,7 +136,7 @@ def test_a_company_narrows_round_trips_to_every_code_it_is_held_under(book):
         whole = book.round_trip_totals(company=company)
         parts = [book.round_trip_totals(ticker=t) for t in set(rows["ticker"])]
         assert whole["realisations"] == sum(p["realisations"] for p in parts), company
-        assert abs(whole["gain"] - sum(p["gain"] for p in parts)) <= 0.005 * len(parts), company
+        assert abs(whole["realised"] - sum(p["realised"] for p in parts)) <= 0.005 * len(parts), company
     assert book.round_trips(company="no such company").empty
 
 
@@ -144,10 +144,10 @@ def test_round_trip_totals_reach_the_realised_figure_twice(book):
     """Summed per realisation, and summed over the raw exits. If the two disagree the
     apportionment of pooled and leg-exact cost is wrong."""
     t = book.round_trip_totals()
-    ties(t["gain"], book.realised(), "round-trip gain vs realised")
-    ties(t["proceeds"] - t["cost"], t["gain"], "proceeds less cost")
+    ties(t["realised"], book.realised(), "round-trip gain vs realised")
+    ties(t["proceeds"] - t["cost"], t["realised"], "proceeds less cost")
     assert t["realisations"] == len(set(D.REALISATION_BY_EXIT.values()))
-    assert t["sells"] == len(D.exits)
+    assert t["sells"] == len(D.sales)
 
 
 def test_round_trips_reproduce_the_closed_table(book):
@@ -164,10 +164,10 @@ def test_round_trips_reproduce_the_closed_table(book):
     exactly that.
     """
     rt = book.round_trips().set_index("realisation_id")
-    for c in D.closed:
-        row = rt.loc[c.realisation]
-        assert row["ticker"] == c.ticker, f"{c.realisation}: the row names {c.ticker}"
-        assert row["opened"].date() == c.open_date, f"{c.realisation}: open date"
+    for c in D.realisations:
+        row = rt.loc[c.realisation_id]
+        assert row["ticker"] == c.ticker, f"{c.realisation_id}: the row names {c.ticker}"
+        assert row["opened"].date() == c.opened, f"{c.realisation_id}: open date"
 
 
 def test_no_round_trip_is_missing_its_entry_date(book):
@@ -177,7 +177,7 @@ def test_no_round_trip_is_missing_its_entry_date(book):
     rt = book.round_trips()
     assert rt["opened"].notna().all(), \
         f"undated entries: {rt.loc[rt['opened'].isna(), 'realisation_id'].tolist()}"
-    assert (rt["held_days"] > 0).all()
+    assert (rt["days_held"] > 0).all()
 
 
 # =====================================================================================
@@ -192,7 +192,7 @@ def test_as_of_today_ties_to_portfolio_cost(book):
     ties(today["cost"].sum(), book.portfolio_cost(), "as_of(today) portfolio cost")
 
 
-@needs("trades")
+@needs("buys")
 def test_as_of_answers_the_opening_day_and_refuses_any_before_it(book):
     """The book does not claim to know what was held in 2025: answering would be a guess wearing a
     number's clothes. Except at the opening day's close, which is what the record opened with —
@@ -278,42 +278,42 @@ def test_activity_is_every_buy_and_every_sale(book):
     the trade rows and the exit rows, each once, and nothing else."""
     a = book.activity()
     assert set(a["direction"]) <= {"Buy", "Sell", "Adjustment"}
-    assert len(a) == len(D.trades) + len(D.exits)
+    assert len(a) == len(D.buys) + len(D.sales)
 
 
-@needs("trades")
+@needs("buys")
 def test_a_corporate_action_reads_as_an_adjustment_and_moves_no_money(book):
     """A share row of nil cost is a split or consolidation: Trades calls it an Adjustment, and
     only it. A buy of money is never one, and a sale never."""
     a = book.activity()
-    nil = {t.id for t in D.trades if t.mode == "cost" and t.val == 0}
+    nil = {t.trade_id for t in D.buys if t.mode == "cost" and t.cost == 0}
     assert nil, "the loaded book holds no split or consolidation; this asserts nothing"
     assert set(a.loc[a["direction"] == "Adjustment", "trade_id"]) == nil
     assert (a.loc[a["direction"] == "Adjustment", "value"] == 0).all()
 
 
-@needs("trades")
+@needs("buys")
 def test_activity_reports_money_not_a_contract_level(book):
     """On a spread-bet buy the record stores the entry LEVEL in points, not a total. One column
     must mean one thing, so activity() reconstructs the money: stake x level."""
     a = book.activity().set_index("trade_id")
-    sb = next(t for t in D.trades if t.mode == "sb")
-    ties(a.loc[sb.id, "value"], sb.stake * sb.val, f"{sb.id} value is stake x level")
-    assert a.loc[sb.id, "value"] > 1000, "a spread-bet notional should not read as a level"
+    sb = next(t for t in D.buys if t.mode == "sb")
+    ties(a.loc[sb.trade_id, "value"], sb.stake * sb.level_points, f"{sb.trade_id} value is stake x level")
+    assert a.loc[sb.trade_id, "value"] > 1000, "a spread-bet notional should not read as a level"
 
 
-@needs("trades")
+@needs("buys")
 def test_a_spread_bet_reads_as_its_stake_and_level_and_they_tie_to_its_money(book):
     """stake x level = the money, on every spread-bet row, buy and sale alike; and the stake
-    agrees with the one trades.csv records wherever it records one. A share carries neither."""
+    agrees with the one buys.csv records wherever it records one. A share carries neither."""
     a = book.activity()
     sb, shares = a[a["held_as"] == "spread bet"], a[a["held_as"] != "spread bet"]
     assert not sb.empty and sb["direction"].eq("Sell").any(), "no spread-bet sale to check"
     for r in sb.to_dict("records"):
-        assert abs(r["stake_per_point"] * r["level_points"] - r["value"]) < 0.02, r["trade_id"]
+        assert abs(r["stake"] * r["level_points"] - r["value"]) < 0.02, r["trade_id"]
         if r["stake"] is not None and r["stake"] == r["stake"]:
-            assert abs(r["stake_per_point"] - float(r["stake"])) < 1e-9, r["trade_id"]
-    assert shares["stake_per_point"].isna().all() and shares["level_points"].isna().all()
+            assert abs(r["stake"] - float(r["stake"])) < 1e-9, r["trade_id"]
+    assert shares["stake"].isna().all() and shares["level_points"].isna().all()
 
 
 def test_a_quarter_with_no_opening_nav_gets_no_return(book):
@@ -337,14 +337,14 @@ def test_no_holding_is_split_across_two_currencies(book):
     """
     cur = book.allocation(by="currency")
     ties(cur["value"].sum(), book.total_exposure(), "currency buckets vs total exposure")
-    ident = book._identity().set_index("code")["currency"]
+    ident = book._identity().set_index("ticker")["currency"]
     for _, row in book.holdings(by="ticker").iterrows():
         assert row["currency"] == ident[row["ticker"]], (
             f"{row['ticker']} is reported as {row['currency']} but securities.csv says "
             f"{ident[row['ticker']]}")
 
 
-@needs("trades")
+@needs("buys")
 def test_gbp_exposure_equals_uk_exposure(book):
     """A corroboration, not a coincidence. Every GBP-quoted holding in this book is a UK
     issuer, so the two figures must agree — and they did NOT while the Stormvik adjustment was
@@ -370,14 +370,14 @@ def test_the_account_blocks_roll_up_to_the_portfolio_table(book):
     ties(port, book.total_exposure(), "portfolio table vs total exposure")
 
 
-@needs("trades")
+@needs("buys")
 def test_the_two_populations_stay_apart(book):
     """A trim is not a round trip. The realised total spans both; the trade count does not.
     Collapsing them would overstate how many trades the book has completed."""
     rt = book.round_trips()
     assert rt["fully_closed"].any() and (~rt["fully_closed"]).any(), \
         "both populations must exist, or this asserts nothing"
-    ties(rt["gain"].sum(), book.realised(), "realised spans BOTH populations")
+    ties(rt["realised"].sum(), book.realised(), "realised spans BOTH populations")
 
 
 def test_an_accounts_cash_is_its_newest_reading_of_either_kind(book):
@@ -513,7 +513,7 @@ def test_the_spread_bet_reconciliation_is_not_comparing_a_figure_with_itself(boo
         # holds whatever the market did.
 
 
-@needs("trades")
+@needs("buys")
 def test_an_account_a_day_cannot_value_is_blank_and_never_zero(monkeypatch):
     """by_account()'s dated branch left out an account `holdings_at()` could not value, and its
     comment said "left absent rather than guessed at zero"; then `per_account()` filled it with
@@ -559,7 +559,7 @@ def test_income_rows_sum_to_the_book_income(book):
 # PERFORMANCE
 # ======================================================================================
 
-@needs("trades")
+@needs("buys")
 def test_a_quarters_name_is_derived_from_its_end_date(book):
     """THE POINT OF THE VOCABULARY. A reader once had to work out that "2026-06-30" and "Q2 2026"
     were the same quarter, because one table keyed on dates and another on names typed into a CSV.
@@ -610,17 +610,17 @@ def test_every_traded_price_is_local_or_absent(book):
     whose contract note gives it in euros. A deal priced in sterling on a foreign share reads at its
     day's close or not at all; a spread bet and a London deal take no rate."""
     rows = book.activity().set_index("trade_id")
-    deals = {t.id: t for t in D.trades} | {e.eid: e for e in D.exits}
+    deals = {t.trade_id: t for t in D.buys} | {e.sale_id: e for e in D.sales}
     for tid, r in rows.iterrows():
         d = deals[tid]
         if r["held_as"] == "spread bet" or r["currency"] == "GBP":
             assert pd.isna(r["fx_at_trade"]), f"{tid} took a rate it never needed"
             continue
-        if d.price is None:
+        if d.traded_price is None:
             assert pd.isna(r["traded_price"]), f"{tid} has a price no document states"
         elif d.cur == "GBP":
             if pd.notna(r["traded_price"]):
-                ties(d.price * r["fx_at_trade"], r["traded_price"], f"{tid} at its day's close")
+                ties(d.traded_price * r["fx_at_trade"], r["traded_price"], f"{tid} at its day's close")
                 assert r["fx_from"] == "TradingView close", tid
 
 
@@ -630,11 +630,11 @@ def test_the_contract_note_prices_come_from_the_record(book):
     rather than recomputing it is the whole point of having one. The loop derives from the
     store, so it covers however many deals the loaded book states a price for."""
     rows = book.activity().set_index("trade_id")
-    for d in [*D.trades, *D.exits]:
-        i = getattr(d, "id", None) or d.eid
-        if d.price is None or d.cur == "GBP" or i not in rows.index:
+    for d in [*D.buys, *D.sales]:
+        i = getattr(d, "trade_id", None) or d.sale_id
+        if d.traded_price is None or d.cur == "GBP" or i not in rows.index:
             continue
-        ties(d.price, rows.loc[i, "traded_price"], f"{i} the document's price")
+        ties(d.traded_price, rows.loc[i, "traded_price"], f"{i} the document's price")
         if d.rate is not None:
             ties(d.rate, rows.loc[i, "fx_at_trade"], f"{i} the broker's rate", tol=1e-9)
 
@@ -643,7 +643,7 @@ def test_the_contract_note_prices_come_from_the_record(book):
 # THE PRICE DATE ON A MULTI-CONTRACT HOLDING  (the owner spotted this on Morane)
 #
 # Holdings shows ONE "Price as at" per ticker, and a spread-bet ticker can hold legs on
-# several contracts. The lookup that fed it was `{t.ticker: LEG_CONTRACT[t.id] for t in
+# several contracts. The lookup that fed it was `{t.ticker: LEG_CONTRACT[t.trade_id] for t in
 # trades}` — keyed by ticker, so the LAST leg in file order won. MORA SB collapsed onto
 # MORA-DEC26, a closed leg with no price row by design, and the cell rendered BLANK for a
 # holding that is priced daily.
@@ -671,10 +671,10 @@ def test_the_price_date_comes_from_the_open_legs_not_the_last_one(book):
     px = {r[0]: r[3] for r in _D.CURRENT_PRICES}
     open_ids = set(book.ledger[book.ledger["open_leg"]]["id"])
     expected = {}
-    for t in _D.trades:
-        if t.mode != "sb" or t.id not in _D.LEG_CONTRACT or t.id not in open_ids:
+    for t in _D.buys:
+        if t.mode != "sb" or t.trade_id not in _D.LEG_CONTRACT or t.trade_id not in open_ids:
             continue
-        c = _D.LEG_CONTRACT[t.id]
+        c = _D.LEG_CONTRACT[t.trade_id]
         if c in px:
             expected.setdefault(t.ticker, []).append(px[c])
     h = book.holdings(by="ticker").set_index("ticker")
@@ -686,7 +686,7 @@ def test_the_price_date_comes_from_the_open_legs_not_the_last_one(book):
             f"marked {sorted(set(dates))} — the oldest is the honest date for the position")
 
 
-@needs("trades")
+@needs("buys")
 def test_a_closed_legs_contract_is_not_expected_to_be_priced(book):
     """The other half, so nobody 'fixes' this by adding price rows for dead contracts.
 
@@ -700,9 +700,9 @@ def test_a_closed_legs_contract_is_not_expected_to_be_priced(book):
     closed_only = set()
     by_contract = {}
     open_ids = set(book.ledger[book.ledger["open_leg"]]["id"])
-    for t in _D.trades:
-        if t.mode == "sb" and t.id in _D.LEG_CONTRACT:
-            by_contract.setdefault(_D.LEG_CONTRACT[t.id], []).append(t.id in open_ids)
+    for t in _D.buys:
+        if t.mode == "sb" and t.trade_id in _D.LEG_CONTRACT:
+            by_contract.setdefault(_D.LEG_CONTRACT[t.trade_id], []).append(t.trade_id in open_ids)
     for contract, held in by_contract.items():
         if not any(held):
             closed_only.add(contract)
@@ -784,7 +784,7 @@ def test_every_closed_quarter_reads_as_it_was_held(book):
 # same reason it was harmless — which is the worst combination.
 # =====================================================================================
 
-@needs("trades")
+@needs("buys")
 def test_an_open_position_keeps_its_thesis_when_it_closes():
     """THE DEFECT THE MERGE REMOVED, asserted at the source rather than on a page.
 
@@ -825,12 +825,12 @@ def _figures(b):
     not moved read as moved."""
     t = b.totals()
     return {k: None if pd.isna(t[k]) else round(float(t[k]), 2) for k in
-            ("opening_capital", "capital_deployed", "capital_employed", "nav",
+            ("opening_nav", "capital_deployed", "capital_employed", "nav",
              "capital_growth", "return_income", "ytd")}
 
 
-@needs("trades")
-@needs("trades")
+@needs("buys")
+@needs("buys")
 def test_a_blank_years_figures_equal_themselves(monkeypatch):
     """JANUARY, BEFORE THE YEAR'S OPENING IS FROZEN: the return is blank, and the tests above that
     compare the figures before and after a change would fail with nothing changed."""
@@ -864,7 +864,7 @@ def test_A_CASH_WITHDRAWAL_MOVES_NO_RETURN_FIGURE(monkeypatch):
         f"return too.\n  before {before}\n  after  {after}")
 
 
-@needs("trades")
+@needs("buys")
 def test_a_deposit_that_sits_as_cash_moves_nothing_either():
     """The same defect with the opposite sign, and the one that would have made the book look
     WORSE: money in, NAV unmoved, so the numerator falls by the whole deposit."""
@@ -878,7 +878,7 @@ def test_a_deposit_that_sits_as_cash_moves_nothing_either():
     assert _figures(b) == before, "a deposit sitting as cash moved the return"
 
 
-@needs("trades")
+@needs("buys")
 def test_a_spread_bets_flow_is_its_funds_on_any_book():
     """Q6'S TWIN (decided 9 Oct 2026): its sibling in `checks/` pins THIS book's settled
     figures and stays home with the book; this one derives the same three-way
@@ -968,7 +968,7 @@ def test_income_reaches_a_return_once():
         assert round(float(got.get(account, 0.0)), 2) == round(float(want), 2), account
 
 
-@needs("trades")
+@needs("buys")
 def test_a_year_end_moves_no_balance():
     """THE YEAR'S FIGURES ROLL AT THE YEAR END AND THE BALANCES DO NOT — `by_account()` says what
     rolling the balances too would cost. The year opens at its frozen 31 December, every
@@ -983,13 +983,13 @@ def test_a_year_end_moves_no_balance():
     opens = b.ytd_opens()
     at_open = b.quarter_nav_rows(opens).set_index("account")["amount"]
     for account in D.ACCOUNT_ORDER:
-        assert by.loc[account, "opening_capital"] == pytest.approx(
+        assert by.loc[account, "opening_nav"] == pytest.approx(
             at_open.get(account, 0.0), abs=PENNY), f"{account} does not open at {opens}"
     year = b._dietz(opens, b.valued_at(), b.quarter_nav_total()[opens], b.nav())
     assert b.totals()["ytd"] == pytest.approx(year["return"], abs=RATE)
 
 
-@needs("trades")
+@needs("buys")
 def test_the_year_to_date_is_blank_until_its_opening_is_frozen():
     """NOTHING TO MEASURE FROM IS NOT ZERO (the owner, 2 Oct 2026: a blank, for the short time it
     lasts). From the first price of a new year until its 31 December is frozen, the year's
@@ -1000,14 +1000,14 @@ def test_the_year_to_date_is_blank_until_its_opening_is_frozen():
     by = b.by_account().set_index("account")
     assert (by["nav"] - now.by_account().set_index("account")["nav"]).abs().max() < PENNY
     t = b.totals()
-    for column in ("opening_capital", "capital_employed", "capital_growth", "ytd"):
+    for column in ("opening_nav", "capital_employed", "capital_growth", "ytd"):
         assert by[column].isna().all(), f"{column} has a figure with nothing to measure from"
         assert pd.isna(t[column]), f"the total {column} is {t[column]}, from nothing"
     assert not by["opened_in_period"].any(), "a blank opening read as an account opened in the year"
     assert t["nav"] == pytest.approx(now.nav(), abs=PENNY)
 
 
-@needs("trades")
+@needs("buys")
 def test_a_row_of_the_new_year_rolls_the_year_before_its_first_price():
     """A ROW DATED 2 JANUARY ROLLS THE YEAR AS A FIRST PRICE WOULD (the owner, 2 Oct 2026;
     `ytd_year()` says why). Stopping the terms at 31 December instead would leave a January
@@ -1027,7 +1027,7 @@ def test_a_row_of_the_new_year_rolls_the_year_before_its_first_price():
     assert pd.isna(b.totals()["ytd"]), "the year rolled onto an opening nobody has frozen"
 
 
-@needs("trades")
+@needs("buys")
 def test_the_return_since_the_start_links_the_years():
     """LINKED, NOT ONE PERIOD (the owner, 2 Oct 2026; `since_start()` says why). In the first year it
     is the year to date; after a year end, each full year's frozen return linked with the year to
@@ -1149,7 +1149,7 @@ def test_a_pair_is_judged_when_it_is_comparable_and_not_when_it_is_not(book):
 # none has its own.
 # =====================================================================================
 
-@needs("trades")
+@needs("buys")
 def test_every_return_is_the_gain_over_the_day_weighted_capital(book):
     """THE FORMULA, HELD TO THE ARITHMETIC on every row that has a return: gain ÷ (opening +
     the flows weighted by the days after each), the weights from `weighted_flows()` and nothing
@@ -1163,11 +1163,11 @@ def test_every_return_is_the_gain_over_the_day_weighted_capital(book):
     a = book.by_account()
     for _, r in a.loc[a["ytd"].notna()].iterrows():
         wcf = float(book.weighted_flows(opens, end)[r["account"]])
-        gain = r["nav"] - r["opening_capital"] - r["capital_deployed"] + r["return_income"]
-        assert abs(r["ytd"] - gain / (r["opening_capital"] + wcf)) < RATE, r.to_dict()
+        gain = r["nav"] - r["opening_nav"] - r["capital_deployed"] + r["return_income"]
+        assert abs(r["ytd"] - gain / (r["opening_nav"] + wcf)) < RATE, r.to_dict()
 
 
-@needs("trades")
+@needs("buys")
 def test_a_flow_weighs_by_the_days_after_it(book, monkeypatch):
     """The weights themselves, on an invented set of flows: one the day after the start weighs
     almost whole, one half way weighs half, one on the last day weighs nothing, and the capital
@@ -1189,7 +1189,7 @@ def test_a_flow_weighs_by_the_days_after_it(book, monkeypatch):
 
 
 
-@needs("trades")
+@needs("buys")
 def test_a_company_held_in_one_listing_reads_as_that_line(book):
     """A COMPANY ROW IS ONE POSITION, so a company held only as shares of one listing reads as
     that line: the same quantity, entry and current price, in the same currency."""
@@ -1203,17 +1203,17 @@ def test_a_company_held_in_one_listing_reads_as_that_line(book):
         c = company.loc[r["company"]]
         assert c["currency"] == r["currency"], r["company"]
         assert c["qty"] == r["qty"], r["company"]
-        for f in ("entry_price", "current_price"):
+        for f in ("entry_price", "price"):
             ties(c[f], r[f], f"{r['company']} {f}")
 
 
-@needs("trades")
+@needs("buys")
 def test_a_bet_counts_in_shares_on_its_companys_row(book):
     """A SPREAD BET IS SHARE-EQUIVALENTS on its company's row: stake per point × points per unit ×
     its currency's rate per pound on the deal date × shares per unit, added to the shares held,
     in the share listing's currency wherever shares are held."""
     L = book.ledger
-    ident = book._identity().set_index("code")
+    ident = book._identity().set_index("ticker")
     company = book.holdings(by="issuer").set_index("company")
     lines = book.holdings(by="ticker")
     checked = 0
@@ -1232,8 +1232,8 @@ def test_a_bet_counts_in_shares_on_its_companys_row(book):
         assert company.at[name, "qty"] == round(shares["qty"].sum() + n), name
         if not shares.empty:
             assert company.at[name, "currency"] == shares.sort_values("value")["currency"].iloc[-1]
-            assert company.at[name, "current_price"] == shares.sort_values("value")[
-                "current_price"].iloc[-1], name
+            assert company.at[name, "price"] == shares.sort_values("value")[
+                "price"].iloc[-1], name
         checked += 1
     if not checked:
         pytest.skip("no company in this book holds a bet with its points per unit on file")

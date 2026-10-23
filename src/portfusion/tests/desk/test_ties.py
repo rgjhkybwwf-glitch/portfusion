@@ -34,7 +34,7 @@ def test_holdings_rows_are_the_engines(b, by):
     assert len(rows) == len(frame)
     for r, f in zip(rows, frame):
         assert r["company"] == f["company"]
-        for c in ("cost", "value", "gain", "entry_price"):
+        for c in ("cost", "value", "unrealised", "entry_price"):
             assert _same(r[c], f.get(c)), (by, f["company"], c, r[c], f.get(c))
         assert _same(r["weight"], f.get("weight"), RATE)
 
@@ -70,7 +70,7 @@ def test_the_year_so_far_is_the_engines(b):
     assert _same(firm["exposure"], b.total_exposure()), ("The book", "exposure")
     assert [r["account"] for r in shown] == [f["account"] for f in frame] == b.account_order()
     for r, f in zip(shown, frame):
-        for c in ("exposure", "nav", "opening_capital", "capital_deployed", "return_income"):
+        for c in ("exposure", "nav", "opening_nav", "capital_deployed", "return_income"):
             assert _same(r[c], f[c]), (f["account"], c)
         assert _same(r["ytd"], f["ytd"], RATE)
 
@@ -80,7 +80,7 @@ def test_round_trips_are_the_engines_newest_first(b):
     assert [r["realisation_id"] for r in rows] == [f["realisation_id"] for f in frame], \
         "the page re-sorted what the engine ordered"
     for r, f in zip(rows, frame):
-        assert _same(r["gain"], f["gain"]), f["realisation_id"]
+        assert _same(r["realised"], f["realised"]), f["realisation_id"]
     closed = [r["closed"] for r in rows]
     assert closed == sorted(closed, reverse=True), "Round Trips is not newest first"
 
@@ -92,7 +92,7 @@ def test_round_trips_for_a_company_are_the_engines_and_list_its_tickers(b):
         d = round_trips.query(company=company)
         frame = b.round_trips(company=company)
         assert [r["realisation_id"] for r in d["rows"]] == list(frame["realisation_id"]), company
-        assert _same(d["totals"]["gain"], b.round_trip_totals(company=company)["gain"]), company
+        assert _same(d["totals"]["realised"], b.round_trip_totals(company=company)["realised"]), company
         assert d["tickers"] == sorted(set(frame["ticker"])) and d["narrowed"], company
 
 
@@ -134,7 +134,7 @@ def test_the_register_is_the_records(b):
     reg = b.account_register().to_dict("records")
     rows = accounts.data()["register"]
     shown = set(accounts.REGISTER_COLUMNS)
-    assert set(reg[0]) - {"holder_names", "kind"} <= shown, set(reg[0]) - shown
+    assert set(reg[0]) - {"holder_names", "held_as"} <= shown, set(reg[0]) - shown
     for r, f in zip(rows, reg):
         assert all(r[c] == (None if f[c] != f[c] else f[c]) for c in shown & set(f)), f["account"]
 

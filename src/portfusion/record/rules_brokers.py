@@ -74,9 +74,9 @@ HL_CODES = {
 #: HL's codes that carry a deal or transfer reference after a prefix. The reference is the row's
 #: `broker_ref`, so the prefix is the only part that classifies.
 HL_CODE_PREFIXES = (
-    (_re.compile(r"^B\d+$"),   BrokerCode("trades", "",
+    (_re.compile(r"^B\d+$"),   BrokerCode("buys", "",
                                           "a purchase; the code is HL's deal reference")),
-    (_re.compile(r"^S\d+$"),   BrokerCode("exits", "",
+    (_re.compile(r"^S\d+$"),   BrokerCode("sales", "",
                                           "a sale; the code is HL's deal reference")),
     (_re.compile(r"^DRI\w*$"), BrokerCode(None, "",
                                           "a transfer between the ISA's Income and Capital "

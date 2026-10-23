@@ -238,7 +238,7 @@ def _writes_under_desk(repo_root):
     """Every write call under desk/, with the module and the expression written TO.
 
     The target matters and the filename does not. A module writing a plist into
-    ~/Applications and a module writing a row into store/trades.csv both "write"; only one
+    ~/Applications and a module writing a row into store/buys.csv both "write"; only one
     of them touches the record. This resolves the receiver back to its assignment in the
     enclosing function, so `path.write_text(...)` after `path = schema.TABLES[t].path` is
     recognised as a store write rather than as an unknown `path`.

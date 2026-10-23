@@ -488,7 +488,7 @@ def test_a_record_that_will_not_load_is_unavailable_on_every_panel(tmp_path):
     from portfusion.record import schema
     book = tmp_path / "book"
     shutil.copytree(schema.DEMO, book)
-    trades = book / "store" / "trades.csv"
+    trades = book / "store" / "buys.csv"
     lines = trades.read_text(encoding="utf-8").splitlines()
     head = lines[0].split(",")
     cells = lines[1].split(",")
@@ -510,7 +510,7 @@ def test_a_record_that_will_not_load_is_unavailable_on_every_panel(tmp_path):
     assert run.returncode == 0, run.stderr[-1500:]
     codes = json.loads(run.stdout.strip().splitlines()[-1])
     status, said = codes.pop("/api/state")
-    assert status == 503 and "trades.csv" in said, (status, said)
+    assert status == 503 and "buys.csv" in said, (status, said)
     assert len(codes) == 13 and set(codes.values()) == {503}, codes
 
 

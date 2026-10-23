@@ -37,14 +37,14 @@ def test_every_current_mark_is_archived():
     untidy. Fix: python3 -m portfusion.history.prices --archive"""
     missing = PH.check()
     assert not missing, ("current marks not in the history: "
-                         + ", ".join(f"{m['ticker']} {m['date']}" for m in missing))
+                         + ", ".join(f"{m['mark_key']} {m['date']}" for m in missing))
 
 
 @needs("price-history")
 def test_no_duplicate_live_marks(rows):
     """One live price per instrument per date. A second one means two sources
     disagreed and nobody chose between them."""
-    live = [(r["ticker"], r["date"]) for r in rows if r["status"] == PH.LIVE]
+    live = [(r["mark_key"], r["date"]) for r in rows if r["status"] == PH.LIVE]
     dupes = [k for k, n in Counter(live).items() if n > 1]
     assert not dupes, f"more than one live mark for: {dupes}"
 
@@ -75,9 +75,9 @@ def test_qualities_are_known(rows):
 def test_superseded_marks_have_a_replacement(rows):
     """A superseded mark is only meaningful beside the mark that replaced it. On its
     own it is just a wrong number sitting in the record."""
-    live = {(r["ticker"], r["date"]) for r in rows if r["status"] == PH.LIVE}
-    orphans = [(r["ticker"], r["date"]) for r in rows
-               if r["status"] == "superseded" and (r["ticker"], r["date"]) not in live]
+    live = {(r["mark_key"], r["date"]) for r in rows if r["status"] == PH.LIVE}
+    orphans = [(r["mark_key"], r["date"]) for r in rows
+               if r["status"] == "superseded" and (r["mark_key"], r["date"]) not in live]
     assert not orphans, f"superseded marks with nothing replacing them: {orphans}"
 
 
@@ -97,8 +97,8 @@ def test_the_engines_dated_lookup_returns_the_live_half_of_a_pair(rows):
     """
     from portfusion import engine
     b = engine.Book()
-    live = {(r["ticker"], r["date"]): r["price"] for r in rows if r["status"] == PH.LIVE}
-    pairs = sorted({(r["ticker"], r["date"]) for r in rows if r["status"] == "superseded"})
+    live = {(r["mark_key"], r["date"]): r["price"] for r in rows if r["status"] == PH.LIVE}
+    pairs = sorted({(r["mark_key"], r["date"]) for r in rows if r["status"] == "superseded"})
     assert pairs, "no superseded mark on file — this asserts nothing"
     for ticker, date in pairs:
         got = b._marks_at(date)[0].get(ticker)
@@ -110,16 +110,16 @@ def test_the_engines_dated_lookup_returns_the_live_half_of_a_pair(rows):
 
 @needs("price-history")
 def test_dates_are_iso_and_prices_positive(rows):
-    bad_date = [r["ticker"] for r in rows if not ISO.match(r["date"])]
+    bad_date = [r["mark_key"] for r in rows if not ISO.match(r["date"])]
     assert not bad_date, f"non-ISO date on: {bad_date}"
-    bad_price = [(r["ticker"], r["date"]) for r in rows if not r["price"] > 0]
+    bad_price = [(r["mark_key"], r["date"]) for r in rows if not r["price"] > 0]
     assert not bad_price, f"non-positive price on: {bad_price}"
 
 
 @needs("price-history")
 def test_every_mark_names_a_source(rows):
     """No fabricated data: a price with no stated source cannot be checked by anyone."""
-    bare = [(r["ticker"], r["date"]) for r in rows if not (r["source"] or "").strip()]
+    bare = [(r["mark_key"], r["date"]) for r in rows if not (r["source"] or "").strip()]
     assert not bare, f"marks with no source: {bare}"
 
 
@@ -167,7 +167,7 @@ def test_every_quarter_end_holding_has_a_price(date, table, rows, tick_idx):
     marked = {}
     for r in PH.load():
         if r["status"] == PH.LIVE:
-            marked.setdefault(r["ticker"], []).append(_dt.date.fromisoformat(r["date"][:10]))
+            marked.setdefault(r["mark_key"], []).append(_dt.date.fromisoformat(r["date"][:10]))
 
     def near(key):
         return any(abs(d - day) <= window for d in marked.get(key, []))
@@ -192,15 +192,15 @@ def test_every_quarter_end_holding_has_a_price(date, table, rows, tick_idx):
 def _restrike(rows, price_delta=0.5):
     """One live mark, re-read the same day at a different price. Returns (live_set, ticker)."""
     live = PH.current_marks()
-    target = live[0]["ticker"]
+    target = live[0]["mark_key"]
     for m in live:
-        if m["ticker"] == target:
+        if m["mark_key"] == target:
             m["price"] = round(m["price"] + price_delta, 4)
     return live, target
 
 
 def _row(ticker, price, struck, source):
-    return {"ticker": ticker, "date": "2026-09-30", "price": price, "currency": "USD",
+    return {"mark_key": ticker, "date": "2026-09-30", "price": price, "currency": "USD",
             "quality": "sourced", "struck": struck, "status": PH.LIVE, "source": source}
 
 
@@ -224,13 +224,13 @@ def test_a_same_day_restrike_replaces_a_live_read_and_supersedes_a_correction():
     live = [{**read, "price": 10.5, "source": "an afternoon read — test"},
             {**close, "price": 20.5, "source": "another close — test"}]
     dropped, superseded = PH._restruck(rows, live)
-    assert [r["ticker"] for r in dropped] == ["AAA"], "a same-day live read was not replaced"
-    assert [r["ticker"] for r in superseded] == ["BBB"], "a corrected close was not superseded"
+    assert [r["mark_key"] for r in dropped] == ["AAA"], "a same-day live read was not replaced"
+    assert [r["mark_key"] for r in superseded] == ["BBB"], "a corrected close was not superseded"
     assert close["status"] == "superseded" and close["source"] == "a close — test" \
         and close["quality"] == "sourced", "the correction changed more than the lifecycle"
     assert read["status"] == PH.LIVE, "a dropped read was marked rather than left for the caller"
     kept = [r for r in rows if r is not read]
-    landing = sorted(m["ticker"] for m in PH._FILE.unbanked(live, kept))
+    landing = sorted(m["mark_key"] for m in PH._FILE.unbanked(live, kept))
     assert landing == ["AAA", "BBB"], f"the new figures would not be appended: {landing}"
 
 
@@ -251,7 +251,7 @@ def test_a_restruck_mark_reads_as_unbanked(monkeypatch):
     rows = PH.load()
     live, ticker = _restrike(rows)
     monkeypatch.setattr(PH, "current_marks", lambda: live)
-    assert [m["ticker"] for m in PH.check()] == [ticker], \
+    assert [m["mark_key"] for m in PH.check()] == [ticker], \
         "a re-struck mark still reads as banked"
 
 
@@ -262,7 +262,7 @@ def _synthetic_pair() -> list[dict]:
     go red when the book gained or cleared a superseded mark, which is not a code change.
     """
     def row(date, price, status, source):
-        return {"ticker": "AAA", "date": date, "price": price, "currency": "GBP",
+        return {"mark_key": "AAA", "date": date, "price": price, "currency": "GBP",
                 "quality": "sourced", "struck": "close", "status": status, "source": source}
     return [row("2026-01-02", 100.0, "live", "the reading that stood"),
             row("2026-01-02", 90.0, "superseded", "the reading that was replaced"),
@@ -329,13 +329,13 @@ def test_a_close_at_the_figure_of_its_days_live_read_still_replaces_it(store_cop
     close = next((m for m in PH.current_marks() if m["struck"] == "close"), None)
     if close is None:
         pytest.skip("the book holds no close among its live marks")
-    key = (close["ticker"], close["date"])
-    rows = [r for r in PH.load() if (r["ticker"], r["date"]) != key]
+    key = (close["mark_key"], close["date"])
+    rows = [r for r in PH.load() if (r["mark_key"], r["date"]) != key]
     PH.save(rows + [dict(close, struck="live")])
     assert PH.check() == [close], "a close over its day's live read reads as banked"
 
     PH.archive(verbose=False)
 
-    on_file = [r for r in PH.load() if (r["ticker"], r["date"]) == key and r["status"] == PH.LIVE]
+    on_file = [r for r in PH.load() if (r["mark_key"], r["date"]) == key and r["status"] == PH.LIVE]
     assert [r["struck"] for r in on_file] == ["close"], on_file
     assert PH.check() == []

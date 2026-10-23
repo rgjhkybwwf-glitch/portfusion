@@ -29,7 +29,7 @@ ORDER = 50
 #: IN HOLDINGS' ORDER: what the line is, how much and at what prices, in its own currency, what
 #: it cost and brought in, then its dates. The per-share prices were sterling until 14 Oct 2026.
 COLUMNS = ("ticker", "company", "held_as", "account", "currency", "qty", "entry_price",
-           "exit_price", "cost", "proceeds", "gain", "gain_pct", "opened", "closed", "held_days",
+           "exit_price", "cost", "proceeds", "realised", "realised_pct", "opened", "closed", "days_held",
            "fully_closed")
 
 #: THE ROW'S KEY, carried and not drawn: R- and the ticker repeats the Ticker column, and Trades'
@@ -38,7 +38,7 @@ KEY = "realisation_id"
 
 #: A SPREAD BET IN ITS OWN TERMS, for the Quantity and the two price cells, as Trades reads
 #: one: a stake per point, entered and exited at levels in points.
-BET_COLUMNS = ("stake_per_point", "entry_level_points", "exit_level_points")
+BET_COLUMNS = ("stake", "entry_level_points", "exit_level_points")
 
 #: THE JUDGEMENT, in the row's detail with its note: `Book.with_reasoning()`'s — every why dated
 #: between the parcel's entry and its last sale, oldest first, each half owed from its own date:
@@ -57,10 +57,10 @@ VIEWS = ("holding", "life")
 VIEW_WORDS = {"holding": "holding", "life": "company life"}
 
 #: A COMPANY LIFE IN ITS OWN TERMS: what it is, when, what it made and how, then what is held and
-#: at what net cost. Its round trips and lines open in the detail.
-LIFE_COLUMNS = ("company", "held_as", "accounts", "state", "opened", "closed", "held_days",
-                "realised", "to_date", "dividends", "funding", "total", "life_pct", "held",
-                "net_cost_per_share", "current_price", "currency")
+#: at what life cost. Its round trips and lines open in the detail.
+LIFE_COLUMNS = ("company", "held_as", "accounts", "state", "opened", "closed", "days_held",
+                "realised", "unrealised", "dividends", "funding_interest", "life_gain", "life_pct", "qty",
+                "life_cost_per_share", "price", "currency")
 LIFE_DETAIL_COLUMNS = ("realisations", "lines")
 
 

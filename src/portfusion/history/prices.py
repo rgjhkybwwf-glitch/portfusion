@@ -58,8 +58,8 @@ LIVE = D.LIVE_MARK          # the status a lookup or a series should see
 
 
 # --- the file itself ------------------------------------------------------------------------
-_FILE = AppendOnlyCSV(CSV_NAME, FIELDS, numeric=("price",), sort_key=lambda r: (r["date"], r["ticker"]),
-                      identity=("ticker", "date"), nullable=False, figure="price")
+_FILE = AppendOnlyCSV(CSV_NAME, FIELDS, numeric=("price",), sort_key=lambda r: (r["date"], r["mark_key"]),
+                      identity=("mark_key", "date"), nullable=False, figure="price")
 
 load = _FILE.load
 save = _FILE.save
@@ -68,7 +68,7 @@ known = _FILE.known
 def current_marks() -> list[dict]:
     """The live CURRENT_PRICES set, in this file's shape. `struck` is the column the feed wrote
     with the price — the one party that knows whether it fetched a close or a live read."""
-    return [{"ticker": t, "date": d, "price": p, "currency": c,
+    return [{"mark_key": t, "date": d, "price": p, "currency": c,
              "quality": "sourced", "struck": struck, "status": D.LIVE_MARK, "source": src}
             for t, p, c, d, src, struck, _at in D.CURRENT_PRICES]
 
@@ -88,16 +88,16 @@ def archive(verbose: bool = True) -> list[dict]:
     """
     new, dropped, superseded = _FILE.bank(current_marks())
     if verbose:
-        for r in sorted(dropped, key=lambda r: r["ticker"]):
-            log.info(f"    replaced   {r['ticker']:12} {r['date']}  {r['price']:>12,.4f} "
+        for r in sorted(dropped, key=lambda r: r["mark_key"]):
+            log.info(f"    replaced   {r['mark_key']:12} {r['date']}  {r['price']:>12,.4f} "
                   f"— a live read, read again the same day")
-        for r in sorted(superseded, key=lambda r: r["ticker"]):
-            log.info(f"    superseded {r['ticker']:12} {r['date']}  {r['price']:>12,.4f} "
+        for r in sorted(superseded, key=lambda r: r["mark_key"]):
+            log.info(f"    superseded {r['mark_key']:12} {r['date']}  {r['price']:>12,.4f} "
                   f"— corrected the same day")
         if new:
             log.info(f"  archived {len(new)} new mark(s):")
-            for m in sorted(new, key=lambda m: m["ticker"]):
-                log.info(f"    {m['ticker']:12} {m['date']}  {m['price']:>12,.4f} {m['currency']}")
+            for m in sorted(new, key=lambda m: m["mark_key"]):
+                log.info(f"    {m['mark_key']:12} {m['date']}  {m['price']:>12,.4f} {m['currency']}")
         else:
             log.info("  nothing to archive — every current mark is already on file")
     return new
@@ -128,7 +128,7 @@ def show(ticker: str | None = None) -> None:
     # Superseded rows are found by `status`, the lifecycle — not by `quality`.
     by, dead = defaultdict(list), defaultdict(list)
     for r in rows:
-        (by if r["status"] == LIVE else dead)[r["ticker"]].append(r)
+        (by if r["status"] == LIVE else dead)[r["mark_key"]].append(r)
     tickers = [ticker] if ticker else sorted(by)
     for t in tickers:
         series = sorted(by.get(t, []), key=lambda r: r["date"])
@@ -161,7 +161,7 @@ def main(argv: list[str]) -> int:
         if missing:
             log.info(f"  ✗ {len(missing)} current mark(s) not in the history:")
             for m in missing:
-                log.info(f"      {m['ticker']} {m['date']}")
+                log.info(f"      {m['mark_key']} {m['date']}")
             log.info("    run: python3 -m portfusion.history.prices --archive")
             return 1
         log.info("  ✓ every current mark is on file")

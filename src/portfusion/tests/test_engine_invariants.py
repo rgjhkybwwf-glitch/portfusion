@@ -69,11 +69,11 @@ def test_each_basis_closes_its_own_cost_gain_and_value(book):
     h = book.holdings(by="ticker")
     for basis in sorted(set(h["held_as"])):
         s = h[h["held_as"] == basis]
-        assert close(s["cost"].sum() + s["gain"].sum(), s["value"].sum()), \
+        assert close(s["cost"].sum() + s["unrealised"].sum(), s["value"].sum()), \
             f"{basis}: cost + gain does not reach value"
 
 
-@needs("trades")
+@needs("buys")
 def test_owned_cost_plus_the_whole_books_unrealised_is_NOT_the_owned_value(book):
     """A NEGATIVE INVARIANT, and it is the issuer roll-up trap written as a test.
 
@@ -92,7 +92,7 @@ def test_owned_cost_plus_the_whole_books_unrealised_is_NOT_the_owned_value(book)
         "have no unrealised gain, or a basis has stopped being a partition.")
 
 
-@needs("trades")
+@needs("buys")
 def test_roll_up_refuses_to_add_exposure_to_money(book):
     """THE BASIS SPLIT, enforced structurally rather than remembered.
 
@@ -125,7 +125,7 @@ def test_every_measure_declares_a_basis(book):
 # PARTITIONS — a roll-up must cover the book exactly once
 # =====================================================================================
 
-@needs("trades")
+@needs("buys")
 def test_the_issuer_roll_up_is_not_a_partition_by_basis(book):
     """THE TRAP `Book.holdings()` NAMES, asserted rather than described.
 
@@ -188,7 +188,7 @@ def test_a_basis_nobody_has_classified_is_refused_rather_than_guessed(book, monk
 
 def test_realised_gain_is_reachable_two_ways_and_agrees(book):
     """Once from the exits, once by totalling the round trips. Two paths, one number."""
-    assert close(book.realised(), float(book.round_trip_totals()["gain"]))
+    assert close(book.realised(), float(book.round_trip_totals()["realised"]))
 
 
 def test_total_gain_is_its_two_halves(book):
@@ -207,7 +207,7 @@ def test_portfolio_cost_is_the_two_bases_costs(book):
 
 
 def test_the_unrealised_total_is_the_sum_of_the_holdings_own_gains(book):
-    assert close(book.unrealised(), book.holdings(by="ticker")["gain"].sum())
+    assert close(book.unrealised(), book.holdings(by="ticker")["unrealised"].sum())
 
 
 # =====================================================================================
@@ -253,7 +253,7 @@ def test_the_two_income_halves_partition_the_whole(book):
 # WHAT MOVED — the three effects account for the change, and for nothing else
 # =====================================================================================
 
-@needs("trades")
+@needs("buys")
 def test_the_three_effects_sum_to_the_change_on_every_line(book):
     """price + fx + transacted = change, exactly, per line and in total.
 
@@ -300,7 +300,7 @@ def test_the_lines_end_where_the_book_is(book):
             f"{held_as} totals do not decompose: {totals['change']:,.2f} vs {parts:,.2f}")
 
 
-@needs("trades")
+@needs("buys")
 def test_a_line_carries_its_own_two_dates(book):
     """EACH LINE IS MEASURED FROM ITS OWN PREVIOUS MARK, never from one book-wide date.
 
@@ -310,17 +310,17 @@ def test_a_line_carries_its_own_two_dates(book):
     """
     history = book.store["history.prices"]
     own_dates = {k: sorted({str(d)[:10] for d in g["date"]})
-                 for k, g in history.groupby("ticker")}
+                 for k, g in history.groupby("mark_key")}
     frame = book.changes_since()
     dated = frame[frame["priced_from"].notna()]
     assert not dated.empty, "no line has two marks — this asserts nothing"
     for row in dated.to_dict("records"):
         assert row["priced_from"] < row["priced_at"], (
-            f"{row['key']} runs {row['priced_from']} -> {row['priced_at']}, which is not "
+            f"{row['mark_key']} runs {row['priced_from']} -> {row['priced_at']}, which is not "
             f"forwards")
-        before = [d for d in own_dates.get(row["key"], []) if d < str(row["priced_at"])[:10]]
+        before = [d for d in own_dates.get(row["mark_key"], []) if d < str(row["priced_at"])[:10]]
         assert before and str(row["priced_from"])[:10] == before[-1], (
-            f"{row['key']} is measured from {row['priced_from']}, not from its own previous "
+            f"{row['mark_key']} is measured from {row['priced_from']}, not from its own previous "
             f"mark {before[-1] if before else None} — a book-wide date has crept back in")
 
 
@@ -335,7 +335,7 @@ def _held_the_day_before(book, day: str) -> tuple[str, dict, dict, dict]:
     return before, held, prices, rates
 
 
-@needs("trades")
+@needs("buys")
 def test_the_window_starts_where_the_book_stood(book):
     """EACH LINE STARTS AS THE BOOK HELD IT THE DAY BEFORE ITS NEW MARK: every line the book
     held then has a row, valued at the mark and the RATE the book valued it at — the start's
@@ -350,8 +350,8 @@ def test_the_window_starts_where_the_book_stood(book):
     what it cost, from the previous mark (changes_since()'s docstring), so its start is not the
     book's on the day before, by design.
     """
-    rows = {r["key"]: r for r in book.changes_since().to_dict("records")}
-    ident = book._identity().set_index("code")
+    rows = {r["mark_key"]: r for r in book.changes_since().to_dict("records")}
+    ident = book._identity().set_index("ticker")
     checked = 0
     for end in sorted({r["priced_at"] for r in rows.values()}):
         before, held, prices, rates = _held_the_day_before(book, end)
@@ -370,7 +370,7 @@ def test_the_window_starts_where_the_book_stood(book):
                 continue                          # dealt in since its previous mark
             ticker = legs[0]["ticker"]
             cur = ident.at[ticker, "currency"]
-            parity = ident.at[ticker, "kind"] == "spread bet" or cur == "GBP"
+            parity = ident.at[ticker, "held_as"] == "spread bet" or cur == "GBP"
             rate = 1.0 if parity else rates[cur][1]
             stood = sum(leg["qty"] for leg in legs) * prices[key][1] / rate
             assert close(row["value_from"], stood), (
@@ -380,7 +380,7 @@ def test_the_window_starts_where_the_book_stood(book):
     assert checked, "no line's start was compared — this asserts nothing"
 
 
-@needs("trades")
+@needs("buys")
 def test_a_line_sold_outright_inside_the_window_lands_at_nothing(store_copy):
     """A LINE CLOSED INSIDE THE WINDOW KEEPS ITS ROW, ending at its close: nothing left, the
     proceeds under dealing, the move from its last mark to the sale price under price, and
@@ -396,25 +396,25 @@ def test_a_line_sold_outright_inside_the_window_lands_at_nothing(store_copy):
     shares = frame[(frame["held_as"] == "shares") & frame["priced_from"].notna()]
     one_account = [r for r in shares.sort_values("priced_at", ascending=False).to_dict("records")
                    if len({leg["acct"] for leg in book._valued_legs_at(r["priced_at"]).values()
-                           if leg["key"] == r["key"]}) == 1]
+                           if leg["key"] == r["mark_key"]}) == 1]
     assert one_account, "no share line held by one account — nothing to sell outright"
     line = one_account[0]
-    legs = [leg for leg in book._valued_legs_at(line["priced_at"]).values() if leg["key"] == line["key"]]
+    legs = [leg for leg in book._valued_legs_at(line["priced_at"]).values() if leg["key"] == line["mark_key"]]
     # A SHARE'S SIZE IS WHOLE; the ledger's qty column is a float since a bet's is its stake.
     account, qty = legs[0]["acct"], int(sum(leg["qty"] for leg in legs))
-    previous = book._marks_at(line["priced_from"])[0][line["key"]][1]
-    now = book._marks_at(line["priced_at"])[0][line["key"]][1]
+    previous = book._marks_at(line["priced_from"])[0][line["mark_key"]][1]
+    now = book._marks_at(line["priced_at"])[0][line["mark_key"]][1]
     price = round(previous * 0.9, 6)
     proceeds = round(line["value_to"] * price / now, 2)      # at the rate the line ends at
-    cur = book._identity().set_index("code")["currency"][line["ticker"]]   # the mark's currency
-    with (store_copy / "exits.csv").open("a", newline="", encoding="utf-8") as fh:
+    cur = book._identity().set_index("ticker")["currency"][line["ticker"]]   # the mark's currency
+    with (store_copy / "sales.csv").open("a", newline="", encoding="utf-8") as fh:
         csv.writer(fh, lineterminator="\n").writerow(
             ["E-999", line["priced_at"], account, line["ticker"], qty, "", price, cur, "",
              proceeds, "a test sale", "", book.parcel(account, line["ticker"]), "", ""])
     rules.reload_store()
     after = Book()
-    rows = {r["key"]: r for r in after.changes_since().to_dict("records")}
-    sold = rows.get(line["key"])
+    rows = {r["mark_key"]: r for r in after.changes_since().to_dict("records")}
+    sold = rows.get(line["mark_key"])
     assert sold is not None, f"{line['key']} was sold outright inside the window and has no line"
     assert sold["value_to"] == 0 and sold["qty_to"] == 0, f"{line['key']} still holds something"
     assert close(sold["transacted"], line["transacted"] - proceeds), (
@@ -440,7 +440,7 @@ def test_a_close_banked_after_the_live_mark_does_not_move_where_the_lines_end(st
     live record's marks."""
     import csv
     before = Book()
-    live = {r["ticker"]: (r["price"], str(r["as_of"])[:10], r["currency"])
+    live = {r["mark_key"]: (r["price"], str(r["as_of"])[:10], r["currency"])
             for r in before.store["prices"].to_dict("records")}
     ahead = []
     for key, (price, as_of, currency) in live.items():
@@ -535,7 +535,7 @@ def test_the_accounts_partition_the_whole_books_change(book):
             f"{whole['change']:,.2f}")
 
 
-@needs("trades")
+@needs("buys")
 def test_narrowing_to_an_account_narrows_a_line_that_several_accounts_hold(book):
     """The point of the argument, on the line that proves it.
 
@@ -543,11 +543,11 @@ def test_narrowing_to_an_account_narrows_a_line_that_several_accounts_hold(book)
     SEVERAL must read smaller in each. Discovered from the frame rather than named here, so
     this keeps asserting something after the book changes shape.
     """
-    whole = {r["key"]: r for r in book.changes_since().to_dict("records")}
+    whole = {r["mark_key"]: r for r in book.changes_since().to_dict("records")}
     per_account: dict[str, list] = {}
     for account, _, _ in _account_kind(book):
         for r in book.changes_since(account=account).to_dict("records"):
-            per_account.setdefault(r["key"], []).append((account, r["value_to"]))
+            per_account.setdefault(r["mark_key"], []).append((account, r["value_to"]))
 
     shared = {k: v for k, v in per_account.items() if len(v) > 1}
     assert shared, "no line is held by more than one account — this asserts nothing"
@@ -564,7 +564,7 @@ def test_narrowing_to_an_account_narrows_a_line_that_several_accounts_hold(book)
 # A LINE'S MARK HISTORY — every key it was ever priced under
 # =====================================================================================
 
-@needs("trades")
+@needs("buys")
 def test_a_lines_mark_history_spans_every_key_it_was_ever_priced_under(book):
     """price-history still holds TICKER-KEYED rows from before the contract convention.
 
@@ -580,12 +580,12 @@ def test_a_lines_mark_history_spans_every_key_it_was_ever_priced_under(book):
     priced. That is an absence rather than a gap.
     """
     from portfusion.record import rules as D
-    leg_ticker = {t.id: t.ticker for t in D.trades}
+    leg_ticker = {t.trade_id: t.ticker for t in D.buys}
     contracts_of = {}
     for leg, contract in D.LEG_CONTRACT.items():
         if leg in leg_ticker:
             contracts_of.setdefault(leg_ticker[leg], set()).add(contract)
-    keys_on_file = set(book.store["history.prices"]["ticker"])
+    keys_on_file = set(book.store["history.prices"]["mark_key"])
     spanned = sorted(t for t, cs in contracts_of.items()
                      if t in keys_on_file and cs & keys_on_file)
     assert spanned, ("no line is priced under both its own key and a contract's — the "
@@ -603,10 +603,10 @@ def test_a_lines_mark_history_spans_every_key_it_was_ever_priced_under(book):
     assert dates == sorted(dates, reverse=True), "the history is not newest-first"
 
 
-@needs("trades")
+@needs("buys")
 def test_a_multi_contract_line_opens_every_contracts_marks(book):
     """HALV SB's history has to answer for both contracts, at their own levels."""
-    keys = book.changes_since().groupby("ticker")["key"].apply(set)
+    keys = book.changes_since().groupby("ticker")["mark_key"].apply(set)
     several = keys[keys.map(len) > 1]
     assert not several.empty, "no multi-contract line — this asserts nothing"
     for ticker, priced_by in several.items():
@@ -620,7 +620,7 @@ def test_a_multi_contract_line_opens_every_contracts_marks(book):
 # VALUING AT A DATE — one level cannot value a position held at two
 # =====================================================================================
 
-@needs("trades")
+@needs("buys")
 def test_one_accounts_spread_bet_can_be_valued_at_a_date(book):
     """A spread-bet account values at a past date, and its legs sum to the book's.
 
@@ -665,11 +665,11 @@ def test_one_accounts_spread_bet_can_be_valued_at_a_date(book):
     assert checked, "no date valued for every account — the regression would not be caught"
 
 
-@needs("trades")
+@needs("buys")
 def test_a_multi_contract_spread_bet_is_valued_at_each_contracts_own_level(book):
     """Every contract a position holds is valued at ITS OWN mark, and the lots sum.
 
-    `_mark_for()` built `{t.ticker: LEG_CONTRACT[t.id] for t in trades if t.mode == "sb"}` — a
+    `_mark_for()` built `{t.ticker: LEG_CONTRACT[t.trade_id] for t in trades if t.mode == "sb"}` — a
     dict keyed by TICKER, so a ticker with legs on several contracts kept whichever appeared
     LAST IN FILE ORDER. `holdings()` records that exact defect at the head of its own price
     lookup and was fixed first; the dated path still had it.
@@ -758,7 +758,7 @@ def _valuable_quarters(book):
     return out
 
 
-@needs("trades")
+@needs("buys")
 def test_a_dated_view_publishes_exactly_the_point_in_time_figures(book):
     """A year-to-date figure has no value AT a date, so a quarter page must not carry one."""
     registered = {k for k, v in Book.HEADLINE.items() if v["point_in_time"]}
@@ -767,7 +767,7 @@ def test_a_dated_view_publishes_exactly_the_point_in_time_figures(book):
             f"the dated view at {as_of} does not match the point-in-time set"
 
 
-@needs("trades")
+@needs("buys")
 def test_the_dated_parts_still_add_up_to_the_dated_whole(book):
     """"— of which" has to mean it at a quarter end too, not only live."""
     for as_of in _valuable_quarters(book):
@@ -947,7 +947,7 @@ def test_a_spread_bet_nav_does_not_depend_on_where_the_baseline_sits(book, monke
     ends = [str(q)[:10] for q in book.quarter_nav_total().index if str(q)[:10] > BASELINE_ASOF]
     pick = next(((a, q) for q in reversed(ends) for a in D.ACCOUNT_ORDER
                  if book.is_spread_bet(a)
-                 and any(e.acct == a and str(e.date)[:10] <= q for e in D.exits)
+                 and any(e.acct == a and str(e.date)[:10] <= q for e in D.sales)
                  and not book.as_of(q, a).empty), None)
     if pick is None:
         pytest.skip("no spread-bet account both sold and held at a frozen quarter end")

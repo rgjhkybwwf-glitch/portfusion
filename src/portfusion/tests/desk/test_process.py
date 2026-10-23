@@ -341,7 +341,7 @@ def test_every_account_dropdown_offers_individual_accounts_in_the_books_order():
                 f"{name}: selecting {account!r} returns nothing — a dead option")
 
 
-@needs("trades")
+@needs("buys")
 def test_the_canonical_order_is_the_records_own():
     """The engine holds it so a panel cannot re-derive it and get a different answer."""
     from portfusion.record import rules as D

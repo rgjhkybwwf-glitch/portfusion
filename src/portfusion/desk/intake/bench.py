@@ -58,17 +58,17 @@ WHY_FIELDS = ("why_entered", "why_exited")
 # the owner is already working through, needing the same three evidence limbs and the same approval.
 # An ii transactions download carries a Running Balance whose top row is dated and sourced, so
 # cash maintains itself as a by-product of an intake being done anyway.
-TABLES = ("trades", "exits", "income", "capital-movements", "cash-observations")
+TABLES = ("buys", "sales", "income", "capital-movements", "cash-readings")
 
 #: WHAT A ROW OF EACH TABLE IS, in the desk's words: a buy, a sale (the Trades page's Direction),
 #: income — a cost is negative income — money into or out of an account, and a cash reading.
-TABLE_LABELS = {"trades": "Buy", "exits": "Sale", "income": "Income",
-                "capital-movements": "Money in or out", "cash-observations": "Cash reading",
-                "securities": "New line", "issuers": "New company", "contracts": "New contract"}
+TABLE_LABELS = {"buys": "Buy", "sales": "Sale", "income": "Income",
+                "capital-movements": "Money in or out", "cash-readings": "Cash reading",
+                "securities": "New line", "companies": "New company", "contracts": "New contract"}
 
 #: THE REGISTER: a line, its company and an IG contract. One rides on an item with the trade that
 #: first needs it and is written with it, so the register holds nothing no trade stands on.
-REGISTER = ("securities", "issuers", "contracts")
+REGISTER = ("securities", "companies", "contracts")
 
 #: A SPLIT OR CONSOLIDATION is a `trades` row that carries its ratio, `{"from": 20, "to": 1}`:
 #: 20 shares become 1. The owner gives the account, the ticker, the date and the ratio; the rest
@@ -77,7 +77,7 @@ ADJUSTMENT_LABEL = "Split or consolidation"
 
 
 def is_adjustment(row: dict) -> bool:
-    return row.get("table") == "trades" and isinstance(row.get("adjustment"), dict)
+    return row.get("table") == "buys" and isinstance(row.get("adjustment"), dict)
 
 
 def adjustment_cells(item: dict, row: dict) -> tuple[dict, list[str]]:
@@ -114,11 +114,11 @@ def adjustment_cells(item: dict, row: dict) -> tuple[dict, list[str]]:
         from portfusion.record import rules as D
         def before(d):                              # ISO, so text compares as dates do
             return not d or str(d) < day.isoformat()
-        bought = sum(t.qty or 0 for t in D.trades
+        bought = sum(t.qty or 0 for t in D.buys
                      if (t.acct, t.ticker) == (account, ticker) and before(t.date))
-        sold = sum(e.qty or 0 for e in D.exits
+        sold = sum(e.qty or 0 for e in D.sales
                    if (e.acct, e.ticker) == (account, ticker) and before(e.date))
-        cur = next((t.cur for t in reversed(D.trades) if (t.acct, t.ticker) == (account, ticker)), "")
+        cur = next((t.cur for t in reversed(D.buys) if (t.acct, t.ticker) == (account, ticker)), "")
         kind = D.KIND_OF_CODE.get(ticker)
         source = (D.trade_source(item.get("evidence_class") or "",
                                  str((item.get("evidence") or {}).get("dated") or "").strip())
@@ -137,8 +137,8 @@ def adjustment_cells(item: dict, row: dict) -> tuple[dict, list[str]]:
     note = f"{old}-to-{new} share {what}: {held:,} shares became {after:,}."
     if left:
         note += f" The remainder, {left}/{old} of a share, is not in this row."
-    cells = {"qty": str(after - held), "val": "0", "cur": cur, "note": note,
-             "price": "", "rate": "", "stake": "", "broker_ref": ""}
+    cells = {"qty": str(after - held), "cost": "0", "level_points": "", "cur": cur, "note": note,
+             "traded_price": "", "rate": "", "stake": "", "broker_ref": ""}
     if document:
         cells["source"] = (f"Derived: {old}-to-{new} {what} of {ticker}, effective "
                            f"{day:%d %b %Y}, per {document}")
@@ -233,16 +233,16 @@ def vocabulary() -> dict:
             # STERLING, EVERY CURRENCY WITH A RATE, AND ANY TRADED. A currency is a closed set the
             # record decides by holding its rate (`fx.csv`); the traded ones alone refused the
             # first trade in a new currency, and on a new book offered nothing at all.
-            "cur": sorted({"GBP"} | {r[0] for r in D.fx_rows} | {t.cur for t in D.trades}),
+            "cur": sorted({"GBP"} | {r[0] for r in D.fx_rows} | {t.cur for t in D.buys}),
             "category": list(D.schema.INCOME_CATEGORIES),
             # THE REGISTER'S CODES, so a line set up and not yet traded is offered too.
-            "ticker": sorted({r[0] for r in D.SECURITIES} | {t.ticker for t in D.trades}),
-            "company": sorted({r[0] for r in D.COMPANY_MASTER}),
-            "sector": sorted({r[1] for r in D.COMPANY_MASTER}),
-            "region": sorted({r[2] for r in D.COMPANY_MASTER}),
-            "kind": list(D.schema.KINDS),
+            "ticker": sorted({r[0] for r in D.SECURITIES} | {t.ticker for t in D.buys}),
+            "company": sorted({r[0] for r in D.COMPANIES}),
+            "sector": sorted({r[1] for r in D.COMPANIES}),
+            "region": sorted({r[2] for r in D.COMPANIES}),
+            "held_as": list(D.schema.KINDS),
             "funding": list(D.schema.FUNDINGS),
-            "realisation": sorted({e.realisation for e in D.exits}),
+            "realisation_id": sorted({e.realisation_id for e in D.sales}),
             # CLOSED, and the one vocabulary that is a fact about PROVENANCE rather than about
             # the book's contents. A reading citing a class the record does not know has no
             # stated authority and no reference shape — limbs 2 and 3 of statement-grade — and
@@ -331,7 +331,7 @@ def form_for(table: str) -> list[dict]:
                 "choices": vocab.get(f.name),
                 "closed": f.name in closed,
                 "long": f.name in LONG}
-        if f.name in ("id", "eid"):
+        if f.name in ("trade_id", "sale_id"):
             spec["suggested"] = ids.get(table)
             spec["help"] = "allocated from the store — the next free id"
         out.append(spec)
@@ -342,10 +342,10 @@ def _repeated_ids(rows: list[dict]) -> list[str]:
     """An id this item's rows share, or one the store already holds: each is a second row of one
     name, which the record refuses on load (`rules`). Said here, by row, before the commit."""
     from portfusion.record import rules as D
-    on_file = {"trades": {t.id for t in D.trades}, "exits": {e.eid for e in D.exits}}
+    on_file = {"buys": {t.trade_id for t in D.buys}, "sales": {e.sale_id for e in D.sales}}
     first, out = {}, []
     for i, row in enumerate(rows, 1):
-        key = {"trades": "id", "exits": "eid"}.get(row["table"])
+        key = {"buys": "trade_id", "sales": "sale_id"}.get(row["table"])
         rid = str(row["values"].get(key) or "").strip() if key else ""
         if not rid:
             continue
@@ -389,12 +389,12 @@ def validate_row(table: str, values: dict) -> list[str]:
         if allowed and name in fields and got and got not in allowed:
             problems.append(f"{name}: {got!r} is not one of {allowed} — match the record's "
                             f"spelling rather than inventing one")
-    for name in ("id", "eid"):
+    for name in ("trade_id", "sale_id"):
         if name in fields and values.get(name):
             problems.extend(_id_clash(table, name, str(values[name]).strip()))
-    if table == "exits" and str(values.get("realisation") or "").strip():
+    if table == "sales" and str(values.get("realisation_id") or "").strip():
         problems.extend(_parcel_clash(values))
-    if table in ("trades", "exits"):
+    if table in ("buys", "sales"):
         problems.extend(_size_clash(values))
     return problems
 
@@ -430,14 +430,14 @@ def _register_problems(rows: list[dict]) -> list[str]:
 
     def _load():
         from portfusion.record import rules as D
-        return ({r[0] for r in D.SECURITIES}, {r[0] for r in D.COMPANY_MASTER}, set(D.CONTRACTS))
+        return ({r[0] for r in D.SECURITIES}, {r[0] for r in D.COMPANIES}, set(D.CONTRACTS))
     codes, companies, contracts = _guarded(_load)
-    trades = [r["values"] for r in rows if r["table"] == "trades"]
+    trades = [r["values"] for r in rows if r["table"] == "buys"]
 
     def v(row, k):
         return str(row.get(k) or "").strip()
-    new_codes = {v(r, "code") for r in new["securities"]}
-    new_companies = {v(r, "company") for r in new["issuers"]}
+    new_codes = {v(r, "ticker") for r in new["securities"]}
+    new_companies = {v(r, "company") for r in new["companies"]}
     out = []
     for code in sorted(new_codes & codes):
         out.append(f"{code} is a line already")
@@ -454,9 +454,9 @@ def _register_problems(rows: list[dict]) -> list[str]:
         name = v(r, "contract")
         if name in contracts:
             out.append(f"{name} is a contract already")
-        if v(r, "code") not in codes | new_codes:
+        if v(r, "ticker") not in codes | new_codes:
             out.append(f"{name}: {v(r, 'code')} is not a line")
-        if not any(v(t, "contract") == name and v(t, "ticker") == v(r, "code") for t in trades):
+        if not any(v(t, "contract") == name and v(t, "ticker") == v(r, "ticker") for t in trades):
             out.append(f"{name}: a new contract needs its trade, on its line")
     return out
 
@@ -464,7 +464,7 @@ def _register_problems(rows: list[dict]) -> list[str]:
 def _unmarked(item: dict) -> list[str]:
     """The new contracts on an item, with an epic, that carry no first mark: the book will not
     load an open bet on a contract it cannot value."""
-    marked = {str(m.get("ticker") or "") for m in item.get("marks") or []}
+    marked = {str(m.get("mark_key") or "") for m in item.get("marks") or []}
     return sorted(str(r["values"].get("contract") or "") for r in item.get("rows") or []
                   if r["table"] == "contracts" and str(r["values"].get("epic") or "").strip()
                   and str(r["values"].get("contract") or "") not in marked)
@@ -475,7 +475,7 @@ def _source_shape(item: dict, row: dict) -> list[str]:
     the kind composes, so the fix is to copy it rather than to guess at a shape."""
     source = str((row.get("values") or {}).get("source") or "").strip()
     key = item.get("evidence_class") or ""
-    if row.get("table") not in ("trades", "exits") or not source or not key:
+    if row.get("table") not in ("buys", "sales") or not source or not key:
         return []
 
     def _load():
@@ -495,7 +495,7 @@ def _parcel_clash(values: dict) -> list[str]:
     """A realisation in another form, or one another holding already has, which would file this
     sale into that holding's round trip. The record refuses both on load (`record/rules.py`; a
     share's in `engine.share_pools()`); this says so before anything is written."""
-    want = str(values.get("realisation") or "").strip()
+    want = str(values.get("realisation_id") or "").strip()
     mine = (str(values.get("account") or "").strip(), str(values.get("ticker") or "").strip())
 
     def _load():
@@ -503,7 +503,7 @@ def _parcel_clash(values: dict) -> list[str]:
         if not D.REALISATION_FORM.fullmatch(want):
             return [f"realisation: {want} is not in the record's form — R-, the holding's root, "
                     f"and -2, -3 when the name is taken"]
-        other = sorted({(e.acct, e.ticker) for e in D.exits if e.realisation == want} - {mine})
+        other = sorted({(e.acct, e.ticker) for e in D.sales if e.realisation_id == want} - {mine})
         return ([f"realisation: {want} is {other[0][0]}'s {other[0][1]} — a sale files under "
                  f"its own holding's"] if other else [])
     try:
@@ -516,8 +516,8 @@ def _id_clash(table: str, field: str, value: str) -> list[str]:
     """A row id already in the store is a silent overwrite waiting to happen."""
     def _load():
         from portfusion.record import rules as D
-        taken = ({t.id for t in D.trades} if table == "trades"
-                 else {e.eid for e in D.exits} if table == "exits" else set())
+        taken = ({t.trade_id for t in D.buys} if table == "buys"
+                 else {e.sale_id for e in D.sales} if table == "sales" else set())
         return [f"{field}: {value} is already in the store"] if value in taken else []
     try:
         return _guarded(_load)
@@ -532,8 +532,8 @@ def _id_clash(table: str, field: str, value: str) -> list[str]:
 #: between two records of one thing, and the id is allocated fresh every time, so a comparison
 #: including them would never match the duplicate it is looking for.
 SIGNATURE = {
-    "trades": ("date", "account", "ticker", "qty", "stake", "val"),
-    "exits": ("date", "account", "ticker", "qty", "stake", "proceeds"),
+    "buys": ("date", "account", "ticker", "qty", "stake", "cost", "level_points"),
+    "sales": ("date", "account", "ticker", "qty", "stake", "proceeds"),
     "income": ("date", "account", "category", "amount"),
     "capital-movements": ("date", "account", "amount"),
     # ACCOUNT AND DATE, WITHOUT THE AMOUNT — and that asymmetry is deliberate. For an event the
@@ -542,7 +542,7 @@ SIGNATURE = {
     # date, so a second row for that pair is a re-reading, not a second fact. Including `cash`
     # would let a mistyped figure in as a "different" observation, which is the exact case this
     # gate exists to catch.
-    "cash-observations": ("account", "as_of"),
+    "cash-readings": ("account", "as_of"),
 }
 
 
@@ -566,7 +566,7 @@ def matching_row(table: str, values: dict):
         # columns that are filled and requires at least THREE of them: fewer than that is not
         # an identification, it is a coincidence waiting to happen.
         #
-        # UNLESS THE SIGNATURE IS SHORTER THAN THREE. `cash-observations` is identified by
+        # UNLESS THE SIGNATURE IS SHORTER THAN THREE. `cash-readings` is identified by
         # (account, as_of) and by nothing else, so a flat minimum of three would silently disable
         # the gate for it. The rule is "all of the columns that identify this thing": for a
         # five-column event signature three filled is enough to be sure, and for a two-column one
@@ -622,7 +622,7 @@ def accounts_citing(reference: str) -> set:
 
     def _load():
         out = set()
-        for table in ("trades", "exits"):
+        for table in ("buys", "sales"):
             acct_col = schema.TABLES[table].header.index("account")
             out |= {row[acct_col] for row in schema.load(table)
                     if any(ref in str(c).lower() for c in row if c)}
@@ -641,7 +641,7 @@ def accounts_of_broker(broker: str) -> list[str]:
     def _load():
         header = schema.TABLES["accounts"].header
         return [r[header.index("account")] for r in schema.load("accounts")
-                if str(r[header.index("broker")]).strip().lower() == broker.strip().lower()]
+                if str(r[header.index("broker_firm")]).strip().lower() == broker.strip().lower()]
     try:
         return _guarded(_load)
     except RecordUnavailable:
@@ -973,7 +973,7 @@ def _why_needed(item: dict, field: str) -> bool:
     split or consolidation.
     """
     rows = item.get("rows") or []
-    table = "trades" if field == "why_entered" else "exits"
+    table = "buys" if field == "why_entered" else "sales"
     # A SPLIT OR CONSOLIDATION IS NOBODY'S DECISION, so it owes no reason.
     return any(r["table"] == table and not is_adjustment(r) for r in rows)
 

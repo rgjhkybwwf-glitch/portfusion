@@ -271,7 +271,7 @@ def _append_lines(rows: list[dict], struck: list[tuple]) -> dict:
 
 
 #: A frozen line's figures, which a restatement compares; its source may differ and move nothing.
-_LINE = ("ticker", "qty", "local_price", "gbp_value", "gbp_cost")
+_LINE = ("ticker", "qty", "price", "value", "cost")
 
 
 def _figures(rows: list[dict], fields: tuple) -> list[tuple]:

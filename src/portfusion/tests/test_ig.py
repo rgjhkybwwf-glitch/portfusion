@@ -285,7 +285,7 @@ def test_exit_does_not_log_out(repo_root):
 # mapping and matching, not fetching.
 # =====================================================================================
 
-@needs("contracts", "trades")
+@needs("contracts", "buys")
 def test_an_unknown_epic_resolves_to_no_ticker(D):
     """THE FAILURE THAT MATTERS. Filing a real trade against the wrong position is worse
     than not filing it, so an epic the book cannot resolve must return NOTHING and be
@@ -297,7 +297,7 @@ def test_an_unknown_epic_resolves_to_no_ticker(D):
     assert m.get("") is None
 
 
-@needs("contracts", "trades")
+@needs("contracts", "buys")
 def test_every_open_contract_resolves_to_its_line(D):
     """An epic resolves to the code its contract names, so the first bet on a contract reads
     with no leg before it."""
@@ -460,7 +460,7 @@ def _stub_accounts(monkeypatch, D):
     return labels[0], [by_label[label] for label in labels[1:]], by_label
 
 
-@needs("contracts", "trades")
+@needs("contracts", "buys")
 def test_account_state_refuses_a_row_that_fails_igs_own_identity(monkeypatch, D):
     """balance - deposit + profitLoss must equal available, or no row is produced.
 
@@ -476,7 +476,7 @@ def test_account_state_refuses_a_row_that_fails_igs_own_identity(monkeypatch, D)
     assert bad in r["refusals"][0]["text"]
 
 
-@needs("contracts", "trades")
+@needs("contracts", "buys")
 def test_account_state_keeps_rows_and_refusals_in_one_ordered_sequence(monkeypatch, D):
     """`entries` is what the printer walks, and the INTERLEAVING is part of the report.
 
@@ -495,7 +495,7 @@ def test_account_state_keeps_rows_and_refusals_in_one_ordered_sequence(monkeypat
     assert all(e in r["entries"] for e in r["rows"] + r["refusals"])
 
 
-@needs("contracts", "trades")
+@needs("contracts", "buys")
 def test_account_state_never_claims_a_notional(monkeypatch, D):
     """positions_value stays blank. Notional needs the open-positions endpoint, which the
     allowlist refuses — and the two bases differ, so guessing one here would be the
@@ -625,18 +625,18 @@ def test_every_generated_row_names_its_tables_columns_exactly():
 def test_a_row_missing_a_column_is_refused_rather_than_rendered():
     """The refusal is the point: a half-built row must not become a CSV line at all."""
     with pytest.raises(ValueError) as e:
-        ig._event("exits", "DIAAAATEST", "close", "Voss IG Spread bet", "x", {"eid": "E-999"})
+        ig._event("sales", "DIAAAATEST", "close", "Voss IG Spread bet", "x", {"sale_id": "E-999"})
     assert "missing" in str(e.value)
 
 
 def test_a_generated_close_carries_the_deal_id_in_the_column_for_it():
-    row = ig._event("exits", "DIAAAAREF", "close", "Voss IG Spread bet", "x",
-                    {"eid": "E-999", "date": "2026-09-01", "account": "Voss IG Spread bet",
-                     "ticker": "ORLA SB", "qty": "", "stake": 1, "price": 100.0,
+    row = ig._event("sales", "DIAAAAREF", "close", "Voss IG Spread bet", "x",
+                    {"sale_id": "E-999", "date": "2026-09-01", "account": "Voss IG Spread bet",
+                     "ticker": "ORLA SB", "qty": "", "stake": 1, "traded_price": 100.0,
                      "cur": "GBP", "rate": "", "proceeds": 100.0, "source": "s", "broker_ref": "DIAAAAREF",
-                     "realisation": "R-ZZZSB", "closes": "T-999C", "note": "n"})
+                     "realisation_id": "R-ZZZSB", "closes": "T-999C", "note": "n"})
     assert row["values"]["broker_ref"] == "DIAAAAREF"
-    assert list(row["values"]) == list(ig.ROW_COLUMNS["exits"])
+    assert list(row["values"]) == list(ig.ROW_COLUMNS["sales"])
     # and the printed line is the same row, so the block and the bench cannot disagree
     assert row["line"].startswith("E-999,2026-09-01,")
 
@@ -648,15 +648,15 @@ def _referenced_open_leg(D):
     loaded supplies its own leg. Returns the leg, its deal, its epic, the parcel and the
     account's feed label."""
     from portfusion.record import schema
-    th = schema.TABLES["trades"].header
-    eh = schema.TABLES["exits"].header
-    exits = schema.load("exits")
+    th = schema.TABLES["buys"].header
+    eh = schema.TABLES["sales"].header
+    exits = schema.load("sales")
     closed = {r[eh.index("closes")] for r in exits if r[eh.index("closes")]}
     label_of = {acct: label for label, acct in ig.account_names(D).items()}
-    for r in schema.load("trades"):
-        tid, ticker, acct = r[th.index("id")], r[th.index("ticker")], r[th.index("account")]
+    for r in schema.load("buys"):
+        tid, ticker, acct = r[th.index("trade_id")], r[th.index("ticker")], r[th.index("account")]
         ref, contract = str(r[th.index("broker_ref")] or ""), r[th.index("contract")]
-        sales = sorted((str(e[eh.index("date")]), e[eh.index("realisation")]) for e in exits
+        sales = sorted((str(e[eh.index("date")]), e[eh.index("realisation_id")]) for e in exits
                        if e[eh.index("account")] == acct and e[eh.index("ticker")] == ticker
                        and str(e[eh.index("date")]) >= str(r[th.index("date")]))
         if (str(ticker).endswith(" SB") and ref.startswith("DIAAAA") and tid not in closed
@@ -667,7 +667,7 @@ def _referenced_open_leg(D):
                          "gone")
 
 
-@needs("contracts", "trades")
+@needs("contracts", "buys")
 def test_a_swept_close_names_its_parcel_and_its_leg(monkeypatch, D):
     """WHAT THE BENCH'S FIRST EXIT LACKED. The close carries the parcel and the leg on its own
     row, from IG's own ids: the leg whose broker_ref is the deal closed — including one this
@@ -699,14 +699,14 @@ def test_a_swept_close_names_its_parcel_and_its_leg(monkeypatch, D):
     monkeypatch.setattr(ig, "IGSession", _S)
 
     r = ig.ig_events("2026-09-01")
-    opened = r["opens"][0]["values"]["id"]
-    got = [(c["values"]["realisation"], c["values"]["closes"]) for c in r["closes"]]
+    opened = r["opens"][0]["values"]["trade_id"]
+    got = [(c["values"]["realisation_id"], c["values"]["closes"]) for c in r["closes"]]
     assert got == [(parcel, leg_id), (parcel, opened)], got
 
     # AND EACH READS AS THE TRADES PAGE SAYS IT (the owner, 12 Oct 2026): the Bench showed IG's
     # "closed @ 8000, 0.25/pt" and listed what was on file as "open 2026-09-27 DIAAAA… ->
-    # already in trades.csv". Ticker, direction, stake per point, the level in points or the day.
-    leg = next(t for t in D.trades if t.id == leg_id)
+    # already in buys.csv". Ticker, direction, stake per point, the level in points or the day.
+    leg = next(t for t in D.buys if t.trade_id == leg_id)
     assert [e["what"] for e in r["opens"]] == [f"{leg.ticker} · Buy · £0.25/pt · 8,000 pts"]
     assert [e["what"] for e in r["closes"]] == [f"{leg.ticker} · Sell · £0.25/pt · 8,000 pts"] * 2
     assert r["matched"] == [f"{leg.ticker} · Buy · £{leg.stake:g}/pt · 2026-09-27 · in the book"]
@@ -722,7 +722,7 @@ def test_a_new_contracts_name_and_funding_are_read_off_its_epic(epic, want):
     assert (got["suffix"], got["funding"]) == want
 
 
-@needs("contracts", "trades")
+@needs("contracts", "buys")
 def test_a_first_bet_on_a_contract_the_book_lacks_is_offered_for_set_up(monkeypatch, D):
     """An opening on an epic no contract carries is a set-up, carrying the trade, the epic and
     its contract's month; a close on one is skipped, having nothing in the book to close."""
@@ -818,7 +818,7 @@ def stub_events(monkeypatch, D):
     return ig.account_names(D)[label]
 
 
-@needs("contracts", "trades")
+@needs("contracts", "buys")
 def test_a_sweep_runs_and_builds_every_kind_of_row(stub_events):
     """The regression test for the TypeError. A cost row and a capital row both carry an
     `account` COLUMN, which is the collision that broke every sweep."""
@@ -832,7 +832,7 @@ def test_a_sweep_runs_and_builds_every_kind_of_row(stub_events):
     assert r["costs"][0]["account"] == account
 
 
-@needs("contracts", "trades")
+@needs("contracts", "buys")
 def test_every_swept_row_fills_its_tables_columns(stub_events):
     """Not just that a row was built — that it is PASTEABLE. This is what the exits row failed
     for its whole life, carrying ten values into an eleven-column table."""
@@ -845,7 +845,7 @@ def test_every_swept_row_fills_its_tables_columns(stub_events):
             assert row["line"], "a row that renders no CSV line cannot be pasted"
 
 
-@needs("contracts", "trades")
+@needs("contracts", "buys")
 def test_a_swept_row_carries_what_the_bench_needs(stub_events):
     """The bench keys on the deal reference and titles the item from `what`."""
     r = ig.ig_events("2026-08-01")
@@ -869,7 +869,7 @@ def _sweep_with(monkeypatch, D, answer):
     return ig.account_names(D)[label]
 
 
-@needs("contracts", "trades")
+@needs("contracts", "buys")
 def test_a_withdrawal_is_capital_and_only_a_funding_line_is_a_cost(monkeypatch, D):
     """IG FILES ITS FUNDING CHARGES AND A WITHDRAWAL UNDER ONE TYPE, `WITH`. Every one became a
     "Funding interest" row, so money taken out of the account would have booked as a trading
@@ -887,7 +887,7 @@ def test_a_withdrawal_is_capital_and_only_a_funding_line_is_a_cost(monkeypatch, 
     assert [(c["ref"], c["values"]["amount"]) for c in r["capital"]] == [("TX-OUT", -2500.0)]
 
 
-@needs("contracts", "trades")
+@needs("contracts", "buys")
 def test_the_sweep_reads_every_page_of_both_histories(monkeypatch, D):
     """ONE PAGE OF 500 WAS ALL IT READ, and a busy window lost the rest silently. Activity
     links its next page (`metadata.paging.next`); transactions number theirs
@@ -915,7 +915,7 @@ def test_the_sweep_reads_every_page_of_both_histories(monkeypatch, D):
     assert sum(p.startswith("/history/activity") for p in asked) == 2, asked
 
 
-@needs("contracts", "trades")
+@needs("contracts", "buys")
 def test_a_full_page_that_says_nothing_of_paging_is_refused(monkeypatch, D):
     """What follows a full page with no paging is unknown, so the sweep says so rather than
     proposing the first page as the window."""
@@ -928,7 +928,7 @@ def test_a_full_page_that_says_nothing_of_paging_is_refused(monkeypatch, D):
         ig.ig_events("2026-08-01")
 
 
-@needs("contracts", "trades")
+@needs("contracts", "buys")
 def test_an_account_the_sweep_did_not_read_has_no_orphans(monkeypatch, D):
     """THE REVERSE CHECK ASKS ONLY OF THE ACCOUNTS SWEPT. It spanned every spread-bet account,
     so one with no credentials here had its every charge reported as missing from IG — telling
@@ -1047,7 +1047,7 @@ def _levels(monkeypatch, env="live", **reply):
     return ig.contract_levels()["rows"], seen
 
 
-@needs("contracts", "trades")
+@needs("contracts", "buys")
 def test_every_level_is_one_call_through_one_session(monkeypatch):
     """Six contracts, one request: the batch read through the real guard, naming every mapped
     epic, and every row saying which session read it."""
@@ -1061,7 +1061,7 @@ def test_every_level_is_one_call_through_one_session(monkeypatch):
     assert {r["contract"]: r["account"] for r in rows} == {k: a for k, (a, _e) in ig.epics().items()}
 
 
-@needs("contracts", "trades")
+@needs("contracts", "buys")
 def test_a_contract_the_batch_leaves_out_is_kept_unpriced(monkeypatch):
     """IG's reply is keyed by epic, so one it did not answer for is absent from it, and the
     row stays in the list, unpriced and with no source to bank."""
@@ -1073,7 +1073,7 @@ def test_a_contract_the_batch_leaves_out_is_kept_unpriced(monkeypatch):
     assert "no snapshot" in gone[0]["status"]
 
 
-@needs("contracts", "trades")
+@needs("contracts", "buys")
 def test_a_live_level_is_live_whichever_gateway_answered(monkeypatch):
     """`struck` answers WHICH MOMENT; it must not answer WHICH GATEWAY as well.
 
@@ -1102,7 +1102,7 @@ def test_a_level_in_no_currency_or_the_wrong_one_is_not_a_mark(monkeypatch):
         assert all("the record in USD" in r["status"] for r in rows)
 
 
-@needs("contracts", "trades")
+@needs("contracts", "buys")
 def test_a_delay_ig_declares_moves_the_instant_back(monkeypatch):
     """`at` is the instant the level describes: the read, less the delay IG states. IG
     declared none on 29 Sep; `feeds/tv.py` strikes its delayed lines the same way."""
@@ -1111,7 +1111,7 @@ def test_a_delay_ig_declares_moves_the_instant_back(monkeypatch):
     assert all("IG delayTime 15 min" in r["source"] for r in rows)
 
 
-@needs("contracts", "trades")
+@needs("contracts", "buys")
 def test_verify_compares_the_sweeps_own_levels(monkeypatch, D):
     """`--ig-verify` reads through `contract_levels()` rather than asking IG again, and a
     contract that did not price is NAMED, never reported as unchanged."""
@@ -1123,7 +1123,7 @@ def test_verify_compares_the_sweeps_own_levels(monkeypatch, D):
     assert set(states.values()) == {"ok"}
 
 
-@needs("contracts", "trades")
+@needs("contracts", "buys")
 def test_a_contracts_close_is_its_bars_bid_and_a_far_one_waits_for_the_statement(monkeypatch):
     """The same side and divisor a live level uses, dated the day asked for, and a row that says
     it is a close. A contract IG has no evening bar for (every far one) is kept, unpriced, with

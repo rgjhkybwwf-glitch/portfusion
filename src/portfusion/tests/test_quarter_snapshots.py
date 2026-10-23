@@ -33,13 +33,13 @@ BASELINE = "2026-01-01"
 def held_at(date, account=None):
     """Quantity per ticker actually held on `date`, from the event log."""
     qty = defaultdict(int)
-    for t in D.trades:
+    for t in D.buys:
         if ISO.match(t.date) and t.date > date:
             continue                        # not yet opened
         if account and t.acct != account:
             continue
         qty[t.ticker] += t.size
-    for e in D.exits:
+    for e in D.sales:
         if e.date > date or (account and e.acct != account):
             continue
         qty[e.ticker] -= e.size
@@ -152,7 +152,7 @@ def _missing_at_quarter_ends(qn) -> list[tuple[str, str]]:
     and no quarter-nav row there."""
     from portfusion.record import schema
     first: dict[str, str] = {}
-    for table in ("trades", "exits", "income", "capital-movements"):
+    for table in ("buys", "sales", "income", "capital-movements"):
         h = schema.TABLES[table].header
         for r in schema.load(table):
             d, a = str(r[h.index("date")])[:10], r[h.index("account")]

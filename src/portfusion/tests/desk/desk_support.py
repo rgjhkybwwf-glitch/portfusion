@@ -35,18 +35,18 @@ def all_crlf(table) -> bool:
 # kind, and a line the book holds directly, serve any book the suite is pointed at.
 SHARES_ACCOUNT = an_account("shares")
 SPREAD_BET_ACCOUNT = an_account("spread bet")
-_DIRECT = next((s for s in _rows("securities") if s["kind"] == "shares"), None)
-SYNTHETIC_TICKER = next((s["code"] for s in _rows("securities") if s["kind"] == "spread bet"),
+_DIRECT = next((s for s in _rows("securities") if s["held_as"] == "shares"), None)
+SYNTHETIC_TICKER = next((s["ticker"] for s in _rows("securities") if s["held_as"] == "spread bet"),
                         None)
 
 # A REFERENCE THAT IS NOT IN THE REAL RECORD. A real contract note's reference — one really in
-# exits.csv — fires the "already in the record" gate on every fixture that uses it, and the gate
+# sales.csv — fires the "already in the record" gate on every fixture that uses it, and the gate
 # is right: the suite would be quietly asserting against evidence the book already holds.
 GOOD_TRADE = {
-    "id": free_id("trades"), "date": "2026-09-01", "source": "ii contract note 01 Sep 2026",
+    "trade_id": free_id("buys"), "date": "2026-09-01", "source": "ii contract note 01 Sep 2026",
     "account": SHARES_ACCOUNT,
-    "ticker": (_DIRECT or {}).get("code"), "cur": (_DIRECT or {}).get("currency"), "qty": "10",
-    "stake": "", "val": "3197.00", "broker_ref": "TESTREF1",
+    "ticker": (_DIRECT or {}).get("ticker"), "cur": (_DIRECT or {}).get("currency"), "qty": "10",
+    "stake": "", "cost": "3197.00", "broker_ref": "TESTREF1",
     "note": "n",
 }
 
@@ -60,7 +60,7 @@ def _ready(item, **over):
     item["evidence"] = dict(GOOD_EVIDENCE)
     item["why"] = {"why_entered": "Entered on the services margin story, which the hardware "
                                  "cycle masks.", "why_exited": ""}
-    item["rows"] = [{"table": "trades", "values": dict(GOOD_TRADE, **over)}]
+    item["rows"] = [{"table": "buys", "values": dict(GOOD_TRADE, **over)}]
     return item
 
 

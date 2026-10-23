@@ -149,7 +149,7 @@ def test_the_build_does_not_import_this(build_imports):
 
 # (account, store date, the statement/app total the record reconciles that row against).
 #
-# DERIVED FROM THE RECORD: store/account-observations.csv carries a real `as_of`, so the
+# DERIVED FROM THE RECORD: store/account-readings.csv carries a real `as_of`, so the
 # mapping is a query. It was once typed by hand, because observations were dated in FREE TEXT
 # — "19 Jul 23:20", "30 Jun (stmt)" — which nothing could join on.
 #

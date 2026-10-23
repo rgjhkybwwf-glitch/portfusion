@@ -36,7 +36,7 @@ def _bank_the_day(day=_DAY):
     from portfusion.desk.doors import marks
     src = f"TradingView 1D, session {day} close — test"
     contracts = set(D.LEG_CONTRACT.values())      # the IG legs bank by their own route
-    prices = [{"ticker": t, "price": p, "currency": c, "as_of": day, "source": src,
+    prices = [{"mark_key": t, "price": p, "currency": c, "as_of": day, "source": src,
                "struck": "close", "at": ""}
               for t, p, c, *_ in D.CURRENT_PRICES if t not in contracts]
     rates = [{"currency": c, "as_of": day, "rate": r,
@@ -148,7 +148,7 @@ def _nearest(dates, day, window=7):
     from portfusion.engine import Book
     b = Book()
     b.store = {**b.store, "history.prices": pd.DataFrame({
-        "ticker": "X", "date": dates, "price": [float(i) for i in range(len(dates))],
+        "mark_key": "X", "date": dates, "price": [float(i) for i in range(len(dates))],
         "status": b.D.LIVE_MARK})}
     return b._marks_at(day, window)[0].get("X")
 
@@ -224,8 +224,8 @@ def test_a_restatement_supersedes_appends_and_holds_the_quarter_again(store_copy
         rows = real(self, as_of, accounts=accounts, restated=restated)
         for r in rows["quarter_nav"]:
             r["amount"] = round(r["amount"] + 100.0, 2)
-        rows["quarter_snapshots"][0]["gbp_value"] = round(
-            rows["quarter_snapshots"][0]["gbp_value"] + 100.0, 2)
+        rows["quarter_snapshots"][0]["value"] = round(
+            rows["quarter_snapshots"][0]["value"] + 100.0, 2)
         return rows
     monkeypatch.setattr(Book, "freeze_rows", moved)
     hdr = schema.TABLES["quarter-nav"].header

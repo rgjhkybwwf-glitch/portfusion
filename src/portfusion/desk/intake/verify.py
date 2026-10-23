@@ -40,7 +40,7 @@ def _digits(text: str) -> str:
 
     WHY THE DECIMAL POINT IS DROPPED, WHICH LOOKS TOO LOOSE UNTIL YOU SEE THE BOOK. LSE prices
     are quoted in pence and STORED AS POUNDS: the ii contract note says 52.50p and
-    `exits.csv` holds 0.525. Requiring the value to appear in its quote as written would reject
+    `sales.csv` holds 0.525. Requiring the value to appear in its quote as written would reject
     that correct transcription every time, and rejecting correct work teaches people to
     switch the check off.
 

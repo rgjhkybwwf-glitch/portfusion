@@ -5,6 +5,24 @@ prints it.
 
 ## Unreleased
 
+- **One name for one idea, from the store to the desk** (#43). The store's names are the desk's,
+  and the suite refuses a heading the glossary has not agreed or a column with no heading.
+  A book's store moves:
+  - tables: `trades` → `buys`, `exits` → `sales`, `closed-positions` → `realisations`, `issuers`
+    → `companies`, `account-observations` → `account-readings`, `cash-observations` →
+    `cash-readings`; the journal's `table` and the Bench archive's keys follow;
+  - columns: `securities.code` and `contracts.code` → `ticker`; `kind` → `held_as`;
+    `accounts.broker` → `broker_firm`; `buys.id` → `trade_id`; `sales.eid` → `sale_id`;
+    `realisation` → `realisation_id`; `price` on buys and sales → `traded_price`;
+    `realisations.open_date` → `opened`; `baseline-reconstruction.fx` → `rate`;
+    quarter-snapshots' `local_price`, `gbp_value`, `gbp_cost` → `price`, `value`, `cost`;
+    `ticker` on current-prices and price-history → `mark_key`, a share's ticker or a bet's
+    contract; an archived Bench item's `marks` follow;
+  - `buys.val` splits by the line's `held_as` into `cost` (a share) and `level_points` (a bet).
+
+  On the desk: Unrealised gain, Funding interest, Quantity and Life cost per share replace Gain to
+  date, Funding, Held and Net cost per share on Round Trips by company life; a deal's `cur` is
+  headed Deal ccy; What Changed and Price Refresh head a mark's key Mark key, not Line. The report's figures do not change.
 - **Round Trips reads by company life**: a company's shares and bets from first purchase to the
   day nothing is held, with dividends, daily funding, a net cost per share and a gain % over
   exposure at entry. The quarterly report does not change.

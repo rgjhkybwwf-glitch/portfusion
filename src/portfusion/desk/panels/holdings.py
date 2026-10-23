@@ -47,8 +47,8 @@ GROUPINGS = ("ticker", "issuer")
 GROUPING_WORDS = {"ticker": "ticker", "issuer": "company"}
 
 COLUMNS = ("ticker", "company", "held_as", "accounts", "currency", "entry_price",
-           "current_price", "priced_at", "cost", "value", "gain", "gain_pct", "weight",
-           "open_date", "days_held")
+           "price", "priced_at", "cost", "value", "unrealised", "unrealised_pct", "weight",
+           "opened", "days_held")
 
 #: WHAT ONLY A TICKER ROW HAS: an issuer row can be several instruments, so it has no single
 #: ticker. Grouped by issuer the column is not sent, rather than sent empty.
@@ -56,7 +56,7 @@ BY_TICKER_ONLY = ("ticker",)
 
 #: How much is held. A share line carries its count and a spread bet its stake per point, never
 #: both; an issuer row is one position, its count in shares with bets as share-equivalents.
-HELD_COLUMNS = ("qty", "stake_per_point")
+HELD_COLUMNS = ("qty", "stake")
 
 #: The mark's own history, as the expansion shows it. `source` is the point of opening it: it
 #: carries the corroboration and the symbol actually queried. `mark_key`, never `ticker` — a
@@ -154,7 +154,7 @@ def _split(b, account) -> tuple:
     """
     if not account:
         return _shape.money(b.owned()), _shape.money(b.exposure())
-    # PER ACCOUNT, the engine's own split is by_account()'s `kind` — a shares account's
+    # PER ACCOUNT, the engine's own split is by_account()'s `held_as` — a shares account's
     # exposure IS its securities owned; a spread-bet account's is its notional. Reading a column
     # the engine already computed is selection, not calculation.
     for r in b.by_account().itertuples(index=False):
@@ -184,7 +184,7 @@ def _columns(by: str) -> list[str]:
 
 
 def _rows(frame, columns: list, b, by: str, account) -> list[dict]:
-    out = _shape.rows(frame, columns, dates=("open_date", "priced_at"))
+    out = _shape.rows(frame, columns, dates=("opened", "priced_at"))
     held = _shape.rows(frame, HELD_COLUMNS)
     key_col = "company" if by == "issuer" else "ticker"
     keys = list(frame[key_col])

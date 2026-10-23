@@ -1,7 +1,7 @@
 """THE OBSERVATIONS DOOR — the one place in `desk/` that REPLACES an account reading.
 
 The third store door, beside `commit.py` (appends an event) and `marks.py` (replaces a mark).
-`store/account-observations.csv` is what `Book.reconciliation()` compares the book to; without a
+`store/account-readings.csv` is what `Book.reconciliation()` compares the book to; without a
 door it was hand-edited, which is how it sat stale while the marks moved underneath it.
 
 THE MARKS RULE ALREADY COVERED THIS. *A feed may write a MARK — "a price, an FX rate, live equity" —
@@ -40,7 +40,7 @@ from portfusion.record import rules as D
 from portfusion.record import schema
 from portfusion.desk.doors import commit
 
-TABLE = "account-observations"
+TABLE = "account-readings"
 
 #: One row per ACCOUNT. Unlike `current-prices.csv` there is no history mixed into this table
 #: and no carried line to protect — every row is a live reading and every one is replaceable.

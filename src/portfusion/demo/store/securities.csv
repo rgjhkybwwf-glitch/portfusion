@@ -1,4 +1,4 @@
-code,company,kind,currency,symbol,quote_unit,points_per_unit,shares_per_unit
+ticker,company,held_as,currency,symbol,quote_unit,points_per_unit,shares_per_unit
 BRYC.L,Bryncoed Minerals plc,shares,GBP,XLON:BRYC,GBX,,
 KELS.L,Kelstrand Foods plc,shares,GBP,XLON:KELS,GBX,,
 QNLR,Quenlan Robotics Inc.,shares,USD,XNAS:QNLR,USD,,
