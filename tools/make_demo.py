@@ -521,9 +521,11 @@ def _cell(value) -> str:
     return "" if value is None else str(value)
 
 
-def _csv(header: list[str], rows: list[dict], table: str | None = None) -> str:
-    """The rows as CSV, cells in `header` order. A key the header lacks is refused, never
-    dropped; a record table's every cell is parsed as the loader will parse it."""
+def _csv(header: list[str], rows: list[dict], table: str | None = None,
+         places: dict | None = None) -> str:
+    """The rows as CSV, cells in `header` order, each figure as the store writes it
+    (`schema.cell()`; a history's `places`). A key the header lacks is refused, never dropped; a
+    record table's every cell is parsed as the loader will parse it."""
     buf = io.StringIO()
     out = csv.writer(buf, lineterminator="\n")
     out.writerow(header)
@@ -532,7 +534,9 @@ def _csv(header: list[str], rows: list[dict], table: str | None = None) -> str:
         stray = set(row) - set(header)
         if stray:
             raise ValueError(f"{table or header}: row {i} has no column for {sorted(stray)}")
-        cells = [_cell(row.get(c)) for c in header]
+        cells = ([schema.cell(f, row.get(f.name)) for f in fields] if fields else
+                 [schema.figure(row[c], **places[c]) if c in (places or {}) and row.get(c) is not None
+                  else _cell(row.get(c)) for c in header])
         for field, cell in zip(fields or (), cells):
             schema._parse(field, cell, table, i)
         out.writerow(cells)
@@ -659,7 +663,7 @@ def build(into: pathlib.Path) -> list[str]:
     for table, spec in schema.TABLES.items():
         put(f"store/{spec.path.name}", _csv(spec.header, T[table], table))
     for name, (fields, rows) in histories.items():
-        put(f"store/{name}", _csv(fields, rows))
+        put(f"store/{name}", _csv(fields, rows, places=history_files.PLACES[name]))
 
     numbers = {a["account"]: a["number"] for a in T["accounts"]}
     for side, row, note in noted:

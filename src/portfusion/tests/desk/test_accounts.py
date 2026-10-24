@@ -759,7 +759,7 @@ def test_a_field_the_new_reading_does_not_carry_is_blank_not_the_old_value():
                "evidence": "ii-valuation", "reference": "new", "available": None}
     merged = dict(zip(header, observations._merged([old[c] for c in header], reading)))
     assert merged["account"] == "X"
-    assert (merged["as_of"], merged["positions"], merged["reference"]) == ("2026-09-30", "12.0", "new")
+    assert (merged["as_of"], merged["positions"], merged["reference"]) == ("2026-09-30", "12.00", "new")
     assert [merged[c] for c in ("at", "available")] == [""] * 2, merged
 
 

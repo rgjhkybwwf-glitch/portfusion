@@ -21,6 +21,7 @@ import os
 import tempfile
 
 from portfusion.record import rules as D
+from portfusion.record import schema
 
 
 class AppendOnlyCSV:
@@ -35,11 +36,14 @@ class AppendOnlyCSV:
 
     `identity` names the columns that make a row unique, so `known()` can answer whether a
     mark is already banked. A history with no natural identity leaves it None.
+
+    `places` says how each numeric column is written, as the schema's `MONEY` or `QUOTE` says it
+    for the record's own tables: every save writes them so (`schema.figure()`).
     """
 
     def __init__(self, name: str, fields: tuple, numeric: tuple, sort_key,
                  identity: tuple | None = None, nullable: bool = False,
-                 figure: str | tuple | None = None) -> None:
+                 figure: str | tuple | None = None, places: dict | None = None) -> None:
         # A FILENAME, never a folder: the folder is whichever store `schema.STORE` points at
         # when the file is used, so the histories follow the record when a test moves it.
         self._name = str(name)
@@ -51,6 +55,7 @@ class AppendOnlyCSV:
         # THE FIGURE A ROW STATES — `price`, `rate`, or an account's several — which a same-day
         # read compares. None for a history that holds none (`restruck()` is then never asked).
         self.figure = (figure,) if isinstance(figure, str) else figure
+        self.places = places or {}
 
     @property
     def path(self) -> str:
@@ -81,12 +86,17 @@ class AppendOnlyCSV:
             if None in r or None in r.values():
                 raise ValueError(f"{self._name} line {i}: {len(self.fields)} cells expected, "
                                  f"the row does not have them")
-        for r in rows:
+        for i, r in enumerate(rows, 2):
             for k in self.numeric:
                 if self.nullable and r[k] in ("", None):
                     r[k] = None
-                else:
-                    r[k] = float(r[k])
+                    continue
+                if k in self.places:
+                    try:
+                        schema._held_to_places(schema.Field(k, "float", **self.places[k]), r[k])
+                    except ValueError as e:
+                        raise ValueError(f"{self._name} line {i}, {k}: {e}") from None
+                r[k] = float(r[k])
         return rows
 
     def save(self, rows: list[dict]) -> list[dict]:
@@ -109,7 +119,8 @@ class AppendOnlyCSV:
         buf = io.StringIO()
         w = csv.DictWriter(buf, fieldnames=self.fields, lineterminator=eol)
         w.writeheader()
-        w.writerows(rows)
+        w.writerows({**r, **{c: schema.figure(r[c], **how) for c, how in self.places.items()
+                             if r.get(c) is not None and r[c] != ""}} for r in rows)
         folder = os.path.dirname(self.path)
         fd, tmp = tempfile.mkstemp(prefix=f".{self._name}.", suffix=".tmp", dir=folder)
         try:

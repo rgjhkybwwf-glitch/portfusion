@@ -236,7 +236,7 @@ def _with_cash_in_three_places(tmp_path):
     share = next(r for r in cash[1:] if r[1] == "2026-09-30")
     readings = [readings[0][:at] + ["stmt_value", "recon_cash"] + readings[0][at:]] + [
         r[:at] + ["", ""] + r[at:] for r in readings[1:]] + [
-        [share[0], share[1], "", "100.0", str(100.0 + float(share[2])), share[2],
+        [share[0], share[1], "", "100.00", f"{100.0 + float(share[2]):.2f}", share[2],
          *[""] * (len(readings[0]) - 4 - 2), share[3], share[4]]]
     _write(store / "account-readings.csv", readings)
     return book, store, share
@@ -261,7 +261,7 @@ def test_a_share_accounts_cash_is_carried_into_its_cash_readings(tmp_path):
         assert (store / name).read_bytes() == (schema.DEMO / "store" / name).read_bytes(), name
     readings = list(csv.reader((store / "account-readings.csv").open(encoding="utf-8")))
     assert readings[0] == schema.TABLES["account-readings"].header
-    assert readings[-1][:4] == [share[0], share[1], "", "100.0"], readings[-1]
+    assert readings[-1][:4] == [share[0], share[1], "", "100.00"], readings[-1]
     added = [r for r in csv.reader((store / "journal.csv").open(encoding="utf-8"))
              if r[1] == "migrate"]
     want = len(list(csv.reader((schema.DEMO / "store" / "cash-readings.csv").open()))) - 3
@@ -274,7 +274,7 @@ def test_a_readings_total_its_stock_and_cash_do_not_make_is_moved_by_hand(tmp_pa
     rather than losing the one sign that a figure was mistyped."""
     book, store, share = _with_cash_in_three_places(tmp_path)
     path = store / "account-readings.csv"
-    total = str(100.0 + float(share[2]))
+    total = f"{100.0 + float(share[2]):.2f}"
     path.write_text(path.read_text(encoding="utf-8").replace(f",{total},", ",1.0,", 1),
                     encoding="utf-8")
     with pytest.raises(ValueError, match="is not its total"):
@@ -308,6 +308,49 @@ def test_two_cash_figures_for_one_day_are_moved_by_hand(tmp_path):
     path = store / "account-readings.csv"
     path.write_text(path.read_text(encoding="utf-8").replace(
         f",{share[2]},", f",{float(share[2]) + 1},", 1), encoding="utf-8")
+    with pytest.raises(ValueError, match="move it by hand"):
+        M.plan(book)
+
+
+def test_every_sum_of_money_is_written_to_the_penny(tmp_path):
+    """A demo copy with its money written as it came — 1234.5, 0.0 — in the record's tables and the
+    account history is carried to the demo exactly, the journal saying which tables were rewritten,
+    and a sum with more places than pennies is refused, to be moved by hand."""
+    from portfusion.history import files
+    book = tmp_path / "book"
+    for part in ("store", "_archive"):
+        shutil.copytree(schema.DEMO / part, book / part)
+    store = book / "store"
+    money = {t.name: [f.name for f in t.fields if f.exact] for t in schema.TABLES.values()}
+    money["account-statements"] = list(files.ACCOUNT_MONEY)
+    touched = set()
+    for name, cols in money.items():
+        path = store / f"{name}.csv"
+        rows = list(csv.reader(path.open(encoding="utf-8")))
+        at = [rows[0].index(c) for c in cols]
+        for r in rows[1:]:
+            for j in at:
+                if r[j].endswith("0") and "." in r[j]:
+                    r[j] = r[j][:-1]
+                    touched.add(name)
+        _write(path, rows)
+    assert {"buys", "account-statements"} <= touched, touched
+
+    m, changes = M.plan(book)
+    assert m is M.MIGRATIONS[5] and changes, "money as it came planned no move"
+    M.write(changes)
+    for p in sorted((schema.DEMO / "store").glob("*.csv")):
+        if p.name != "journal.csv":
+            assert (store / p.name).read_bytes() == p.read_bytes(), f"{p.name} moved wrong"
+    added = {r[3] for r in csv.reader((store / "journal.csv").open(encoding="utf-8"))
+             if r[1] == "migrate"}
+    assert added == touched - {"account-statements"}, added
+    assert M.plan(book) == (None, [])
+
+    path = store / "capital-movements.csv"
+    rows = list(csv.reader(path.open(encoding="utf-8")))
+    rows[1][rows[0].index("amount")] = "12.345"
+    _write(path, rows)
     with pytest.raises(ValueError, match="move it by hand"):
         M.plan(book)
 

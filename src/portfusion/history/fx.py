@@ -47,7 +47,8 @@ BASE = "GBP"
 
 # --- the file itself ------------------------------------------------------------------------
 _FILE = AppendOnlyCSV(CSV_NAME, FIELDS, numeric=("rate",), sort_key=lambda r: (r["currency"], r["date"], r["kind"]),
-                      identity=("currency", "date", "kind"), nullable=False, figure="rate")
+                      identity=("currency", "date", "kind"), nullable=False, figure="rate",
+                      places=files.PLACES[CSV_NAME])
 
 load = _FILE.load
 save = _FILE.save

@@ -266,8 +266,11 @@ def test_a_buy_whose_figure_is_in_the_other_kinds_column_is_refused_on_load(stor
     from portfusion.record import rules
     path = store_copy / "buys.csv"
     rows = list(csv.DictReader(path.open(newline="", encoding="utf-8")))
-    leg = next(dict(r) for r in rows if bool(r["contract"]) == bet and r["cost"] != "0.0")
-    leg.update(trade_id=free_id("buys"), cost=leg["level_points"], level_points=leg["cost"])
+    leg = next(dict(r) for r in rows if bool(r["contract"]) == bet and float(r["cost"] or 1))
+    # EACH FIGURE WRITTEN AS ITS NEW COLUMN WRITES ONE, so only the kind is wrong.
+    level, cost = leg["level_points"], leg["cost"]
+    leg.update(trade_id=free_id("buys"), cost=f"{float(level):.2f}" if level else "",
+               level_points=cost)
     with path.open("a", newline="", encoding="utf-8") as f:
         csv.DictWriter(f, fieldnames=list(rows[0]), lineterminator="\n").writerow(leg)
     with pytest.raises(ValueError, match="a level and no cost" if bet else "a cost and no level"):

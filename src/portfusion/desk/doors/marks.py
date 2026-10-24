@@ -125,6 +125,11 @@ def _require(row: dict, fields: tuple, what: str) -> None:
             f"indicator agrees everything is fine when it is not.")
 
 
+def _cells(table: str, row: dict) -> list[str]:
+    """A mark's row as the table's cells, each written as `schema.cell()` writes it."""
+    return commit._rendered(table, {f: row.get(f) for f in schema.TABLES[table].header})
+
+
 def _replace_lines(table: str, new_rows: dict) -> str:
     """The table's text with `new_rows` swapped in by key, everything else UNTOUCHED.
 
@@ -237,13 +242,9 @@ def write(prices: list[dict] | None = None, rates: list[dict] | None = None) -> 
 
     by_table = {}
     if prices:
-        by_table["current-prices"] = {r["mark_key"]: [r["mark_key"], r["price"], r["currency"],
-                                                    r["as_of"], r["source"], r["struck"],
-                                                    r.get("at") or ""] for r in prices}
+        by_table["current-prices"] = {r["mark_key"]: _cells("current-prices", r) for r in prices}
     if rates:
-        by_table["fx"] = {r["currency"]: [r["currency"], r["rate"], r["as_of"], r["source"],
-                                          r.get("struck") or ""]
-                          for r in rates}
+        by_table["fx"] = {r["currency"]: _cells("fx", r) for r in rates}
 
     # RECORD TIME, DECIDED ONCE. Both tables of one refresh carry the same instant, because
     # they are one write — a reader asking "what did this refresh do" must not have to notice
@@ -340,9 +341,8 @@ def first(prices: list[dict], route: str, ref: str, at: str) -> list[str]:
         raise Refused(f"{', '.join(priced)} has a mark already: the Price Refresh replaces it")
     path = schema.TABLES["current-prices"].path
     was = len(schema.load("current-prices"))
-    commit._append(path, path.read_bytes(), [commit._csv_line(
-        [r["mark_key"], r["price"], r["currency"], r["as_of"], r["source"], r["struck"],
-         r.get("at") or ""]) for r in prices])
+    commit._append(path, path.read_bytes(),
+                   [commit._csv_line(_cells("current-prices", r)) for r in prices])
     if len(schema.load("current-prices")) != was + len(prices):
         raise Refused("current-prices.csv did not gain exactly the new marks")
     commit.journal([(route, "append", "current-prices", len(prices), ref,

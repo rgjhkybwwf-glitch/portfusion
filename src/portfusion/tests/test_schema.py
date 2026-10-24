@@ -235,6 +235,38 @@ def test_an_integer_column_refuses_a_float():
         _cell("int", "4375.0")
 
 
+def test_money_is_written_to_the_penny_and_a_quote_to_at_most_six_places():
+    """ONE FORMATTER FOR EVERY WRITER (`schema.cell()`): a sum of money always two places, never
+    rounded from more; a price, rate or level rounded to six and its trailing noughts dropped."""
+    money = schema.Field("m", "float", **schema.MONEY)
+    quote = schema.Field("q", "float", **schema.QUOTE)
+    assert [schema.cell(money, v) for v in (1234.5, "0", 7, None, "")] == [
+        "1234.50", "0.00", "7.00", "", ""]
+    with pytest.raises(ValueError, match="sum to 2 decimal places"):
+        schema.cell(money, 12.345)
+    assert [schema.cell(quote, v) for v in (0.1235, "2", 1.2917000001)] == ["0.1235", "2.0", "1.2917"]
+    from portfusion.desk.doors import commit
+    assert commit._rendered("capital-movements", {"amount": "250"})[2] == "250.00"
+
+
+@pytest.mark.parametrize("field, text", [
+    (schema.Field("m", "float", **schema.MONEY), "1234.5"),
+    (schema.Field("m", "float", **schema.MONEY), "1234.567"),
+    (schema.Field("q", "float", **schema.QUOTE), "1.2345678"),
+    (schema.Field("q", "float", **schema.QUOTE), "1e-3")])
+def test_a_figure_written_to_other_places_is_refused_on_load(field, text):
+    """Money written to one place, or a quote to seven, is refused where the cell is read."""
+    with pytest.raises(ValueError, match="decimal places"):
+        schema._parse(field, text, "t", 2)
+
+
+def test_every_figure_column_declares_its_places():
+    """A float column with no places is a figure written however its writer liked."""
+    loose = [f"{t.name}.{f.name}" for t in schema.TABLES.values() for f in t.fields
+             if f.kind == "float" and f.places is None]
+    assert not loose, loose
+
+
 def test_the_number_kind_preserves_int_against_float():
     """TWO COLUMNS IN THIS RECORD GENUINELY MIX THEM — a spread-bet stake is 1 or 0.25,
     a limit level is 11300 or 8922.1. Declaring them float would be a silent reshape no

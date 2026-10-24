@@ -33,7 +33,7 @@ from portfusion.log import log
 
 # The file and its columns are `history/files.py`'s, where the demo's generator reads them.
 CSV_NAME, FIELDS = files.ACCOUNTS, files.ACCOUNT_FIELDS
-NUMERIC = ("positions_value", "funds", "running_pl", "equity", "deposit")
+NUMERIC = files.ACCOUNT_MONEY
 #: The subset this table permits, from `schema.QUALITIES`.
 QUALITIES = ("sourced", "derived")
 
@@ -46,7 +46,8 @@ def _is_spread_bet(account: str) -> bool:
 # ITS FIGURES ARE ALL OF NUMERIC: a re-reading of one day that moves any figure both rows state
 # is a new statement of that day, and `bank()` replaces the earlier one (`restruck()`).
 _FILE = AppendOnlyCSV(CSV_NAME, FIELDS, numeric=tuple(NUMERIC), sort_key=lambda r: (r["as_of"], r["account"]),
-                      identity=("as_of", "account"), nullable=True, figure=tuple(NUMERIC))
+                      identity=("as_of", "account"), nullable=True, figure=tuple(NUMERIC),
+                      places=files.PLACES[CSV_NAME])
 
 load = _FILE.load
 save = _FILE.save

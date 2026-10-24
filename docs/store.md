@@ -51,6 +51,10 @@ happened, never an instruction or how a figure was reached; those go in the comm
   names any price nothing holds.
 - **A mark has two axes**: `quality` (provenance) and `struck` (`close` or `live`). A blank
   `struck` compares with nothing.
+- **Money is written to the penny, a quote to at most six places.** Every sum of money has
+  exactly two decimal places and a price, rate or level no more than six, as `schema.MONEY` and
+  `schema.QUOTE` declare per column; the loader refuses a figure written otherwise, and every
+  writer writes them so.
 - **A share account's cash is in one place, its cash readings.** A reading off a document that
   states the cash writes it as a cash reading of that day, and the reading's total is its stock
   plus that cash. A spread bet's cash is IG's funds, on its reading.
