@@ -1030,10 +1030,13 @@ def test_the_return_since_the_start_links_the_years():
 def test_the_firms_gain_is_its_accounts_gains():
     """ONE NUMERATOR, so the parts add to the whole: each closed quarter's firm gain is the sum
     of its accounts' — which it was not while the accounts counted no income and the book
-    counted a spread bet's funding twice."""
+    counted a spread bet's funding twice. THE BOOK AND EACH ACCOUNT SHARE ONE QUARTER TABLE: the
+    book's columns, under the same names, on every account's row."""
     from portfusion import engine
     b = engine.Book()
     per = b.account_quarter_returns()
+    missing = set(b.quarter_returns().columns) - set(per.columns)
+    assert not missing, f"the accounts' quarter table has no {sorted(missing)}"
     # A BLANK GAIN ADDS NOTHING, so this also says a quarter whose account gain is blank moved
     # nothing the book counts. Failing on such a row would mean the book counts a gain its own
     # account calls unknown.

@@ -870,7 +870,9 @@ def test_a_reading_writes_its_levels_beside_its_equity(store_copy):
     """The book's figure for a spread-bet account comes from its contract MARKS and the broker's
     from the instant it is asked, so a reading written without the levels it was struck against
     is compared to marks from some other time. That once read as two accounts out, with
-    nothing wrong in either figure."""
+    nothing wrong in either figure.
+
+    AN IG READING KEEPS EACH OF ITS FIVE FIGURES ONCE, IN ITS OWN COLUMN."""
     from portfusion.record import schema
     from portfusion.desk.panels import price_refresh as R
     contract, _ = _mapped_contract()
@@ -882,8 +884,31 @@ def test_a_reading_writes_its_levels_beside_its_equity(store_copy):
     landed = next(r for r in schema.load("current-prices") if r[0] == contract)
     assert landed[1] == 7690.0, "the contract mark was not replaced"
     read = next(r for r in schema.load("account-readings") if r[0] == SPREAD_BET_ACCOUNT)
-    assert read[schema.TABLES["account-readings"].header.index("equity")] == 23000.0, \
-        "the reading was not replaced"
+    head = schema.TABLES["account-readings"].header
+    five = ("funds", "running_pl", "equity", "deposit", "available")
+    assert [read[head.index(c)] for c in five] == [_reading()[c] for c in five], \
+        "the reading was not replaced, figure by figure"
+
+
+def test_an_ig_check_describes_its_own_instant(store_copy):
+    """AN IG CHECK DESCRIBES ITS OWN INSTANT: a sweep on a later day leaves the reconciliation of the
+    reading before it as it was, its tie included. On the loaded book's own reading."""
+    import datetime as dt
+    from portfusion.desk.doors import marks
+    from portfusion.engine import Book
+
+    def row():
+        return {k: str(v) for k, v in next(r for r in Book().reconciliation().to_dict("records")
+                                         if r["account"] == SPREAD_BET_ACCOUNT).items()}
+    was = row()
+    if was["comparable"] != "True":
+        pytest.skip(f"{SPREAD_BET_ACCOUNT}'s reading is not one pass with its marks")
+    day = next(r.as_of for r in _rules.ac_rows if r.acct == SPREAD_BET_ACCOUNT)
+    later = (dt.date.fromisoformat(str(day)[:10]) + dt.timedelta(days=1)).isoformat()
+    contract, _ = _mapped_contract()
+    marks.write(prices=[_level(price=round(_BY_TICKER[contract][1] * 0.9, 1), as_of=later,
+                               at=f"{later}T14:02:11Z")])
+    assert row() == was, "a later day's level moved the reconciliation of the reading before it"
 
 
 def test_a_refused_reading_rolls_back_the_levels_too(store_copy):
