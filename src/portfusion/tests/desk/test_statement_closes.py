@@ -158,3 +158,16 @@ def test_the_desk_hands_the_sweep_its_statement_reader(monkeypatch):
         on=on, filed=filed) or {"on": on})
     assert P._fetch_all(on="2026-09-30") == {"ok": True, "on": "2026-09-30"}
     assert seen == {"on": "2026-09-30", "filed": statement_closes.closes}
+
+
+def test_the_demos_ig_statement_gives_each_contract_its_level():
+    """THE DEMO SHOWS THE ROUTE: its filed IG statement prints its date alone and its open
+    positions, so a far contract's close for that day comes off the statement on file."""
+    from portfusion.desk.intake import statement_closes as S
+    from portfusion.record import rules as D, schema
+    if D.store_dir().resolve() != (schema.DEMO / "store").resolve():
+        pytest.skip("the demo's own statement, read with the demo loaded")
+    got = S.closes("2026-07-06")
+    assert not got["problems"], got["problems"]
+    assert {c: r["level"] for c, r in got["rows"].items()} == {"VELD-SEP26": 9930.0,
+                                                               "VELD-DEC26": 9920.0}, got["rows"]

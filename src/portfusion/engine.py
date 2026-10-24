@@ -2656,7 +2656,7 @@ class Book:
     def quarter_label(date: str, opens: str | None = None) -> str:
         """A quarter-end date -> the quarter's NAME. "2026-06-30" -> "Q2 2026". A quarter that
         `opens` after the quarter end before it, the one the record began inside, names the day it
-        opens at, as the year does ("from 31 Dec"): "Q2 2026, from 14 May".
+        opens at, as the year does ("from 31 Dec"): "Q2 2026, from 17 May".
 
         DERIVED, NEVER TYPED: deriving the name here is what lets the quarter blocks key on
         identical values and be read across — typing "Q1 2026" in a second place is how they
@@ -2938,7 +2938,7 @@ class Book:
         """The year to a FROZEN quarter end, measured exactly as its quarters are: `_dietz()` from
         the net asset value at `year_opens()` to the quarter end's. Unlike the live year to
         date, both ends are frozen, so a report regenerates it the same. Labelled "2026 to 30 Sep"
-        under `quarter`, and "2026 to 30 Sep, from 14 May" in the year the record began inside.
+        under `quarter`, and "2026 to 30 Sep, from 17 May" in the year the record began inside.
         KeyError if either end is not frozen."""
         navs = self.quarter_nav_total()
         year = int(quarter_end[:4])

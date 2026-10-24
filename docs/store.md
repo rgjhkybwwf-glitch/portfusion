@@ -1,18 +1,22 @@
 # The store
 
-A book's `store/` folder is its record: every sourced fact, one row per event, in a file for each
-table `record/schema.py` registers, and the three histories.
+Which table a fact goes in, and what each column may hold. A book's `store/` folder is its
+record: every sourced fact, one row per event, in a file for each table `record/schema.py`
+registers, and the three histories.
 
-**A trade goes in `buys.csv`, a sale in `sales.csv`, a dividend in `income.csv`**, never in a
-Python literal. **A new column or table is a `record/schema.py` change**, not a CSV one: the
-schema checks every row on load, and a bad cell fails naming its table, row and column.
+**A buy goes in `buys.csv`, a sale in `sales.csv`, a dividend in `income.csv`**, never in a
+Python literal.
+
+**A new column or table is a `record/schema.py` change**, not a CSV one: the schema checks every
+row on load, and a bad cell fails naming its table, row and column.
 
 **Every event table reads as it happened**: by date, then the account's place in the register,
 then ticker (`record/order.py`). A door writes a row where its date puts it; the loader refuses a
 table out of that order, and `portfusion migrate` puts a book in it.
 
 **`journal.csv` is about the record, not part of it**: one row per write, never an input to a
-figure. A hand edit is allowed, and carries a `hand` journal row saying what it was.
+figure. A hand edit is allowed, and carries a `hand` journal row saying what it was, its `at` in
+UTC marked `Z`.
 
 **A row names its source** in the column its table provides. A `note` or `detail` says what
 happened, never an instruction or how a figure was reached; those go in the commit message.
@@ -21,16 +25,18 @@ happened, never an instruction or how a figure was reached; those go in the comm
 
 | Column | Values |
 |---|---|
-| `account` | one of the register's, `accounts.csv`; the loader refuses any other |
-| `held_as` · `category` · `funding` | closed lists in `record/schema.py`, printed in the glossary's §9. A line's `held_as` sits once, on its ticker's `securities.csv` row |
+| `account` | one of the register's, `accounts.csv`; the loader refuses any other, but on `quarter-results.csv`, where blank is the book, it checks none |
+| `record_begins` | on `accounts.csv`: the day an account opened after the book did; blank for one held from the opening. The loader refuses a quarter-end row before it |
+| `held_as` · `category` · `funding` | closed lists in `record/schema.py`, printed in [the glossary](glossary.md)'s §9. A line's `held_as` sits once, on its ticker's `securities.csv` row |
 | `ticker` on income | the line a dividend was paid on; blank on interest, fees and funding |
-| `symbol` · `quote_unit` | a listing as its market names it: the market's ISO code and its ticker (`XLON:BRYC`, `XCSE:HALD B`), and the unit it quotes in (`GBX` is pence). The price feed translates the symbol into its own form |
+| `symbol` · `quote_unit` | a listing as its market names it: the market's ISO code and its ticker (`XLON:BRYC`, `XNYS:VELD`), and the unit it quotes in (`GBX` is pence). The price feed translates the symbol into its own form |
 | `points_per_unit` · `shares_per_unit` | on a spread-bet line: how many points make one unit of its listing's price (100 where IG quotes in cents or pence), and how many shares one unit of the listing stands for (blank is one; a depositary receipt's ratio). With the stake they make a bet's share-equivalents |
 | `cur` | on buys and sales, the currency the document states `traded_price` in: `GBP` or the share's own |
 | `cost` · `level_points` | on a buy: a share's settled sterling, or a spread bet's entry level in points; the other is blank |
-| `trade_id` · `sale_id` | `T-NNN` and `E-NNN`, the row's place in date order: given when the row is written, and moved, with every `closes` and note that names it, when an earlier-dated row is written before it |
-| evidence class | `rules.EVIDENCE_CLASSES`, printed in the glossary's §9 |
-| `broker_ref` | the deal's own reference (a contract number, a deal id), never a SEDOL; blank where no document prints one. The `source` then names only the document's kind and date (`trade_source()`) |
+| `trade_id` · `sale_id` | `T-NNN` and `E-NNN`, the row's place in date order: given when the row is written, and moved, with every `closes` and every buy or sale `note` that names it, when an earlier-dated row is written before it |
+| `source` on buys and sales | the document's kind and date only, as `trade_source()` writes them |
+| `broker_ref` | the deal's own reference (a contract number, a deal id), never a SEDOL; blank where no document prints one |
+| `evidence` | on a reading, a key of `rules.EVIDENCE_CLASSES`, printed in the glossary's §9 |
 
 ## What bites
 
@@ -56,8 +62,9 @@ happened, never an instruction or how a figure was reached; those go in the comm
   `schema.QUOTE` declare per column; the loader refuses a figure written otherwise, and every
   writer writes them so.
 - **A share account's cash is in one place, its cash readings.** A reading off a document that
-  states the cash writes it as a cash reading of that day, and the reading's total is its stock
-  plus that cash. A spread bet's cash is IG's funds, on its reading.
+  states the cash writes it as a cash reading of that day, and a share reading's total is its
+  stock plus the account's newest cash reading on or before its day. A spread bet's cash is IG's
+  funds, on its reading.
 - **A correction replaces its row.** A mark read again on its own day takes its row's place, and
   `restate()` replaces a frozen quarter end's rows and results, the journal saying why; git keeps
   what each row said. One row per fact, so no reader filters.

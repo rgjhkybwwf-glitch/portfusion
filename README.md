@@ -6,34 +6,41 @@ in the browser, and a quarterly report. It records your own positions; it gives 
 
 ## Try it
 
-PortFusion needs Python 3.13:
+PortFusion needs Python 3.13 or newer.
 
 ```bash
 python3 -m venv ~/.portfusion && ~/.portfusion/bin/python3 -m pip install "portfusion @ git+https://github.com/rgjhkybwwf-glitch/portfusion@v0.2.0"
 ~/.portfusion/bin/portfusion desk --book demo     # the invented demo book, in a browser
-~/.portfusion/bin/portfusion init ~/my-book       # a new, empty book: its folder, git history and release
-cd ~/my-book && python3 -m venv .venv && .venv/bin/python3 -m pip install -r requirements.txt
-source .venv/bin/activate && portfusion desk      # every command reads the book in the folder it is typed in
+~/.portfusion/bin/portfusion init ~/my-book       # a new, empty book, with its git history
+cd ~/my-book
+python3 -m venv .venv && .venv/bin/python3 -m pip install -r requirements.txt
+source .venv/bin/activate
+portfusion desk                                   # reads the book in the folder it is typed in
 ```
 
-`portfusion init --practice` makes a copy of the demo to try things on, `--begins 2026-05-15` a
-book whose record begins that day, and `--push-on-commit` a book whose every commit is pushed to
-its remote as it lands. On a Mac,
-`portfusion desk --install-agent` starts the desk at login for the book it is typed in.
+| `portfusion init` with | Makes |
+|---|---|
+| `--practice` | a copy of the demo, to try things on |
+| `--begins 2026-05-18` | a book whose record begins that day |
+| `--push-on-commit` | a book whose every commit is pushed to its remote as it lands |
 
-A book is a folder:
+On a Mac, `portfusion desk --install-agent` starts the desk at login for the book it is typed in.
 
-```
-store/      the facts: one CSV per kind of event          brand/    its name and look (optional)
-_inbox/     documents waiting to be read onto the record   checks/   its own tests (optional)
-_archive/   the documents behind the rows                  .githooks/  its guards
-requirements.txt   the PortFusion release the book runs
-```
+| A book's folder | Holds |
+|---|---|
+| `store/` | the facts: one CSV per kind of event |
+| `_inbox/` | documents waiting to be read onto the record |
+| `_archive/` | the documents behind the rows |
+| `brand/` | its name and look (optional) |
+| `checks/` | its own tests (optional) |
+| `.githooks/` | its guards |
+| `requirements.txt` | the PortFusion release it runs |
 
 ## Taking a new release
 
-A book names the release it runs in its own requirements.txt, and moves only when its owner changes
-that line. Read the release's entry in `CHANGELOG.md`, change the line, then in the book's folder:
+A book names the release it runs in its own `requirements.txt`, and moves only when its owner
+changes that line. Read the release's entry in [`CHANGELOG.md`](CHANGELOG.md), change the line,
+then in the book's folder:
 
 ```bash
 .venv/bin/python3 -m pip install --force-reinstall --no-deps -r requirements.txt   # the pinned code
@@ -44,34 +51,36 @@ portfusion record                    # the audit
 ```
 
 The first install is forced because two commits can carry one version number, and a plain install
-keeps the old code. Until a release's store moves are made, the record names the table and will not
-load; `portfusion migrate --write` makes them, opens and audits the book, and puts every file back
-if either fails. The lines of the book's `checks/` it lists are moved by hand before the guard, and
-the move is committed as the book's own change. Restart the desk afterwards: it does not
-notice an upgraded package (`docs/desk-app.md`). A book holds no code, so a change to
-PortFusion is made in PortFusion, as `CONTRIBUTING.md` says.
+keeps the old code. Until a release's store moves are made, the book will not load, and the
+loader names the table; `portfusion migrate --write` makes them, opens and audits the book, and
+puts every file back if either fails, so the moves the release's entry gives as by hand are made
+first. The lines of the book's `checks/` it lists are moved by
+hand before the guard, and the move is committed as the book's own change. A hook or `.gitignore`
+the audit names is copied from a book `portfusion init` makes in a scratch folder. Restart the
+desk afterwards: it does not notice an upgraded package ([`docs/desk-app.md`](docs/desk-app.md)).
 
 ## Where everything is
 
-```
-src/portfusion/
-  record/     the schema, which types every column on load, and the record's rules
-  engine.py   every derived figure, once
-  desk/       the browser, and its doors — the only code that writes to a book
-  report/     the quarterly report
-  house/      what both renderers share: headings, precision, PortFusion's palette
-  feeds/      the market feeds (IG, TradingView), read-only; history/  their append-only reads
-  tests/      the guard, shipped with the app: `portfusion check` runs it
-  demo/       the invented book; tools/make_demo.py writes it
-```
+| `src/portfusion/` | Holds |
+|---|---|
+| `record/` | the schema, which types every column on load, and the record's rules |
+| `engine.py` | every derived figure, once |
+| `desk/` | the browser, and its doors to the record |
+| `report/` | the quarterly report |
+| `house/` | what both renderers share: headings, precision, PortFusion's palette |
+| `feeds/` | the market feeds (IG, TradingView), read-only |
+| `history/` | the histories: prices, FX rates and account values over time |
+| `tests/` | the guard, shipped with the app: `portfusion check` runs it |
+| `demo/` | the invented book; `tools/make_demo.py` writes it |
 
 A document becomes a row on the desk's Bench: it is read, each figure quoted back with the line
-it came from, a person approves, and `desk/doors/commit.py` appends the row, files the document
-and journals the write in one step. The engine derives from the record and the two renderers
-show it; neither computes a figure of its own.
+it came from, a person approves, and `desk/doors/commit.py` places the row by its date
+(`record/order.py`), files the document and journals the write in one step. The engine derives
+from the record and the two renderers show it; neither computes a figure of its own.
 
-To change PortFusion, `CONTRIBUTING.md` sets up a checkout and says where each kind of change
-goes; `docs/` holds the component guides, and `docs/glossary.md` what each word means here.
+A book holds no code, so a change to PortFusion is made here: [`CONTRIBUTING.md`](CONTRIBUTING.md)
+sets up a checkout and says where each kind of change goes, [`docs/`](docs) holds the component
+guides, and [`docs/glossary.md`](docs/glossary.md) what each word means here.
 
-PortFusion is open source under the Apache License 2.0 (`LICENSE`). A security fault is
-reported privately, as `SECURITY.md` says.
+PortFusion is open source under the Apache License 2.0 ([`LICENSE`](LICENSE)). A security fault
+is reported privately, as [`SECURITY.md`](SECURITY.md) says.

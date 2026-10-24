@@ -10,43 +10,38 @@ prints it.
   `struck-apart` rather than a difference that was never there.
 - **An ii dividend arrives knowing its line (#39).** The ii reader reads a line's description before
   its Symbol, so a dividend, which names its security as a deal does, is proposed rather than
-  reported as a dealing line, with its ticker the Symbol's code in the book; blank where the book
+  reported as a dealing line, with the book's ticker for its Symbol; blank where the book
   registers none.
 - **A history keeps only the marks a figure can take.** The price and FX histories keep every
-  close, each line's mark at every quarter end and opening, and its two newest; a live read
-  between them leaves at the next bank, and git keeps what it said. No figure moves.
-- **A statement ties a quarter to its own day, and an unopened account needs none.**
-  A quarter's net asset value copied from a statement is tied to that day's statement, not the
-  latest before it. An account not yet open needs no statement at a quarter end, so the 0.00
-  stand-ins go from the statement history as they went from the quarter tables, and a quarter's
-  income table lists only the accounts open by its end. `portfusion migrate`'s clock move keeps
-  an offset an instant carries rather than reading it as UK time.
+  close, each line's mark at every quarter end, opening and account reading, and its two newest;
+  a live read between them leaves at the next bank, and git keeps what it said. No figure moves.
+- **A quarter's net asset value is tied to its own day's statement** where its row says it was
+  copied from one, not to the latest before it where the journal says the freeze did not write it.
 - **A book can begin on any day (#7).** `portfusion init --begins` takes a day as well as a year.
   The year to date, the year to each quarter and the return since the start measure from the
   record's opening in the year it began, and its first quarter from that opening, named for it:
-  "Q2 2026, from 14 May" on the desk and the report, whose gate asks for that opening. A record
+  "Q2 2026, from 17 May" on the desk and the report, whose gate asks for that opening. A record
   that begins on another day than 1 January is no longer refused.
 - **An account can open after the book does.** The register's `record_begins` is the day an
   account's record began, blank for one held from the book's opening. Before it the account holds
-  nothing, whatever deal dates the statement it opened at carries, the freeze writes no row for it,
-  and a quarter end holds none: the loader refuses one, so the 0.00 rows that stood in for it go.
-  `portfusion migrate` adds the column, blank; an account opened later is dated by hand, with
-  those rows removed, since only their prose says which they were.
+  nothing, whatever deal dates the statement it opened at carries, and the freeze writes no row
+  for it. A quarter end before it holds no row for it (the loader refuses one) and needs no
+  statement of it, so the 0.00 rows and statements that stood in for it go; a quarter's income
+  table lists only the accounts open by its end. `portfusion migrate` adds the column, blank; an
+  account opened later is dated by hand, with those rows removed, since only their prose says
+  which they were.
 - **A spread bet is priced by its contract, and the journal keeps one clock.** A mark under a
-  bet's own code is refused, and the engine's fall-back to one, from before each contract had a
+  bet's ticker is refused, and the engine's fall-back to one, from before each contract had a
   key, is retired. A journal instant without its `Z` is refused; `portfusion migrate` writes a
-  book's older ones, and the bench items they tie to, in UTC. A quarter's NAV is tied to its
-  statement where the row says it was copied from one, not where the journal says the freeze
-  did not write it.
+  book's older ones, and the Bench items they tie to, in UTC.
 - **A book's folder and its research notes are held by PortFusion.** The audit asks that a book
   holds every file `portfusion init` writes, with the release's hooks and ignore list, that every
   filed document is named as the record reads it, and that its research-notes rows agree with
   the research repo it names, every published note on a held company on file.
   `portfusion init --push-on-commit` writes a hook that pushes each commit as it lands.
 - **Every row naming a document is held to its class's one format**, in buys, sales, income,
-  capital movements and the account history: a trade's line its document's kind and date, every
-  other its class's template. The migration tests become one carry test and one refusals test,
-  a case per move.
+  capital movements and the statement history: a trade's line its document's kind and date, every
+  other its class's template.
 - **Money is written to the penny, a quote to at most six places.** Every figure column declares
   its places in the schema, every writer writes figures one way, and the loader refuses a sum of
   money not written to exactly two places or a price, rate or level written to more than six. A
@@ -63,8 +58,8 @@ prints it.
   row beside its replacement is retired, with the Holdings mark history's struck-through marks,
   and the loader refuses a quarter end written twice. `portfusion migrate` drops the column and
   any row it marked superseded.
-- **Two tables retire: `realisations` and `baseline-reconstruction`.** A round trip's entry date
-  and note come from its own buys and sales, which already said what the first table did, and
+- **Two tables retire: `closed-positions` and `baseline-reconstruction`.** A round trip's entry
+  date and note come from its own buys and sales, which already said what the first table did, and
   nothing read the second. `portfusion migrate` removes both files and the journal rows that name
   them.
 - **On Trades, a sale's ID is headed Sale ID.** A row's detail read a sale's ID as its Trade ID;
@@ -78,41 +73,38 @@ prints it.
   loader refuses a table out of order or an id not its place, and `portfusion migrate` sorts and
   renumbers a book, journalling what it moved under a new `migrate` route. `settings.csv`'s
   `trade_id_floor` and the letter suffixes of a fill in several legs are retired.
-- **`portfusion migrate --write` carries a book through every move it still needs** before
-  opening and auditing it, so a book more than one release behind is not refused between them.
 - **A new book passes its own audit**: the change-totals audit asks only of the kinds a book
   holds, and the price-feed audit waits for a book's first prices.
 - **The journal's opening boundary is tested on any book**: a book with no rows written before
   its journal opened, a new one included, no longer fails the audit.
-- **`portfusion migrate` carries a book to this release's store** (#12): it shows every move,
-  and on `--write` makes it, opens the book and audits it, and puts every file back if either
-  fails. Moves are declared in `record/migrations.py`. It never commits. The README's *Taking a
-  new release* now forces the install, since two commits can share a version, and migrates before
-  the guard; a new book's requirements.txt points there.
+- **`portfusion migrate` carries a book to this release's store** (#12): it shows the first move
+  a book needs, and on `--write` makes every one, then opens the book and audits it, and puts
+  every file back if either fails. Moves are declared in `record/migrations.py`. It never commits.
+  **Make this section's by-hand moves first**: `--write` puts back a book that will not open. The
+  README's [*Taking a new release*](README.md#taking-a-new-release) now forces the install, since
+  two commits can share a version, and migrates before the guard; a new book's requirements.txt
+  points there.
 - **One name for one idea, from the store to the desk** (#43). The store's names are the desk's,
-  and the suite refuses a heading the glossary has not agreed or a column with no heading.
-  `portfusion migrate` moves a book's store:
-  - tables: `trades` → `buys`, `exits` → `sales`, `closed-positions` → `realisations`, `issuers`
-    → `companies`, `account-observations` → `account-readings`, `cash-observations` →
-    `cash-readings`; the journal's `table` and the Bench archive's keys follow;
-  - columns: `securities.code` and `contracts.code` → `ticker`; `kind` → `held_as`;
-    `accounts.broker` → `broker_firm`; `buys.id` → `trade_id`; `sales.eid` → `sale_id`;
-    `realisation` → `realisation_id`; `price` on buys and sales → `traded_price`;
-    `realisations.open_date` → `opened`; `baseline-reconstruction.fx` → `rate`;
-    quarter-snapshots' `local_price`, `gbp_value`, `gbp_cost` → `price`, `value`, `cost`;
-    `ticker` on current-prices and price-history → `mark_key`, a share's ticker or a bet's
-    contract; an archived Bench item's `marks` follow;
+  and the suite refuses a heading the [glossary](docs/glossary.md) has not agreed or a column with
+  no heading. `portfusion migrate` moves a book's store:
+  - tables: `trades` → `buys`, `exits` → `sales`, `issuers` → `companies`, `account-observations`
+    → `account-readings`, `cash-observations` → `cash-readings`; the journal's `table` and the
+    Bench archive's keys follow;
+  - columns: `securities.code` → `ticker`; `kind` → `held_as`; `accounts.broker` →
+    `broker_firm`; `buys.id` → `trade_id`; `sales.eid` → `sale_id`; `sales.realisation` →
+    `realisation_id`; `price` on buys and sales → `traded_price`; quarter-snapshots'
+    `local_price`, `gbp_value`, `gbp_cost` → `price`, `value`, `cost`; `ticker` on current-prices
+    and price-history → `mark_key`, a share's ticker or a bet's contract; an archived Bench
+    item's `marks` follow;
   - `buys.val` splits by the line's `held_as` into `cost` (a share) and `level_points` (a bet).
 
-  On the desk: Unrealised gain, Funding interest, Quantity and Life cost per share replace Gain to
-  date, Funding, Held and Net cost per share on Round Trips by company life; a deal's `cur` is
-  headed Deal ccy; What Changed and Price Refresh head a mark's key Mark key, not Line. The
-  report's figures do not change.
+  On the desk: a deal's `cur` is headed Deal ccy, and What Changed and Price Refresh head a mark's
+  key Mark key, not Line. The report's figures do not change.
 - **Round Trips reads by company life**: a company's shares and bets from first purchase to the
-  day nothing is held, with dividends, daily funding, a net cost per share and a gain % over
-  exposure at entry. The quarterly report does not change.
-- **`income.csv` gains `ticker`.** A book's rows move by hand: add `,ticker` to the header and
-  each row, and give each dividend its line's code.
+  day nothing is held, with dividends, funding interest, a life cost per share and a life gain %
+  over exposure at entry. The quarterly report does not change.
+- **`income.csv` gains `ticker`.** **A book's rows move by hand:** add `,ticker` to the header and
+  each row, and give each dividend its line's ticker.
 - **A company held both ways reads as one position.** Grouped by company, Holdings gives each row
   its quantity in shares, a spread bet counted as share-equivalents (stake per point × points per
   unit × its currency's rate per pound on the deal date × shares per unit), its entry price as the
@@ -121,7 +113,7 @@ prints it.
   The audit names a held bet line with no points per unit, and each bet deal date owed a close.
 - **`securities.csv`: `tv_symbol` and `tv_unit` become `symbol` and `quote_unit`, and it gains
   `points_per_unit` and `shares_per_unit`.** A symbol is the market's ISO code and the ticker as
-  that market spells it (`XLON:BRYC`, `XNYS:VELD`, `XCSE:HALD B`); the price feed translates.
+  that market spells it (`XLON:BRYC`, `XNYS:VELD`); the price feed translates.
   **A book's rows move by hand:** rename the two headers and add the two new ones at the end;
   rewrite each symbol's market (`LSE`→`XLON`, `NYSE`→`XNYS`, `NASDAQ`→`XNAS`, `XETR` stays,
   `OMXCOP`→`XCSE`, `OMXSTO`→`XSTO`) and an underscore in a ticker as the market's space; give
@@ -145,10 +137,11 @@ prints it.
 - **A first bet on a new contract is set up from the IG sweep.** The sweep offers it with its
   epic; the Bench takes its line, company and contract with the trade, reads the contract's first
   mark from IG, and writes all of them together. Any item can add a new line, company or
-  contract, and the Bench suggests every code in the register.
-- **`contracts.csv` gains `code`**, the line each contract is on, and the sweep reads a bet's
-  ticker from it. **A book's rows move by hand:** add `,code` to the header, and to each row the
-  ticker its legs carry in `trades.csv`. Every leg on a contract must be on that contract's line.
+  contract, and the Bench suggests every ticker in the register.
+- **`contracts.csv` gains `ticker`**, the line each contract is on, and the sweep reads a bet's
+  ticker from it. **A book's rows move by hand:** add `,ticker` to the header, and to each row the
+  ticker its legs carry in `buys.csv` (`trades.csv` before migrating). Every leg on a contract
+  must be on that contract's line.
 - **The report's footer names the commit an installed build came from**, as `release()` does.
 
 ## 0.2.0 — beta, 21 Oct 2026

@@ -1,38 +1,39 @@
 # Testing
 
 What each layer of the guard proves, how to write a test, and what to do when one fails.
-`CONTRIBUTING.md` has the commands that set up and run it.
+[`CONTRIBUTING.md`](../CONTRIBUTING.md) has the commands that set up and run it.
 
 ```bash
-portfusion check               # the code on the demo, then the loaded book opening, with its checks/
+portfusion check               # the code on the demo, then the loaded book opening with its checks/
 portfusion record              # the audit: what the record needs today
 portfusion migrate             # a book carried to this release's store; --write moves it
 python3 -m pytest -m audit     # the audit set alone
 ```
 
-**One suite, any book.** The guard runs on whichever book is loaded, and its last line names
-that book. A check of one book's own facts lives in **that book's `checks/` folder**, collected
-when that book is loaded (`tests/harness.py`). Everything in `tests/` must pass on any book,
-which the demo run proves. A check another book could pass or fail belongs in `tests/` or the
-audit, never in a book's `checks/`.
+**One suite, any book.** `python3 -m pytest` runs on whichever book is loaded, and its last line
+names that book. A check of one book's own facts lives in **that book's `checks/` folder**,
+collected when that book is loaded (`tests/harness.py`). Everything in `tests/` must pass on any
+book, which the demo run proves. A check another book could pass or fail belongs in `tests/` or
+the audit, never in a book's `checks/`.
 
 **Read a test's docstring before changing it.** It says why the check exists.
 
 ## What each layer proves
 
-| | Proves | Does not prove |
+| Layer | Proves | Does not prove |
 |---|---|---|
-| `portfusion record` | whether the record is in good order: the findings, then the audit tests | anything about the code |
-| `pytest` | the record's internal consistency: wrongness that still loads | |
-| `test_engine_ties`, `desk/test_ties.py` | the engine's figures agree seen from more than one side, and each page shows what the engine computed | that the engine is right |
-| `test_engine_invariants` | the engine's arithmetic agrees with itself, assuming nothing | that a figure is the right answer |
-| the brokers' statements | the book against a figure nothing here can influence | an account that is not judged; the audit names those |
+| `python3 -m pytest` | the code, on the loaded book's rows | that the record is in good order |
 | the suite on the demo | the code runs on a book that is not yours | that the demo's figures are right |
 | `portfusion check` | the code passes on the demo, and the loaded book opens: figures, findings, every page | that the code is right on your book's rows |
+| `portfusion record` | whether the record is in good order: the findings, then the audit tests | anything about the code |
 | `tools/clean_room.py` | the tracked files install fresh and pass on the demo and on a new, empty book, and the wheel built from them passes `portfusion check` | that nothing of a book is named in what leaves |
-| `test_demo` | the demo's files name nothing of a real book, and `tools/make_demo.py` writes them exactly | that the demo's invented figures agree beyond the suite |
+| `test_engine_ties`, `desk/test_ties.py` | the engine's figures agree seen from more than one side, and each page shows what the engine computed | that the engine is right |
+| `test_engine_invariants` | the engine's arithmetic agrees with itself, assuming nothing | that a figure is the right answer |
+| `test_demo` | `tools/make_demo.py` writes the demo exactly | that the demo's invented figures agree beyond the suite |
+| `test_what_leaves` | nothing of the loaded book is named in the checkout, the commits not yet on `main` or the branch's name | anything, on the demo or a practice book: there is nothing to check |
 | `test_code` | the code carries nothing only a test reads, and a function its comments name exists | that the code is right |
-| eyes on the desk | whether a heading sits over its column | |
+| the brokers' statements | the book against a figure nothing here can influence | an account that is not judged; the audit names those |
+| eyes on the desk | whether a heading sits over its column | that the figure under it is right |
 
 ## Writing a test
 

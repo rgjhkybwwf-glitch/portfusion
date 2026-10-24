@@ -9,6 +9,7 @@ make, update the expectation and say why in the commit message. Do not delete a 
 a build pass.
 """
 import datetime as _dt
+import os
 import re
 from collections import Counter, defaultdict
 from datetime import date as _date
@@ -356,12 +357,12 @@ def test_a_record_that_begins_on_any_day_is_measured_from_its_opening(store_copy
     year = int(begins[:4])
     text = path.read_text()
     assert text.count(f"record_begins,{begins}") == 1
-    path.write_text(text.replace(f"record_begins,{begins}", f"record_begins,{year}-05-15"))
+    path.write_text(text.replace(f"record_begins,{begins}", f"record_begins,{year}-05-18"))
     rules.reload_store()
     b = Book()
-    assert b.baseline_asof == f"{year}-05-14"
-    assert b.year_opens(year) == f"{year}-05-14" and b.year_opens(year + 1) == f"{year}-12-31"
-    assert b.quarter_opens(f"{year}-06-30") == f"{year}-05-14"
+    assert b.baseline_asof == f"{year}-05-17"
+    assert b.year_opens(year) == f"{year}-05-17" and b.year_opens(year + 1) == f"{year}-12-31"
+    assert b.quarter_opens(f"{year}-06-30") == f"{year}-05-17"
     assert b.quarter_opens(f"{year}-09-30") == f"{year}-06-30"
     assert b.quarter_opens(f"{year}-03-31") == f"{year - 1}-12-31", "the opening opened from itself"
 
@@ -740,6 +741,8 @@ def test_the_code_repeats_itself_no_more_than_it_did(repo_root, project_files):
 NAMED_ON_PURPOSE = {
     ".git/": "git's own folder, which it never lists",
     "bin/activate": "inside the venv, which git never lists",
+    "brand/": "a book's own folder, which no checkout holds",
+    "requirements.txt": "a book's own pin; the app's needs are pyproject.toml's",
 }
 
 
@@ -782,7 +785,8 @@ def test_every_pointer_in_a_guide_leads_somewhere(repo_root, project_files):
     known = set(listed) | {"/".join(p.split("/")[:i]) for p in listed for i in range(1, p.count("/") + 1)}
 
     def find(path, here):
-        for c in (path, f"{here}/{path}" if here != "." else path):
+        # A guide in `docs/` reaches a file at the root as `../NAME`, the way GitHub follows it.
+        for c in (path, os.path.normpath(f"{here}/{path}") if here != "." else path):
             if c in known:
                 return c
         # A tail only one path has; or, where a book repeats a name (the demo's demo/store/ beside
@@ -919,6 +923,13 @@ def test_the_generated_half_of_the_glossary_matches_the_constants(repo_root):
     on_file = glossary.BEGIN + text.split(glossary.BEGIN, 1)[1].split(glossary.END, 1)[0] \
         + glossary.END
     fresh = glossary.generate().rstrip("\n")
+    import unittest.mock
+    from portfusion.engine import Book
+    other = "Return since 2 Feb 2031 (MWR)"
+    since = {other if k == Book.SINCE_START else k: v for k, v in Book.HEADLINE.items()}
+    with unittest.mock.patch.multiple(Book, SINCE_START=other, HEADLINE=since):
+        assert glossary.generate().rstrip("\n") == fresh, \
+            "the generated block prints the loaded book's own day"
     assert on_file == fresh, (
         "docs/glossary.md's generated section no longer matches the constants it is derived "
         "from. The CODE is right and the document is a defect — run `python3 tools/glossary.py "

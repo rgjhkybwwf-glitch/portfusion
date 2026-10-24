@@ -1,8 +1,8 @@
 # Security
 
-PortFusion keeps a book's record on the owner's own machine, and its desk can be served to
-readers beyond it. A fault that would let someone read a book they were not given, write to one
-without the owner's approval, or take a credential from it is a security fault.
+How a security fault in PortFusion is reported, and where its guards are. A security fault is one
+that would let someone read a book they were not given, write to one without the owner's
+approval, or take a credential from it.
 
 ## Reporting one
 
@@ -19,8 +19,12 @@ The newest release. Fixes are not back-ported to older ones.
 
 ## Where the guards are
 
-- **The desk's sign-in**: passkeys and the access levels, `docs/access-levels.md`.
-- **The doors**: the only code that writes to a book, `src/portfusion/desk/doors/`.
+- **The desk's sign-in**: passkeys and the access levels,
+  [`docs/access-levels.md`](docs/access-levels.md).
+- **The writers**: the desk's, named in `DESK_WRITERS`
+  (`src/portfusion/tests/desk/test_boundaries.py`); the histories (`src/portfusion/history/`);
+  and `portfusion migrate --write`.
 - **The feeds**: read-only by construction; a dealing endpoint is refused in code.
 - **The secret gate**: a commit that would put a credential into git is refused, in this
-  repository and in every book `portfusion init` makes (`src/portfusion/hooks/pre_commit.py`).
+  repository and in every book whose history `portfusion init` starts
+  (`src/portfusion/hooks/pre_commit.py`).

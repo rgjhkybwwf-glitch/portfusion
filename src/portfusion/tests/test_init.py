@@ -140,7 +140,7 @@ def test_an_empty_book_opens(tmp_path):
     assert run.returncode == 0, run.stderr[-2000:]
 
 
-#: What a book that began on 15 May is asked, in its own process: its year and its first quarter
+#: What a book that began on 18 May is asked, in its own process: its year and its first quarter
 #: measure from its opening, the quarter says so on the desk's list and the report, and the gate
 #: asks for that opening rather than a 31 March the record never had.
 _MID_YEAR = """
@@ -149,17 +149,17 @@ from portfusion.engine import Book
 from portfusion.report.gate import completeness
 from portfusion.report.page import render
 b = Book()
-assert b.ytd_opens() == b.baseline_asof == "2026-05-14", b.ytd_opens()
+assert b.ytd_opens() == b.baseline_asof == "2026-05-17", b.ytd_opens()
 assert not math.isnan(b.headline()["YTD return (MWR)"]), "the year has nothing to open from"
 first = b.quarter_returns().iloc[0]
-assert (first["quarter"], first["opens"]) == ("Q2 2026, from 14 May", "2026-05-14"), first
+assert (first["quarter"], first["opens"]) == ("Q2 2026, from 17 May", "2026-05-17"), first
 year = b.year_to_quarter("2026-09-30")
-assert (year["quarter"], year["opens"]) == ("2026 to 30 Sep, from 14 May", "2026-05-14"), year
+assert (year["quarter"], year["opens"]) == ("2026 to 30 Sep, from 17 May", "2026-05-17"), year
 assert completeness("2026-06-30") == [], completeness("2026-06-30")
 page = render("2026-06-30")
-assert "<h1>Q2 2026, from 14 May</h1>" in page and "2026 to 30 Jun, from 14 May" in page
+assert "<h1>Q2 2026, from 17 May</h1>" in page and "2026 to 30 Jun, from 17 May" in page
 from portfusion.desk import engine as desk
-assert desk.reports()["quarters"][-1]["quarter"] == "Q2 2026, from 14 May", desk.reports()
+assert desk.reports()["quarters"][-1]["quarter"] == "Q2 2026, from 17 May", desk.reports()
 # A RESTATEMENT OF THAT QUARTER JOURNALS IT BY THE SAME NAME. The engine's strike is moved £100,
 # so there is something to restate.
 from portfusion.desk.doors import freeze
@@ -174,12 +174,12 @@ Book.freeze_rows = moved
 account = next(r[1] for r in schema.load("quarter-nav") if str(r[0]) == "2026-06-30")
 freeze.restate({"2026-06-30": [account]}, "a test moved it")
 said = [r[-1] for r in schema.load("journal") if r[3] == "quarter-results"][-2:]
-assert said[0].startswith("Q2 2026, from 14 May: ") and said[1].startswith("Q3 2026: "), said
+assert said[0].startswith("Q2 2026, from 17 May: ") and said[1].startswith("Q3 2026: "), said
 """
 
 
 def _begun_mid_quarter(tmp_path):
-    """A practice book whose record begins on 15 May 2026: its opening is the demo's frozen
+    """A practice book whose record begins on 18 May 2026: its opening is the demo's frozen
     31 March, dated the day before, and nothing is frozen, deposited or earned before it."""
     import csv
     book = create(tmp_path / "book", practice=True)
@@ -191,15 +191,15 @@ def _begun_mid_quarter(tmp_path):
             head, *rows = list(csv.reader(fh))
         with path.open("w", newline="", encoding="utf-8") as fh:
             csv.writer(fh, lineterminator="\n").writerows([head, *(change(r) for r in rows if keep(r))])
-    begins = {"record_begins": "2026-05-15", "reasoning_owed_from": "2026-05-15",
+    begins = {"record_begins": "2026-05-18", "reasoning_owed_from": "2026-05-18",
               "first_report": "2026-06-30"}
     edit("settings", change=lambda r: [r[0], begins.get(r[0], r[1])])
     for table in ("quarter-nav", "quarter-snapshots"):
         edit(table, keep=lambda r: r[0] >= "2026-03-31",
-             change=lambda r: ["2026-05-14", *r[1:]] if r[0] == "2026-03-31" else r)
+             change=lambda r: ["2026-05-17", *r[1:]] if r[0] == "2026-03-31" else r)
     edit("quarter-results", keep=lambda r: r[0] > "2026-03-31")
     for table in ("capital-movements", "income"):
-        edit(table, keep=lambda r: r[0] >= "2026-05-15")
+        edit(table, keep=lambda r: r[0] >= "2026-05-18")
     return book
 
 
@@ -221,10 +221,10 @@ def test_init_runs_where_there_is_no_book(tmp_path):
         assert run.returncode == 0 and (tmp_path / f"book{n}" / "store").is_dir(), run.stderr
     # `--begins` TAKES A DAY as well as a year, and the book's record begins on it.
     run = subprocess.run([sys.executable, "-m", "portfusion", "init", "dated", "--no-git",
-                          "--begins", "2026-05-15"], cwd=tmp_path, env=env, capture_output=True,
+                          "--begins", "2026-05-18"], cwd=tmp_path, env=env, capture_output=True,
                          text=True)
     assert run.returncode == 0, run.stderr
-    assert "record_begins,2026-05-15" in (tmp_path / "dated/store/settings.csv").read_text()
+    assert "record_begins,2026-05-18" in (tmp_path / "dated/store/settings.csv").read_text()
     run = subprocess.run([sys.executable, "-m", "portfusion", "init", "undated", "--no-git",
                           "--begins", "15 May"], cwd=tmp_path, env=env, capture_output=True, text=True)
     assert run.returncode == 2 and "neither a year nor a day" in run.stderr, run.stderr
