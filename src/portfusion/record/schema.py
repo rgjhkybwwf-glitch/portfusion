@@ -866,7 +866,11 @@ REFERENCES = {
     ("quarter-snapshots", "account"):    ("accounts", "account"),
     ("account-readings", "account"):     ("accounts", "account"),
     ("cash-readings", "account"):        ("accounts", "account"),
+    ("quarter-results", "account"):      ("accounts", "account"),
 }
+
+#: A REFERENCE WHOSE BLANK IS A VALUE: quarter-results' row for the book names no account.
+BLANK_IS_THE_BOOK = {("quarter-results", "account")}
 
 
 def check_references() -> None:
@@ -884,7 +888,7 @@ def check_references() -> None:
         if target not in cache:
             ti = TABLES[target].header.index(target_col)
             cache[target] = {r[ti] for r in load(target)}
-        known = cache[target]
+        known = cache[target] | ({""} if (table, column) in BLANK_IS_THE_BOOK else set())
         ci = TABLES[table].header.index(column)
         for n, row in enumerate(load(table), start=2):
             if row[ci] is not None and row[ci] not in known:

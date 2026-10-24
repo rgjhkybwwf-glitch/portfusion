@@ -1,5 +1,5 @@
 """
-THE FX HISTORY — exchange rates, by currency and date.
+THE FX HISTORY — exchange rates, by date and currency.
 
 The live table, store/fx.csv, holds one rate per currency, the one each refresh replaces. Here
 the currency and a real date identify a rate, and every dated rate the record converts at is on
@@ -47,7 +47,7 @@ QUALITIES = ("sourced", "derived")
 BASE = "GBP"
 
 # --- the file itself ------------------------------------------------------------------------
-_FILE = AppendOnlyCSV(CSV_NAME, FIELDS, numeric=("rate",), sort_key=lambda r: (r["currency"], r["date"], r["kind"]),
+_FILE = AppendOnlyCSV(CSV_NAME, FIELDS, numeric=("rate",), sort_key=lambda r: (r["date"], r["currency"], r["kind"]),
                       identity=("currency", "date", "kind"), nullable=False, figure="rate",
                       places=files.PLACES[CSV_NAME], series=("currency", "kind"))
 

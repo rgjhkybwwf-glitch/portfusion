@@ -160,6 +160,15 @@ def test_a_live_rate_is_not_banked_over_its_days_close():
     assert FX._FILE.unstruck([later], [close]) == [], "an outranked live rate reads as unbanked"
 
 
+def test_the_history_is_kept_in_date_order():
+    """The record's one order is by date, and a saved history keeps it: a rate goes where its day
+    puts it, then by currency, as a price goes by its day, then its line. In memory only."""
+    rows = [{**_rate(d, 1.0, "close", "a close — test"), "currency": c}
+            for c, d in (("USD", "2026-09-29"), ("DKK", "2026-09-30"), ("EUR", "2026-09-29"))]
+    assert [(r["date"], r["currency"]) for r in sorted(rows, key=FX._FILE.sort_key)] == \
+        [("2026-09-29", "EUR"), ("2026-09-29", "USD"), ("2026-09-30", "DKK")]
+
+
 @needs("fx-history")
 def test_a_restruck_rate_reads_as_unbanked(monkeypatch):
     """check() is the precondition the Price Refresh's write reads: a rate re-read at another

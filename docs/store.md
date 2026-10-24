@@ -12,7 +12,8 @@ row on load, and a bad cell fails naming its table, row and column.
 
 **Every event table reads as it happened**: by date, then the account's place in the register,
 then ticker (`record/order.py`). A door writes a row where its date puts it; the loader refuses a
-table out of that order.
+table out of that order. **The three histories are saved by date too**, then by line, currency
+or account name.
 
 **`journal.csv` is about the record, not part of it**: one row per write, never an input to a
 figure. A hand edit is allowed, and carries a `hand` journal row saying what it was, its `at` in
@@ -25,7 +26,7 @@ happened, never an instruction or how a figure was reached; those go in the comm
 
 | Column | Values |
 |---|---|
-| `account` | one of the register's, `accounts.csv`; the loader refuses any other, but on `quarter-results.csv`, where blank is the book, it checks none |
+| `account` | one of the register's, `accounts.csv`, and the loader refuses any other; on `quarter-results.csv` a blank is the book |
 | `record_begins` | on `accounts.csv`: the day an account opened after the book did; blank for one held from the opening. The loader refuses a quarter-end row before it |
 | `held_as` · `category` · `funding` | closed lists in `record/schema.py`, printed in [the glossary](glossary.md)'s §9. A line's `held_as` sits once, on its ticker's `securities.csv` row |
 | `ticker` on income | the line a dividend was paid on; blank on interest, fees and funding |

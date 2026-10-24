@@ -401,7 +401,7 @@ def _histories() -> dict[str, tuple[list[str], list[dict]]]:
                            ("USD", "2026-08-20", 1.321, "close"),
                            ("USD", "2026-09-01", 1.317, "close"),
                            ("USD", "2026-09-15", 1.322, "close"),
-                           ("USD", "2026-09-30", 1.33, "close"), ("SEK", "2026-09-30", 12.4, ""))]
+                           ("SEK", "2026-09-30", 12.4, ""), ("USD", "2026-09-30", 1.33, "close"))]
     # NO STATEMENT BEFORE AN ACCOUNT OPENS (`BEGINS`): there was nothing to state.
     statements = []
     for as_of, isa, trading in (("2025-12-31", 2000.0, None), ("2026-03-31", 4180.0, 1050.0),
