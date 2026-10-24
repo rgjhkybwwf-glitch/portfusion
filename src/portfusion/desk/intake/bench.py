@@ -900,7 +900,10 @@ def reading_of(item: dict) -> dict:
     when = commit._archive_date(dated)
     return {"account": r.get("account") or item.get("account") or "",
             "as_of": when.isoformat() if when else "", "at": r.get("at") or "",
-            "positions": r.get("positions"), "cash": r.get("cash"), "total": r.get("total"),
+            "positions": r.get("positions"),
+            # AN ITEM READ BEFORE CASH HAD ONE PLACE (24 Oct 2026) holds them under their old names.
+            "cash": r.get("cash", r.get("recon_cash")),
+            "total": r.get("total", r.get("stmt_value")),
             "evidence": item.get("evidence_class") or "",
             "reference": str(ev.get("reference") or "").strip()}
 

@@ -351,9 +351,10 @@ def _evidence_of(source: str, account: str) -> tuple[str, str] | None:
 def _cash_in_one_place(store: pathlib.Path) -> list[Change]:
     """A share reading's cash and total, and a statement's cash, out of their own columns: each
     figure a cash reading of its day, unless one is on file at it. A figure on file at another, or
-    a statement's cash whose source names no class, is moved by hand; a statement's cash of zero
-    whose source names none is an account not yet funded, and goes. Untouched lines keep their
-    bytes."""
+    a statement's cash whose source names no class, is moved by hand, and so is a reading whose
+    stock and cash are not its total. A statement's cash of zero whose source names none is an
+    account not yet funded, and goes; a spread bet's is its funds, on the same row, and goes.
+    Untouched lines keep their bytes."""
     path = store / "cash-readings.csv"
     if not path.is_file():
         return []
@@ -363,13 +364,18 @@ def _cash_in_one_place(store: pathlib.Path) -> list[Change]:
 
     def owe(account, day, cash, evidence, reference, where):
         was = on_file.get((account, day))
-        if was is not None and float(was) != float(cash):
+        if was is not None and abs(float(was) - float(cash)) >= 0.005:
             raise ValueError(f"{where}: cash {cash} for {account} on {day}, but cash-readings.csv "
                              f"says {was}: move it by hand")
         if was is None:
             on_file[(account, day)] = cash
             new.append([account, day, cash, evidence, reference])
 
+    _p, register, _e = _rows((store / "accounts.csv").read_text(encoding="utf-8"))
+    kind = register[0].index("held_as" if "held_as" in register[0] else "kind")
+    named = register[0].index("account")
+    accounts = [r[named] for r in register[1:]]
+    spread_bets = {r[named] for r in register[1:] if r[kind] == "spread bet"}
     for name, drop in (("account-readings", ("recon_cash", "stmt_value")),
                        ("account-statements", ("cash",))):
         table = store / f"{name}.csv"
@@ -386,8 +392,16 @@ def _cash_in_one_place(store: pathlib.Path) -> list[Change]:
             if cash == "":
                 continue
             if name == "account-readings":
+                total, stock = r[at["stmt_value"]], r[at["positions"]]
+                if total and stock and abs(float(stock) + float(cash) - float(total)) >= 0.005:
+                    raise ValueError(f"{where}: stock {stock} plus cash {cash} is not its total "
+                                     f"{total}: move it by hand")
                 owe(r[at["account"]], r[at["as_of"]], cash, r[at["evidence"]],
                     r[at["reference"]], where)
+            elif r[at["account"]] in spread_bets:
+                said.append(f"  {where}: a spread bet's cash, its funds on the same row, dropped")
+            elif (r[at["account"]], r[at["as_of"]]) in on_file:
+                owe(r[at["account"]], r[at["as_of"]], cash, "", "", where)   # compared, not added
             elif found := _evidence_of(r[at["source"]], r[at["account"]]):
                 owe(r[at["account"]], r[at["as_of"]], cash, *found, where)
             elif float(cash) == 0:
@@ -400,8 +414,6 @@ def _cash_in_one_place(store: pathlib.Path) -> list[Change]:
                           said))
     if not new:
         return out
-    _p, accounts, _e = _rows((store / "accounts.csv").read_text(encoding="utf-8"))
-    accounts = [r[accounts[0].index("account")] for r in accounts[1:]]
     line_of = {id(r): line for r, line in zip(rows[1:], lines[1:])}
     placed = order.placed("cash-readings", rows[0], rows[1:], new, accounts)
     out.append(Change(path, path, lines[0] + "".join(line_of.get(id(r)) or _line(r, eol)

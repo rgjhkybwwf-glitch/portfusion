@@ -309,6 +309,7 @@ def _cash_rows(readings: list[dict]) -> list[dict]:
                           f"door does not choose.")
         out.append({"account": account, "as_of": day, "cash": cash,
                     "evidence": r["evidence"], "reference": r["reference"]})
+        on_file[(account, day)] = cash          # a second reading of it in this write is the same
     return out
 
 

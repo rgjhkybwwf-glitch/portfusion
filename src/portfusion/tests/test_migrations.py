@@ -215,7 +215,8 @@ def test_a_book_with_the_lifecycle_loses_the_column_and_every_row_it_kept_beside
 def _with_cash_in_three_places(tmp_path):
     """A demo copy in the shape before cash had one place: a statement's cash in its own column,
     the demo's cash readings bar the last quarter's gone from `cash-readings`, an unfunded
-    account's statement carrying a cash of zero, and a share reading with its cash and total."""
+    account's statement carrying a cash of zero, a spread bet's statement carrying its funds as
+    cash, and a share reading with its cash and total."""
     book = tmp_path / "book"
     for part in ("store", "_archive"):
         shutil.copytree(schema.DEMO / part, book / part)
@@ -225,7 +226,8 @@ def _with_cash_in_three_places(tmp_path):
     rows = list(csv.reader((store / "account-statements.csv").open(encoding="utf-8")))
     at = rows[0].index("positions_value") + 1
     rows = [rows[0][:at] + ["cash"] + rows[0][at:]] + [
-        r[:at] + [held.get((r[0], r[1]), "0.0" if "not yet funded" in r[-2] and r[2] else "")]
+        r[:at] + [held.get((r[0], r[1]), "0.0" if "not yet funded" in r[-2] and r[2] else
+                           "6500.0" if r[0].endswith("Spread bet") and r[1] == "2026-09-30" else "")]
         + r[at:] for r in rows[1:]]
     _write(store / "account-statements.csv", rows)
     _write(store / "cash-readings.csv", cash[:1] + [r for r in cash[1:] if r[1] == "2026-09-30"])
@@ -265,6 +267,18 @@ def test_a_share_accounts_cash_is_carried_into_its_cash_readings(tmp_path):
     want = len(list(csv.reader((schema.DEMO / "store" / "cash-readings.csv").open()))) - 3
     assert [(r[2], r[3], r[4]) for r in added] == [("append", "cash-readings", str(want))], added
     assert M.plan(book) == (None, []), "a book with cash in one place still planned a move"
+
+
+def test_a_readings_total_its_stock_and_cash_do_not_make_is_moved_by_hand(tmp_path):
+    """The total leaves with the column, so a reading whose three figures never agreed is refused
+    rather than losing the one sign that a figure was mistyped."""
+    book, store, share = _with_cash_in_three_places(tmp_path)
+    path = store / "account-readings.csv"
+    total = str(100.0 + float(share[2]))
+    path.write_text(path.read_text(encoding="utf-8").replace(f",{total},", ",1.0,", 1),
+                    encoding="utf-8")
+    with pytest.raises(ValueError, match="is not its total"):
+        M.plan(book)
 
 
 def test_two_cash_figures_for_one_day_are_moved_by_hand(tmp_path):

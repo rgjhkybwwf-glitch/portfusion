@@ -806,6 +806,16 @@ def test_a_readings_cash_that_disagrees_with_its_days_cash_reading_is_refused(st
 
 
 @needs("accounts", "account-readings", "buys")
+def test_one_write_reading_a_day_twice_files_its_cash_once(store_copy):
+    """The same account and day twice in one write is one cash reading, not two."""
+    account = _share_filed(store_copy)
+    out = _write([_share(), _share()])
+    assert out["ok"] is True and out["cash"] == 1, out
+    assert sum(1 for c in _rules.cash_readings
+               if (c.account, c.as_of.isoformat()) == (account, "2026-09-30")) == 1
+
+
+@needs("accounts", "account-readings", "buys")
 def test_a_reading_writes_a_crlf_table_back_in_crlf(store_copy):
     """The readings door rebuilt account-readings.csv with "\\n" whatever it found (the code
     review of 2 Oct 2026; latent while the store is LF)."""
