@@ -7,8 +7,9 @@ the suite says the same on any book.
 
 THE BOOK'S ROWS ARE HELD TO ITS OWN REPO. `store/research-notes.csv` exists so the book builds on
 a machine without the repo, which makes it a second home for a fact, so it is tied rather than
-trusted. A book that names no `research_repo` has no notes, and nothing here to hold; one that
-names a repo this machine does not have skips, and a book that lists its skips fails on it.
+trusted. Those tests are the AUDIT's (`portfusion record`), the one run that reaches a user's
+book. A book that names no `research_repo` has no notes, and nothing here to hold; one that names a
+repo this machine does not have skips, and a book that lists its skips fails on it.
 """
 from __future__ import annotations
 
@@ -139,6 +140,7 @@ def _company(code: str) -> str:
     return code.split()[0].upper()
 
 
+@pytest.mark.audit
 def test_each_ref_on_file_is_one_companys_and_links_its_note_over_https(D):
     """A ref is one published note, so the same ref against two companies means one of them is
     mislabelled; against a company's shares and its spread bet it is right. A link is the note's
@@ -153,6 +155,7 @@ def test_each_ref_on_file_is_one_companys_and_links_its_note_over_https(D):
     assert not wrong, wrong
 
 
+@pytest.mark.audit
 def test_every_row_on_file_is_a_note_the_repo_publishes_on_a_code_it_covers(D):
     """THE ROWS AGAINST THE NOTES. Each row's ref is in the repo, with the date and link the store
     copied, on a code of the note's company that the book has held since the record began (the

@@ -299,11 +299,13 @@ def test_the_loaded_book_holds_what_init_writes_and_its_hooks_are_the_releases(t
     every new book now gets, or keep a hook or ignore list the release has since changed. A new
     book is made beside it and the two compared: every file it holds must be there, and its
     `.gitignore` and hooks byte for byte, so a pin that moves takes them by copying a new book's.
-    A hook only some books take (`--push-on-commit`) is the book's own choice, and not asked for.
-    The demo ships inside the app and is no book's folder, so it has nothing here to hold."""
+    A post-commit hook is held only when `--push-on-commit` wrote it: one of the book's own making
+    is the book's. The demo ships inside the app and is no book's folder, so it has nothing to hold."""
     if schema.BOOK == schema.DEMO:
         return
-    new = create(tmp_path / "new")
+    hook = schema.BOOK / ".githooks" / "post-commit"
+    new = create(tmp_path / "new", push_on_commit=hook.is_file()
+                 and "portfusion init --push-on-commit" in hook.read_text(encoding="utf-8"))
     written = [p.relative_to(new) for p in new.rglob("*")
                if p.is_file() and ".git" not in p.relative_to(new).parts]
     missing = [str(p) for p in written if not (schema.BOOK / p).is_file()]
