@@ -729,7 +729,6 @@ def _figures(b):
 
 
 @needs("buys")
-@needs("buys")
 def test_a_blank_years_figures_equal_themselves(monkeypatch):
     """JANUARY, BEFORE THE YEAR'S OPENING IS FROZEN: the return is blank, and the tests that
     compare the figures before and after a change would fail with nothing changed."""

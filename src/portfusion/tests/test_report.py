@@ -110,7 +110,7 @@ def test_an_unclosed_quarter_is_refused_and_says_why():
     assert gaps, f"{NOT_YET} has not closed — the gate must refuse it"
     joined = " ".join(gaps)
     assert "quarter-nav" in joined
-    assert "account-statements" not in joined, "the broker checks gate the report again"
+    assert "account-statements" not in joined, "the broker checks gate the report"
     assert "marks" not in joined, (
         "a marks gap means a held position cannot be valued from the record, and every open "
         f"leg has a contract-keyed mark: {gaps}")
@@ -125,7 +125,7 @@ def test_the_report_is_rendered_and_never_written(tmp_path, monkeypatch):
     import re
     import portfusion.report.__main__ as cli
     import portfusion.report.page as page
-    assert not hasattr(page, "generate"), "report.page writes a page again"
+    assert not hasattr(page, "generate"), "report.page writes a page"
     for path in sorted((SRC / "report").glob("*.py")):
         src = path.read_text()
         assert not re.search(r"write_text|write_bytes|\.mkdir\(|open\([^)]*['\"][wa]", src), path.name
@@ -313,7 +313,7 @@ def test_the_activity_section_covers_the_quarter_and_nothing_before_it():
     shown = re.findall(r'<td class="dim">(\d{1,2} [A-Z][a-z]{2} \d{4})</td>',
                        _section(render(COMPLETE), "Investment activity"))
     dates = [dt.datetime.strptime(d, "%d %b %Y").date().isoformat() for d in shown]
-    assert dates, "Section 7 rendered no activity"
+    assert dates, "Section 6 rendered no activity"
     start = Book().quarter_start(COMPLETE)
     assert min(dates) >= start, f"activity begins {min(dates)}, before the quarter's {start}"
     assert max(dates) <= COMPLETE, f"activity runs to {max(dates)}, past the quarter end"
@@ -399,11 +399,6 @@ def test_a_composition_apart_from_its_exposure_says_both_figures(monkeypatch):
     assert "short" not in page
     assert "These lines total &pound;" in page
     assert f"Section 1&rsquo;s exposure is &pound;{exposure:,.0f}." in page
-
-
-def _section(page: str, title: str) -> str:
-    """One section of a report page, by its title."""
-    return page.split(f"<h2>{title}</h2>")[1].split("</section>")[0]
 
 
 def test_a_line_is_named_by_its_ticker_first():

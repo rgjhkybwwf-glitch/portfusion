@@ -320,7 +320,7 @@ def _session(r):
     cookie = r.headers["set-cookie"]
     assert cookie.startswith(f"{auth.COOKIE}=") and "HttpOnly" in cookie and "Secure" in cookie
     assert "SameSite=Strict" in cookie, \
-        "auth.py's cookie docstring promises Strict; two of its three attributes were held"
+        "the session cookie is not SameSite=Strict"
     return {"Cookie": cookie.split(";")[0]}
 
 

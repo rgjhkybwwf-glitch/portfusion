@@ -175,9 +175,9 @@ def test_an_ig_close_naming_its_leg_is_written_and_the_leg_stops_being_held(
     item["why"] = {"why_entered": "", "why_exited": "Trimmed to manage margin."}
     leg = _open_sb_leg_with_parcel()
     item["rows"] = [{"table": "sales", "values": dict(
-        sale_id=_EID, date="2026-09-29", account=leg["account"], ticker=leg["ticker"],
+        sale_id=_EID, date="2026-09-21", account=leg["account"], ticker=leg["ticker"],
         qty="", stake=str(leg["stake"]), traded_price="80.0", cur="GBP", proceeds="2000.00",
-        source="IG REST /history/activity 29 Sep 2026", broker_ref="DIAAAATESTCLOSE",
+        source="IG REST /history/activity 21 Sep 2026", broker_ref="DIAAAATESTCLOSE",
         realisation_id=leg["realisation_id"], closes=leg["trade_id"], note="n")}]
     _bench.save(item)
 
@@ -204,9 +204,9 @@ def test_a_close_filed_under_another_holdings_realisation_is_refused(
     item["evidence_class"] = "ig-api"
     item["why"] = {"why_entered": "", "why_exited": "Trimmed to manage margin."}
     item["rows"] = [{"table": "sales", "values": dict(
-        sale_id=_EID, date="2026-09-29", account=leg["account"], ticker=leg["ticker"],
+        sale_id=_EID, date="2026-09-21", account=leg["account"], ticker=leg["ticker"],
         qty="", stake=str(leg["stake"]), traded_price="80.0", cur="GBP", proceeds="2000.00",
-        source="IG REST /history/activity 29 Sep 2026", broker_ref="DIAAAATESTCLOSE",
+        source="IG REST /history/activity 21 Sep 2026", broker_ref="DIAAAATESTCLOSE",
         realisation_id=other, closes=leg["trade_id"], note="n")}]
     _bench.save(item)
     rows = next(g for g in _bench.gates(item) if g["name"] == "rows")
@@ -237,9 +237,9 @@ def test_a_realisation_in_another_form_is_refused(item, store_copy, tmp_path, mo
     item["evidence_class"] = "ig-api"
     item["why"] = {"why_entered": "", "why_exited": "Trimmed to manage margin."}
     item["rows"] = [{"table": "sales", "values": dict(
-        sale_id=_EID, date="2026-09-29", account=leg["account"], ticker=leg["ticker"],
+        sale_id=_EID, date="2026-09-21", account=leg["account"], ticker=leg["ticker"],
         qty="", stake=str(leg["stake"]), traded_price="80.0", cur="GBP", proceeds="2000.00",
-        source="IG REST /history/activity 29 Sep 2026", broker_ref="DIAAAATESTCLOSE",
+        source="IG REST /history/activity 21 Sep 2026", broker_ref="DIAAAATESTCLOSE",
         realisation_id=typo, closes=leg["trade_id"], note="n")}]
     _bench.save(item)
     rows = next(g for g in _bench.gates(item) if g["name"] == "rows")
@@ -349,9 +349,9 @@ def _closing(item, legs, ref):
     item["evidence"] = dict(GOOD_EVIDENCE, reference=ref)
     item["why"] = {"why_entered": "", "why_exited": "Closed to manage margin."}
     item["rows"] = [{"table": "sales", "values": dict(
-        sale_id=f"E-9{n:02d}", date="2026-09-29", account=leg["account"], ticker=leg["ticker"],
+        sale_id=f"E-9{n:02d}", date="2026-09-21", account=leg["account"], ticker=leg["ticker"],
         qty="", stake=str(leg["stake"]), traded_price="80.0", cur="GBP", proceeds="2000.00",
-        source="IG REST /history/activity 29 Sep 2026", broker_ref=f"DIAAAATEST{n:02d}",
+        source="IG REST /history/activity 21 Sep 2026", broker_ref=f"DIAAAATEST{n:02d}",
         realisation_id=b.parcel(leg["account"], leg["ticker"]), closes=leg["trade_id"], note="n")}
         for n, leg in enumerate(legs)]
     _bench.save(item)
@@ -468,9 +468,9 @@ def _selling(item, ticker, held, ref):
     item["evidence"] = dict(GOOD_EVIDENCE, reference=ref)
     item["why"] = {"why_entered": "", "why_exited": "Sold to release cash."}
     item["rows"] = [{"table": "sales", "values": dict(
-        sale_id=free_id("sales", n), date="2026-09-29", account=acct, ticker=ticker, qty=str(qty),
+        sale_id=free_id("sales", n), date="2026-09-21", account=acct, ticker=ticker, qty=str(qty),
         stake="", traded_price="1.00", cur="GBP", rate="", proceeds=f"{qty:.2f}",
-        source="ii contract note 29 Sep 2026", broker_ref="", realisation_id=parcel,
+        source="ii contract note 21 Sep 2026", broker_ref="", realisation_id=parcel,
         closes="", note="n")}
         for n, ((acct, qty), parcel) in enumerate(zip(sorted(held.items()), parcels))]
     _bench.save(item)
@@ -1727,8 +1727,8 @@ def test_the_header_is_re_read_on_every_panel_switch(repo_root):
     show = js[js.index("async function show(name)"):]
     show = show[:show.index("\n(async function start()")]
     assert '/api/state' in show, (
-        "show() no longer re-reads /api/state, so the freshness line goes stale the moment "
-        "anything writes to the store — which is how it was found")
+        "show() does not re-read /api/state, so the freshness line goes stale when anything "
+        "writes to the store")
     assert "drawFreshness" in show, (
         "show() fetches the state but never repaints the header with it")
 

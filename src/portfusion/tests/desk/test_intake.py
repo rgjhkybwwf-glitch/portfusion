@@ -438,12 +438,13 @@ def test_a_re_read_does_not_hand_out_an_id_a_kept_row_holds(read_item):
 
 
 def test_a_note_mentioning_a_derived_fields_name_in_passing_is_kept(read_item):
-    """WHAT THE READER COULD NOT FIND IS KEPT unless it is about a field the record supplied."""
+    """WHAT THE READER COULD NOT FIND IS KEPT unless it is about a field the record supplied, named
+    as a word: `sale_id` inside a longer word is not that field."""
     from portfusion.desk.intake import propose as P
     out = P.propose(read_item["id"], _reading(
         [{"field": "qty", "value": "5000", "quote": "Sold 5,000 PENR.L"}],
-        not_found=["the price of the Heidelberg line", "sale_id"]))
-    assert out["not_found"] == ["the price of the Heidelberg line"], out["not_found"]
+        not_found=["the presale_identifier on the note", "sale_id"]))
+    assert out["not_found"] == ["the presale_identifier on the note"], out["not_found"]
 
 
 def test_a_figure_is_stored_the_way_the_store_can_read_it(read_item, monkeypatch):
@@ -707,8 +708,8 @@ def test_a_class_composes_the_provenance_line_the_record_already_uses():
     # A TRADE OR SALE TAKES THE ONE FORMAT every account's trades share: the kind and the date.
     assert D.trade_source("ii-contract-note", "2026-03-12") == \
         "ii contract note 12 Mar 2026"                  # a share sale's own source
-    assert D.trade_source("ig-api", "2026-09-29", endpoint="/history/activity") == \
-        "IG REST /history/activity 29 Sep 2026"         # a spread-bet close's
+    assert D.trade_source("ig-api", "2025-03-10", endpoint="/history/activity") == \
+        "IG REST /history/activity 10 Mar 2025"         # a spread-bet close's
     assert D.evidence_source("ii-statement", "Q2") == "ii statement Q2"
     assert D.evidence_source("ig-statement", "11 Aug 2026") == "IG statement 11 Aug 2026"
     assert D.evidence_source("nonsense", "x") == "", \

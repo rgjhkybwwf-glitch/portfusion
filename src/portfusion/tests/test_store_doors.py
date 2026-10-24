@@ -248,7 +248,7 @@ def test_moving_the_store_moves_every_table_the_engine_reads(tmp_path):
             first = frame.columns[0]
             assert "ZZ-SENTINEL" in set(frame[first]), (
                 f"Book.store[{key!r}] did not come from the store the record was pointed "
-                f"at. That table is reading a path of its own again.")
+                f"at: that table reads a path of its own")
 
 
 @needs("buys", "current-prices")

@@ -9,7 +9,6 @@ statements, one row per event. A frozen snapshot is a rendering of it made at a 
 in time, and a rendering can go stale when a trade is later corrected. KNOWN below is where
 such a case is explained.
 """
-import re
 from collections import defaultdict
 
 import pytest
@@ -19,8 +18,6 @@ from quarter_support import frozen_quarters
 from portfusion.record import rules as D
 from harness import needs
 
-ISO = re.compile(r"^\d{4}-\d{2}-\d{2}$")
-BASELINE = "2026-01-01"
 
 
 def held_at(date, account=None):
@@ -29,7 +26,7 @@ def held_at(date, account=None):
     qty = defaultdict(int)
     open_then = set(D.accounts_open(date))
     for t in D.buys:
-        if ISO.match(t.date) and t.date > date:
+        if t.date > date:
             continue                        # not yet opened
         if (account and t.acct != account) or t.acct not in open_then:
             continue

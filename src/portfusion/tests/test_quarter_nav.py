@@ -60,8 +60,7 @@ def test_a_notional_row_does_not_move_net_asset_value():
         nav_rows = sum(q.amount for q in D.QUARTER_NAV
                        if str(q.as_of) == str(d) and q.contribution in Book.NAV_BASES)
         assert NAV_TOTAL[str(d)] == pytest.approx(round(nav_rows, 2)), (
-            f"{d}: NAV must be the NAV-basis rows alone — a notional row has leaked into "
-            f"the total, which is the July defect again")
+            f"{d}: NAV is not its NAV-basis rows alone — a notional row has leaked into it")
 
 
 @needs("quarter-nav")
@@ -224,7 +223,7 @@ def test_the_published_methodology_says_what_the_formula_does():
     assert not re.search(r"time-weights external cash flows", joined), \
         "the method claims time-weighting, which this formula does not do"
     assert "Simple Dietz" not in joined and "midpoint" not in joined, \
-        "the method describes the formula the book no longer runs"
+        "the method describes a formula the book does not run"
 
 
 # =====================================================================================
@@ -242,10 +241,9 @@ def test_only_one_quarter_return_series_is_exposed():
     heads = [heading("Performance", c) for c in performance.COLUMNS]
     returns = [h for h in heads if "return" in h.lower()]
     assert returns == ["Return"], (
-        f"expected exactly one quarter-return column in the series, found {returns}. "
-        f"Two would let a consumer pick the wrong basis, which is how the Q3 Report went wrong.")
+        f"expected exactly one quarter-return column in the series, found {returns}")
     assert "net-invested" not in " ".join(heads).lower(), \
-        "the net-invested series is back beside the net asset value series"
+        "the net-invested series is beside the net asset value series"
 
 
 def test_no_renderer_names_simple_dietz(repo_root):
@@ -259,7 +257,7 @@ def test_no_renderer_names_simple_dietz(repo_root):
                  for d in ("desk", "report") for f in (SRC / d).rglob("*")
                  if f.suffix in (".py", ".js", ".html") and "Simple Dietz" in f.read_text()]
     assert any((SRC / d).is_dir() for d in ("desk", "report")), "no renderer folder to scan"
-    assert not offenders, f"these name a method the book no longer runs: {offenders}"
+    assert not offenders, f"these name a method the book does not run: {offenders}"
 
 
 # =====================================================================================
