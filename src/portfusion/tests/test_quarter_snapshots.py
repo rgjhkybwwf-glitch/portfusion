@@ -31,16 +31,18 @@ BASELINE = "2026-01-01"
 
 
 def held_at(date, account=None):
-    """Quantity per ticker actually held on `date`, from the event log."""
+    """Quantity per ticker actually held on `date`, from the event log. An account not yet open
+    holds nothing (`rules.accounts_open()`), whatever its legs' deal dates."""
     qty = defaultdict(int)
+    open_then = set(D.accounts_open(date))
     for t in D.buys:
         if ISO.match(t.date) and t.date > date:
             continue                        # not yet opened
-        if account and t.acct != account:
+        if (account and t.acct != account) or t.acct not in open_then:
             continue
         qty[t.ticker] += t.size
     for e in D.sales:
-        if e.date > date or (account and e.acct != account):
+        if e.date > date or (account and e.acct != account) or e.acct not in open_then:
             continue
         qty[e.ticker] -= e.size
     return {k: v for k, v in qty.items() if v}
@@ -147,8 +149,8 @@ def test_a_late_row_before_a_frozen_quarter_end_is_named(store_copy):
 
 
 def _missing_at_quarter_ends(qn) -> list[tuple[str, str]]:
-    """(quarter end, account) for each account with an event on or before a frozen quarter end
-    and no quarter-nav row there."""
+    """(quarter end, account) for each account open at a frozen quarter end, with an event on or
+    before it, and no quarter-nav row there."""
     from portfusion.record import schema
     first: dict[str, str] = {}
     for table in ("buys", "sales", "income", "capital-movements"):
@@ -158,7 +160,7 @@ def _missing_at_quarter_ends(qn) -> list[tuple[str, str]]:
             first[a] = min(first.get(a, d), d)
     ends = qn["as_of"].astype(str).str[:10]
     return [(q, a) for q in sorted(set(ends)) for a, d in sorted(first.items())
-            if d <= q and a not in set(qn.loc[ends == q, "account"])]
+            if d <= q and a in D.accounts_open(q) and a not in set(qn.loc[ends == q, "account"])]
 
 
 @pytest.mark.audit

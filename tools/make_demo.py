@@ -50,6 +50,9 @@ INVENTED = "Invented for the demo"
 UNFUNDED = "Account not yet funded"
 
 ISA, TRADING, SPREAD = "Voss ii ISA", "Voss ii Trading", "Voss IG Spread bet"
+#: The day each account opened that the record began without (accounts.csv `opens`): a quarter end
+#: before it holds no row for the account.
+OPENS = {TRADING: "2026-02-27", SPREAD: "2026-07-01"}
 
 #: When the journal opened, and every count in it is taken.
 OPENED = "2026-09-30T17:00:00Z"
@@ -139,9 +142,10 @@ def _book() -> dict[str, list[dict]]:
         {"account": ISA, "holder": "Ms Nia Voss", "broker_firm": "interactive investor",
          "number": "7421950", "code": "A1", "held_as": "shares"},
         {"account": TRADING, "holder": "Ms Nia Voss", "broker_firm": "interactive investor",
-         "number": "7421951", "code": "A2", "held_as": "shares"},
+         "number": "7421951", "code": "A2", "held_as": "shares", "opens": OPENS[TRADING]},
         {"account": SPREAD, "holder": "Ms Nia Voss", "broker_firm": "IG Index Ltd",
-         "number": "XK9P3", "code": "A3", "held_as": "spread bet", "feed_key": "VOSS_IG"},
+         "number": "XK9P3", "code": "A3", "held_as": "spread bet", "feed_key": "VOSS_IG",
+         "opens": OPENS[SPREAD]},
     ]
     T["capital-movements"] = [
         {"date": d, "account": a, "amount": v, "source": NOT_ON_FILE, "detail": "Deposit"}
@@ -167,7 +171,9 @@ def _book() -> dict[str, list[dict]]:
         {"date": "2026-05-20", "account": ISA, "ticker": "KELS.L", "qty": 2000, "cost": 3000.0,
          "traded_price": 1.5, **shares,
          "_note": _note("DMU3XE", "11:12", "22/05/2026", "KELSTRAND FOODS PLC", "ORD GBP0.05")},
-        {"date": "2026-07-06", "ticker": "VELD SB", "stake": 1, "level_points": 9850.0,
+        # DEALT BEFORE THE ACCOUNT OPENED, and carried in by the statement it opened at with its
+        # own deal date: the account holds it from its opening (`OPENS`), not from this day.
+        {"date": "2026-06-26", "ticker": "VELD SB", "stake": 1, "level_points": 9850.0,
          "contract": "VELD-SEP26", **bets, "broker_ref": "DIAAAADEMOVELD06",
          "_statement": "2026-07-06"},
         {"date": "2026-07-06", "ticker": "VELD SB", "stake": 1, "level_points": 9900.0,
@@ -210,7 +216,7 @@ def _book() -> dict[str, list[dict]]:
         {"date": "2026-06-15", "account": ISA, "category": "Dividend",
          "detail": "BRYC.L final dividend", "amount": 30.0, "source": NOT_ON_FILE, "ticker": "BRYC.L"},
         {"date": "2026-08-20", "account": SPREAD, "category": "Funding interest",
-         "detail": "Long interest 06/07/26 to 31/08/26, ref CS00DEMO0000001", "amount": -1.2,
+         "detail": "Long interest 01/07/26 to 31/08/26, ref CS00DEMO0000001", "amount": -1.2,
          "source": NOT_ON_FILE},
         {"date": "2026-09-25", "account": ISA, "category": "Cash interest",
          "detail": "Gross interest", "amount": 1.1, "source": NOT_ON_FILE},
@@ -294,12 +300,6 @@ def _quarter_nav() -> list[dict]:
     rows = [
         {"as_of": "2025-12-31", "account": ISA, "amount": 2000.0,
          "contribution": "positions at market", "quality": "derived", "source": NOT_ON_FILE},
-        {"as_of": "2025-12-31", "account": TRADING, "amount": 0.0,
-         "contribution": "positions at market", "quality": "sourced", "source": UNFUNDED},
-        {"as_of": "2025-12-31", "account": SPREAD, "amount": 0.0,
-         "contribution": "account equity", "quality": "sourced", "source": UNFUNDED},
-        {"as_of": "2025-12-31", "account": SPREAD, "amount": 0.0, "contribution": "notional",
-         "quality": "sourced", "source": UNFUNDED},
     ]
     for as_of, isa, trading, equity, notional in (("2026-03-31", 4180.0, 1050.0, 0.0, 0.0),
                                                   ("2026-06-30", 9377.27, 1100.0, 0.0, 0.0),
@@ -310,7 +310,8 @@ def _quarter_nav() -> list[dict]:
                  for a, v, c in ((ISA, isa, "positions at market"),
                                  (TRADING, trading, "positions at market"),
                                  (SPREAD, equity, "account equity"),
-                                 (SPREAD, notional, "notional"))]
+                                 (SPREAD, notional, "notional"))
+                 if OPENS.get(a, "") <= as_of]
     return rows
 
 
@@ -320,20 +321,14 @@ def _quarter_snapshots() -> list[dict]:
                 "price": price, "currency": currency, "value": value,
                 "cost": cost, "source": source}
 
-    def empty(as_of):
-        return {"as_of": as_of, "account": SPREAD, "ticker": "(no positions)", "value": 0.0,
-                "cost": 0.0, "source": f"No open position at {as_of}, frozen from the "
-                                           f"engine at the marks nearest {as_of}"}
     rows = [
         held("2026-03-31", ISA, "BRYC.L", 1000, 2.1, 2100.0, 2000.0),
         held("2026-03-31", ISA, "TARN.L", 800, 2.6, 2080.0, 2000.0),
         held("2026-03-31", TRADING, "BRYC.L", 500, 2.1, 1050.0, 1025.0),
-        empty("2026-03-31"),
         held("2026-06-30", ISA, "BRYC.L", 1000, 2.2, 2200.0, 2000.0),
         held("2026-06-30", ISA, "KELS.L", 2000, 1.6, 3200.0, 3000.0),
         held("2026-06-30", ISA, "QNLR", 50, 105.0, 3977.27, 3800.0, "USD"),
         held("2026-06-30", TRADING, "BRYC.L", 500, 2.2, 1100.0, 1025.0),
-        empty("2026-06-30"),
         held("2026-09-30", ISA, "BRYC.L", 1000, 2.35, 2350.0, 2000.0),
         held("2026-09-30", ISA, "KELS.L", 1000, 1.7, 1700.0, 1500.0),
         held("2026-09-30", ISA, "QNLR", 50, 112.0, 4210.53, 3800.0, "USD"),
@@ -358,11 +353,9 @@ def _quarter_results() -> list[dict]:
         ("2026-03-31", "", 2000.0, 3025.0, 0.0, 5230.0, 205.0, 0.058363),
         ("2026-03-31", ISA, 2000.0, 2000.0, 0.0, 4180.0, 180.0, 0.06),
         ("2026-03-31", TRADING, 0.0, 1025.0, 0.0, 1050.0, 25.0, 0.04878),
-        ("2026-03-31", SPREAD, 0.0, 0.0, 0.0, 0.0, None, None),
         ("2026-06-30", "", 5230.0, 4560.0, 30.0, 10477.27, 717.27, 0.095509),
         ("2026-06-30", ISA, 4180.0, 4560.0, 30.0, 9377.27, 667.27, 0.103293),
         ("2026-06-30", TRADING, 1050.0, 0.0, 0.0, 1100.0, 50.0, 0.047619),
-        ("2026-06-30", SPREAD, 0.0, 0.0, 0.0, 0.0, None, None),
         ("2026-09-30", "", 10477.27, 4700.0, 12.5, 17576.33, 2411.56, 0.188003),
         ("2026-09-30", ISA, 9377.27, -1800.0, 0.0, 8260.53, 683.26, 0.080599),
         ("2026-09-30", TRADING, 1100.0, 0.0, 12.5, 1175.0, 87.5, 0.079545),

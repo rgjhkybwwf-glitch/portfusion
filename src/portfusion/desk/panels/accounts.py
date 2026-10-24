@@ -30,8 +30,8 @@ ORDER = 65
 #: (`Book.newest_cash()`), and what it was read from in Reconcile's words. It was two figures with
 #: two dates (13 Oct 2026), which could disagree, and the one headed "now" could be the
 #: older.
-REGISTER_COLUMNS = ("code", "account", "holder", "broker_firm", "number", "feed_key", "cash",
-                    "cash_read")
+REGISTER_COLUMNS = ("code", "account", "holder", "broker_firm", "number", "feed_key", "opens",
+                    "cash", "cash_read")
 #: Newest first, as the engine returns it: a log is scanned for what happened lately.
 MOVEMENT_COLUMNS = ("date", "account", "amount", "source", "detail")
 #: THE YEAR'S INCOME AND COSTS BY ACCOUNT, as the report has a quarter's: one row per account and

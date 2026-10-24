@@ -235,13 +235,23 @@ def _journal_on_uk_time(store):
     return {}, {}
 
 
+def _register_without_opens(store):
+    """The register as it was before an account could say when it opened. The move gives every
+    account a blank `opens`; the day one opened later is dated by hand."""
+    rows = _rows_of(store / "accounts.csv")
+    at = rows[0].index("opens")
+    _write(store / "accounts.csv", [r[:at] + r[at + 1:] for r in rows])
+    return {}, {"accounts.csv": lambda got: all(r[-1] == "" for r in got[1:])}
+
+
 @pytest.mark.parametrize("step, old_shape", [
     pytest.param(1, _out_of_date_order, id="date order and ids"),
     pytest.param(2, _with_retired_tables, id="two tables retired"),
     pytest.param(3, _with_the_lifecycle, id="the lifecycle column"),
     pytest.param(4, _with_cash_in_three_places, id="cash in three places"),
     pytest.param(5, _money_as_it_came, id="money as it came"),
-    pytest.param(6, _journal_on_uk_time, id="the journal on UK time")])
+    pytest.param(6, _journal_on_uk_time, id="the journal on UK time"),
+    pytest.param(7, _register_without_opens, id="a register without openings")])
 def test_a_book_one_move_behind_is_carried_to_the_demo(tmp_path, step, old_shape):
     """The move planned is that one, and it lands the demo exactly: every file the demo's bytes,
     no file the demo lacks, the journal the demo's plus the rows the move must write, and nothing

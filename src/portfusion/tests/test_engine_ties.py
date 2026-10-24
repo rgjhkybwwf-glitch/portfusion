@@ -77,7 +77,8 @@ def test_quarter_end_navs_are_per_account_and_roll_up(book):
     assert set(q["as_of"]) == {BASELINE_ASOF, *D.QSNAP_FROZEN}, (
         "quarter-nav and quarter-snapshots must hold the same quarter ends, from the baseline on")
     for date, rows in q.groupby("as_of"):
-        assert set(rows["account"]) == set(D.ACCOUNT_ORDER), f"{date}: not every account contributes"
+        assert set(rows["account"]) == set(D.accounts_open(date)), \
+            f"{date}: not every account open then contributes"
         # PER BASIS. The unfiltered sum is what put the spread-bet notional into a
         # quarter's NAV the moment the notional rows landed, and this line is where it surfaced.
         # Each series rolls up against its own total, so the two can never be added together
@@ -87,7 +88,7 @@ def test_quarter_end_navs_are_per_account_and_roll_up(book):
         ties(nav["amount"].sum(), book.quarter_nav_total()[date], f"NAV roll-up at {date}")
         ties(exp["amount"].sum(), book.quarter_exposure_total()[date],
              f"exposure roll-up at {date}")
-        assert set(nav["account"]) == set(D.ACCOUNT_ORDER), (
+        assert set(nav["account"]) == set(D.accounts_open(date)), (
             f"{date}: an account contributes nothing to NAV, which understates it silently")
 
 

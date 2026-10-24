@@ -1,16 +1,9 @@
 as_of,account,amount,contribution,quality,source
 2025-12-31,Voss ii ISA,2000.00,positions at market,derived,Not on file: invented for the demo
-2025-12-31,Voss ii Trading,0.00,positions at market,sourced,Account not yet funded
-2025-12-31,Voss IG Spread bet,0.00,account equity,sourced,Account not yet funded
-2025-12-31,Voss IG Spread bet,0.00,notional,sourced,Account not yet funded
 2026-03-31,Voss ii ISA,4180.00,positions at market,derived,Positions at market frozen from the engine at the marks nearest 2026-03-31
 2026-03-31,Voss ii Trading,1050.00,positions at market,derived,Positions at market frozen from the engine at the marks nearest 2026-03-31
-2026-03-31,Voss IG Spread bet,0.00,account equity,derived,Equity frozen from the engine at the marks nearest 2026-03-31: funds plus the legs at those levels
-2026-03-31,Voss IG Spread bet,0.00,notional,derived,"Notional frozen from the engine at the marks nearest 2026-03-31, the EXPOSURE measure — NOT part of NAV"
 2026-06-30,Voss ii ISA,9377.27,positions at market,derived,Positions at market frozen from the engine at the marks nearest 2026-06-30
 2026-06-30,Voss ii Trading,1100.00,positions at market,derived,Positions at market frozen from the engine at the marks nearest 2026-06-30
-2026-06-30,Voss IG Spread bet,0.00,account equity,derived,Equity frozen from the engine at the marks nearest 2026-06-30: funds plus the legs at those levels
-2026-06-30,Voss IG Spread bet,0.00,notional,derived,"Notional frozen from the engine at the marks nearest 2026-06-30, the EXPOSURE measure — NOT part of NAV"
 2026-09-30,Voss ii ISA,8260.53,positions at market,derived,Positions at market frozen from the engine at the marks nearest 2026-09-30
 2026-09-30,Voss ii Trading,1175.00,positions at market,derived,Positions at market frozen from the engine at the marks nearest 2026-09-30
 2026-09-30,Voss IG Spread bet,8140.80,account equity,derived,Equity frozen from the engine at the marks nearest 2026-09-30: funds plus the legs at those levels

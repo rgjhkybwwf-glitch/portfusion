@@ -176,22 +176,26 @@ def test_the_freeze_may_run_on_the_day_but_not_for_one_to_come(monkeypatch):
         assert ("has not come yet" in why) is refused, (day, why)
 
 
-def test_an_account_holding_nothing_at_a_quarter_end_freezes_as_no_positions():
-    """An account not yet funded at a quarter end values at nothing and is frozen as
-    "(no positions)". `holdings_at()` once built that empty frame with no columns and raised
-    KeyError 'value', so such a quarter end could not be frozen at all."""
+def test_an_account_opens_on_its_day_holding_nothing_before_it():
+    """AN ACCOUNT HOLDS NOTHING BEFORE IT OPENS, whatever deal dates the statement it opened at
+    carries: the day before, it values at nothing and the freeze writes no row for it, and on
+    the day it holds what its legs to then say. An account open and holding nothing is frozen
+    as "(no positions)": `holdings_at()` once built that empty frame with no columns and raised
+    KeyError 'value'."""
+    import datetime as _dt
     from portfusion.engine import Book
     from portfusion.record import rules as D
+    if not D.ACCOUNT_OPENS:
+        pytest.skip("no account in this book opened after it")
     b = Book()
-    empty = [(q, a) for q in D.QSNAP_FROZEN for a in D.ACCOUNT_ORDER if b.as_of(q, a).empty]
-    if not empty:
-        pytest.skip("no account is empty at a frozen quarter end in this book")
-    for q, a in empty:
-        assert b.holdings_at(q, a).empty, (q, a)
-    q = max(q for q, _ in empty)
-    lines = b.freeze_rows(q)["quarter_snapshots"]
-    assert {(s["account"], s["ticker"]) for s in lines} >= {(a, "(no positions)")
-                                                            for d, a in empty if d == q}
+    for account, opens in D.ACCOUNT_OPENS.items():
+        eve = (_dt.date.fromisoformat(opens) - _dt.timedelta(days=1)).isoformat()
+        assert b.as_of(eve, account).empty and b.holdings_at(eve, account).empty, account
+        assert not b._valued_legs_at(eve, account), f"{account}'s legs are valued before it opens"
+        assert account not in {s["account"] for s in b.freeze_rows(eve, [account])["quarter_nav"]}
+        if b.as_of(opens, account).empty:
+            snaps = b.freeze_rows(opens, [account])["quarter_snapshots"]
+            assert [(s["account"], s["ticker"]) for s in snaps] == [(account, "(no positions)")]
 
 
 # =====================================================================================
@@ -350,9 +354,9 @@ def test_the_records_opening_is_never_a_frozen_quarter(store_copy):
     if not any(r[0] == BASELINE_ASOF for r in rows[1:]):
         if not D.QSNAP_FROZEN:
             pytest.skip("the book holds no frozen quarter end to open from")
-        newest = max(D.QSNAP_FROZEN)
+        newest, held = max(D.QSNAP_FROZEN), set(D.accounts_open(BASELINE_ASOF))
         write_rows("quarter-snapshots", *[dict(zip(rows[0], [BASELINE_ASOF, *r[1:]]))
-                                          for r in rows[1:] if r[0] == newest])
+                                          for r in rows[1:] if r[0] == newest and r[1] in held])
         D.reload_store()
     assert BASELINE_ASOF not in D.QSNAP_FROZEN
     assert not Book().quarter_lines(BASELINE_ASOF).empty

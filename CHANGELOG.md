@@ -5,6 +5,12 @@ prints it.
 
 ## Unreleased
 
+- **An account can open after the book does.** The register's `opens` is the day an account's
+  record began, blank for one held from the book's opening. Before it the account holds nothing,
+  whatever deal dates the statement it opened at carries, the freeze writes no row for it, and a
+  quarter end holds none: the loader refuses one, so the 0.00 rows that stood in for it go.
+  `portfusion migrate` adds the column, blank; an account opened later is dated by hand, with
+  those rows removed, since only their prose says which they were.
 - **A spread bet is priced by its contract, and the journal keeps one clock.** A mark under a
   bet's own code is refused, and the engine's fall-back to one, from before each contract had a
   key, is retired. A journal instant without its `Z` is refused; `portfusion migrate` writes a

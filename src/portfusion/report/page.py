@@ -117,7 +117,8 @@ def render(quarter_end: str) -> str:
 
     sections = [
         ("Portfolio summary",
-         _summary(nav_total, figures["Total market exposure"], this_q, figures["Open positions"])),
+         _summary(nav_total, figures["Total market exposure"], this_q, figures["Open positions"],
+                  len(D.accounts_open(quarter_end)))),
         ("Performance", _performance(b, qr, quarter_end)),
         ("Where the exposure sits", _allocation(b, quarter_end)),
         ("Holdings", _holdings(lines, b.quarter_lines_total(quarter_end),
@@ -162,7 +163,7 @@ def _colophon() -> str:
                               about.stamp(store=D.store_dir())])
 
 
-def _summary(nav_total, exposure, this_q, positions) -> str:
+def _summary(nav_total, exposure, this_q, positions, accounts) -> str:
     """The headline figures."""
     return f"""  <div class="stats">
     <div><div class="v">&pound;{_money(nav_total)}</div><div class="k">Net asset value</div>
@@ -171,7 +172,7 @@ def _summary(nav_total, exposure, this_q, positions) -> str:
       <div class="sub">Includes spread-bet notional.</div></div>
     <div><div class="v">{_pct(this_q["return"])}</div><div class="k">Return this quarter</div>
       <div class="sub">Modified Dietz, day-weighted.</div></div>
-    <div><div class="v">{len(D.ACCOUNT_ORDER)} / {positions:,.0f}</div><div class="k">Accounts / positions</div>
+    <div><div class="v">{accounts} / {positions:,.0f}</div><div class="k">Accounts / positions</div>
       <div class="sub">Frozen at the quarter end.</div></div>
   </div>"""
 
