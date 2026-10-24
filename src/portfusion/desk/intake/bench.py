@@ -2,8 +2,7 @@
 
 WHAT THIS IS FOR. Something happened in the market and the record has to catch up. A dropped
 document, an IG read and "I made a spread bet" are three inputs to ONE pipeline, not three
-procedures — which is why the `/intake` and `/trade` skills were retired: a skill only fires
-when a Claude session is driving, and intake and trade entry happen here.
+procedures.
 
     open  ->  evidence  ->  reasoning  ->  proposed rows  ->  approved  ->  written  ->  archived
               3 limbs      the why         validated live     all gates    commit.py   _archive/
@@ -183,9 +182,7 @@ OPEN = ("ticker",)
 def closed_for(table: str) -> tuple:
     """Which of `table`'s columns are a CLOSED vocabulary, as opposed to merely known.
 
-    One flat list, because a column name means one thing on every table. It did not until 1 Oct
-    2026: `evidence` was a class key on the observations and provenance prose on trades, and a
-    carve-out kept the bench from refusing every trade. Trades' column is `source` now.
+    One flat list, because a column name means one thing on every table.
     """
     return CLOSED
 
@@ -231,8 +228,8 @@ def vocabulary() -> dict:
         return {
             "account": list(D.ACCOUNT_ORDER),
             # STERLING, EVERY CURRENCY WITH A RATE, AND ANY TRADED. A currency is a closed set the
-            # record decides by holding its rate (`fx.csv`); the traded ones alone refused the
-            # first trade in a new currency, and on a new book offered nothing at all.
+            # record decides by holding its rate (`fx.csv`); the traded ones alone would refuse a
+            # first trade in a new currency, and offer a new book nothing.
             "cur": sorted({"GBP"} | {r[0] for r in D.fx_rows} | {t.cur for t in D.buys}),
             "category": list(D.schema.INCOME_CATEGORIES),
             # THE REGISTER'S CODES, so a line set up and not yet traded is offered too.
@@ -278,8 +275,8 @@ class _Filled(dict):
 def _filed_already(item: dict, reference: str, names: list[str]) -> list[str]:
     """The archived names this item's document matches, by the archive's own rule
     (`rules.filed_as`): a statement by its date, authority and account, a contract note by its
-    number. Matched as a substring of the filename, a dated statement's reference — "3 Mar 2025
-    14:05" — is never how the file is named, and the check never fired for one."""
+    number. A substring match never fires for a dated statement, whose reference is never how its
+    file is named."""
     from portfusion.record import rules as D
     ev = D.EVIDENCE_BY_KEY.get(item.get("evidence_class") or "")
     if ev is None:
@@ -748,8 +745,7 @@ def gates(item: dict) -> list[dict]:
 
     # THE DOCUMENT'S KIND IS OWED FIRST. It composes the row's `source` in the one format every
     # account's trades share and fills the authority in its own words; without it, three typed
-    # boxes passed this gate and a trade went in with a source no class composed, refused by the
-    # guard only once it was in the store.
+    # boxes would pass this gate with a source no class composes.
     missing = (["what kind of document"] if not item.get("evidence_class") else []) + [
         label for key, label, _ in LIMBS if not str(item["evidence"].get(key, "")).strip()]
     out.append({
@@ -809,8 +805,8 @@ def gates(item: dict) -> list[dict]:
     # is why RETRIEVAL_KINDS exists as structure. `none` is `not-on-file`, refused here: it says
     # in its own definition that nothing retrieves it.
     #
-    # A NAME IS NOT A FILE. Until 14 Oct 2026 this passed on the document's name alone, so a
-    # document taken off the workbench after its item was opened still let the rows commit.
+    # A NAME IS NOT A FILE: a document taken off the workbench after its item was opened stops
+    # the rows committing.
     from portfusion.record import rules as _D
     from portfusion.desk.doors import commit as _commit
     ev = _D.EVIDENCE_BY_KEY.get(item.get("evidence_class") or "")
@@ -892,8 +888,7 @@ def reading_of(item: dict) -> dict:
     referenced by its evidence limbs as they stand now.
 
     THE DATE IS READ AS THE FILING READS IT (`commit._archive_date()`), however it was typed,
-    and is blank when it will not read. Its first ten characters were taken until 14 Oct 2026,
-    so "30 Sep 2026" became "30 Sep 202" and the gate raised instead of refusing."""
+    and is blank when it will not read."""
     from portfusion.desk.doors import commit
     r = item.get("reading") or {}
     ev = item.get("evidence") or {}
@@ -902,7 +897,7 @@ def reading_of(item: dict) -> dict:
     return {"account": r.get("account") or item.get("account") or "",
             "as_of": when.isoformat() if when else "", "at": r.get("at") or "",
             "positions": r.get("positions"),
-            # AN ITEM READ BEFORE CASH HAD ONE PLACE (24 Oct 2026) holds them under their old names.
+            # AN ITEM MAY HOLD THEM AS `recon_cash` AND `stmt_value`.
             "cash": r.get("cash", r.get("recon_cash")),
             "total": r.get("total", r.get("stmt_value")),
             "evidence": item.get("evidence_class") or "",
@@ -925,12 +920,11 @@ def _reading_gate(item: dict) -> dict:
     except observations.Refused as e:
         return {"name": "the account's reading", "ok": False, "detail": str(e)}
     except FileNotFoundError:
-        # A DOCUMENT GONE FROM THE WORKBENCH is this gate failing, not the Bench: raised, it took
-        # every item's page down with a 500 (the review of 21 Oct 2026).
+        # A DOCUMENT GONE FROM THE WORKBENCH is this gate failing, not the Bench.
         return {"name": "the account's reading", "ok": False,
                 "detail": f"{name} is no longer on the workbench: drop it there again to read it"}
     agree = sum(1 for u in item.get("units") or [] if u["agrees"])
-    # A CASH OF NOTHING IS STILL A CASH: `or ''` read 0.00 as none and dropped it from the line.
+    # A CASH OF NOTHING IS STILL A CASH: `or ''` would read 0.00 as none.
     cash = ("" if reading["cash"] is None or str(reading["cash"]).strip() == ""
             else f", cash {reading['cash']}, total {reading['total']}")
     return {"name": "the account's reading", "ok": True,
@@ -1012,7 +1006,7 @@ def for_document(name: str, origin: str = "document") -> dict:
     correction is needed, and by then the old item has left the bench anyway.
     """
     # A DOCUMENT IS ONE ON THE WORKBENCH, by its bare name. The name arrives from the browser,
-    # and an item's document is what the reader opens: a path here was read wherever it pointed.
+    # and an item's document is what the reader opens: a path would be read wherever it points.
     if not name or os.path.basename(name) != name \
             or not os.path.isfile(os.path.join(_reader().INBOX, name)):
         raise FileNotFoundError(f"no document {name!r} on the workbench")
@@ -1145,7 +1139,7 @@ def for_event(event: dict, origin: str = "ig-events", marks: list[dict] | None =
 
     row = {"table": event["table"], "values": dict(event["values"])}
     # THE EVENT'S OWN WORDS ARE ITS TITLE, as the Trades page says it; the deal id is the
-    # evidence's reference, shown with it, and was in the title twice over until 12 Oct 2026.
+    # evidence's reference, shown with it.
     item = new_item(origin=origin, title=event.get("what") or ref)
     item["event_ref"] = ref
     item["evidence_class"] = "ig-api"
@@ -1169,10 +1163,9 @@ def save(item: dict, drawn: int | None = None) -> dict:
     """Write the item, raising its `revision` by one.
 
     A PAGE SAYS WHICH REVISION IT DREW (`drawn`), and a save from an older one is refused with
-    `Stale`. The page sends the whole item, so a page left open while a session handed in a
-    reading through the propose door wrote its old rows back over the reading, and nothing said
-    so (19 Oct 2026). Every saver comes through here, so every save moves the revision. An item
-    from before revisions reads as revision 0."""
+    `Stale`. The page sends the whole item, so a page drawn before another save would write its
+    old rows back over it. Every saver comes through here, so every save moves the revision. An
+    item from before revisions reads as revision 0."""
     BENCH_DIR.mkdir(parents=True, exist_ok=True)
     path = _path(item["id"])
     current = (json.loads(path.read_text(encoding="utf-8")).get("revision", 0) if path.is_file()
@@ -1214,11 +1207,10 @@ def discard(item_id: str) -> None:
 
 
 def paste_block(item: dict) -> list[dict]:
-    """The rows as they would land in each CSV — a PREVIEW, and not the only outcome.
+    """The rows as they would land in each CSV — a PREVIEW.
 
-    `desk/doors/commit.py` writes them. This stays because seeing the exact line before it lands is
-    worth having, and because it is the fallback if a commit is ever refused: the text is still
-    correct and can be pasted by hand.
+    `desk/doors/commit.py` writes them; this shows each line before it lands, and can be pasted by
+    hand if a commit is refused.
     """
     from portfusion.record import schema
     out = []
@@ -1298,7 +1290,7 @@ def waiting_documents() -> list[dict]:
     """What is sitting on the intake workbench, unfinished — and what each one says it is."""
     try:
         docs = _reader().waiting()
-    except Exception as e:                       # a missing skill file must not blank the panel
+    except Exception as e:                       # an unreadable _inbox/ must not blank the panel
         return [{"name": f"could not read _inbox/: {e}", "bytes": 0, "error": True}]
     for d in docs:
         if str(d.get("name", "")).lower().endswith(_CHEAP_TO_READ):

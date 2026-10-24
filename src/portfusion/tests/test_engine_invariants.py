@@ -1,7 +1,7 @@
 """
 THE ENGINE'S OWN ARITHMETIC — checked against ITSELF, never against what a page shows.
 
-WHY THIS FILE EXISTS: it closes the one gap the guard had.
+WHY THIS FILE EXISTS: it closes the guard's one gap.
 
 Every figure is the engine's and every page its output, so `tests/desk/test_ties.py` is a
 REGRESSION test — it catches a renderer that stops rendering what the engine computed, which is
@@ -51,8 +51,7 @@ def test_the_two_bases_compose_into_total_exposure(book):
 def test_leverage_is_exactly_the_gap_between_exposure_and_the_money(book):
     """Leverage is DERIVED from two published figures and is itself published.
 
-    That combination is why it once drifted unnoticed in a to-do list: it is the one headline
-    nothing recomputes. Here it is recomputed.
+    It is the one headline nothing else recomputes. Here it is recomputed.
     """
     f = book.headline()
     assert close(f["Exposure above net asset value"],
@@ -196,9 +195,8 @@ def test_total_gain_is_its_two_halves(book):
 
 
 def test_portfolio_cost_is_the_two_bases_costs(book):
-    """A MIXED-BASIS figure, the engine's own term for unrealised and registered as a headline
-    until 13 Oct 2026: the two costs it sums are shown apart instead. This checks
-    it is still the sum it claims to be."""
+    """A MIXED-BASIS figure, the engine's own term for unrealised and never a headline: the two
+    costs it sums are shown apart. This checks it is the sum it claims to be."""
     h = book.holdings(by="ticker")
     assert close(book.portfolio_cost(),
                  h.loc[h["held_as"] == "shares", "cost"].sum()
@@ -231,10 +229,9 @@ def test_the_two_income_halves_partition_the_whole(book):
     landing in neither would vanish from the total; one landing in both would be counted
     twice. Either way the published return moves and nothing says so.
 
-    NOTE THE SIGN. Position income can be LARGER than total income,
-    because the account half is negative — it is mostly fees. A test asserting the
-    numerator was a subset "and therefore smaller" would fail on a correct book, which is
-    what the first draft of this did.
+    NOTE THE SIGN. Position income can be LARGER than total income, because the account half is
+    negative — it is mostly fees. A test asserting the numerator was a subset "and therefore
+    smaller" would fail on a correct book.
     """
     rows = book.income_rows(book.ytd_year())
     position = rows[rows["category"].isin(D.POSITION_INCOME)]["amount"].sum()
@@ -279,10 +276,7 @@ def test_the_lines_end_where_the_book_is(book):
     """Each kind of line ends at the figure the book publishes for it.
 
     THIS IS WHAT MAKES THE PANEL TRUSTWORTHY rather than decorative: a decomposition that
-    lands somewhere other than the book is describing a different book. It caught a real
-    defect on the first run — keying the frame off price-history rather than off the live
-    ledger put four positions closed months ago into it, each reported across its own stale
-    window, and direct value_to read well above the book's figure.
+    lands somewhere other than the book is describing a different book.
 
     AN AUDIT, NOT A GUARD. A line holds each position as it stood at that line's newest mark;
     the book holds it as it stands now. A close entered after the mark keeps the two apart
@@ -309,8 +303,7 @@ def test_a_line_carries_its_own_two_dates(book):
     """EACH LINE IS MEASURED FROM ITS OWN PREVIOUS MARK, never from one book-wide date.
 
     Held line by line against the line's own history, so it holds on a day when every line
-    happens to share one window as firmly as on a day when none do. It used to ask for more
-    than one window, which was true only while two feeds banked on different days.
+    happens to share one window as firmly as on a day when none do.
     """
     history = book.store["history.prices"]
     own_dates = {k: sorted({str(d)[:10] for d in g["date"]})
@@ -344,11 +337,6 @@ def test_the_window_starts_where_the_book_stood(book):
     """EACH LINE STARTS AS THE BOOK HELD IT THE DAY BEFORE ITS NEW MARK: every line the book
     held then has a row, valued at the mark and the RATE the book valued it at — the start's
     half of `test_the_lines_end_where_the_book_is`.
-
-    IT FAILED TWO WAYS ON ITS FIRST RUN (13 Oct 2026). The US lines started at the rate
-    banked on or before their close's own date, where the book had valued those closes at a
-    later rate beside them: securities owned started above where the book stood. And a contract
-    closed inside the window had no row, so its value at the outgoing mark was nowhere and the spread-bet notional started without it.
 
     A LINE DEALT IN BETWEEN ITS PREVIOUS MARK AND THAT DAY is left out: dealing is valued at
     what it cost, from the previous mark (changes_since()'s docstring), so its start is not the
@@ -388,8 +376,8 @@ def test_the_window_starts_where_the_book_stood(book):
 def test_a_line_sold_outright_inside_the_window_lands_at_nothing(store_copy):
     """A LINE CLOSED INSIDE THE WINDOW KEEPS ITS ROW, ending at its close: nothing left, the
     proceeds under dealing, the move from its last mark to the sale price under price, and
-    the sale's date where the new mark's would be. Absent, the window's start lost the line
-    and the dealing column showed a part-close but never a whole one.
+    the sale's date where the new mark's would be. Without it the window's start would lose
+    the line.
 
     Built on a copy: the one-account share line with the newest mark sold outright on that
     mark's day, at 90% of its previous mark."""
@@ -477,7 +465,7 @@ def test_the_two_kinds_of_line_are_never_totalled_together(book):
     with pytest.raises(BasisError):
         book.change_totals(held_as="both")
     with pytest.raises(BasisError):
-        book.change_totals(held_as="direct")      # the retired word, not the record's
+        book.change_totals(held_as="direct")      # not a word the record uses
 
 
 def _account_kind(book):
@@ -582,9 +570,8 @@ _A_BET = next((c for c, kind in D.KIND_OF_CODE.items() if kind == "spread bet"),
     ("current-prices.csv", "{bet},101.5,USD,2026-01-02,a mark under the bet's code,close,")])
 def test_a_spread_bet_priced_under_its_own_code_is_refused_by_name(store_copy, file, row):
     """A SPREAD BET IS PRICED BY ITS CONTRACT. A mark under the bet's own code is one level for a
-    position that may sit on several contracts at several levels, and valued it at that one,
-    saying nothing; the engine read such marks as a fall-back once, from before each contract had
-    a key. The store refuses one now, naming the file, the code and the day."""
+    position that may sit on several contracts at several levels. The store refuses one, naming
+    the file, the code and the day."""
     from portfusion.engine import load_store
     from harness import append_rows
     append_rows(store_copy / file, [row.format(bet=_A_BET)])
@@ -595,7 +582,7 @@ def test_a_spread_bet_priced_under_its_own_code_is_refused_by_name(store_copy, f
 
 @needs("buys")
 def test_a_multi_contract_line_opens_every_contracts_marks(book):
-    """HALV SB's history has to answer for both contracts, at their own levels."""
+    """Each contract a line is priced by is in its history, at its own level."""
     keys = book.changes_since().groupby("ticker")["mark_key"].apply(set)
     several = keys[keys.map(len) > 1]
     assert not several.empty, "no multi-contract line — this asserts nothing"
@@ -628,18 +615,8 @@ def test_a_lines_mark_history_reads_newest_first_each_mark_with_its_source(book)
 def test_one_accounts_spread_bet_can_be_valued_at_a_date(book):
     """A spread-bet account values at a past date, and its legs sum to the book's.
 
-    The SIBLING of the test below. That one caught a per-contract split keyed by ticker; this
-    one catches the split being made against the wrong POPULATION.
-
-    `holdings_at(as_of, account)` narrowed its holdings to one account and then asked
-    `_held_by_mark_key()` for the WHOLE BOOK's lots. So a multi-contract spread bet was split
-    book-wide and compared against one account's quantity, which never matched: a ticker held on
-    two contracts across two accounts, neither holding the combined quantity. The split was
-    refused, the ticker fall-back found no ticker-keyed mark at any recent date, and EITHER
-    ACCOUNT RAISED FOR EVERY DATE from the contract-keying convention onward.
-
-    It failed loudly, which is why it survived: nothing in the build calls it that way. The
-    share reconciliation does, and the spread-bet one was about to.
+    The SIBLING of the test below. That one holds the split by contract; this one holds it to
+    the account's own lots.
 
     NOTHING IS HARDCODED. The per-account values are summed and checked against the book-wide
     figure for the same date, so the assertion holds whatever the levels are.
@@ -673,21 +650,13 @@ def test_one_accounts_spread_bet_can_be_valued_at_a_date(book):
 def test_a_multi_contract_spread_bet_is_valued_at_each_contracts_own_level(book):
     """Every contract a position holds is valued at ITS OWN mark, and the lots sum.
 
-    `_mark_for()` built `{t.ticker: LEG_CONTRACT[t.trade_id] for t in trades if t.mode == "sb"}` — a
-    dict keyed by TICKER, so a ticker with legs on several contracts kept whichever appeared
-    LAST IN FILE ORDER. `holdings()` records that exact defect at the head of its own price
-    lookup and was fixed first; the dated path still had it.
-
-    MORA SB collapsed onto MORA-DEC26 — closed, and unpriced by design — so holdings_at()
-    RAISED for every date from 13 Jul 2026, which is the whole of Q3 and the report's
-    completeness gate with it. That was the lucky half, because it failed loudly. HALV SB
-    collapsed onto HALV-MAR27 and ZEPH SB onto ZEPH-DEC26, both priced, and each valued a
-    two-contract position entirely at one contract's level while failing nothing.
+    A lookup keyed by ticker keeps whichever leg is last in file order, and values the position
+    at one contract's level.
 
     NOTHING HERE IS HARDCODED. The expected value is rebuilt from the same dated marks, one
-    contract at a time, and the collapse is asserted against directly: whatever the levels
-    are, the position must not be worth its whole quantity at any single one of them. A
-    ticker joins this test by holding legs on two contracts.
+    contract at a time, and whatever the levels are, the position must not be worth its whole
+    quantity at any single one of them. A ticker joins this test by holding legs on two
+    contracts.
     """
     prices = book.store["history.prices"]
     checked = 0
@@ -743,9 +712,8 @@ def test_every_figure_the_engine_publishes_is_in_the_registry(book):
 def _valuable_quarters(book):
     """The quarter ends the engine can actually value, and why the others are not here.
 
-    `2025-12-31` is the baseline itself, the year's opening and no quarter's end. A quarter end
-    the book cannot value is left out rather than valued from a price that does not exist:
-    `2026-03-31` was, until its closes were banked on 14 Oct 2026.
+    `BASELINE_ASOF` is the year's opening and no quarter's end. A quarter end the book cannot
+    value is left out rather than valued from a price that does not exist.
 
     Discovered, never listed: a quarter joins by becoming valuable.
     """
@@ -783,9 +751,8 @@ def test_the_dated_parts_still_add_up_to_the_dated_whole(book):
 
 
 def test_every_registered_figure_declares_a_basis_and_a_unit():
-    """A FIGURE'S NAME AND ITS BASIS AGREE. A money figure once sat under a ratio's name and a
-    mixed one under a cost's; each registered figure states its basis and unit, so a renderer
-    marks what is notional and never guesses."""
+    """A FIGURE'S NAME AND ITS BASIS AGREE. Each registered figure states its basis and unit, so
+    a renderer marks what is notional and never guesses."""
     for label, spec in Book.HEADLINE.items():
         assert spec["basis"], f"{label} has no basis"
         assert spec["unit"] in {"gbp", "pct", "count"}, f"{label} has unit {spec['unit']!r}"
@@ -793,10 +760,7 @@ def test_every_registered_figure_declares_a_basis_and_a_unit():
 
 
 def test_the_live_headline_builds_the_year_once(monkeypatch):
-    """ONE YEAR, ASKED ONCE. The live headline asked `by_account()` three times and `totals()`
-    twice until step 5: net asset value rebuilt the year `totals()` already held, and the return
-    since the start asked `totals()` again for the year's return. Every live figure comes from the
-    one year, so it is built once."""
+    """ONE YEAR, ASKED ONCE. Every live figure comes from the one year, so it is built once."""
     b = Book()
     asked = {"by_account": 0, "totals": 0}
     for name in asked:
@@ -813,8 +777,6 @@ def test_the_live_headline_builds_the_year_once(monkeypatch):
 # =====================================================================================
 
 def test_a_quarter_label_and_its_start_are_derived_from_the_date(book):
-    """Both were hand-rolled somewhere once. quarter_start() was first-of-month minus 62
-    days in the report, which lands on 1 MARCH for a Q2 page."""
     assert Book.quarter_label("2026-06-30") == "Q2 2026"
     assert Book.quarter_label("2025-12-31") == "Q4 2025"
     assert Book.quarter_start("2026-06-30") == "2026-04-01"
@@ -953,19 +915,8 @@ def test_a_holdings_share_cost_is_its_buys_less_what_its_sales_released(book):
 def test_every_ledger_row_carries_the_evidence_it_came_in_with():
     """EVERY FIGURE TRACES TO A REAL, NAMED SOURCE, held here as an invariant.
 
-    THIS TEST EXISTS BECAUSE THE SUITE MISSED THE DEFECT TWICE. First the engine served a
-    column labelled `source` containing the word "exposure" — the provenance of every trade
-    dropped between the store and the engine, because one name did two jobs and the valuation
-    basis overwrote the evidence. It was fixed by ORDERING two lines, which is a fix that holds
-    only while nobody reorders them.
-
-    Then renaming the store column `basis` to `evidence` orphaned exactly that dance:
-    `ledger["source"] = ledger["contribution"]` read a column only the SELL rows had, and 104
-    of 136 rows went to NaN. The whole suite passed, and the build ran clean.
-
-    So the claim is made directly rather than left to depend on the order of two assignments:
-    a ledger row's source is present, and it is the EVIDENCE — a named document — never one of
-    the valuation words that has twice been found sitting in it.
+    A ledger row's source is present, and it is the EVIDENCE — a named document — never a
+    valuation word.
     """
     L = Book().ledger
     missing = L[L["source"].isna() | (L["source"].astype(str).str.strip() == "")]
@@ -982,11 +933,10 @@ def test_every_ledger_row_carries_the_evidence_it_came_in_with():
 
 def test_a_spread_bet_nav_does_not_depend_on_where_the_baseline_sits(book, monkeypatch):
     """A SPREAD-BET ACCOUNT'S NET ASSET VALUE IS BUILT FROM ITS BASELINE EQUITY, and that equity
-    already holds every sale and every open gain up to the baseline. It added them again — every
-    exit's realised gain, every open leg's gain from entry — so a book whose spread bets predate
-    its baseline counted them twice (the review of 21 Oct 2026). The check, assuming nothing:
-    move the baseline to a later quarter end, give it the account's worth that day, and today's
-    figure must not move."""
+    already holds every sale and every open gain up to the baseline. Nothing adds them again, so
+    spread bets that predate the baseline count once. The check, assuming nothing: move the
+    baseline to a later quarter end, give it the account's worth that day, and today's figure
+    must not move."""
     ends = [str(q)[:10] for q in book.quarter_nav_total().index if str(q)[:10] > BASELINE_ASOF]
     pick = next(((a, q) for q in reversed(ends) for a in D.ACCOUNT_ORDER
                  if book.is_spread_bet(a)

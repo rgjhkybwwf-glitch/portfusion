@@ -1,10 +1,9 @@
 """THE RECORD'S ONE LOCK — `schema.LOCK`, shared by every door, the record's reload and the desk's
 engine.
 
-The desk serves its routes on a pool of threads, and until 21 Oct 2026 nothing in `desk/` held a
-lock: a door's check and its write were two steps another request could fall between, a refusal's
-restore put back bytes another write had since moved on from, and the engine could be rebuilt over
-a record another request was half-way through re-reading (the review of 21 Oct 2026).
+The desk serves its routes on a pool of threads: without the lock a door's check and its write are
+two steps another request can fall between, a refusal's restore puts back bytes another write has
+moved on from, and the engine can be rebuilt over a record half-way through re-reading.
 """
 from __future__ import annotations
 

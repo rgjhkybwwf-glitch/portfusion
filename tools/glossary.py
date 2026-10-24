@@ -3,14 +3,14 @@ THE DERIVED HALF OF docs/glossary.md.
 
 The half of the glossary that has a code home is generated from that code, and a test asserts
 the checked-in file matches what the constants produce — a vocabulary document kept by hand
-drifts the same way the vocabulary did.
+drifts.
 
 AN INDEX, NEVER A SECOND TELLING. It emits NAMES, VALUES and WHERE THEY LIVE; what a word MEANS
 stays where it is defined, and `test_record.py` refuses a second telling of STATEMENT_GRADE
 or SOURCE_HIERARCHY anywhere.
 
-What has no constant behind it — retired spellings, the practice equivalences, "as at" against
-"as of", the three clocks — stays hand-written above the marker.
+What has no constant behind it — the practice equivalences, "as at" against "as of", the three
+clocks — stays hand-written above the marker.
 
     python3 tools/glossary.py            print the generated block
     python3 tools/glossary.py --write    write it into docs/glossary.md between the markers
@@ -75,10 +75,9 @@ def _record_vocabularies() -> list[str]:
     from portfusion.record import rules as D
     out = ["| Vocabulary | Values | Declared in |", "|---|---|---|"]
 
-    # CODE CONSTANTS ONLY (decided 9 Oct 2026): the account order and the carried marks
-    # are the LOADED BOOK's facts, and a generated block that printed them would make the
-    # checked-in file wrong the moment another book loads. A book's own facts are read on
-    # the desk, not in the glossary.
+    # CODE CONSTANTS ONLY: the account order and the carried marks are the LOADED BOOK's facts,
+    # and a generated block that printed them would make the checked-in file wrong the moment
+    # another book loads. A book's own facts are read on the desk, not in the glossary.
     out.append("| Evidence classes | "
                + " · ".join(f"`{e.key}`" for e in D.EVIDENCE_CLASSES)
                + " | `rules.EVIDENCE_CLASSES` |")
@@ -94,7 +93,7 @@ def _record_vocabularies() -> list[str]:
 
 def _tables() -> list[str]:
     """Every table in the store and what it is for, the first sentence of the schema's `doc`, and
-    each column beside the heading a reader meets it under (#43): one name from store to page."""
+    each column beside the heading a reader meets it under: one name from store to page."""
     from portfusion.house.headings import store_heading
     from portfusion.record import schema
     out = ["| Table | What it holds | Columns, as the desk heads them |", "|---|---|---|"]
@@ -116,10 +115,9 @@ def generate() -> str:
              "",
              "**Everything below this line is DERIVED from the `record/` modules and",
              "`Book.HEADLINE` by `glossary.py`, and `tests/test_record.py` asserts that the",
-             "checked-in file matches what those constants produce.** It cannot drift, which is",
-             "the complaint that started this document. It is an INDEX — names, values and where",
-             "they live. What a word MEANS stays where it is defined, and `test_record.py`",
-             "refuses this block if it starts to define one.",
+             "checked-in file matches what those constants produce.** It cannot drift. It is an",
+             "INDEX — names, values and where they live. What a word MEANS stays where it is",
+             "defined, and `test_record.py` refuses this block if it starts to define one.",
              "",
              "### Every registered headline figure", ""]
     parts += _figures()

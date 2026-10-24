@@ -1,7 +1,7 @@
 """THE DESK'S TWO LOAD-BEARING CLAIMS, and the named set of modules that may write.
 
   1. THE BOOK DOES NOT DEPEND ON THE DESK. Delete desk/ and the report builds unchanged.
-  2. NO ACTION CAN WRITE AN EVENT. The marks rule let a feed write a MARK on the owner's tick and
+  2. NO ACTION CAN WRITE AN EVENT. The marks rule lets a feed write a MARK on the owner's tick and
      never an event, and `Action` refuses to be constructed otherwise.
 
 The rest of tests/desk/ is detail on these two, split by subject.
@@ -37,8 +37,8 @@ def test_the_engine_and_the_record_do_not_import_the_desk(repo_root, imports_of)
 def test_an_import_guard_sees_an_import_under_the_package(tmp_path, imports_of):
     """THE GUARDS ABOVE CAN FIRE. Every one asks whether a name is absent, and absence is also
     what a scan that cannot see the name reports. Under one package every import begins with the
-    package's name, and a dotted guard (`history.fx`) asked a set of first names; both held
-    whatever was imported."""
+    package's name, so a scan of first names, or a dotted guard (`history.fx`) asking one, would
+    hold whatever is imported."""
     f = tmp_path / "m.py"
     f.write_text("from portfusion.desk import app\nimport portfusion.history.fx\n"
                  "from portfusion.record import schema\n")
@@ -78,7 +78,7 @@ def test_writes_is_three_valued_not_a_boolean():
 
 
 def test_a_write_must_name_its_human_gate():
-    """A write with no stated human step is exactly what the marks rule did not settle."""
+    """The marks rule does not settle a write with no stated human step."""
     with pytest.raises(ValueError, match="no gate"):
         actions.Action(name="z", label="z", panel="p", run=lambda: None, writes="marks")
 
@@ -97,10 +97,9 @@ def test_every_writing_action_is_pinned():
       refresh-write-marks  the Price Refresh's write: prices, FX rates, and the IG accounts'
                            equity read with the levels, landing together or not at all.
 
-    A share account's reading is no longer an action: it is filed with its holdings export by
-    the Bench's commit, through the same door (the owner, 30 Sep 2026). The outgoing value is
-    banked first, and the whole operation is refused if any line lacks its date, its evidence
-    or its reference.
+    A share account's reading is not an action: it is filed with its holdings export by the
+    Bench's commit, through the same door. The outgoing value is banked first, and the whole
+    operation is refused if any line lacks its date, its evidence or its reference.
     """
     assert {a.name for a in actions.writing_actions()} == {"refresh-write-marks"}
     for name in ("refresh-write-marks",):
@@ -125,9 +124,8 @@ def test_every_reaching_action_is_pinned():
       refresh-fetch-all  the price sweep, so TWO vendors: IG's levels and each account's equity
                          in one pass, then TradingView. Declared rather than inherited from the
                          feeds it calls: `reaches` describes what an ACTION does. The levels
-                         and the equity together are the point: struck an hour apart they
-                         differed by tens of pounds, struck together they were identical to
-                         the penny.
+                         and the equity together are the point: struck apart they differ,
+                         struck together they agree to the penny.
       ig-setup-to-bench  asks IG for one new contract's level: the first mark its first bet is
                          valued at, read on the press that sets the bet up.
 
@@ -160,9 +158,8 @@ def test_reaches_is_not_a_fourth_value_on_writes():
 
 
 def test_the_blanket_date_gate_is_lifted():
-    """Lifted (the owner): the desk closes a quarter itself, so a gate that opens the day AFTER the
-    close protects nothing. `None` means no BLANKET gate; the mechanism survives it, which is
-    the next test."""
+    """NO BLANKET GATE (`WRITES_ENABLED_FROM` is None): the desk closes a quarter itself, so a gate
+    that opens the day AFTER the close protects nothing. The per-action date is the next test."""
     assert actions.WRITES_ENABLED_FROM is None
     a = actions.Action(name="w", label="w", panel="p", run=lambda: None,
                        writes="marks", gate="tick-each-line")
@@ -171,8 +168,8 @@ def test_the_blanket_date_gate_is_lifted():
 
 
 def test_an_action_may_still_name_its_own_date():
-    """The per-action mechanism outlives the blanket gate, and is kept because it costs
-    nothing — a single risky button can still defer itself without a project-wide rule."""
+    """The per-action date is kept because it costs nothing — a single risky button can defer
+    itself without a project-wide rule."""
     tomorrow = _dt.date.today() + _dt.timedelta(days=1)
     later = actions.Action(name="w", label="w", panel="p", run=lambda: None, writes="marks",
                            gate="tick-each-line", enabled_from=tomorrow)
@@ -217,6 +214,8 @@ def test_an_action_may_still_name_its_own_date():
 #:                    a price is replaced by design, and the two must not share a code path
 #:                    that could confuse them.
 #:   observations.py  REPLACES AN ACCOUNT READING in store/ — a mark too, on the same terms.
+#:   research_notes.py
+#:                    APPENDS A PUBLISHED NOTE'S ROWS to store/.
 #:   withdraw.py      MOVES A DOCUMENT OUT of _inbox/. Separate from dropoff.py for the same
 #:                    reason marks.py is separate from commit.py, and for a sharper one:
 #:                    test_intake.py proves on dropoff.py's syntax tree that the way IN can
@@ -289,11 +288,10 @@ STORE_DOORS_UNDER_DESK = {
     # An account reading is a MARK — the marks rule names "live equity" in as many words — so it is
     # replaced, banked first, like a price.
     "doors/observations.py": "replaces an account reading",
-    # A quarter end, derived by Book.freeze_rows() and appended to quarter-snapshots.csv and
-    # quarter-nav.csv once. It replaced a hand copy off HOLDINGS.
+    # A quarter end, derived by the engine and written to quarter-snapshots, -nav and -results.
     "doors/freeze.py": "adds a frozen quarter end, or restates one, superseding its rows",
     # A published research note's rows, one per code it covers, from the research repo's own
-    # frontmatter on the Bench's press (12 Oct 2026), placed by `commit.placed()`.
+    # frontmatter on the Bench's press, placed by `commit.placed()`.
     "doors/research_notes.py": "adds a published research note",
 }
 
@@ -304,8 +302,8 @@ def test_only_the_declared_doors_under_desk_write_the_record(repo_root):
     A set of FILENAMES conflates "writes a file" with "writes the record": bench.py writes its
     bench note and dropoff.py writes into _inbox/, and neither goes near store/. The claim worth
     making is the one the module docstring makes, and a filename cannot say what a call wrote
-    to. A filename set also failed on any split of a module, which is a check standing in the
-    way of tidying rather than protecting anything.
+    to. A filename set would also fail on any split of a module, which is a check standing in
+    the way of tidying rather than protecting anything.
 
     A NAMED map rather than a count, so another door fails here until somebody writes down what
     it may write and why.
@@ -350,7 +348,7 @@ def test_a_new_writer_under_desk_is_a_decision(repo_root):
 ])
 def test_the_write_scan_sees_every_way_a_file_is_written(code, writes):
     """WHAT THE SCAN CALLS A WRITE (`harness.write_call`): an atomic swap (`os.replace`), a rename,
-    a removed folder and an `open()` for writing, each of which it once missed; and not a string's
-    replace or a frame's rename."""
+    a removed folder and an `open()` for writing; and not a string's replace or a frame's
+    rename."""
     import ast
     assert write_call(ast.parse(code).body[0].value) == writes

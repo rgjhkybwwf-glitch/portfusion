@@ -48,8 +48,8 @@ def _bank_the_day(day=_DAY):
 
 @needs("quarter-nav", "current-prices")
 def test_a_quarter_end_is_frozen_from_the_engine_and_journalled(store_copy, monkeypatch):
-    """What a person once copied off HOLDINGS at a close, derived instead: one row per line,
-    each account's contribution beside it, and the journal accounting for every row."""
+    """One row per line, each account's contribution beside it, and the journal accounting for
+    every row."""
     from portfusion.record import schema
     from portfusion.engine import Book
     from portfusion.desk.doors import freeze
@@ -77,9 +77,9 @@ def test_a_quarter_end_is_frozen_from_the_engine_and_journalled(store_copy, monk
 
 @needs("quarter-nav", "current-prices")
 def test_a_freeze_writes_in_each_files_own_line_ending(store_copy, monkeypatch):
-    """The Q3 freeze rewrote quarter-snapshots.csv's CRLF lines as LF, a whole-file diff for a
-    few-row write. Every line on file before must be there after, byte for byte and in its order,
-    and every line in the file's own ending, wherever the new rows' dates put them."""
+    """A write in another line ending is a whole-file diff for a few-row write. Every line on file
+    before must be there after, byte for byte and in its order, and every line in the file's own
+    ending, wherever the new rows' dates put them."""
     from portfusion.record import schema
     from portfusion.desk.doors import freeze
     _bank_the_day()
@@ -155,9 +155,8 @@ def _nearest(dates, day, window=7):
 
 
 def test_a_quarter_end_takes_each_lines_nearest_mark_either_side():
-    """The owner, 30 Sep 2026: a quarter end is "close enough". Nearest wins in either direction,
-    the earlier on a tie; beyond the window the newest on or before stands, for
-    `freeze_rows()` to name."""
+    """Nearest wins in either direction, the earlier on a tie; beyond the window the newest on or
+    before stands, for `freeze_rows()` to name."""
     assert _nearest(["2026-09-23", "2026-09-29"], "2026-09-24") == ("2026-09-23", 0.0)
     assert _nearest(["2026-09-23", "2026-09-29"], "2026-09-27") == ("2026-09-29", 1.0)
     assert _nearest(["2026-09-23", "2026-09-29"], "2026-09-26") == ("2026-09-23", 0.0)
@@ -180,8 +179,7 @@ def test_an_account_opens_on_its_day_holding_nothing_before_it():
     """AN ACCOUNT HOLDS NOTHING BEFORE IT OPENS, whatever deal dates the statement it opened at
     carries: the day before, it values at nothing and the freeze writes no row for it, and on
     the day it holds what its legs to then say. An account open and holding nothing is frozen
-    as "(no positions)": `holdings_at()` once built that empty frame with no columns and raised
-    KeyError 'value'."""
+    as "(no positions)"."""
     import datetime as _dt
     from portfusion.engine import Book
     from portfusion.record import rules as D
@@ -302,11 +300,10 @@ def test_a_restatement_that_moves_nothing_writes_nothing(store_copy, monkeypatch
 
 @needs("quarter-nav", "current-prices")
 def test_a_composition_is_appended_where_there_was_none(store_copy):
-    """THE OPENING'S COMPOSITION: the record's 31 Dec 2025 has net asset
-    values and no lines, so its first quarter has no contributors. `lines_only` strikes the lines
-    where none are frozen and appends them, and touches nothing else: no net asset value, no
-    result, nothing replaced; asked again, it refuses. Held here on the newest frozen quarter
-    end with its lines taken out of the copy."""
+    """THE OPENING'S COMPOSITION: an opening may hold net asset values and no lines, so its first
+    quarter has no contributors. `lines_only` strikes the lines where none are frozen and appends
+    them, and touches nothing else: no net asset value, no result, nothing replaced; asked again,
+    it refuses. Held here on the newest frozen quarter end with its lines taken out of the copy."""
     import csv
     import datetime as _dt
     from portfusion.engine import Book

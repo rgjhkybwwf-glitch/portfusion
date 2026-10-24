@@ -10,10 +10,9 @@ requires A NAMED REFERENCE THAT RETRIEVES THE FIGURE A SECOND TIME. The referenc
 the row; _archive/statements/ is where it leads. A row whose evidence was left on the
 workbench, or deleted from it, points at nothing.
 
-THIS IS THE SAME SHAPE AS feeds/refresh.py, deliberately. That orchestrator exists because the
-archive was the step that got skipped, so it archives BEFORE it prints the block inviting you
-to overwrite. Here the archive comes last and cannot be enforced by ordering, so it is
-enforced by the suite instead.
+THIS IS THE SAME SHAPE AS feeds/refresh.py, deliberately: it banks the marks before it sweeps.
+Here the archive comes last and cannot be enforced by ordering, so it is enforced by the suite
+instead.
 """
 import os
 import pytest
@@ -31,7 +30,7 @@ def test_the_workbench_is_clear():
     the guard, and do not delete the document: it leaves by being archived, or it goes back
     where it came from.
     """
-    # THE LOADED BOOK'S WORKBENCH, not the checkout's: on the demo this watched this book's.
+    # THE LOADED BOOK'S WORKBENCH, not the checkout's.
     from portfusion.record import schema
     inbox = schema.INBOX
     if not inbox.is_dir():
@@ -106,17 +105,13 @@ def test_no_bench_item_has_been_written_and_not_archived():
 
 
 def test_a_broker_export_that_is_not_utf8_still_reads(tmp_path):
-    """HL'S EXPORTS COULD NOT BE OPENED AT ALL.
+    """A UK broker's export is CP1252: HL writes the pound sign as the single byte 0xA3, which is
+    not valid UTF-8.
 
-    The CSV branch decoded as strict `utf-8-sig` with no fallback, and a UK broker's
-    spreadsheet export is CP1252: HL writes the pound sign as the single byte 0xA3, which is
-    not valid UTF-8. HL's downloads raised `UnicodeDecodeError` before anything
-    could read them.
-
-    AND THE ONE-WORD FIX WOULD HAVE BEEN WORSE. `errors="replace"` opens the file and corrupts
-    it in the one place it matters — 0xA3 sits IMMEDIATELY BEFORE A FIGURE in these documents,
-    so the reader would be handed "?12,345.67" to quote and verify against. This asserts the
-    figure survives intact, not merely that the file opens.
+    NEVER `errors="replace"`: it opens the file and corrupts it in the one place it matters —
+    0xA3 sits IMMEDIATELY BEFORE A FIGURE in these documents, so the reader would be handed
+    "?12,345.67" to quote and verify against. This asserts the figure survives intact, not
+    merely that the file opens.
     """
     from portfusion.desk.intake import read_document as R
 
@@ -148,17 +143,15 @@ def test_a_document_in_no_known_encoding_says_so_rather_than_guessing(tmp_path):
 
 @pytest.mark.audit
 def test_a_working_note_and_its_document_are_never_separated():
-    """The two silent states, and both had happened before this was written.
+    """The two silent states.
 
     A bench note in `_inbox/.bench/` and the document it is about are one piece of work. Either
     half without the other is debris that no guard above catches, because both of those look at
     only one side:
 
       * a note without its document — the document was archived or moved by some route that did
-        not close the note. Four sat like this after the ii SIPP rehearsal was worked by hand,
-        every one reading `open`, so the bench showed four jobs outstanding and the desk looked
-        as though nothing had been done. `test_no_bench_item_has_been_written_and_not_archived`
-        misses it: these never reached `written`.
+        not close the note. `test_no_bench_item_has_been_written_and_not_archived` misses it: the
+        note never reached `written`.
 
       * a document without its note — what `bench.discard()` leaves behind, since it removes the
         note and its docstring promises it never touches a document. The document then rests on

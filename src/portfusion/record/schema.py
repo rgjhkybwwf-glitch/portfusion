@@ -39,12 +39,12 @@ ROOT = APP.parents[1] if (APP.parents[1] / "pyproject.toml").is_file() else None
 #: The PORTFUSION_BOOK environment variable names it, absolute or relative to where the command
 #: was typed, as any path on a command line is; the word `demo` is the invented demo book the
 #: app ships. UNSET, IT IS THE BOOK IN THE FOLDER THE COMMAND WAS TYPED IN, and with none there it
-#: is refused: falling back to the demo once let a forgotten setting show invented figures as
-#: though they were a book's own. `portfusion init` makes a book. READ HERE AND NOWHERE ELSE:
-#: every other path to a book's files derives from this one. An environment setting rather than
-#: a flag, because every process the desk starts (the restart, the audit's test run) inherits it
-#: — which is why the book is written back ABSOLUTE once resolved: a child started in another
-#: folder reads the same book. `about.book_line()` says which book a run loaded.
+#: is refused: falling back to the demo would show invented figures as a book's own. `portfusion
+#: init` makes a book. READ HERE AND NOWHERE ELSE: every other path to a book's files derives from
+#: this one. An environment setting rather than a flag, because every process the desk starts (the
+#: restart, the audit's test run) inherits it — which is why the book is written back ABSOLUTE once
+#: resolved: a child started in another folder reads the same book. `about.book_line()` says which
+#: book a run loaded.
 ENV = "PORTFUSION_BOOK"
 #: THE DEMO BOOK, inside the app. Read in place; `portfusion init --practice <folder>` gives a
 #: copy to work in.
@@ -74,10 +74,10 @@ STORE = BOOK / "store"
 #: THE RECORD'S ONE LOCK, for a process that serves more than one request at a time — the desk,
 #: whose routes run on a pool of threads. Held by every write to the store (`desk/doors/commit.py`
 #: `atomic()` and each door's entry point, from its first read to its reload), by the record's
-#: reload (`rules.reload_store()`), and by the desk's rebuild of the engine. Without it a check
-#: and its write were two steps another request could fall between, a refusal's restore put back
-#: bytes another write had since moved on from, and a Book could be built over a record half
-#: re-read. REENTRANT, because a door's envelope holds it while the reload inside takes it again.
+#: reload (`rules.reload_store()`), and by the desk's rebuild of the engine. Without it another
+#: request can fall between a check and its write, a refusal's restore put back bytes another
+#: write has moved on from, and a Book be built over a half-read record.
+#: REENTRANT, because a door's envelope holds it while the reload inside takes it again.
 #: HERE AND NOT IN `rules`, because the reload re-executes that module and would rebind a lock
 #: there while it was held.
 LOCK = threading.RLock()
@@ -85,8 +85,7 @@ LOCK = threading.RLock()
 
 def record_instant() -> str:
     """NOW, AS RECORD TIME: UTC, to the second, marked `Z`. One clock whatever the machine's zone,
-    so a book written on one machine and read on another orders its journal as it happened; a
-    local time with no zone ordered a book made in BST and read in UTC an hour wrong."""
+    so a book written on one machine and read on another orders its journal as it happened."""
     return _dt.datetime.now(_dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
@@ -112,9 +111,8 @@ INBOX = BOOK / "_inbox"
 def filed_statements() -> list[str]:
     """The documents in `STATEMENTS`, by name and sorted — THE ONE LISTING of the archive.
 
-    Five callers listed the folder themselves until 2 Oct 2026, and not the same way: three
-    counted a hidden file the other two skipped. A hidden file is not a document, and Finder
-    writes `.DS_Store` into any folder it opens. Empty where the folder is absent.
+    A hidden file is not a document, and Finder writes `.DS_Store` into any folder it opens.
+    Empty where the folder is absent.
     """
     if not STATEMENTS.is_dir():
         return []
@@ -185,7 +183,7 @@ COMPANIES = Table(
          "code cannot carry a sector its issuer disagrees with."),
     fields=(
         Field("company", "str"),
-        # REQUIRED, so no line drops out of a split by sector or region (14 Oct 2026).
+        # REQUIRED, so no line drops out of a split by sector or region.
         Field("sector", "str", required=True),
         Field("region", "str", required=True),
     ),
@@ -196,9 +194,9 @@ COMPANIES = Table(
 #: (`rules.SPREAD_BET`). One vocabulary for both: `securities.kind` and `accounts.kind`.
 KINDS = ("shares", "spread bet")
 
-#: THE CLOSED VOCABULARIES, declared to the loader: a value outside one fails
-#: on load naming the table, the row and the column. Each was clean when declared, so no row
-#: changed. An account needs none — `REFERENCES` holds every account column to the register.
+#: THE CLOSED VOCABULARIES, declared to the loader: a value outside one fails on load naming the
+#: table, the row and the column. An account needs none — `REFERENCES` holds every account column
+#: to the register.
 #: Currency, region, sector and ticker stay open, so a first holding in a new one is not refused;
 #: a line's currency, sector and region are `required` all the same, so none is ever blank.
 #: `rules.POSITION_INCOME` and `rules.ACCOUNT_INCOME` split these, each into exactly one.
@@ -243,7 +241,7 @@ ACCOUNTS = Table(
         Field("broker_firm", "str"),
         Field("number", "str"),            # STRING, not int — "0123456" keeps its zero
         # WHAT THE ACCOUNT IS CALLED TO ANYONE BUT THE OWNER: A1, A2… in register order, never
-        # reused (decided 6 Oct 2026). `Book.account_codes()` gives each its label.
+        # reused. `Book.account_codes()` gives each its label.
         Field("code", "str", required=True),
         Field("held_as", "str", enum=KINDS, required=True),
         # THE LABEL OF THE ACCOUNT'S BLOCK IN credentials.json, for an account a feed reads.
@@ -261,8 +259,7 @@ CAPITAL_MOVEMENTS = Table(
          "This is money crossing the book's boundary — not money moving between "
          "positions, which is a trade, and not the value of anything."),
     fields=(
-        # AN EVENT IS DATED, refused on load when blank: the bench approved an undated one until
-        # 12 Oct 2026, when no row on file lacked a date.
+        # AN EVENT IS DATED, refused on load when blank.
         Field("date", "str", required=True),   # ISO string: the ledger's own date convention
         Field("account", "str"),
         Field("amount", "float", **MONEY),
@@ -273,8 +270,7 @@ CAPITAL_MOVEMENTS = Table(
 
 BUYS = Table(
     name="buys",
-    doc=("THE LEDGER — one row per buy leg. Every date in the book is entered here and "
-         "nowhere else; everything else derives from it.\n\n"
+    doc=("THE LEDGER — one row per buy leg.\n\n"
          "a leg's kind (its code's, securities.csv) is why several columns are nullable rather than a shape defect. A SHARE "
          "leg records its quantity in `qty` and the settled GBP total in `cost`; a SPREAD-BET "
          "leg records its stake in `stake` and its entry level in points in `level_points`, as "
@@ -475,8 +471,8 @@ CURRENT_PRICES = Table(
          "cross and the IG intraday caveat — that the price history depends on.\n\n"
          "`struck` and `at` ARE THE FEED'S, written with the price: whether the mark is a "
          "session close or a live read, and the UTC instant a live read describes. A close "
-         "is a date, so its `at` is blank. They were read back out of `source` until 29 Sep "
-         "2026; the feed is the only party that knows, so it now says so in a column."),
+         "is a date, so its `at` is blank. The feed is the only party that knows, so it says "
+         "so in a column."),
     fields=(
         Field("mark_key", "str"),          # a share's ticker, or a spread bet's CONTRACT
         Field("price", "float", **QUOTE),
@@ -498,8 +494,7 @@ QUARTER_SNAPSHOTS = Table(
          "it. A spread-bet account's legs appear here at NOTIONAL, as Holdings shows them — "
          "`qty` the stake per point, `price` the level in points — while "
          "quarter-nav.csv carries its equity.\n\n"
-         "APPENDED BY desk/doors/freeze.py from Book.freeze_rows(), from the Q3 2026 close: the "
-         "rows before it were typed off Holdings.\n\n"
+         "APPENDED BY desk/doors/freeze.py from Book.freeze_rows().\n\n"
          "`quality` is the line's provenance in the record's one vocabulary (glossary §3)."),
     fields=(
         Field("as_of", "str"),
@@ -523,18 +518,9 @@ ACCOUNT_READINGS = Table(
     name="account-readings",
     doc=("What the book holds each account to be worth RIGHT NOW, and the observation it "
          "rests on. The Accounts tab reconciles these against the broker.\n\n"
-         "MOVED OUT OF CODE 1 September 2026 (contradiction H). It was `ac_rows` in "
-         "rules.py — the LAST table holding facts in code after the rest moved every "
-         "other one. It was skipped then, and not by decision: splitting it needed three "
-         "questions answered first, and they had not been.\n\n"
-         "THE ONE THAT ACTUALLY BLOCKED IT: `asof` was FREE TEXT — '19 Jul 15:21', "
-         "'30 Jun (stmt)', '31 Aug (API)' — a date and its provenance in one string, which no "
-         "schema can type and nothing can join on. tests/test_history_accounts.py had to "
-         "hand-write an account-to-date mapping because of it, and that mapping is now derived "
-         "from this table instead. `as_of` is a real date here and `at` the instant it was "
-         "read, ISO and UTC, as on current-prices: it was `observed`, a display qualifier "
-         "such as '(API)', until 1 Oct 2026. The two are recombined for DISPLAY.\n\n"
-         "TWO KINDS OF READING, EACH IN ITS OWN COLUMNS (13 Oct 2026). A share account's is "
+         "`as_of` is a real date here and `at` the instant it was read, ISO and UTC, as on "
+         "current-prices. The two are recombined for DISPLAY.\n\n"
+         "TWO KINDS OF READING, EACH IN ITS OWN COLUMNS. A share account's is "
          "its document's stock, `positions`; the cash its document states is a cash reading "
          "of the same day (cash-readings.csv), and its total is the two together. A "
          "spread-bet account's is IG's five figures under IG's names, once each: `funds`, "
@@ -543,7 +529,7 @@ ACCOUNT_READINGS = Table(
          "the equity and equity − deposit to the available (record/rules.py)."),
     fields=(
         Field("account", "str"),
-        Field("as_of", "date"),            # A REAL DATE. The whole point of the split.
+        Field("as_of", "date"),            # A REAL DATE.
         Field("at", "str"),                # ISO UTC, e.g. 2026-09-30T17:40Z; blank if unknown
         # A SHARE ACCOUNT'S READING, blank on a spread-bet row.
         Field("positions", "float", null=True, **MONEY),   # positions at market
@@ -569,15 +555,12 @@ RESEARCH_NOTES = Table(
     doc=("WHICH RESEARCH NOTES COVER WHICH INSTRUMENT. One row per (ticker, ref) pair — a note "
          "on a company held as both shares and a spread bet covers both codes, so it appears twice, and that mapping is a "
          "BOOK decision rather than a fact in the note.\n\n"
-         "MOVED OUT OF CODE 2 September 2026. It was `RESEARCH_NOTES` in rules.py, and a NEW "
-         "note could only be added by hand-editing a Python literal — the last of the four "
-         "fields the bench could not produce.\n\n"
          "THE RESEARCH REPO IS THE SOURCE OF TRUTH FOR A REF, not this table, and the rules "
          "governing a ref — never reused, never computed, gaps are legitimate — are that "
          "repo's own. THIS TABLE IS A "
          "RECORD OF WHAT WAS CITED, so the book builds on a machine that does not have the "
          "research repo; `desk/doors/research_notes.py` writes a published note's rows from "
-         "that repo's own frontmatter on the Bench's press (12 Oct 2026), so no ref is typed. "
+         "that repo's own frontmatter on the Bench's press, so no ref is typed. "
          "Tests tie the two together both ways wherever both exist, the way quarter-nav is tied "
          "to account-statements.csv."),
     fields=(
@@ -594,24 +577,15 @@ CASH_READINGS = Table(
          "Append-only: a new reading adds a row and never replaces one. The Accounts tab's "
          "'Cash now' is the NEWEST row per account, and a share reading's total is its stock "
          "plus the cash here on or before its date.\n\n"
-         "MOVED OUT OF CODE 2 September 2026. It was `CASH_ROWS` in rules.py — a hand-edited "
-         "Python literal — and it was the last fact in the book that no upload could reach. "
-         "An observation found it: an ii transactions download carries a Running "
-         "Balance whose top row is dated, sourced and statement-grade, and there was no route "
-         "from it into the record. The literal had also run "
-         "AHEAD of the store, carrying an 11 Aug and a 20 Aug figure the record had never seen.\n\n"
-         "ONE PLACE (24 Oct 2026). A share reading's cash and total, and a statement's cash, "
-         "were columns of their own until then, so one day's cash could sit in three files and "
-         "disagree. A reading off a document that states cash writes it here, the same day. "
-         "Not in account-statements.csv, which answers 'what was this account WORTH': a "
-         "cash-only row there would become an account's latest statement, with no net asset "
-         "value.\n\n"
+         "ONE PLACE, so a day's cash cannot disagree with itself: a reading off a document that "
+         "states cash writes it here, the same day. Not in account-statements.csv, which "
+         "answers 'what was this account WORTH': a cash-only row there would become an "
+         "account's latest statement, with no net asset value.\n\n"
          "THIS DOES NOT REACH NAV OR THE RETURN, and there is no date on which it starts to. "
-         "Cash left the return on 2 Sep 2026 and the plan to add it to NAV on 30 Sep was dropped "
-         "the same day. This is a RECORD of cash and a cell on a tab.\n\n"
-         "NOT FOR A SPREAD-BET ACCOUNT (13 Oct 2026). Its funds are on its reading, under IG's "
-         "own name (account-readings.funds), and the Accounts page reads them there; a row "
-         "here for one was the same figure under a second name."),
+         "This is a RECORD of cash and a cell on a tab.\n\n"
+         "NOT FOR A SPREAD-BET ACCOUNT. Its funds are on its reading, under IG's own name "
+         "(account-readings.funds), and the Accounts page reads them there; a row here would "
+         "name that figure twice."),
     fields=(
         Field("account", "str"),
         Field("as_of", "date"),
@@ -662,7 +636,6 @@ QUARTER_RESULTS = Table(
     ),
 )
 
-#: Every table the record holds, before the journal — which needs their names as a vocabulary.
 #: WHAT MAKES THIS BOOK THIS BOOK — its dates and names, which the code may not type. One row per
 #: key; `rules.SETTINGS` reads them and refuses a key twice. A blank value is none.
 SETTING_KEYS = (
@@ -693,6 +666,7 @@ SETTINGS = Table(
     ),
 )
 
+#: Every table the record holds, before the journal — which needs their names as a vocabulary.
 _RECORD = (
     COMPANIES, SECURITIES, ACCOUNTS, CAPITAL_MOVEMENTS, BUYS, SALES,
     INCOME, QUARTER_NAV, QUARTER_SNAPSHOTS, FX, CURRENT_PRICES,
@@ -702,20 +676,16 @@ _RECORD = (
 JOURNAL = Table(
     name="journal",
     doc=("RECORD TIME — when the book LEARNED a thing, as against when the thing HAPPENED.\n\n"
-         "The record has always kept three clocks and could answer two of them. MARKET TIME is "
-         "in the price and FX histories; EVENT TIME is every `date` and `as_of` column in this "
-         "store. RECORD TIME lived only in git and, from 2 Sep 2026, in `_archive/bench/*.json` "
-         "— so 'what has this book learned lately' was a question the engine could not be "
-         "asked. This is that question becoming a table: one row per WRITE, in git, diffable, "
-         "and answerable.\n\n"
+         "The record keeps three clocks. MARKET TIME is in the price and FX histories; EVENT "
+         "TIME is every `date` and `as_of` column in this store. RECORD TIME is this table: one "
+         "row per WRITE, in git, diffable, and answerable.\n\n"
          "ONE ROW PER WRITE, NEVER PER CHANGED FIGURE. A bench item landing three rows in "
-         "`trades` is one journal row saying so. A refresh replacing twelve marks is one row. "
+         "`buys` is one journal row saying so. A refresh replacing twelve marks is one row. "
          "The detail of what changed is in the table that changed and in the archive the `ref` "
          "retrieves; this says WHEN, BY WHAT ROUTE, and HOW MUCH MOVED.\n\n"
-         "FORWARD-ONLY BY CONSTRUCTION. It reaches back to the day it opened plus the archived "
-         "bench items it was seeded from, and no further. Reconstructing it from the commit log "
-         "was considered and declined on 4 Sep 2026 — a git-reading door in a project that keeps "
-         "its doors countable, and a commit message is prose that cannot be queried.\n\n"
+         "FORWARD-ONLY BY CONSTRUCTION. It reaches back to the day it opened, and to the "
+         "writes it was seeded from, no further. Never rebuilt from the commit log: a commit "
+         "message is prose that cannot be queried.\n\n"
          "THE OPENING COUNT IS WHAT MAKES IT CHECKABLE. Each table opens with a "
          "`route=baseline, op=open` row carrying the rows on file that day. Then "
          "`opening + appends − removes` "
@@ -727,8 +697,7 @@ JOURNAL = Table(
          "classification, and this book deletes those. A REPLACE ADDS NO ROWS: without `op` a "
          "fortnightly refresh would read as twelve unaccounted rows and the check would train "
          "its reader to ignore it.\n\n"
-         "THE FIRST TABLE TO DECLARE ITS VOCABULARIES TO THE LOADER. `Field(enum=)` has existed "
-         "since 2 Sep 2026 and nothing used it; a stray route now fails ON LOAD naming the "
+         "ITS VOCABULARIES ARE DECLARED TO THE LOADER: a stray route fails ON LOAD naming the "
          "table, the row and the column, rather than joining to nothing downstream."),
     fields=(
         # RECORD TIME, to the second, IN UTC (`record_instant()`) — a `str`, because

@@ -9,21 +9,18 @@ vendor declares for that line. A venue not trading gives its latest session's cl
 bars, dated by that session — today's, once its venue has shut: a sweep is the price at the moment
 it is taken, at any hour.
 
-A LIVE READ IS THE QUOTE SCREEN'S, AND FAILING THAT THE LAST MINUTE BAR'S. A
-day bar for a session still in progress is not a price: a line quoting 50.0p can have a
-part-formed day bar reading 49.7p. Completed bars are exact — they matched an independent
-vendor's closes to the tick. The quote screen is TradingView's scanner, and it has refused every
-market with a 429 for hours while the bars answered. So
-when it refuses, cannot be reached, or leaves a line out, a line still trading takes its newest
-ONE-MINUTE bar: the last trade, stamped at the minute it happened — fifteen minutes behind for
-London, Xetra and Copenhagen, current for the rates, measured that afternoon. Only when the
-minute bars fail too is the line REPORTED UNPRICED, with both reasons.
+A LIVE READ IS THE QUOTE SCREEN'S, AND FAILING THAT THE LAST MINUTE BAR'S. A day bar for a
+session still in progress is not a price: a line quoting 50.0p can have a part-formed day bar
+reading 49.7p. Completed bars are exact. The quote screen, TradingView's scanner, can refuse every
+market with a 429 while the bars answer. So when it refuses, cannot be reached, or leaves a line
+out, a line still trading takes its newest ONE-MINUTE bar: the last trade, stamped at the minute it
+happened — fifteen minutes behind for London, Xetra and Copenhagen, current for the rates. Only
+when the minute bars fail too is the line REPORTED UNPRICED, with both reasons.
 
 A REFUSAL ARRIVES AS A NORMAL REPLY — `success: false` inside HTTP 200, or `isError` with a reason
-in plain text. The quote screen answered the first way for twenty minutes on 29 Sep (TradingView's
-scanner, 429) while the bars answered throughout. It is raised as a refusal and named, never read
-as data. A reply that is only PARTIAL — some markets failed — says so in `partial` and `warnings`,
-and names each symbol it left out in `missing`; the sweep reports all three.
+in plain text. It is raised as a refusal and named, never read as data. A reply that is only
+PARTIAL — some markets failed — says so in `partial` and `warnings`, and names each symbol it left
+out in `missing`; the sweep reports all three.
 
 NOT PART OF THE BUILD, AND IT NEVER WRITES THE RECORD. It prints; `desk/doors/marks.py` is the door. The
 only file it writes is its own sign-in, `.tv_session.json`, gitignored and mode 0600.
@@ -74,9 +71,8 @@ PAUSE_SECONDS = 1.0
 _GATEWAY = (502, 503, 504)
 
 #: THE ONE REFUSAL ASKED AGAIN: TradingView's server has not yet opened its own data connection.
-#: A fresh session's first bar requests are refused with this, then answered — measured 1 Oct
-#: 2026, two refusals then an answer about two seconds after the first. Every sweep opens a fresh
-#: session, so its first line (GRVL) was lost to it on every sweep that afternoon.
+#: A fresh session's first bar requests are refused with this, then answered — within seconds.
+#: Every sweep opens a fresh session, so its first line meets it.
 _NOT_YET_CONNECTED = "websocket: bad handshake"
 
 #: Request ids are numbered under this lock: a sweep has several requests in flight at once.
@@ -398,9 +394,10 @@ def session_date(t: int) -> str:
     """The date of the session a daily bar describes.
 
     A share's bar is stamped at its session's open, on its own day (US 13:30Z, Europe 07:00Z). An
-    FX bar is stamped at 22:00 UTC THE EVENING BEFORE: measured 29 Sep 2026, "Sun 27 Sep 22:00Z"
-    is Monday's rate. Dated by its stamp it would be a day early — a rate for the wrong date, the
-    conversion error `rules.FX_RATE_AGE_LIMIT_DAYS` describes. So a bar stamped in the evening opens the next day's session.
+    FX bar is stamped at 22:00 UTC THE EVENING BEFORE: "Sun 27 Sep 22:00Z" is Monday's rate. Dated
+    by its stamp it would be a day early — a rate for the wrong date, the conversion error
+    `rules.FX_RATE_AGE_LIMIT_DAYS` describes. So a bar stamped in the evening opens the next day's
+    session.
     """
     stamp = _dt.datetime.fromtimestamp(int(t), _dt.timezone.utc)
     if stamp.hour >= 18:
@@ -424,9 +421,8 @@ def _complete_bar(bars: list[dict], on: str) -> tuple[str, float]:
 # =================================================================================================
 # THE SWEEP
 # =================================================================================================
-#: LINES PRICED AT ONCE. One after another, a sweep's requests took about a second each, half of it opening a fresh secure connection. Five at a time took 5.7 s and
-#: ten 3.6 s, every line priced both ways; five is nearly as fast and asks half as hard of a vendor
-#: already rationing its quote screen.
+#: LINES PRICED AT ONCE. Five is nearly as fast as ten, and asks half as hard of a vendor rationing
+#: its quote screen.
 AT_ONCE = 5
 
 
@@ -528,8 +524,7 @@ def _one_line(conn, key, symbol, unit, quote, absent, now, record_currency=None)
             except TVError as e:
                 raise TVError(f"{symbol} is trading, and neither live route answered — the quote "
                               f"screen: {why}; the minute bars: {e}")
-            # NEVER THE WORD "close": a rate's source is how `desk/doors/marks.py` tells a close from a
-            # live read, and this is a live read.
+            # NEVER THE WORD "close": this is a live read.
             source = (f"TradingView 1m bar {symbol} {raw} {unit}"
                       + (f" / {divisor}" if divisor != 1 else "")
                       + f", last trade in the minute to {at}")

@@ -15,8 +15,7 @@ def _blank(v):
 
 
 def _a_month() -> tuple[str, str] | None:
-    """The calendar month of the loaded book's newest trade: a window it did something in. Typed
-    as August 2026, it was one only a book of that year acted in."""
+    """The calendar month of the loaded book's newest trade: a window it did something in."""
     from portfusion.record import rules
     days = sorted(str(t.date)[:10] for t in rules.buys)
     if not days:
@@ -41,9 +40,8 @@ def test_every_panel_declares_the_full_contract():
 
 
 def test_a_panel_has_one_name():
-    """THE FILE, THE URL AND THE TAB ARE ONE NAME (the owner, 2 Oct 2026). Five tabs had grown
-    three each — the URL `refresh` opened What Changed while Price Refresh sat at `refresh-bay`
-    — so a reader could not get from the screen to its code. A renamed tab renames its file."""
+    """THE FILE, THE URL AND THE TAB ARE ONE NAME: three would keep a reader from getting from the
+    screen to its code. A renamed tab renames its file."""
     for mod in panels.all_panels():
         stem = mod.__name__.rsplit(".", 1)[-1]
         assert mod.NAME == stem.replace("_", "-") == mod.TITLE.lower().replace(" ", "-"), (
@@ -70,9 +68,8 @@ def test_the_snapshot_ties_to_the_engine():
 
 @needs("buys")
 def test_a_blank_year_reaches_the_desk_as_a_blank(monkeypatch):
-    """Until a new year's 31 December is frozen its return is blank (the owner, 2 Oct 2026), and a
-    NaN would stop the Dashboard rather than show a dash: JSON has no NaN, so the panel route
-    would answer 500."""
+    """Until a new year's 31 December is frozen its return is blank, and a NaN would stop the
+    Dashboard rather than show a dash: JSON has no NaN, so the panel route would answer 500."""
     import json
     from quarter_support import book_in_the_next_year
     monkeypatch.setattr(engine, "book", lambda: book_in_the_next_year(frozen=False))
@@ -86,10 +83,10 @@ def test_a_blank_year_reaches_the_desk_as_a_blank(monkeypatch):
 
 @needs("buys")
 def test_the_dashboard_says_which_year_ytd_is_and_why_it_is_blank(monkeypatch):
-    """K8 (the owner, 12 Oct 2026): the page said neither which year a year-to-date figure is of nor
-    why one is blank. The newest mark's date cannot say it, because the year rolls at a new
-    year's first row as well as its first price; the engine's ytd_window() does, and "not frozen"
-    is drawn exactly when the year's figures are blank."""
+    """The page says which year a year-to-date figure is of and why one is blank. The newest mark's
+    date cannot say it, because the year rolls at a new year's first row as well as its first price;
+    the engine's ytd_window() does, and "not frozen" is drawn exactly when the year's figures are
+    blank."""
     from quarter_support import book_in_the_next_year
     live = panels.get("dashboard").data()["ytd"]
     assert live == _engine.Book().ytd_window()
@@ -105,8 +102,8 @@ def test_the_dashboard_says_which_year_ytd_is_and_why_it_is_blank(monkeypatch):
 
 
 def test_money_rounds_half_up_the_same_way_on_every_panel():
-    """Snapshot rounded with Python's round() and Holdings with numpy's, and a notional on a
-    half-penny read one penny on one screen and the next on the other."""
+    """Every panel rounds money one way, or a notional on a half-penny reads a penny apart on two
+    screens."""
     assert _shape.money(1234.565) == 1234.57
     assert _shape.money(0.125) == 0.13 and _shape.money(-0.125) == -0.13
     assert _shape.money(None) is None and _shape.money(float("nan")) is None
@@ -125,16 +122,9 @@ def test_the_one_asserted_reconciliation_holds_on_the_desk_too():
 
 
 def test_no_figure_is_classified_by_the_desk_itself():
-    """EVERY basis comes from Book.HEADLINE. This panel once classified them by hand and got
-    THREE wrong — portfolio cost as money when it is mixed and reads higher than NAV precisely
-    because it contains notional; unrealised and total gain under a basis the registry had not
-    settled. Each is the mislabel that put the entry notional inside 'capital added'.
-    Since 13 Oct 2026 the registry says a gain is money on either kind of line and
-    the mixed cost figure is retired; the guard is the same — the registry decides, never this
-    panel."""
+    """EVERY basis comes from Book.HEADLINE — the registry decides, never this panel."""
     for f in panels.get("dashboard").data()["figures"]:
-        # NO EXEMPTIONS. The benchmark rows that once had one are gone, and the guard is
-        # absolute.
+        # NO EXEMPTIONS. The guard is absolute.
         assert f["label"] in _engine.Book.HEADLINE, \
             f"{f['label']!r} has no entry in the registry — it is being classified by default"
         assert f["notional_basis"] == (f["basis"] in _engine.Book.NOTIONAL_BASES)
@@ -221,14 +211,13 @@ def test_price_precision_is_the_houses_not_reinvented(repo_root):
     assert not re.search(r"toFixed\(\d|\?\?\s*\d", lp), f"app.js types a local price's places: {lp}"
 
 def test_holdings_totals_tie_to_the_engine_on_every_grouping():
-    """THE TIE-CHECK FOR THIS PANEL, and it earns its place — the first version summed the
-    rows by their basis label and was wrong by the whole of one basis.
+    """THE TIE-CHECK FOR THIS PANEL: owned and notional are the engine's on every grouping.
 
     Grouped by ISSUER, a company held both ways collapses to one row carrying one basis:
     Orlant is ORLA and ORLA SB. The label stops being a partition, and summing on it
     misstates BOTH sides. Every other grouping keeps the partition, which is exactly why a
-    test over ALL of them is the one worth having — a check on the default alone would have
-    passed the day the panel was wrong, or failed forever after it was fixed.
+    test over ALL of them is the one worth having — a check on the default alone would pass a
+    wrong panel.
     """
     from portfusion.desk.panels import holdings
     b = _engine.Book()
@@ -256,7 +245,7 @@ def test_an_issuer_held_both_ways_reads_mixed_and_the_panel_adds_no_marker():
     """Reported rather than hidden, in the one word: grouped by issuer, a company held as shares
     and as a bet is one row held as `mixed`, the engine's word, so a reader looking at one line
     knows part of it is money the book owns. The panel adds no marker and no list of its own
-    beside the word (13 Oct 2026)."""
+    beside the word."""
     from portfusion.desk.panels import holdings
     d = holdings.query(by="issuer")
     assert any(r["held_as"] == "mixed" for r in d["rows"]), "no issuer is held both ways"
@@ -274,11 +263,8 @@ def test_a_per_account_holdings_split_never_calls_notional_money():
 
 @needs("buys")
 def test_round_trip_totals_follow_the_selection():
-    """THE TOTALS FOLLOW THE SELECTION (the owner: "sorting by account does not change the headline
-    figures to reflect the accounts selected").
-
-    Kept whole-book while the table narrowed, the three headline numbers answered a question
-    nobody had asked.
+    """THE TOTALS FOLLOW THE SELECTION: kept whole-book while the table narrows, they would answer
+    a question nobody asked.
 
     THE TOTALS ARE STILL THE ENGINE'S: round_trip_totals() takes the selection, so the panel
     asks rather than summing its own rows. The whole book is carried alongside so the screen
@@ -304,9 +290,9 @@ def test_round_trip_totals_follow_the_selection():
 
 @needs("buys")
 def test_round_trips_can_be_narrowed_to_a_range_of_exit_dates():
-    """The owner: a date-range filter on the tab. `closed` is the date a round trip is filed under,
-    and the SELECTION IS THE ENGINE'S — book.round_trips() takes start and end for the same
-    reason book.activity() does."""
+    """A date-range filter on the tab. `closed` is the date a round trip is filed under, and the
+    SELECTION IS THE ENGINE'S — book.round_trips() takes start and end for the same reason
+    book.activity() does."""
     from portfusion.desk.panels import round_trips
     b = _engine.Book()
     got = round_trips.query(start=_MONTH[0], end=_MONTH[1])
@@ -368,10 +354,10 @@ def test_the_opened_on_nothing_caveat_appears_when_the_condition_does():
 
 
 def test_the_tabs_run_in_the_order_of_the_work():
-    """THE ORDER OF THE WORK (the owner): where the book stands, then the work, then the book's own
-    pages, then the reports, which end the thread; Method and Access apart, below the rule (13 Oct
-    2026). `desk/panels/__init__.py` says why each sits where it does. Pinned on
-    TITLE, so a renamed or moved tab is a decision written here."""
+    """THE ORDER OF THE WORK: where the book stands, then the work, then the book's own pages, then
+    the reports, which end the thread; Method and Access apart, below the rule.
+    `desk/panels/__init__.py` says why each sits where it does. Pinned on TITLE, so a renamed or
+    moved tab is a decision written here."""
     assert [m.TITLE for m in panels.all_panels()] == [
         "Dashboard",
         "Bench", "Price Refresh", "What Changed", "Reconcile",
@@ -401,8 +387,7 @@ def test_the_stage_5_query_routes_defer_to_their_panels():
 def test_the_refresh_panel_shows_the_two_bases_apart():
     """Two blocks, never one total, and each carries the engine's own figures.
 
-    THE PLAN'S MOCK-UP HEADED THIS PANEL with a single "Total market exposure" change and
-    a decomposition under it. That figure cannot be decomposed: a combined `transacted` row
+    A single "Total market exposure" change cannot be decomposed: a combined `transacted` row
     adds spread-bet notional to money, which is the mistake NAV_BASES, EXPOSURE_BASES and
     roll_up() exist to make impossible. The panel shows the bases apart instead, and this is
     the test that stops a later tidy-up putting them back together.
@@ -444,10 +429,6 @@ def test_the_refresh_panel_says_which_clock_each_block_is_on():
     A mark banked on 31 Aug and a July dividend entered on 3 Sep sit three weeks apart on this
     page and answer different questions. Unlabelled, a reader cannot tell which sense of *when*
     is in front of them; that is `docs/glossary.md` §4 stated as layout.
-
-    The panel once reported only MARKET time and had to say it was silent on record time.
-    `store/journal.csv` covers record time, so demanding that caveat would hold the panel to a
-    limitation it no longer has.
     """
     d = panels.get("what-changed").data()
     assert "market time" in d["caveat"].lower(), \
@@ -467,10 +448,8 @@ def test_the_refresh_panel_says_which_clock_each_block_is_on():
 
 @needs("buys")
 def test_the_record_block_covers_the_span_the_marks_do():
-    """RECORD TIME OVER THE SAME SPAN AS MARKET TIME. The block listed every write since the
-    journal opened, most of the page within weeks, and grew with every write.
-    It lists the writes since the earliest window above opened and folds the rest — and
-    between the two, every write is still there."""
+    """RECORD TIME OVER THE SAME SPAN AS MARKET TIME. It lists the writes since the earliest window
+    above opened and folds the rest — and between the two, every write is still there."""
     b = engine.book()
     r = panels.get("what-changed").data()["record"]
     starts = [w["priced_from"] for w in b.change_windows() if w["priced_from"]]
@@ -484,10 +463,10 @@ def test_the_record_block_covers_the_span_the_marks_do():
 
 @needs("buys")
 def test_an_accounts_quarter_names_what_its_closing_nav_rests_on():
-    """THE RECORD SAYS WHAT EACH QUARTER END RESTS ON and no page showed it: a
-    statement, a reconstruction, a freeze from the engine — and whether that is sourced or
-    derived. Each account's frozen quarter row carries its quarter end's source and quality, for
-    the row's detail; the open quarter, at today's marks, and the book's rows carry none."""
+    """THE RECORD SAYS WHAT EACH QUARTER END RESTS ON: a statement, a reconstruction, a freeze from
+    the engine — and whether that is sourced or derived. Each account's frozen quarter row carries
+    its quarter end's source and quality, for the row's detail; the open quarter, at today's marks,
+    and the book's rows carry none."""
     b = engine.book()
     d = panels.get("performance").data()
     assert d["detail"] == ["source", "quality"]
@@ -508,9 +487,7 @@ def test_an_accounts_quarter_names_what_its_closing_nav_rests_on():
 
 @needs("buys")
 def test_a_year_row_rebuilds_its_own_return():
-    """THE YEAR TABLE SHOWED ALL INCOME BESIDE A RETURN BUILT ON POSITION INCOME:
-    fees and cash interest reached its income column and never its return, so no row could be
-    rebuilt. It shows the return's income now, and every row's YTD return is its own figures:
+    """THE YEAR TABLE SHOWS THE RETURN'S INCOME, so every row's YTD return is its own figures:
     (capital growth + income) ÷ (opening NAV + the capital deployed, each flow weighted by the
     days after it — the engine's weights, since the row carries the flows' sum)."""
     d = panels.get("performance").data()
@@ -550,12 +527,8 @@ def test_the_refresh_panel_names_every_window_the_engine_drew():
 
 
 def test_movement_colour_is_used_and_scoped(repo_root):
-    """THE TOKENS EXISTED AND NOTHING USED THEM, which is why this test exists at all.
-
-    `--up` and `--down` were generated into /tokens.css and referenced NOWHERE in app.css or
-    app.js — so the desk rendered a loss in the same
-    ink as a gain while carrying the colours to say otherwise. A token nobody consumes
-    is a palette entry pretending to be a treatment.
+    """`--up` and `--down` are worn, or a loss renders in the ink of a gain. A token nobody
+    consumes is a palette entry pretending to be a treatment.
 
     THE SECOND HALF IS THE JUDGEMENT, and it is the part worth guarding. Every column in the
     list is a GAIN — a figure whose sign says whether the book is better or worse off. The
@@ -606,13 +579,8 @@ def test_movement_colour_is_used_and_scoped(repo_root):
 def test_every_screen_colour_is_legible_in_both_schemes(repo_root):
     """A COLOUR THAT CANNOT BE READ IS WORSE THAN NONE, and nothing else in the project can tell.
 
-    It began with movement: the light scheme's two colours, #2C6A51 and #B3261E, scored 2.76 and
-    2.70 against the dark paper, #141A19, below even
-    the 3.0 that WCAG allows for large text. Then the sourced blue, which the desk had borrowed
-    as its accent for the selected tab, links and focus: 2.23 on the dark paper, found on
-    4 Oct 2026 when the desk took the book's look. So every text colour is held to 4.5 on the
-    paper and on the band a header or a total row sits on, and an input's border to the 3.0 a
-    control boundary needs.
+    Every text colour is held to 4.5 on the paper and on the band a header or a total row sits on,
+    and an input's border to the 3.0 a control boundary needs.
 
     DERIVED, NOT A FIXTURE. The colours are read out of the generated tokens, both schemes,
     rather than written here, so a palette change is CHECKED instead of assumed.
@@ -664,9 +632,8 @@ def test_every_screen_colour_is_legible_in_both_schemes(repo_root):
 
 def test_no_panel_leaves_a_handler_on_the_frame(repo_root):
     """#main OUTLIVES EVERY PANEL, so a handler a panel adds to it on each draw stays behind and
-    multiplies. The Price Refresh did, until 30 Sep 2026: four visits in, a filter change on
-    another page threw four errors. A panel's handlers go on its own elements; a delegated one
-    on #main is wired once, behind a guard, from a `main` it has looked up."""
+    multiplies. A panel's handlers go on its own elements; a delegated one on #main is wired once,
+    behind a guard, from a `main` it has looked up."""
     js = _static("app.js")
     assert '$("#main").addEventListener' not in js
 
@@ -728,8 +695,7 @@ def test_each_row_opens_the_marks_behind_it_with_every_source_string():
     """The detail's mark history is the evidence behind a value: the source notes written at each
     refresh carry the corroboration, the symbol actually queried and the session's own range.
 
-    THE LAST FIVE REFRESHES (the owner, 12 Oct 2026): "we don't need to see more than five lines of
-    mark changes for a trend". Every mark stays on file; the detail shows the newest five dates,
+    THE LAST FIVE REFRESHES: every mark stays on file; the detail shows the newest five dates,
     each mark carrying its `status` so a correction is drawn under its replacement."""
     from portfusion.desk.panels import holdings as H
     for by in ("issuer", "ticker"):
@@ -776,10 +742,7 @@ def test_the_expansion_spans_the_whole_row_however_many_columns_there_are(repo_r
 
 #: How many words of CHROME the desk shows. A ratchet: it may only go down.
 #:
-#: the owner: the desk "has become very verbose growing references and notes from decisions made
-#: during development and diluting the important data ... the purpose of the desk is account
-#: management". It was right: Price Refresh and Reconcile each opened with four explanation
-#: blocks, so the table on one and What disagrees on the other began below the fold.
+#: The desk is for account management, and chrome above the work pushes it below the fold.
 #:
 #: Chrome is what the desk says ABOUT ITSELF — a caveat, a note, a button's blurb. It is not the
 #: record: a trade's note and a position's reasoning are FACTS and are not counted here, and they
@@ -790,28 +753,7 @@ def test_the_expansion_spans_the_whole_row_however_many_columns_there_are(repo_r
 #: A ratchet, in the shape `tests/test_evidence.py:_UNCLASSIFIED_HIGH_WATER` uses. Cutting can
 #: never fail it; only new prose can.
 #:
-#: The step line's quiet notes (`<span class="muted small">`, `quiet()`) are counted from
-#: 1 Oct 2026: the steps moved out of `<li class="note">` and onto one line, and a pattern that
-#: could not see them would have priced the move as a cut.
-#:
-#: 1075 → 834 with the page template (1 Oct 2026): the six note boxes went into the fold.
-#: 834 → 752 the same day: the bench's read-it-for-me button and its registry blurb went, with
-#: the API reading they belonged to.
-#: 752 → 524 (12 Oct 2026, the Bench walk): it stood at 679; the Bench's paragraphs about the
-#: document kind, the reasons and writing moved into its fold, rewritten for a reader, and the
-#: sweep's sixty-word blurb under its button went.
-#: 524 → 513 (12 Oct 2026, the Price Refresh walk): the Bank step's "all on file", the Review
-#: step's counts and the sweep's "line(s) filled in below, ready to check and take".
-#: 513 → 482 (13 Oct 2026, the What Changed walk): the fold's sentence saying a closed line is
-#: not shown went when it was, the by-hand note's pointer to git, and both clocks' fold entries
-#: rewritten shorter, the market one taking the status line's account of its windows.
-#: 482 → 474 (13 Oct 2026, the Reconcile walk): the Events step's two quiet notes went with it.
-#: +8 on 13 Oct 2026: the five labels under an IG reading's broker figure on Reconcile (funds ·
-#: running P/L · deposit · available), figure labels the pattern counts as prose; the
-#: reading keeps the figures once each and a figure kept is a figure shown.
-#: 482 → 480 (14 Oct 2026): the Price Refresh's "asking …" line is one template
-#: naming whom it asks, for the sweep and for the rates the record lacks alike.
-#: 480 → 458: an IG event's bench action says what it does in one sentence.
+#: The step line's quiet notes (`<span class="muted small">`, `quiet()`) are counted too.
 DESK_CHROME_WORDS = 458
 
 
@@ -848,9 +790,7 @@ def _chrome_words(repo_root):
 def test_the_desks_own_prose_only_goes_down(repo_root):
     """The desk is an operating interface, not a place to record decisions about it.
 
-    Every explanation here was written for a good reason and the reasons accumulated: four
-    numbered steps above the table on two panels, and about seventy-five words under each of ten
-    buttons. None of it was wrong and all of it together pushed the work below the fold.
+    Reasons accumulate, and together they push the work below the fold.
 
     The fix is not deletion, it is placement — `whyFold()` puts the reasons under the work they
     describe — so this counts only what still sits in the reader's way. Raising it needs a reason
@@ -881,8 +821,8 @@ def _renderer(js, name):
 
 def test_the_dashboards_status_line_draws_what_it_is_sent(repo_root):
     """THE AGE LEADS THE PRICES STEP, and the year-to-date step names the 31 December the year
-    opens at (the owner, 12 Oct 2026). A payload field the renderer drops is a figure shown nowhere.
-    `year` is the one not drawn: `opens` names it."""
+    opens at. A payload field the renderer drops is a figure shown nowhere. `year` is the one not
+    drawn: `opens` names it."""
     js = _renderer(_static("app.js"), "dashboard")
     data = panels.get("dashboard").data()
     assert set(data["prices"]) == {"newest", "oldest", "spread_days", "marks", "age_days"}
@@ -893,10 +833,8 @@ def test_the_dashboards_status_line_draws_what_it_is_sent(repo_root):
 
 
 def test_the_dashboard_lists_the_checks_the_audit_prints(repo_root):
-    """WHAT WAS CHECKED, under what needs attention (the owner, 12 Oct 2026). The Dashboard showed
-    only "clear" while `portfusion record` printed the checks behind it, and two of them — the
-    evidence chain and the conversions — had no home on the desk at all: what is captured has
-    a display home. The engine's notes, in its words and its order."""
+    """WHAT WAS CHECKED, under what needs attention: what is captured has a display home. The
+    engine's notes, in its words and its order."""
     data = panels.get("dashboard").data()
     assert data["checks"] == _engine.Book().findings()["notes"]
     assert any(c.startswith("evidence:") for c in data["checks"])
@@ -904,11 +842,11 @@ def test_the_dashboard_lists_the_checks_the_audit_prints(repo_root):
 
 
 def test_the_footer_says_whose_it_is_and_which_release(repo_root):
-    """K3 (the owner, 12 Oct 2026): every page's footer said "Nothing here is typed", and the Bench
-    is where rows are typed. It now says whose the desk is and which release it is, each held
-    once — the book's words in its brand, the release in portfusion/__init__.py — and filled into
-    the shell the Mac and the hosted desk both serve: "© <owner> · PortFusion 0.2.0 beta" (option
-    C and V3, 20 Oct 2026), the app's half alone where a brand gives no ownership line."""
+    """Every page's footer says whose the desk is and which release it is, each held once — the
+    book's words in its brand, the release in portfusion/__init__.py — and filled into the shell
+    the Mac and the hosted desk both serve: "© <owner> · <release>", the app's half alone where a
+    brand gives no ownership line. Never "Nothing here is typed": the Bench is where rows are
+    typed."""
     import datetime
     from portfusion import about, brand
     from portfusion.desk import bundle
@@ -921,13 +859,8 @@ def test_the_footer_says_whose_it_is_and_which_release(repo_root):
 
 
 def test_every_page_is_drawn_through_the_template(repo_root):
-    """The owner, 1 Oct 2026: "create a base page template so all pages have some form of synergy,
-    I feel I am adjusting individual pages and tweaking without clear directions".
-
-    Every page built its own layout, so each fix landed on one page and the others drifted: three
-    pages at 992px and six at the window's width, six note boxes on five pages, three ways of
-    explaining. `page()` draws the bands in one order, and a page that skips it is the drift
-    starting again."""
+    """`page()` draws the bands in one order, so a fix lands on every page; a page that skips it
+    drifts."""
     js = _static("app.js")
     skipped = [p.NAME for p in panels.all_panels() if "page({" not in _renderer(js, p.NAME)]
     assert not skipped, (
@@ -936,14 +869,13 @@ def test_every_page_is_drawn_through_the_template(repo_root):
 
 
 def test_the_template_has_no_note_box_and_no_pill(repo_root):
-    """Two treatments the template retired (the owner, 1 Oct 2026), each of which added a second
-    voice to a page: the note box between the figures and the table (explanations live in the
-    fold), and the basis pill beside a figure whose label already says what it is.
+    """Two treatments add a second voice to a page: the note box between the figures and the
+    table (explanations live in the fold), and the basis pill beside a figure whose label already
+    says what it is.
 
-    A third, NO CAPITALS, was retired in its turn on 6 Oct 2026: the design system sets its labels in condensed
-    capitals, and the owner took the design system's rule over the desk's. What the 1 Oct rule protected still
-    holds, because the capitals are the stylesheet's: every label is still WRITTEN in sentence
-    case, which this checks instead — a heading typed in capitals would hide three spellings."""
+    The design system's labels are condensed capitals, set by the stylesheet, so every label is
+    WRITTEN in sentence case, which this checks — a heading typed in capitals would hide three
+    spellings."""
     import re
     js, css = _static("app.js"), _static("app.css")
     assert 'class="caveat"' not in js and ".caveat" not in css, "a note box is back"
@@ -953,10 +885,8 @@ def test_the_template_has_no_note_box_and_no_pill(repo_root):
 
 
 def test_the_page_head_is_ruled_off_on_every_page(repo_root):
-    """A rule under the title and its scope line, on every page (the owner, 1 Oct 2026): it was
-    drawn only where a status line followed, as that line's own top border, so Round Trips and
-    Performance had none. It belongs to the head, which every page draws through `page()`, and
-    the status line no longer draws a second one beneath it."""
+    """A rule under the title and its scope line, on every page: it belongs to the head, which
+    every page draws through `page()`, and the status line draws none beneath it."""
     import re
     css = _static("app.css")
     head = re.search(r"\.page-head \{([^}]*)\}", css).group(1)
@@ -966,10 +896,8 @@ def test_the_page_head_is_ruled_off_on_every_page(repo_root):
 
 
 def test_every_wide_table_scrolls_in_its_own_box(repo_root):
-    """A wide table scrolls in its own box, so the page never does. Reconcile's
-    table was written by hand outside `.scroll`, and on a phone it pushed the whole page to 866px
-    wide (found on the hosted desk, 15 Oct 2026). The two narrow kinds, a page's figures and
-    Holdings' bars, are two or three columns and fit a phone as they are."""
+    """A wide table scrolls in its own box, so the page never does. The two narrow kinds, a page's
+    figures and Holdings' bars, are two or three columns and fit a phone as they are."""
     import re
     js = _static("app.js")
     narrow = ('<table class="figures">', '<table class="alloc">')
@@ -980,9 +908,9 @@ def test_every_wide_table_scrolls_in_its_own_box(repo_root):
 
 
 def test_the_dashboards_glance_stacks_on_a_phone(repo_root):
-    """The Dashboard's figures stand beside Needs attention. On a phone that
-    left the list one letter wide, off the screen's edge (found on the hosted desk, 15 Oct 2026),
-    so at the phone's width, the 48rem the gutter narrows at, the list goes below them."""
+    """The Dashboard's figures stand beside Needs attention. Beside them on a phone the list would
+    be one letter wide, so at the phone's width, the 48rem the gutter narrows at, the list goes
+    below them."""
     import re
     css = _static("app.css")
 
@@ -999,8 +927,7 @@ def test_the_dashboards_glance_stacks_on_a_phone(repo_root):
 
 
 def test_every_filter_row_can_be_cleared(repo_root):
-    """The filters band is one shape on every page, and "clear filters" is part of it — it was on
-    two of the three pages with filters."""
+    """The filters band is one shape on every page, and "clear filters" is part of it."""
     import re
     js = _static("app.js")
     rows = re.findall(r"filters: \{([^\[]*)fields:", js)
@@ -1014,26 +941,24 @@ def test_every_filter_row_can_be_cleared(repo_root):
 
 #: TAB TITLES THAT NO LONGER EXIST, and what replaced each. A renamed tab leaves its old name
 #: scattered through docstrings, comments and guides that a reader then cannot find on screen —
-#: prose drifting from behaviour, which is the defect this project is built to catch. Renaming
-#: two tabs once touched 43 references across 17 files, and the risk was missing one. This is
+#: prose drifting from behaviour, which is the defect this project is built to catch. This is
 #: what makes that checkable instead of careful.
 RETIRED_TAB_TITLES = {
     # The keys are spelled out here rather than assembled, because a blanket rename over this
-    # file rewrote them into their own replacements the first time — the list that polices a
-    # rename cannot itself be a casualty of one. (tab-name-ok: this is the retired list)
-    "Last Refresh": "What Changed",     # 7 Sep 2026
-    "Refresh Bay": "Price Refresh",     # 8 Sep 2026
-    "What changed": "What Changed",     # 8 Sep 2026 — title case, matching its neighbours
+    # file would rewrite them into their own replacements — the list that polices a rename
+    # cannot itself be a casualty of one. (tab-name-ok: this is the retired list)
+    "Last Refresh": "What Changed",
+    "Refresh Bay": "Price Refresh",
+    "What changed": "What Changed",     # title case, matching its neighbours
 }
 
 
 #: Action labels that no longer exist, policed by the same test for the same reason. A button
 #: is a thing an operator is TOLD to press — by docs/reconciling.md, by the close checklist the
-#: build prints — so a renamed one strands an instruction that cannot be followed. Renaming the
-#: reading button touched four such references, in three files and two languages.
+#: build prints — so a renamed one strands an instruction that cannot be followed.
 RETIRED_ACTION_LABELS = {
-    "Take a reading": "Price Refresh",             # 9 Sep 2026, renamed for its scope
-    "Read IG live valuations": "Price Refresh",    # 29 Sep 2026 — IG equity is read with the
+    "Take a reading": "Price Refresh",             # renamed for its scope
+    "Read IG live valuations": "Price Refresh",    # IG equity is read with the
                                                    # contract levels in the sweep
 }
 
@@ -1063,8 +988,7 @@ def test_no_file_names_a_tab_or_button_that_no_longer_exists(repo_root, project_
                 if "tab-name-ok" in line:
                     continue                    # explicitly exempted, with its reason beside it
                 # CAPITALS TOO. A retired name is also caught in capitals, the form headings
-                # use; matching exactly let two headings keep old names for a fortnight
-                # (tab-name-ok: "THE REFRESH BAY", "LAST REFRESH"). Not in lower case:
+                # use; matching exactly would miss a heading. Not in lower case:
                 # "since the last refresh" is English, not a tab. A rename of case alone
                 # has no capital form of its own, so it stays exact (tab-name-ok).
                 forms = (old,) if old.lower() == new.lower() else (old, old.upper())
@@ -1090,9 +1014,8 @@ def test_every_live_tab_title_is_one_a_panel_declares(repo_root):
 # =====================================================================================
 
 def test_the_desk_says_notional_too(repo_root):
-    """A RENDERER NO CHECK COVERS DRIFTS. `notional` won because it is the store's own word, and
-    while the only check read another renderer's labels the desk's Holdings panel said "Economic
-    interest" until the owner caught it by eye, which is exactly the job a test should have.
+    """A RENDERER NO CHECK COVERS DRIFTS. `notional` is the store's own word, and the desk's labels
+    say it too.
 
     LABELS, NOT PROSE: the phrase survives where it DEFINES the term — "notional is the size of
     an economic interest" is the sentence that teaches it — and not where it replaces it.

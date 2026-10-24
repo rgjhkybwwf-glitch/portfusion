@@ -6,9 +6,9 @@ NOTHING IS SUMMED HERE. The year's income by account is `Book.income_summary()`'
 table for a quarter, and its firm row is the Dashboard's YTD income; a total worked out of these
 rows would be a second answer to both.
 
-THE MAC ONLY, the owner's decision (13 Oct 2026): the register names holders and account
-numbers, which the hosted desk's readers are shown as codes (`desk/naming.py`), and a register of
-codes tells its reader nothing. It is not in `remote.REMOTE_PANELS`.
+THE MAC ONLY: the register names holders and account numbers, which the hosted desk's readers
+are shown as codes (`desk/naming.py`), and a register of codes tells its reader nothing. It is
+not in `remote.REMOTE_PANELS`.
 """
 from __future__ import annotations
 
@@ -19,17 +19,14 @@ NAME = "accounts"
 TITLE = "Accounts"
 ORDER = 65
 
-#: ONE ROW PER ACCOUNT: who it is, then its cash. The register and the cash were two tables of the
-#: same accounts in the same order (13 Oct 2026).
+#: ONE ROW PER ACCOUNT: who it is, then its cash.
 #:
 #: THE FEED KEY names the block of credentials.json a feed reads the account with, blank for an
-#: account no feed reads. It was recorded and shown on no page (13 Oct 2026).
+#: account no feed reads.
 #:
 #: CASH IS RECORDED, NEVER IN NET ASSET VALUE: a broker's total is positions plus cash, so the
 #: reconciliation needs it. ONE FIGURE PER ACCOUNT, its newest on file from either kind of reading
-#: (`Book.newest_cash()`), and what it was read from in Reconcile's words. It was two figures with
-#: two dates (13 Oct 2026), which could disagree, and the one headed "now" could be the
-#: older.
+#: (`Book.newest_cash()`), and what it was read from in Reconcile's words.
 REGISTER_COLUMNS = ("code", "account", "holder", "broker_firm", "number", "feed_key", "record_begins",
                     "cash", "cash_read")
 #: Newest first, as the engine returns it: a log is scanned for what happened lately.
@@ -37,21 +34,19 @@ MOVEMENT_COLUMNS = ("date", "account", "amount", "source", "detail")
 #: THE YEAR'S INCOME AND COSTS BY ACCOUNT, as the report has a quarter's: one row per account and
 #: one column per category, the categories `Book.income_summary()` gives, which head themselves as
 #: they do on the report (an income category is data), then the total. THE BOOK LEADS, as on
-#: Performance (13 Oct 2026): the engine's closing "Total" row, named as that page names it.
+#: Performance: the engine's closing "Total" row, named as that page names it.
 SUMMARY_COLUMNS = ("account", "total")
-#: AN ACCOUNT'S OWN ROWS, under its summary line's detail link: every account's rows in one table
-#: filled the page (13 Oct 2026). The summary line names the account, so a row does not.
+#: AN ACCOUNT'S OWN ROWS, under its summary line's detail link. The summary line names the
+#: account, so a row does not.
 #:
 #: In the engine's order: newest first within each account.
 #:
-#: NO RUNNING TOTAL AND NO QUARTER (13 Oct 2026): the account's total is the year's own figure,
-#: and the date says the quarter, which this column spelled "2026Q3" where every other page
-#: says "Q3 2026".
+#: NO RUNNING TOTAL AND NO QUARTER: the account's total is the year's own figure, and the date
+#: says the quarter.
 #:
-#: A FOREIGN ROW READS AS ITS CONVERSION, left to right (13 Oct 2026): the currency it was
-#: paid in, the amount in it, the day of the rate that converted it, then the sterling the book
-#: adds up. Blank on a sterling row, and left out of an account none of whose rows was converted:
-#: three empty columns wrapped a share account's rows onto two lines (13 Oct 2026).
+#: A FOREIGN ROW READS AS ITS CONVERSION, left to right: the currency it was paid in, the amount
+#: in it, the day of the rate that converted it, then the sterling the book adds up. Blank on a
+#: sterling row, and left out of an account none of whose rows was converted.
 INCOME_COLUMNS = ("date", "category", "detail", "currency", "local_amount", "rate_date", "amount",
                   "source", "note")
 CONVERSION = ("currency", "local_amount", "rate_date")

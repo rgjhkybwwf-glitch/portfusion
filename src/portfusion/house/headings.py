@@ -1,18 +1,16 @@
 """house/headings.py — what a column is called, on every renderer.
 
-ONE WORD PER COLUMN, AND ONE PLACE IT IS WRITTEN. A heading typed in each renderer drifts: the
-desk kept its own map in `app.js`, the report typed its `<th>` inline, and "Entry" came to mean
-two figures on the desk alone. The words are `docs/glossary.md` §5's with one sterling suffix,
-`(GBP)`. This list is the authority.
+ONE WORD PER COLUMN, AND ONE PLACE IT IS WRITTEN. A heading typed in each renderer drifts. The
+words are `docs/glossary.md` §5's with one sterling suffix, `(GBP)`. This list is the authority.
 
 KEYED BY TAB AND FIELD. `COMMON` holds a field that reads the same wherever it is shown, a store
-column under its own name (#43); `BY_TAB` holds the ones only one tab shows, or that a tab heads
-in its own words (Dashboard's `currency`, a category). The tab is the desk panel's title. One
-heading names one field (`tests/test_figures.py`).
+column under its own name; `BY_TAB` holds the ones only one tab shows, or that a tab heads in its
+own words (Dashboard's `currency`, a category). The tab is the desk panel's title. One heading
+names one field (`tests/test_figures.py`).
 
-WHAT IS REGISTERED is every field the desk or the report shows, and nothing else: `tests/test_figures.py`
-refuses a heading typed anywhere else, and a heading here that no renderer heads (13 Oct 2026), since a column retired from its page left its word behind four times in the desk
-review.
+WHAT IS REGISTERED is every field the desk or the report shows, and nothing else:
+`tests/test_figures.py` refuses a heading typed anywhere else, and a heading here that no renderer
+heads, since a column retired from its page leaves its word behind.
 
 Imports nothing, so the desk and the report can read it without loading the record.
 """
@@ -55,8 +53,8 @@ COMMON = {
     "qty": "Quantity",
     "stake": "Stake (£/pt)",
     "level_points": "Level (points)",
-    # A LOCAL PRICE IS NAMED BY THE Ccy COLUMN BESIDE IT, so its heading carries no unit
-    # ("(local)" retired 12 Oct 2026). house/precision.py's LOCAL_PRICE_FIELDS lists them.
+    # A LOCAL PRICE IS NAMED BY THE Ccy COLUMN BESIDE IT, so its heading carries no unit.
+    # house/precision.py's LOCAL_PRICE_FIELDS lists them.
     "price": "Price",                       # a line's mark, beside its entry price
     "entry_price": "Entry price",
     "traded_price": "Traded price",
@@ -219,9 +217,9 @@ BY_TAB = {
 
 
 #: STORE COLUMNS NO PAGE HEADS, each with why; `table.column` where the name heads another idea.
-#: Every other store column is headed under its own name (#43, `tests/test_figures.py`).
+#: Every other store column is headed under its own name (`tests/test_figures.py`).
 STORE_ONLY: dict[str, str] = {
-    "struck": "whether a mark can be fetched again; the marks door reads it, no page since 13 Oct",
+    "struck": "whether a mark can be fetched again; the marks door reads it, no page",
     "published": "a research note's date, inside the Research notes link",
     "url": "a research note's address, the Research notes link's",
     "settings.key": "a setting's name", "settings.value": "a setting's value, not sterling",

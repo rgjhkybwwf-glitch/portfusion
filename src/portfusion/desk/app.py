@@ -2,8 +2,8 @@
 
 THIS FILE IS THE SWAP POINT. It is the only module that knows the desk is served over HTTP —
 `engine.py`, `actions.py` and `panels/` would be unchanged if this became stdlib http.server,
-or grew a login. That was the reason for choosing a framework at all: the plumbing is written
-once and the layout churns, so the churn must not live here.
+or grew a login. A framework writes the plumbing once; the layout churns, so the churn must
+not live here.
 
 IT COMPUTES NOTHING. Every figure comes from a panel, every panel from `desk.engine`, and
 `desk.engine` from `engine.py`.
@@ -66,10 +66,8 @@ def index():
     return Response(bundle.index(), media_type="text/html", headers=NO_STORE)
 
 
-# The desk is a development tool served from disk, and its layout churns. A cached stylesheet or
-# shell script is therefore never what anyone wants here: the browser runs a copy from before the
-# change while the API correctly serves the new one. Nothing here is on a network and nothing
-# benefits from being cached.
+# A cached stylesheet or script runs a copy from before a change while the API serves the new
+# one.
 NO_STORE = {"Cache-Control": "no-store, must-revalidate"}
 
 #: WHEN THIS PROCESS IMPORTED THE CODE IT IS SERVING. Whole seconds, so a shell can compare it
@@ -127,9 +125,9 @@ def favicon():
 
     A browser tab with the generic page icon is one you lose among twenty others.
 
-    `desk.icon.png()` draws it in the book's palette and writes nothing, so this is a function
-    call rather than a committed .png, and a palette change reaches the tab the same day it
-    reaches the pages. The Dock's icon is the next route's.
+    The book's `brand/` icon, or `desk.icon.png()` drawn in its palette on request rather than
+    committed, so a palette change reaches the tab with the pages. The Dock's icon is the next
+    route's.
     """
     return _shell("/favicon.png")
 

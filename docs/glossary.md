@@ -16,7 +16,7 @@ disagree, the code is right.
 | What a spread bet is | `rules.SPREAD_BET` | the Method page |
 | What a document is | `rules.EVIDENCE_CLASSES`, `rules.RETRIEVAL_KINDS` | §9 |
 
-## 2 · `basis`, and the words that took its other senses
+## 2 · `basis`, and the words used instead of it
 
 | The question | Word | Values | Where |
 |---|---|---|---|
@@ -214,7 +214,7 @@ column headings.
 | A figure a feed returned | **Fetched** | |
 | A figure read off a filed broker document | **Filed** | |
 | A line the sweep could not price | **Unpriced** | the reason on hover |
-| A rate entered by hand | **Typed** | the only thing still typed |
+| A rate entered by hand | **Typed** | the only thing typed |
 
 ### What the book learned, and when
 
@@ -261,10 +261,9 @@ positions. `roll_up()` and `MEASURE_BASIS` keep them apart.
 
 **Everything below this line is DERIVED from the `record/` modules and
 `Book.HEADLINE` by `glossary.py`, and `tests/test_record.py` asserts that the
-checked-in file matches what those constants produce.** It cannot drift, which is
-the complaint that started this document. It is an INDEX — names, values and where
-they live. What a word MEANS stays where it is defined, and `test_record.py`
-refuses this block if it starts to define one.
+checked-in file matches what those constants produce.** It cannot drift. It is an
+INDEX — names, values and where they live. What a word MEANS stays where it is
+defined, and `test_record.py` refuses this block if it starts to define one.
 
 ### Every registered headline figure
 

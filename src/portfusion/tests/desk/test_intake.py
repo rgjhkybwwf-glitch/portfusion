@@ -26,9 +26,9 @@ def test_a_dropped_document_lands_on_the_workbench(inbox):
 
 
 def test_the_drop_off_writes_only_inside_the_inbox(inbox):
-    """THE BEHAVIOURAL HALF, the same shape as the bench's and the Dock shortcut's. Land a
-    document and prove the record is untouched — this module has no business anywhere near
-    store/, and the syntax-tree guard above cannot prove where a write LANDED."""
+    """THE BEHAVIOURAL HALF, the same shape as the bench's. Land a document and prove the record
+    is untouched — this module has no business anywhere near store/, and the syntax-tree guard
+    below cannot prove where a write LANDED."""
     from portfusion.desk.intake import dropoff
     from portfusion.record import schema
     before = {p: p.stat().st_mtime for p in schema.STORE.glob("*.csv")}    # the loaded book's
@@ -39,7 +39,7 @@ def test_the_drop_off_writes_only_inside_the_inbox(inbox):
 
 def test_a_dropped_document_keeps_its_download_time(inbox):
     """The browser sends `File.lastModified`; the file keeps it, as a Finder copy would, because
-    it dates a document that states no date of its own (ii's exports, the owner 30 Sep 2026)."""
+    it dates a document that states no date of its own (ii's exports)."""
     import datetime as dt
     from portfusion.desk.intake import dropoff
     pulled = dt.datetime(2026, 9, 30, 15, 3)
@@ -63,7 +63,7 @@ def test_a_document_that_states_no_instant_is_dated_by_its_download(tmp_path, mo
     doc = tmp_path / "Holdings.csv"
     doc.write_text("Symbol,Name,Qty,Price\nWEND,Wendmoor,100,20p\n", encoding="utf-8")
     # A LONDON DOWNLOAD TIME, as the reader takes one: a naive time is the machine's own zone,
-    # and passed only where that zone was London.
+    # and would pass only where that zone is London.
     pulled = dt.datetime(2026, 9, 30, 15, 3, tzinfo=ZoneInfo("Europe/London"))
     os.utime(doc, (pulled.timestamp(), pulled.timestamp()))
     monkeypatch.setattr(read_document, "INBOX", str(tmp_path))
@@ -72,9 +72,8 @@ def test_a_document_that_states_no_instant_is_dated_by_its_download(tmp_path, mo
 
 
 def test_a_name_is_read_from_the_workbench_and_a_path_only_from_code(tmp_path, monkeypatch):
-    """AN ABSOLUTE PATH WAS READ AS GIVEN by the reader every browser route reaches, for the
-    doors' own reads of the archive: safe only while each route happened to refuse a slash. A name
-    is the workbench's; a path is read only by `extract_file`, which the code alone calls."""
+    """EVERY BROWSER ROUTE REACHES THE READER, so a name is read from the workbench and never as a
+    path; a path is read only by `extract_file`, which the code alone calls."""
     from portfusion.desk.intake import read_document
     inbox, outside = tmp_path / "inbox", tmp_path / "elsewhere" / "kept.csv"
     inbox.mkdir()
@@ -168,8 +167,7 @@ def test_the_drop_off_has_no_way_to_make_a_document_LEAVE(repo_root):
     quietly become a route OUT, so the module may call exactly one writing name and no
     removing or renaming one at all.
 
-    Checked the way every guard here is checked since the bench's first version failed on its
-    own docstring: prose is not behaviour.
+    Checked on the syntax tree: prose is not behaviour.
     """
     import ast
     tree = ast.parse((SRC / "desk" / "intake" / "dropoff.py").read_text())
@@ -218,16 +216,12 @@ def test_the_route_hands_a_refusal_back_as_a_400(inbox):
 
 
 def test_every_key_the_bench_panel_sends_is_actually_READ_by_the_shell():
-    """WHY `writes_enabled: False` SURVIVED A DAY PAST BEING TRUE.
-
-    It said the desk could not write, in the payload of the panel from which the desk writes.
-    Nothing behaved wrongly — because nothing read it, which is exactly why nobody noticed: a
-    field no caller asks about cannot be caught by a caller noticing it is wrong. The staleness
-    was invisible by construction.
+    """AN UNREAD FIELD CANNOT BE NOTICED GOING STALE: a field no caller asks about cannot be
+    caught by a caller noticing it is wrong.
 
     So the guard is not "is this field correct", which needs a human to check prose. It is "is
     anything sending a field nobody consumes" — structural, and it fires the moment an unread
-    key appears rather than a day after it stops being true.
+    key appears rather than after it stops being true.
 
     BENCH ONLY, deliberately. The other panels hand over frames whose columns the shell reads
     dynamically by name, so the same check there would fail on correct code.
@@ -259,10 +253,10 @@ def test_the_screen_states_the_rules_it_does_not_hold_them():
 # =====================================================================================
 # THE PROPOSAL — the document read, and every figure checked back against it.
 #
-# `bench.py` refuses to be a PARSER and that stands; a Claude session TRANSCRIBES and the
-# transcription is verified in Python. The claim under test is not "the reader is accurate" —
-# it is that A FIGURE THAT WAS NEVER IN THE DOCUMENT CANNOT REACH THE FORM, whatever the reader
-# says. Every test hands in a reading; a guard below asserts nothing here could reach out.
+# `bench.py` is not a PARSER; a Claude session TRANSCRIBES and the transcription is verified in
+# Python. The claim under test is not "the reader is accurate" — it is that A FIGURE THAT WAS NEVER
+# IN THE DOCUMENT CANNOT REACH THE FORM, whatever the reader says. Every test hands in a reading; a
+# guard below asserts nothing here could reach out.
 # =====================================================================================
 
 DOCUMENT = """ii  CONTRACT NOTE
@@ -334,17 +328,16 @@ def test_a_number_absent_from_its_own_quote_is_dropped(read_item, monkeypatch):
     ("2026-09-30", "as at the quarter end", True),       # no date to read: left to the eye
 ])
 def test_a_date_must_be_one_its_quote_prints(value, quote, ok):
-    """A DATE WAS CHECKED FOR ITS SHAPE AND NOTHING ELSE, so a day and a month swapped passed —
-    the misreading most likely off a UK document (the review of 21 Oct 2026). The value must be a
-    date the quote itself prints, read day first."""
+    """A DATE IS CHECKED AGAINST ITS QUOTE: a day and a month swapped is the misreading most
+    likely off a UK document. The value must be a date the quote itself prints, read day first."""
     from portfusion.desk.intake import verify as V
     why = V.check({"field": "date", "value": value, "quote": quote}, "date", f"x {quote} y")
     assert (why is None) == ok, why
 
 
 def test_a_zero_must_stand_in_its_quote_like_any_other_number():
-    """ZERO WAS NO NUMBER: its significant digits stripped to nothing, so a 0 skipped the check
-    that it appears in its own quote, whatever the quote said."""
+    """ZERO IS A NUMBER: a 0 must appear in its own quote, though its significant digits strip to
+    nothing."""
     from portfusion.desk.intake import verify as V
     doc = "Consideration GBP 965.12 Commission GBP 0.00"
     assert V.check({"field": "cost", "value": "0", "quote": "Consideration GBP 965.12"},
@@ -377,12 +370,9 @@ def test_PENCE_STORED_AS_POUNDS_SURVIVES_THE_CHECK(read_item, monkeypatch):
 
 
 def test_A_TABLE_ROW_IS_TWO_NUMBERS_NOT_ONE(read_item, monkeypatch):
-    r"""THE BUG THE OWNER'S FIRST REAL READ FOUND, pinned by name.
-
-    A contract note is a TABLE. A quote covering one row of it reads "5,000 0.193000" —
-    quantity and price, two columns, one space. `_numbers_in` matched `[\d][\d,.\s]*`, which
-    swallows the space, so the row became the single token 50000480453 and matched NEITHER
-    figure. Two perfectly correct transcriptions were rejected, and the two that matter most.
+    r"""A contract note is a TABLE. A quote covering one row of it reads "5,000 0.193000" —
+    quantity and price, two columns, one space. A pattern that swallows the space makes the row
+    one token matching NEITHER figure.
 
     A table row is the single most likely thing to be quoted here, so it gets its own test.
     """
@@ -400,10 +390,9 @@ def test_A_TABLE_ROW_IS_TWO_NUMBERS_NOT_ONE(read_item, monkeypatch):
 
 
 def test_a_price_the_page_prints_in_pence_is_stored_in_pounds(read_item):
-    """THE READER IS TOLD TO CONVERT NOTHING, AND NOTHING DID. Reported as printed, "19.30" off
-    "at 19.30p" was stored as £19.30 — a hundred times the price (the review of 21 Oct 2026).
-    The record converts it, because the quote prints that very figure in pence, and the row's
-    note says so. A figure the reader already gave in pounds is left as it is (the test above)."""
+    """THE READER IS TOLD TO CONVERT NOTHING, SO THE RECORD CONVERTS IT, because the quote prints
+    that very figure in pence, and the row's note says so. A figure the reader already gave in
+    pounds is left as it is (the test above)."""
     from portfusion.desk.intake import propose as P
     P.propose(read_item["id"], _reading([
         {"field": "traded_price", "value": "19.30", "quote": "at 19.30p"},
@@ -434,9 +423,8 @@ def test_reading_twice_replaces_the_reading_and_keeps_what_the_owner_added(read_
 
 
 def test_a_re_read_does_not_hand_out_an_id_a_kept_row_holds(read_item):
-    """A ROW TYPED BY HAND SURVIVES A RE-READ, AND SO DOES ITS ID. The reading allocated from the
-    store alone, so the fresh row took the next free id — the one the owner's row already held
-    — and the item carried two rows of one name (the review of 21 Oct 2026)."""
+    """A ROW TYPED BY HAND SURVIVES A RE-READ, AND SO DOES ITS ID. Allocated from the store alone,
+    the fresh row would take the id the kept row holds."""
     from portfusion.desk.intake import propose as P
     taken = _bench.next_ids()["sales"]
     read_item["rows"] = [{"table": "sales", "values": {"sale_id": taken, "detail": "typed by hand"},
@@ -450,9 +438,7 @@ def test_a_re_read_does_not_hand_out_an_id_a_kept_row_holds(read_item):
 
 
 def test_a_note_mentioning_a_derived_fields_name_in_passing_is_kept(read_item):
-    """WHAT THE READER COULD NOT FIND IS KEPT unless it is about a field the record supplied. The
-    derived `eid` matched as a substring, so a note naming a company with "eid" in it went with
-    the derived field (the review of 21 Oct 2026)."""
+    """WHAT THE READER COULD NOT FIND IS KEPT unless it is about a field the record supplied."""
     from portfusion.desk.intake import propose as P
     out = P.propose(read_item["id"], _reading(
         [{"field": "qty", "value": "5000", "quote": "Sold 5,000 PENR.L"}],
@@ -461,10 +447,9 @@ def test_a_note_mentioning_a_derived_fields_name_in_passing_is_kept(read_item):
 
 
 def test_a_figure_is_stored_the_way_the_store_can_read_it(read_item, monkeypatch):
-    """THE DOCUMENT PRINTS "5,000" AND THE STORE CANNOT LOAD IT. `int("5,000")` and
-    `float("965.12")` both raise, so a perfectly correct transcription failed validation on
-    the owner's first read. A reader is asked for the figure exactly as printed — which is what
-    makes the quote check possible — so the separators come out here, with the quote still
+    """THE DOCUMENT PRINTS "5,000" AND THE STORE CANNOT LOAD IT. `int("5,000")` raises, so a correct
+    transcription would fail validation. A reader is asked for the figure exactly as printed — which
+    is what makes the quote check possible — so the separators come out here, with the quote still
     showing what the page said. Nothing else is touched: no rounding, no unit conversion."""
     from portfusion.desk.intake import propose as P, verify as V
     assert V.as_stored("5,000", "int") == "5000"
@@ -478,19 +463,17 @@ def test_a_figure_is_stored_the_way_the_store_can_read_it(read_item, monkeypatch
     assert row["values"]["qty"] == "5000"
     assert row["sources"]["qty"] == "Sold 5,000 PENR.L", "the quote must keep the page's spelling"
     # THE PROOF: it goes through the loader's own parser without raising, which is the door
-    # the CSV loader uses and the door it failed at on the first real read.
+    # the CSV loader uses.
     from portfusion.record import schema
     field = {f.name: f for f in schema.TABLES["sales"].fields}["qty"]
     assert schema._parse(field, row["values"]["qty"], "sales", 0) == 5000
 
 
 def test_the_record_supplies_what_the_document_cannot(read_item, monkeypatch):
-    """THE THIRD PROVENANCE, designed and then not built — which showed the moment a real note
-    was read: `eid` and `source` came back "required, and empty" on a row where the document had
-    given everything it could. Neither is IN the document and neither is a guess: the id is the
-    next free one in the store, and the provenance line is the owner's own three evidence limbs
-    joined in the shape `exits.source` already uses — for a sale, the one format every
-    account's trades share, its number the row's broker_ref."""
+    """THE THIRD PROVENANCE. Neither `sale_id` nor `source` is IN the document and neither is a
+    guess: the id is the next free one in the store, and the provenance line is the owner's own
+    three evidence limbs joined in the shape `sales.source` already uses — for a sale, the one
+    format every account's trades share, its number the row's broker_ref."""
     from portfusion.desk.intake import propose as P
     read_item["evidence"] = dict(GOOD_EVIDENCE)
     _bench.save(read_item)
@@ -557,19 +540,16 @@ def test_a_row_the_document_did_not_evidence_is_not_created(read_item, monkeypat
 
 @needs("accounts", "buys")
 def test_A_LINE_ALREADY_IN_THE_BOOK_IS_NOT_PROPOSED_AGAIN(read_item, monkeypatch):
-    """THE OWNER'S ASK, after dropping a cash statement. A statement of transactions covers a
-    window and most of that window is already recorded — one ISA statement yielded seven
-    candidates of which four were already in.
+    """A statement of transactions covers a window and most of that window is already recorded.
 
-    Flagging them at the GATE was the first answer and it is the wrong place: reading seven
-    rows, checking seven sets of quotes and dismissing four of them is work that lands on him
-    to arrive where the record already was. So the reading answers the question a statement
-    actually poses — WHICH OF THESE ARE NEW — and reports every suppression by the row it
-    matches, because a silent one would be indistinguishable from a misread.
+    Flagged at the GATE, the lines already in would be work that lands on the reader to arrive where
+    the record already is. So the reading answers the question a statement actually poses — WHICH OF
+    THESE ARE NEW — and reports every suppression by the row it matches, because a silent one would
+    be indistinguishable from a misread.
     """
     from portfusion.desk.intake import propose as P
-    # A document carrying a recorded sale's OWN figures, as the incident document did. The sale derives from the loaded book, so the suppression is tested on
-    # whichever book is loaded.
+    # A document carrying a recorded sale's OWN figures. The sale derives from the loaded book,
+    # so the suppression is tested on whichever book is loaded.
     sale = _recorded_sale()
     d = str(sale["date"])
     uk = f"{d[8:10]}/{d[5:7]}/{d[0:4]}"
@@ -606,9 +586,8 @@ def test_a_duplicate_is_found_even_when_the_account_is_still_blank():
 
 
 def test_an_unreadable_row_is_reported_and_not_silently_skipped():
-    """HOW TWO ALREADY-RECORDED SALES GOT THROUGH: their proceeds carried a "£", `float()`
-    raised, and the check quietly moved on. A row the parser cannot read is a row the duplicate
-    check cannot see, and that must be said rather than swallowed."""
+    """A row the parser cannot read is a row the duplicate check cannot see, and that must be said
+    rather than swallowed."""
     assert _bench.matching_row("sales", {
         "date": "2026-03-12", "account": "Voss ii ISA", "ticker": "PENR.L",
         "qty": "5000", "proceeds": "£965.12"}) == "unreadable"
@@ -620,9 +599,8 @@ def test_an_unreadable_row_is_reported_and_not_silently_skipped():
 
 
 def test_a_currency_symbol_is_not_part_of_the_number():
-    """The first version said no currency would be stripped, and that was wrong the moment a
-    cash statement arrived: "£965.12" cannot load, and every figure on that document carried
-    one. The symbol is not information the cell holds — `cur` and `account` say the currency."""
+    """"£965.12" cannot load, and a cash statement prints one on every figure. The symbol is not
+    information the cell holds — `cur` and `account` say the currency."""
     from portfusion.desk.intake import verify as V
     assert V.as_stored("£965.12", "float") == "965.12"
     assert V.as_stored("-£450.00", "float") == "-450.00"
@@ -632,7 +610,7 @@ def test_a_currency_symbol_is_not_part_of_the_number():
 @needs("accounts", "buys")
 def test_a_document_s_ticker_becomes_the_record_s_when_it_is_unambiguous():
     """A document says PENR and the book says PENR.L. Telling a reader to use the record's
-    spelling works most of the time and is NOT deterministic — one reading returned PENR.L and
+    spelling works most of the time and is NOT deterministic — one reading may return PENR.L and
     the next PENR, and with the ticker inside the duplicate signature that is the difference
     between catching an already-recorded sale and proposing it twice.
 
@@ -642,8 +620,8 @@ def test_a_document_s_ticker_becomes_the_record_s_when_it_is_unambiguous():
     from portfusion.desk.intake import propose as P
     from portfusion.record import schema
     sh = schema.TABLES["securities"].header
-    # THE POSITIVE CASES ARE THE BOOK'S OWN suffixed holdings (the incident pair was
-    # PENR -> PENR.L and STRM -> STRM.DE); the negative cases are invented and travel.
+    # THE POSITIVE CASES ARE THE BOOK'S OWN suffixed holdings; the negative cases are invented
+    # and travel.
     dotted = [r[sh.index("ticker")] for r in schema.load("securities")
               if "." in r[sh.index("ticker")]]
     assert dotted, "no suffixed ticker on file — the positive premise is gone"
@@ -656,8 +634,8 @@ def test_a_document_s_ticker_becomes_the_record_s_when_it_is_unambiguous():
 
 
 def test_a_brokers_code_finds_the_one_security_it_means():
-    """ONE RULE FOR EVERY READER (8 Oct 2026). HL prints ASKE B for ASKE-B.CO, so a space reads as
-    a hyphen; two securities the code could mean leave it as printed, for the check to name."""
+    """ONE RULE FOR EVERY READER. HL prints ASKE B for ASKE-B.CO, so a space reads as a hyphen; two
+    securities the code could mean leave it as printed, for the check to name."""
     from portfusion.record import rules as D
     assert D.book_code("ASKE B", ["ASKE-B.CO", "GRVL"]) == "ASKE-B.CO"
     assert D.book_code("KAPP", ["KAPP.DE", "BELL.L"]) == "KAPP.DE"
@@ -667,8 +645,8 @@ def test_a_brokers_code_finds_the_one_security_it_means():
 
 def test_two_rows_in_one_item_do_not_get_the_same_id(read_item, monkeypatch):
     """A cash statement routinely evidences two sales. `next_ids()` reads the store, which does
-    not move between them, so both were allocated the same next id and one would have overwritten the
-    other on the way in."""
+    not move between them, so both would take the same next id, one overwriting the other on the
+    way in."""
     from portfusion.desk.intake import propose as P
     read_item["evidence"] = dict(GOOD_EVIDENCE)
     _bench.save(read_item)
@@ -686,10 +664,9 @@ def test_two_rows_in_one_item_do_not_get_the_same_id(read_item, monkeypatch):
 
 def test_a_third_row_steps_past_every_id_taken_whatever_their_order(read_item):
     """THE TWO-ROW TEST CANNOT SEE THIS. With two rows for one table the second steps past one
-    taken id. A third steps past two, and the walk took them in a set's order, which Python
-    changes from one process to the next: met second-before-first, it stepped once and handed
-    the third row the second row's id. They are passed here in that order, so the old walk
-    fails every time rather than in most processes."""
+    taken id; a third steps past two, in whatever order they come. They are passed
+    second-before-first, the order on which a walk that steps once hands out a taken id, so such a
+    walk fails here every time."""
     from portfusion.desk.intake import propose as P
     first = P.next_ids()["sales"]
     prefix, _, number = first.rpartition("-")
@@ -699,20 +676,17 @@ def test_a_third_row_steps_past_every_id_taken_whatever_their_order(read_item):
 
 
 def test_a_download_satisfies_limb_3_WITHOUT_a_reference_number():
-    """THE GAP THE OWNER FOUND BY USING IT, and the answer the rules already contained.
-
-    ii gives contract notes and a quarterly statement — official, dated, referenced. It also
+    """ii gives contract notes and a quarterly statement — official, dated, referenced. It also
     lets you download recent transactions: a snapshot between quarters, still direct from the
     broker and still repeatable, but with NO reference number. Between quarters that download is
     the only information there is, so refusing it would refuse the only evidence available.
 
-    THE LIMB WAS NEVER ABOUT NUMBERS. STATEMENT_GRADE names a statement as a reference beside a
-    contract note number, the first assertion below holds it to that, and the record has always
-    read it that way — rows cite "ii statement Q2" and not one of them is a number. The limb asks for something
-    that gets you back to the same figures.
+    THE LIMB IS NOT ABOUT NUMBERS. STATEMENT_GRADE names a statement as a reference beside a
+    contract note number, the first assertion below holds it to that, and the record reads it
+    that way — rows cite "ii statement Q2" and not one of them is a number. The limb asks for
+    something that gets you back to the same figures.
 
     SO A DOWNLOAD'S REFERENCE IS THE QUERY THAT REPRODUCES IT: broker, account, date range.
-    No rule was widened; what was missing was the vocabulary to say it in.
     """
     from portfusion.record import rules as D
     assert "a statement" in D.STATEMENT_GRADE, \
@@ -769,9 +743,9 @@ def test_every_class_still_owes_all_three_limbs():
 
 @needs("accounts", "buys")
 def test_the_account_number_on_a_note_resolves_to_the_account(read_item, monkeypatch):
-    """THE RECORD ANSWERS, NOT THE MODEL. `store/accounts.csv` has held a `number` column all
-    along, beside each account's name, so mapping the number a contract note prints onto the
-    account it belongs to is a derivation, exactly like the next free id.
+    """THE RECORD ANSWERS, NOT THE MODEL. `store/accounts.csv` holds a `number` column beside each
+    account's name, so mapping the number a contract note prints onto the account it belongs to is a
+    derivation, exactly like the next free id.
 
     THE MODEL IS STILL TOLD TO REFUSE IT, and that is not a contradiction: it does not know the
     mapping, and reasoning its way to one would be the invention this bench exists to prevent.
@@ -822,8 +796,8 @@ def test_a_derived_account_still_passes_the_closed_vocabulary():
 
 def test_prose_fields_are_declared_long_so_the_screen_can_size_them():
     """`note` is the cell the machine wrote and the one the owner most has to read before approving
-    it. A one-line input made it a short box to scroll sideways, which is exactly backwards.
-    The SCREEN does not decide which fields are prose — the form spec says so."""
+    it. A one-line input would make it a short box to scroll sideways. The SCREEN does not decide
+    which fields are prose — the form spec says so."""
     spec = {f["name"]: f for f in _bench.form_for("sales")}
     assert spec["note"]["long"] is True
     assert spec["qty"]["long"] is False
@@ -835,11 +809,8 @@ def test_prose_fields_are_declared_long_so_the_screen_can_size_them():
 
 
 def test_the_reader_is_told_which_columns_each_table_has(capsys, monkeypatch):
-    """FROM THE FIRST REAL READ. It proposed `account`, `type` and `mode` for an `exits` row —
-    all real column names, `account` then not on that table — so all three were dropped and the
-    account went unfilled although the document names it. So the guide states each table's
-    columns, DERIVED from schema.TABLES rather than written out. The store has spelled the
-    account `account` on every table since 1 Oct 2026; the old `acct` must not come back."""
+    """A reader proposes only a table's own columns, so the guide states each table's, DERIVED
+    from schema.TABLES rather than written out; the account column is spelt `account`."""
     from portfusion.desk.intake import propose as P
     columns = P._columns()
     exits_cols = columns.split("sales —")[1].split("columns:")[1].split("\n")[0]
@@ -853,9 +824,9 @@ def test_the_reader_is_told_which_columns_each_table_has(capsys, monkeypatch):
 
 
 def test_ordinary_customer_boilerplate_is_not_reported_as_a_directive():
-    """The first real read flagged four directives, all of them the note doing its job —
-    "Please detach this slip and return it together with your cheque". Reporting those on every
-    ii note trains the reader to skim the box that exists to catch a real injection attempt.
+    """Boilerplate is the note doing its job — "Please detach this slip and return it together with
+    your cheque". Reporting it on every ii note trains the reader to skim the box that exists to
+    catch a real injection attempt.
 
     The rules ask for text directing the TRANSCRIPTION, not the account holder.
     """
@@ -867,7 +838,7 @@ def test_ordinary_customer_boilerplate_is_not_reported_as_a_directive():
 @needs("accounts", "buys")
 def test_the_reasoning_and_the_row_id_can_never_be_proposed(read_item, monkeypatch):
     """`note` is the REASONING — the one field no document supplies, and the reason the bench
-    exists at all. `eid`/`id` are allocated from the store. Neither is in the tool's schema, and
+    exists at all. `trade_id`/`sale_id` are allocated from the store. Neither is proposable, and
     neither survives if a reading carries it anyway."""
     from portfusion.desk.intake import propose as P
     assert "note" not in P._proposable()["buys"]
@@ -919,9 +890,9 @@ def test_a_scan_is_refused_rather_than_guessed_at(item, monkeypatch):
 
 
 def test_the_proposal_reaches_no_network(repo_root):
-    """THE READER IS A SESSION, NOT AN API CALL (the owner, 1 Oct 2026). Nothing in propose.py may
-    open a connection or import what would, so no key is needed and none can expire. Checked on
-    the syntax tree, the way every guard here is checked."""
+    """THE READER IS A SESSION, NOT AN API CALL. Nothing in propose.py may open a connection or
+    import what would, so no key is needed and none can expire. Checked on the syntax tree, the
+    way every guard here is checked."""
     import ast
     tree = ast.parse((SRC / "desk" / "intake" / "propose.py").read_text())
     imported = set()
@@ -963,8 +934,8 @@ def test_a_quote_survives_the_round_trip_through_the_store(read_item, monkeypatc
 # =====================================================================================
 # THE SESSION'S DOOR — a reading made by a Claude session, handed in as a file.
 #
-# The tool schema guaranteed the model's answer had the right shape. A file has nothing behind
-# it, so the shape is checked whole before any cell is, and the quote check is the same one.
+# No schema stands behind a reading handed in as a file, so its shape is checked whole before any
+# cell is; its cells then meet the quote check above.
 # =====================================================================================
 
 @pytest.mark.parametrize("bad, why", [
@@ -1033,15 +1004,13 @@ def test_the_guide_is_the_rules_the_columns_and_what_is_waiting(read_item, monke
 @needs("accounts", "buys")
 def test_a_committed_document_is_filed_under_the_folder_s_own_convention(item, store_copy,
                                                                         tmp_path, monkeypatch):
-    """THE GAP THAT WOULD HAVE BITTEN ON THE FIRST REAL COMMIT.
-
-    `_archive/statements/` names a document by `rules.ARCHIVE_CONVENTION`, and commit.py filed
-    one under whatever it happened to be called when it was dropped. The three evidence limbs
-    ARE the three parts of that convention, so the name is derived from them rather than typed.
+    """`_archive/statements/` names a document by `rules.ARCHIVE_CONVENTION`, never by the name it
+    was dropped under. The three evidence limbs ARE the three parts of that convention, so the
+    name is derived from them rather than typed.
 
     THIS EXERCISES THE UNSTAMPED BRANCH. A document that states its own instant is filed with
-    it, and that half is
-    `test_the_archive_name_carries_the_instant_the_document_states` below."""
+    it, and that half is test_bench.py's
+    `test_the_archive_name_carries_the_instant_the_document_states`."""
     from portfusion.desk.doors import commit as _commit
     monkeypatch.setattr(_commit, "ARCHIVE", tmp_path / "archive")
     from portfusion.record import schema
@@ -1107,12 +1076,12 @@ def test_the_withdraw_route_returns_what_the_module_did(workbench):
 
 
 def test_a_refused_withdrawal_reaches_the_screen_as_a_409(workbench):
-    """THE HALF THAT WAS UNPROVEN. A refusal is a RULE, not a failure — the operator named a
-    destination inside the repository, and the answer is the rule that stopped them.
+    """A refusal is a RULE, not a failure — the operator named a destination inside the
+    repository, and the answer is the rule that stopped them.
 
     409 and not 500: a 500 is a bug report, and an operator who gets one retries. The commit
-    route made this choice first and this one has to make the same, or two doors out of the
-    same workbench disagree about what a refusal looks like.
+    route answers 409 too, and this one must, or two doors out of the same workbench disagree
+    about what a refusal looks like.
     """
     from fastapi import HTTPException
     from portfusion.record import schema
@@ -1147,12 +1116,9 @@ def test_the_withdraw_button_calls_the_route_that_exists():
 
 @needs("accounts", "buys")
 def test_every_archived_contract_note_reads_back_its_own_reference():
-    """The PDF half of `read_document.extract()` once never ran in the suite — every document
-    the bench tests read was a CSV — while the archive's PDFs sat one folder away. A contract
-    note is the document the bench most needs to read, and its reference is printed on it, so
-    each one filed under `ii contract note <REF>` must yield text, say it is not a scan, and
-    contain that reference. DERIVED from the loaded book's folder: a new note joins by being
-    filed.
+    """A contract note is the document the bench most needs to read, and its reference is printed on
+    it, so each one filed under `ii contract note <REF>` must yield text, say it is not a scan, and
+    contain that reference. DERIVED from the loaded book's folder: a new note joins by being filed.
     """
     import re
     from portfusion.record import schema
@@ -1171,8 +1137,8 @@ def test_every_archived_contract_note_reads_back_its_own_reference():
 # =====================================================================================
 
 def test_opening_a_readable_csv_reads_it_here_and_never_asks_for_a_reading(tmp_path, monkeypatch):
-    """The owner, 30 Sep 2026: an ii CSV "sent a call to claude ai". A class in `read_rows.LOCAL` is
-    read by `bench.read_here()` as the item opens; no reading is asked for."""
+    """A class in `read_rows.LOCAL` is read by `bench.read_here()` as the item opens; no reading
+    is asked for."""
     import sys
     sys.path.insert(0, str(SRC / "tests"))
     from test_read_rows import LEDGER

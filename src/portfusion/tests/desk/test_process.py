@@ -14,9 +14,7 @@ from harness import SRC, needs
 # =====================================================================================
 
 def test_the_restart_is_declared_and_writes_nothing():
-    """A running desk serves what it IMPORTED at startup, and a browser refresh cannot fix
-    that. The Dock launcher replaces a stale server but only one IT started — a desk run from a
-    terminal, which is how it is run while being worked on, never meets that check.
+    """A running desk serves what it IMPORTED at startup, and a browser refresh cannot fix that.
 
     `writes=None` is literal here: it replaces a PROCESS and touches no file.
     """
@@ -34,16 +32,14 @@ def test_the_restart_module_touches_no_file(repo_root):
     import ast
     from harness import write_call
     tree = ast.parse((SRC / "desk" / "restart.py").read_text())
-    # THE SUITE'S ONE LIST OF WHAT WRITES (`harness.write_call`): this one kept its own, and missed
-    # a replace and an `open(…, "w")`.
+    # THE SUITE'S ONE LIST OF WHAT WRITES (`harness.write_call`).
     found = {write_call(n) for n in ast.walk(tree)} - {None}
     assert not found, f"desk/restart.py writes something: {sorted(found)}"
 
 
 def test_the_restart_will_not_default_to_a_port_it_was_not_given():
-    """THE BUG THIS EXISTS FOR, caught before it shipped. The action first read
-    `port=8765` as a default — so a desk started on any other port would have restarted the one
-    on 8765 instead: a different server, quite possibly someone else's work.
+    """A default port would restart whichever desk is on it: a different server, quite possibly
+    someone else's work.
 
     The PAGE knows which server it is talking to and says so; the action requires it.
     """
@@ -84,10 +80,8 @@ def _restart_spawns(monkeypatch, *, env: str | None, launchd_pid: int | None) ->
 
 
 def test_under_its_agent_the_restart_is_launchds(monkeypatch):
-    """THE ORPHAN, 19 Oct 2026. A replacement the desk spawned itself had ppid 1: the agent no
-    longer owned the desk, a kickstart after a merge could not stop it, and the agent's own copy
-    found the ports taken while the orphan served the old code. Under the agent, launchd does
-    the restart, so its plist's arguments and PORTFUSION_BOOK come back with it."""
+    """A replacement the desk spawns itself has ppid 1, beyond the agent's reach. Under the agent,
+    launchd does the restart, so its plist's arguments and PORTFUSION_BOOK come back with it."""
     import os
     argv = _restart_spawns(monkeypatch, env="some.agent", launchd_pid=os.getpid())
     assert argv[-1] == f"gui/{os.getuid()}/some.agent"
@@ -122,17 +116,12 @@ def test_the_restart_waits_for_the_new_process_rather_than_guessing(repo_root):
 
 
 def test_every_font_size_comes_from_the_scale(repo_root):
-    """THE SCALE EXISTED IN NAME ONLY (the owner: "scan the desk font for sizing and uniformity").
+    """EVERY SIZE IS A STEP OF THE SCALE, and every step is used: one nothing renders is a size
+    the design does not have.
 
-    app.css declared three steps and then set SEVENTEEN font sizes as hard-coded rem literals,
-    so changing the small text meant finding eight separate `0.8125rem` and hoping. And
-    `--step-2` had been declared since the file began and used nowhere — a size the design does
-    not have, pretending to be one it does.
-
-    Five steps then, one per job, and nothing may state a size outside :root. That is the same
-    rule this file already opens with for colour and spacing — "nothing outside it sets a
-    colour, a size or a spacing" — applied to the file itself. The display steps added two (the owner,
-    6 Oct 2026): a page's title in the design system's display size, and the figures on the Dashboard's band.
+    Nothing may state a size outside :root, the rule app.css opens with for colour and spacing
+    applied to the file itself. Two steps are display sizes: a page's title, and the figures on
+    the Dashboard's band.
     """
     import re
     css = (SRC / "desk" / "static" / "app.css").read_text()
@@ -154,17 +143,14 @@ def test_every_font_size_comes_from_the_scale(repo_root):
 
 
 def test_nothing_in_a_data_row_is_bold(repo_root):
-    """Bold is for a headline figure and an item's label, never a cell (the owner, 30 Sep 2026:
-    Price Refresh and Recent Trades had bold tickers and dates that no other table had). Trades
-    is a table since 12 Oct 2026, so the cell check holds it with the rest."""
+    """Bold is for a headline figure and an item's label, never a cell."""
     import re
     js = (SRC / "desk" / "static" / "app.js").read_text()
     assert not re.findall(r"<td[^>]*>\s*<strong", js), "a table cell is bold"
 
 
 def test_every_detail_is_in_the_one_order(repo_root):
-    """The owner, 12 Oct 2026: "the toggle is one across the book and is detail, inside the fold are
-    the sub headings and they are always listed in the same order."
+    """ONE TOGGLE ACROSS THE BOOK, and inside the fold the sub-headings always in one order.
 
     app.js's DETAIL is the order; a panel names which parts its rows' detail draws, in
     DETAIL_COLUMNS. A part DETAIL does not know would never be drawn, and a panel listing its
@@ -184,17 +170,11 @@ def test_every_detail_is_in_the_one_order(repo_root):
 
 
 def test_every_filter_row_has_the_same_shape(repo_root):
-    """The owner: "the same form, order and layout across holdings, round trips and recent
-    trades — I like the grey filter boxes."
+    """ONE FORM, ORDER AND LAYOUT across holdings, round trips and trades, in the grey filter boxes.
 
-    They had three shapes. Trades used labelled `.f` boxes in a grid; Holdings and Round
-    Trips used inline controls in a paragraph with the label to the LEFT of the select, so the
-    same Account dropdown was a different object on each tab.
-
-    ONE ORDER, applying only the fields a panel has (S8, 14 Oct 2026: "arrange them for the best
-    synergy across the desk pages"): account · company · ticker · dates, then the page's own
-    control. Account is the first box on every page that has one, so a box two pages share sits
-    in one place.
+    ONE ORDER, applying only the fields a panel has: account · company · ticker · dates, then the
+    page's own control. Account is the first box on every page that has one, so a box two pages
+    share sits in one place.
     No filter reads "all" on every page; a date is bounded to what is on file; and the grey boxes
     are only ever a filter row, never a form.
     """
@@ -279,10 +259,9 @@ def _own(call):
 
 
 def test_every_sorting_table_names_itself_and_holds_its_own_sort(repo_root):
-    """S8, the map's point A (14 Oct 2026): a sort was held under the page and the table's
-    columns, so What Changed's Shares and Spread bets held one sort between them, as did its record
-    time and the fold beneath it, and the account tables on Accounts. A sorting table names itself
-    and its sort is held under that name; one with no name would share again, so it is refused."""
+    """Held under the page and its columns, two tables would share one sort. A sorting table
+    names itself and its sort is held under that name; one with no name would share, so it is
+    refused."""
     js = _static("app.js")
     assert "const sortKey = (name) =>" in js and "sortKey(name)" in js, \
         "a sort is not held under its table's name"
@@ -295,28 +274,23 @@ def test_every_sorting_table_names_itself_and_holds_its_own_sort(repo_root):
 
 
 def test_a_table_whose_order_is_its_layout_keeps_it(repo_root):
-    """S8, the map's point B (14 Oct 2026): Performance's year table, drawn as one grid with the
-    quarters, sorted where the quarters did not, and YTD return pressed put The book third among
-    its accounts; Accounts' Income and costs did the same. A table naming the book first and then
-    each account once keeps that order, as a detail's mark history keeps its own."""
+    """A table naming the book first and then each account once keeps that order, as a detail's
+    mark history keeps its own."""
     kept = {c.split(",")[0].strip() for c in map(_own, _table_calls(_static("app.js")))
             if "sort: false" in c}
     assert kept == {"x.marks", "quarters", "d.year", "d.income"}, kept
 
 
 def test_every_account_dropdown_offers_individual_accounts_in_the_books_order():
-    """TWO DEFECTS, both found by the owner using the Holdings filter.
+    """EVERY OPTION IS ONE ACCOUNT, IN THE BOOK'S ORDER.
 
-    NOT INDIVIDUAL. A holdings row names EVERY account its ticker sits in, joined with " · " so
-    no sub-rows double-count. The panel split that column on a COMMA, which never appears in it,
-    so nothing ever split and each COMBINATION became its own entry: "Rowe HL ISA · Voss ii
-    ISA · Voss ii Trading" was offered as though it were an account. Selecting it returned ZERO
+    INDIVIDUAL. A holdings row names EVERY account its ticker sits in, joined with " · " so no
+    sub-rows double-count; each account is offered alone, as a combination would select ZERO
     rows, because no account is called that.
 
-    AND OUT OF ORDER. All three dropdowns were alphabetical, which puts "Voss IG Spread bet"
-    between "Voss ii ISA" and "Voss ii Trading" — a spread-bet account in the middle of the
-    share ones, with the break between the two valuation bases gone. ACCOUNT_ORDER is an ORDER
-    rather than a sort for exactly that reason.
+    IN THE BOOK'S ORDER: alphabetical would put a spread-bet account among the share ones, the
+    break between the two valuation bases gone. ACCOUNT_ORDER is an ORDER rather than a sort for
+    exactly that reason.
 
     EVERY OPTION MUST ALSO WORK. A dropdown entry that returns nothing is worse than one that is
     missing: it reads as "this account holds nothing" when the truth is "that is not an account".
@@ -360,7 +334,7 @@ def test_the_canonical_order_is_the_records_own():
 
 @pytest.fixture
 def source_baseline():
-    """Restore record._source_seen, which is process-wide state these tests move."""
+    """Restore engine._source_seen, which is process-wide state these tests move."""
     saved = dict(engine._source_seen)
     yield engine._source_seen
     engine._source_seen.clear()
@@ -368,11 +342,8 @@ def source_baseline():
 
 
 def test_the_scan_covers_this_projects_source_and_nothing_else():
-    """The scan reads the package and nothing beside it. The venv sat inside the repository
-    while the scan's root was the repository, and the first version walked 592 modules and would
-    have named
-    `.venv/lib/python3.13/site-packages/pandas/core/frame.py` in the page header the day
-    anything was reinstalled. A dependency changing is a real event and it is not this one.
+    """The scan reads the package and nothing beside it. A dependency changing is a real event
+    and it is not this one.
 
     THE TWO EXCLUSIONS THAT ARE NOT ABOUT NOISE. `store/*.csv` is absent because the engine is
     cached on the store's own mtime, so a changed CSV is picked up live; `desk/static/*` is
@@ -401,12 +372,10 @@ def test_the_scan_covers_this_projects_source_and_nothing_else():
 
 
 def test_a_file_changed_since_import_reads_stale_and_is_named(source_baseline):
-    """The signal that was missing while a server ran a six-day-old engine, asserted.
-
-    NAMED, NOT COUNTED. "1 file changed" sends you looking; "engine.py" tells you what moved.
+    """NAMED, NOT COUNTED. "1 file changed" sends you looking; "engine.py" tells you what moved.
     """
     # THE ENGINE BY ITS OWN PATH: "ends with engine.py" also takes desk/engine.py, so which file
-    # was picked hung on the order the modules came in (the review of 21 Oct 2026).
+    # is picked would hang on the order the modules come in.
     target = next(p for p in engine._repo_modules()
                   if pathlib.Path(p).parts[-2:] == ("portfusion", "engine.py"))
     source_baseline[target] = 0.0               # as if imported before the file was written
@@ -441,9 +410,8 @@ def test_a_clean_desk_says_nothing_about_its_source(source_baseline):
 
 
 def test_the_page_says_the_desk_is_behind_and_points_at_the_restart(repo_root):
-    """The button has been on this line since the desk was built; nothing said when to press
-    it. That is the whole defect — the freshness line reported the store was fine, because it
-    was, while the engine behind the page was six days old."""
+    """The freshness line says when to press the restart: a fine store says nothing of a stale
+    engine behind the page."""
     js = _static("app.js")
     assert "source_stale" in js, "the header no longer reads the source-staleness signal"
     assert "restart it" in js, "the warning does not say what to do about it"
@@ -470,9 +438,8 @@ def test_a_stale_desk_is_a_problem(source_baseline):
 
 def test_every_app_the_desk_hands_uvicorn_imports():
     """uvicorn is given its apps BY NAME, `module:attribute`, and imports them only as the server
-    starts. When the app became a package those names still said `desk.app:app`, no test
-    started the desk through its command line, and the desk did not come back after the merge
-    (18 Oct 2026). Every such name in the app is imported here, as uvicorn would."""
+    starts, so a stale name fails only then. Every such name in the app is imported here, as
+    uvicorn would."""
     import ast
     import re
     from uvicorn.importer import import_from_string

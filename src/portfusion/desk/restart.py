@@ -22,11 +22,11 @@ the same port. This process answers the request, then exits. The browser polls /
 
 UNDER THE AGENT, LAUNCHD RESTARTS IT. A replacement this process spawned would be nobody's
 child (ppid 1), and the LaunchAgent would no longer own the desk: a later `launchctl kickstart`
-could not stop it, and the agent's fresh copy would find the ports taken (19 Oct 2026, after a
-merge). So when launchd names THIS pid as its job's, the detached child asks launchd to
-`kickstart -k` that job instead, and the plist's own arguments and environment come back with
-it. `XPC_SERVICE_NAME` alone is not proof — a desk started from a terminal or an app inherits
-that app's — so the label it gives is believed only if launchd reports this pid for it.
+could not stop it, and the agent's fresh copy would find the ports taken. So when launchd names
+THIS pid as its job's, the detached child asks launchd to `kickstart -k` that job instead, and
+the plist's own arguments and environment come back with it. `XPC_SERVICE_NAME` alone is not
+proof — a desk started from a terminal or an app inherits that app's — so the label it gives is
+believed only if launchd reports this pid for it.
 """
 from __future__ import annotations
 
@@ -143,9 +143,9 @@ def restart(port: int = 8765) -> dict:
 
 # THE BUTTON IS THE SHELL'S. Every page draws it on the rail's freshness line, which is where a
 # stale desk is noticed; no page lists it, and the hosted desk, whose door lists no actions, never
-# shows it. It was registered on the Bench for want of another home until 13 Oct 2026. `writes=None` IS LITERAL: it touches no file at all; what it replaces is the
-# PROCESS. `desk/actions.py:_load_panels()` imports this module so the button is in the registry
-# before the registry is read, as every panel's are.
+# shows it. `writes=None` IS LITERAL: it touches no file at all; what it replaces is the PROCESS.
+# `desk/actions.py:_load_panels()` imports this module so the button is in the registry before
+# the registry is read, as every panel's are.
 register(Action(
     name="restart-desk", label="Restart the desk", panel="desk",
     writes=None,

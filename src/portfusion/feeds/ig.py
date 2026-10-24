@@ -93,9 +93,9 @@ def _assert_readonly(method, path):
     if not any(call.startswith(a) for a in _ALLOWED):
         raise RuntimeError(
             f"REFUSED: {call}\n"
-            "feeds/ig.py is read-only. It may reach /session, /markets and /accounts and nothing\n"
-            "else. If you are trying to add a dealing call, this is the guard telling you that this\n"
-            "is the wrong file for it.")
+            "feeds/ig.py is read-only. It may make only the calls _ALLOWED lists. If you are\n"
+            "trying to add a dealing call, this is the guard telling you that this is the wrong\n"
+            "file for it.")
     low = path.lower().split("?")[0]
     if any(m in low for m in _FORBIDDEN_MARKERS):
         raise RuntimeError(f"REFUSED: {call} — path looks like a dealing endpoint.")
@@ -308,9 +308,9 @@ class IGSession:
         """EVERY EPIC'S SNAPSHOT IN ONE CALL, so the levels describe one instant.
 
         Keyed by epic, and an epic IG does not answer for is ABSENT, never a zero. `update_time`
-        is IG's `updateTime`, which is UTC and carries no date (measured 29 Sep 2026 against the
-        clock); `delay` is IG's own `delayTime`, in minutes. NOT `filter=SNAPSHOT_ONLY`: that
-        returns the instrument's name, expiry and currency as nulls (29 Sep 2026).
+        is IG's `updateTime`, which is UTC and carries no date; `delay` is IG's own `delayTime`,
+        in minutes. NOT `filter=SNAPSHOT_ONLY`: that returns the instrument's name, expiry and
+        currency as nulls.
         """
         query = urllib.parse.urlencode({"epics": ",".join(epics)})
         payload, _ = self._request("GET", f"/markets?{query}", 2)
@@ -395,8 +395,8 @@ def epics(D=None) -> dict:
 PRICE_SIDE = "bid"
 
 # A PAST DAY'S CLOSE IS THE HOUR BAR OPENING AT 21:00 UK: it ends at 22:00, when an IG statement
-# values every position. Measured against filed statements, its close was the printed level on
-# the near contracts, where the DAY bar's close was not.
+# values every position. Its close is the printed level on the near contracts; the DAY bar's close
+# is not.
 # ONLY WHERE IG QUOTES THE CONTRACT THROUGH THE EVENING. A near contract has a priced bar each
 # hour from 18:00; a far one has none, or empty bars, and its statement level matches no bar.
 # A far contract's close is that day's statement level.
@@ -468,8 +468,7 @@ def _each_epic(fetch):
     """`fetch(session, epic)` for every mapped contract, through the one session, by contract.
 
     For IG's PER-EPIC reads, its bars; a level has a batch call and never comes here. The reads
-    are spaced because IG caps requests per minute, and a burst of bar reads met the cap on
-    29 Sep 2026.
+    are spaced because IG caps requests per minute.
     """
     out = {}
     with _instrument_session() as s:
@@ -605,7 +604,7 @@ def cmd_verify():
     for row in r["rows"]:
         key, live, old, asat = row["contract"], row["live"], row["stored"], row["as_of"]
         if row["state"] == "new":
-            # NO LEVEL IS A DASH: a wrong epic answers none, and formatting None raised.
+            # NO LEVEL IS A DASH: a wrong epic answers none, and None does not format.
             shown = "—" if live is None else live
             log.info(f"{key:<14} {'—':>10} {'not in record':<12} {shown:>10}   NEW")
             continue
@@ -615,8 +614,8 @@ def cmd_verify():
         log.info(f"{key:<14} {old:>10.3f} {asat:<12} {live:>10.3f} {row['pct']:>8.2f}%  {row['status']}")
     log.info("\nA large diff is not automatically wrong — these are dated marks and the book's are")
     log.info("often a fortnight old. What you are checking is that each contract is PLAUSIBLE for its")
-    log.info("expiry, and that longer-dated sits above nearer-dated, the term-structure sanity check")
-    log.info("the record has used to corroborate this mapping since 2 Aug 2026.\n")
+    log.info("expiry, and that longer-dated sits above nearer-dated, the term-structure sanity "
+             "check.\n")
 
 
 # The book's name for each IG account, keyed by the credential label. Stated, never derived from
@@ -705,9 +704,8 @@ def _epic_to_ticker(D):
     return {epic: D.CONTRACT_CODE[c] for c, epic in D.CONTRACTS.items() if epic}
 
 
-#: THE COLUMNS EACH GENERATED ROW FILLS, in the store's own order, BY NAME: a positional row once
-#: carried ten values for an eleven-column table. tests/test_ig.py asserts these against
-#: schema.TABLES; this module does not import schema, so the sweep runs without the build.
+#: THE COLUMNS EACH GENERATED ROW FILLS, in the store's own order, BY NAME. tests/test_ig.py
+#: asserts these against schema.TABLES.
 ROW_COLUMNS = {
     "buys": ("trade_id", "date", "source", "account", "ticker", "cur", "qty", "stake", "cost",
              "level_points", "broker_ref", "note", "contract", "traded_price", "rate"),
@@ -741,8 +739,7 @@ def contract_suffix(epic: str, day: str) -> dict:
 
 def _said(ticker, direction, stake, level=None, day=""):
     """AN EVENT IN THE TRADES PAGE'S WORDS: ticker, direction, stake per point, and the level in
-    points or the day — "VELD SB · Sell · £1/pt · 10,000.5 pts". IG's own "closed @ 10000.5, 1/pt"
-    and the store's file names were what the Bench showed until 12 Oct 2026."""
+    points or the day — "VELD SB · Sell · £1/pt · 10,000.5 pts"."""
     return " · ".join([ticker, direction, f"£{stake:g}/pt"]
                       + ([f"{level:,.10g} pts"] if level is not None else [])
                       + ([day] if day else []))
@@ -752,8 +749,8 @@ def _event(table, ref, kind, account, what, values):
     """One proposed row, as DATA: the table, the values by column name, and enough about the event
     for a reader or the bench to know what it is.
 
-    `values` is a dict, not **kwargs: half the store's column names — account, date, note, source,
-    type, id — would collide with this function's own parameters.
+    `values` is a dict, not **kwargs: the store's `account` column would collide with this
+    function's own `account` parameter.
 
     `line` is the CSV rendering the sweep prints, kept here so the printed block and anything
     carrying the row onward cannot disagree about what the row is.
@@ -802,9 +799,8 @@ def _every_page(s, path, version, key):
     PASSED OFF AS THE WHOLE.
 
     /history/activity (v3) links its next page in `metadata.paging.next`; /history/transactions
-    (v2) numbers them, `metadata.pageData.totalPages` (IG's API reference). Until 21 Oct 2026 the
-    sweep read one page of 500 and a busy window lost the rest without a word. A full page that
-    says nothing about paging is refused, since what lies beyond it is unknown.
+    (v2) numbers them, `metadata.pageData.totalPages` (IG's API reference). A full page that says
+    nothing about paging is refused, since what lies beyond it is unknown.
     """
     rows, page, number = [], None, 1
     for _ in range(MAX_PAGES):
@@ -969,8 +965,7 @@ def ig_events(since=None):
             amt = float(r["profitAndLoss"].replace("£", "").replace(",", ""))
             day = r["dateUtc"][:10]
             # A `WITH` IS MONEY OUT, and only some of it is a cost: IG files its funding charges
-            # and a withdrawal under the one type. Until 21 Oct 2026 every one became "Funding
-            # interest", so a withdrawal would have booked as a trading loss.
+            # and a withdrawal under the one type.
             funding = r["transactionType"] == "WITH" and any(
                 w in str(r.get("instrumentName") or "").lower() for w in FUNDING_WORDS)
             if funding:
@@ -1072,9 +1067,8 @@ def cmd_logout():
     if not cache:
         log.info("no cached session")
         return
-    # THE CACHE IS CLEARED HOWEVER THE GOODBYE GOES. Until 21 Oct 2026 a missing credentials
-    # file or a dropped connection raised before the clear, leaving the tokens on this disk —
-    # the one thing the command exists to remove.
+    # THE CACHE IS CLEARED HOWEVER THE GOODBYE GOES. A missing credentials file or a dropped
+    # connection must not leave the tokens on this disk.
     try:
         creds = load_credentials()
         for label, entry in list(cache.items()):
@@ -1101,8 +1095,7 @@ IG price sweep — read-only. Fetches spread-bet CONTRACT levels from IG's REST 
     python3 -m portfusion.feeds.ig --ig-events 2026-08-01     ...over a window you choose
     python3 -m portfusion.feeds.ig --ig-logout            end the cached session and delete the cache
 
-The levels, the equity and a past day's closes are printed by the sweep, `python3 -m
-feeds.refresh [--on D]`.
+The sweep, `python3 -m portfusion.feeds.refresh [--on D]`, prints levels, equity and past closes.
 
 Tokens from one login are cached in .ig_session.json (0600, gitignored) and reused for up to
 five hours, because IG rate-limits an app that authenticates on every call.

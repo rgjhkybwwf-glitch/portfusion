@@ -15,7 +15,7 @@ from typing import NamedTuple
 # exchange suffix otherwise (.L LSE/AIM · .DE Xetra · .CO Copenhagen · .PA Paris · .ST Stockholm),
 # and " SB" for a spread bet. Spread-bet CONTRACT keys are a separate namespace. One security held
 # as two separate round trips keeps two join keys by a "(qualifier)". securities.csv registers
-# every code, and a ledger row naming any other is refused by the suite.
+# every code, and a ledger row naming any other is refused on load.
 # ============================================================================
 def book_code(code: str, known) -> str:
     """The book's code for one a broker's document prints, or the code as printed.

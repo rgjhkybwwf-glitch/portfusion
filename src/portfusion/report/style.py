@@ -1,11 +1,10 @@
 """The page's stylesheet: one string, inlined into the page so the file stands on its own.
 
 ITS COLOURS AND TYPEFACE ARE house/palette.py's with the book's brand over them
-(`portfusion.brand`), in both schemes, as the desk's are —
-`tests/test_figures.py::test_no_renderer_types_a_colour` says what that replaced. The look is
-PortFusion's: a white page in the light and a dark one in the dark, square corners, a 2px
-rule opening every section and table, labels in condensed capitals and every figure in tabular
-numerals.
+(`portfusion.brand`), in both schemes, as the desk's are
+(`tests/test_figures.py::test_no_renderer_types_a_colour`). The look is PortFusion's: a white page
+in the light and a dark one in the dark, square corners, a 2px rule opening every section and table,
+labels in condensed capitals and every figure in tabular numerals.
 
 THE FACE TRAVELS INSIDE THE PAGE, as base64, because a page that stands on its own cannot fetch
 it, and one that falls back would do so silently. The one file is variable on weight and width,

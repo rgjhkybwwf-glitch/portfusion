@@ -1,16 +1,12 @@
 """
 LIMB 3 — "a named reference that retrieves it", checked rather than asserted.
 
-Kept apart from test_record.py, whose tests import no build and touch no file: these open
-`_archive/statements/` and read the PDFs inside it — the only tests in the suite that look at
-the evidence rather than reasoning about it.
+Kept apart from test_record.py, which reasons about the record: these open `_archive/statements/`
+and read the PDFs inside it — the only tests in the suite that look at the evidence rather than
+reasoning about it.
 
-WHY THAT MATTERS HERE MORE THAN ANYWHERE. The first version of this check reasoned, and was
-wrong: it took the DATE out of a row's basis prose, matched it against archive FILENAMES, and
-produced a confident list of eleven rows whose documents were supposedly missing. Every one of
-those rows stored the dealId that retrieves it, and every dealId was already in an archived
-statement. A guard that sends you looking for documents that were filed months ago is worse
-than no guard, because you believe it.
+WHY THAT MATTERS HERE MORE THAN ANYWHERE. A check that reasons can send you looking for documents
+filed months ago, which is worse than no guard, because you believe it.
 
 So the strongest test here opens the files.
 """
@@ -21,11 +17,8 @@ import pytest
 # =====================================================================================
 # LIMB 3, CHECKED RATHER THAN ASSERTED
 #
-# "A named reference that retrieves it" was the one limb of statement-grade nothing could
-# test. EVIDENCE_CLASSES said what retrieves each class in PROSE — "the contract note
-# number", "the dealId the row stores" — so no code could ask whether a reference actually
-# led anywhere. rules.Evidence.retrieval turns that into structure, and these tests are what
-# it buys.
+# `rules.Evidence.retrieval` states what retrieves each class as structure, so code can ask
+# whether a reference leads anywhere.
 #
 # EVERY ROW, WHATEVER ITS DATE. A row whose document the archive does not hold says so in its
 # own class, `not-on-file`, so no row may cite a document that is missing.
@@ -67,19 +60,17 @@ _NOT_BROKER_DOCUMENTS = {
 def _provenance_rows(D):
     """(id, date, source line, stored reference, account) for every row the vocabulary governs.
 
-    THE TABLE LIST IS DERIVED FROM THE SCHEMA, never typed. A typed list covered trades and
-    exits — two of the ten tables carrying provenance — and `feeds/ig.py` wrote thirty
-    unclassified lines into income, cash-readings and account-statements without it
-    noticing. A guard that watches two of ten doors is not a guard, it is a sample.
+    THE TABLE LIST IS DERIVED FROM THE SCHEMA, never typed. A typed list is a sample, not a
+    guard.
 
     A new table with a `source` column joins by EXISTING. Opting one out means adding a
     line to `_NOT_BROKER_DOCUMENTS` with a reason, which is a diff a reviewer sees.
 
     THE STORED REFERENCE IS CARRIED because it is the thing that retrieves the row —
-    record/schema.py: "`source` says what KIND of document; this says WHICH ONE." Leaving it out
-    is what made eleven rows look unretrievable when their dealIds were in the archive already.
-    THE ACCOUNT IS CARRIED for the same reason: a trade's source names its document's kind and
-    date only (`rules.trade_source()`), and a date is not a document until the account narrows it.
+    record/schema.py: "`source` says what KIND of document; this says WHICH ONE." Without it, a row
+    whose dealId is archived looks unretrievable. THE ACCOUNT IS CARRIED for the same reason: a
+    trade's source names its document's kind and date only (`rules.trade_source()`), and a date is
+    not a document until the account narrows it.
 
     """
     from portfusion.record import schema
@@ -178,7 +169,7 @@ def _documented(D, table):
     # row has nothing to put right there).
     *(pytest.param(t, True, id=f"{t}, the book", marks=pytest.mark.audit) for t in SOURCED)])
 def test_every_row_names_its_document_in_its_class_format(D, table, audit):
-    """The owner, 12 Oct 2026: "I want one format going forward for all accounts."
+    """ONE FORMAT FOR EVERY ACCOUNT.
 
     A trade or sale's `source` is its document's kind, in its class's own words, and the
     document's date — "ii contract note 03 Feb 2022", "HL security movements 23 Jul 2026"; an API
@@ -223,10 +214,9 @@ def test_a_date_alone_does_not_put_a_document_on_file():
 def test_every_source_line_was_composed_by_a_class_the_record_knows(D):
     """A provenance line no class composed has no stated authority and no reference shape.
 
-    The vocabulary is `EVIDENCE_CLASSES`, and a line outside it cannot be checked by
-    anything — which is the state limb 3 was in for every row before the vocabulary existed.
-    The count can only grow if somebody types a provenance line instead of letting
-    evidence_source() compose one.
+    The vocabulary is `EVIDENCE_CLASSES`, and a line outside it cannot be checked by anything. The
+    count can only grow if somebody types a provenance line instead of letting evidence_source()
+    compose one.
     """
     unknown = {rid for rid, _, src, ref, _acct in _provenance_rows(D)
                if "S.104" not in str(src) and not _is_derivation(src)
@@ -243,9 +233,8 @@ def test_every_stored_deal_reference_is_findable_in_an_archived_statement(D):
 
     A dealId is treated as self-retrieving — `rules.SOURCE_HIERARCHY_NOTE` puts an
     authenticated API read on the top rung when the row stores the reference that retrieves it.
-    That is a RULE, and a rule is what the eleven-row false alarm was built on. So this stops
-    asserting and looks: every stored dealId must appear verbatim in a statement in
-    `_archive/statements/`.
+    That is a RULE, and a rule can be wrong, so this looks: every stored dealId must appear
+    verbatim in a statement in `_archive/statements/`.
 
     It reads every PDF in the archive and costs about a third of a second, which is worth
     paying for the only check in the suite that opens the evidence rather than reasoning
@@ -272,8 +261,8 @@ def test_every_stored_deal_reference_is_findable_in_an_archived_statement(D):
         pytest.skip("no readable PDF in the archive")
 
     # A ROW WHOSE CLASS RETRIEVES BY API OWES NO PDF (`rules_evidence.py`, retrieval `api`):
-    # its stored dealId IS the retrieval, and an IG event swept from the Bench files no document
-    # (30 Sep 2026). Every other dealId must be in a filed statement.
+    # its stored dealId IS the retrieval, and an IG event swept from the Bench files no document.
+    # Every other dealId must be in a filed statement.
     missing = [f"{rid} ({when})  {ref}" for rid, when, src, ref, _acct in _deal_rows(D)
                if D.is_deal_reference(ref) and ref not in blob
                and getattr(D.evidence_from_source(src), "retrieval", None) != "api"]
@@ -367,10 +356,7 @@ def test_an_ii_contract_note_is_recognised_and_nothing_else_is_taken_for_one():
     """THE ARCHIVE IS THE SAMPLE. Every filed ii contract note must be recognised from its own
     text, and must give back the date, time and number its filed name was built from. No other
     filed document may be taken for one: an ii statement is the near miss, from the same broker
-    in the same register. DERIVED from the folder, so a new document joins by being filed.
-
-    Found 1 Oct 2026, reading a real note through the bench: the class came back blank, and the
-    date came from the file's download time rather than from the dealing line."""
+    in the same register. DERIVED from the folder, so a new document joins by being filed."""
     import datetime as dt
     from portfusion.record import rules as D
     from portfusion.desk.intake import read_document
@@ -459,7 +445,7 @@ def test_no_reading_entered_from_now_on_rests_on_a_closed_class(D):
                   for r in D.ac_rows
                   if r.evidence in D.CLOSED_TO_NEW_ENTRIES and str(r.as_of)[:10] > CLOSED_ON]
     assert not stragglers, (
-        "readings entered after the screenshot classes closed:\n    "
+        "readings on a closed class entered after it closed:\n    "
         + "\n    ".join(stragglers))
 
 
@@ -467,9 +453,8 @@ def test_no_reading_entered_from_now_on_rests_on_a_closed_class(D):
 @pytest.mark.parametrize("key", sorted(__import__("portfusion.record.rules", fromlist=["x"])
                                        .REFERENCE_IS_A_DATE))
 def test_a_dated_statement_cited_with_no_date_is_a_gap_not_no_document(key):
-    """A STATEMENT IS FOUND BY ITS DATE, so a line that cites one with none — the ii statement's
-    own prompt once asked for "Q2 25" — names a document and says nothing that finds it. It read
-    as citing no document at all and was never reported missing (the review of 21 Oct 2026)."""
+    """A STATEMENT IS FOUND BY ITS DATE, so a line that cites one with none, such as "Q2 25",
+    names a document and says nothing that finds it."""
     from portfusion.record import rules as D
     ev = D.EVIDENCE_BY_KEY[key]
     # THE CLASS'S OWN SOURCE LINE, with a quarter where its date belongs.

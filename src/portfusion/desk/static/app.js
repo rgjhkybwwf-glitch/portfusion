@@ -21,7 +21,7 @@ let PRECISION = {};
 /* A LOCAL PRICE, in its line's own currency (which the Ccy column names) at house/precision.py's
    places for it, carried in PRECISION with the fields that are one. Never money(): a £ on a
    dollar price is wrong twice. GBP is 4dp because LSE prices are quoted in pence and stored
-   /100; the raw float printed 0.49887600000000004. */
+   /100; a raw float prints 0.49887600000000004. */
 const localPrice = (v, cur) => v == null ? "—"
   : Number(v).toFixed(PRECISION.local_price_dp[cur] ?? PRECISION.local_price_default);
 const pct = (n) =>
@@ -54,9 +54,9 @@ async function get(path) {
     e.signIn = r.status === 401;
     /* A 502 or 504 that is not the desk's JSON is Netlify's proxy finding no Mac behind the
        tunnel. The desk's own refusals always come as JSON.
-       SO IS A 500 WITH NOTHING IN IT (found 5 Oct 2026 with the Funnel turned off): Netlify
-       answers that, not a 502, when there is no tunnel at all. The desk's own 500 always says
-       "Internal Server Error", so a crash on the Mac is not mistaken for it. */
+       SO IS A 500 WITH NOTHING IN IT: Netlify answers that, not a 502, when there is no tunnel
+       at all. The desk's own 500 always says "Internal Server Error", so a crash on the Mac is
+       not mistaken for it. */
     e.unreachable = ([502, 504].includes(r.status) && !body.detail)
                     || (r.status === 500 && !text.trim());
     throw e;
@@ -67,10 +67,7 @@ async function get(path) {
 /* A RESPONSE THAT IS NOT JSON MUST NOT BECOME A BROWSER MESSAGE.
    `await r.json()` on a 500 whose body is the plain string "Internal Server Error" throws, and
    Safari words that as "SyntaxError: The string did not match the expected pattern." — which
-   says nothing about brokers, credentials or what to do. That is what the desk showed when it
-   asked IG for live equity and feeds/ig.py died on an unrelated entry in credentials.json.
-   The failure was real. The MESSAGE was the second bug, and it is the one that made the first
-   one hard to find. */
+   says nothing about brokers, credentials or what to do. */
 async function readJson(r) {
   const text = await r.text();
   try {
@@ -127,8 +124,7 @@ async function wireRestart() {
 function drawFreshness(f) {
   /* THE DESK'S OWN CODE, and it names what moved. A running server serves what it IMPORTED,
      while /static/* is read from disk per request — so a stale desk runs THIS file against an
-     older engine and renders new markup over missing data. The restart button has always been
-     on this line; until 7 Sep 2026 nothing said when to press it. */
+     older engine and renders new markup over missing data. */
   const source = !f.source_stale ? "" :
     ` · <span class="stale" title="${esc((f.source_files || []).join("\n"))}">` +
     `running older code — ${esc((f.source_files || []).join(", "))}` +
@@ -136,8 +132,8 @@ function drawFreshness(f) {
         ? ` +${f.source_count - f.source_files.length} more` : ""}` +
     ` changed since it started; restart it</span>`;
   /* THE PRICE DATE. Book.valued_at() is the newest mark, the same answer the Dashboard heads
-     its glance with. The Price Refresh tab sits directly below this line, so a link to it
-     here was a second way to the same tab (dropped 29 Sep 2026). */
+     its glance with. The Price Refresh tab sits directly below this line, so it needs no link
+     here. */
   const prices = f.prices_as_at ? ` · prices as at ${esc(f.prices_as_at)}` : "";
   /* THE HOSTED DESK, as this Mac sees it (desk/publish.py:status()): its tunnel, and whether the
      version published is the one on disk. Drawn on the Mac only; the hosted page checks the
@@ -163,9 +159,7 @@ function drawFreshness(f) {
   });
 }
 
-/* SWITCH TO A PANEL FROM ANYWHERE. The Holdings "trades" link already did this by finding the
-   tab button and clicking it; the freshness line's "refresh" link is the second caller, so it
-   becomes one function rather than two copies of a selector. Clicking the real tab rather than
+/* SWITCH TO A PANEL FROM ANYWHERE. Every panel link calls it. Clicking the real tab rather than
    calling show() keeps the tab strip's own selected state correct — it is the tab that owns it. */
 function openPanel(name) {
   const tab = [...document.querySelectorAll(".tabs button")].find((x) => x.dataset.name === name);
@@ -177,8 +171,7 @@ function drawTabs(panels, active, onPick) {
     `<button role="tab" aria-selected="${p.name === active}" data-name="${esc(p.name)}">` +
     `${esc(p.title)}</button>`;
   /* THE PAGES APART FROM THE WORK sit below a rule, off the thread, with no heading: Method and
-     Access on the Mac (`APART` on the panel module). The rule alone sets them apart; a heading
-     over them read "The Mac only", which four pages on the thread also are (13 Oct 2026). */
+     Access on the Mac (`APART` on the panel module). The rule alone sets them apart. */
   const apart = panels.filter((p) => p.apart);
   $("#tabs").innerHTML =
     `<div class="thread">${panels.filter((p) => !p.apart).map(tab).join("")}</div>` +
@@ -246,9 +239,9 @@ const RENDER = {
         </section>`;
     };
 
-    /* THE SECOND CLOCK, added 7 Sep 2026 with store/journal.csv. Market time above, record
-       time below, and each block says which — a mark banked at a month end and a dividend
-       from the month before, entered days later, sit weeks apart on this page and answer different questions.
+    /* THE SECOND CLOCK, store/journal.csv. Market time above, record time below, and each block
+       says which — a mark banked at a month end and a dividend from the month before, entered
+       days later, sit weeks apart on this page and answer different questions.
 
        NOTHING IS COUNTED HERE. The rows are Book.journal()'s and the discrepancy is
        Book.journal_reconciliation()'s; the panel selected them and this draws them. */
@@ -311,9 +304,8 @@ const RENDER = {
        the price behind it. The SPREAD is on the Prices step, which is what makes this a date
        rather than an instant.
 
-       NO BASIS PILL: a call-out box beside the figure added nothing. The label
-       names what each figure is, and the panel still hands over its basis, held to
-       Book.HEADLINE by tests/test_figures.py. */
+       NO BASIS PILL: the label names what each figure is, and the panel still hands over its
+       basis, held to Book.HEADLINE by tests/test_figures.py. */
     /* THE BAND TAKES THE FIGURES THE PANEL LEADS WITH, each
        with the indented parts that follow it in the engine's order; the rest stay in the list
        below. Which figures lead is the panel's `lead`, never a choice made here. */
@@ -338,9 +330,7 @@ const RENDER = {
         { label: "Year to date", body: quiet(`from ${esc(day(y.opens))}${y.frozen ? "" : " · not frozen"}`) },
         ...(d.report ? [{ label: "Report", body: `${reportLink(d.report)}
           ${panelLink("reports", "every report")}` }] : [])],
-      /* THE FIGURES BESIDE WHAT NEEDS ATTENTION: the list of figures took 360px
-         of a 1,415px frame, the attention list ran on below it, and the page was taller than
-         the window. Side by side, the page is one screen. */
+      /* THE FIGURES BESIDE WHAT NEEDS ATTENTION, so the page is one screen. */
       work: `<div class="glance">
         ${figures(rest.map((f) => [f.label, fmt(f.value, f.kind), f.indent ? "indent" : ""]))}
         <section><h2>Needs attention</h2><ul class="items">${items}</ul></section></div>`,
@@ -351,9 +341,9 @@ const RENDER = {
 /* ---------------------------------------------------------------------------------------
    THE BENCH. An event, from evidence to an approved row.
 
-   IT PROPOSES NOTHING. Every value here is typed or picked by the owner; the screen's job is to
-   make the wrong value hard — closed vocabularies as dropdowns, a live word count against the
-   cap, and the three statement-grade limbs as fields rather than a paragraph to remember.
+   Every value here is typed, picked or approved by the owner; the screen's job is to make the
+   wrong value hard — closed vocabularies as dropdowns, a live word count against the cap, and
+   the three statement-grade limbs as fields rather than a paragraph to remember.
    --------------------------------------------------------------------------------------- */
 /* THE ACTION REGISTRY, held once. `desk/actions.py` is "the one place that says what this
    thing can do", and two screens ask it what an action writes and what it reaches. Cached
@@ -395,13 +385,12 @@ let OPEN_ID = null;        // which item is being worked
 let DRAWN = 0;             // the revision of it on screen, sent with every save
 let REVIEWING = false;     // the review before writing is on screen
 let BENCH_GONE = null;     // an item opened from a list that was out of date: its title
-/* Whether the document preview is open, remembered ACROSS a drawItem() rebuild. It used to be
-   inferred from `#preview-pane` having content, which is true of the DOM and not of the
-   intention: every re-render emptied the pane and so "forgot" that someone was reading. */
+/* Whether the document preview is open, remembered ACROSS a drawItem() rebuild. Not read off
+   `#preview-pane`, which every re-render empties. */
 let PREVIEW_OPEN = false;
 /* Set by a "trades" link (Holdings, Round Trips) and taken once by Trades, which then HOLDS the
-   company as a filter chosen there (14 Oct 2026): the box shows it and "clear filters" sits
-   beside it, so it narrows nothing out of sight. */
+   company as a filter chosen there: the box shows it and "clear filters" sits beside it, so it
+   narrows nothing out of sight. */
 let PENDING_COMPANY = null;
 /* THE RECEIPT FOR A REFRESH JUST WRITTEN, carried from the Price Refresh to What Changed and shown
    once. Same idiom and same reason as PENDING_COMPANY above: a completed write moves you to the
@@ -414,21 +403,19 @@ let LAST_REFRESH = null;
    through the DOM — the same reason `collect()` rebuilds a bench row from named inputs. */
 let IG_EVENTS = {};
 
-/* THE SWEEP SURVIVES LEAVING THE TAB. It lived only in the DOM, so working
-   ONE event and going back to its tab to carry on lost every other event the sweep had found —
-   and the only way back was another 30-day call to the broker. Held here and re-rendered on
-   return, which also repopulates IG_EVENTS, since the renderer fills it as it draws. */
+/* THE SWEEP SURVIVES LEAVING THE TAB. Losing it would cost another 30-day call to the broker.
+   Held here and re-rendered on return, which also repopulates IG_EVENTS, since the renderer
+   fills it as it draws. */
 let LAST_SWEEP = null;
 
 /* A FETCHED PRICE SWEEP SURVIVES LEAVING THE TAB until it is written or
-   discarded: it costs two vendors' calls, and a tab switch redrew the bay from the record. Held:
+   discarded: it costs two vendors' calls, and a tab switch redraws from the record. Held:
    the fetch's reply, the day it asked for, when it landed, and each row's tick and any figure
    typed into a line it left open — so the form comes back as it was left. */
 let PRICE_SWEEP = null;
 
-/* EACH PAGE'S FILTERS, kept while the desk is open: a switch redraws a
-   panel from the record, and its filters fell back to their defaults with it. By panel, then
-   by the control's id. */
+/* EACH PAGE'S FILTERS, kept while the desk is open: a switch redraws a panel from the record,
+   and its filters would reset with it. By panel, then by the control's id. */
 const HELD_FILTERS = {};
 
 /* LOCAL TIME, because it is read against a wall clock. The desk's other timestamps come from
@@ -467,8 +454,7 @@ async function landFiles(files) {
   for (const f of files) {
     try {
       /* `modified` is when the file was downloaded; it dates a document that states no date.
-         SENT ONLY WHEN THE FILE HAS ONE: an empty `modified=` is no number, and the drop was
-         refused for it (the review of 21 Oct 2026). */
+         SENT ONLY WHEN THE FILE HAS ONE: an empty `modified=` is no number, and is refused. */
       const r = await fetch(`/api/inbox?name=${encodeURIComponent(f.name)}` +
                             (f.lastModified ? `&modified=${f.lastModified}` : ""),
                             { method: "POST", body: f });
@@ -529,10 +515,8 @@ function wireDrop() {
   $("#pickbtn").addEventListener("click", () => pick.click());
 }
 
-/* ONE SAVE AT A TIME. Every change saved at once, so two in flight raced: the second carried the
-   revision the first was about to replace and came back 409, and each answer redrew the whole
-   item under the owner's hands (the review of 21 Oct 2026). Each save now waits for the one
-   before it, and so carries the revision that one drew. */
+/* ONE SAVE AT A TIME. Each save waits for the one before it, and so carries the revision that
+   one drew. */
 let SAVING = Promise.resolve();
 
 function benchSave(patch) {
@@ -542,8 +526,8 @@ function benchSave(patch) {
 }
 
 /* WHAT THE OWNER IS TYPING SURVIVES A REDRAW. A field not yet left has fired no change, so its
-   text was in no save, and the redraw a save ends with wiped it. It is put back, with the caret,
-   in the field of the same name. */
+   text is in no save, and a redraw would wipe it. It is put back, with the caret, in the field
+   of the same name. */
 function keepingTheField(draw) {
   const el = document.activeElement;
   const attr = el && $("#item") && $("#item").contains(el)
@@ -563,9 +547,8 @@ function keepingTheField(draw) {
 
 async function saveNow(patch) {
   /* A SAVE SAYS WHICH REVISION IT WAS MADE FROM. The page sends the whole item, so one left open
-     while a session handed in a reading wrote its old rows back over the reading (19 Oct 2026).
-     The server refuses a save from an older revision; the item is drawn again as it now is, and
-     the change is made again on that. */
+     would write its old rows over a newer save. The server refuses a save from an older
+     revision; the item is drawn again as it now is, and the change is made again on that. */
   const r = await fetch(`/api/bench/${OPEN_ID}`, {
     method: "PUT", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ ...patch, revision: DRAWN }),
@@ -577,8 +560,7 @@ async function saveNow(patch) {
       `<ul class="items"><li class="gap"><span class="tag">changed</span>drawn again; make the change again</li></ul>`);
     return d;
   }
-  /* A SAVE REFUSED FOR ANY OTHER REASON SAYS SO. It read the refusal as the item and drew
-     nothing, so the change looked made. */
+  /* A SAVE REFUSED FOR ANY OTHER REASON SAYS SO. */
   if (!r.ok) {
     const said = await r.json().catch(() => ({}));
     $("#item").insertAdjacentHTML("afterbegin",
@@ -595,11 +577,9 @@ function field(spec, value, quote, drafted) {
   const req = spec.required ? ` <span class="req">required</span>` : "";
   let input;
   if (spec.choices) {
-    /* EVERY CHOICE FIELD IS SEARCHABLE, not only the ticker. The combobox first went only to the
-       OPEN vocabularies — ticker and category — because those were the long ones. But `evidence`
-       has ten entries and `acct` can hold names that differ only in their last word (an ISA
-       against a SIPP at the same broker, say), and picking from a menu you cannot type into is the
-       slow way to reach either.
+    /* EVERY CHOICE FIELD IS SEARCHABLE, not only the ticker. `evidence` is long and `acct` can
+       hold names that differ only in their last word (an ISA against a SIPP at the same broker,
+       say), and picking from a menu you cannot type into is the slow way to reach either.
 
        CLOSED STILL MEANS CLOSED. The difference is not whether you may type — it is whether
        what you typed is allowed to stand: a closed field that does not resolve to a listed
@@ -611,8 +591,8 @@ function field(spec, value, quote, drafted) {
 
        AND IT IS A REAL COMBOBOX, NOT A <datalist>. A datalist is the correct HTML and is not
        reliably a SEARCH: Safari does not filter one as you type the way Chrome does, so a few
-       dozen tickers behaved as a long menu to scroll rather than something you type three letters
-       into. This filters on every keystroke, in every browser. */
+       dozen tickers become a long menu to scroll. This filters on every keystroke, in every
+       browser. */
     input = `<div class="combo"><input data-f="${esc(spec.name)}" value="${esc(v)}"` +
       ` autocomplete="off" role="combobox" aria-expanded="false"` +
       (spec.closed ? ` data-closed="1"` : "") +
@@ -620,8 +600,8 @@ function field(spec, value, quote, drafted) {
       `<ul class="combo-list" hidden></ul></div>`;
     } else if (spec.long) {
     /* PROSE DOES NOT FIT ON ONE LINE. The drafted note runs to a sentence or three, and a
-       one-line input made it something to scroll sideways rather than read — which is exactly
-       backwards for the one cell the machine wrote and the owner has to check. */
+       one-line input makes it a thing to scroll, not read — which is exactly backwards for the
+       one cell the machine wrote and the owner has to check. */
     input = `<textarea data-f="${esc(spec.name)}" rows="3">${esc(v)}</textarea>`;
   } else {
     input = `<input data-f="${esc(spec.name)}" value="${esc(v)}"` +
@@ -694,7 +674,7 @@ function drawItem(d) {
 
   /* A HOLDINGS EXPORT FILES THE ACCOUNT'S READING — these figures, read
      off it, written when it is filed. Its units are in the reading above. ii's states no cash,
-     so its reading is the stock alone and Reconcile adds the account's cash (2 Oct 2026). */
+     so its reading is the stock alone and Reconcile adds the account's cash. */
   const rdg = it.reading;
   const num = (v) => v === "" || v == null ? "—" : money(Number(v));
   const readingBlock = !rdg ? "" : `
@@ -829,8 +809,8 @@ function drawItem(d) {
     const derived = (r.derived || []).filter(untouched);
     const ratio = Object.fromEntries([...$("#rows").querySelectorAll(`[data-row="${i}"] [data-ratio]`)]
       .map((el) => [el.dataset.ratio, el.value]));
-    /* A ROW THE OWNER HAS EDITED IS THEIRS. It kept `machine`, and a re-read replaces machine
-       rows, so the correction went with the reading it corrected (the review of 21 Oct 2026). */
+    /* A ROW THE OWNER HAS EDITED IS THEIRS. A re-read replaces machine rows, so an edit drops
+       `machine`. */
     const mine = Object.keys(values).some((k) => !untouched(k));
     return { table: r.table, values, sources, drafted, derived, machine: r.machine && !mine,
              ...(r.adjustment ? { adjustment: ratio } : {}) };
@@ -870,9 +850,9 @@ function drawItem(d) {
   $("#item").querySelectorAll("[data-delrow]").forEach((b) =>
     b.addEventListener("click", () => benchSave({
       rows: collect().filter((_, i) => i !== +b.dataset.delrow) })));
-  // Withdraw takes the document with it; discard leaves it on the workbench, which is what
-  // that button has always done and what its API route promises. The two are side by side
-  // because the choice between them is the choice the operator actually has.
+  // Withdraw takes the document with it; discard leaves it on the workbench, as its API route
+  // promises. The two are side by side because the choice between them is the choice the
+  // operator actually has.
   const wd = $("#withdraw");
   if (wd) wd.addEventListener("click", async () => {
     const why = prompt("Why is this not needed? Recorded on the archived item.");
@@ -911,11 +891,8 @@ function drawItem(d) {
      preview you stop using. The item breaks out of the page measure while it is open. */
   /* THE DOCUMENT STAYS OPEN ACROSS A RE-RENDER.
      drawItem() rebuilds the whole item — after a read, after a save — and the template emits
-     an EMPTY #preview-pane, so the document vanished while `body.wide` stayed on: a two-column
-     layout with nothing in the right column, and the toggle back at "show the document". It
-     read as the preview needing a second press to come back.
-     A preview you have to reopen every time the form changes is one you stop using, which is
-     the same reason it was made sticky in the first place. */
+     an EMPTY #preview-pane, so the document is drawn into it again after each one.
+     A preview you have to reopen every time the form changes is one you stop using. */
   const showDoc = (on) => {
     const pane = $("#preview-pane");
     if (!pane) return;
@@ -950,7 +927,7 @@ async function openItem(id) {
   OPEN_ID = id;
   REVIEWING = false;
   /* AN ITEM GONE FROM UNDER THE LIST SAYS SO. Written, discarded or withdrawn in another window,
-     it 404s; the click did nothing and the page read as frozen (12 Oct 2026). */
+     it 404s, and the Bench is drawn again, naming it. */
   let d;
   try { d = await get(`/api/bench/${id}`); }
   catch (e) {
@@ -963,9 +940,7 @@ async function openItem(id) {
   drawItem(d);
 }
 
-/* ONE THING ON THE PAGE AT A TIME (12 Oct 2026). An opened item was drawn at the foot of the
-   page, under the drop zone and the sweep, its title in the section heading's small capitals,
-   and nothing moved you to it. While an item or the review is open, the list steps aside. */
+/* ONE THING ON THE PAGE AT A TIME. While an item or the review is open, the list steps aside. */
 function benchFocus(on) {
   const list = $("#bench-list");
   if (list) list.hidden = on;
@@ -983,9 +958,9 @@ function nextStep(d) {
     : `<p><button class="link" id="reviewall">review and write</button></p>`;
 }
 
-/* THE REVIEW BEFORE WRITING (12 Oct 2026). Every ready item, each row in the desk's words, its
-   reasons and its checks, and ONE PRESS PER ITEM: each event keeps its own approval, and a press
-   that wrote them all would be a background pass in all but name. */
+/* THE REVIEW BEFORE WRITING. Every ready item, each row in the desk's words, its reasons and its
+   checks, and ONE PRESS PER ITEM: each event keeps its own approval, and a press that wrote them
+   all would be a background pass in all but name. */
 async function reviewItems() {
   REVIEWING = true;
   OPEN_ID = null;
@@ -1049,30 +1024,25 @@ async function reviewItems() {
 }
 
 /* ---------------------------------------------------------------------------------------
-   Three panels that read; none of them computes. Every figure below is rendered
+   The panels that read; none computes. Every figure below is rendered
    exactly as the engine handed it over — a percentage worked out here would be a second
    calculation of something engine.py already answers, one remove further out.
 
-   THEY USE THE STYLE LAYER AND INVENT NOTHING. The first version reached for `class="n"`,
-   `.cards` and `.card`, none of which exist in app.css, so figures ran together as
-   "Realisations24" and no number was right-aligned. The house classes are `num` on a cell,
-   `.items` for a list, `.muted` for prose: use the style layer, never set it at a call site.
+   THEY USE THE STYLE LAYER AND INVENT NOTHING. The house classes are `num` on a cell, `.items`
+   for a list, `.muted` for prose: use the style layer, never set it at a call site.
    --------------------------------------------------------------------------------------- */
 
 /* SENTENCE CASE for a heading, a column head and a label: the words as written, first letter
-   up. The CSS set them all in capitals until 1 Oct 2026, which hid that "company" and
-   "Accounts" headed neighbouring columns. */
+   up. */
 const sentence = (t) => t ? t.charAt(0).toUpperCase() + t.slice(1) : t;
 
 /* COLUMN HEADINGS ARE NOT WRITTEN HERE. Each panel arrives with `heads`, its columns in
    house/headings.py's words for its tab, and paintPanel() keeps them for the page — the one list
-   the report reads too. This file kept its own map until
-   then, and "Entry" headed a local price on Holdings and a sterling cost on Round Trips. A field
-   the list has not named shows its own name, and tests/test_figures.py fails before it ships. */
+   the report reads too. A field the list has not named shows its own name, and
+   tests/test_figures.py fails before it ships. */
 let HEADS = {};
-/* A HEAD MAY BREAK AFTER A SLASH. "Proceeds/share (GBP)", a Round Trips head until 14 Oct 2026,
-   was otherwise one 85px word over figures 56px wide, and it pushed the page 9px past a 1,728px
-   window. The words stay the list's. */
+/* A HEAD MAY BREAK AFTER A SLASH: unbroken, a slashed head is one word, wider than its figures.
+   The words stay the list's. */
 const head = (c) => esc(sentence(HEADS[c] || c.replace(/_/g, " "))).replace(/\//g, "/<wbr>");
 
 const MONEYCOL = ["cost", "value", "gain", "unrealised", "proceeds",
@@ -1099,14 +1069,14 @@ const PCTCOL = ["unrealised_pct", "realised_pct", "weight", "return", "price_mov
                   money, but not a result.
 
    The Dashboard's headline gains stay plain on purpose. Colouring those needs a flag on
-   Book.HEADLINE, because a renderer must not decide what a figure MEANS by reading its label —
-   that is the defect that got figures.py deleted. Colour's job here is scanning a column, and
-   the Dashboard is a summary list rather than a table you scan. */
+   Book.HEADLINE, because a renderer must not decide what a figure MEANS by reading its label.
+   Colour's job here is scanning a column, and the Dashboard is a summary list rather than a
+   table you scan. */
 const MOVEMENTCOL = ["gain", "unrealised", "unrealised_pct", "realised_pct", "return",
                      "change", "price_effect", "fx_effect", "price_move_pct",
                      "realised", "life_gain", "life_pct"];
 
-/* THE FOUR ADDED 6 SEP 2026 FOR What Changed, AND THE ONE HELD BACK. `change`, `price_effect`,
+/* THE FOUR FOR What Changed, AND THE ONE HELD BACK. `change`, `price_effect`,
    `fx_effect` and `price_move_pct` are results: their sign says whether the book is better or
    worse off, which is the test above. `transacted` is NOT and must never join them — buying
    £5,000.00 of shares is not a gain and selling £2,500.00 of them is not a loss. It is the
@@ -1123,16 +1093,12 @@ const movement = (c, v) =>
 /* Why it works that way, BELOW the work it describes: explanation above a table
    dilutes its data, and the desk is for managing the accounts.
 
-   Price Refresh and Reconcile each opened with four explanation blocks, so the table on one and
-   What disagrees on the other began below the fold. The steps keep their TAG, their LABEL and
-   their STATE line — "13 days old · limit 21 days" — which
-   is the work. The paragraph saying why the step exists comes here, closed.
+   The steps keep their TAG, their LABEL and their STATE line — "13 days old · limit 21 days" —
+   which is the work. The paragraph saying why the step exists comes here, closed.
 
-   ONE MECHANISM, NOT TWO. A second fold with its own markup would drift from this one the way
-   the four Reconcile blocks and the four Price Refresh blocks already had. */
+   ONE MECHANISM, NOT TWO. A second fold with its own markup would drift from this one. */
 /* THE STEPS, EXPLAINED ONCE AND BELOW THE TABLE. `Reading` keeps its links on screen because
-   those are the work; the reasons live here, Events' among them: the step that reported a
-   sweep went on 13 Oct 2026, being only this browser tab's memory of one. */
+   those are the work; the reasons live here, Events' among them. */
 const RECONCILE_WHY = [
   ["Events", "A missing trade makes the book's own figure wrong, and this check reports it as a "
              + "difference: a difference may be an event not yet entered. A sweep on the Bench "
@@ -1150,10 +1116,8 @@ const whyFold = (summary, pairs) => pairs.length ? `
     <dl>${pairs.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl>
   </details>` : "";
 
-/* THE STEPS ON ONE LINE. Price Refresh and Reconcile each stacked their
-   steps one to a row, so a step's state, its button and the date box sat rows apart and the
-   work began below them. Every step now reads the same way, left to right: its state, its name,
-   then what can be pressed. A step with no state yet shows no badge. `body` is markup. */
+/* THE STEPS ON ONE LINE. Every step reads the same way, left to right: its state, its name, then
+   what can be pressed. A step with no state yet shows no badge. `body` is markup. */
 const stepLine = (steps) => `<ol class="steps">${steps.map((s) => `
   <li class="${s.state || "pending"}"${s.title ? ` title="${esc(s.title)}"` : ""}>${s.state
     ? `<span class="tag">${esc(s.tag || s.state)}</span>` : ""}<strong>${esc(s.label)}</strong>
@@ -1173,9 +1137,8 @@ const panelLink = (panel, label) => !PANELS.has(panel) ? "" :
 const reportLink = (q) =>
   `<a href="/api/report/${esc(q.quarter_end)}" target="_blank" rel="noopener">${esc(q.quarter)}</a>`;
 
-/* THE PAGE TEMPLATE: the pages had been adjusted one at a time, and it showed. Every tab is drawn
-   through this, so the bands come in one order everywhere and a change to a band is a change
-   to every page that has it:
+/* THE PAGE TEMPLATE. Every tab is drawn through this, so the bands come in one order everywhere
+   and a change to a band is a change to every page that has it:
 
      1 TITLE    the tab's own name, and one short line of what the page's figures are
      2 STATUS   the step line: state, name, what can be pressed            `stepLine()`
@@ -1185,8 +1148,7 @@ const reportLink = (q) =>
      6 WHY      every explanation, closed, at the foot                       `whyFold()`
 
    A band a page has nothing for is left out. NOTHING EXPLAINS ITSELF ABOVE THE WORK: a note box
-   between the figures and the table pushed the table down to be read once. Every page fills the
-   window; `data-wide` is what widens it. */
+   there pushes the table down. Every page fills the window; `data-wide` is what widens it. */
 const page = ({ scope = "", field = null, status = null, figures: strip = null, filters: row = null,
                 work = "", why = null }) => {
   const head = `<header class="page-head"><h1>${esc(PAGE_TITLE)}</h1>${scope
@@ -1205,17 +1167,13 @@ const page = ({ scope = "", field = null, status = null, figures: strip = null, 
 };
 
 /* A LONG NOTE MUST NOT SET THE ROW HEIGHT. Round Trips carries the why, and some of those
-   run to several sentences — rendered plain they made every row several centimetres deep and
-   the table unreadable. Clamped to one line with the whole text on hover and in the title.
+   run to several sentences — rendered plain they would set the row's height. Clamped to one
+   line with the whole text on hover and in the title.
 
-   NOR MUST A LABEL. With the notes clamped, Round Trips' rows were still three to five lines
-   deep, because a date, an account and a company wrapped in their narrow columns (measured
-   29 Sep 2026). Every cell of a data row is one line (app.css); a company name and Holdings'
-   list of accounts are read WHOLE, where they had been clipped at 16rem.
-   The table scrolls sideways instead. */
+   NOR MUST A LABEL. Every cell of a data row is one line (app.css); a company name and
+   Holdings' list of accounts are read WHOLE. The table scrolls sideways instead. */
 const ONELINE = ["closed", "realisation_id", "ticker", "account"];
-/* A DATE IS READ WHOLE WHATEVER ITS COLUMN IS CALLED: Holdings' Opened broke at its hyphens and
-   doubled every row (30 Sep 2026). */
+/* A DATE IS READ WHOLE WHATEVER ITS COLUMN IS CALLED: an ISO date breaks at its hyphens. */
 const ISODATE = ISOMOMENT;
 const cell = (c, v) => {
   if (v == null) return `<td>—</td>`;
@@ -1232,12 +1190,9 @@ const cell = (c, v) => {
   return `<td>${esc(v)}</td>`;
 };
 
-/* A HEADING MUST MEET ITS NUMBERS. cell() decides right-alignment per
-   VALUE, but every <th> here was rendered plain — so a right-aligned column of figures sat
-   under a left-aligned heading, and Holdings, Performance and Round Trips each read as though
-   the headings belonged to the column to their left. `th.num` has been in app.css all along
-   and the two hand-built tables already used it; only this generic one did not. Decided per
-   COLUMN, not per cell, because a heading cannot be right for some of its rows. */
+/* A HEADING MUST MEET ITS NUMBERS. cell() decides right-alignment per VALUE, so a heading over
+   figures takes `th.num` too. Decided per COLUMN, not per cell, because a heading cannot be
+   right for some of its rows. */
 const isNumCol = (c, rows) => {
   if (MONEYCOL.includes(c) || PCTCOL.includes(c)) return true;
   const first = rows.find((r) => r[c] != null);
@@ -1247,17 +1202,13 @@ const isNumCol = (c, rows) => {
 /* ONE FILTER ROW, THREE PANELS: the same form, order and layout across Holdings, Round
    Trips and Trades, in the grey filter boxes.
 
-   They had three shapes. Trades used labelled `.f` boxes in a grid; Holdings and Round
-   Trips used inline controls in a paragraph with the label sitting to the LEFT of the select,
-   so the same "Account" dropdown was a different object on each tab. The `.f` box is the one
-   chosen, and it is already the bench's field, so this is the desk having one idea of a
-   labelled control rather than two.
+   The `.f` box, the bench's field: one idea of a labelled control.
 
-   THE ORDER IS FIXED AND THE SAME EVERYWHERE, applying only the fields a panel has (S8, 14 Oct
-   2026): account · company · ticker · from · to, then the page's own control (direction on Trades,
-   the group by on Holdings). Who, then what, then when, so a box shared by two pages sits in the
-   same place on both: Account is the first box on every page, Company and Ticker the second and
-   third, the dates the fourth and fifth. No filter reads "all" everywhere. */
+   THE ORDER IS FIXED AND THE SAME EVERYWHERE, applying only the fields a panel has: account ·
+   company · ticker · from · to, then the page's own control (direction on Trades, the group by
+   on Holdings). Who, then what, then when, so a box shared by two pages sits in the same place
+   on both: Account is the first box on every page, Company and Ticker the second and third, the
+   dates the fourth and fifth. No filter reads "all" everywhere. */
 const filterField = (label, control) =>
   `<label class="f"><span>${esc(sentence(label))}</span>${control}</label>`;
 
@@ -1269,9 +1220,8 @@ const filters = (fields, clearId) => `
    are untouched.
 
    `inserts` PUTS A HAND-BUILT COLUMN IN THE MIDDLE. `extraCell` only ever appends, so a
-   column it renders lands after everything — including the row's controls, 340px past the
-   right edge of Holdings. A column belongs where its meaning puts it, so `{after, head, cell}`
-   names the column it follows.
+   column it renders lands after everything — including the row's controls. A column belongs
+   where its meaning puts it, so `{after, head, cell}` names the column it follows.
 
    `afterRow` OPENS A FULL-WIDTH ROW UNDER EACH ROW, which is the only way a table can carry a
    detail pane: a note cannot live inside a <tr> and still span the columns. The colspan is
@@ -1290,12 +1240,10 @@ const filters = (fields, clearId) => `
    and table, as the filters are, so a filter redraw keeps it. It orders what the engine sent;
    nothing is worked out. A table whose order IS its layout opts out (`sort: false`): the tables
    that name the book first and then each account once (Performance's quarters and its year,
-   Accounts' Income and costs; S8, 14 Oct 2026), and a detail's mark history.
+   Accounts' Income and costs), and a detail's mark history.
 
-   A SORTING TABLE NAMES ITSELF (`name`), and its sort is held under the page and that name. It
-   was held under the page and the table's COLUMNS, so two tables drawn with the same columns
-   held one sort between them: Change pressed on What Changed's Shares ordered its Spread bets
-   the next time the page was drawn (14 Oct 2026). */
+   A SORTING TABLE NAMES ITSELF (`name`), and its sort is held under the page and that name.
+   Keyed by COLUMNS, two tables alike would share one sort. */
 const SORTS = {};
 const SORTED = new Map();
 let SORTED_NEXT = 0;
@@ -1353,7 +1301,7 @@ const table = (rows, cols, extraHead = "", extraCell = () => "", opts = {}) => {
 
 /* THE HEADLINE STRIP, the template's third band: a label, its figure, and optionally `lead` or
    `indent`, which is how the Dashboard sets a total above its parts. The label says what each
-   figure is; the basis pill beside it went on 1 Oct 2026. */
+   figure is. */
 const figures = (rows) => `<table class="figures"><tbody>${rows.map(([label, value, kind]) =>
   `<tr${kind === "lead" ? ` class="lead"` : ""}>` +
   `<td${kind === "indent" ? ` class="indent"` : ""}>${esc(label)}</td>` +
@@ -1363,18 +1311,13 @@ const figures = (rows) => `<table class="figures"><tbody>${rows.map(([label, val
    feeds/ig.py, and working one out here would be a second calculation of something the feed already
    answered. A key with no renderer falls back to JSON, which is honest about being unfinished
    rather than hiding the result. */
-/* THE ACTION STRIP, SHARED BY TWO PANELS FROM 8 SEPTEMBER 2026.
-   It lived inside the `accounts` renderer (the Reconcile tab), which was fine while that was the
-   only panel with broker buttons. The 30-day event sweep moved to the Bench that day — it belongs where its
-   output goes — so two panels render actions now, and a copied strip would be two strips
-   drifting apart. The panel NAME is the only thing that differs. */
+/* THE ACTION STRIP: a page's standing broker buttons. */
 async function wireActions(panelName) {
   /* INLINE ACTIONS ARE NOT PANEL BUTTONS. "Work this event" belongs to one row of a sweep
-     and is rendered there; listed here it was a standing button with nothing to work.
+     and is rendered there; listed here it would be a button with nothing to work.
 
-     EVERY OTHER ACTION OF THE PAGE IS A STANDING BUTTON. The strip once took a list of names,
-     because the restart was registered on the Bench for want of another home; since 13 Oct 2026
-     it is the shell's own ("desk"), drawn by the rail, and no page's list needs trimming. */
+     EVERY OTHER ACTION OF THE PAGE IS A STANDING BUTTON. The restart is the shell's own
+     ("desk"), drawn by the rail, and no page's list needs trimming. */
   const acts = Object.values(await loadActions())
     .filter((a) => a.panel === panelName && !a.inline);
   /* THE BUTTON AND WHAT IT REACHES, and no paragraph: what it does is in the page's fold. */
@@ -1394,9 +1337,9 @@ async function wireActions(panelName) {
         if (raw) { out.textContent = raw; return; }
         if (!ok) { out.textContent = body.detail || JSON.stringify(body, null, 2); return; }
 
-        /* THE ANSWER IS FIGURES, NOT JSON: asking the broker had returned a screen of code. A
-           renderer per action, and JSON only where there is none, so a
-           NEW action still shows its result rather than nothing while its view is written. */
+        /* THE ANSWER IS FIGURES, NOT JSON. A renderer per action, and JSON only where there is
+           none, so a NEW action still shows its result rather than nothing while its view is
+           written. */
         const payload = body.result || {};
         if (payload.ok === false) {
           out.textContent = payload.error + (payload.hint ? `\n\n${payload.hint}` : "");
@@ -1430,7 +1373,7 @@ const ACTION_VIEW = {
        that already tie are a count. An event is never written from here — it is reported, and
        worked on the bench.
 
-       A BUTTON PER EVENT, from 3 Sep 2026, and deliberately not one button for the sweep.
+       A BUTTON PER EVENT, and deliberately not one button for the sweep.
        Carrying several events across in a single press would be a background pass in all but name.
        Each press opens ONE bench item, with the dealId as its evidence reference, and is
        idempotent on that id — press twice and you land on the item you already have. */
@@ -1447,10 +1390,8 @@ const ACTION_VIEW = {
       <h3>${esc(label)} <span class="tag gap">${rows.length}</span></h3>
       <ul class="items">${rows.map((r) => {
         IG_EVENTS[r.ref] = r;
-        /* THE STATUS SITS BESIDE THE EVENT, NOT UNDER IT. `.event-head`, the ledger's old flex row,
-           wrapped; once the button's label became "on the bench — why_exited still owed" it
-           broke onto its own line and read as a second column. `.swept` gives the row a fixed
-           shape — description left, status right, neither wrapping into the other. */
+        /* THE STATUS SITS BESIDE THE EVENT, NOT UNDER IT. `.swept` gives the row a fixed shape —
+           description left, status right, neither wrapping into the other. */
         /* WHAT THIS EVENT IS NOW, not what it was when the sweep ran. An event already in the
            record is DONE and offering to work it again is how a duplicate gets made; one on the
            bench is in progress and says what it still owes. */
@@ -1502,14 +1443,12 @@ const points = (v) => v == null ? "—"
   : Number(v).toLocaleString("en-GB", { maximumFractionDigits: 2 }) + " pts";
 const pointsCell = (v) => `<td class="num">${points(v)}</td>`;
 
-/* THE DETAIL UNDER A ROW: ONE LINK ACROSS THE DESK, AND ONE ORDER INSIDE IT (12 Oct 2026).
+/* THE DETAIL UNDER A ROW: ONE LINK ACROSS THE DESK, AND ONE ORDER INSIDE IT.
    Every table's row opens the same way, by "detail", to whatever the record holds on it, each
    part under its own heading from house/headings.py and ALWAYS IN THIS ORDER: the judgement,
    then what happened, then where it came from and what it belongs to, then the marks, which are
    a table. A page names the parts it draws (its panel's DETAIL_COLUMNS, sent as `detail`); a
-   heading with nothing logged under it is left out. It replaced three toggles that each said
-   what they opened differently — "why" over a trade's note, "detail" over its source, "note" or
-   "why" on Round Trips, "marks" and "why" side by side on Holdings. */
+   heading with nothing logged under it is left out. */
 const DETAIL = ["why_entered", "why_exited", "research_notes", "note", "source", "quality",
                 "broker_ref", "trade_id", "sale_id", "realisation_id", "contract", "funding",
                 "fx_at_trade",
@@ -1624,8 +1563,7 @@ const allocation = (d) => !d.allocation ? "" : `<h2>Where the exposure sits</h2>
 
 Object.assign(RENDER, {
   holdings(d) {
-    /* OWNED AND NOTIONAL, APART AND NEVER ADDED. Both come from the engine — this panel used
-       to sum its own rows and was wrong whenever it grouped by issuer. */
+    /* OWNED AND NOTIONAL, APART AND NEVER ADDED. Both come from the engine. */
     return page({
       scope: "securities owned and spread-bet notional, shown apart and never added",
       /* A SECOND DOOR TO THE BAY, because this is where you are standing when you doubt a
@@ -1662,10 +1600,8 @@ Object.assign(RENDER, {
 
   "round-trips"(d) {
     if (d.view === "life") return companyLives(d);
-    /* THE FIGURES ARE THE SELECTION'S. They were the whole book's with the
-       filtered ones relegated to a line underneath, so narrowing to an account changed the
-       table and left the three headline numbers answering a question nobody had asked. When a
-       filter is on, the whole book sits beside them as context rather than as the answer. */
+    /* THE FIGURES ARE THE SELECTION'S. When a filter is on, the whole book sits beside them as
+       context rather than as the answer. */
     const t = d.totals, w = d.whole;
     return page({
       scope: "every closed position, gain net of dealing commission",
@@ -1690,8 +1626,8 @@ Object.assign(RENDER, {
         viewField(d),
       ] },
       /* THE SAME "trades" LINK AS HOLDINGS', by company: the sales a round trip took, and the
-         buys before them, are Trades' to show (Sells and Realisation ID left the page for it,
-         12 Oct 2026). Then the row's detail: its whys, research notes and note. */
+         buys before them, are Trades' to show. Then the row's detail: its whys, research notes
+         and note. */
       work: table(d.rows, d.columns, "<th></th>",
                   (r) => `<td class="nowrap">${r.company
                     ? `<button class="link" data-trades="${esc(r.company)}">trades</button>` : ""}${
@@ -1757,11 +1693,11 @@ Object.assign(RENDER, {
      here.
 
      A QUARTER STILL OPEN SHOWS ITS TAG ALONE: before its end the gate can only say its NAV rows
-     are not frozen yet, which "open" already says (13 Oct 2026). What stops a report shows from
-     the day the quarter ends.
+     are not frozen yet, which "open" already says. What stops a report shows from the day the
+     quarter ends.
 
      NO DATE BESIDE A NAME: "Q3 2026" and "2026 year end" say the period, as Performance's
-     Quarter does (13 Oct 2026). */
+     Quarter does. */
   reports(d) {
     const state = (q) => !q.closed ? ["note", q.ended ? "to close" : "open"]
                        : q.gaps.length ? ["gap", "not ready"] : ["ok", "ready"];
@@ -1788,12 +1724,8 @@ Object.assign(RENDER, {
   performance(d) {
     const quarters = [...d.firm, ...d.accounts];
     const opens = new Set(quarters.filter((r, n) => !n || r.account !== quarters[n - 1].account));
-    /* THE INDEX COMPARISON WAS HERE AND IS GONE — the presentation on 2 Sep 2026 and the
-       derivation behind it on 3 Sep, and there is to be no comparison to a benchmark of any kind. An
-       index return is TIME-WEIGHTED, having no cash flows, and this book's is
-       modified Dietz on NAV, day-weighted, which is MONEY-WEIGHTED and moves with the size and timing of every
-       flow into positions. Subtracting one from the other asserted an equivalence that does
-       not hold, and no index is coming back beside these figures. */
+    /* NO BENCHMARK: an index return is TIME-WEIGHTED and this book's MONEY-WEIGHTED, and the two
+       do not subtract. */
     return page({
       scope: `every return on ${d.measure}, modified Dietz (day-weighted)`,
       status: d.reports.length ? [{ label: "Reports",
@@ -1801,8 +1733,7 @@ Object.assign(RENDER, {
       /* THE BOOK AND EACH ACCOUNT IN ONE TABLE, under one set of heads:
          the same columns named alike, so a figure is read down its column from the book to
          any account. THE ACCOUNT IS A COLUMN, named on its first row and blank on the rest,
-         with a rule where the next one starts: the title rows it replaced were bold on a band
-         and held no figure (13 Oct 2026). */
+         with a rule where the next one starts. */
       /* ONE GRID FOR THE TWO TABLES: the year's table takes the Quarter
          column's place with "Year to date", so its opening NAV, capital deployed, income,
          closing value, gain and return each sit under the quarter table's, in the same widths;
@@ -1979,7 +1910,7 @@ RENDER_LATE = {
       $("#q-count").textContent =
         `${res.total} trade${res.total === 1 ? "" : "s"}` +
         (res.span.first ? ` · ${day(res.span.first)} to ${day(res.span.last)}` : "");
-      /* A TABLE IN HOLDINGS' ORDER (12 Oct 2026): the deal as struck on the line, and
+      /* A TABLE IN HOLDINGS' ORDER: the deal as struck on the line, and
          everything else the record holds on the trade in its detail. A spread bet reads in its
          own terms, a stake per point at a level in points, with no currency of its own. */
       $("#q-rows").innerHTML = res.rows.length ? table(res.rows, d.columns, "<th></th>",
@@ -2003,9 +1934,9 @@ RENDER_LATE = {
       draw(await get(`/api/trades?${p}`));
     };
     const FILTERS = ["q-account", "q-company", "q-ticker", "q-start", "q-end", "q-direction"];
-    /* THE TICKER BOX IS THE CHOSEN COMPANY'S (14 Oct 2026), so it cannot name a line the
-       Company box has ruled out; a company chosen starts its ticker afresh. Bound before `run`,
-       so the query reads the ticker it leaves. */
+    /* THE TICKER BOX IS THE CHOSEN COMPANY'S, so it cannot name a line the Company box has ruled
+       out; a company chosen starts its ticker afresh. Bound before `run`, so the query reads the
+       ticker it leaves. */
     const tickers = (sel = "") => {
       const co = $("#q-company").value;
       $("#q-ticker").innerHTML = opts(co ? d.company_tickers[co] || [] : d.tickers, sel);
@@ -2047,7 +1978,7 @@ RENDER_LATE = {
     /* THE TAG READS IN WORDS: the engine's code is "units-agree", the reader's is "units agree". */
     const verdictWords = (v) => v.replace(/-/g, " ");
     /* AN IG READING'S FIVE FIGURES, under the broker's figure, in IG's own words: the reading
-       keeps them once each (13 Oct 2026), and a figure kept is a figure shown. */
+       keeps them once each, and a figure kept is a figure shown. */
     const fig = (v) => v == null ? "—" : money(v);
     const igFigures = (r) => r.funds == null ? "" : `<br><span class="muted small">funds ${fig(r.funds)}
         · running P/L ${fig(r.running_pl)} · deposit ${fig(r.deposit)} · available ${fig(r.available)}</span>`;
@@ -2062,9 +1993,9 @@ RENDER_LATE = {
         <td>${r.document ? esc(r.document) : "—"}</td>
       </tr>`).join("");
 
-    /* REPORT ONLY WHAT DISAGREES is the reconcile skill's instruction, and it is a reporting
-       rule rather than a data one — the panel hands over every row, and the lead is what needs
-       attention. A clean book leads with a clean line, not with silence. */
+    /* REPORT ONLY WHAT DISAGREES: a reporting rule rather than a data one — the panel hands over
+       every row, and the lead is what needs attention. A clean book leads with a clean line, not
+       with silence. */
     const lead = d.disagreements.length
       ? `<ul class="items">${d.disagreements.map((r) =>
           `<li class="problem"><span class="tag">differs</span><strong>${esc(r.account)}</strong>
@@ -2075,8 +2006,7 @@ RENDER_LATE = {
 
     /* THE ENGINE'S OWN WORDS, ONCE. Each unjudged account's `rule` and its difference sit in
        its table row, where a reader already looks; the lead names the accounts and says once
-       what a difference beside them is. It used to repeat each row's rule and a caveat
-       sentence per account above the table (29 Sep 2026). */
+       what a difference beside them is. */
     const gaps = d.gaps.length ? `<ul class="items"><li class="gap"><span class="tag">not
         judged</span><strong>${d.gaps.map((r) => esc(r.account)).join(" · ")}</strong> — the
         table says why.</li></ul>`
@@ -2105,7 +2035,7 @@ RENDER_LATE = {
     PREVIEW_OPEN = false;
     document.body.classList.remove("wide");
     BENCH = d;
-    /* AN EMPTY LIST IS NOT DRAWN: the status line already counts it (12 Oct 2026). */
+    /* AN EMPTY LIST IS NOT DRAWN: the status line already counts it. */
     const items = d.items.length ? d.items.map((i) =>
       `<li class="${i.ready ? "clear" : "note"}"><span class="tag">${i.ready ? "ready" : i.state}</span>` +
       `<button class="link" data-open="${esc(i.id)}">${esc(i.title)}</button> ` +
@@ -2147,10 +2077,7 @@ RENDER_LATE = {
     const a = d.accepts;
     const mb = Math.round(a.max_bytes / (1024 * 1024));
 
-    /* THE THIRD ROUTE IN, moved here from what is now Reconcile on 8 September 2026. The bench has
-       three ways to start work — a dropped document, `+ new item`, and a swept IG event — and
-       this was the only one that began on a different tab, so "Work this event" had to carry
-       you across to reach the item it had just made. */
+    /* EVERY ROUTE IN STARTS HERE: a dropped document, `+ new item` and a swept IG event. */
     const ready = d.items.filter((i) => i.ready).length;
     $("#main").innerHTML = page({
       scope: "an event, from evidence to an approved row",
@@ -2232,10 +2159,11 @@ RENDER_LATE = {
     if (REVIEWING) reviewItems();
   },
 
-  /* PRICE REFRESH — the only screen on this desk that writes.
+  /* PRICE REFRESH — the screen that writes marks.
 
-     THE FOUR STEPS ARE THE PANEL, not decoration. feeds/refresh.py exists as ONE command because two
-     commands meant two chances to forget the first. Here the same ordering is what you look at while you work.
+     THE FOUR STEPS ARE THE PANEL, not decoration. feeds/refresh.py exists as ONE command because
+     two commands mean two chances to forget the first. Here the same ordering is what you look at
+     while you work.
 
      A ROW CANNOT BE TICKED UNTIL IT IS COMPLETE. Rule 1 of docs/prices.md — update a price and
      its date together — enforced at the point of entry rather than explained afterwards. The
@@ -2261,7 +2189,7 @@ RENDER_LATE = {
        never typed: the door refuses one without an instant (`struck`, `at`), which only a feed
        supplies — and a fetched figure edited before it was ticked would have travelled under
        the vendor's source. A RATE the sweep left unpriced is the one line opened for typing,
-       by `unpriced()` (29 Sep 2026). The tick waits for all three cells. */
+       by `unpriced()`. The tick waits for all three cells. */
     /* WHERE THE FIGURE CAME FROM, once it is there. Empty until something fills the row, then
        `fetched` or `derived` — quotes and a cross ticked identically in one column is
        how the difference stops being visible, and the difference is the whole of the glossary's
@@ -2329,11 +2257,9 @@ RENDER_LATE = {
     const takeAll = (kind) =>
       `<label class="tick"><input type="checkbox" data-all="${kind}" disabled> all</label>`;
 
-    /* ONE TABLE, THREE GROUPS. The IG accounts were a table of their own
-       that appeared only after the fetch, with no take-all and its ticks out of line with the
-       rest, and both readings were missed on the day's sweep. One set of columns puts every tick
-       under the one above it; each group keeps its own take-all, because the three arrive by
-       different routes and are finished at different moments. */
+    /* ONE TABLE, BY KIND. One set of columns puts every tick under the one above it; each group
+       keeps its own take-all, because they arrive by different routes and are finished at
+       different moments. */
     const group = (label, kind, rows) => `
       <tbody><tr><th colspan="7">${label}</th><th>${takeAll(kind)}</th></tr>${rows.join("")}</tbody>`;
 
@@ -2356,18 +2282,13 @@ RENDER_LATE = {
                                             + "record until you ask it to."],
             ...d.steps.map((s) => [s.label, s.detail])],
       work: `
-      ${/* WHAT THIS FORM CAN REPLACE, NOT WHAT NEEDS REPLACING. It read "N price(s) and M
-            rate(s) due" whatever their ages, and some had been fetched minutes earlier by a
-            reading on the Reconcile tab. The LIST is still the whole set —
-            docs/prices.md: refresh the whole book or none of it — so the count that changed
-            is the one in words. `stale` is the engine's, against rules.PRICE_AGE_LIMIT. */ ""}
+      ${/* WHAT THIS FORM CAN REPLACE, NOT WHAT NEEDS REPLACING. The LIST is the whole set
+            (docs/prices.md: the whole book or none); the stale count is in words. `stale` is
+            the engine's, against rules.PRICE_AGE_LIMIT. */ ""}
       <div id="rb-fetched"></div>
       <pre id="rb-out" class="paste" hidden></pre>
-      ${/* TAKE THE WHOLE COLUMN. Fetching the IG levels fills a row per
-            contract at once and every one of them then had to be ticked by hand, a click per row
-            to accept one machine answer. One per table, not one for the page: prices and rates
-            are two populations that arrive by different routes and are finished at different
-            moments — the contracts come from the broker while the shares are still being typed.
+      ${/* TAKE THE WHOLE COLUMN. A fetch fills many rows at once. One per group, not one for the
+            page: the groups arrive by different routes and are finished at different moments.
 
             IT ONLY EVER TICKS A COMPLETE ROW, and that is the rule surviving the convenience.
             A line without its figure, its date AND its source cannot be ticked one at a time,
@@ -2445,10 +2366,8 @@ RENDER_LATE = {
        reaches only rows the form has already ENABLED, so an incomplete line stays untaken —
        select-all is a shortcut through the clicking, never through the rule.
 
-       ON THE FORM, NOT ON #main (30 Sep 2026). #main outlives every panel, so each visit here
-       added three more handlers that stayed behind: four visits in, a filter change on another
-       page threw four errors, and a held sweep's ticks were one handler away from being
-       recorded as empty. The form is redrawn with the panel, and its handlers with it. */
+       ON THE FORM, NOT ON #main. #main outlives every panel, so handlers there pile up a set per
+       visit. The form is redrawn with the panel, and its handlers with it. */
     const form = $("#rb-form");
     form.addEventListener("change", (e) => {
       const kind = e.target?.dataset?.all;
@@ -2460,19 +2379,15 @@ RENDER_LATE = {
     });
     /* NOT WHILE THE SELECT-ALL BOX ITSELF IS THE TARGET. A checkbox fires `input` BEFORE
        `change`, and retick() treats the header box as a FOLLOWER of its column — so on `input`
-       it overwrote the box the click had just set, and the `change` handler above then read the
-       overwritten value. The control could only ever UNTICK: from an empty column it read
-       `false` and did nothing, from a part-ticked one it read `false` and CLEARED the ticks,
-       and from a full one it read `true` and left them. Found on the first live refresh
-       on 8 Sep 2026. Row boxes and text fields still retick on `input` as before. */
+       it would overwrite the box the click set before `change` reads it. Row boxes and text
+       fields retick on `input`. */
     form.addEventListener("input", (e) => { if (!e.target?.dataset?.all) retick(); });
     form.addEventListener("change", retick);
     retick();
 
     /* ONE LINE INTO ONE ROW. `origin` is what the row wears afterwards — see priceRow. The
        fetch FILLS the form and never ticks it: every figure still has to be looked at and
-       taken, which is the human check between a vendor's number and the record, and the
-       contract feeds/ig.py has kept since it was written. */
+       taken, which is the human check between a vendor's number and the record. */
     const fill = (key, kind, values, origin) => {
       const tr = rows().find((t) => t.dataset.key === key && t.dataset.kind === kind);
       if (!tr) return false;
@@ -2487,7 +2402,7 @@ RENDER_LATE = {
       tr.dataset.at = values.at || "";
       tr.dataset.ig = values.ig ? "1" : "";
       /* A LIVE READ SAYS ITS TIME AND A CLOSE SAYS SO, beside the date the write
-         sends: the two were the same date, and only the source told them apart. */
+         sends: the two can share a date. */
       const when = tr.querySelector("[data-when]");
       if (when) when.textContent = values.struck === "close" ? "close"
         : values.at ? clock(values.at) : "";
@@ -2710,12 +2625,10 @@ RENDER_LATE = {
           out.textContent = `refused — nothing was written.\n\n${res.refused}`;
           return;
         }
-        /* A WRITTEN REFRESH MOVES YOU ON. The bay is the machine and What
-           changed is the report, so finishing here means reading there — and re-rendering the
-           bay, which is what this used to do, left you looking at the empty form you had just
-           emptied. A REFUSAL DOES NOT MOVE: the message names the line and the rule that
-           stopped it, and navigating away from it would throw away the only thing worth reading.
-           The receipt travels; see LAST_REFRESH. */
+        /* A WRITTEN REFRESH MOVES YOU ON. The bay is the machine and What Changed is the report,
+           so finishing here means reading there. A REFUSAL DOES NOT MOVE: the message names the
+           line and the rule that stopped it, and navigating away from it would throw away the
+           only thing worth reading. The receipt travels; see LAST_REFRESH. */
         PRICE_SWEEP = null;
         $("#rb-discard").hidden = true;
         if (closeOf) {
@@ -2801,7 +2714,7 @@ function wireStage5(name, fresh = true) {
     if (tk) tk.addEventListener("change", go);
     if (acct) acct.addEventListener("change", go);
     /* A COMPANY CHOSEN STARTS ITS TICKER AFRESH, and the page comes back with that company's
-       codes in the Ticker box (14 Oct 2026). */
+       codes in the Ticker box. */
     if (co) co.addEventListener("change", () => { if (tk) tk.value = ""; go(); });
     /* `change` and not `input`: a date input fires on every keystroke while a year is being
        typed, and each one would be a request for a range nobody meant. */
@@ -2815,20 +2728,6 @@ function wireStage5(name, fresh = true) {
   }
 }
 
-/* A PANEL WITH A WIDE TABLE TAKES THE WINDOW; everything else keeps the reading measure.
-   DERIVED FROM THE RENDERED PANEL, never from a list of names: `.scroll` is the wrapper the
-   shared wide-table helper already emits, so a new wide table widens its page by existing. A
-   list here would be a second statement of which panels are wide and would drift on the first
-   addition — the defect this codebase keeps deleting things for.
-
-   WATCHED, NOT CALLED, and that is the second version. Calling it after each render meant
-   finding every place that writes to #main, and I missed one immediately: the panels in
-   RENDER_LATE return early from show(), so the Bench kept the previous panel's width — click
-   Holdings then Bench and the form was 1,616px wide with the `data` class still on the body.
-   An observer cannot be forgotten by the next person to add a render path. */
-/* HOLDINGS -> THE LEDGER, filtered to one company. Delegated from #main rather than bound per
-   row, because the table is re-rendered on every grouping change and per-row listeners would be
-   rebound each time — or worse, silently lost. */
 /* THE COMBOBOX. Delegated from the document, so a field rendered by a later drawItem() works
    without rewiring — the bench rebuilds its form constantly and per-input listeners would be
    lost or doubled. */
@@ -2878,12 +2777,10 @@ function wireCombos() {
       const ul = listFor(inp);
       if (ul) ul.hidden = true;
       /* A CLOSED FIELD RESOLVES WHAT YOU TYPED, and only clears if it cannot.
-         The first version cleared anything that was not an exact match, which punished the
-         search it had just been given: type "sipp", see the one account it can be, tab away,
-         lose it. So — exact match wins (correcting the case, because an account name typed in
-         lower case plainly means that account); otherwise, if the filter leaves exactly ONE
-         candidate, that is what you meant; anything else clears, because a half-typed account
-         name that LOOKED accepted is the thing a closed vocabulary exists to prevent.
+         Exact match wins (correcting the case, because an account name typed in lower case
+         plainly means that account); otherwise, if the filter leaves exactly ONE candidate, that
+         is what you meant; anything else clears, because a half-typed account name that LOOKED
+         accepted is the thing a closed vocabulary exists to prevent.
          Ambiguity clears too: two candidates is not a choice, it is a guess. */
       if (!inp.dataset.closed) return;
       const typed = inp.value.trim();
@@ -2954,7 +2851,7 @@ function wireDetailLinks() {
 /* Draw a sweep into the Bench, and remember it.
    `data-wide` is the house signal that this is DATA rather than prose — widenForData() watches
    for it and takes the measure off the page. A swept row carries a generated CSV line, which is
-   the widest thing on the desk and the one thing there is no point clipping to 44rem. */
+   the widest thing on the desk and the one thing there is no point clipping. */
 async function showSweep(result) {
   LAST_SWEEP = result;
   const out = $("#actout"), view = $("#actview");
@@ -2964,8 +2861,8 @@ async function showSweep(result) {
   view.setAttribute("data-wide", "");
 
   /* ASK WHAT HAS HAPPENED TO THESE EVENTS. The snapshot supplies the events; the server
-     supplies their state. Without this a row carried to the bench offered "work it" again on
-     the way back, and a row already WRITTEN stayed on the sweep as though it were missing. */
+     supplies their state. Without it a carried row would offer "work it" again, and a written
+     one read as missing. */
   const refs = ["opens", "closes", "costs", "capital", "setups"]
     .flatMap((k) => (result[k] || []).map((r) => r.ref)).filter(Boolean);
   SWEEP_STATUS = {};
@@ -3089,8 +2986,7 @@ async function toBench(b, ev, action = "ig-event-to-bench") {
     b.textContent = res.blocked && res.blocked.length
       ? `on the bench — ${res.blocked.join(", ")} still owed`
       : "on the bench";
-    /* THE LIST ABOVE REDRAWS, the sweep with it from its snapshot: the item was made and the
-       list went on without it, so the page read as stuck (12 Oct 2026). */
+    /* THE LIST ABOVE REDRAWS, the sweep with it from its snapshot. */
     await show("bench");
   } catch (err) {
     b.textContent = "failed — see the log";
@@ -3098,6 +2994,9 @@ async function toBench(b, ev, action = "ig-event-to-bench") {
   }
 }
 
+/* HOLDINGS -> THE LEDGER, filtered to one company. Delegated from #main rather than bound per
+   row, because the table is re-rendered on every grouping change and per-row listeners would be
+   rebound each time — or worse, silently lost. */
 function wireTradeLinks() {
   const main = $("#main");
   if (!main || main.dataset.tradesWired) return;
@@ -3116,21 +3015,18 @@ function wireTradeLinks() {
   });
 }
 
+/* A PAGE TAKES THE WINDOW BY WHAT IT RENDERED, never by a list of panel names, which would drift
+   on the first addition: `data-wide`, which page() puts on every tab, or a `.scroll`, the
+   wide-table helper's wrapper. A page with neither (an error, the sign-in) keeps the measure.
+
+   WATCHED, NOT CALLED, since a call per render must find every path that writes to #main.
+   An observer cannot be forgotten by the next person to add a render path. */
 function widenForData() {
-  /* `.scroll` IS THE USUAL MARKER and it is not the only one. Trades is data-shaped and
-     renders no table — it is a list of events, so it never matched, and it kept the 62rem
-     reading measure while carrying six columns of figures AND a note: wasted screen space, and
-     the account column wrapping onto four lines inside it. A panel can opt in with `data-wide`
-     instead: still DERIVED from what was rendered, still not a list of panel names in here. */
   const main = $("#main");
   if (!main) return;
   /* A LOADING PANEL HAS NO OPINION ABOUT ITS WIDTH, or the Dashboard renders in jerks.
-     Every navigation writes "reading the store…" into #main first, and the observer
-     read that empty state as "no table here" and narrowed the page — then widened it again a
-     beat later when the real content arrived. Going from one wide panel to another, the layout
-     therefore COLLAPSED TO 992 AND SPRANG BACK TO 1,616 for no reason: two reflows, both
-     avoidable, and the jerk was the page measuring a message rather than a panel.
-     Hold the current width until there is something to measure. */
+     Every navigation writes "reading the store…" into #main first, which is no measure of a
+     panel. Hold the current width until there is something to measure. */
   if (main.querySelector(".loading")) return;
   document.body.classList.toggle("data", !!main.querySelector(".scroll, [data-wide]"));
   markOverflow();
@@ -3221,16 +3117,7 @@ function watchForData() {
   wireDetailLinks();
 }
 
-/* ONE PAINT, NOT FOUR: the Dashboard's content had popped in at delayed intervals.
-
-   The cold start ran: fetch state → paint the freshness line → paint the tabs → paint "reading
-   the store…" → fetch the panel → paint the content. FIVE steps, four of them visible, each one
-   after an await. Nothing was slow — the whole thing is about 135ms — but it ARRIVED IN FOUR
-   INSTALMENTS, which is what makes a fast page feel messy.
-
-   So the shell now waits for the panel and everything appears together. It costs nothing: the
-   state call returns in 4ms and the panel in ~130, and the page was not usable until the panel
-   landed anyway. */
+/* ONE PAINT, NOT FOUR: the shell waits for the panel, so everything appears together. */
 function paintPanel(p) {
   PAGE_TITLE = p.title;
   HEADS = p.heads || {};
@@ -3252,9 +3139,7 @@ async function show(name) {
   const slow = setTimeout(() => {
     $("#main").innerHTML = `<p class="loading">reading the store…</p>`;
   }, 180);
-  /* THE HEADER IS RE-READ ON EVERY SWITCH. It was drawn once at boot,
-     so a bench commit wrote the store while the line above it went on quoting the stamp it had
-     at page load.
+  /* THE HEADER IS RE-READ ON EVERY SWITCH.
 
      A SWITCH, NOT A WRITE, is the hook, for the reason book() keys its cache on the store's
      mtime rather than trusting its callers: the three desk writers are not the only way the
@@ -3391,14 +3276,12 @@ async function passkey(ask, answer, verb, body) {
     if (otherVersion(s)) { drawFreshness(s.freshness); return; }
     let active = location.hash.slice(1) || s.panels[0]?.name;
     if (!s.panels.some((p) => p.name === active)) active = s.panels[0]?.name;
-    /* THE ADDRESS NAMES THE PAGE, AND THE BROWSER'S BACK AND FORWARD MOVE IT (14 Oct 2026).
+    /* THE ADDRESS NAMES THE PAGE, AND THE BROWSER'S BACK AND FORWARD MOVE IT.
        A tab writes its name into the address, so every page visited is a step in the browser's
-       history — but nothing listened when Back stepped the address back: from Holdings' trades
-       link, Back left Trades on screen under an address naming Holdings, which Safari showed as
-       its picture of Holdings flicking back to Trades. Now a step of history shows the page it
-       names, its filters as they were left (HELD_FILTERS) and where it was scrolled to; a page
-       opened by a tab or a link starts at its top. `shown` is the page on screen, so the address
-       change a tab makes itself is recognised and not shown twice. */
+       history, and a step of history shows the page it names, its filters as they were left
+       (HELD_FILTERS) and where it was scrolled to; a page opened by a tab or a link starts at its
+       top. `shown` is the page on screen, so the address change a tab makes itself is recognised
+       and not shown twice. */
     let shown = active;
     const scrolled = {};
     const leave = () => { scrolled[shown] = window.scrollY; };
@@ -3419,7 +3302,7 @@ async function passkey(ask, answer, verb, body) {
     if (!active) { drawFreshness(s.freshness); return; }
 
     /* FETCH BEFORE PAINTING ANYTHING. The three draws below are one frame's work; splitting them
-       around an await is what put them on screen a beat apart. */
+       around an await would put them on screen a beat apart. */
     location.hash = active;
     let first = null;
     try { first = await get(`/api/panel/${encodeURIComponent(active)}`); } catch (e) { /* below */ }

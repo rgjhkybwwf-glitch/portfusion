@@ -49,8 +49,8 @@ def _digits(text: str) -> str:
     MAGNITUDE — and that is what the quote is for, sitting under the field where it can be read.
     """
     digits = re.sub(r"\D", "", text or "")
-    # ZERO IS A NUMBER: stripped to nothing it was no number at all, and a value of 0 skipped the
-    # check that it stands in its quote.
+    # ZERO IS A NUMBER: stripped to nothing, a value of 0 would skip the check that it stands in
+    # its quote.
     return digits.lstrip("0") or ("0" if digits else "")
 
 
@@ -169,8 +169,8 @@ def check(cell: dict, kind: str, doc: str) -> str | None:
         except ValueError:
             return f"{value!r} is not an ISO date, and a misread date is a real defect here"
         # THE DATE MUST BE ONE ITS QUOTE PRINTS. Checked for its shape alone, a day and a month
-        # swapped passed — 2026-03-09 for a quote saying 03/09/2026. A quote printing no date the
-        # check can read is left to the eye, as before.
+        # swapped would pass — 2026-03-09 for a quote saying 03/09/2026. A quote printing no date
+        # the check can read is left to the eye.
         printed = _dates_in(quote)
         if printed and value not in printed:
             return (f"{value!r} is not a date its quote {quote!r} prints "

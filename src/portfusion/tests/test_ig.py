@@ -36,9 +36,8 @@ DEALING_CALLS = [
     ("GET", "/confirms/DEAL123"),            # deal confirmation — trips the "confirm" marker
     ("GET", "/positions"),                   # READ-ONLY AT IG, AND STILL REFUSED HERE: it trips
                                              # the "position" marker. Making the marker
-                                             # check method-aware was considered and NOT
-                                             # taken; if that ever changes it is a
-                                             # decision, not a tweak — this line is the tripwire.
+                                             # check method-aware is a decision, not a
+                                             # tweak — this line is the tripwire.
     ("POST", "/markets/../positions/otc"),   # traversal dressed up as an allowed prefix
 ]
 
@@ -133,8 +132,8 @@ def test_no_dealing_endpoint_appears_in_code(repo_root):
 # =====================================================================================
 
 def test_a_contract_mark_is_the_level_its_note_quotes(D):
-    """IG quotes points and the record keeps the level as IG states it (S1 package three, 13 Oct
-    2026): a mark and the bid its own source note quotes are ONE figure, on every contract.
+    """IG quotes points and the record keeps the level as IG states it: a mark and the bid its
+    own source note quotes are ONE figure, on every contract.
 
     SELF-ANCHORING. One hardcoded pair — a level and its mark — would move at every price run
     and need a hand edit to a literal in a test file; the note already states the raw level, so
@@ -230,7 +229,7 @@ def test_no_credentials_file_is_tracked(repo_root):
 
 
 # =====================================================================================
-# The session cache, which exists because the API key was once rate-limited.
+# The session cache, which keeps logins under IG's rate limit.
 # =====================================================================================
 
 def test_session_cache_file_is_gitignored(repo_root):
@@ -265,9 +264,8 @@ def test_a_corrupt_cache_is_not_fatal(tmp_path, monkeypatch):
 def test_exit_does_not_log_out(repo_root):
     """__exit__ must NOT close the session.
 
-    Defends against a regression that happened once: logging out on exit is what forced
-    every command to authenticate again, and roughly a dozen logins in ten minutes got the
-    API key rate-limited. The tokens are meant to be left live and cached; --ig-logout is
+    Logging out on exit forces every command to authenticate again, and a dozen logins in ten
+    minutes rate-limit the API key. The tokens are meant to be left live and cached; --ig-logout is
     the deliberate way to end one.
     """
     src = (SRC / "feeds" / "ig.py").read_text()
@@ -279,10 +277,9 @@ def test_exit_does_not_log_out(repo_root):
 # =====================================================================================
 # THE EVENT SWEEP
 #
-# A statement was never the only way to learn what happened on the account; it was the only
-# STRUCTURED way, before the history endpoints were allowlisted. These test the parts that
-# can go wrong WITHOUT a network call, which is most of them — the sweep's real risks are
-# mapping and matching, not fetching.
+# The history endpoints are a structured way, beside a statement, to learn what happened on the
+# account. These test the parts that can go wrong WITHOUT a network call, which is most of them
+# — the sweep's real risks are mapping and matching, not fetching.
 # =====================================================================================
 
 @needs("contracts", "buys")
@@ -356,10 +353,7 @@ def _selects(command):
 def test_every_ig_command_is_reachable_from_a_flag(repo_root):
     """A command nothing can invoke is a command that does not exist.
 
-    It asks the WIRING. Asserting the literal source text `'"--ig-events" in args'` proved a
-    SPELLING: it passed for one of six commands, would have broken on any refactor of the arg
-    chain that changed no behaviour, and would have stayed green on a chain that matched the
-    flag and then dispatched nowhere.
+    It asks the WIRING. A check of the source text proves only a SPELLING.
     """
     reachable = {_selects(_invoke(flag)) for flag in _usage_flags()}
     missing = _commands(repo_root) - reachable
@@ -367,8 +361,8 @@ def test_every_ig_command_is_reachable_from_a_flag(repo_root):
 
 
 def test_every_documented_flag_lands_somewhere(repo_root):
-    """The opposite failure, which a check on the source text could not see at all: a flag
-    written into USAGE that dispatches to nothing. The usage text is a promise."""
+    """The opposite failure, which a check on the source text cannot see: a flag written into USAGE
+    that dispatches to nothing. The usage text is a promise."""
     for flag in _usage_flags():
         assert _invoke(flag) is not None, \
             f"{flag} is documented in USAGE but dispatches to nothing"
@@ -396,8 +390,8 @@ def test_choosing_a_command_reaches_no_broker(monkeypatch):
 
 
 def test_the_sweep_still_writes_nothing(repo_root):
-    """The contract every tool here works to. Re-asserted for the new command because it
-    generates ROWS, which is the closest this module has come to writing."""
+    """The contract every tool here works to. Asserted of cmd_events because it generates ROWS,
+    the closest this module comes to writing."""
     import ast
     tree = ast.parse((SRC / "feeds" / "ig.py").read_text())
     fn = next(n for n in ast.walk(tree)
@@ -498,8 +492,7 @@ def test_account_state_keeps_rows_and_refusals_in_one_ordered_sequence(monkeypat
 @needs("contracts", "buys")
 def test_account_state_never_claims_a_notional(monkeypatch, D):
     """positions_value stays blank. Notional needs the open-positions endpoint, which the
-    allowlist refuses — and the two bases differ, so guessing one here would be the
-    mislabel this book has already paid for once."""
+    allowlist refuses — and the two bases differ, so a guess here would be a mislabel."""
     labels = _feed_labels(D)
     if len(labels) < 2:
         # One label, and the stub fails the first on purpose: feed the single label the
@@ -544,17 +537,11 @@ def test_a_label_with_no_account_name_is_refused_rather_than_guessed(monkeypatch
 # =====================================================================================
 # CREDENTIALS.JSON IS NOT ONLY IG'S
 #
-# `ANTHROPIC` lived in that file too — the desk's document reading used its api_key until
-# 1 Oct 2026 — and it has no identifier, password or env, because it is not a broker
-# login. load_credentials() validated EVERY block as an IG account, so that entry failed
-# and took the whole function down: every IG read returned a 500.
+# Another service's block has no identifier, password or env, because it is not a broker
+# login, and load_credentials() skips it.
 #
-# AND IT DID IT WITH sys.exit(), which raises SystemExit. That inherits from
-# BaseException, not Exception, so the desk's own `except Exception` guard could not see
-# it and neither could the `except FileNotFoundError` branch written for the missing-file
-# case. The 500 reached the browser as "the string did not match the expected pattern",
-# which is Safari's words for JSON.parse on a plain-text body and says nothing about
-# credentials at all.
+# A problem raises, never sys.exit(): SystemExit inherits from BaseException and slips past
+# the desk's `except Exception`.
 # =====================================================================================
 
 def _creds_file(tmp_path, monkeypatch, blocks):
@@ -572,7 +559,7 @@ ANTHROPIC_BLOCK = {"api_key": "sk-ant-x", "workspace_id": "ws"}
 
 
 def test_a_non_ig_entry_does_not_break_the_ig_credentials(tmp_path, monkeypatch):
-    """The regression. An ANTHROPIC block beside the IG ones must be ignored, not judged."""
+    """An ANTHROPIC block beside the IG ones must be ignored, not judged."""
     from portfusion.feeds import ig as I
     path = _creds_file(tmp_path, monkeypatch,
                        {"VOSS_IG": dict(IG_BLOCK), "ANTHROPIC": dict(ANTHROPIC_BLOCK)})
@@ -582,7 +569,7 @@ def test_a_non_ig_entry_does_not_break_the_ig_credentials(tmp_path, monkeypatch)
 
 def test_a_credentials_problem_raises_rather_than_exiting(tmp_path, monkeypatch):
     """CATCHABLE, so a server can report it. sys.exit() raises SystemExit, which slips past
-    every `except Exception` between here and the browser — which is exactly what happened."""
+    every `except Exception` between here and the browser."""
     from portfusion.feeds import ig as I
     path = _creds_file(tmp_path, monkeypatch,
                        {"VOSS_IG": {"identifier": "u", "password": "", "api_key": "k",
@@ -592,8 +579,7 @@ def test_a_credentials_problem_raises_rather_than_exiting(tmp_path, monkeypatch)
 
 
 def test_a_missing_credentials_file_raises_rather_than_exiting(tmp_path):
-    """The same rule for the missing file, which still called sys.exit() until 29 Sep 2026:
-    the desk's fetch answered HTTP 500 instead of naming IG as the vendor that was down."""
+    """The same rule for the missing file, so the desk names IG as the vendor that is down."""
     from portfusion.feeds import ig as I
     with pytest.raises(I.CredentialsError, match="NO CREDENTIALS FILE"):
         I.load_credentials(str(tmp_path / "credentials.json"))
@@ -604,13 +590,7 @@ def test_a_missing_credentials_file_raises_rather_than_exiting(tmp_path):
 # =====================================================================================
 
 def test_every_generated_row_names_its_tables_columns_exactly():
-    """THE CHECK THAT WAS MISSING, and the defect it would have caught.
-
-    The sweep built each paste row as a bare LIST and rendered it straight to a CSV line, so
-    nothing compared it against the table it was destined for. The exits row carried TEN values
-    for an ELEVEN-column table: the note text landed in `broker_ref` and `note` was never
-    written. Pasting one would have misaligned the row — and because `exits.broker_ref` is empty
-    on every row on file, nothing downstream would have looked wrong.
+    """A GENERATED ROW FILLS ITS TABLE'S COLUMNS: a row short of one misaligns the paste.
 
     feeds/ig.py does not import schema (the sweep must run without the build beside it), so the
     contract is a constant there and this is what holds the two together.
@@ -669,11 +649,10 @@ def _referenced_open_leg(D):
 
 @needs("contracts", "buys")
 def test_a_swept_close_names_its_parcel_and_its_leg(monkeypatch, D):
-    """WHAT THE BENCH'S FIRST EXIT LACKED. The close carries the parcel and the leg on its own
-    row, from IG's own ids: the leg whose broker_ref is the deal closed — including one this
-    same sweep proposes — and the parcel its ACCOUNT's holding already has (the owner, 12 Oct
-    2026: named by ticker alone, a close was proposed into a round trip in another
-    account)."""
+    """The close carries the parcel and the leg on its own row, from IG's own ids: the leg whose
+    broker_ref is the deal closed — including one this same sweep proposes — and the parcel its
+    ACCOUNT's holding already has (named by ticker alone, a close could join a round trip in
+    another account)."""
     leg_id, leg_ref, epic, parcel, label = _referenced_open_leg(D)
 
     def act(deal, kind, affected, day):
@@ -703,9 +682,8 @@ def test_a_swept_close_names_its_parcel_and_its_leg(monkeypatch, D):
     got = [(c["values"]["realisation_id"], c["values"]["closes"]) for c in r["closes"]]
     assert got == [(parcel, leg_id), (parcel, opened)], got
 
-    # AND EACH READS AS THE TRADES PAGE SAYS IT (the owner, 12 Oct 2026): the Bench showed IG's
-    # "closed @ 8000, 0.25/pt" and listed what was on file as "open 2026-09-27 DIAAAA… ->
-    # already in buys.csv". Ticker, direction, stake per point, the level in points or the day.
+    # AND EACH READS AS THE TRADES PAGE SAYS IT: ticker, direction, stake per point, the level
+    # in points or the day.
     leg = next(t for t in D.buys if t.trade_id == leg_id)
     assert [e["what"] for e in r["opens"]] == [f"{leg.ticker} · Buy · £0.25/pt · 8,000 pts"]
     assert [e["what"] for e in r["closes"]] == [f"{leg.ticker} · Sell · £0.25/pt · 8,000 pts"] * 2
@@ -761,16 +739,8 @@ def test_a_first_bet_on_a_contract_the_book_lacks_is_offered_for_set_up(monkeypa
 # =====================================================================================
 # THE SWEEP ACTUALLY RUNS
 #
-# WHY THIS EXISTS. `_event()` was tested in isolation and `ig_events()` never was, so the
-# rows it builds were only ever exercised through a browser stub that skipped the builders
-# entirely. The first version took its values as **kwargs — and `income` and
-# `capital-movements` both have a column literally named `account`, which collided with the
-# function's own parameter. EVERY sweep raised
-# `TypeError: _event() got multiple values for argument 'account'`, and nothing here noticed
-# because nothing here had ever called it. Half the store's column names would collide the
-# same way: date, note, source, detail, type, id.
-#
-# So this drives all four row kinds through the real function with a stubbed transport.
+# A store column that shares an `_event()` parameter's name (`account`) must not collide with it.
+# This drives all four row kinds through the real function with a stubbed transport.
 # =====================================================================================
 
 _EVENT_ACCOUNTS = {"accounts": [{"accountId": "ABC12", "accountType": "SPREADBET",
@@ -820,8 +790,8 @@ def stub_events(monkeypatch, D):
 
 @needs("contracts", "buys")
 def test_a_sweep_runs_and_builds_every_kind_of_row(stub_events):
-    """The regression test for the TypeError. A cost row and a capital row both carry an
-    `account` COLUMN, which is the collision that broke every sweep."""
+    """EVERY KIND OF ROW IS BUILT, though a cost row and a capital row carry an `account` COLUMN
+    of the same name as `_event()`'s own parameter."""
     account = stub_events
     r = ig.ig_events("2026-08-01")
     assert len(r["costs"]) == 1, "the funding charge did not become a row"
@@ -834,8 +804,7 @@ def test_a_sweep_runs_and_builds_every_kind_of_row(stub_events):
 
 @needs("contracts", "buys")
 def test_every_swept_row_fills_its_tables_columns(stub_events):
-    """Not just that a row was built — that it is PASTEABLE. This is what the exits row failed
-    for its whole life, carrying ten values into an eleven-column table."""
+    """Not just that a row was built — that it is PASTEABLE."""
     from portfusion.record import schema
     r = ig.ig_events("2026-08-01")
     for kind in ("opens", "closes", "costs", "capital"):
@@ -871,10 +840,9 @@ def _sweep_with(monkeypatch, D, answer):
 
 @needs("contracts", "buys")
 def test_a_withdrawal_is_capital_and_only_a_funding_line_is_a_cost(monkeypatch, D):
-    """IG FILES ITS FUNDING CHARGES AND A WITHDRAWAL UNDER ONE TYPE, `WITH`. Every one became a
-    "Funding interest" row, so money taken out of the account would have booked as a trading
-    loss (the review of 21 Oct 2026). A line IG names as interest or funding is the cost; any
-    other `WITH` is capital leaving, proposed for the reader to confirm, as a deposit is."""
+    """IG FILES ITS FUNDING CHARGES AND A WITHDRAWAL UNDER ONE TYPE, `WITH`. A line IG names as
+    interest or funding is the cost; any other `WITH` is capital leaving, proposed for the
+    reader to confirm, as a deposit is."""
     txns = {"transactions": [
         {"dateUtc": "2026-08-21T00:00:00", "reference": "TX-INT", "transactionType": "WITH",
          "profitAndLoss": "£-1.52", "instrumentName": "Long Interest for US/Can shares 20/08/26"},
@@ -889,9 +857,8 @@ def test_a_withdrawal_is_capital_and_only_a_funding_line_is_a_cost(monkeypatch, 
 
 @needs("contracts", "buys")
 def test_the_sweep_reads_every_page_of_both_histories(monkeypatch, D):
-    """ONE PAGE OF 500 WAS ALL IT READ, and a busy window lost the rest silently. Activity
-    links its next page (`metadata.paging.next`); transactions number theirs
-    (`metadata.pageData.totalPages`)."""
+    """EVERY PAGE IS READ, or a busy window loses the rest. Activity links its next page
+    (`metadata.paging.next`); transactions number theirs (`metadata.pageData.totalPages`)."""
     def tx(ref, day):
         return {"dateUtc": f"2026-08-{day}T00:00:00", "reference": ref, "transactionType": "DEPO",
                 "profitAndLoss": "£10.00", "instrumentName": "Card deposit"}
@@ -930,9 +897,8 @@ def test_a_full_page_that_says_nothing_of_paging_is_refused(monkeypatch, D):
 
 @needs("contracts", "buys")
 def test_an_account_the_sweep_did_not_read_has_no_orphans(monkeypatch, D):
-    """THE REVERSE CHECK ASKS ONLY OF THE ACCOUNTS SWEPT. It spanned every spread-bet account,
-    so one with no credentials here had its every charge reported as missing from IG — telling
-    the reader to remove correct rows."""
+    """THE REVERSE CHECK ASKS ONLY OF THE ACCOUNTS SWEPT: an account with no credentials here is
+    never told its charges are missing from IG."""
     _sweep_with(monkeypatch, D, lambda path: {"transactions": []}
                 if path.startswith("/history/transactions")
                 else {"activities": []} if path.startswith("/history/activity") else None)
@@ -945,8 +911,8 @@ def test_an_account_the_sweep_did_not_read_has_no_orphans(monkeypatch, D):
 
 
 def test_logout_clears_the_tokens_even_when_it_cannot_say_goodbye(monkeypatch, tmp_path):
-    """A MISSING CREDENTIALS FILE OR A DROPPED LINE raised before the cache was cleared, leaving
-    the session tokens on disk — the one thing `logout` exists to remove."""
+    """THE CACHE IS CLEARED HOWEVER THE GOODBYE GOES: a missing credentials file or a dropped line
+    leaves no session token on disk — the one thing `logout` exists to remove."""
     cache = tmp_path / ".ig_session.json"
     monkeypatch.setattr(ig, "SESSION_CACHE", str(cache))
     ig._save_session_cache({"X": {"cst": "c", "token": "t"}})
@@ -1006,8 +972,8 @@ def test_the_close_bar_opens_at_21_00_uk_on_either_side_of_the_clock_change(on, 
 
 
 def test_a_contract_ig_did_not_quote_through_the_evening_has_no_close_bar():
-    """ZEPH-MAR27 on 18 Aug, as IG returned it: empty bars from 18:00 UK, then a 21:00 close no
-    statement vouches for. That is the far-contract shape, so there is no bar to take."""
+    """Empty bars from 18:00 UK, then a 21:00 close no statement vouches for: the far-contract
+    shape, so there is no bar to take."""
     thin = {h: None for h in range(16, 20)} | {20: 7608.1, 21: 7608.1, 22: 7608.1}
     s = _session_answering({"prices": _evening("2026-08-18", thin)}, [])
     assert s.close_bar("SH.D.ZEPHUS.MAR.IP", "2026-08-18") is None
@@ -1029,7 +995,7 @@ def test_every_mapped_epic_may_be_asked_for_its_history():
 
 
 def _snapshots(leave_out=(), delay=0, currencies=({"code": "USD"},)):
-    """IG's batch reply for every mapped epic, as the 29 Sep probe saw it, less `leave_out`."""
+    """IG's batch reply for every mapped epic, less `leave_out`."""
     from portfusion.feeds import ig
     return {"marketDetails": [
         {"instrument": {"epic": epic, "name": key, "expiry": "DEC-26",
@@ -1049,8 +1015,8 @@ def _levels(monkeypatch, env="live", **reply):
 
 @needs("contracts", "buys")
 def test_every_level_is_one_call_through_one_session(monkeypatch):
-    """Six contracts, one request: the batch read through the real guard, naming every mapped
-    epic, and every row saying which session read it."""
+    """One request: the batch read through the real guard, naming every mapped epic, and every row
+    saying which session read it."""
     from portfusion.feeds import ig
     rows, seen = _levels(monkeypatch)
     assert len(seen) == 1 and seen[0][0] == "GET" and seen[0][2] == 2, seen
@@ -1077,11 +1043,8 @@ def test_a_contract_the_batch_leaves_out_is_kept_unpriced(monkeypatch):
 def test_a_live_level_is_live_whichever_gateway_answered(monkeypatch):
     """`struck` answers WHICH MOMENT; it must not answer WHICH GATEWAY as well.
 
-    It was once read out of the source with `"IG REST live" in source`, where that `live` is
-    feeds/ig.py's `env` — production as against `demo` — and not the instant at all, so the
-    recommended first configuration (`env="demo"`) banked a BLANK `struck`, and `comparability()`
-    then refused to judge either IG account. The feed now says it outright; this pins that the
-    gateway plays no part, and that the row is dated by the UK day of the instant IG was asked.
+    The feed says it outright: the gateway (`env`, production or `demo`) plays no part, and the
+    row is dated by the UK day of the instant IG was asked.
     """
     for env in ("demo", "live"):
         rows, _ = _levels(monkeypatch, env=env)
@@ -1093,8 +1056,8 @@ def test_a_live_level_is_live_whichever_gateway_answered(monkeypatch):
 
 
 def test_a_level_in_no_currency_or_the_wrong_one_is_not_a_mark(monkeypatch):
-    """`filter=SNAPSHOT_ONLY` answered with the currency as null on 29 Sep, and a blank currency
-    would have reached the record through the desk's write. Every row is kept, unpriced."""
+    """The read leaves out `filter=SNAPSHOT_ONLY`, which answers no currency. Every row is kept,
+    unpriced."""
     for currencies in (None, ({"code": "GBP"},)):
         rows, seen = _levels(monkeypatch, currencies=currencies)
         assert "SNAPSHOT_ONLY" not in seen[0][1]
@@ -1104,8 +1067,8 @@ def test_a_level_in_no_currency_or_the_wrong_one_is_not_a_mark(monkeypatch):
 
 @needs("contracts", "buys")
 def test_a_delay_ig_declares_moves_the_instant_back(monkeypatch):
-    """`at` is the instant the level describes: the read, less the delay IG states. IG
-    declared none on 29 Sep; `feeds/tv.py` strikes its delayed lines the same way."""
+    """`at` is the instant the level describes: the read, less the delay IG states. `feeds/tv.py`
+    strikes its delayed lines the same way."""
     rows, _ = _levels(monkeypatch, delay=15)
     assert {r["at"] for r in rows} == {"2026-09-03T23:15:00Z"}
     assert all("IG delayTime 15 min" in r["source"] for r in rows)
@@ -1125,9 +1088,9 @@ def test_verify_compares_the_sweeps_own_levels(monkeypatch, D):
 
 @needs("contracts", "buys")
 def test_a_contracts_close_is_its_bars_bid_and_a_far_one_waits_for_the_statement(monkeypatch):
-    """The same side and divisor a live level uses, dated the day asked for, and a row that says
-    it is a close. A contract IG has no evening bar for (every far one) is kept, unpriced, with
-    its status naming where that day's level is."""
+    """The same side a live level uses, dated the day asked for, and a row that says it is a close.
+    A contract IG has no evening bar for (every far one) is kept, unpriced, with its status naming
+    where that day's level is."""
     from portfusion.feeds import ig
 
     class Near:
@@ -1149,8 +1112,8 @@ def test_a_contracts_close_is_its_bars_bid_and_a_far_one_waits_for_the_statement
 
 
 def test_verify_prints_a_new_contract_with_no_level(monkeypatch, capsys):
-    """A CONTRACT NOT IN THE RECORD AND WITH NO LEVEL — a wrong epic answers none — printed its
-    level with a width, and None will not take one: the check raised where it should report."""
+    """A CONTRACT NOT IN THE RECORD AND WITH NO LEVEL — a wrong epic answers none — is printed,
+    and the check reports rather than raising."""
     monkeypatch.setattr(ig, "verify_levels", lambda: {"side": "bid", "rows": [
         {"contract": "NEWONE", "state": "new", "stored": None, "as_of": None, "live": None,
          "pct": None, "status": "no epic"}]})

@@ -59,8 +59,8 @@ ENCODINGS = ("utf-8-sig", "cp1252")
 def _decode(path) -> tuple[str, str]:
     """The file's text, and the encoding that read it. Raises rather than guessing."""
     raw = open(path, "rb").read()
-    # A UTF-16 EXPORT SAYS SO IN ITS FIRST TWO BYTES, and is read so. Without this cp1252, which
-    # takes any byte, read one as letters and NULs: a document of garbage that loaded cleanly.
+    # A UTF-16 EXPORT SAYS SO IN ITS FIRST TWO BYTES, and is read so. Without it, cp1252 (which
+    # takes any byte) reads one as letters and NULs, and raises nothing.
     if raw[:2] in (b"\xff\xfe", b"\xfe\xff"):
         return raw.decode("utf-16"), "utf-16"
     for enc in ENCODINGS:
@@ -77,12 +77,11 @@ def _decode(path) -> tuple[str, str]:
 def _located(name):
     """The file a name means: a bare name ON THE WORKBENCH, and nowhere else. A path the code
     already holds — the doors' own, into the archive — is read by `extract_file()`, so nothing a
-    browser sends is ever read as a path (CodeQL's first scan of the public repository).
+    browser sends is ever read as a path.
 
-    A NAME IS NOT TRIED AGAINST THE FOLDER THE PROCESS RUNS IN. It was, first, so a name the desk
-    was handed by a browser — `credentials.json` — was read from the book's own folder and served
-    back (the review of 21 Oct 2026). The containment is the `/raw` route's: the name resolves
-    inside `_inbox/` or it is not found.
+    A NAME IS NOT TRIED AGAINST THE FOLDER THE PROCESS RUNS IN, so `credentials.json` is never
+    read from the book's folder. The containment is the `/raw` route's: the name resolves inside
+    `_inbox/` or it is not found.
     """
     inbox = os.path.realpath(INBOX)
     path = os.path.realpath(os.path.join(inbox, name))
@@ -97,8 +96,8 @@ def modified(name):
     A document that states no instant of its own is dated by this. The drop-off keeps the
     browser's download time on the file, and Finder keeps it on a copy.
 
-    UK WALL-CLOCK TIME, as a document's own instant is (`rules.utc_instant()` reads it so). In the
-    Mac's own zone it was off by the Mac's distance from London, on any machine not set to it.
+    UK WALL-CLOCK TIME, as a document's own instant is (`rules.utc_instant()` reads it so). The
+    Mac's own zone would put it off by the Mac's distance from London.
     """
     import datetime as _dt
     from zoneinfo import ZoneInfo
@@ -155,8 +154,8 @@ def _extract(path):
         delim = "\t" if ext == ".tsv" else ","
         body, enc = _decode(path)
         rows = list(csv.reader(io.StringIO(body), delimiter=delim))
-        # WRITTEN BACK AS CSV, QUOTED WHERE A CELL NEEDS IT. Joined bare, "12,000" came back as
-        # two cells, and HL writes every figure over 999 that way.
+        # WRITTEN BACK AS CSV, QUOTED WHERE A CELL NEEDS IT. Joined bare, "12,000" is two cells,
+        # and HL writes every figure over 999 that way.
         buf = io.StringIO()
         csv.writer(buf, delimiter=delim, lineterminator="\n").writerows(rows)
         return {"name": base, "kind": ext.lstrip("."), "pages": len(rows), "encoding": enc,

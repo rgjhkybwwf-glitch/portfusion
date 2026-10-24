@@ -39,9 +39,8 @@ def test_a_run_that_did_not_complete_is_red_whatever_it_listed(clean_room):
 
 
 def test_a_failed_run_that_names_no_failure_is_red(clean_room):
-    """EXIT 1 WITH NO TEST NAMED: a crash after the tests ran, or the harness failing a run that
-    moved the loaded book. With nothing to compare against, it read as green, so a wheel that
-    broke in that way passed (the review of 21 Oct 2026)."""
+    """EXIT 1 IS RED THOUGH NO TEST IS NAMED: a crash after the tests ran, or the harness failing
+    a run that moved the loaded book."""
     said = "FAILED: the run moved the loaded book's own files (1): _inbox/.bench\n1141 passed\n"
     assert clean_room.verdict(1, said), "an exit 1 naming no failed test passed"
 

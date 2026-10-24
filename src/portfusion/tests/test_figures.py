@@ -1,15 +1,7 @@
 """
 ONE REGISTRY, TWO RENDERERS — the cross-renderer guard.
 
-This book renders its headline figures on the desk's Dashboard and in the quarterly report. Each
-renderer was once checked on its own terms, and unevenly, and that is why all three of the
-defects the registry found were in the report:
-
-  * an account equity figure printed under the word "notional", because the amount was taken
-    last-wins and the label first-wins from the same two rows;
-  * "Total market exposure" reconstructed from the ledger, hundreds of pounds away from the frozen
-    quarter's figure under one name, with nothing comparing them;
-  * an "activity in the quarter" section that began six weeks before the quarter.
+This book renders its headline figures on the desk's Dashboard and in the quarterly report.
 
 A per-cell tie test cannot scale across renderers: it costs N² comparisons and it only ever
 covers the cells somebody remembered. So every renderer exposes its headline block AS DATA, and
@@ -73,9 +65,7 @@ def test_every_rendered_label_is_in_the_registry(desk_figures, report_figures):
 
 @needs("buys")
 def test_both_renderers_list_the_registry_in_its_order(desk_figures, report_figures):
-    """ONE ORDER, THE REGISTRY'S. The Dashboard typed the sixteen labels a second time, in an order
-    of its own, until step 5: three sat away from the order HEADLINE says a list reads in, and its
-    units were typed again beside them. It lists HEADLINE now, and the report's Section 1 lists
+    """ONE ORDER, THE REGISTRY'S. The Dashboard lists HEADLINE, and the report's Section 1 lists
     the figures `headline(date)` gives, in the same order."""
     assert list(desk_figures) == list(Book.HEADLINE)
     assert list(report_figures) == [k for k, v in Book.HEADLINE.items() if v["point_in_time"]]
@@ -107,10 +97,8 @@ def test_the_desk_renders_the_engines_figures(engine, desk_figures):
 
 @needs("buys")
 def test_the_report_renders_the_engines_figures(engine, report_figures):
-    """THE CONTRACT THAT CATCHES THE GAP. The report reconstructed exposure from the
-    ledger instead of reading the store's quarter rows, and published it under the engine's name
-    with nothing comparing the two. Settled by the owner: the dated view is the store's, because a
-    quarter's inputs are FROZEN and a reconstruction is not a frozen input.
+    """THE DATED VIEW IS THE STORE'S: a quarter's inputs are FROZEN, and a reconstruction from
+    the ledger is not a frozen input.
     """
     at_quarter = engine.headline(QUARTER)
     for label, fig in report_figures.items():
@@ -143,9 +131,7 @@ def test_a_dated_page_cannot_quote_a_year_to_date_figure(engine):
 @needs("buys")
 def test_the_parts_add_up_to_the_whole_at_a_quarter_end(engine):
     """"— of which" has to mean it. Both components and the total come from ONE call to
-    quarter_nav_rows(), split by is_spread_bet(), so they cannot be sourced differently —
-    which is exactly how the report came to print an amount from one row beside a basis from
-    another."""
+    quarter_nav_rows(), split by is_spread_bet(), so they cannot be sourced differently."""
     f = engine.headline(QUARTER)
     assert f["— of which securities owned"] + f["— of which spread-bet notional"] == \
         pytest.approx(f["Total market exposure"], abs=PENNY)
@@ -165,9 +151,7 @@ def test_the_desk_states_the_registrys_basis(desk_figures):
 
 
 def test_a_basis_is_the_registrys_or_nothing():
-    """NO SECOND OPINION ON A BASIS. `basis_of()` answered "capital" for a label nobody registered,
-    and `NOTIONAL_BASES` kept "mixed", which no registered figure has carried since the mixed cost
-    retired, until step 5. A label nobody registered is refused, and every notional
+    """NO SECOND OPINION ON A BASIS. A label nobody registered is refused, and every notional
     basis is one a figure carries."""
     with pytest.raises(KeyError, match="not in Book.HEADLINE"):
         Book.basis_of("A figure nobody registered")
@@ -182,10 +166,8 @@ def test_the_report_states_the_registrys_basis(report_figures):
 
 
 def test_a_net_asset_value_column_shows_only_a_nav_basis(engine):
-    """THE CLASS-LEVEL STATEMENT OF THE REPORT'S WORST DEFECT. Where a renderer shows a value
-    and a basis in the same row, the basis must be one the column's heading permits. A quarter's
-    page printed an account's equity beside the word "notional" — a NAV figure wearing
-    the exposure label — because the two came from different rows of the same table.
+    """Where a renderer shows a value and a basis in the same row, the basis must be one the
+    column's heading permits.
     """
     for row in engine.quarter_nav_rows(QUARTER, "nav").itertuples():
         assert row.contribution in engine.NAV_BASES, \
@@ -203,8 +185,8 @@ def test_a_net_asset_value_column_shows_only_a_nav_basis(engine):
 AGGREGATIONS = {"sum", "mean", "groupby", "pivot_table", "cumsum", "prod", "agg", "median"}
 
 #: Lines a person had to write on purpose, each still doing arithmetic, each allowed by name.
-#: Adding to this list is the decision; the point is that it cannot happen silently. Empty since
-#: step 5, when the report's Holdings total became the engine's (`Book.quarter_lines_total()`).
+#: Adding to this list is the decision; the point is that it cannot happen silently. Empty: the
+#: report's Holdings total is the engine's (`Book.quarter_lines_total()`).
 ALLOWED: set[tuple[str, str]] = set()
 
 
@@ -216,10 +198,7 @@ def _renderer_files():
 
 
 def test_no_renderer_derives_a_figure_it_was_not_allowed_to():
-    """Replaces test_report.py's substring scan for "/ 2", "Dietz(", "def _return" and
-    "def _nav", which would not have caught a single one of the three defects found in that
-    file. A renderer's job is to show what the engine decided.
-    """
+    """A renderer's job is to show what the engine decided."""
     found = set()
     for name, path in _renderer_files():
         for node in ast.walk(ast.parse(path.read_text())):
@@ -251,26 +230,22 @@ def test_no_renderer_reaches_past_the_engines_methods_into_its_store():
 # ONE HEADING PER COLUMN — house/headings.py, read by every renderer
 # =====================================================================================
 #
-# The headline figures were held to one registry and the columns were not: the desk kept a map
-# of its own in app.js, and the report typed its <th> inline. "Entry" came to mean a local price
-# on one desk page and a sterling cost on the next, and nothing failed (the owner, 1 Oct 2026). Each
-# renderer is held to the registry here, the way the headline block is above, rather than one to
-# the other.
+# Each renderer is held to the registry here, the way the headline block is above, rather than
+# one to the other.
 
-#: Headings retired before the list existed that a renderer had in use until 1 Oct 2026. None may come back
-#: as a column's heading on any renderer. Bare "Gain" is not among them: on Performance it is
-#: the quarter's gain, which is neither unrealised nor realised.
+#: Retired headings: none may come back as a column's heading on any renderer. Bare "Gain" is not
+#: among them: on Performance it is the quarter's gain, which is neither unrealised nor realised.
 RETIRED_HEADINGS = {"GBP", "GBP proceeds", "GBP value", "GBP cost", "Gain %", "Entry",
                     "Exit", "Ref", "Qty", "Period", "Unrealised", "Realised", "Company (issuer)",
                     "Unrealised gain (£)", "Realised gain (£)",
-                    # "(local)" retired 12 Oct 2026: the Ccy column names a local price's currency.
+                    # "(local)": the Ccy column names a local price's currency.
                     "Entry price (local)", "Traded price (local)", "Price (local)"}
 
 #: Bold words in glossary §5's heading tables that name something other than a column, each with
 #: why. The sterling suffix row states a rule, so it carries code rather than a heading.
 GLOSSARY_NOT_HEADINGS: dict[str, str] = {
     # A FIGURE'S WORD, not a column's: Book.HEADLINE's label on the Dashboard, and no table is
-    # headed with it (13 Oct 2026, when the two left house/headings.py).
+    # headed with it.
     "YTD income": "the Dashboard's figure, Book.HEADLINE's word",
     "Spread-bet notional": "the Dashboard's figure, Holdings' strip and What Changed's block",
 }
@@ -278,9 +253,8 @@ GLOSSARY_NOT_HEADINGS: dict[str, str] = {
 
 @needs_checkout
 def test_the_glossarys_headings_are_the_registrys():
-    """GLOSSARY §5 AND house/headings.py SAY THE SAME WORDS, BOTH WAYS (the owner, 1 and 23 Oct
-    2026). A word renamed in one and not the other fails, and so does a heading added without a
-    word agreed in §5: "Gain to date" reached the desk that way, beside an agreed "Unrealised gain".
+    """GLOSSARY §5 AND house/headings.py SAY THE SAME WORDS, BOTH WAYS. A word renamed in one and
+    not the other fails, and so does a heading added without a word agreed in §5.
     """
     import re
     from portfusion.house.headings import BY_TAB, COMMON
@@ -300,7 +274,7 @@ def test_the_glossarys_headings_are_the_registrys():
 
 
 def test_every_store_column_is_headed_under_its_own_name():
-    """ONE NAME FROM THE STORE TO THE PAGE (#43): a column a reader can meet is headed under the
+    """ONE NAME FROM THE STORE TO THE PAGE: a column a reader can meet is headed under the
     name the store gives it, so the store and the desk cannot call one thing two names."""
     from portfusion.house.headings import STORE_ONLY, registered
     from portfusion.record import schema
@@ -313,8 +287,8 @@ def test_every_store_column_is_headed_under_its_own_name():
 
 
 def test_one_heading_names_one_field():
-    """ONE IDEA, ONE NAME (#43): two fields under one heading are one idea under two names, as
-    `kind` and `held_as` were, or two ideas under one word, as `cur` and `currency` were."""
+    """ONE IDEA, ONE NAME: two fields under one heading are one idea under two names, or two
+    ideas under one word."""
     from collections import defaultdict
     from portfusion.house.headings import BY_TAB, COMMON
     fields = defaultdict(set)
@@ -327,8 +301,7 @@ def test_one_heading_names_one_field():
 
 def test_every_desk_column_has_a_heading_for_its_tab(repo_root):
     """Every field a panel shows is named for its tab, and app.js draws a head from nothing else:
-    no map of its own, and no typed head. Price Refresh's grid was the one exception until 2 Oct
-    2026, when both its date columns read "As at"."""
+    no map of its own, and no typed head."""
     import re
     from portfusion.desk import panels
     unnamed = []
@@ -342,17 +315,15 @@ def test_every_desk_column_has_a_heading_for_its_tab(repo_root):
     assert not re.search(r"const HEADS\s*=\s*\{", js), "app.js has its own heading map again"
     literal = set(re.findall(r"<th[^>]*>([^<$]+)</th>", js))
     assert not literal, f"app.js types {sorted(literal)} as a table head; draw it with head()"
-    # A FIELD head() IS ASKED FOR BY NAME IS REGISTERED: an unregistered one prints its own name,
-    # as the refresh grid's "line" did after the field became `mark_key` (#43).
+    # A FIELD head() IS ASKED FOR BY NAME IS REGISTERED: an unregistered one prints its own name.
     from portfusion.house.headings import registered
     asked = set(re.findall(r'\b(?:head|box|pick)\("([a-z_]+)"', js))
     assert not asked - registered(), f"app.js heads {sorted(asked - registered())}, named nowhere"
 
 
 def test_app_js_draws_a_table_from_the_panels_own_columns(repo_root):
-    """A COLUMN LIST TYPED IN app.js DRIFTS FROM THE PANEL'S. Holdings' marks expansion drew a
-    list of its own and left out the currency MARK_COLUMNS declares, so a contract's marks read
-    as prices in no currency (12 Oct 2026). Every table() takes its columns from the payload."""
+    """A COLUMN LIST TYPED IN app.js DRIFTS FROM THE PANEL'S. Every table() takes its columns
+    from the payload."""
     import re
     js = (SRC / "desk" / "static" / "app.js").read_text(encoding="utf-8")
     typed = re.findall(r"\btable\([^,()]+,\s*\[[^\]]*\]", js)
@@ -362,8 +333,8 @@ def test_app_js_draws_a_table_from_the_panels_own_columns(repo_root):
 @needs("buys")
 def test_the_desks_allocation_is_headed_as_the_reports():
     """WHERE THE EXPOSURE SITS IS DRAWN BY BOTH RENDERERS — the report's section, and Holdings
-    under its table since 12 Oct 2026 — so the axes, their order and their words are one. The
-    desk's tables are compared with the report's own head by head, in order."""
+    under its table — so the axes, their order and their words are one. The desk's tables are
+    compared with the report's own head by head, in order."""
     import html
     import re
     from portfusion.desk.panels import holdings
@@ -375,11 +346,9 @@ def test_the_desks_allocation_is_headed_as_the_reports():
 
 
 def test_every_percentage_is_printed_to_the_houses_places(repo_root):
-    """ONE PRECISION FOR EVERY PERCENTAGE THE PROJECT PRINTS: house/precision.py's PCT_DP (12 Oct
-    2026). The desk printed four places, the record four, the
-    report's weights one, so one figure read differently on each. A Python renderer prints a
-    percentage with precision.pct(); app.js's pct() takes the places each panel answer carries
-    and types none of its own. A CSS width is not a printed figure."""
+    """ONE PRECISION FOR EVERY PERCENTAGE THE PROJECT PRINTS: house/precision.py's PCT_DP. A
+    Python renderer prints a percentage with precision.pct(); app.js's pct() takes the places
+    each panel answer carries and types none of its own. A CSS width is not a printed figure."""
     import re
     from portfusion.desk import app as desk_app
     from portfusion.house import precision
@@ -416,10 +385,9 @@ def test_no_renderer_heads_a_column_with_a_retired_word():
 
 def test_a_table_with_a_local_price_marks_its_sterling(repo_root):
     """A LOCAL PRICE IS IN ITS LINE'S OWN CURRENCY, which the Ccy column beside it names:
-    house/precision.py's LOCAL_PRICE_FIELDS say which fields are one, and "(local)" left the
-    headings on 12 Oct 2026. On a table that shows one, every sterling column (the ones app.js
-    draws as money, MONEYCOL) is headed "… (GBP)" — glossary §5's suffix rule, 2 Oct 2026 — and
-    no local price is drawn as money: Holdings printed Corrant's 220.70 dollars as "£220.70"."""
+    house/precision.py's LOCAL_PRICE_FIELDS say which fields are one. On a table that shows one,
+    every sterling column (the ones app.js draws as money, MONEYCOL) is headed "… (GBP)" —
+    glossary §5's suffix rule — and no local price is drawn as money."""
     import re
     from portfusion.desk import panels
     from portfusion.house.headings import headings
@@ -442,19 +410,18 @@ def test_a_table_with_a_local_price_marks_its_sterling(repo_root):
 
 
 def test_the_valuation_date_is_the_engines(desk_figures):
-    """WHERE THE BOOK STANDS, AND WHEN (the owner). Every live figure rests on the current marks,
-    and one answer says when those were taken — Book.valued_at(), the newest mark — so no page
-    can hold its own opinion of what "now" means. ISO, as the store and every date column."""
+    """WHERE THE BOOK STANDS, AND WHEN. Every live figure rests on the current marks, and one answer
+    says when those were taken — Book.valued_at(), the newest mark — so no page can hold its own
+    opinion of what "now" means. ISO, as the store and every date column."""
     from portfusion.desk import panels
     assert panels.get("dashboard").data()["valued_at"] == Book().valued_at()
 
 
 @needs("buys")
 def test_net_asset_value_leads_wherever_the_figures_are_listed(desk_figures):
-    """NAV FIRST, then exposure and its parts (the owner, 12 Oct 2026): the book's own capital, and
-    what the return is measured on. The report's summary led with it already; the Dashboard led
-    with exposure, a notional figure. The registry's order is the order every list reads in —
-    the Dashboard, `portfusion record`, the glossary's index — so it is held there."""
+    """NAV FIRST, then exposure and its parts: the book's own capital, and what the return is
+    measured on. The registry's order is the order every list reads in — the Dashboard,
+    `portfusion record`, the glossary's index — so it is held there."""
     nav = "Net asset value"
     assert next(iter(Book.HEADLINE)) == nav
     assert next(iter(Book().headline())) == nav and next(iter(Book().headline(QUARTER))) == nav
@@ -493,14 +460,11 @@ def test_the_open_quarter_reaches_the_desk():
 # =====================================================================================
 
 def test_no_renderer_types_a_colour(project_files):
-    """EVERY COLOUR IS house/palette.py's, in either scheme. Until 2 Oct 2026 the report typed
-    twenty of its own — six copies of the palette, a loss in the desk's warning ink, a dark
-    scheme nobody else shared — and the desk's dark scheme sat in app.css. A colour written in
-    a renderer is a copy waiting to drift, so none may be: hex with a `#`, or bare six digits."""
+    """EVERY COLOUR IS house/palette.py's, in either scheme. A colour written in a renderer is a
+    copy waiting to drift, so none may be: hex with a `#`, or bare six digits."""
     import re
     colour = re.compile(r"#[0-9A-Fa-f]{6}\b|#[0-9A-Fa-f]{3}\b|[\"'][0-9A-Fa-f]{6}[\"']")
-    # THE RENDERERS BY THEIR PLACE IN THE PACKAGE: read from the checkout's root, every path began
-    # `src/`, and the guard read none of the files it was written for.
+    # THE RENDERERS BY THEIR PLACE IN THE PACKAGE, never by a path from the checkout's root.
     renderers = [p for p in project_files(".py", ".css", ".js")
                  if p.is_relative_to(SRC) and p.relative_to(SRC).parts[0] in ("desk", "report")]
     assert len(renderers) > 20, f"the guard reads {len(renderers)} renderer file(s)"
@@ -541,9 +505,7 @@ def _headings_used(monkeypatch) -> set[tuple[str, str]]:
 
 
 def test_every_desk_page_is_a_tab_the_headings_know():
-    """A MISSPELT TAB READ AS A PAGE WITH NO HEADINGS OF ITS OWN: `heading()` fell back to the
-    common words for any tab it did not know, and three pages relied on that, until step 5. Every
-    page is named now, those three with nothing of their own, and a tab that is not one is refused."""
+    """EVERY PAGE IS A TAB THE HEADINGS NAME, and a tab that is not one is refused."""
     from portfusion.desk import panels
     from portfusion.house import headings as H
     assert set(H.BY_TAB) == {m.TITLE for m in panels.all_panels()}, (
@@ -554,11 +516,9 @@ def test_every_desk_page_is_a_tab_the_headings_know():
 
 @needs("buys")
 def test_the_headings_registry_is_not_a_graveyard(monkeypatch):
-    """13 Oct 2026: Sells, Pre-baseline, Struck and Status left their pages in
-    the desk review and their words stayed registered: a heading nothing heads is a column that
-    was retired without the registry being told, and the next renderer will resurrect it by
-    accident, as test_the_registry_is_not_a_graveyard says of a figure. Thirteen went the day
-    this was written."""
+    """A heading nothing heads is a column that was retired without the registry being told, and
+    the next renderer will resurrect it by accident, as test_the_registry_is_not_a_graveyard says
+    of a figure."""
     from portfusion.house import headings as H
     used = _headings_used(monkeypatch)
     fields = {f for _, f in used}

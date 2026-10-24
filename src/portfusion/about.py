@@ -49,7 +49,7 @@ def release(root: str | None = None) -> str:
         return f"PortFusion {__version__} {LABEL}"
     if root is None:
         # THE CODE'S OWN COMMIT, never the folder's around it: installed in a book's `.venv`, git
-        # asked from the package finds the book's repository (issue #18).
+        # asked from the package finds the book's repository.
         from portfusion.record import schema
         commit = _commit(str(schema.ROOT)) if schema.ROOT else _installed_commit()
     else:

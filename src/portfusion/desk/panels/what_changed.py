@@ -53,8 +53,7 @@ NOTIONAL_COLUMNS = tuple(c for c in COLUMNS if c != "fx_effect")
 
 #: The two kinds of line, in the record's own words (`schema.KINDS`, glossary §2).
 #:
-#: THE LABEL CARRIES THE BASIS. It was "Spread bets" with a notional pill beside it; the pills
-#: went on 1 Oct 2026, so the heading says it, in the words Holdings' figures use.
+#: THE LABEL CARRIES THE BASIS. The heading says it, in the words Holdings' figures use.
 BLOCKS = (("shares", "Shares", COLUMNS),
           ("spread bet", "Spread bets", NOTIONAL_COLUMNS))
 
@@ -68,7 +67,7 @@ JOURNAL_COLUMNS = ("at", "route", "op", "table", "rows", "ref", "detail")
 RECORD_CAVEAT = (
     "Record time is when the book learned a thing, not when it happened: a July dividend "
     "entered in September appears here in September. Forward-only — the journal reaches back to "
-    "the day it opened, and the bench items it was seeded from.")
+    "the day it opened, and the writes it was seeded from.")
 
 
 def data() -> dict:

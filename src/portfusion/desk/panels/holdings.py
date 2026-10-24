@@ -9,8 +9,7 @@ EVERY ROW SAYS WHAT IT IS HELD AS, in the record's two words (schema.KINDS) and 
 issuer row holding both: the engine's own `held_as` column, reported as it stands. A share
 position's `value` is its market value and a spread bet's is its NOTIONAL (rules.SPREAD_BET),
 and the two must never be added into a figure called capital — the two figures at the top are
-the engine's, apart. This panel classifies nothing: the per-row marker and the list of issuers
-held both ways it once added beside the word retired on 13 Oct 2026.
+the engine's, apart. This panel classifies nothing.
 """
 from __future__ import annotations
 
@@ -29,8 +28,7 @@ ORDER = 40
 #: XYZ SB is one line at issuer level, carrying one basis label. Every other grouping keeps the
 #: partition and its rows sum to the engine's own owned/exposure figures exactly. So `ticker` is
 #: the default and the screen opens with nothing withheld; issuer-level exposure is one choice
-#: away, its totals still the engine's and its collapsed rows marked (29 Sep
-#: 2026 — issuer was the default until then).
+#: away, its totals still the engine's and its collapsed rows marked.
 #
 # TWO, BECAUSE THE ENGINE GROUPS BY TWO. `book.holdings(by=)` decides one thing:
 # `key = "company" if by == "issuer" else "ticker"`. Any other axis offered here would change the
@@ -43,7 +41,7 @@ ORDER = 40
 # two figures at the top, which are the basis split and are never added.
 GROUPINGS = ("ticker", "issuer")
 #: EACH GROUPING IN THE READER'S WORD: the engine's `issuer` is the glossary's Company, the word
-#: every page heads the column with (14 Oct 2026).
+#: every page heads the column with.
 GROUPING_WORDS = {"ticker": "ticker", "issuer": "company"}
 
 COLUMNS = ("ticker", "company", "held_as", "accounts", "currency", "entry_price",
@@ -62,12 +60,12 @@ HELD_COLUMNS = ("qty", "stake")
 #: carries the corroboration and the symbol actually queried. `mark_key`, never `ticker` — a
 #: contract is not an instrument.
 #:
-#: THE LAST FIVE REFRESHES, NOT EVERY MARK (12 Oct 2026): enough to see the trend under the
-#: value, which What Changed and the charts carry further. Every mark stays on file, because a
-#: past valuation, What Changed and the IG checks are worked out from them. Whether a mark is a
-#: close, a bid or a reconstruction its source already says, so `quality` and `struck` are not
-#: drawn; a mark a later read of its day replaced is not on file at all. Its price prints as Holdings' own do: a spread bet's `level` in points, a share's at its
-#: currency's places, house/precision.py's.
+#: THE LAST FIVE REFRESHES, NOT EVERY MARK: enough to see the trend under the value, which What
+#: Changed and the charts carry further. Every mark stays on file, because a past valuation, What
+#: Changed and the IG checks are worked out from them. Whether a mark is a close, a bid or a
+#: reconstruction its source already says, so `quality` and `struck` are not drawn; a mark a
+#: later read of its day replaced is not on file at all. Its price prints as Holdings' own do: a
+#: spread bet's `level` in points, a share's at its currency's places, house/precision.py's.
 MARK_COLUMNS = ("date", "mark_key", "price", "currency", "source")
 MARK_REFRESHES = 5
 

@@ -1,12 +1,11 @@
 """ROUND TRIPS — every position that has been closed, and what it did.
 
-Round trips can be narrowed to a company,
-a ticker, an account or a range of EXIT dates, which is what you actually want when asking "how
-has PENR gone for us" — the answer is several round trips across several years, and reading them
-together is the point. A company is every code it is held under, its share and its spread bet in one
-choice, as on Trades (14 Oct 2026). THE HEADLINE FIGURES FOLLOW THE SELECTION: narrowing to an account and
-leaving the whole book's realisations, proceeds and gain on screen answers a question nobody
-asked.
+Round trips can be narrowed to a company, a ticker, an account or a range of EXIT dates, which is
+what you actually want when asking "how has PENR gone for us" — the answer is several round trips
+across several years, and reading them together is the point. A company is every code it is held
+under, its share and its spread bet in one choice, as on Trades. THE HEADLINE FIGURES FOLLOW THE
+SELECTION: narrowing to an account and leaving the whole book's realisations, proceeds and gain on
+screen answers a question nobody asked.
 
 REALISED GAIN IS NET OF COMMISSION, and that is not an oversight to be corrected here: proceeds
 are recorded net, so the dealing cost is already inside the gain. `store/income.csv` carries
@@ -27,7 +26,7 @@ TITLE = "Round Trips"
 ORDER = 50
 
 #: IN HOLDINGS' ORDER: what the line is, how much and at what prices, in its own currency, what
-#: it cost and brought in, then its dates. The per-share prices were sterling until 14 Oct 2026.
+#: it cost and brought in, then its dates.
 COLUMNS = ("ticker", "company", "held_as", "account", "currency", "qty", "entry_price",
            "exit_price", "cost", "proceeds", "realised", "realised_pct", "opened", "closed", "days_held",
            "fully_closed")

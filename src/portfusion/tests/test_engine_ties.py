@@ -79,10 +79,8 @@ def test_quarter_end_navs_are_per_account_and_roll_up(book):
     for date, rows in q.groupby("as_of"):
         assert set(rows["account"]) == set(D.accounts_open(date)), \
             f"{date}: not every account open then contributes"
-        # PER BASIS. The unfiltered sum is what put the spread-bet notional into a
-        # quarter's NAV the moment the notional rows landed, and this line is where it surfaced.
-        # Each series rolls up against its own total, so the two can never be added together
-        # by accident again.
+        # PER BASIS. Each series rolls up against its own total, so the two are never added
+        # together.
         nav = rows[rows["contribution"].isin(book.NAV_BASES)]
         exp = rows[rows["contribution"].isin(book.EXPOSURE_BASES)]
         ties(nav["amount"].sum(), book.quarter_nav_total()[date], f"NAV roll-up at {date}")
@@ -119,17 +117,13 @@ def test_the_baseline_nav_is_the_opening_capital_the_return_measures_from(book):
 
 
 # =====================================================================================
-# INCOME
-# =====================================================================================
-
-# =====================================================================================
 # ROUND TRIPS
 # =====================================================================================
 
 def test_a_company_narrows_round_trips_to_every_code_it_is_held_under(book):
-    """S8 (14 Oct 2026): Round Trips narrows by company, as Trades does, so a share and its spread
-    bet are read in one choice. The engine selects, so the page's totals still come from here: a
-    company's are its codes' together."""
+    """Round Trips narrows by company, as Trades does, so a share and its spread bet are read in
+    one choice. The engine selects, so the page's totals still come from here: a company's are its
+    codes' together."""
     every = book.round_trips()
     for company, rows in every.groupby("company"):
         got = book.round_trips(company=company)
@@ -153,8 +147,7 @@ def test_round_trip_totals_reach_the_realised_figure_twice(book):
 
 def test_no_round_trip_is_missing_its_entry_date(book):
     """The entry date and the price paid are what demonstrate the return on a particular
-    investment (the owner). a holding of many years; throwing its entry away would throw the point of
-    the record away with it."""
+    investment; throwing its entry away would throw the point of the record away with it."""
     rt = book.round_trips()
     assert rt["opened"].notna().all(), \
         f"undated entries: {rt.loc[rt['opened'].isna(), 'realisation_id'].tolist()}"
@@ -175,9 +168,8 @@ def test_as_of_today_ties_to_portfolio_cost(book):
 
 @needs("buys")
 def test_as_of_answers_the_opening_day_and_refuses_any_before_it(book):
-    """The book does not claim to know what was held in 2025: answering would be a guess wearing a
-    number's clothes. Except at the opening day's close, which is what the record opened with —
-    every pre-baseline leg — so the opening can be valued at its own closes."""
+    """THE BOOK ANSWERS FROM ITS OPENING DAY, valued at its own closes, and refuses any day
+    before it (`Book.as_of()` says why)."""
     import datetime as _dt
     eve = (_dt.date.fromisoformat(BASELINE_ASOF) - _dt.timedelta(days=1)).isoformat()
     with pytest.raises(ValueError, match="baseline"):
@@ -194,20 +186,9 @@ def test_as_of_answers_the_opening_day_and_refuses_any_before_it(book):
 # =====================================================================================
 
 def test_the_build_does_not_import_the_broker_feed(build_imports):
-    """THE RULE THAT SURVIVED, and the one that did not.
-
-    The build was once forbidden to import `engine.py` too — the engine stood beside the build as
-    a SECOND calculator, and a rebuild was not allowed to fail because of anything only the
-    engine needed.
-
-    THAT HALF IS RETIRED: the engine produces the data and a renderer renders it. A
-    renderer has to read what it renders, so the build importing the engine is the design, not
-    a violation; keeping the test would have kept a rule that outlived its reason.
-
-    WHAT STILL HOLDS is the part that was always about risk rather than architecture: the
-    build must not import `feeds/ig.py`. That module talks to a broker over the network,
-    and a report build that can fail because IG is down is a worse book. pandas is a
-    library on disk; a broker is not.
+    """The build must not import `feeds/ig.py`. That module talks to a broker over the network,
+    and a report build that can fail because IG is down is a worse book. pandas is a library on
+    disk; a broker is not.
     """
     imports = build_imports
     assert "feeds" not in imports, (
@@ -243,8 +224,7 @@ def test_holdings_by_ticker_ties_to_the_book(book):
 def test_the_live_position_count_is_the_ledgers_open_lines(book):
     """OPEN POSITIONS, REACHED A SECOND WAY. The live count is `holdings(by="ticker")`'s rows, the
     valued legs grouped; here it is the tickers with a buy leg still open, which the ledger marks
-    as each sale consumes one. Of the sixteen registered figures it was the one held by the
-    registry's guards alone until step 5."""
+    as each sale consumes one."""
     L = book.ledger
     assert book.headline()["Open positions"] == L.loc[L["open_leg"], "ticker"].nunique()
 
@@ -298,7 +278,7 @@ def test_a_spread_bet_reads_as_its_stake_and_level_and_they_tie_to_its_money(boo
 
 
 def test_a_quarter_with_no_opening_nav_gets_no_return(book):
-    """NEVER ZERO, which is a claim. The rule the retired report tab broke."""
+    """NEVER ZERO, which is a claim."""
     q = book.quarter_returns()
     for _, row in q.iterrows():
         if row["opening_nav"] == 0 and row["capital_deployed"] == 0:
@@ -308,13 +288,8 @@ def test_a_quarter_with_no_opening_nav_gets_no_return(book):
 
 
 def test_no_holding_is_split_across_two_currencies(book):
-    """THE DEFECT THIS REPLACES, and the rule that stops it returning.
-
-    ONE holding was once booked into TWO currency buckets. STRM.DE is Stormvik on Xetra, quoted in
-    EUR — but its S.104 pool adjustment row carried the code GBP, and the currency decides the
-    VALUATION ROUTE, so the pool was undervalued and part of it leaked into the GBP
-    bucket. BOTH TOTALS STILL TIED, which is why it survived. Fixed by one field: a holding's
-    currency comes from IDENTITY, never from whichever ledger row happens to be first.
+    """A HOLDING'S CURRENCY COMES FROM IDENTITY, never its first ledger row: it decides the
+    valuation route, and both totals tie when it is wrong.
     """
     cur = book.allocation(by="currency")
     ties(cur["value"].sum(), book.total_exposure(), "currency buckets vs total exposure")
@@ -328,21 +303,16 @@ def test_no_holding_is_split_across_two_currencies(book):
 @needs("buys")
 def test_gbp_exposure_equals_uk_exposure(book):
     """A corroboration, not a coincidence. Every GBP-quoted holding in this book is a UK
-    issuer, so the two figures must agree — and they did NOT while the Stormvik adjustment was
-    leaking into GBP. It is the cheapest available check that the leak has not returned."""
+    issuer, so the two figures must agree — the cheapest check that no holding's currency leaks
+    into GBP."""
     cur = book.allocation(by="currency").set_index("currency")["value"]
     reg = book.allocation(by="region").set_index("region")["value"]
     ties(cur["GBP"], reg["UK"], "GBP exposure vs UK exposure")
 
 
 def test_the_account_blocks_roll_up_to_the_portfolio_table(book):
-    """Account detail, without the trap the old indented sub-rows came with.
-
-    Sub-rows inside the main table had to be excluded from every roll-up by hand — "never sum a
-    column here, it would count them twice". Holdings puts each account in its OWN table, so
-    there is nothing to exclude.
-
-    The check that matters is that they still add up.
+    """Account detail, each account in its OWN table, so there is nothing to exclude from a
+    roll-up. The check that matters is that they add up.
     """
     port = book.holdings(by="ticker")["value"].sum()
     blocks = sum(book.holdings(account=a, by="ticker")["value"].sum()
@@ -395,7 +365,7 @@ def test_a_share_readings_total_is_its_stock_and_the_cash_of_its_day(book):
 
 @pytest.mark.audit
 def test_every_share_reading_rests_on_units_that_still_agree(book):
-    """A SHARE ACCOUNT IS CHECKED ON UNITS (the owner, 30 Sep 2026), and this is the audit's half.
+    """A SHARE ACCOUNT IS CHECKED ON UNITS, and this is the audit's half.
 
     The door refuses a holdings export whose units are not the book's, so a reading on file
     agreed when it was written. What can change since is the BOOK: an event entered later and
@@ -455,16 +425,10 @@ def test_every_reconcilable_account_still_agrees_with_its_broker(book):
 
 
 def test_the_spread_bet_reconciliation_is_not_comparing_a_figure_with_itself(book):
-    """THE DEFECT THIS BLOCK SHIPPED WITH, and it read as a clean bill of health.
+    """A RECONCILIATION THAT CANNOT FAIL IS NOT A RECONCILIATION.
 
-    book_total for a spread-bet account was `r.equity` — and `stmt_value` on the same ac_rows
-    row IS that equity. So the difference column printed 0.00 for the spread-bet accounts, for
-    weeks, while comparing the statement figure with itself. A reconciliation that cannot
-    fail is not a reconciliation.
-
-    The book's own number for those accounts is the DERIVED nav — capital in, plus realised,
-    plus unrealised, plus income — which is computed from the ledger and knows nothing about
-    what the broker said. THAT is what has something to prove.
+    Its book side is the engine's DERIVED nav (`Book.reconciliation()` says why), which knows
+    nothing about what the broker said.
 
     Asserting the two are not the same object is not enough: they would coincide by accident
     on a day the derivation happened to land exactly on the broker's figure. So this checks
@@ -475,28 +439,22 @@ def test_the_spread_bet_reconciliation_is_not_comparing_a_figure_with_itself(boo
         if D.ACCOUNT_KIND.get(account) != "spread bet":
             continue
         # AT THE READING'S OWN DATE. The book's side is pinned to the instant the broker's figure
-        # was struck at; asking the live NAV here would assert the very floating that pinning
-        # stopped.
+        # was struck at; asking the live NAV here would assert the floating the pinning prevents.
         day = row["struck_on"] or None
         nav = book.by_account(day).set_index("account")["nav"].to_dict()
         assert abs(row["book"] - nav[account]) < 1e-9, (
             f"{account}: the reconciliation's book figure is not the engine's derived NAV at "
             f"{day} — {row['book']:,.2f} against {nav[account]:,.2f}")
-        # NOT "THE TWO FIGURES MUST DIFFER". That cheap proxy fitted a book_total copied from the
-        # broker; a reading that strikes the marks and the equity in ONE PASS makes the two
-        # sides agree — a spread bet's by 7e-12, which is floating point, not agreement by accident —
-        # and a correct reconciliation could not satisfy it. The assertion above is the guard
-        # actually wanted: the book's side is DERIVED, which is a property of the code and
-        # holds whatever the market did.
+        # NOT "THE TWO FIGURES MUST DIFFER": a reading that strikes the marks and the equity in
+        # ONE PASS makes them agree. The guard is that the book's side is DERIVED, which holds
+        # whatever the market did.
 
 
 @needs("buys")
 def test_an_account_a_day_cannot_value_is_blank_and_never_zero(monkeypatch):
-    """by_account()'s dated branch left out an account `holdings_at()` could not value, and its
-    comment said "left absent rather than guessed at zero"; then `per_account()` filled it with
-    0.0, and the account was worth nothing that day (the code review of 2 Oct 2026).
-    It happens at an opening, where a share account holds a line with no mark that early.
-    A blank, which every sum it reaches carries."""
+    """An account `holdings_at()` cannot value is blank, never 0.0, and every sum it reaches
+    carries the blank. It happens at an opening, where a share account holds a line with no mark
+    that early."""
     from portfusion.engine import MissingMark
     b = Book()
     day = max(D.QSNAP_FROZEN)
@@ -522,26 +480,15 @@ def test_income_rows_sum_to_the_book_income(book):
     ties(rows["amount"].sum(), book.totals()["income"], "YTD income")
 
 
-# =====================================================================================
-# SORT ORDER
-#
-# Two rules. ENTITY LISTS use a canonical order; EVENT LOGS are newest first, each account's
-# income among them since 14 Oct 2026 (the owner), when the one exception to the rule ended.
-#
-# Worth a test because it is exactly the kind of thing that drifts one block at a time
-# and is only ever noticed by eye — which is how it was noticed.
-# =====================================================================================
-
 # ======================================================================================
 # PERFORMANCE
 # ======================================================================================
 
 @needs("buys")
 def test_a_quarters_name_is_derived_from_its_end_date(book):
-    """THE POINT OF THE VOCABULARY. A reader once had to work out that "2026-06-30" and "Q2 2026"
-    were the same quarter, because one table keyed on dates and another on names typed into a CSV.
-    The name is DERIVED from the end date, year included, so a 2027 quarter cannot be stamped 2026,
-    and every quarter the returns carry wears the name its own date gives it.
+    """THE POINT OF THE VOCABULARY. The name is DERIVED from the end date, year included, so a
+    2027 quarter cannot be stamped 2026, and every quarter the returns carry wears the name its
+    own date gives it.
     """
     assert book.quarter_label("2026-03-31") == "Q1 2026"
     assert book.quarter_label("2026-06-30") == "Q2 2026"
@@ -607,10 +554,9 @@ def test_every_traded_price_is_local_or_absent(book):
 
 
 def test_the_contract_note_prices_come_from_the_record(book):
-    """A deal's own price and its broker's rate, read off the row. The engine used to
-    recompute these from value/quantity and get the GBP figure instead. Reading the record
-    rather than recomputing it is the whole point of having one. The loop derives from the
-    store, so it covers however many deals the loaded book states a price for."""
+    """A deal's own price and its broker's rate, read off the row. Reading the record rather than
+    recomputing it is the whole point of having one. The loop derives from the store, so it covers
+    however many deals the loaded book states a price for."""
     rows = _by_id(book.activity())
     for d in [*D.buys, *D.sales]:
         i = getattr(d, "trade_id", None) or d.sale_id
@@ -622,18 +568,11 @@ def test_the_contract_note_prices_come_from_the_record(book):
 
 
 # =====================================================================================
-# THE PRICE DATE ON A MULTI-CONTRACT HOLDING  (the owner spotted this on Morane)
+# THE PRICE DATE ON A MULTI-CONTRACT HOLDING
 #
 # Holdings shows ONE "Price as at" per ticker, and a spread-bet ticker can hold legs on
-# several contracts. The lookup that fed it was `{t.ticker: LEG_CONTRACT[t.trade_id] for t in
-# trades}` — keyed by ticker, so the LAST leg in file order won. MORA SB collapsed onto
-# MORA-DEC26, a closed leg with no price row by design, and the cell rendered BLANK for a
-# holding that is priced daily.
-#
-# The blank was the lucky outcome. ZEPH SB collapses across four contracts and HALV SB
-# across two; both landed on a priced contract and showed a plausible date from a leg that
-# was not necessarily the right one. Had two contracts carried different dates, the tab
-# would have printed one of them with nothing to say which.
+# several contracts. A lookup keyed by ticker takes the LAST leg in file order, which may be
+# closed and unpriced, or marked on another day.
 # =====================================================================================
 
 def test_every_open_holding_has_a_price_date(book):
@@ -643,7 +582,7 @@ def test_every_open_holding_has_a_price_date(book):
     assert not missing, (
         f"open holdings with no 'Price as at': {missing}. A spread bet priced daily must not "
         f"render a blank date — check whether its ticker collapsed onto a CLOSED leg's "
-        f"contract, which is how MORA SB broke.")
+        f"contract.")
 
 
 def test_the_price_date_comes_from_the_open_legs_not_the_last_one(book):
@@ -672,10 +611,9 @@ def test_the_price_date_comes_from_the_open_legs_not_the_last_one(book):
 def test_a_closed_legs_contract_is_not_expected_to_be_priced(book):
     """The other half, so nobody 'fixes' this by adding price rows for dead contracts.
 
-    MORA-DEC26 and STRM-SEP26 have no row in CURRENT_PRICES and should not: the legs on
-    them are closed, and pricing a contract nothing holds would be inventing a mark to fill
-    a column. The test that would have caught the original bug is the one above; this one
-    stops the wrong cure.
+    A contract whose legs are all closed has no row in CURRENT_PRICES: pricing a contract
+    nothing holds would be inventing a mark to fill a column. The test above holds the date;
+    this one stops the wrong cure.
     """
     from portfusion.record import rules as _D
     px = {r[0] for r in _D.CURRENT_PRICES}
@@ -706,21 +644,11 @@ def test_every_live_price_is_on_a_line_still_held(book):
 
 
 # =====================================================================================
-# THE TRADING FLOW IS DERIVED  (after the owner found Q3 had stopped moving)
-#
-# capital-flows.csv was hand-kept, and its "Q3 to date" row had captured nothing for weeks.
-# It was wrong in BOTH directions at once — understating one spread-bet account because two
-# legs were never added, and overstating another because its opens were carried through and
-# its closes were not. Two share-account sales were missing entirely.
-#
-# Nothing could see it. The table fed section 5, block 6b's net-invested returns and the
-# quarter-return series, and there was nothing anywhere to compare it against.
-#
-# The figures now come from the ledger, and the hand-kept table is retired (8 Oct 2026).
+# A CLOSED QUARTER IS HELD
 # =====================================================================================
 
 def test_every_closed_quarter_reads_as_it_was_held(book):
-    """A CLOSED QUARTER DOES NOT MOVE UNLESS A ROW SAYS WHY (the owner, 1 Oct 2026).
+    """A CLOSED QUARTER DOES NOT MOVE UNLESS A ROW SAYS WHY.
 
     `quarter-results.csv` holds each closed quarter's six figures, for the book and each account,
     as the engine gave them; the newest row for a quarter end and an account is the one in force.
@@ -753,22 +681,14 @@ def test_every_closed_quarter_reads_as_it_was_held(book):
 
 
 # =====================================================================================
-# ONE REASONING STORE  (the owner)
+# ONE REASONING STORE
 #
-# It was two — OPEN_THESIS for Holdings, TRADE_RATIONALE for Round Trips — both keyed by
-# ticker and both holding why_entered. A position moves from Holdings to Round Trips when
-# it closes; THE REASONING DID NOT MOVE WITH IT, because the two pages read different
-# dictionaries. A thesis would have vanished the day its position closed, and nothing would
-# have said so.
-#
-# It had not fired because every closed parcel was opened before the write-up cut-off, so
-# every why_entered on Round Trips is legitimately blank. The defect was invisible for the
-# same reason it was harmless — which is the worst combination.
+# Holdings and Round Trips read one store, so a position's reasoning moves with it when it closes.
 # =====================================================================================
 
 @needs("buys")
 def test_an_open_position_keeps_its_thesis_when_it_closes():
-    """THE DEFECT THE MERGE REMOVED, asserted at the source rather than on a page.
+    """ONE STORE, asserted at the source rather than on a page.
 
     Holdings and Round Trips must read the SAME store, so a ticker's reasoning is reachable
     whichever side of the close it is on: one store, and both pages keyed off it through
@@ -784,9 +704,7 @@ def test_an_open_position_keeps_its_thesis_when_it_closes():
 
 
 def test_the_research_note_is_derived_not_stored_twice():
-    """It used to be a third element in the tuple, and Round Trips ignored it in favour of
-    deriving it from RESEARCH_NOTES anyway — a copy one consumer already disagreed with.
-    Both tabs derive it now, so there is nothing to drift."""
+    """Both tabs derive it from RESEARCH_NOTES, so there is nothing to drift."""
     fields = tuple(f.name for f in D.schema.TABLES["reasoning"].fields)
     for ticker, rows in D.REASONING.items():
         assert all(r._fields == fields for r in rows), (
@@ -795,16 +713,15 @@ def test_the_research_note_is_derived_not_stored_twice():
 
 
 # =====================================================================================
-# THE RETURN STOPS CHASING CASH  (the owner)
+# THE RETURN DOES NOT CHASE CASH
 #
-# A flow is money into POSITIONS, not cash across the book's boundary. These pin the defect
-# that forced it and the coherence of what replaced it.
+# A flow is money into POSITIONS, not cash across the book's boundary. These hold it.
 # =====================================================================================
 
 def _figures(b):
     """The year's figures, rounded. A BLANK ONE IS None: until the year's opening is frozen its
-    return is NaN, and NaN equals nothing, itself included, so every January a figure that had
-    not moved read as moved."""
+    return is NaN, and NaN equals nothing, itself included, so a figure that has not moved would
+    read as moved."""
     t = b.totals()
     return {k: None if pd.isna(t[k]) else round(float(t[k]), 2) for k in
             ("opening_nav", "capital_deployed", "capital_employed", "nav",
@@ -814,7 +731,7 @@ def _figures(b):
 @needs("buys")
 @needs("buys")
 def test_a_blank_years_figures_equal_themselves(monkeypatch):
-    """JANUARY, BEFORE THE YEAR'S OPENING IS FROZEN: the return is blank, and the tests above that
+    """JANUARY, BEFORE THE YEAR'S OPENING IS FROZEN: the return is blank, and the tests that
     compare the figures before and after a change would fail with nothing changed."""
     b = Book()
     real = b.totals
@@ -823,12 +740,8 @@ def test_a_blank_years_figures_equal_themselves(monkeypatch):
 
 
 def test_A_CASH_WITHDRAWAL_MOVES_NO_RETURN_FIGURE(monkeypatch):
-    """THE DEFECT THAT STARTED THIS. Two cash withdrawals moved the published return by
-    over a point — most of it from the numerator alone, because the
-    flow term fell while NAV never moved. NAV for a share account is positions at market and
-    cash is not in it, so subtracting a cash flow booked gain that never happened.
-
-    Now a withdrawal is not a flow at all, and nothing may move.
+    """NAV for a share account is positions at market and cash is not in it, so subtracting a
+    cash flow books a gain never made. A withdrawal is not a flow, and nothing may move.
     """
     from portfusion import engine
     import pandas as pd
@@ -848,8 +761,8 @@ def test_A_CASH_WITHDRAWAL_MOVES_NO_RETURN_FIGURE(monkeypatch):
 
 @needs("buys")
 def test_a_deposit_that_sits_as_cash_moves_nothing_either():
-    """The same defect with the opposite sign, and the one that would have made the book look
-    WORSE: money in, NAV unmoved, so the numerator falls by the whole deposit."""
+    """The opposite sign, which would make the book look WORSE: money in, NAV unmoved, so the
+    numerator falls by the whole deposit."""
     from portfusion import engine
     import pandas as pd
     b = engine.Book()
@@ -862,9 +775,8 @@ def test_a_deposit_that_sits_as_cash_moves_nothing_either():
 
 @needs("buys")
 def test_a_spread_bets_flow_is_its_funds_on_any_book():
-    """Q6'S TWIN (decided 9 Oct 2026): its sibling in `checks/` pins THIS book's settled
-    figures and stays home with the book; this one derives the same three-way
-    distinction from whichever book is loaded, so the beta ships with the enforcement.
+    """Its sibling in `checks/` pins THIS book's settled figures and stays home with the book;
+    this one derives the same three-way distinction from whichever book is loaded.
 
     THE FLOW IS THE MONEY MOVED IN — the account's cash movements, recomputed here straight
     off the store — never the legs' entry cost and never their notional. On a funded
@@ -898,9 +810,9 @@ def test_a_spread_bets_flow_is_its_funds_on_any_book():
 
 
 def test_only_the_capitals_own_income_reaches_the_return():
-    """The owner's split: a dividend is return on the shares and funding interest is the price of
-    holding a bet open, so both count. A platform fee and interest on idle CASH belong to the
-    account — they are the noise this basis exists to remove.
+    """A dividend is return on the shares and funding interest is the price of holding a bet open,
+    so both count. A platform fee and interest on idle CASH belong to the account — they are the
+    noise this basis exists to remove.
 
     AND YTD INCOME IS UNCHANGED. Only the return filters; the Dashboard figure is true about
     the book and dropping it would answer a question nobody asked."""
@@ -910,13 +822,11 @@ def test_only_the_capitals_own_income_reaches_the_return():
     assert set(D.POSITION_INCOME) == {"Dividend", "Funding interest"}
     assert set(D.ACCOUNT_INCOME) == {"Cash interest", "Fee"}
 
-    # DERIVED, NOT TYPED. Two live totals written in here failed on ordinary work — entering
-    # one dividend turned the test red, and the fix was always to retype a figure.
+    # DERIVED, NOT TYPED. A total typed here would turn red at the next dividend.
     #
     # A FIGURE IS NOT THE RULE. The rule is that the return takes POSITION_INCOME and the
     # Dashboard's Income takes everything, and that holds whatever the numbers are. Stated
-    # this way a cash-interest row provably cannot move the return, which is the claim the
-    # hardcoded pair was standing in for. Why each figure moved is in the commits.
+    # this way a cash-interest row provably cannot move the return.
     rows = b.income_rows(2026)
     position = rows[rows["category"].isin(D.POSITION_INCOME)]["amount"].sum()
     assert round(float(b.position_income(2026).sum()), 2) == round(float(position), 2), \
@@ -932,10 +842,9 @@ def test_only_the_capitals_own_income_reaches_the_return():
 
 
 def test_income_reaches_a_return_once():
-    """A SPREAD-BET ACCOUNT'S EQUITY ALREADY HOLDS ITS INCOME, and the book's return once added
-    its funding on top: a quarter's funding was counted twice (found 30 Sep 2026).
-    A share account's value holds none, so its dividends are added — and, until the same day,
-    reached the book's return and never the account's own. The term is `return_income()`."""
+    """A SPREAD-BET ACCOUNT'S EQUITY ALREADY HOLDS ITS INCOME, so the book's return never adds
+    its funding again. A share account's value holds none, so its dividends are added, to the
+    account's return and the book's. The term is `return_income()`."""
     from portfusion import engine
     from portfusion.record import rules as D
     b = engine.Book()
@@ -973,10 +882,10 @@ def test_a_year_end_moves_no_balance():
 
 @needs("buys")
 def test_the_year_to_date_is_blank_until_its_opening_is_frozen():
-    """NOTHING TO MEASURE FROM IS NOT ZERO (the owner, 2 Oct 2026: a blank, for the short time it
-    lasts). From the first price of a new year until its 31 December is frozen, the year's
-    opening, capital employed, growth and return are blank, on every account and in the total —
-    where pandas would otherwise sum the blanks to £0.00 — and every balance stands."""
+    """NOTHING TO MEASURE FROM IS NOT ZERO (a blank, for the short time it lasts). From the first
+    price of a new year until its 31 December is frozen, the year's opening, capital employed,
+    growth and return are blank, on every account and in the total — where pandas would otherwise
+    sum the blanks to £0.00 — and every balance stands."""
     now = Book()
     b = book_in_the_next_year(frozen=False)
     by = b.by_account().set_index("account")
@@ -991,10 +900,10 @@ def test_the_year_to_date_is_blank_until_its_opening_is_frozen():
 
 @needs("buys")
 def test_a_row_of_the_new_year_rolls_the_year_before_its_first_price():
-    """A ROW DATED 2 JANUARY ROLLS THE YEAR AS A FIRST PRICE WOULD (the owner, 2 Oct 2026;
-    `ytd_year()` says why). Stopping the terms at 31 December instead would leave a January
-    purchase in the value with no money in against it. With nothing frozen to open from, the
-    rolled year's return is blank."""
+    """A ROW DATED 2 JANUARY ROLLS THE YEAR AS A FIRST PRICE WOULD (`ytd_year()` says why).
+    Stopping the terms at 31 December instead would leave a January purchase in the value with
+    no money in against it. With nothing frozen to open from, the rolled year's return is
+    blank."""
     year = Book().ytd_year() + 1
     before = Book()
     before.valued_at = lambda: f"{year - 1}-12-31"
@@ -1011,9 +920,9 @@ def test_a_row_of_the_new_year_rolls_the_year_before_its_first_price():
 
 @needs("buys")
 def test_the_return_since_the_start_links_the_years():
-    """LINKED, NOT ONE PERIOD (the owner, 2 Oct 2026; `since_start()` says why). In the first year it
-    is the year to date; after a year end, each full year's frozen return linked with the year to
-    date; and with nothing yet to open the year from, blank as that is."""
+    """LINKED, NOT ONE PERIOD (`since_start()` says why). In the first year it is the year to
+    date; after a year end, each full year's frozen return linked with the year to date; and with
+    nothing yet to open the year from, blank as that is."""
     first = Book()
     first.valued_at = lambda: f"{BASELINE.year}-09-30"
     assert first.since_start() == pytest.approx(first.totals()["ytd"], abs=RATE)
@@ -1029,9 +938,8 @@ def test_the_return_since_the_start_links_the_years():
 
 def test_the_firms_gain_is_its_accounts_gains():
     """ONE NUMERATOR, so the parts add to the whole: each closed quarter's firm gain is the sum
-    of its accounts' — which it was not while the accounts counted no income and the book
-    counted a spread bet's funding twice. THE BOOK AND EACH ACCOUNT SHARE ONE QUARTER TABLE: the
-    book's columns, under the same names, on every account's row."""
+    of its accounts'. THE BOOK AND EACH ACCOUNT SHARE ONE QUARTER TABLE: the book's columns,
+    under the same names, on every account's row."""
     from portfusion import engine
     b = engine.Book()
     per = b.account_quarter_returns()
@@ -1046,8 +954,7 @@ def test_the_firms_gain_is_its_accounts_gains():
 
 
 def test_the_quarters_and_the_year_are_the_same_measure():
-    """They were not, for a moment: the year moved to money-into-positions while the quarters
-    still summed cash movements, and nothing would have said which was right."""
+    """Both measure money into positions, never cash movements."""
     from portfusion import engine
     b = engine.Book()
     q = b.quarter_returns()
@@ -1056,12 +963,8 @@ def test_the_quarters_and_the_year_are_the_same_measure():
 
 
 def test_the_engines_own_column_names_say_notional(book):
-    """THE THIRD PLACE THE RETIRED TERM COULD HIDE, and it was hiding there.
-
-    `notional` won because it is the store's own word. tests/desk/test_panels.py holds the desk
-    to it by reading app.js, which is RENDERED OUTPUT — so it could not see an engine method
-    returning a column literally named `economic`, three lines under a docstring that already
-    said "which part is money and which is notional".
+    """`notional` is the store's own word. tests/desk/test_panels.py holds the desk to it by
+    reading app.js's text, blind to an engine column the desk never reads.
 
     A LABEL IS NOT ONLY WHAT A READER SEES. A frame column is what every renderer reads it by,
     and it outlives any one of them. This checks the engine's own vocabulary, which is where the
@@ -1082,18 +985,11 @@ def test_the_engines_own_column_names_say_notional(book):
 
 
 def test_a_pair_is_judged_when_it_is_comparable_and_not_when_it_is_not(book):
-    """The rule that replaced the day limit, at its boundaries.
+    """The comparability rule, at its boundaries.
 
-    THE DAY LIMIT AND ITS SCALING BAND LASTED ONE DAY. Measured against the marks on file,
-    a share account can move several percent in a single day, against a
-    rule allowing 0.25% a day capped at 1.5%. So it fired whenever the book actually moved,
-    and widening it far enough not to would take thousands on one account, which is wider
-    than a wrong quantity on a single holding. There was no number that was neither too
-    tight nor too loose, which is how you know a tolerance was the wrong instrument.
-
-    What replaced it asks whether the two figures describe the SAME STATE OF THE MARKET.
-    `Book.comparability()` measures it, this classifies it, and the verdict prints
-    comparability's own words so a reader is told which of several reasons applied.
+    It asks whether the two figures describe the SAME STATE OF THE MARKET. `Book.comparability()`
+    measures it, this classifies it, and the verdict prints comparability's own words so a reader is
+    told which of several reasons applied.
 
     NOTHING HERE IS HARDCODED against today's record. Both boundaries are asserted on the rule
     itself, and the frame check below adapts to whatever the record currently holds.
@@ -1111,8 +1007,8 @@ def test_a_pair_is_judged_when_it_is_comparable_and_not_when_it_is_not(book):
     assert v(100_000.0, band - 0.01, "ig-accounts", True, "")["verdict"] == "within-band"
     assert v(100_000.0, band + 0.01, "ig-accounts", True, "")["verdict"] == "differs"
 
-    # A SHARE ACCOUNT IS NOT ASKED THIS (the owner, 30 Sep 2026): its check is units, so neither a
-    # comparability nor a difference moves its verdict.
+    # A SHARE ACCOUNT IS NOT ASKED THIS: its check is units, so neither a comparability nor a
+    # difference moves its verdict.
     assert v(100_000.0, 50_000.0, "ii-valuation", False, "anything")["verdict"] == "units-agree"
 
     # AND THE ENGINE AGREES WITH ITSELF: a row the frame calls incomparable is never judged.
@@ -1158,8 +1054,8 @@ def test_a_flow_weighs_by_the_days_after_it(book, monkeypatch):
     almost whole, one half way weighs half, one on the last day weighs nothing, and the capital
     deployed still counts every one in full.
 
-    WHY BY DAYS: weighted at the period's midpoint, a flow's date never reached the figure, and
-    an account funded on a quarter's last day read as invested for half of it."""
+    WHY BY DAYS: weighted at the period's midpoint, an account funded on a quarter's last day
+    would read as invested for half of it."""
     import pandas as pd
     account = D.ACCOUNT_ORDER[0]
     flows = pd.DataFrame({"account": [account] * 3,

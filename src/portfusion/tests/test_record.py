@@ -1,10 +1,8 @@
 """
 THE RECORD — invariants of record/rules.py.
 
-These import no build and touch no file. They exist because record/rules.py once carried NO
-assertions of its own: every guard lived inside the build, which only fires once you rebuild,
-and several of the things that can go wrong here produce a page that renders cleanly and
-is quietly wrong.
+These import no build. Several of the things that can go wrong here produce a page that
+renders cleanly and is quietly wrong.
 
 Each test names the failure it is defending against. If one fails after a change you meant to
 make, update the expectation and say why in the commit message. Do not delete a test to make
@@ -49,9 +47,9 @@ def test_every_trade_account_is_a_known_account(D):
 
 
 def test_an_account_is_named_by_its_code_without_its_holder():
-    """THE NAME ANYONE BUT THE OWNER READS (decided 6 Oct 2026): one code per account, in the
-    register's own order, and a label that carries no word of the holder's name. The two IG
-    spread bets read alike once the holder comes off, so the code is what tells them apart."""
+    """THE NAME ANYONE BUT THE OWNER READS: one code per account, in the register's own order,
+    and a label that carries no word of the holder's name. The two IG spread bets read alike
+    once the holder comes off, so the code is what tells them apart."""
     from portfusion.engine import Book
     b = Book()
     codes, reg = b.account_codes(), b.account_register().set_index("account")
@@ -70,8 +68,8 @@ def test_every_account_has_a_dated_cash_reading(D):
 
     store/cash-readings.csv is APPEND-ONLY — several readings per account over time — so
     the question is about the NEWEST reading per account, which is what the tab renders. A
-    SPREAD-BET ACCOUNT'S CASH IS ITS FUNDS, on its own reading under IG's name (13 Oct 2026),
-    and it has no row here.
+    SPREAD-BET ACCOUNT'S CASH IS ITS FUNDS, on its own reading under IG's name, and it has no
+    row here.
     """
     latest = D.cash_latest()
     shares = {a for a in D.ACCOUNT_ORDER if D.ACCOUNT_KIND[a] != "spread bet"}
@@ -86,10 +84,6 @@ def test_every_account_has_a_dated_cash_reading(D):
 def test_a_cash_reading_names_an_evidence_class_that_exists(D):
     """A reading whose class is not in EVIDENCE_CLASSES has no stated authority and no
     reference shape — limbs 2 and 3 of statement-grade, which prose alone cannot enforce.
-
-    New with the table. The literal carried its provenance as one free-text blob, so there
-    was nothing to check: 'HL app, read 20 Aug' and 'ii statement of transactions' were the
-    same kind of thing as far as any code could tell, though they sit on different rungs.
     """
     for o in D.cash_readings:
         assert o.evidence in D.EVIDENCE_BY_KEY, (
@@ -103,9 +97,8 @@ def test_an_account_reading_names_an_evidence_class_that_exists(D):
     too.
 
     IT MATTERS MORE HERE. A cash reading is a component; an ACCOUNT reading is the figure the
-    whole reconciliation is judged against. Without the pair it could not say what it rested
-    on at all — the flags had to colour the row from a different file, and nothing could bank
-    an observation into the history, because a banked row needs a source and a quality.
+    whole reconciliation is judged against. Without the pair it could not say what it rests on,
+    and a banked row needs a source and a quality.
     """
     for r in D.ac_rows:
         assert r.evidence in D.EVIDENCE_BY_KEY, (
@@ -135,9 +128,8 @@ def test_a_spread_bet_account_reconciles_against_an_official_class(D):
 
 
 def test_every_trade_date_is_a_date(D):
-    """A trade's date is an ISO date, with no exceptions. Dates written in words were retired on
-    12 Oct 2026 with the machinery that read them, so any other string is a mistyped date, which
-    the engine would otherwise refuse to load."""
+    """A trade's date is an ISO date, with no exceptions. Any other string is a mistyped date,
+    which the engine would otherwise refuse to load."""
     bad = []
     for t in D.buys:
         try:
@@ -174,8 +166,7 @@ def test_each_feed_shares_one_date(D):
     answer is usually yes. (A brand-new instrument's first mark, seeded from a confirming
     statement, is dated to the pinned date, so it does not appear here as a second date.)
 
-    WHY NOT ONE DATE FOR THE WHOLE BOOK. It began as one and was widened three times, each
-    the owner's call and each a real loosening, so the reasons are written down:
+    WHY NOT ONE DATE FOR THE WHOLE BOOK. Three reasons:
 
       · MARKETS KEEP THEIR OWN HOURS. A sweep strikes each line at its own instant: a market
         still trading gives a live read dated today, one not yet open gives its last session.
@@ -186,18 +177,17 @@ def test_each_feed_shares_one_date(D):
       · A WEEKLY CADENCE. Shares taken at Friday's close and contracts read on Monday are
         three days apart before anyone has done anything wrong, so the span is
         PRICE_SPREAD_LIMIT — one number, living beside PRICE_AGE_LIMIT, which the Legend
-        quotes. It was once typed here as well, and this test caught the two disagreeing.
+        quotes.
       · MARKET HOLIDAYS. On a US holiday the US lines come back at the session before — their
         last COMPLETE one — while the LSE and XETRA lines, whose markets traded, come back at
         the day itself. Both are right. So the shares group by CURRENCY, which is the market
-        calendar for every line on file; ASKE-B.CO is DKK, priced in Copenhagen, and is a
-        group of one.
+        calendar for every line on file.
 
-    WHAT IS STILL GUARDED is most of the original force: every share within one market moves
-    together, every contract moves together, and the whole book stays inside
-    PRICE_SPREAD_LIMIT, so no group can drift off while another carries the book. The groups
-    are DERIVED — contracts from LEG_CONTRACT, shares from the row's currency — so a market
-    this book has never held joins the right group by existing.
+    WHAT IS GUARDED: every share within one market moves together, every contract moves
+    together, and the whole book stays inside PRICE_SPREAD_LIMIT, so no group can drift off
+    while another carries the book. The groups are DERIVED — contracts from LEG_CONTRACT,
+    shares from the row's currency — so a market this book has never held joins the right
+    group by existing.
     """
     contracts = set(D.LEG_CONTRACT.values())
     groups = defaultdict(set)
@@ -241,10 +231,8 @@ def test_a_contract_is_named_only_on_a_spread_bet_leg(D):
 
 @needs("buys")
 def test_a_spread_bet_with_no_contract_is_refused_on_load(store_copy):
-    """THE GAP FOUND ON 8 OCT 2026. A spread-bet leg with no contract was
-    valued at nothing: on a scratch copy one new open HALV leg lowered net asset value by its whole
-    entry notional, and nothing said so. The record now refuses it on load, which is also what
-    stops the bench committing one."""
+    """A spread-bet leg with no contract would be valued at nothing, so the record refuses it on
+    load, which also stops the bench committing one."""
     import csv
     from portfusion.record import rules
     path = store_copy / "buys.csv"
@@ -260,8 +248,8 @@ def test_a_spread_bet_with_no_contract_is_refused_on_load(store_copy):
 @needs("buys")
 @pytest.mark.parametrize("bet", [False, True])
 def test_a_buy_whose_figure_is_in_the_other_kinds_column_is_refused_on_load(store_copy, bet):
-    """`val` was one column a share and a bet both filled; split by kind (#43), a share's cost in
-    the level column, or a bet's level in the cost one, would roll up as nothing."""
+    """A share's cost in the level column, or a bet's level in the cost one, would roll up as
+    nothing."""
     import csv
     from portfusion.record import rules
     path = store_copy / "buys.csv"
@@ -380,8 +368,8 @@ def test_a_record_that_begins_on_any_day_is_measured_from_its_opening(store_copy
 
 def test_a_negative_quantity_carries_no_value(D):
     """A share consolidation changes the count and not the cost, so it is the one kind of trade row
-    with a negative quantity, and it carries no value. A negative row WITH a value is a sale written
-    the old way: it would rebuild cleanly and be counted as a buy."""
+    with a negative quantity, and it carries no value. A negative row WITH a value is a sale
+    miswritten: it would load cleanly and count as a buy."""
     bad = [(t[T_ID], t[T_QTY], t.cost) for t in D.buys
            if t[T_QTY] is not None and t[T_QTY] < 0 and t.cost != 0]
     assert not bad, (f"negative-quantity trades carrying a value — a sale is one sales.csv row, "
@@ -436,16 +424,14 @@ def test_exit_leg_match_joins_real_rows(D):
 # =====================================================================================
 # The record's shape is declared, not described
 #
-# A field-name comment once listed SEVENTEEN names for an EIGHTEEN-field tuple and claimed 118
-# rows against a real 102. A declaration cannot drift like that, but these pin the properties
-# a declaration alone does not.
+# A declaration cannot drift as a comment does, but these pin the properties a declaration
+# alone does not.
 # =====================================================================================
 
 @needs("buys")
 def test_the_record_exports_named_rows_not_bare_tuples(D):
     """
-    Bare tuples are what the wrong field comment was documenting. If a container
-    reverts to plain tuples, every `.ticker` in the build becomes an AttributeError
+    If a container holds plain tuples, every `.ticker` in the build becomes an AttributeError
     at best — and a silent positional misread if someone "fixes" it back to indexes.
     """
     expected = {
@@ -465,9 +451,8 @@ def test_the_record_exports_named_rows_not_bare_tuples(D):
 
 @needs("buys")
 def test_whether_a_leg_is_still_held_comes_from_the_sales(D, book):
-    """A leg's `status` was once a column the engine read, and then a column nothing read; it is
-    retired. Which legs are still held comes from the sales alone: a leg an IG close names is not
-    held, and neither is any leg of a ticker no account holds any more."""
+    """Which legs are still held comes from the sales alone: a leg an IG close names is not held,
+    and neither is any leg of a ticker no account holds any more."""
     buys = book.ledger[book.ledger["direction"] == "Buy"].set_index("event_id")
     named = sorted({e.closes for e in D.sales if e.closes})
     assert named and not buys.loc[named, "open_leg"].any(), "a leg a sale closed still reads as held"
@@ -482,18 +467,12 @@ def test_whether_a_leg_is_still_held_comes_from_the_sales(D, book):
 
 def test_every_traded_ticker_has_an_identity_row(D):
     """
-    REGRESSION-BY-DISCOVERY, found while mis-aiming a mutation at CURRENT_PRICES and hitting
-    SECURITIES instead — which turned out to be the more interesting result.
-
-    Sector, region and exposure are all built from SECURITIES. Deleting one identity row once
-    failed nothing: sector and region silently took a default wherever they were shown, and the
-    report's issuer table lost the company name and shifted every row below it. Today
-    `Book.holdings()` refuses a held code with no identity row; this names every traded one, held
-    or closed, without a build.
+    Sector, region and exposure are all built from SECURITIES. Without its row a code's sector
+    and region would take a default. `Book.holdings()` refuses a held code with none; this names
+    every traded one, held or closed, without a build.
 
     That is the "plausible, rebuilds cleanly, passes every check, and is wrong" pattern this
-    suite exists for — the same shape as the Halvard sub-row miss. A ticker in the
-    ledger with no identity row is a gap, not a default.
+    suite exists for. A ticker in the ledger with no identity row is a gap, not a default.
     """
     sec_codes = {r[0] for r in D.SECURITIES}
     traded = {t.ticker for t in D.buys} | {e.ticker for e in D.sales}
@@ -522,13 +501,12 @@ def test_every_open_share_has_a_price_route(D):
 
 
 # =====================================================================================
-# THE IMPLIED DEALING COST ON A SALE  (the owner)
+# THE IMPLIED DEALING COST ON A SALE
 #
 # `price` is the EXECUTION price and `proceeds` is NET, so the gap between them is the
-# dealing cost. NOTHING STORES THAT COST, and after an audit that is deliberate: a buy
-# commission is part of the cost basis and a sell commission reduces proceeds, so both
-# are already counted, in the right place, exactly once. Recording either again in
-# income.csv double-counts it — which was once done, and caught.
+# dealing cost. NOTHING STORES THAT COST, deliberately: a buy commission is part of the cost
+# basis and a sell commission reduces proceeds, so both are already counted, in the right
+# place, exactly once. Recording either again in income.csv double-counts it.
 #
 # WHAT THIS TEST IS FOR is the other half. The gap is not stored, so nothing checks that
 # it is SANE — and a mis-keyed price or proceeds shows up nowhere else in the book. A
@@ -551,7 +529,7 @@ def test_every_open_share_has_a_price_route(D):
 #
 # A SPREAD-BET EXIT MUST LAND ON EXACTLY ZERO. A closing level is at parity and carries
 # no commission, so any gap there is an error by definition — the tolerance still
-# applies, but nothing has ever needed it.
+# applies.
 # =====================================================================================
 
 def _implausible_dealing_cost(qty, price, proceeds, rate=None):
@@ -600,9 +578,8 @@ def test_the_implied_dealing_cost_on_every_priced_buy_is_plausible(D):
 
 
 def test_the_dealing_cost_guard_actually_catches_a_fat_finger(D):
-    """A GUARD THAT HAS NEVER FIRED CANNOT SHOW YOU IT STILL WORKS. A cap in this record was
-    once wired to nothing for a whole session and printed the same reassuring "0 in scope"
-    throughout; firing the guard at rows built to fail is what proves it is connected.
+    """A GUARD THAT HAS NEVER FIRED CANNOT SHOW YOU IT STILL WORKS. Firing it at rows built to
+    fail is what proves it is connected.
 
     Three slips the record could really make, on a sale of 1,200 @ 0.8043, proceeds 960.16:
     """
@@ -626,16 +603,7 @@ def test_a_spread_bet_sale_implies_no_dealing_cost(D):
 
 
 # =====================================================================================
-# THE RULES ARE STATED ONCE  (the owner)
-#
-# The source hierarchy was once written out in FOUR places — CLAUDE.md, this module's header,
-# the Legend tab, and an architecture document — and they had already drifted: two said
-# "broker platform" and two said "broker platform or app", in a rule whose entire job is
-# deciding which source wins when two disagree.
-#
-# That is the leverage defect applied to prose. Leverage stood wrong in two documents for
-# three weeks because it was DERIVED and restated; a rule restated four times is the same
-# failure with no arithmetic to catch it.
+# THE RULES ARE STATED ONCE
 #
 # One copy, in rules. The Method page renders it.
 # =====================================================================================
@@ -644,9 +612,7 @@ def _flat(text):
     """The WORDS, not the formatting.
 
     Whitespace-insensitive so markdown line wrapping is not a false failure, and emphasis
-    is stripped so a guide may bold a phrase without breaking the comparison. It
-    did: a guide rendered "**Statement-grade means three things...**" and the first version
-    of this test read that as a drift.
+    is stripped so a guide may bold a phrase without breaking the comparison.
     """
     import re
     return " ".join(re.sub(r"[*`]", "", str(text)).split())
@@ -655,14 +621,11 @@ def _flat(text):
 def test_no_file_writes_out_a_rule_the_record_states_once(repo_root, project_files):
     """THE SOURCE HIERARCHY, THE ARCHIVE CONVENTION AND STATEMENT GRADE are each stated once, in
     `record/rules.py`, and the Method page renders them. A file may NAME one and point at it;
-    writing it out is a second copy, and the second copy is the one that goes stale: four
-    tellings of the hierarchy had drifted apart, and five of the archive convention were stale
-    in all five.
+    writing it out is a second copy, and the second copy is the one that goes stale.
 
     Each rule is found by the part nobody can restate it without: the hierarchy's first rungs,
     the convention's date token, and any eight words in a row of statement grade, taken from the
-    constant so a rewording needs no list edited. Every directory is read: a guard globbing the
-    root alone is how the store's guide carried a whole second hierarchy for weeks.
+    constant so a rewording needs no list edited. Every directory is read, not the root alone.
     """
     import re
     from harness import app_name
@@ -694,10 +657,9 @@ def test_no_file_writes_out_a_rule_the_record_states_once(repo_root, project_fil
 #: repeating the docstring below it. This counts every copy, beyond the first, of an eight-word run of comment or docstring prose. It
 #: measures repetition, not length: a long docstring that says a thing once adds nothing.
 #:
-#: A HIGH-WATER MARK, in the shape `test_evidence.py:_UNCLASSIFIED_HIGH_WATER` uses, taken after
-#: the prose passes so it holds their cuts. Cutting can never fail it; writing a sentence a
-#: second time can.
-REPEATED_PROSE_HIGH_WATER = 2026
+#: A HIGH-WATER MARK, in the shape `test_evidence.py:_UNCLASSIFIED_HIGH_WATER` uses. Cutting
+#: can never fail it; writing a sentence a second time can.
+REPEATED_PROSE_HIGH_WATER = 1881
 
 
 def _prose_blocks(src):
@@ -737,9 +699,8 @@ def _prose_runs(src):
 
 
 def test_the_code_repeats_itself_no_more_than_it_did(repo_root, project_files):
-    """A SENTENCE WRITTEN TWICE is two sentences to keep true, and the prose passes found the
-    second copy was usually the stale one. The unit is eight words, and every copy beyond the
-    first counts, so a third telling costs what the second did.
+    """A SENTENCE WRITTEN TWICE is two sentences to keep true. The unit is eight words, and every
+    copy beyond the first counts, so a third telling costs what the second did.
 
     If this fires, the failure names the runs each uncommitted file has gained since the last
     commit, which is where the new copy is. Keep the telling where the thing is done and point
@@ -807,12 +768,10 @@ def test_every_pointer_in_a_guide_leads_somewhere(repo_root, project_files):
     """A POINTER THAT LEADS NOWHERE sends its reader nowhere and tells nobody.
 
     The guides point rather than restate, so a pointer is most of what one holds, and it goes stale
-    when the thing it names moves. A guide once sent its reader to a folder that had been
-    renamed, and nothing saw it: the guide tests read words, not
-    where they lead. A path must name a listed file or folder (from the root, from the guide's
-    own folder, or by a tail only one path has, or only the path nearest the root has) or one
-    git ignores; after `:` or `::`, the name must be in that file. Code points at guides too, so
-    a `.py` file naming a CLAUDE.md is held to the same.
+    when the thing it names moves. A path must name a listed file or folder (from the root, from
+    the guide's own folder, or by a tail only one path has, or only the path nearest the root has)
+    or one git ignores; after `:` or `::`, the name must be in that file. Code points at guides
+    too, so a `.py` file naming a CLAUDE.md is held to the same.
     """
     import subprocess
     # Every listed file whatever its suffix, by project_files' own git call, which filters by one.
@@ -868,12 +827,12 @@ def test_every_pointer_in_a_guide_leads_somewhere(repo_root, project_files):
 
 
 def test_the_evidence_list_is_in_the_order_the_owner_gave(D):
-    """THE ORDER IS THE FEATURE, not an accident of when each class was added (the owner).
+    """THE ORDER IS THE FEATURE, not an accident of when each class was added.
 
     The two brokers that send documents first, each with its kinds running strongest to
     weakest, then IG which has an API and needs neither. Reading down the list is reading down
     the source hierarchy, so the strongest thing you have is the first thing you meet in the
-    dropdown — which is the whole reason the owner specified an order rather than a set.
+    dropdown — which is why it is an order, not a set.
 
     Pinned because a list has no opinion about its own sequence: the next class added would
     land at the end, quietly putting an IG API read above it.
@@ -901,11 +860,11 @@ def test_the_evidence_list_is_in_the_order_the_owner_gave(D):
         "Not on file",
     ]
 
-    # The order is not just a list somebody agreed once: within each broker it must run
-    # strongest to weakest, which is the hierarchy `retrieval` states. IG's three classes
-    # carry all three strong retrieval kinds: statement (document), activity (api — a stored
-    # dealId returns the same answer for ever), balance (reading — the endpoint answers again,
-    # with a different number). That is a real hierarchy, and it is asserted.
+    # Within each broker the order must run strongest to weakest, which is the hierarchy
+    # `retrieval` states. IG's three classes carry all three strong retrieval kinds: statement
+    # (document), activity (api — a stored dealId returns the same answer for ever), balance
+    # (reading — the endpoint answers again, with a different number). That is a real
+    # hierarchy, and it is asserted.
     rank = {"document": 0, "none": 2, "api": 0, "reading": 1}
     for broker in ("ii-", "hl-", "ig-"):
         ranks = [rank[e.retrieval] for e in D.EVIDENCE_CLASSES if e.key.startswith(broker)]
@@ -940,10 +899,9 @@ def _glossary():
 def test_the_generated_half_of_the_glossary_matches_the_constants(repo_root):
     """docs/glossary.md's §9 is GENERATED, and this is what makes that worth anything.
 
-    THE GLOSSARY EXISTS BECAUSE OF DRIFT, and a document recording what the words are,
-    maintained by hand, drifts exactly the way the words did — one file along. So the half with
-    a code home is emitted from `record/rules.py`, `record/schema.py` and `Book.HEADLINE`, and
-    the checked-in file is compared against what those constants produce right now.
+    A GLOSSARY KEPT BY HAND DRIFTS. So the half with a code home is emitted from
+    `record/rules.py`, `record/schema.py` and `Book.HEADLINE`, and the checked-in file is
+    compared against what those constants produce right now.
 
     IF THIS FAILS, THE DOCUMENT IS STALE AND THE CODE IS RIGHT — which is the rule stated at
     the foot of the glossary itself. Run `python3 tools/glossary.py --write` and commit the result;
@@ -972,12 +930,10 @@ def test_the_generated_glossary_indexes_rather_than_redefines(repo_root):
     style note.
 
     `test_record.py` already refuses a second telling of SOURCE_HIERARCHY and STATEMENT_GRADE
-    in any file — because a rule stated twice drifts, which this whole document exists to stop
-    (the spread-bet guard was retired on 13 Oct 2026 so its vocabulary could change, and the
-    glossary still may not define it). That guard is right, and it is
-    precisely the guard a generated glossary would trip the moment somebody emitted a
-    definition into it. This says so out loud rather than leaving the next author to discover
-    it by a failing test three files away.
+    in any file — because a rule stated twice drifts, which this whole document exists to stop.
+    That guard is right, and it is precisely the guard a generated glossary would trip the
+    moment somebody emitted a definition into it. SPREAD_BET has no such guard, and the glossary
+    may not define it either.
     """
     glossary = _glossary()
     from portfusion.record import rules as D
@@ -995,15 +951,8 @@ def test_the_generated_glossary_indexes_rather_than_redefines(repo_root):
 def test_every_history_permits_only_qualities_the_schema_declares():
     """ONE PROVENANCE VOCABULARY, and three files that each permit a subset.
 
-    `reconstructed` was a fourth word for `derived` and lived only in `history/accounts.py`'s own
-    tuple — so the same fact wore two labels in two files: a spread bet's carried-back 31 Dec figure
-    read `derived` in quarter-nav.csv, where a test demanded it, and `sourced` in
-    account-statements.csv, where nothing did.
-
-    A SUBSET IS LEGITIMATE and a NEW WORD IS NOT. A reading is never `superseded` — it is
-    replaced by a later reading at a later date — so accounts declares three of the four. What
-    this refuses is a fifth word arriving in one file and nowhere else, which is how the last one
-    got in.
+    A SUBSET IS LEGITIMATE and a NEW WORD IS NOT. What this refuses is a word arriving in one
+    file and nowhere else.
     """
     from portfusion.record import schema
     from portfusion.history import accounts as AH
@@ -1056,9 +1005,8 @@ def test_a_transfer_between_sub_accounts_belongs_to_no_table(D):
     and a dividend moved between them appears on BOTH transaction lists under one reference,
     once negative and once positive — so entering it from both sides books it twice.
 
-    Verified on a dividend re-investment: the amount out of Income and into Capital, then a
-    purchase the book already holds with HL's own reference. Both ends are recorded; the
-    movement between them is plumbing.
+    A dividend re-investment moves the amount out of Income into Capital, then buys with HL's
+    own reference. Both ends are recorded; the movement between them is plumbing.
     """
     code = D.hl_code("DRI0000001")
     assert code.table is None, f"a sub-account transfer would become a {code.table} row"
@@ -1082,13 +1030,12 @@ def test_an_account_has_exactly_one_observation_row(D):
 
     `Book.reconciliation()` reads it with `next(x for x in D.ac_rows if x.acct == a)` — the
     FIRST match, not the newest — so an appended row sits in the file changing nothing while
-    the reconciliation goes on quoting the older one. That is how an account could go on reading
-    out against an old anchor after a newer baseline had been written.
+    the reconciliation goes on quoting the older one.
 
-    THE TABLE'S ROUTE IS `replace`, not `append`, and the journal has always said so. This is
-    the check that makes the convention hold on its own: `cash-readings.csv` is the
-    append-only one and it has `cash_latest()` to pick by date, which this table does not need
-    because it never has two rows to choose between.
+    THE TABLE'S ROUTE IS `replace`, not `append`. This is the check that makes the convention
+    hold on its own: `cash-readings.csv` is the append-only one and it has `cash_latest()` to
+    pick by date, which this table does not need because it never has two rows to choose
+    between.
     """
     seen = [r.acct for r in D.ac_rows]
     twice = sorted({a for a in seen if seen.count(a) > 1})
@@ -1101,13 +1048,13 @@ def test_an_account_has_exactly_one_observation_row(D):
 # =====================================================================================
 # A CONVERSION IS DATA, NOT PROSE
 #
-# income.csv's `amount` is always GBP. Where the money arrived in another currency the
-# conversion was once recorded inside `detail`, in words:
+# income.csv's `amount` is always GBP. A conversion is never recorded inside `detail`, in
+# words:
 #
 #     "Gross interest to 24/01/25: EUR 0.50 (GBP at 14 Jan rate 1.20000)"
 #
 # Every part of that is a fact the record knows how to hold, and in prose no guard could
-# reach any of it — the rate sat in a free-text column nothing reads, and every check agreed.
+# reach any of it.
 # =====================================================================================
 
 def test_a_converted_row_carries_its_currency_and_amount_or_neither(D):
@@ -1136,9 +1083,8 @@ def test_the_converted_figure_is_what_the_rate_produces(D):
     """THE ARITHMETIC, which prose could never be held to.
 
     `amount` is GBP and `local_amount` is what the broker paid. One divided by the rate must
-    be the other, to the penny the record rounds to. This is the check the 38p row never had:
-    both halves of it were sourced and nothing anywhere multiplied them together. The rate is
-    the engine's own answer (`Book.conversions()`), so the test and the book read one.
+    be the other, to the penny the record rounds to. The rate is the engine's own answer
+    (`Book.conversions()`), so the test and the book read one.
     """
     from portfusion.engine import Book
     bad = []

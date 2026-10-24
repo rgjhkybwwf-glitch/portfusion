@@ -4,8 +4,7 @@ Here rather than in each history because `tools/make_demo.py` writes these files
 exists. A history module imports the record, and the record loads a store on import, so the
 generator could not run after a change to the very schema it was being run to follow.
 
-Each history reads its own pair from here (`prices.CSV_NAME`, `prices.FIELDS` and so on), so the
-names a caller already uses stand.
+Each history reads its own pair from here (`prices.CSV_NAME`, `prices.FIELDS` and so on).
 """
 
 from portfusion.record import schema

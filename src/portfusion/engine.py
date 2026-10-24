@@ -12,7 +12,7 @@ rules (tests/test_store_doors.py).
 THE BASIS IS A COLUMN, NOT A WARNING: a figure is money or notional, and roll_up() refuses to add
 across the two.
 
-PANDAS TRAPS this code has fallen into, each commented where it bites:
+PANDAS TRAPS, 1–3 commented where they bite:
   1. `r.mode` in `df.apply(axis=1)` is `Series.mode`, the METHOD — silently truthy. Use `r["mode"]`.
   2. A share sale from a holding still held is VALUED at minus its quantity: two flags, not one.
   3. A pooled S.104 disposal releases cost from a position that stays OPEN — `share_pools()`.
@@ -76,8 +76,7 @@ def load_store() -> dict[str, pd.DataFrame]:
         "income":    pd.DataFrame(D.ci_rows, columns=D.CostIncomeRow._fields),
         "movements": pd.DataFrame(D.movements,
                                   columns=["date", "account", "amount", "source", "detail"]),
-        # THE SCHEMA'S HEADER, not a typed copy of it — the copy here went stale the day
-        # current-prices.csv gained `struck` and `at`.
+        # THE SCHEMA'S HEADER: a typed copy goes stale when the table gains a column.
         "prices":    pd.DataFrame(D.CURRENT_PRICES,
                                   columns=D.schema.TABLES["current-prices"].header),
         # THE HISTORIES, so the engine can value a past date. Here, because
@@ -87,7 +86,7 @@ def load_store() -> dict[str, pd.DataFrame]:
         # The account statements: what a broker said an account was worth, and when.
         "statements":    pd.read_csv(D.store_dir() / "account-statements.csv",
                                      dtype={"as_of": str}),
-        # Every account's CONTRIBUTION to net asset value at each 2026 quarter end.
+        # Every account's CONTRIBUTION to net asset value at each quarter end.
         # `contribution` is a column here, not a footnote: a share account contributes its
         # POSITIONS AT MARKET and a spread-bet account its ACCOUNT EQUITY, never its
         # notional. That is the one rule this table exists to enforce.
@@ -311,8 +310,8 @@ def share_pools(ledger: pd.DataFrame) -> pd.DataFrame:
 def build_ledger() -> pd.DataFrame:
     """The trade ledger with Direction and Realisation ID attached: one row per event, buys and
     sells. The spine everything else hangs off."""
-    # THE STORE'S NAMES (#44): a buy's `cost` or `level_points` and a sale's `proceeds`, each blank
-    # on the rows it is not, and `event_id`, a buy's trade id or a sale's sale id.
+    # THE STORE'S NAMES: a buy's `cost` or `level_points` and a sale's `proceeds`, each blank on
+    # the rows it is not, and `event_id`, a buy's trade id or a sale's sale id.
     buys = pd.DataFrame(D.buys, columns=D.Buy._fields).rename(columns={"trade_id": "event_id"})
     buys["direction"] = "Buy"
     # HOW EACH LEG IS COSTED, from its code's kind (`rules.Trade.mode`): a frame of NamedTuples
@@ -360,10 +359,9 @@ def build_ledger() -> pd.DataFrame:
     ledger["pool_opened"] = _lookup(ledger["event_id"], pools["opened"])
     ledger["pool_emptied"] = _lookup(ledger["event_id"], pools["emptied"])
 
-    # THE PROVENANCE IS `source` FROM THE STORE TO THE LEDGER (1 Oct 2026), as on every other
-    # table, so nothing is copied under a second name. A copy that stood here once read a column
-    # only the sales had, and most rows lost their source with the suite green;
-    # tests/test_engine_invariants.py now holds every ledger row to having one.
+    # THE PROVENANCE IS `source` FROM THE STORE TO THE LEDGER, as on every other table, so nothing
+    # is copied under a second name; tests/test_engine_invariants.py holds every ledger row to
+    # having one.
 
     # An OPEN buy leg is a buy that no realisation has consumed. Drives QUANTITY and COST.
     ledger["open_leg"] = (ledger["direction"] == "Buy") & ledger["realisation_id"].isna()
@@ -423,8 +421,8 @@ def _price_lookup():
 def _rate_now_lookup(record=None):
     """Currency -> the rate the book converts it at RIGHT NOW: fx.csv, one row per currency.
 
-    FROM THE TABLE, not a list: a currency missing from a list fell through to PARITY, a silent
-    wrong answer. A new currency joins by having a row.
+    FROM THE TABLE, not a list: a list would let a missing currency fall to PARITY, silently. A
+    new currency joins by having a row.
     """
     return {cur: rate for cur, rate, *_ in (record or D).fx_rows}
 
@@ -511,9 +509,9 @@ def marks_replaceable() -> dict:
       replaceable  every mark a refresh may replace, with its outgoing price, its age and whether
                    that age is past the limit — because a price updated without its DATE makes the
                    book claim a freshness it does not have.
-      held         CARRIED lines (the key stays `held` — glossary §5): no feed and immaterial, at
-                   the last broker price by decision. Kept apart, because a fresh date on a price
-                   nobody can look up is the error being guarded against.
+      held         CARRIED lines (key `held`, glossary §5b): no feed and immaterial, at the last
+                   broker price by decision. Kept apart, because a fresh date on a price nobody
+                   can look up is the error being guarded against.
       fx           the live rate of each currency, saying whether it is carried and why
                    (`rules.RATE_CARRIED`), and how old it is, as a price and a reading say.
       readings     each spread-bet account's IG reading — its outgoing equity and date — the one
@@ -679,8 +677,7 @@ class Book:
         # A GAIN IS MONEY ON EITHER KIND OF LINE: a bet's unrealised gain is stake x (level now
         # less entry level), IG's running profit or loss, inside its equity (rules.SPREAD_BET),
         # as its realised gain is money. Only the VALUE a bet's gain is measured from is
-        # notional. "Cost and entry notional", the mixed sum both costs made, retired on 13 Oct
-        # 2026; the two costs stand apart above, as exposure's two parts do.
+        # notional. The two costs stand apart above, as exposure's two parts do.
         "Unrealised gain / loss":                {"basis": "capital", "unit": "gbp", "point_in_time": False},
         "Realised gain / loss to date":          {"basis": "capital", "unit": "gbp", "point_in_time": False},
         "Total gain":                            {"basis": "capital", "unit": "gbp", "point_in_time": False},
@@ -763,7 +760,7 @@ class Book:
             "— of which spread-bet notional": sb,
             "Exposure above net asset value": exposure - nav,
             # THE FROZEN COMPOSITION'S LINES, as the exposure above is its accounts' frozen rows: a
-            # count of the ledger at the marks once took in lines no frozen account held.
+            # ledger count at the marks takes in lines no frozen account holds.
             "Open positions": float(len(self.quarter_lines(as_of))),
         }
 
@@ -818,7 +815,7 @@ class Book:
     # hold several codes.
     def _identity(self) -> pd.DataFrame:
         """ticker -> company, sector, region, held_as. One row per line."""
-        # COLUMNS FROM THE SCHEMA, never typed: a typed list broke the day the table grew one.
+        # COLUMNS FROM THE SCHEMA, never typed: a typed list breaks when the table grows one.
         sec = pd.DataFrame(self.D.SECURITIES, columns=list(self.D.schema.TABLES["securities"].header))
         iss = pd.DataFrame(self.D.COMPANIES, columns=list(self.D.schema.TABLES["companies"].header))
         return sec.merge(iss[["company", "sector", "region"]], on="company", how="left")
@@ -1152,7 +1149,7 @@ class Book:
         """Closed round trips, per realisation. THE JOIN -- three tables, one key.
 
         Carries the ENTRY DATE and PRICE PAID as well as the exit, because those show the return
-        on an investment; a position opened before the baseline and closed in 2026 is a complete
+        on an investment; a position opened before the baseline and closed after it is a complete
         round trip. Entry and exit prices are in the share's own currency (`currency`), each a
         quantity-weighted mean of its deals' own prices (`deal_prices()`); the money is sterling.
         `start` and `end` bound the day a trip closed, and `start` counts its day, as the Round
@@ -1244,7 +1241,7 @@ class Book:
         # date, the date a round trip is filed under.
         if ticker:
             rt = rt[rt["ticker"] == ticker]
-        # A COMPANY IS EVERY CODE IT IS HELD UNDER, shares and spread bets both (14 Oct 2026):
+        # A COMPANY IS EVERY CODE IT IS HELD UNDER, shares and spread bets both:
         # how Stormvik has gone for us is its share's round trips and its spread bet's together.
         if company:
             rt = rt[rt["company"] == company]
@@ -1707,10 +1704,9 @@ class Book:
         return reg
 
     def account_codes(self) -> pd.DataFrame:
-        """Each account as it is named to anyone but the owner (decided 6 Oct 2026): its register
-        code, and a `label` that is the code beside the account's name with the holder taken out,
-        `A3 · IG Spread bet`. Columns account, code, label; one row per account, in
-        ACCOUNT_ORDER."""
+        """Each account as it is named to anyone but the owner: its register code, and a `label`
+        that is the code beside the account's name with the holder taken out, `A3 · IG Spread bet`.
+        Columns account, code, label; one row per account, in ACCOUNT_ORDER."""
         reg = self.account_register().set_index("account").loc[list(self.D.ACCOUNT_ORDER)]
         rest = [" ".join(w for w in a.split() if w not in names)
                 for a, names in zip(reg.index, reg["holder_names"])]
@@ -1963,11 +1959,10 @@ class Book:
     def _dated_flows(self, start=None, end=None) -> pd.DataFrame:
         """Every flow into POSITIONS in the window, dated: columns account, date, amount.
 
-        NAV for a share account excludes cash, so counting cash movements against it made a
-        withdrawal read as gain and a sale as loss — errors that roughly cancel over a
-        sale-then-withdraw cycle, which is why they went unseen. So a flow is a PURCHASE: buying
-        with cash nets to zero, a price move is the whole gain, and a deposit or withdrawal touches
-        nothing. Cash is still recorded, for the reconciliation; it does not reach the return.
+        NAV for a share account excludes cash, so counting cash movements against it reads a
+        withdrawal as gain and a sale as loss. So a flow is a PURCHASE: buying with cash nets to
+        zero, a price move is the whole gain, and a deposit or withdrawal touches nothing. Cash is
+        still recorded, for the reconciliation; it does not reach the return.
 
         TWO RULES THAT ARE NOT INTERCHANGEABLE:
 
@@ -2038,7 +2033,7 @@ class Book:
         went to cash the NAV does not hold, and is added here. A spread-bet account's is its
         EQUITY, which already holds every income row: its POSITION_INCOME is in the return once
         without help, and its ACCOUNT_INCOME is taken back out, as a share account's never goes
-        in. Adding a spread-bet account's funding here as well counted it twice. Bounded by
+        in. Adding a spread-bet account's funding here would count it twice. Bounded by
         `_window()`; an account with no such row is absent.
         """
         df = self._window(self.store["income"], start, end, year)
@@ -2081,8 +2076,8 @@ class Book:
         broker states its rate, which is that row's own conversion and no market's.
 
         COSTS ARE NEGATIVE and income positive, so one column sums to the book's income
-        figure. NEWEST FIRST WITHIN AN ACCOUNT, as every log on the desk reads (14 Oct 2026); a
-        broker's statement lists them the other way, one press of the Date heading off.
+        figure. NEWEST FIRST WITHIN AN ACCOUNT, as every log on the desk reads; a broker's
+        statement lists them the other way, one press of the Date heading off.
         """
         df = self.store["income"].copy()
         if year is not None:
@@ -2156,8 +2151,8 @@ class Book:
                  for d, rd, b in zip(rows["date"], rows["rate_date"], broker)]
         limit = self.D.FX_RATE_AGE_LIMIT_DAYS
         # STALE FROM THE LIST, not from the column: beside a row with a rate, pandas stores a row
-        # with none as NaN, which is not None and is not past the limit, so a missing rate read
-        # as a fresh one and was never reported.
+        # with none as NaN, which is not None and is not past the limit, so a missing rate would
+        # read as fresh.
         rows["stale"] = [dd is None or dd > limit for dd in apart]
         rows["days_apart"] = pd.Series(apart, index=rows.index, dtype=object)
         return rows[cols].sort_values("days_apart", ascending=False).reset_index(drop=True)
@@ -2519,15 +2514,15 @@ class Book:
             rows.append({"account": account, "as_of": str(at.loc[account, "as_of"]),
                          "document": ev.label if ev else None, "held": held})
         # OBJECT, so None stays None. pandas 3 infers its str dtype for a column of text and
-        # None, and stores the None as NaN — which is truthy, so `document or ...` printed "nan".
+        # None, and stores the None as NaN — which is truthy, so `document or ...` gives "nan".
         return pd.DataFrame(rows, columns=["account", "as_of", "document", "held"], dtype=object)
 
     # ---- THE QUARTER ENDS  —  what each one froze ------------------------------------
 
     def quarter_nav(self) -> pd.DataFrame:
-        """Each account's NAV contribution at each 2026 quarter end: statement-grade where a
-        statement exists, reconstructed where not. `quality` says which; `contribution` says how
-        the account contributes."""
+        """Each account's NAV contribution at each quarter end: statement-grade where a statement
+        exists, reconstructed where not. `quality` says which; `contribution` says how the account
+        contributes."""
         return self.store["quarter_nav"].copy()
 
     #: Which contributions in quarter-nav.csv are MONEY, and may be summed into NAV. `notional` is
@@ -2676,7 +2671,7 @@ class Book:
     @staticmethod
     def quarter_start(quarter_end: str) -> str:
         """A quarter-end date -> the first day of that quarter. "2026-06-30" -> "2026-04-01".
-        Derived, never typed: first-of-month arithmetic once put a March trade on a Q2 page."""
+        Derived, never typed: hand arithmetic on months can file a trade in the wrong quarter."""
         d = pd.Timestamp(quarter_end)
         return f"{d.year}-{(d.month - 1) // 3 * 3 + 1:02d}-01"
 
@@ -2802,9 +2797,8 @@ class Book:
         uses. Never notional against entry notional — a return on a number that never moved
         through the account.
 
-        THE SAME NUMERATOR AS THE BOOK'S: the change in value, less the
-        capital deployed, plus `return_income()`. Until then these counted no income at all, so
-        a share account's dividends reached the book's return and never its own.
+        THE SAME NUMERATOR AS THE BOOK'S: the change in value, less the capital deployed, plus
+        `return_income()`.
 
         `opened_in_period` marks a quarter that opened on nothing and still has a return, the
         case OPENED_IN_PERIOD describes.
@@ -3279,7 +3273,7 @@ class Book:
                          "qty": r["qty"], "cost": r["cost"], "value": value,
                          "priced_at": priced_at})
         # NAMED COLUMNS, so an account holding nothing that day is an empty frame rather than a
-        # KeyError on "value": an IG account not yet funded at a quarter end could not be frozen.
+        # KeyError on "value": an IG account unfunded at a quarter end can still be frozen.
         out = pd.DataFrame(rows, columns=["ticker", "company", "sector", "region", "currency",
                                           "held_as", "qty", "cost", "value", "priced_at"])
         out["unrealised"] = out["value"] - out["cost"]
@@ -3384,12 +3378,11 @@ class Book:
                     restated: str | None = None) -> dict:
         """The rows that FREEZE a quarter end, from the engine at the marks nearest that date.
 
-        What checklist steps 2 to 4 had a person copy off HOLDINGS into two CSVs — the one place
-        a close typed figures. `quarter_snapshots` is one row per line of each account's block,
-        exactly as HOLDINGS shows it: a spread-bet leg at NOTIONAL, its local price the value
-        over the quantity, an account holding nothing as "(no positions)". `quarter_nav` is each
-        account's contribution to net asset value — positions at market, or a spread-bet
-        account's equity with its notional beside it for the exposure archive.
+        `quarter_snapshots` is one row per line of each account's block, exactly as HOLDINGS shows
+        it: a spread-bet leg at NOTIONAL, its local price the value over the quantity, an account
+        holding nothing as "(no positions)". `quarter_nav` is each account's contribution to net
+        asset value — positions at market, or a spread-bet account's equity with its notional
+        beside it for the exposure archive.
 
         QUANTITIES ARE THE QUARTER END'S; A PRICE IS THE MARK NEAREST IT within
         `rules.CLOSE_CHECK_WINDOW_DAYS` either side — a quarter end needs to be close, not an
@@ -3512,9 +3505,8 @@ class Book:
 
         A LINE CLOSED INSIDE THE WINDOW ENDS AT ITS CLOSE, at nothing: its proceeds in
         `transacted`, the move from its last mark to its sale price in `price_effect`, and the
-        sale's date as `priced_at`. Leaving it out started the window without it, while a
-        part-close beside it showed. One sold before the newest outgoing mark belongs to an
-        earlier window.
+        sale's date as `priced_at`. Left out, it would vanish while a part-close beside it shows.
+        One sold before the newest outgoing mark belongs to an earlier window.
 
         A LINE WITH ONLY ONE MARK is included, `priced_from` blank and its whole move in
         `transacted`; dropping it breaks the tie back to the book.
@@ -3998,9 +3990,8 @@ class Book:
             if conv.empty:
                 return "", []
             limit = self.D.FX_RATE_AGE_LIMIT_DAYS
-            # THE ROWS WITH A RATE, for the furthest: a row with none has no distance, and taking
-            # the max over it raised, which dropped every problem below — the row with no rate
-            # among them, the one this check exists for.
+            # THE ROWS WITH A RATE, for the furthest: a row with none has no distance, and the max
+            # over it would raise, putting "could not be checked" in place of every problem below.
             apart = [int(d) for d in conv["days_apart"] if d is not None and pd.notna(d)]
             note = (f"conversions: {len(conv)} foreign-currency income row(s) · "
                     + (f"rate up to {max(apart)}d before the event, limit {limit}d" if apart
@@ -4013,8 +4004,8 @@ class Book:
                       f"close on file on or before its date. Fetch the rate for the day.")
                 for r in conv[conv["stale"]].itertuples()]
         except Exception as e:                       # noqa: BLE001 — never fail over this check
-            # NOT CHECKED IS A PROBLEM, not a note: answered with no problems, a check that could
-            # not run let the record read as in good order.
+            # NOT CHECKED IS A PROBLEM, not a note: a check that cannot run must not read as good
+            # order.
             return (f"conversions: unknown ({type(e).__name__})",
                     [f"conversions could not be checked: {type(e).__name__}: {e}"])
 

@@ -86,8 +86,8 @@ def test_round_trips_are_the_engines_newest_first(b):
 
 
 def test_round_trips_for_a_company_are_the_engines_and_list_its_tickers(b):
-    """S8 (14 Oct 2026): narrowed to a company, the rows and the four figures are the engine's,
-    and the Ticker box offers that company's codes alone."""
+    """Narrowed to a company, the rows and the four figures are the engine's, and the Ticker box
+    offers that company's codes alone."""
     for company in round_trips.data()["companies"]:
         d = round_trips.query(company=company)
         frame = b.round_trips(company=company)
@@ -97,8 +97,8 @@ def test_round_trips_for_a_company_are_the_engines_and_list_its_tickers(b):
 
 
 def test_the_trades_ticker_box_is_the_chosen_companys(b):
-    """S8 (14 Oct 2026): each company's codes as the ledger holds them, so the Ticker box beside
-    the Company box cannot name a line the company rules out."""
+    """Each company's codes as the ledger holds them, so the Ticker box beside the Company box
+    cannot name a line the company rules out."""
     d = trades.data()
     assert set(d["company_tickers"]) == set(d["companies"])
     for company, codes in d["company_tickers"].items():
@@ -116,8 +116,7 @@ def test_trades_are_the_engines(b):
 
 def test_the_accounts_page_keeps_the_engines_order(b):
     """The register in the record's account order; external capital newest first, as a log is
-    read; income in account order, then each account's rows newest first too (the owner, 14 Oct
-    2026: they ran oldest first, as a broker's statement lists them)."""
+    read; income in account order, then each account's rows newest first too."""
     d = accounts.data()
     assert [r["account"] for r in d["register"]] == b.account_order()
     moves = [r["date"] for r in d["movements"]]

@@ -3,13 +3,11 @@ says otherwise.
 
 The desk and the report turn SCREEN and DARK below into CSS custom properties (`desk/theme.py`,
 `report/style.py`), through `portfusion.brand`, which lays a book's accent and spark over them. A
-colour changed here moves every renderer that wears it, or none. Consumers each hardcoding one
-spelling of one colour is how a rework once broke two outright and would have broken a third
-SILENTLY — and the report typed its own until 2 Oct 2026.
+colour changed here moves every renderer that wears it, or none.
 
 A STAND-IN. PortFusion's own design system is still to be drawn; until it is, these are a set
-of cool greys, status inks and a graphite accent, and the grounds and inks are the ones the first
-book proved legible in both schemes. Its arrival replaces this file's values and nothing else.
+of cool greys, status inks and a graphite accent, with grounds and inks legible in both schemes.
+Its arrival replaces this file's values and nothing else.
 
 Bare six-digit hex; the screens add the `#`.
 
@@ -53,8 +51,8 @@ TOKENS_DARK = {
     "bar-bear": "E0714F", "bar-held": "6A6E88",
 }
 
-#: ONE FAMILY: Archivo, whose width and weight axes do the work three typefaces did. Expanded 800
-#: for display and figures that lead, normal for text, condensed 600 in capitals for labels.
+#: ONE FAMILY: Archivo, whose width and weight axes do three typefaces' work. Expanded 800 for
+#: display and figures that lead, normal for text, condensed 600 in capitals for labels.
 #: Figures are Archivo's own, set tabular wherever they line up — the screens set no monospace.
 FACES = {"sans": '"Archivo", ui-sans-serif, system-ui, sans-serif'}
 

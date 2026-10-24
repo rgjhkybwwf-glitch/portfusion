@@ -16,7 +16,7 @@ def test_the_reports_page_decides_nothing(monkeypatch):
     gate's own list for that date.
 
     AGAINST AN ANSWER WORKED AGAIN, not the one the panel was handed: both read the same cache,
-    so the comparison was of one object with itself, and a page that edited it passed."""
+    so comparing them tests one object against itself and passes a page that edited it."""
     import copy
     from portfusion.report.gate import completeness
     data = copy.deepcopy(panels.get("reports").data())
@@ -68,7 +68,7 @@ def test_only_a_quarter_end_is_asked_for(bad):
 @needs("quarter-nav")
 def test_opening_a_report_writes_nothing():
     """The route renders for the request, or opening a page on the hosted desk would leave a file
-    on the Mac. Held on the book's folder, where a written report once went (`_reports/`)."""
+    on the Mac. Held on the book's folder."""
     from portfusion.record import schema
     before = sorted(p for p in schema.BOOK.iterdir())
     ready = [q for q in engine.reports()["quarters"] if q["closed"] and not q["gaps"]]

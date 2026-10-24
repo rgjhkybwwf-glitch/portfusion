@@ -16,14 +16,13 @@ from portfusion.record import rules as D
 from portfusion.engine import Book
 from harness import an_account, holds, needs
 
-#: The register's spread-bet accounts, BY KIND — B2 moved kind onto the register, and a
-#: tuple of this book's names would judge another book's table against the wrong accounts.
+#: The register's spread-bet accounts, BY KIND: a tuple of one book's names would judge
+#: another's table against the wrong accounts.
 SPREAD_BET = tuple(r[0] for r in D.register
                    if r[D.schema.TABLES["accounts"].header.index("held_as")] == "spread bet")
 
 
-# The engine is the one implementation of these. These names keep the tests below reading as
-# they always have while asking the live code.
+# The engine is the one implementation of these. The tests below ask it through these names.
 NAV_TOTAL = Book().quarter_nav_total().to_dict()
 EXPOSURE_TOTAL = Book().quarter_exposure_total().to_dict()
 
@@ -49,11 +48,10 @@ def test_spread_bet_accounts_contribute_equity_not_notional():
 
 @needs("quarter-nav")
 def test_a_notional_row_does_not_move_net_asset_value():
-    """THE GUARD THAT FIRED. When the notional rows were added, both totals summed the table
-    blind, and a quarter's NAV read the true figure plus the exposure. Exactly the
-    July defect, arriving through the store instead of by hand. This asserts the totals stay
-    apart by construction, not by the data happening to be all money; the 30 Jun figures
-    themselves are held, figure for figure, by quarter-results.csv and its own test."""
+    """A NOTIONAL ROW IS EXPOSURE: summed blind, a quarter's NAV would read the true figure plus
+    the exposure. This asserts the totals stay apart by construction, not by the data happening
+    to be all money; the 30 Jun figures themselves are held, figure for figure, by
+    quarter-results.csv and its own test."""
     dates = sorted({q.as_of for q in D.QUARTER_NAV
                     if q.contribution == "notional" and q.amount})
     assert dates, "no quarter end carries a notional row — this asserts nothing"
@@ -69,9 +67,8 @@ def test_a_notional_row_does_not_move_net_asset_value():
 @needs("quarter-nav")
 def test_a_contribution_nobody_classified_stops_every_reader():
     """`_classified()` IS THE ONE PLACE quarter-nav.csv is checked: a contribution in neither
-    NAV_BASES nor EXPOSURE_BASES must be neither summed nor dropped. A second reader of the rows
-    skipped it until step 5, so the year's opening and every spread-bet account's baseline read
-    past a row nobody had classified. Planted in memory, never on file."""
+    NAV_BASES nor EXPOSURE_BASES must be neither summed nor dropped. Planted in memory, never
+    on file."""
     import pandas as pd
     b = Book()
     q = b.store["quarter_nav"]
@@ -131,16 +128,14 @@ def test_every_row_names_a_source_and_a_known_quality():
 
 
 def test_the_csv_store_agrees_with_the_record():
-    """account-statements.csv and QUARTER_NAV hold the same facts. Two homes for one
-    fact is how this project's worst defects have always started, so they are tied
-    rather than trusted.
+    """account-statements.csv and QUARTER_NAV hold the same facts. Two homes for one fact are
+    tied rather than trusted.
 
     ONLY A ROW COPIED FROM A STATEMENT, its quality `sourced`. A `derived` row is the engine's
     valuation at the quarter end (what the freeze writes), and its tie to the broker is the
     reconciliation inside `rules.CLOSE_CHECK_WINDOW_DAYS`, which `report/gate.py:completeness()`
-    gates. The row says which it is, so no other file is asked: the journal once was, and a book
-    whose journal began afresh had its engine's valuations tied to statements they never copied.
-    A spread bet's notional is exposure, not NAV, and has no statement figure here."""
+    gates. The row says which it is, so no other file is asked. A spread bet's notional is
+    exposure, not NAV, and has no statement figure here."""
     from portfusion.history import accounts as A
     wrong = _untied(A.load())
     assert not wrong, wrong
@@ -148,8 +143,7 @@ def test_the_csv_store_agrees_with_the_record():
 
 def _untied(statements, rows=None) -> list[str]:
     """Each sourced quarter-NAV row its account's statement OF THAT DAY does not bear out. A
-    statement of another day describes another day: the latest on or before the quarter end tied a
-    row copied from a statement no longer on file to an older one's figure."""
+    statement of another day describes another day."""
     from portfusion.history import accounts as A
     of_day = {(s["account"], s["as_of"]): s for s in statements}
     wrong = []
@@ -195,13 +189,9 @@ def test_the_desks_quarter_navs_are_the_records():
 
 @needs("quarter-nav")
 def test_a_quarter_return_only_exists_where_both_endpoints_have_a_nav():
-    """Q1 and Q2 are COMPUTED (the owner). They are internal figures — Q3 2026 is the first
-    period the book reports on.
-
-    What replaced the old "nothing above Q3" rule is narrower and permanent: a return
-    may only sit on a row where BOTH endpoints carry a net asset value, because a
-    return measured from a blank is not a return. Every row of the series carries both
-    ends, for the book and for each account, so the check is on the row itself.
+    """A return may only sit on a row where BOTH endpoints carry a net asset value, because a
+    return measured from a blank is not a return. Every row of the series carries both ends,
+    for the book and for each account, so the check is on the row itself.
     """
     b = Book()
     for frame in (b.quarter_returns(include_open=True),
@@ -216,8 +206,7 @@ def test_a_quarter_return_only_exists_where_both_endpoints_have_a_nav():
 
 @needs("quarter-nav")
 def test_q1_and_q2_are_computed():
-    """Guards the instruction itself: these two were once blank by decision and are now
-    expected to carry a figure."""
+    """These two carry a figure."""
     q = Book().quarter_returns(include_open=True)
     seen = {str(r["quarter_end"])[:10]: r["return"] for r in q.to_dict("records")}
     for d in ("2026-03-31", "2026-06-30"):
@@ -226,10 +215,8 @@ def test_q1_and_q2_are_computed():
 
 
 def test_the_published_methodology_says_what_the_formula_does():
-    """The method ran Simple Dietz, every flow at the period midpoint, until 13 Oct 2026, and
-    the Method page said so; since then each flow is weighted by the days after it — modified
-    Dietz, day-weighted — and the page must say that, not the old formula, and not the
-    time-weighting an early report claimed."""
+    """Each flow is weighted by the days after it — modified Dietz, day-weighted — and the Method
+    page must say that, not Simple Dietz or time-weighting."""
     # The desk's Method page is the single home for methodology, so the claim is checked there.
     from portfusion.desk.panels import method
     joined = " ".join(r["text"] for s in method.data()["sections"] for r in s["rows"])
@@ -245,16 +232,10 @@ def test_the_published_methodology_says_what_the_formula_does():
 # =====================================================================================
 
 def test_only_one_quarter_return_series_is_exposed():
-    """THE RULE A REPORT DEFECT TAUGHT, kept after its subject was deleted.
+    """THE QUARTER SERIES EXPOSES EXACTLY ONE COLUMN THAT IS A QUARTER RETURN, the NAV one, so a
+    consumer cannot be handed the wrong basis.
 
-    A report tab once quoted Performance's NET-INVESTED column for its quarterly series while
-    the year-to-date beside it was on the NAV basis — two bases in one table, which the
-    methodology forbids. What survives is structural: THE QUARTER SERIES EXPOSES EXACTLY ONE
-    COLUMN THAT IS A QUARTER RETURN, and it is the NAV one, so a consumer asking for "the
-    quarter return" cannot be handed the wrong series.
-
-    The other half of that defect — an unreported quarter prints BLANK, never 0.00% — is a
-    requirement on the report generator.
+    An unreported quarter prints BLANK, never 0.00%: a requirement on the report generator.
     """
     from portfusion.desk.panels import performance
     from portfusion.house.headings import heading
@@ -268,14 +249,12 @@ def test_only_one_quarter_return_series_is_exposed():
 
 
 def test_no_renderer_names_simple_dietz(repo_root):
-    """The book runs modified Dietz, day-weighted, whose formula `Book._dietz_row()` states. It
-    ran Simple Dietz, every flow at the period midpoint, until 13 Oct 2026, and that name must
-    not go on appearing where a reader meets the method: a renderer still saying it describes
-    a figure the engine no longer makes.
+    """The book runs modified Dietz, day-weighted, whose formula `Book._dietz_row()` states.
+    Simple Dietz must not appear where a reader meets the method: a renderer saying it describes
+    a figure the engine does not make.
     """
     from harness import SRC
-    # THE PACKAGE'S RENDERERS, where they live. Read from the checkout's root this scanned two
-    # folders that were not there, and passed on nothing.
+    # THE PACKAGE'S RENDERERS, where they live.
     offenders = [str(f.relative_to(SRC))
                  for d in ("desk", "report") for f in (SRC / d).rglob("*")
                  if f.suffix in (".py", ".js", ".html") and "Simple Dietz" in f.read_text()]

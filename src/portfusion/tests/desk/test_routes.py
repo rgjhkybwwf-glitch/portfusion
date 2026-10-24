@@ -21,7 +21,7 @@ def test_the_shell_lists_what_is_registered_and_nothing_else():
 def test_static_refuses_a_path_that_leaves_the_directory():
     """`../app.py` IS THERE: the desk's own source, beside the folder. Every other probe named a
     file that does not exist, so a route serving whatever it reached would have passed on a
-    not-found (the review of 21 Oct 2026)."""
+    not-found."""
     from fastapi import HTTPException
     assert (SRC / "desk" / "app.py").is_file(), "the premise: the probe's target exists"
     for bad in ("../app.py", "../credentials.json", "../../etc/passwd", "..%2fcredentials.json"):
@@ -45,19 +45,15 @@ def test_every_typeface_the_tokens_declare_is_served():
 
 
 def test_tokens_are_derived_from_the_palette_not_written_here():
-    """A colour changed in house/palette.py must reach the desk. The alternative is the defect
-    house/palette.py already records: one colour hardcoded in three consumers, two broken
-    outright by a rework and the third broken silently."""
+    """A colour changed in house/palette.py must reach the desk: hardcoded in each consumer, one
+    colour breaks in each, some silently."""
     css = app.tokens().body.decode()
     for key, value in engine.palette().items():
         assert value in css, f"{key} did not reach tokens.css"
 
 
 def test_there_is_exactly_one_palette_derivation(imports_of):
-    """ONE ROUTE TO THE COLOURS. There were briefly two: desk/theme.py already existed and
-    engine.py grew its own palette() because nobody looked first. Two routes to one answer is
-    what got figures.py deleted, and the duplicate was the worse of the pair: it covered ten of
-    the twelve constants rather than all of them.
+    """ONE ROUTE TO THE COLOURS: two routes to one answer drift.
 
     engine.py stays the one way the desk reads; theme.py holds the derivation.
     """
@@ -65,18 +61,16 @@ def test_there_is_exactly_one_palette_derivation(imports_of):
     assert engine.palette() == theme.palette()
     assert engine.tokens_css() == theme.tokens_css()
 
-    # And nothing else may reconstruct it: app.py serves what record hands it.
+    # And nothing else may reconstruct it: app.py serves what engine hands it.
     app_py = SRC / "desk" / "app.py"
     assert "house" not in imports_of(app_py), \
         "app.py is deriving colours itself — it must serve record.tokens_css()"
 
 
 def test_every_token_the_desk_is_handed_is_worn(repo_root):
-    """A TOKEN NOBODY CONSUMES is a palette entry pretending to be a treatment. Four sat in
-    /tokens.css until 4 Oct 2026 — `--rule` and three `--gap-*` spacings — declared on every load
-    and used by nothing, the last three sharing a name with the colour that means work is owed.
-    The icon wears its own through `desk.icon.ROLES`, and the served shell wears the mark's two
-    in the book's lockup, so both count as a use."""
+    """A TOKEN NOBODY CONSUMES is a palette entry pretending to be a treatment. The icon wears its
+    own through `desk.icon.ROLES`, and the served shell wears the mark's two in the book's lockup,
+    so both count as a use."""
     import re
     from portfusion.desk import icon
     used = ((SRC / "desk" / "static" / "app.css").read_text(encoding="utf-8")
@@ -88,10 +82,9 @@ def test_every_token_the_desk_is_handed_is_worn(repo_root):
 
 
 def test_every_token_the_desk_wears_is_handed_to_it(repo_root):
-    """THE OTHER DIRECTION: a var() naming a token nobody declares draws in the property's
-    default, with nothing on screen saying so. Holdings' allocation bars wore `--chart`, the
-    report's bar colour, which the desk did not emit, and drew black (12 Oct 2026). Every
-    var(--x) in app.css is a token /tokens.css declares or one app.css sets itself."""
+    """THE OTHER DIRECTION: a var() naming a token nobody declares draws in the property's default,
+    with nothing on screen saying so. Every var(--x) in app.css is a token /tokens.css declares or
+    one app.css sets itself."""
     import re
     css = (SRC / "desk" / "static" / "app.css").read_text(encoding="utf-8")
     declared = (set(re.findall(r"--([a-z0-9-]+):", app.tokens().body.decode()))
@@ -128,9 +121,9 @@ def test_the_freshness_line_says_what_can_be_out_of_date():
     An exact set rather than a subset: a key that arrives without anyone deciding to add it is
     the drift this assertion exists to catch.
 
-    The CODE signal — the `source_*` keys, `record.source_stale()`, tested in test_process.py —
-    is there because a server up for six days served a six-day-old engine behind a current page
-    while this line said everything was fine. `prices_as_at` is Book.valued_at(), the newest
+    The CODE signal — the `source_*` keys, `engine.source_stale()`, tested in test_process.py —
+    is there because a long-running server can serve an old engine behind a current page while
+    this line says everything is fine. `prices_as_at` is Book.valued_at(), the newest
     mark, the same answer the Dashboard heads its glance with; it sits on this line because the
     refresh is started from here.
     """
@@ -151,9 +144,7 @@ def test_the_freshness_line_says_what_can_be_out_of_date():
 #
 # The rest of the desk's suite calls panels, the bench and the doors as functions. That proves
 # what each one decides; it cannot prove the decision reaches the browser as the status code the
-# page acts on. No route was requested over HTTP in a test while httpx, which FastAPI's
-# TestClient needs, was not installed — a gap true of every route, and the first probe found one
-# route reporting a discard that never happened.
+# page acts on.
 #
 # NOTHING HERE WRITES. Every request is a read, or a refusal its door makes before a file is
 # touched. The writing paths are proved against a copied store elsewhere in tests/desk/.
@@ -282,19 +273,17 @@ def test_a_drop_the_door_refuses_is_a_400_and_lands_nothing(client, name, body, 
 # =====================================================================================
 
 def test_the_favicon_route_returns_a_real_png():
-    """A LOAD-BEARING ROUTE. The page names it as the tab's icon — and it was the Dock's too
-    until 7 Oct 2026 — so a break in it degrades to a generic icon SILENTLY, which is exactly the
-    failure this project guards against everywhere else.
+    """A LOAD-BEARING ROUTE. The page names it as the tab's icon, so a break in it degrades to a
+    generic icon SILENTLY, which is exactly the failure this project guards against everywhere
+    else.
 
     Checked as bytes rather than by calling desk.icon.png() directly: the route is the thing
     that has to work, and asserting on the drawing function would pass with the route broken.
 
     IT READS THE PIXELS, and that is the point. A size threshold looks like a check — a blank
-    square should be smaller — and is not: the bar chart this replaced was 194 bytes, because
-    flat rectangles compress hard. A SIZE THRESHOLD CANNOT SEE WHETHER ANYTHING WAS DRAWN, which
-    is precisely the bug this exists for. That mark once shipped with its third bar invisible for
-    a week while the only test on it checked that a PNG came out. A mark at 64px is a few pixels
-    of stroke on a tile, the likeliest thing to be lost.
+    square should be smaller — and is not: flat shapes compress hard. A SIZE THRESHOLD CANNOT SEE
+    WHETHER ANYTHING WAS DRAWN. A mark at 64px is a few pixels of stroke on a tile, the likeliest
+    thing to be lost.
     """
     import struct
     import zlib
@@ -362,8 +351,7 @@ def test_the_page_declares_the_icon_the_dock_will_use(repo_root):
     each scheme and the browser paints the chrome around the page to match.
 
     Both halves are GENERATED, in `desk/theme.py`'s tokens_css(), from the `paper` role in
-    house/palette.py's SCREEN and its DARK. The dark one was an override in app.css until
-    2 Oct 2026.
+    house/palette.py's SCREEN and its DARK.
     """
     from portfusion.desk import theme
     from portfusion.house import palette as P
@@ -379,9 +367,9 @@ def test_the_page_declares_the_icon_the_dock_will_use(repo_root):
     assert 'name="apple-mobile-web-app-title"' in html, \
         "without this the Dock web app is named with the whole <title>"
 
-    # THE DOCK AND THE TAB CARRY ONE NAME (the owner, 6 Oct 2026): "The Desk | <the book's
-    # name>", ending with the name, so Safari does not trim the opening words two tabs share
-    # (13 Oct 2026). The page states it twice, so this holds the two alike.
+    # THE DOCK AND THE TAB CARRY ONE NAME: "The Desk | <the book's name>", ending with the name,
+    # so Safari does not trim the opening words two tabs share. The page states it twice, so this
+    # holds the two alike.
     html = app.index().body.decode()
     title = re.search(r"<title>(.*?)</title>", html).group(1)
     dock = re.search(r'name="apple-mobile-web-app-title" content="([^"]*)"', html).group(1)
@@ -409,8 +397,8 @@ def _png_shape(body: bytes) -> tuple[int, int, int]:
 
 
 def test_the_dock_icons_are_the_full_mark_square_and_opaque():
-    """THE DOCK, THE HOME SCREEN AND ANDROID WEAR THE FULL MARK (the owner, 7 Oct 2026): the
-    book's own, from its brand, or PortFusion's, drawn.
+    """THE DOCK, THE HOME SCREEN AND ANDROID WEAR THE FULL MARK: the book's own, from its brand,
+    or PortFusion's, drawn.
 
     Each route is requested over HTTP and must return that icon, at the size its name says, with
     no alpha channel, since every one of those surfaces draws its own corner."""
@@ -459,10 +447,9 @@ def test_the_manifest_makes_the_desk_an_app_under_the_tabs_name(repo_root):
 
 def test_a_name_off_the_workbench_reads_nothing_from_the_books_folder(client, tmp_path,
                                                                       monkeypatch):
-    """A BARE NAME WAS TRIED AGAINST THE FOLDER THE DESK RUNS IN FIRST, and that folder is the
-    book's: `GET /api/document/credentials.json` read the broker credentials and served them
-    (the review of 21 Oct 2026). A name means a document on the workbench, or nothing; and the
-    bench will not open an item on a path at all."""
+    """A BARE NAME IS NEVER TRIED AGAINST THE FOLDER THE DESK RUNS IN, the book's, which holds its
+    credentials. A name means a document on the workbench, or nothing; and the bench will not
+    open an item on a path at all."""
     from portfusion.desk.intake import bench, read_document
     book, inbox = tmp_path / "book", tmp_path / "book" / "_inbox"
     inbox.mkdir(parents=True)
@@ -479,8 +466,8 @@ def test_a_name_off_the_workbench_reads_nothing_from_the_books_folder(client, tm
 
 def test_a_record_that_will_not_load_is_unavailable_on_every_panel(tmp_path):
     """ONE CELL NO LOADER ACCEPTS: the shell and every panel say "record unavailable" (503), the
-    shell with the record's own words naming the file, where each answered a bare 500. Served from a child process, on a copy of the demo with one
-    cell no loader accepts, so this process's record is untouched."""
+    shell with the record's own words naming the file. Served from a child process, on a copy of
+    the demo with one cell no loader accepts, so this process's record is untouched."""
     import json
     import shutil
     import subprocess
@@ -515,9 +502,8 @@ def test_a_record_that_will_not_load_is_unavailable_on_every_panel(tmp_path):
 
 
 def test_a_drop_with_no_download_time_is_not_refused_for_it(client, inbox):
-    """A FILE WITH NO MODIFIED TIME was sent as `modified=` with nothing after it, which is no
-    number, and the drop was refused for that alone (the review of 21 Oct 2026). The page sends
-    the parameter only when there is a time, and the route takes a drop without one."""
+    """A FILE WITH NO MODIFIED TIME is not refused for it: the page sends the parameter only when
+    there is a time, and the route takes a drop without one."""
     import re
     from desk_support import _static
     js = re.sub(r"/\*.*?\*/", "", _static("app.js"), flags=re.S)

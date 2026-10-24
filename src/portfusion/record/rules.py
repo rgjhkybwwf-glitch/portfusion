@@ -29,7 +29,7 @@ if not schema.STORE.is_dir():
         "\nSTOPPED — there is no store/ folder.\n"
         f"  looked for: {schema.STORE}\n"
         "  Every fact in this record lives in there. Checked separately from the file list\n"
-        "  below so a missing FOLDER does not report as seventeen missing files.\n")
+        "  below so a missing FOLDER does not report as every file missing.\n")
 
 _MISSING = sorted(f"{t.name}.csv" for t in schema.TABLES.values() if not t.path.exists())
 if _MISSING:
@@ -62,14 +62,13 @@ CLOSE_CHECK_WINDOW_DAYS = 7
 
 
 # ==============================================================================================
-# NO BAND BY DAYS. A tolerance scaled by the gap between two figures either fired whenever the book
-# moved (by several percent in a day) or was wider than a wrong quantity. `Book.comparability()` asks the
-# real question instead — do the two describe the same state of the market? The retired code is
-# in the project's history.
+# NO BAND BY DAYS. A tolerance scaled by the gap between two figures would either fire whenever the
+# book moves or be wider than a wrong quantity. `Book.comparability()` asks the real question
+# instead — do the two describe the same state of the market?
 
 # ==============================================================================================
-# THE TWO RULES THAT CODE RENDERS. The Legend has to show them, so the words exist here, once.
-# CLAUDE.md points at them, and test_record.py refuses a second telling anywhere else.
+# THE TWO RULES THAT CODE RENDERS. The Method page shows them, so the words exist here, once.
+# test_record.py refuses a second telling anywhere else.
 # ----------------------------------------------------------------------------------------------
 SOURCE_HIERARCHY = (
     "contract note / statement / authenticated broker API read carrying its own reference "
@@ -98,10 +97,9 @@ SPREAD_BET = (
     "word; the AVAILABLE is equity less deposit; and the NOTIONAL, IG's Position (net), is the "
     "full exposure to the instruments, which is not money. The same hold for one instrument or "
     "across many.")
-# THE ONLY DEFINITION OF A SPREAD BET IN THIS PROJECT. Told in many files, each telling slightly
-# different, it kept tripping the book up; it is stated here, and CLAUDE.md and the Method page
-# point here. What actually stops the mistake is structure —
-# `Book.NAV_BASES`/`EXPOSURE_BASES` and `roll_up()`'s BasisError — not these words.
+# THE ONLY DEFINITION OF A SPREAD BET IN THIS PROJECT. It is stated here, and the Method page
+# points here. What actually stops the mistake is structure — `Book.NAV_BASES`/`EXPOSURE_BASES`
+# and `roll_up()`'s BasisError — not these words.
 
 
 ARCHIVE_CONVENTION = (
@@ -113,8 +111,7 @@ ARCHIVE_CONVENTION = (
     "for itself on that date, or else the one the reference says it was pulled at, which then "
     "leaves the REF - two pulls of one account five minutes apart are different figures, and a "
     "name that cannot tell them apart loses one of them.")
-# THE ONLY STATEMENT OF THE ARCHIVE CONVENTION, for the same reason: five tellings had gone stale
-# in five places. test_record.py refuses a second one. Point at it.
+# THE ONLY STATEMENT OF THE ARCHIVE CONVENTION. test_record.py refuses a second one. Point at it.
 
 #: THE BOOK'S SETTINGS, store/settings.csv — `schema.SETTING_KEYS` says what each one is.
 SETTINGS = dict(schema.load("settings"))
@@ -146,8 +143,7 @@ PRICE_SPREAD_LIMIT = 4
 # ==============================================================================================
 # WHEN EACH VENUE CLOSES, IN UK TIME. `feeds/tv.py` reads it to tell a line still trading, whose
 # live quote is a price, from one that has shut, whose day bar is. KEYED BY CURRENCY, so a new
-# market joins by existing. (Until 30 Sep 2026 it also set when a share account's document could
-# be judged; a share account is checked on units now, which a close does not move.)
+# market joins by existing.
 VENUE_CLOSE_UK = {"GBP": "16:30", "EUR": "16:30", "DKK": "16:00", "USD": "21:00"}
 #: A currency not listed is taken to close with London; add its venue's close above when it is
 #: held, so a line is never refused for want of one.
@@ -185,9 +181,9 @@ def utc_instant(uk_time: str) -> str:
 
 
 # ==============================================================================================
-# THE EVIDENCE CLASSES and THE BROKERS' CODES live in their own pure modules, re-exported here, so
-# `D.EVIDENCE_CLASSES`, `D.identify()`, `D.HL_CODES` and the rest read as ever. Neither derives
-# anything from the store, so `reload_store()` re-executing this module alone stays correct.
+# THE EVIDENCE CLASSES and THE BROKERS' CODES live in their own pure modules, re-exported here as
+# `D.EVIDENCE_CLASSES`, `D.identify()`, `D.HL_CODES` and the rest. Neither derives anything from
+# the store, so `reload_store()` re-executing this module alone stays correct.
 #
 #   rules_evidence.py   what a document IS, and what retrieves it a second time
 #   rules_brokers.py    HL's own codes, and how an export is read
@@ -208,9 +204,8 @@ from portfusion.record.rules_brokers import *     # noqa: F401,F403
 # held, reserved or closed). Two tables because ONE ISSUER CAN HOLD SEVERAL CODES — Orlant is
 # ORLA and ORLA SB, Askel the Copenhagen line and the NYSE ADR — joined by full legal name.
 #
-# Two facts nothing else states: sector and region are an editorial first pass, not sourced
-# data; the tickers were source-verified against Yahoo Finance and the exchanges. Rows stay tuples
-# in file order, so positional reads downstream are unchanged.
+# Sector and region are editorial, not sourced data. Rows are tuples in file order, read by
+# position downstream.
 # ============================================================================
 COMPANIES = schema.load("companies")
 SECURITIES = schema.load("securities")
@@ -244,13 +239,12 @@ CURRENT_PRICES = schema.load("current-prices")
 # is NOT here: it is derived from a related listing instead. Adding to this dict is a
 # decision about what the book stops watching, never a way to quiet a check.
 # ==============================================================================================
-# EMPTY by default. The mechanism stays.
+# EMPTY by default.
 STATEMENT_PRICED = {}
 
 # ==============================================================================================
 # CARRIED RATES — the FX half of the same idea. A currency here is deliberately NOT refreshed;
-# its live rate is carried at its last level, still on file and still read. EMPTY by
-# default. The mechanism stays.
+# its live rate is carried at its last level, still on file and still read. EMPTY by default.
 #
 # A second dict, because the reason differs: not "no feed and immaterial" but NOTHING THE BOOK
 # VALUES IS DENOMINATED IN IT. Structure rather than a note in the row's source text, so the Price
@@ -266,9 +260,9 @@ RATE_CARRIED = {k: RATE_CARRIED_WHY for k in SETTINGS.get("rate_carried", "").sp
 # URL), oldest first. A ticker with no entry is not missing data; the book publishes on a subset of
 # what it holds.
 #
-# THE RESEARCH REPO IS THE SOURCE OF TRUTH FOR A REF (CLAUDE.md). This records what the BOOK cites,
-# so the book builds without that repo; `desk/intake/research.py` reads the repo so the bench can
-# OFFER a ref. THE REF IS NOT THE URL — never derive one from the other. One note can cover both
+# THE RESEARCH REPO IS THE SOURCE OF TRUTH FOR A REF. This records what the BOOK cites, so the
+# book builds without that repo; `desk/intake/research.py` reads the repo so the bench can OFFER a
+# ref. THE REF IS NOT THE URL — never derive one from the other. One note can cover both
 # sides of a pair: Orlant's is cited by ORLA and ORLA SB, a mapping that is the book's own.
 # ==============================================================================================
 RESEARCH_NOTES: dict[str, list[tuple[str, str, str]]] = {}
@@ -283,7 +277,7 @@ for _r in schema.load("research-notes"):
 # ==============================================================================================
 # THE LEDGER — every transaction, and the parcels they form
 # ----------------------------------------------------------------------------------------------
-# `trades` is the record: one row per transaction. A sale is entered ONCE, in `exits`, and the
+# `buys` and `sales` are the record, a row per transaction. A sale is entered ONCE, and the
 # ledger's Sell rows are generated from it, so the two cannot disagree. REALISATION ID, not ticker,
 # joins buys to sells, because a ticker can be an open holding and a realised parcel at once.
 #
@@ -292,19 +286,19 @@ for _r in schema.load("research-notes"):
 # ==============================================================================================
 
 # ==============================================================================================
-# THE TRADE ROW. A NamedTuple, so positional reads (t[4]) still work and the names are additive —
-# a declaration cannot drift from the tuple it declares.
+# THE TRADE ROW. A NamedTuple, read by name or position (t[4]): a declaration cannot drift from
+# the tuple it declares.
 #
 # WHETHER A LEG IS STILL HELD IS DERIVED, never stored: which legs a sale consumed comes from
 # `engine.share_pools()` and `EXIT_LEG_MATCH`, and the ledger's `open_leg` says it.
 # ==============================================================================================
 class Buy(NamedTuple):
-    trade_id: str               # T-nnn, never renumbered and never reused
+    trade_id: str               # T-nnn, its place in the record's order
     date: str                   # ISO
     source: str                 # the NAMED source: document + broker ref. One of the seven fields.
                                 # What DOCUMENT backs this row — never what kind of
                                 # number it is (glossary §2).
-    acct: str                   # must be in ACCOUNT_ORDER — matched as a STRING by every SUMIFS
+    acct: str                   # must be in ACCOUNT_ORDER
     ticker: str                 # the security's code, as securities.csv registers it; its kind
     cur: str                    # the currency `traded_price` is stated in; GBP on a spread bet, IG's
                                 # "Curr £" — the stake's, never the market's
@@ -353,7 +347,6 @@ assert not _unpriced, (f"spread-bet legs {_unpriced} name no contract: give each
 _off_line = [t.trade_id for t in buys if t.contract and CONTRACT_CODE.get(t.contract) != t.ticker]
 assert not _off_line, f"spread-bet legs {_off_line} name a contract on another line"
 
-# --- NAMING MIGRATION: remap tickers to real codes before the sort ---
 # ---- Exits: defined before the merged ledger, which is built from them ----
 class Sale(NamedTuple):
     sale_id: str                # E-nnn
@@ -380,8 +373,7 @@ class Sale(NamedTuple):
 sales = [Sale(*_r) for _r in schema.load("sales")]
 
 # AN EVENT'S ID IS ITS NAME: an exit names the leg it closes by one, and a sale the parcel it
-# realises. Two rows under one id are one row too many, with nothing to say which. Nothing refused
-# it until 21 Oct 2026, so a bench item proposing two exits as one id reached the store.
+# realises. Two rows under one id are one row too many, with nothing to say which.
 for _table, _ids in (("buys", [t.trade_id for t in buys]), ("sales", [e.sale_id for e in sales])):
     assert len(set(_ids)) == len(_ids), (
         f"{_table}.csv ids must be distinct: "
@@ -433,8 +425,7 @@ EXIT_LEG_MATCH = {e.sale_id: e.closes for e in sales if e.closes}
 
 # ACCOUNT-LEVEL BREAKDOWN: a ticker held in more than one account shows a row per account under its
 # aggregate, each summing back to it. DERIVED from the ledger (see the foot of this file), so a
-# ticker traded in two accounts HAS a breakdown; a hand-kept list once missed one and nothing
-# failed. The tests check the derivation.
+# ticker traded in two accounts HAS a breakdown. The tests check the derivation.
 
 
 # ==============================================================================================
@@ -479,9 +470,9 @@ assert sorted(POSITION_INCOME + ACCOUNT_INCOME) == sorted(schema.INCOME_CATEGORI
     "an income category is in neither half, or in both"
 
 # ----------------------------------------------------------------------------------------------
-# FUNDING INTEREST IS THE CONTRACT'S, NOT THE ACCOUNT'S (13 Oct 2026). IG charges it on a daily
-# funded bet for each night a leg is held and on a dated bet never (schema.FUNDINGS), so a row
-# belongs to an account holding such a leg on the nights it names, in IG's own words on the row:
+# FUNDING INTEREST IS THE CONTRACT'S, NOT THE ACCOUNT'S. IG charges it on a daily funded bet for
+# each night a leg is held and on a dated bet never (schema.FUNDINGS), so a row belongs to an
+# account holding such a leg on the nights it names, in IG's own words on the row:
 # "Long Interest for US/Can shares 03/02/25 to 05/02/25". The load refuses a row no such leg
 # explains; the audit asks the other way round (Book.funding_gaps).
 # ----------------------------------------------------------------------------------------------
@@ -575,11 +566,11 @@ class AccountRow(NamedTuple):
     positions: float | None     # a share account's positions at market; None on a spread bet
     equity: float | None        # spread-bet accounts only: funds plus running P/L
     asof: str                   # DISPLAY ONLY — "19 Jul 15:21". Rebuilt from as_of + at.
-    as_of: _dt.date             # THE REAL DATE, and the reason contradiction H existed
+    as_of: _dt.date             # THE REAL DATE
     evidence: str = ""          # an EVIDENCE_CLASSES key — limbs 2 and 3, structurally
     reference: str = ""         # what retrieves this reading a second time
     at: str = ""                # THE INSTANT IT WAS READ, ISO and UTC; blank if nobody knows
-    # IG'S OWN FIGURES, a spread-bet account's reading (13 Oct 2026); None on a share account.
+    # IG'S OWN FIGURES, a spread-bet account's reading; None on a share account.
     funds: float | None = None
     running_pl: float | None = None
     deposit: float | None = None      # IG's word for the margin
@@ -707,7 +698,7 @@ def next_free_ids() -> dict:
     """The next free row id per table, one above the last: what a proposed row is called until it
     is written, when the door gives it its place in date order (`record/order.py`).
 
-    ONE ALLOCATOR, for the bench and the IG sweep alike: two copies of it had drifted.
+    ONE ALLOCATOR, for the bench and the IG sweep alike.
     """
     return {"buys": f"T-{len(buys) + 1:03d}", "sales": f"E-{len(sales) + 1:03d}"}
 
@@ -840,9 +831,7 @@ if _sized:
 
 #: THE FORM OF A REALISATION'S NAME: `R-`, the root its holding was first named by, and a number
 #: when another holding already has that name (`Book.parcel()` gives exactly these). Upper-case
-#: letters and digits, joined by hyphens; one older name carries a word where the number would
-#: go. Anything else reached the record as typed — an "R-ABC=2" passed every check on the bench
-#: on 12 Oct 2026, caught only by reading it.
+#: letters and digits, joined by hyphens. Anything else is refused on load.
 REALISATION_FORM = _re.compile(r"R-[A-Z0-9]+(?:-[A-Z0-9]+)*")
 _misnamed = sorted({f"{name} ({where})" for name, where in
                     [(e.realisation_id, e.sale_id) for e in sales]
@@ -897,8 +886,8 @@ def store_at(path):
 
     Side effects: those of `set_store()`, twice.
 
-    PUT BACK HOWEVER THE BLOCK ENDS, its own start included: a store that would not load raised
-    from `set_store()` before the block was entered, and left the record pointed at it.
+    PUT BACK HOWEVER THE BLOCK ENDS, its own start included: `set_store()` can raise before the
+    block is entered.
     """
     was = schema.STORE
     try:

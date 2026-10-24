@@ -39,8 +39,7 @@ def _the_records(e: BaseException) -> bool:
 
 def _guarded(fn):
     """Run something that imports the record, turning the record's refusal to load into a typed
-    error: its guard's exit, or a cell or a rule it refuses on load. Until 21 Oct 2026 only the
-    exit was caught, so a malformed cell answered a bare 500 on every page."""
+    error: its guard's exit, or a cell or a rule it refuses on load."""
     try:
         return fn()
     except SystemExit as e:                     # rules's own: the store is not whole
@@ -57,8 +56,7 @@ def _guarded(fn):
 # otherwise pay for four engines. Keyed on the store's own modification time, so an edit to any
 # CSV invalidates it without anyone having to remember to say so.
 #
-# NO MEASURED DURATION IS WRITTEN HERE. A typed timing outlives the code it measured, and one
-# here once made a narrower reload look thrifty against a full one that cost milliseconds more.
+# NO MEASURED DURATION IS WRITTEN HERE. A typed timing outlives the code it measured.
 _cache: dict = {"key": None, "book": None}
 
 
@@ -81,11 +79,10 @@ def book():
     the desk. This covers every other way the store moves: a hand edit, a git pull, a checkout,
     a revert.
 
-    THE CHECK AND THE REBUILD ARE ONE STEP, under `schema.LOCK`: two requests rebuilding at once
-    reloaded the record over each other, and one could build its Book over a record the other
-    was half-way through re-reading — then cache it. A door's write holds the same lock, so a
-    rebuild never reads a store a door is part-way through. The Book, once built, needs no lock:
-    it pins the record it was built from.
+    THE CHECK AND THE REBUILD ARE ONE STEP, under `schema.LOCK`: two rebuilds at once would
+    reload the record over each other, and one could cache a Book over a half-read record. A
+    door's write holds the same lock, so a rebuild never reads a store a door is part-way
+    through. The Book, once built, needs no lock: it pins the record it was built from.
     """
     from portfusion.record import schema
     with schema.LOCK:
@@ -128,8 +125,7 @@ def reports() -> dict:
                      "reported": q >= first, "closed": q in closed,
                      "ended": q <= b.valued_at(), "gaps": completeness(q)} for q in ends]
         years = sorted({q[:4] for q in ends}, reverse=True)
-        # A YEAR IS ITS NAME AND WHETHER ITS REPORT IS BUILT: its end date and whether it had
-        # closed were sent and drawn nowhere (13 Oct 2026).
+        # A YEAR IS ITS NAME AND WHETHER ITS REPORT IS BUILT.
         return {"quarters": quarters[::-1], "first_reported": first,
                 "years": [{"year": y, "built": False} for y in years]}
 
@@ -139,7 +135,7 @@ def reports() -> dict:
 
 def report_page(quarter_end: str) -> tuple[str | None, list[str]]:
     """One quarter's report, or what stops it. Nothing is written: the page is rendered for the
-    request and handed back, the only way a report is made since `_reports/` was retired."""
+    request and handed back, the only way a report is made."""
     def _run():
         from portfusion.report.gate import completeness
         from portfusion.report.page import render
@@ -151,8 +147,8 @@ def report_page(quarter_end: str) -> tuple[str | None, list[str]]:
 def palette() -> dict:
     """The house style — DELEGATED to `desk/theme.py`, never re-derived here.
 
-    Two routes to one answer is the defect that got `figures.py` deleted. `engine.py` stays the
-    one way the desk reads; the derivation lives in `theme.py`.
+    Two routes to one answer can disagree. `engine.py` stays the one way the desk reads; the
+    derivation lives in `theme.py`.
     """
     from portfusion.desk import theme
     return theme.palette()
@@ -187,7 +183,7 @@ def lockup() -> str:
 #
 # THE MIXTURE IS THE DANGEROUS PART. A wholly stale desk shows an old page and looks old. A
 # desk with fresh static files and a stale engine renders new markup against old data and
-# looks CONFIDENTLY WRONG, which is the failure mode this book keeps writing guards for.
+# looks CONFIDENTLY WRONG.
 #
 # WHAT IS SCANNED IS WHAT THIS PROCESS ACTUALLY IMPORTED — `sys.modules` filtered to files
 # under ROOT — so a module joins the check by being imported and there is no list to maintain.

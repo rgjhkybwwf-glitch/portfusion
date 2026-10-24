@@ -5,14 +5,13 @@ folder it sits in, and a book's checks sit in the book's folder. The app is impo
 installed package, `portfusion`, which the venv's editable install points at this checkout's
 `src/`.
 
-record/rules.py is pure data — importing it runs no build and touches no file.
+record/rules.py loads the record on import and runs no build.
 
 The report is importable: its page is `report.page.render()` and its command line sits behind a
 __main__ guard, so collecting the tests runs no command.
 
-The subprocess tests in test_report.py STAY. They run the real command line — the gate's
-refusal, the exit code — which is how the report is actually
-invoked, and an in-process call would not prove it.
+The subprocess tests in test_report.py run the real command line — the gate's refusal, the exit
+code — which is how the report is actually invoked, and an in-process call would not prove it.
 """
 import functools
 import os
@@ -88,8 +87,7 @@ def holds(*found, what: str = "the rows this test is built from"):
 
 
 #: THE CALLS THAT WRITE OR REMOVE A FILE, by name: the one list every guard asking "does this
-#: module write?" reads (`write_call`). Two lists drifted — one lacked `replace` and `open(…, "w")`,
-#: and saw neither the history's atomic swap nor the sign-in log's append.
+#: module write?" reads (`write_call`).
 WRITE_CALLS = {"write_text", "write_bytes", "move", "copy2", "copyfile", "copytree", "unlink",
                "rmtree", "_append", "to_csv", "dump"}
 
@@ -162,16 +160,15 @@ def require(*found, what: str = "the rows this module is built from") -> None:
 # strictness belongs here. The build must never refuse: if the venv breaks the day before a
 # quarter close, a report built on identical system packages beats no report at all.
 #
-# WHAT IT ASKS, since the app became a package (18 Oct 2026): not whether a folder named
-# .venv is running, but the two things that folder stood for.
+# WHAT IT ASKS: not whether a folder named .venv is running, but the two things that folder
+# stands for.
 #
 #   * `portfusion` comes from THIS checkout's src/. An installed checkout is found through the
 #     venv, so a worktree run on another checkout's venv imports THAT checkout's code and passes
 #     on it. Each checkout has a venv of its own (docs/environment.md).
-#   * Every package the project names is installed. When the project left iCloud, a dead venv
-#     fell back to the SYSTEM interpreter, and every book test carried on passing — because the
-#     book's packages are installed system-wide TOO — while the desk's could not be collected.
-#     The run looked like a FastAPI problem and was nothing of the kind.
+#   * Every package the project names is installed. A dead venv falls back to the system
+#     interpreter, where the book's tests pass on its packages, installed system-wide too, while
+#     the desk's cannot be collected.
 #
 # IT FIRES IN `pytest_configure`, BEFORE COLLECTION, because that is the only moment early
 # enough: a collection error in a desk test interrupts the run before any test executes, so a
@@ -266,11 +263,10 @@ def expected_skips() -> set[str] | None:
 
 
 def pytest_sessionfinish(session, exitstatus):
-    """THE RUN FAILS IF IT MOVED THE LOADED BOOK. Tests that forgot to point the bench or a door
-    at a copy wrote the real `_inbox/.bench/` and could archive into `_archive/` — on whichever
-    book was loaded — and passed (the review of 21 Oct 2026). Checked once, across the whole run,
-    so a test that cleans up after itself is still seen to have touched it. A write the owner made
-    through the desk during the run shows here too; run the suite again."""
+    """THE RUN FAILS IF IT MOVED THE LOADED BOOK. A test that reached the real `_inbox/.bench/`
+    or `_archive/` would otherwise pass. Checked once, across the whole run, so a test that
+    cleans up after itself is still seen to have touched it. A write the owner made through the
+    desk during the run shows here too; run the suite again."""
     # A SKIP THE BOOK DOES NOT LIST fails the run: a test it has the rows for was not run.
     listed = expected_skips()
     if listed is not None:
@@ -307,9 +303,8 @@ def pytest_terminal_summary(terminalreporter):
 
 def pytest_configure(config):
     """Fires before collection, which is the only moment early enough — a collection error in
-    a desk test module interrupts the run before any test executes, so a TEST could never have caught
-    this. (It was at conftest import first; pytest reports that as "ImportError while loading
-    conftest", which is a misleading headline over a correct message.)"""
+    a desk test module interrupts the run before any test executes, so a TEST could never have
+    caught this."""
     configure(config)
     unsigned_git()
     faults = environment_faults()
@@ -328,8 +323,8 @@ def pytest_configure(config):
 
 
 #: What every git command the suite starts is told, whatever the machine's own config says. A
-#: machine that signs its commits by default failed every test that makes one — in a scratch
-#: repository, with no key to sign with (the review of 21 Oct 2026).
+#: machine that signs commits by default would fail every test that commits in a scratch
+#: repository, with no key to sign with.
 UNSIGNED = (("commit.gpgsign", "false"), ("tag.gpgsign", "false"))
 
 
@@ -367,13 +362,13 @@ def configure(config) -> None:
 def book_checks(config) -> Path | None:
     """THE LOADED BOOK'S OWN CHECKS, when a default run should take them in.
 
-    THE SUITE RUNS ON ANY BOOK (9 Oct 2026). `PORTFUSION_BOOK` points the record at a book's
-    folder (`record/schema.py`), and the one suite in `tests/` is the guard for whichever is
-    loaded: there is no second suite to drift. A check of ONE book's own facts — a typed census,
-    a migrated text, a reading whose incident lives in one row — is a fact another book can
-    neither satisfy nor refute, so it lives in that book's `checks/` folder and leaves nothing
-    behind in the code. A run that names no paths collects it when, and only when, its book is
-    the one loaded; a run that names paths takes exactly those.
+    THE SUITE RUNS ON ANY BOOK. `PORTFUSION_BOOK` points the record at a book's folder
+    (`record/schema.py`), and the one suite in `tests/` is the guard for whichever is loaded:
+    there is no second suite to drift. A check of ONE book's own facts — a typed census, a
+    migrated text, a reading whose incident lives in one row — is a fact another book can neither
+    satisfy nor refute, so it lives in that book's `checks/` folder and leaves nothing behind in
+    the code. A run that names no paths collects it when, and only when, its book is the one
+    loaded; a run that names paths takes exactly those.
 
       PORTFUSION_BOOK=. python3 -m pytest        the guard, and this book's checks
       PORTFUSION_BOOK=demo python3 -m pytest     the same guard on the demo, and the demo's, if any
@@ -393,15 +388,11 @@ def store_copy(tmp_path, monkeypatch):
     EVERY test that writes to the store uses this and never the record — a test that
     appended a row to `store/buys.csv` would be a fabricated trade in the book.
 
-    IT MOVES THE WHOLE BOOK, not the store alone. Redirecting `schema.STORE` was once all a
-    copy did, while `engine.py` read three histories off the repo's own path and `history/*`
-    bound a fourth at import — so a "sandboxed" Book got twenty tables from the copy and
-    three from the live record. And the DOORS read and write the archive beside the store —
-    `commit.py` files a committed item in `_archive/bench/` and a document in
-    `_archive/statements/` — so a copy without the archive had every door test writing a
-    sandboxed row while reading, and archiving into, the real book's folders: a green
-    borrowed from whichever book the repo holds. Copying from `schema.STORE`, never
-    `ROOT / "store"`, is also what lets the suite check whatever book is loaded.
+    IT MOVES THE WHOLE BOOK, not the store alone. The DOORS read and write the archive beside
+    the store — `commit.py` files a committed item in `_archive/bench/` and a document in
+    `_archive/statements/` — so a copy without it would file into the real book's folders.
+    Copying from `schema.STORE`, never `ROOT / "store"`, is also what lets the suite check
+    whatever book is loaded.
 
     Restores the record, and both archive paths, however the test ends.
     """
@@ -504,9 +495,7 @@ def project_files():
     whatever happens to sit under the root. Every guard that reads the whole tree reads this.
 
     NOT `repo_root.rglob()`, which walks into the desktop app's worktrees under
-    `.claude/worktrees/`, each a full checkout of the repo. Four guards failed in the main
-    checkout whenever one existed — every guide duplicated in full, every store door opened
-    twice — and passed in a checkout without them.
+    `.claude/worktrees/`, each a full checkout of the repo.
 
     Tracked files AND untracked ones git does not ignore, so a module written but not yet
     added is guarded before the commit rather than after it. Git does not descend into a
@@ -533,18 +522,16 @@ PACKAGE = SRC.name
 def imports_of():
     """Modules a source file actually IMPORTS, by parsing it rather than grepping it.
 
-    The grep version was wrong in both directions: it matched the word "refresh" in the
-    build's prose (hundreds of hits) and it matched "record/rules.py" inside a docstring
-    saying the file deliberately does NOT write there. A dependency claim has to be
-    checked against the syntax tree, not the prose.
+    A grep matches a module's name in prose, even in a docstring saying the file does not use
+    it. A dependency claim has to be checked against the syntax tree, not the prose.
 
     AN IMPORT IS READ PAST THE PACKAGE: `from portfusion.desk import app` is `desk`. Under one
     package every import's first name is the package's, so a guard asking whether the book
     imports `desk` would hold for ever without this.
 
     `dotted=True` adds each module by its dotted name as well (`history.accounts`,
-    `record.schema`), for a guard that names a module rather than a folder. Without it such a
-    guard asked a set of first names for a dotted one, and passed whatever was imported.
+    `record.schema`), for a guard that names a module rather than a folder. Without it, such a
+    guard asks a set of first names for a dotted one, and passes whatever is imported.
     """
     import ast
 
@@ -560,7 +547,7 @@ def imports_of():
                 names = [_name(a.name) for a in node.names]
             elif isinstance(node, ast.ImportFrom) and node.module == PACKAGE:
                 # `from portfusion import engine` IMPORTS `engine`. Read as the package alone, it
-                # named nothing a guard could refuse, and the report already imports this way.
+                # names nothing a guard could refuse.
                 names = [a.name for a in node.names]
             elif isinstance(node, ast.ImportFrom) and node.module:
                 module = _name(node.module)

@@ -17,8 +17,7 @@ def main(argv=None):
     if not argv or argv[0] in ("-h", "--help"):
         log.info(__doc__)
         return 0
-    # --CHECK IS READ WHEREVER IT STANDS. Without it the command once wrote
-    # the page; since `_reports/` was retired a bare date is answered with the usage.
+    # --CHECK IS READ WHEREVER IT STANDS. Without it a bare date is answered with the usage.
     dates = [a for a in argv if a != "--check"]
     if "--check" not in argv or len(dates) != 1:
         log.error(__doc__)

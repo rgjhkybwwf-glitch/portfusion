@@ -1,14 +1,12 @@
 """
 ONE HISTORY CSV, shared by the three histories.
 
-They were the same module written three times, and three copies of a parse rule are three
-parse rules: one coerced blanks to None while two raised on them.
+Three copies of a parse rule are three parse rules.
 
 `archive()` and `check()` are NOT shared. Each asks the record for its live set in the record's
 own vocabulary (`D.CURRENT_PRICES`, `D.fx_rows`), and the printing differs by what is printed;
 neither is worth an indirection. WHAT A SAME-DAY READ DOES IS SHARED (`restruck()`): a price, a
-rate and a statement are all read again, and two copies of that rule had already become one rule
-and none.
+rate and a statement are all read again.
 
 The build must not import this, and each history keeps a test saying so. The engine reads the
 same files with pandas for a different job — frames for analysis, not rows for appending.
@@ -161,10 +159,9 @@ class AppendOnlyCSV:
 
     # ---- A SAME-DAY READ: the marks' one rule, for a price and a rate alike --------------------
     #
-    # A FIGURE ON FILE IS REPLACED, NEVER KEPT BESIDE ITS REPLACEMENT (23 Oct 2026). A later read
-    # of the same day — another live read, that day's close, a statement put right — takes the
-    # row's place, and git keeps what the row said. Until then a correction was kept on file
-    # marked `superseded`, and every reader had to filter on it.
+    # A FIGURE ON FILE IS REPLACED, NEVER KEPT BESIDE ITS REPLACEMENT. A later read of the same
+    # day — another live read, that day's close, a statement put right — takes the row's place,
+    # and git keeps what the row said.
 
     @staticmethod
     def outranked(was: dict, mark: dict) -> bool:
@@ -183,8 +180,8 @@ class AppendOnlyCSV:
     @staticmethod
     def promoted(was: dict, mark: dict) -> bool:
         """Is this mark its day's close, where the row on file is that day's live read? Then it
-        replaces the live read AT ANY FIGURE: a close that happened to equal the last live read
-        was skipped as "the same", and the day went on reading as a live read, owed its close."""
+        replaces the live read AT ANY FIGURE, even a close equal to the last live read, or the day
+        goes on reading as a live read, owed its close."""
         return was.get("struck") == "live" and mark.get("struck") == "close"
 
     def _restrikes(self, was: dict, mark: dict) -> bool:
@@ -195,9 +192,8 @@ class AppendOnlyCSV:
         return (not self._same(was, mark) or self.promoted(was, mark)) and not self.outranked(was, mark)
 
     def restruck(self, rows: list[dict], live: list[dict]) -> list[dict]:
-        """The rows on file a SAME-DAY re-strike replaces. Without this, a second read of one day
-        found itself already banked and appended nothing, leaving the history disagreeing with
-        the live table about that day. Side effects: none; the caller drops them and saves."""
+        """The rows on file a SAME-DAY re-strike replaces, so the history agrees with the live
+        table about a day read twice. Side effects: none; the caller drops them and saves."""
         on_file = {self.key(r): r for r in rows}
         return [was for m in live
                 if (was := on_file.get(self.key(m))) is not None and self._restrikes(was, m)]

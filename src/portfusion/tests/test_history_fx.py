@@ -42,7 +42,7 @@ def test_no_duplicate_rates(rows):
     """One rate per currency per date PER KIND. The kind matters: EUR genuinely
     holds both a spot and an annual average at 2025-12-31, and they are different
     facts. A CURRENCY KEYS ITS LIVE RATE, as a ticker keys its price: a key with a date or a year
-    inside it is how stale typed rates came to sit beside the live ones."""
+    inside it lets a stale typed rate sit beside the live one."""
     dupes = [k for k, n in Counter((r["currency"], r["date"], r["kind"]) for r in rows).items()
              if n > 1]
     assert not dupes, f"more than one rate for: {dupes}"
@@ -128,7 +128,7 @@ def test_the_build_does_not_import_this(build_imports):
 
 
 # =====================================================================================
-# A RATE READ TWICE IN ONE DAY — the price history's rule, now this one's
+# A RATE READ TWICE IN ONE DAY — the price history's rule too
 # =====================================================================================
 
 def _rate(date, rate, struck, source):
@@ -137,10 +137,9 @@ def _rate(date, rate, struck, source):
 
 
 def test_a_second_read_of_a_day_replaces_the_rate_on_file():
-    """THE HOLE THIS CLOSES. The identity is (currency, date, kind), so the second refresh of a
-    day found its rate already banked and appended nothing: fx.csv held the afternoon's rate
-    while this file kept the morning's. A live read, or a rate typed or closed at another
-    figure, now leaves for the later one, unedited. In memory only."""
+    """The identity is (currency, date, kind), so a later read appends nothing while the row on
+    file stays: a live read, or a rate typed or closed at another figure, leaves for the later
+    one, unedited. In memory only."""
     read = _rate("2026-09-30", 1.33, "live", "a morning read — test")
     typed = {**_rate("2026-06-30", 1.32, "", "a typed rate — test"), "quality": "derived"}
     rows = [read, typed]
@@ -163,9 +162,8 @@ def test_a_live_rate_is_not_banked_over_its_days_close():
 
 @needs("fx-history")
 def test_a_restruck_rate_reads_as_unbanked(monkeypatch):
-    """check() is the precondition the Price Refresh's write reads. It asked only whether the
-    (currency, date) was on file, so a rate re-read at another figure reported as banked while
-    the figure sat nowhere."""
+    """check() is the precondition the Price Refresh's write reads: a rate re-read at another
+    figure reads as unbanked."""
     live = FX.live_marks()
     assert live, "no live rate to re-strike — this asserts nothing"
     moved = [{**m, "rate": round(m["rate"] + 0.01, 5)} if i == 0 else m

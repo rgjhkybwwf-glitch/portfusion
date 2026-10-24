@@ -2,8 +2,7 @@
 
 One module per screen, and they do not depend on each other.
 Adding a panel is adding a file; reordering is changing one number. Nothing here has a list of
-panels in it, because a list is a second place to update and this project has paid for that
-mistake often enough.
+panels in it, because a list is a second place to update.
 
 Each panel module declares:
 
@@ -13,20 +12,19 @@ Each panel module declares:
     data()  -> dict, the panel's whole payload
     APART   optional: True for a page off the thread of the work, drawn below a rule
 
-THE TABS RUN IN THE ORDER OF THE WORK: DASHBOARD, where the book stands, is
-tab one and the landing screen — `app.js` opens whatever comes first; then the work — BENCH ·
-PRICE REFRESH · WHAT CHANGED · RECONCILE; then the book — PERFORMANCE · HOLDINGS · ROUND TRIPS ·
-TRADES · ACCOUNTS; then REPORTS, read after
-the work it reports on (6 Oct 2026), which ends the thread. PRICE REFRESH PRECEDES WHAT CHANGED
-because you run a refresh and then read what it did; RECONCILE closes the work because it reads
-both. METHOD and ACCESS sit APART, below a rule with no heading: how the numbers are made and who
-reads them are not work on the book (13 Oct 2026).
+THE TABS RUN IN THE ORDER OF THE WORK: DASHBOARD, where the book stands, is tab one and the
+landing screen — `app.js` opens whatever comes first; then the work — BENCH · PRICE REFRESH ·
+WHAT CHANGED · RECONCILE; then the book — PERFORMANCE · HOLDINGS · ROUND TRIPS · TRADES ·
+ACCOUNTS; then REPORTS, read after the work it reports on, which ends the thread. PRICE REFRESH
+PRECEDES WHAT CHANGED because you run a refresh and then read what it did; RECONCILE closes the
+work because it reads both. METHOD and ACCESS sit APART, below a rule with no heading: how the
+numbers are made and who reads them are not work on the book.
 
 A PANEL HAS ONE NAME: its file, its URL and its title agree (`test_a_panel_has_one_name`).
 
 `data()` MUST NOT COMPUTE A FIGURE. It reaches the engine through `desk.engine` and shapes what
 comes back. A panel that does arithmetic is a second calculation of something `engine.py` already
-answers, which is the defect that got `figures.py` deleted.
+answers.
 """
 from __future__ import annotations
 

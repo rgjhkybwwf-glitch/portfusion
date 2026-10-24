@@ -33,8 +33,7 @@ def _head(tab: str, *cols) -> str:
     return f"<thead><tr>{''.join(cells)}</tr></thead>"
 
 
-#: The first period the book reports on. Q1 and Q2 2026 are computed for the record and as the
-#: series' starting point.
+#: The first period the book reports on. An earlier quarter is computed for the record.
 def first_reported() -> str:
     """The first quarter end the report is built for: settings.csv `first_report`."""
     return D.SETTINGS["first_report"]
@@ -44,8 +43,8 @@ def notice(quarter_end: str) -> str:
     """The note at the head of every report, plus the narrower one where it applies.
 
     Every page says the positions are the book's own and not a recommendation, whatever the
-    quarter. Only Q3 2026 onward is a period the book reports on; an earlier quarter's page
-    also says it is computed, not reported.
+    quarter. Only a quarter from `first_report` on is reported; an earlier quarter's page also
+    says it is computed, not reported.
 
     Its own function so both branches can be tested without a reportable quarter behind them.
     """
@@ -102,8 +101,7 @@ def render(quarter_end: str) -> str:
     navs = b.quarter_nav_rows(quarter_end)
     figures = {f["label"]: f["value"] for f in summary_figures(quarter_end, b)}
     nav_total = figures["Net asset value"]
-    # THE FROZEN COMPOSITION, so the holdings add to the exposure Section 1 publishes. It was a
-    # revaluation of the same day once, and the page had to explain a gap between the two.
+    # THE FROZEN COMPOSITION, so the holdings add to the exposure Section 1 publishes.
     lines = b.quarter_lines(quarter_end)
 
     qr = b.quarter_returns()

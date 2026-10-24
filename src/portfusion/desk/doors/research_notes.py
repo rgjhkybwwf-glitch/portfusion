@@ -4,7 +4,7 @@
     write(ref)    append one note's rows to research-notes.csv, journalled, or refuse
 
 A STORE DOOR, the fifth under desk/ (`tests/desk/test_boundaries.py`), and it only APPENDS. Without
-it nothing wrote the table, and a note published later reached no page.
+it nothing writes the table, and no note reaches a page.
 
 WHAT A NOTE COVERS IS THE BOOK'S RULE, kept here once: every code of its company the book has
 held since the record began (`Book.codes_held()`), matched as the research reader matches

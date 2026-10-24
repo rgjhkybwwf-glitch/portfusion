@@ -8,7 +8,7 @@ question the engine answers. Ticker and direction are narrowed on the returned f
 selection rather than calculation.
 
 A TRADE LOG, READ BACK: each line is the deal as struck, and everything else the record holds
-on it — why, what happened, where it came from — is in its detail (12 Oct 2026).
+on it — why, what happened, where it came from — is in its detail.
 """
 from __future__ import annotations
 
@@ -48,7 +48,7 @@ def data() -> dict:
         "tickers": _shape.uniques(frame, "ticker"),
         "companies": _companies(frame),
         # EACH COMPANY'S CODES IN THE LEDGER: the Ticker box lists the chosen company's alone, so
-        # it cannot name a line the Company box has ruled out (14 Oct 2026).
+        # it cannot name a line the Company box has ruled out.
         "company_tickers": _shape.company_codes(_with_company(frame)),
         "directions": _shape.uniques(frame, "direction"),
         "columns": list(COLUMNS),

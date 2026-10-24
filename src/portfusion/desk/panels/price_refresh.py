@@ -61,8 +61,8 @@ def query() -> dict:
     """The bay's state. Every figure is the engine's or the door's; nothing is decided here."""
     from portfusion.desk.doors import marks
 
-    # THE ENGINE THROUGH THE DESK'S GUARD, not imported with the module: a store that would not
-    # load stopped the import, and the page answered a bare 500 rather than "record unavailable".
+    # THE ENGINE THROUGH THE DESK'S GUARD, not imported with the module, where a store that will
+    # not load would answer a bare 500, not "record unavailable".
     def _replaceable():
         from portfusion.engine import marks_replaceable
         return marks_replaceable()
@@ -229,8 +229,7 @@ def _write(prices=None, rates=None, readings=None, close_of=None):
     except Exception as e:                          # noqa: BLE001 — reported, never swallowed
         # A FAULT, NOT A REFUSAL, and the files are back just the same: `atomic()` restored them.
         # The record in memory follows them, or it would go on serving marks the files no longer
-        # hold; and the page says what failed, where it had a bare 500 until 14 Oct 2026. The
-        # trace goes to the desk's log.
+        # hold; and the page says what failed. The trace goes to the desk's log.
         traceback.print_exc()
         with contextlib.suppress(Exception):
             D.reload_store()

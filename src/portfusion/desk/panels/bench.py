@@ -52,9 +52,9 @@ def data() -> dict:
     }
 
 
-#: HOW THIS PAGE WORKS, in the order the work comes in and in a reader's words (12 Oct 2026: a
-#: decision's letter means nothing to a reader, and nor do committing and reversing in git). The
-#: one place the page explains itself; nothing above the fold does.
+#: HOW THIS PAGE WORKS, in the order the work comes in and in a reader's words (no decision
+#: letters, no committing or reverting). The one place the page explains itself; nothing above
+#: the fold does.
 WHY = [
     ("A dropped document",
      "Drop a contract note, statement or broker download onto the page, or choose one; it "
@@ -140,7 +140,7 @@ def detail(item_id: str) -> dict:
 # THE OTHER HALF OF THE ARGUMENT: a sweep also finds what would make the book incomplete. A
 # missing trade makes the book's own figure wrong, and a reconciliation run against it reports a
 # difference that is really an unentered event. Reconcile neither re-runs a 30-day broker call
-# nor reports a sweep: its step that did was only a browser tab's memory, and went on 13 Oct 2026.
+# nor reports a sweep.
 # =================================================================================================
 from portfusion.desk.intake.broker import _ig                                               # noqa: E402
 

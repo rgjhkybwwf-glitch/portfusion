@@ -4,7 +4,7 @@ laid over them (`portfusion.brand`), never retyped.
 A second renderer is where "derive it, never type it twice" breaks first: a hand-copied hex
 here would drift the day the palette moves. So the tokens are generated from the one palette:
 change a colour in house/palette.py and every renderer that wears it changes together, or none
-does. The dark scheme too, since 2 Oct 2026; app.css held it.
+does. The dark scheme too.
 
 THE TYPEFACE: one family as one stack, and one @font-face across the file's whole weight and
 width range, served from house/fonts/ (or the brand's folder, when it names a face) by app.py's
@@ -12,8 +12,8 @@ width range, served from house/fonts/ (or the brand's folder, when it names a fa
 
 THE DESK WEARS THESE AND NO OTHERS. A token emitted and never consumed is a palette entry
 pretending to be a treatment, so `tests/desk/test_routes.py` holds every one here to a use in
-app.css or the icon, and the report's own (its page ground, its labels) stay out. Its bars came
-in with Holdings' allocation (12 Oct 2026), which draws them as the report does.
+app.css or the icon, and the report's own (its page ground, its labels) stay out, except its
+bars, which Holdings' allocation draws as the report does.
 """
 from __future__ import annotations
 
