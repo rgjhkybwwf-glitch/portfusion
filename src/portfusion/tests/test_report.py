@@ -494,7 +494,22 @@ def test_the_income_table_is_the_income_the_return_counts_and_the_rest():
         t = b.income_summary(start=prev, end=d).set_index("account")
         assert t.loc["Total", list(D.POSITION_INCOME)].sum() == pytest.approx(
             float(b.position_income(start=prev, end=d).sum()), abs=0.01), d
-        assert list(t.index) == list(D.ACCOUNT_ORDER) + ["Total"]
+        assert list(t.index) == b.accounts_open(d) + ["Total"]
+
+
+@needs("quarter-nav", "income")
+def test_a_quarters_income_table_lists_the_accounts_open_then():
+    """A quarter's income table names the accounts its other tables do: one whose record had not
+    begun by the quarter end has no 0.00 line, as it has no NAV row, unless it earned in it."""
+    b = Book()
+    if not D.ACCOUNT_BEGINS:
+        pytest.skip("no account in this book opened after it")
+    for d in D.QSNAP_FROZEN:
+        start = b.quarter_opens(d)
+        earned = {r.account for r in D.ci_rows if start < str(r.date)[:10] <= d}
+        want = [a for a in D.ACCOUNT_ORDER if a in set(b.accounts_open(d)) | earned]
+        t = b.income_summary(start=start, end=d).set_index("account")
+        assert list(t.index)[:-1] == want, (d, list(t.index))
 
 
 @needs("quarter-nav", "buys")

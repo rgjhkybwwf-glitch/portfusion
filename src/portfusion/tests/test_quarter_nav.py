@@ -14,7 +14,7 @@ import pytest
 
 from portfusion.record import rules as D
 from portfusion.engine import Book
-from harness import needs
+from harness import an_account, holds, needs
 
 #: The register's spread-bet accounts, BY KIND — B2 moved kind onto the register, and a
 #: tuple of this book's names would judge another book's table against the wrong accounts.
@@ -142,16 +142,39 @@ def test_the_csv_store_agrees_with_the_record():
     whose journal began afresh had its engine's valuations tied to statements they never copied.
     A spread bet's notional is exposure, not NAV, and has no statement figure here."""
     from portfusion.history import accounts as A
-    statements, wrong = A.load(), []
-    for q in D.QUARTER_NAV:
+    wrong = _untied(A.load())
+    assert not wrong, wrong
+
+
+def _untied(statements, rows=None) -> list[str]:
+    """Each sourced quarter-NAV row its account's statement OF THAT DAY does not bear out. A
+    statement of another day describes another day: the latest on or before the quarter end tied a
+    row copied from a statement no longer on file to an older one's figure."""
+    from portfusion.history import accounts as A
+    of_day = {(s["account"], s["as_of"]): s for s in statements}
+    wrong = []
+    for q in D.QUARTER_NAV if rows is None else rows:
         if q.quality != "sourced" or q.contribution == "notional":
             continue
-        on_file = A.at(str(q.as_of), statements).get(q.account)
+        on_file = of_day.get((q.account, str(q.as_of)))
         stated = None if on_file is None else round(A.nav_component(on_file), 2)
         if stated != round(q.amount, 2):
-            wrong.append(f"{q.as_of} {q.account}: the record says {q.amount:,.2f}, the statement "
-                         + ("on file says nothing" if stated is None else f"{stated:,.2f}"))
-    assert not wrong, wrong
+            wrong.append(f"{q.as_of} {q.account}: the record says {q.amount:,.2f}, its statement "
+                         + ("of that day is not on file" if stated is None else f"{stated:,.2f}"))
+    return wrong
+
+
+@holds(an_account("shares"), what="a share account")
+def test_a_statement_of_another_day_does_not_tie_a_quarter_end():
+    """THE TIE ABOVE, shown to fire: a row copied from a share account's statement ties to that
+    day's, and not to the same figure stated the day before."""
+    row = D.QuarterNAV("2026-06-30", an_account("shares"), 1234.56, "positions at market",
+                       "sourced", "a statement of 30 Jun")
+    stated = {"account": row.account, "positions_value": 1234.56}
+    assert _untied([{**stated, "as_of": "2026-06-30"}], [row]) == []
+    assert _untied([{**stated, "as_of": "2026-06-29"}], [row]) == [
+        f"2026-06-30 {row.account}: the record says 1,234.56, its statement of that day is not "
+        f"on file"]
 
 
 @needs("quarter-nav")

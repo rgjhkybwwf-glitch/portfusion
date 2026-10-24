@@ -5,6 +5,12 @@ prints it.
 
 ## Unreleased
 
+- **A statement ties a quarter to its own day, and an unopened account needs none.**
+  A quarter's net asset value copied from a statement is tied to that day's statement, not the
+  latest before it. An account not yet open needs no statement at a quarter end, so the 0.00
+  stand-ins go from the statement history as they went from the quarter tables, and a quarter's
+  income table lists only the accounts open by its end. `portfusion migrate`'s clock move keeps
+  an offset an instant carries rather than reading it as UK time.
 - **A book can begin on any day (#7).** `portfusion init --begins` takes a day as well as a year.
   The year to date, the year to each quarter and the return since the start measure from the
   record's opening in the year it began, and its first quarter from that opening, named for it:

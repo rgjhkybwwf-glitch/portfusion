@@ -47,7 +47,6 @@ DEMO = HERE / "src" / "portfusion" / "demo"     # inside the app, which ships it
 
 NOT_ON_FILE = D.evidence_source("not-on-file", reference="invented for the demo")
 INVENTED = "Invented for the demo"
-UNFUNDED = "Account not yet funded"
 
 ISA, TRADING, SPREAD = "Voss ii ISA", "Voss ii Trading", "Voss IG Spread bet"
 #: The day each account opened that the record began without (accounts.csv `record_begins`): a quarter end
@@ -402,16 +401,14 @@ def _histories() -> dict[str, tuple[list[str], list[dict]]]:
                            ("USD", "2026-09-01", 1.317, "close"),
                            ("USD", "2026-09-15", 1.322, "close"),
                            ("USD", "2026-09-30", 1.33, "close"), ("SEK", "2026-09-30", 12.4, ""))]
-    unfunded_ig = {"account": SPREAD, "equity": 0.0, "source": UNFUNDED, "quality": "derived"}
+    # NO STATEMENT BEFORE AN ACCOUNT OPENS (`BEGINS`): there was nothing to state.
     statements = []
     for as_of, isa, trading in (("2025-12-31", 2000.0, None), ("2026-03-31", 4180.0, 1050.0),
                                 ("2026-06-30", 9377.27, 1100.0)):
         statements += [
-            {"account": ISA, "as_of": as_of, "positions_value": isa,
-             "source": NOT_ON_FILE, "quality": "derived"},
-            {"account": TRADING, "as_of": as_of, "positions_value": trading or 0.0,
-             "source": NOT_ON_FILE if trading else UNFUNDED, "quality": "derived"},
-            {**unfunded_ig, "as_of": as_of}]
+            {"account": a, "as_of": as_of, "positions_value": v, "source": NOT_ON_FILE,
+             "quality": "derived"}
+            for a, v in ((ISA, isa), (TRADING, trading)) if BEGINS.get(a, "") <= as_of]
     statements += [
         {"account": ISA, "as_of": "2026-09-30", "positions_value": 8260.53,
          "source": NOT_ON_FILE, "quality": "sourced"},

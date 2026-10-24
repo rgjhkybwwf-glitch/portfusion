@@ -479,12 +479,13 @@ def _to_the_penny(store: pathlib.Path) -> list[Change]:
 
 def _utc(at: str) -> str:
     """An instant on the record's clock (`schema.record_instant`): one marked `Z` as it is, one
-    with no zone read as UK wall-clock time. An hour the clocks going back make twice is read as
-    its first, summer, one."""
+    carrying its own offset moved by it, one with no zone read as UK wall-clock time. An hour the
+    clocks going back make twice is read as its first, summer, one."""
     if not at or at.endswith("Z"):
         return at
-    uk = _dt.datetime.fromisoformat(at).replace(tzinfo=zoneinfo.ZoneInfo("Europe/London"))
-    return uk.astimezone(_dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    t = _dt.datetime.fromisoformat(at)
+    t = t if t.tzinfo else t.replace(tzinfo=zoneinfo.ZoneInfo("Europe/London"))
+    return t.astimezone(_dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def _on_one_clock(store: pathlib.Path) -> list[Change]:
