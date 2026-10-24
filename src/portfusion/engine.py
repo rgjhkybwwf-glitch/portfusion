@@ -80,7 +80,7 @@ def load_store() -> dict[str, pd.DataFrame]:
         # current-prices.csv gained `struck` and `at`.
         "prices":    pd.DataFrame(D.CURRENT_PRICES,
                                   columns=D.schema.TABLES["current-prices"].header),
-        # THE APPEND-ONLY HISTORIES, so the engine can value a past date. Here, because
+        # THE HISTORIES, so the engine can value a past date. Here, because
         # load_store() is the ONE seam into the store.
         "history.prices": pd.read_csv(D.store_dir() / "price-history.csv", dtype={"date": str}),
         "history.fx":    pd.read_csv(D.store_dir() / "fx-history.csv", dtype={"date": str}),
@@ -2962,7 +2962,7 @@ class Book:
 
     #
     # Freeze the INPUTS, not the output: a report regenerates identically because the marks it
-    # valued at are dated rows in the histories, which only grow. Valuing a past quarter at today's
+    # valued at are dated rows in the histories, which keep every mark a dated figure takes. Valuing a past quarter at today's
     # prices would give a number that changes every time it is asked for.
     def _marks_at(self, as_of: str, window: int | None = None) -> tuple[dict, dict]:
         """Prices and FX as at a date — the newest mark ON OR BEFORE it, per instrument.

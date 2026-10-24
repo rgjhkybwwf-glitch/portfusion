@@ -9,6 +9,9 @@ prints it.
   its Symbol, so a dividend, which names its security as a deal does, is proposed rather than
   reported as a dealing line, with its ticker the Symbol's code in the book; blank where the book
   registers none.
+- **A history keeps only the marks a figure can take.** The price and FX histories keep every
+  close, each line's mark at every quarter end and opening, and its two newest; a live read
+  between them leaves at the next bank, and git keeps what it said. No figure moves.
 - **A statement ties a quarter to its own day, and an unopened account needs none.**
   A quarter's net asset value copied from a statement is tied to that day's statement, not the
   latest before it. An account not yet open needs no statement at a quarter end, so the 0.00

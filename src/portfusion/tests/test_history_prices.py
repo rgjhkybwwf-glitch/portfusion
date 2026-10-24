@@ -1,7 +1,7 @@
 """
 THE PRICE HISTORY.
 
-price-history.csv is append-only and exists so the book can answer "what was this
+price-history.csv exists so the book can answer "what was this
 worth on that date?" — which it could not do while CURRENT_PRICES was overwritten in
 place on every refresh.
 
@@ -263,3 +263,30 @@ def test_a_close_at_the_figure_of_its_days_live_read_still_replaces_it(store_cop
     on_file = [r for r in PH.load() if (r["mark_key"], r["date"]) == key]
     assert [r["struck"] for r in on_file] == ["close"], on_file
     assert PH.check() == []
+
+
+def test_a_history_keeps_only_the_marks_a_figure_can_take(store_copy, monkeypatch):
+    """THE NEXT BANK DROPS WHAT NO FIGURE CAN TAKE (`AppendOnlyCSV.kept()`). Kept: a close; the
+    mark on or before and the nearest to a quarter end (the year's before too), an opening and a
+    current reading; the live mark and the one before it, though a later close sits above them.
+    An invented line in an invented year, so no figure of the loaded book is near it."""
+    from types import SimpleNamespace
+    from portfusion.history import accounts as AH, fx as FX
+    monkeypatch.setattr(D, "ACCOUNT_BEGINS", {"An account": "2031-04-22"})
+    monkeypatch.setattr(D, "ac_rows", [SimpleNamespace(as_of="2031-08-05")])
+
+    def mark(day, struck="live"):
+        return {**_row("ZZZ", 1.0, struck, "test"), "date": f"2031-{day}"}
+
+    PH.save(PH.load() + [mark("01-03"), mark("01-06"), mark("03-31"), mark("04-14"),
+                         mark("04-15", "close"), mark("04-21"), mark("06-27"), mark("07-02"),
+                         mark("08-05"), mark("08-10"), mark("08-20"), mark("08-25", "close")])
+    PH._FILE.bank([mark("08-21")])
+    days = [r["date"][5:] for r in PH.load() if r["mark_key"] == "ZZZ"]
+    assert days == ["01-03", "03-31", "04-15", "04-21", "06-27", "07-02", "08-05", "08-20",
+                    "08-21", "08-25"], days
+    rate = {"currency": "ZZZ", "kind": "spot", "rate": 1.0, "quality": "sourced",
+            "struck": "live", "source": "test"}
+    rates = [{**rate, "date": f"2031-{d}"} for d in ("01-03", "01-06", "03-31", "08-20", "08-21")]
+    assert FX._FILE.kept(rates) == [rates[0], *rates[2:]], "the FX history keeps what prices keep"
+    assert AH._FILE.series is None, "an account's history is its value series, every row kept"

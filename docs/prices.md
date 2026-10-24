@@ -10,7 +10,9 @@ python3 -m portfusion.feeds.refresh --check  # are both histories current?
 ```
 
 The terminal sweep writes nothing. On the desk, the write banks the outgoing marks first, then
-lands the ticked marks and IG readings together.
+lands the ticked marks and IG readings together. A history keeps every close, each line's mark
+at every quarter end and opening, and its two newest; a live read between them leaves at the
+next bank, and git keeps it.
 
 ## When to run it
 

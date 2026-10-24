@@ -1,10 +1,11 @@
 """
-THE PRICE HISTORY — an append-only record of what each instrument was worth, and when.
+THE PRICE HISTORY — what each instrument was worth, and when.
 
 Current prices are replaced on every refresh, so without this file the book could say what was
-held on any past date but not what it was worth. Prices ACCUMULATE here, one row per line and
-day; a row is replaced only by a later read of its own day (`AppendOnlyCSV.restruck()`), and git
-keeps what it said. CSV because this is the table whose diff is worth reading.
+held on any past date but not what it was worth. Prices are banked here, one row per line and
+day; a row is replaced by a later read of its own day (`AppendOnlyCSV.restruck()`), a live read
+no figure can take leaves (`AppendOnlyCSV.kept()`), and git keeps what each said. CSV because
+this is the table whose diff is worth reading.
 
     python3 -m portfusion.history.prices --archive      # before a refresh: bank the current marks
     python3 -m portfusion.history.prices --show TSSL    # one instrument's series
@@ -44,7 +45,7 @@ QUALITIES = ("sourced", "derived")
 # --- the file itself ------------------------------------------------------------------------
 _FILE = AppendOnlyCSV(CSV_NAME, FIELDS, numeric=("price",), sort_key=lambda r: (r["date"], r["mark_key"]),
                       identity=("mark_key", "date"), nullable=False, figure="price",
-                      places=files.PLACES[CSV_NAME])
+                      places=files.PLACES[CSV_NAME], series=("mark_key",))
 
 load = _FILE.load
 save = _FILE.save
