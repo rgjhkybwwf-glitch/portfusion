@@ -12,7 +12,7 @@ row on load, and a bad cell fails naming its table, row and column.
 
 **Every event table reads as it happened**: by date, then the account's place in the register,
 then ticker (`record/order.py`). A door writes a row where its date puts it; the loader refuses a
-table out of that order, and `portfusion migrate` puts a book in it.
+table out of that order.
 
 **`journal.csv` is about the record, not part of it**: one row per write, never an input to a
 figure. A hand edit is allowed, and carries a `hand` journal row saying what it was, its `at` in

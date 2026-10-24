@@ -6,8 +6,8 @@ that order, numbered from one under a `T-` or an `E-`, so a backdated entry renu
 after it, and a sale's `closes` and an id a note quotes follow.
 
 Pure: cells in, cells out, holding no state and touching no file. The loader asks it whether a
-table is in order (`rules`), the doors where a row goes (`desk/doors/commit.py`), and a migration
-how to put a book in order (`migrations.py`), which is why it imports nothing of the record.
+table is in order (`rules`) and the doors where a row goes (`desk/doors/commit.py`), which is why
+it imports nothing of the record.
 """
 from __future__ import annotations
 

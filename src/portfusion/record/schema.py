@@ -795,9 +795,7 @@ def _held_to_places(field: Field, text: str) -> None:
     if any(c in text for c in "eE") or (len(digits) != field.places if field.exact
                                         else len(digits) > field.places):
         raise ValueError(f"{text!r} is not written to {'exactly' if field.exact else 'at most'} "
-                         f"{field.places} decimal places"
-                         + ("; `portfusion migrate` writes a book's money to the penny"
-                            if field.exact else ""))
+                         f"{field.places} decimal places")
 
 
 def figure(value, places: int, exact: bool = False) -> str:

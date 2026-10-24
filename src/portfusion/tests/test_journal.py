@@ -297,8 +297,7 @@ def test_a_row_written_before_the_opening_is_inside_it(store_copy):
 def test_an_instant_with_no_zone_is_refused(store_copy):
     """ONE CLOCK FOR THE JOURNAL: 13:30 in London summer time is 12:30 UTC, so a row written
     without its zone read as after a UTC 12:45 written fifteen minutes later. The record writes
-    UTC (`schema.record_instant()`), and a row without its `Z` is refused, naming
-    `portfusion migrate`, which writes a book's older ones so."""
+    UTC (`schema.record_instant()`), and a row without its `Z` is refused, naming it."""
     from portfusion.engine import Book
     from portfusion.record import rules, schema
     assert schema.record_instant().endswith("Z")
@@ -307,5 +306,5 @@ def test_an_instant_with_no_zone_is_refused(store_copy):
                     + "2026-07-01T13:30:00,hand,append,reasoning,0,old,a UK time with no zone\n",
                     encoding="utf-8")
     rules.reload_store()
-    with pytest.raises(ValueError, match=r"MARKED Z.*portfusion migrate.*2026-07-01T13:30:00"):
+    with pytest.raises(ValueError, match=r"MARKED Z; 1 are not: \['2026-07-01T13:30:00'\]$"):
         Book()

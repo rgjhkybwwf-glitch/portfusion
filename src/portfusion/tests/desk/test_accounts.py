@@ -1138,3 +1138,12 @@ def test_a_cash_of_nothing_is_still_shown_as_a_cash(holdings_on_the_bench):
     it["reading"].update(cash=0, total=float(it["reading"]["positions"]))
     gate = next(g for g in bench.gates(it) if g["name"] == "the account's reading")
     assert gate["ok"] and ", cash 0, total " in gate["detail"], gate["detail"]
+
+
+def test_a_reading_takes_its_cash_and_total_from_their_own_fields_alone():
+    """A holdings item's reading names its cash `cash` and its total `total`; a field by any other
+    name is not read as either."""
+    from portfusion.desk.intake import bench
+    r = bench.reading_of({"reading": {"account": "x", "positions": "1.00", "recon_cash": "2.00",
+                                      "stmt_value": "3.00"}})
+    assert (r["cash"], r["total"]) == (None, None), r
