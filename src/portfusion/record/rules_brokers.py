@@ -125,8 +125,9 @@ II_LEDGER_HEADER = ("Date", "Settlement Date", "Symbol", "Sedol", "Quantity", "P
 
 #: WHAT AN ii LEDGER LINE IS. ii prints no transaction code, so a line is known by how its
 #: Description BEGINS — literal, off ii's own ledgers, case aside, never a pattern guessed at. A
-#: line naming a security (a Symbol other than "n/a") is a DEALING line and is not here: its
-#: contract note is the entry, and the line is reported against it (`II_DEALING`).
+#: dividend's line names its security too. Any other line naming one (a Symbol other than "n/a")
+#: is a DEALING line and is not here: its contract note is the entry, and the line is reported
+#: against it (`II_DEALING`).
 II_LEDGER_LINES = (
     ("Gross interest", BrokerCode("income", "Cash interest",
                                   "interest paid on the cash balance")),
@@ -143,12 +144,14 @@ II_BROKER = "interactive investor"
 
 
 def ii_line(description: str, symbol: str) -> BrokerCode | None:
-    """What one ii ledger line is. None means unrecognised, which is a real answer."""
-    if str(symbol or "").strip().lower() not in ("", "n/a"):
-        return II_DEALING
+    """What one ii ledger line is, by its Description first and only then its Symbol. None means
+    unrecognised, which is a real answer."""
     text = " ".join(str(description or "").split()).lower()
-    return next((code for prefix, code in II_LEDGER_LINES if text.startswith(prefix.lower())),
+    code = next((code for prefix, code in II_LEDGER_LINES if text.startswith(prefix.lower())),
                 None)
+    if code is None and str(symbol or "").strip().lower() not in ("", "n/a"):
+        return II_DEALING
+    return code
 
 
 def ii_contract_number(reference: str) -> str:

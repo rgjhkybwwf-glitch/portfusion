@@ -5,6 +5,10 @@ prints it.
 
 ## Unreleased
 
+- **An ii dividend arrives knowing its line (#39).** The ii reader reads a line's description before
+  its Symbol, so a dividend, which names its security as a deal does, is proposed rather than
+  reported as a dealing line, with its ticker the Symbol's code in the book; blank where the book
+  registers none.
 - **A history keeps only the marks a figure can take.** The price and FX histories keep every
   close, each line's mark at every quarter end and opening, and its two newest; a live read
   between them leaves at the next bank, and git keeps what it said. No figure moves.

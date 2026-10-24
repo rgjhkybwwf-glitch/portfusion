@@ -175,6 +175,10 @@ LEDGER = (
     '02/02/2025,02/02/2025,n/a,n/a,n/a,n/a,PAYMENT Q0000000000000 N VOSS,n/a,"£2,200.00",n/a,'
     "£200.00\n"
     "11/01/2025,11/01/2025,n/a,n/a,n/a,n/a,Fee Transfer,n/a,£12.50,n/a,£400.00\n"
+    "10/02/2025,10/02/2025,KELS,B000001,n/a,n/a,Div 1000   KELSTRAND FOODS   ORD GBP0.01,n/a,"
+    "n/a,£40.00,£245.00\n"
+    "12/02/2025,12/02/2025,ZQX,B000002,n/a,n/a,Div 500   ZEQUAX MINING   ORD,n/a,n/a,£5.00,"
+    "£250.00\n"
     "01/02/2025,01/02/2025,n/a,n/a,n/a,n/a,Transfer in from somewhere,n/a,n/a,£5.00,£205.00\n"
 )
 
@@ -203,6 +207,11 @@ def test_an_ii_ledger_is_read_line_by_line_by_how_each_description_begins(ledger
     assert rows[("income", "Cash interest")]["amount"] == "1.50"
     assert rows[("income", "Fee")]["amount"] == "-12.50", "a fee is a negative income row"
     assert rows[("capital-movements", "")]["amount"] == "-2200.00"
+    # A DIVIDEND IS READ BY ITS DESCRIPTION, though its line names a Symbol as a deal's does, and
+    # its ticker is that Symbol's code in the book — blank where the book registers none.
+    divs = [r["values"] for r in out["rows"] if r["values"].get("category") == "Dividend"]
+    assert [(d["amount"], d.get("ticker", "")) for d in divs] == [("40.00", "KELS.L"),
+                                                                   ("5.00", "")], divs
     assert rows[("income", "Cash interest")]["date"] == "2025-02-25"
     # THE DEALING LINE IS REPORTED AGAINST ITS CONTRACT NOTE, never entered from the ledger.
     dealing = [s for s in out["seen"] if "ABC123" in s["line"]]
@@ -232,14 +241,15 @@ def test_a_ledger_in_another_currency_is_left_for_a_person(tmp_path, monkeypatch
     monkeypatch.setattr(read_rows, "bench_matching", lambda table, values: None)
     (tmp_path / "eur.csv").write_text(LEDGER.replace("£", "€"), encoding="utf-8")
     out = read_rows.read("eur.csv")
-    assert out["rows"] == [] and len(out["unrecognised"]) == 5
+    assert out["rows"] == [] and len(out["unrecognised"]) == 7
     assert all("EUR ledger" in u for u in out["unrecognised"])
 
 
 def test_the_ii_ledger_rules_are_literal_prefixes():
     from portfusion.record import rules as D
     assert D.ii_line("GROSS INTEREST", "n/a").category == "Cash interest", "case aside"
-    assert D.ii_line("Div 1000 KELSTRAND FOODS", "n/a").category == "Dividend"
+    assert D.ii_line("Div 1000 KELSTRAND FOODS", "KELS").category == "Dividend", \
+        "a dividend's line names its security, and is no deal"
     assert D.ii_line("anything at all", "QNLR") is D.II_DEALING
     assert D.ii_line("Interest adjustment", "n/a") is None, "a prefix, not a keyword search"
     assert D.ii_contract_number("12345ABC123") == "ABC123"
