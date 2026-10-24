@@ -5,6 +5,10 @@ prints it.
 
 ## Unreleased
 
+- **Every row naming a document is held to its class's one format**, in buys, sales, income,
+  capital movements and the account history: a trade's line its document's kind and date, every
+  other its class's template. The migration tests become one carry test and one refusals test,
+  a case per move.
 - **Money is written to the penny, a quote to at most six places.** Every figure column declares
   its places in the schema, every writer writes figures one way, and the loader refuses a sum of
   money not written to exactly two places or a price, rate or level written to more than six. A

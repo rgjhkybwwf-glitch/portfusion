@@ -359,6 +359,16 @@ def _source_prefix(ev):
     return ev.source.split("{")[0].strip()
 
 
+def template_pattern(ev):
+    """The pattern a line in this class's template matches, each slot a named group. An account
+    slot left empty is tidied away with its brackets, as `evidence_source()` writes it."""
+    pattern = _re.escape(ev.source).replace(_re.escape(" ({account})"),
+                                            "(?: \\((?P<account>.*?)\\))?")
+    for slot in ("reference", "date", "endpoint"):
+        pattern = pattern.replace(_re.escape("{%s}" % slot), f"(?P<{slot}>.*?)")
+    return _re.compile(pattern)
+
+
 def evidence_from_source(line):
     """The Evidence class that composed this `source` line, or None.
 

@@ -85,44 +85,245 @@ def test_a_book_in_the_old_shape_is_carried_to_this_release_and_can_be_put_back(
     assert now == old, "put_back() did not return the book to its old shape"
 
 
-def test_a_book_out_of_date_order_is_put_in_it_and_numbered_by_it(tmp_path):
-    """The record reads as it happened (`record/order.py`). A demo copy with its first buy moved to
-    the bottom, the sales out of order, and the retired `trade_id_floor` back in its settings is
-    carried to the demo exactly: every table in date order, every id its place, and a sale's
-    `closes` following the leg it named. Rows that tie on date, account and ticker keep their file
-    order, which is why the buy moved is one that ties with none."""
+# =====================================================================================
+# ONE MOVE BEHIND: a demo copy put back in the shape before one move, and carried to the demo.
+#
+# Each old shape below returns the journal rows its move must write, {(op, table): rows or None
+# for any count}, and the files allowed to differ from the demo's, each with what its rows must
+# still say (their headers must be the demo's).
+# =====================================================================================
+
+def _demo_copy(tmp_path):
     book = tmp_path / "book"
     for part in ("store", "_archive"):
         shutil.copytree(schema.DEMO / part, book / part)
-    store = book / "store"
+    return book, book / "store"
+
+
+def _write(path, rows):
+    out = io.StringIO()
+    csv.writer(out, lineterminator="\n").writerows(rows)
+    path.write_text(out.getvalue(), encoding="utf-8")
+
+
+def _rows_of(path):
+    with path.open(encoding="utf-8") as fh:
+        return list(csv.reader(fh))
+
+
+def _out_of_date_order(store):
+    """The first buy moved to the bottom and numbered after the rest, the sales reversed, and the
+    retired `trade_id_floor` back in settings. Rows that tie on date, account and ticker keep their
+    file order, which is why the buy moved is one that ties with none."""
     buys = (store / "buys.csv").read_text(encoding="utf-8").splitlines(keepends=True)
     sales = (store / "sales.csv").read_text(encoding="utf-8").splitlines(keepends=True)
-    # THE OLD NUMBERS: the first buy last and numbered after the rest, every other one down by one.
-    last = f"T-{len(buys) - 1:03d}"
-    old = {f"T-{n:03d}": f"T-{n - 1:03d}" for n in range(2, len(buys))} | {"T-001": last}
-    moved = [buys[0]] + [line.replace(line.split(",")[0], old[line.split(",")[0]], 1)
-                         for line in buys[2:] + buys[1:2]]
-    (store / "buys.csv").write_text("".join(moved), encoding="utf-8")
+    old = {f"T-{n:03d}": f"T-{n - 1:03d}" for n in range(2, len(buys))} | {
+        "T-001": f"T-{len(buys) - 1:03d}"}
+    (store / "buys.csv").write_text("".join(
+        [buys[0]] + [line.replace(line.split(",")[0], old[line.split(",")[0]], 1)
+                     for line in buys[2:] + buys[1:2]]), encoding="utf-8")
     (store / "sales.csv").write_text(re.sub(r",(T-\d{3}),", lambda m: f",{old[m.group(1)]},",
                                             "".join([sales[0], *reversed(sales[1:])])),
                                      encoding="utf-8")
     with (store / "settings.csv").open("a", encoding="utf-8") as fh:
         fh.write("trade_id_floor,T-050\n")
+    return {("replace", "buys"): None, ("replace", "sales"): None, ("remove", "settings"): "1"}, {}
+
+
+def _with_retired_tables(store):
+    """The two retired tables on file, and a journal row naming each."""
+    (store / "realisations.csv").write_text("ticker,realisation_id,opened,note\n", encoding="utf-8")
+    (store / "baseline-reconstruction.csv").write_text(
+        "as_of,ticker,qty,price,source,rate,quality\n", encoding="utf-8")
+    journal = store / "journal.csv"
+    lines = journal.read_text(encoding="utf-8").splitlines(keepends=True)
+    opening = next(ln for ln in lines if ",baseline,open," in ln)
+    journal.write_text("".join(lines[:2] + [
+        opening.replace(f",{opening.split(',')[3]},", f",{t},", 1)
+        for t in M.RETIRED] + lines[2:]), encoding="utf-8")
+    return {}, {}
+
+
+def _with_the_lifecycle(store):
+    """`status` in its five tables, a superseded row beside a live one in a history and in
+    quarter-nav, and a restated quarter's first row before its restatement."""
+    after = {"price-history": "struck", "fx-history": "struck", "account-statements": "quality",
+             "quarter-nav": "quality", "quarter-snapshots": "quality"}
+    for name, col in after.items():
+        rows = _rows_of(store / f"{name}.csv")
+        at = rows[0].index(col) + 1
+        rows = [rows[0][:at] + ["status"] + rows[0][at:]] + [
+            r[:at] + ["live"] + r[at:] for r in rows[1:]]
+        if name in ("price-history", "quarter-nav"):
+            rows.insert(2, rows[1][:at] + ["superseded"] + rows[1][at + 1:])
+        _write(store / f"{name}.csv", rows)
+    results = (store / "quarter-results.csv").read_text(encoding="utf-8").splitlines(keepends=True)
+    restated = next(i for i, ln in enumerate(results) if "Restated:" in ln)
+    results.insert(restated, results[restated].split('"Restated:')[0] + "\n")
+    (store / "quarter-results.csv").write_text("".join(results), encoding="utf-8")
+    return {("remove", "quarter-nav"): "1", ("remove", "quarter-results"): "1"}, {}
+
+
+def _a_share_reading():
+    """The demo's last-quarter cash reading the cash cases give a share reading for."""
+    return next(r for r in _rows_of(schema.DEMO / "store" / "cash-readings.csv")[1:]
+                if r[1] == "2026-09-30")
+
+
+def _with_cash_in_three_places(store):
+    """A statement's cash in its own column, the demo's cash readings bar the last quarter's gone
+    from `cash-readings`, an unfunded account's statement carrying a cash of zero, a spread bet's
+    carrying its funds as cash, and a share reading with its cash and total, at the figure of the
+    cash reading on file for its day, so it is matched and not doubled."""
+    cash = _rows_of(store / "cash-readings.csv")
+    held = {(r[0], r[1]): r[2] for r in cash[1:]}
+    rows = _rows_of(store / "account-statements.csv")
+    at = rows[0].index("positions_value") + 1
+    rows = [rows[0][:at] + ["cash"] + rows[0][at:]] + [
+        r[:at] + [held.get((r[0], r[1]), "0.0" if "not yet funded" in r[-2] and r[2] else
+                           "6500.0" if r[0].endswith("Spread bet") and r[1] == "2026-09-30" else "")]
+        + r[at:] for r in rows[1:]]
+    _write(store / "account-statements.csv", rows)
+    kept = [r for r in cash[1:] if r[1] == "2026-09-30"]
+    _write(store / "cash-readings.csv", cash[:1] + kept)
+    readings = _rows_of(store / "account-readings.csv")
+    at = readings[0].index("positions") + 1
+    share = _a_share_reading()
+    readings = [readings[0][:at] + ["stmt_value", "recon_cash"] + readings[0][at:]] + [
+        r[:at] + ["", ""] + r[at:] for r in readings[1:]] + [
+        [share[0], share[1], "", "100.00", f"{100.0 + float(share[2]):.2f}", share[2],
+         *[""] * (len(readings[0]) - 4 - 2), share[3], share[4]]]
+    _write(store / "account-readings.csv", readings)
+    # THE READING KEEPS ITS STOCK where its cash and total leave.
+    return ({("append", "cash-readings"): str(len(cash) - 1 - len(kept))},
+            {"account-readings.csv": lambda rows: rows[-1][:4] == [share[0], share[1], "", "100.00"]})
+
+
+def _money_as_it_came(store):
+    """Money written as it came — 1234.5, 0.0 — in the record's tables and the account history."""
+    from portfusion.history import files
+    money = {t.name: [f.name for f in t.fields if f.exact] for t in schema.TABLES.values()}
+    money["account-statements"] = list(files.ACCOUNT_MONEY)
+    touched = set()
+    for name, cols in money.items():
+        rows = _rows_of(store / f"{name}.csv")
+        at = [rows[0].index(c) for c in cols]
+        for r in rows[1:]:
+            for j in at:
+                if r[j].endswith("0") and "." in r[j]:
+                    r[j] = r[j][:-1]
+                    touched.add(name)
+        _write(store / f"{name}.csv", rows)
+    assert {"buys", "account-statements"} <= touched, touched
+    return {("replace", t): None for t in touched if t in schema.TABLES}, {}
+
+
+@pytest.mark.parametrize("step, old_shape", [
+    pytest.param(1, _out_of_date_order, id="date order and ids"),
+    pytest.param(2, _with_retired_tables, id="two tables retired"),
+    pytest.param(3, _with_the_lifecycle, id="the lifecycle column"),
+    pytest.param(4, _with_cash_in_three_places, id="cash in three places"),
+    pytest.param(5, _money_as_it_came, id="money as it came")])
+def test_a_book_one_move_behind_is_carried_to_the_demo(tmp_path, step, old_shape):
+    """The move planned is that one, and it lands the demo exactly: every file the demo's bytes,
+    no file the demo lacks, the journal the demo's plus the rows the move must write, and nothing
+    left to move after it."""
+    book, store = _demo_copy(tmp_path)
+    journal, may_differ = old_shape(store)
 
     m, changes = M.plan(book)
-    assert m is M.MIGRATIONS[1] and changes, "a book out of date order planned no move"
+    assert m is M.MIGRATIONS[step] and changes, f"planned {m and m.issue!r}"
     M.write(changes)
-    for p in sorted((schema.DEMO / "store").glob("*.csv")):
-        if p.name != "journal.csv":
-            assert (store / p.name).read_bytes() == p.read_bytes(), f"{p.name} moved wrong"
-    # THE JOURNAL SAYS WHAT MOVED, after the demo's own rows, or the audit would find rows no
-    # route accounts for.
+
+    demo = schema.DEMO / "store"
+    assert sorted(p.name for p in store.glob("*.csv")) == sorted(p.name for p in demo.glob("*.csv"))
+    for p in sorted(demo.glob("*.csv")):
+        got, want = (store / p.name).read_bytes(), p.read_bytes()
+        if p.name in may_differ:
+            assert got.splitlines()[0] == want.splitlines()[0], f"{p.name}'s header moved wrong"
+            assert may_differ[p.name](_rows_of(store / p.name)), f"{p.name}'s rows moved wrong"
+        elif p.name != "journal.csv":
+            assert got == want, f"{p.name} moved wrong"
     said = (store / "journal.csv").read_text(encoding="utf-8")
-    assert said.startswith((schema.DEMO / "store" / "journal.csv").read_text(encoding="utf-8"))
-    added = [r for r in csv.reader(io.StringIO(said)) if r[1] == "migrate"]
-    assert {(r[2], r[3]) for r in added} == {
-        ("replace", "buys"), ("replace", "sales"), ("remove", "settings")}, added
-    assert M.plan(book) == (None, []), "a book in date order still planned a move"
+    assert said.startswith((demo / "journal.csv").read_text(encoding="utf-8"))
+    added = {(r[2], r[3]): r[4] for r in csv.reader(io.StringIO(said)) if r[1] == "migrate"}
+    assert set(added) == set(journal) and all(
+        added[k] == n for k, n in journal.items() if n is not None), added
+    assert M.plan(book) == (None, []), "a book in this release's shape still planned a move"
+
+
+# =====================================================================================
+# WHAT A MOVE WILL NOT PLACE: refused by name, to be moved by hand, writing nothing.
+# =====================================================================================
+
+def _two_cash_figures_for_one_day(store):
+    """A reading's cash, adding up with its stock to its total, at another figure than the cash
+    reading of its day."""
+    _with_cash_in_three_places(store)
+    share, path = _a_share_reading(), store / "account-readings.csv"
+    cash = float(share[2])
+    path.write_text(path.read_text(encoding="utf-8").replace(
+        f",{100.0 + cash:.2f},{share[2]},", f",{101.0 + cash:.2f},{cash + 1:.2f},", 1),
+        encoding="utf-8")
+
+
+def _a_total_its_stock_and_cash_do_not_make(store):
+    """The total leaves with its column, so one that never agreed would take the only sign that a
+    figure was mistyped with it."""
+    _with_cash_in_three_places(store)
+    share, path = _a_share_reading(), store / "account-readings.csv"
+    path.write_text(path.read_text(encoding="utf-8").replace(
+        f",{100.0 + float(share[2]):.2f},", ",1.00,", 1), encoding="utf-8")
+
+
+def _statement_cash_no_document_names(store):
+    """A statement's cash whose source names no class, so it cannot say what retrieves it."""
+    _with_cash_in_three_places(store)
+    rows = _rows_of(store / "account-statements.csv")
+    row = next(r for r in rows[1:] if r[rows[0].index("cash")] not in ("", "0.0")
+               and not r[0].endswith("Spread bet"))
+    row[rows[0].index("source")], row[rows[0].index("cash")] = "a figure typed in", "12.34"
+    _write(store / "account-statements.csv", rows)
+
+
+def _a_sum_beyond_pennies(store):
+    """A sum of money with more places than pennies: writing it to the penny would move it."""
+    rows = _rows_of(store / "capital-movements.csv")
+    rows[1][rows[0].index("amount")] = "12.345"
+    _write(store / "capital-movements.csv", rows)
+
+
+@pytest.mark.parametrize("break_it, says", [
+    pytest.param(_two_cash_figures_for_one_day, "cash-readings.csv says", id="two cash figures"),
+    pytest.param(_a_total_its_stock_and_cash_do_not_make, "is not its total", id="a total"),
+    pytest.param(_statement_cash_no_document_names, "names no evidence class", id="no document"),
+    pytest.param(_a_sum_beyond_pennies, "not a sum to the penny", id="beyond pennies")])
+def test_a_figure_a_move_cannot_place_is_refused_by_name(tmp_path, break_it, says):
+    book, store = _demo_copy(tmp_path)
+    break_it(store)
+    before = {p: p.read_bytes() for p in store.iterdir()}
+    with pytest.raises(ValueError, match=f"{says}.*move it by hand"):
+        M.plan(book)
+    assert {p: p.read_bytes() for p in store.iterdir()} == before, "a refused plan wrote"
+
+
+def test_cash_a_document_never_stated_is_not_made_a_cash_reading(tmp_path):
+    """A statement banked off ii's holdings export, which states no cash, carrying a cash figure
+    another document gave: the column leaves and no cash reading is credited to the export."""
+    book, store = _demo_copy(tmp_path)
+    _with_cash_in_three_places(store)
+    rows = _rows_of(store / "account-statements.csv")
+    isa = next(r for r in rows[1:] if r[1] == "2026-06-30" and r[rows[0].index("cash")])
+    isa[rows[0].index("source")] = f"ii valuation 30 Jun 2026 14:05 ({isa[0]})"
+    _write(store / "account-statements.csv", rows)
+    cash = store / "cash-readings.csv"
+    before = cash.read_text(encoding="utf-8")
+
+    _m, changes = M.plan(book)
+    moved = next(c for c in changes if c.to == cash)
+    assert f"{isa[0]},2026-06-30," not in moved.text, "the export was credited with a cash figure"
+    assert any("does not state" in line for c in changes for line in c.said), changes
+    assert moved.text.count("\n") == before.count("\n") + 4, "the other figures did not come"
 
 
 def test_a_book_two_moves_behind_is_carried_through_both_before_it_is_opened(tmp_path):
@@ -145,214 +346,6 @@ def test_a_book_two_moves_behind_is_carried_through_both_before_it_is_opened(tmp
     assert M.plan(book) == (None, [])
     M.put_back(before)
     assert {p: p.read_bytes() for p in book.rglob("*") if p.is_file()} == old
-
-
-def test_a_retired_table_leaves_with_the_journal_rows_that_name_it(tmp_path):
-    """A demo copy holding the two retired tables, as a book made before they went does, and
-    journal rows naming them: the files go and so do those rows, and the book is the demo again."""
-    book = tmp_path / "book"
-    for part in ("store", "_archive"):
-        shutil.copytree(schema.DEMO / part, book / part)
-    store = book / "store"
-    (store / "realisations.csv").write_text("ticker,realisation_id,opened,note\n", encoding="utf-8")
-    (store / "baseline-reconstruction.csv").write_text(
-        "as_of,ticker,qty,price,source,rate,quality\n", encoding="utf-8")
-    journal = store / "journal.csv"
-    lines = journal.read_text(encoding="utf-8").splitlines(keepends=True)
-    opening = next(ln for ln in lines if ",baseline,open," in ln)
-    journal.write_text("".join(lines[:2] + [
-        opening.replace(f",{opening.split(',')[3]},", f",{t},", 1)
-        for t in M.RETIRED] + lines[2:]), encoding="utf-8")
-
-    m, changes = M.plan(book)
-    assert m is M.MIGRATIONS[2] and changes, "the retired tables planned no move"
-    M.write(changes)
-    for name in M.RETIRED:
-        assert not (store / f"{name}.csv").exists(), f"{name}.csv is still in the store"
-    assert journal.read_bytes() == (schema.DEMO / "store" / "journal.csv").read_bytes()
-    assert M.plan(book) == (None, []), "a book with no retired table still planned a move"
-
-
-def test_a_book_with_the_lifecycle_loses_the_column_and_every_row_it_kept_beside_another(tmp_path):
-    """A demo copy in the shape before a correction replaced its row: `status` in its five tables, a
-    superseded row beside a live one in a history and in quarter-nav, and a restated quarter's
-    first row before its restatement. The column goes, those rows with it, the journal says so of
-    the tables it counts, and the book is the demo again."""
-    book = tmp_path / "book"
-    for part in ("store", "_archive"):
-        shutil.copytree(schema.DEMO / part, book / part)
-    store = book / "store"
-    after = {"price-history": "struck", "fx-history": "struck", "account-statements": "quality",
-             "quarter-nav": "quality", "quarter-snapshots": "quality"}
-    for name, col in after.items():
-        rows = list(csv.reader(io.StringIO((store / f"{name}.csv").read_text(encoding="utf-8"))))
-        at = rows[0].index(col) + 1
-        rows = [rows[0][:at] + ["status"] + rows[0][at:]] + [r[:at] + ["live"] + r[at:] for r in rows[1:]]
-        if name in ("price-history", "quarter-nav"):
-            rows.insert(2, rows[1][:at] + ["superseded"] + rows[1][at + 1:])
-        out = io.StringIO()
-        csv.writer(out, lineterminator="\n").writerows(rows)
-        (store / f"{name}.csv").write_text(out.getvalue(), encoding="utf-8")
-    results = (store / "quarter-results.csv").read_text(encoding="utf-8").splitlines(keepends=True)
-    restated = next(i for i, ln in enumerate(results) if "Restated:" in ln)
-    results.insert(restated, results[restated].split('"Restated:')[0] + "\n")
-    (store / "quarter-results.csv").write_text("".join(results), encoding="utf-8")
-
-    m, changes = M.plan(book)
-    assert m is M.MIGRATIONS[3] and changes, "a book with the lifecycle planned no move"
-    M.write(changes)
-    for p in sorted((schema.DEMO / "store").glob("*.csv")):
-        if p.name != "journal.csv":
-            assert (store / p.name).read_bytes() == p.read_bytes(), f"{p.name} moved wrong"
-    said = (store / "journal.csv").read_text(encoding="utf-8")
-    assert said.startswith((schema.DEMO / "store" / "journal.csv").read_text(encoding="utf-8"))
-    added = [r for r in csv.reader(io.StringIO(said)) if r[1] == "migrate"]
-    assert {(r[2], r[3], r[4]) for r in added} == {
-        ("remove", "quarter-nav", "1"), ("remove", "quarter-results", "1")}, added
-    assert M.plan(book) == (None, []), "a book without the lifecycle still planned a move"
-
-
-def _with_cash_in_three_places(tmp_path):
-    """A demo copy in the shape before cash had one place: a statement's cash in its own column,
-    the demo's cash readings bar the last quarter's gone from `cash-readings`, an unfunded
-    account's statement carrying a cash of zero, a spread bet's statement carrying its funds as
-    cash, and a share reading with its cash and total."""
-    book = tmp_path / "book"
-    for part in ("store", "_archive"):
-        shutil.copytree(schema.DEMO / part, book / part)
-    store = book / "store"
-    cash = list(csv.reader((store / "cash-readings.csv").open(encoding="utf-8")))
-    held = {(r[0], r[1]): r[2] for r in cash[1:]}
-    rows = list(csv.reader((store / "account-statements.csv").open(encoding="utf-8")))
-    at = rows[0].index("positions_value") + 1
-    rows = [rows[0][:at] + ["cash"] + rows[0][at:]] + [
-        r[:at] + [held.get((r[0], r[1]), "0.0" if "not yet funded" in r[-2] and r[2] else
-                           "6500.0" if r[0].endswith("Spread bet") and r[1] == "2026-09-30" else "")]
-        + r[at:] for r in rows[1:]]
-    _write(store / "account-statements.csv", rows)
-    _write(store / "cash-readings.csv", cash[:1] + [r for r in cash[1:] if r[1] == "2026-09-30"])
-    readings = list(csv.reader((store / "account-readings.csv").open(encoding="utf-8")))
-    at = readings[0].index("positions") + 1
-    share = next(r for r in cash[1:] if r[1] == "2026-09-30")
-    readings = [readings[0][:at] + ["stmt_value", "recon_cash"] + readings[0][at:]] + [
-        r[:at] + ["", ""] + r[at:] for r in readings[1:]] + [
-        [share[0], share[1], "", "100.00", f"{100.0 + float(share[2]):.2f}", share[2],
-         *[""] * (len(readings[0]) - 4 - 2), share[3], share[4]]]
-    _write(store / "account-readings.csv", readings)
-    return book, store, share
-
-
-def _write(path, rows):
-    out = io.StringIO()
-    csv.writer(out, lineterminator="\n").writerows(rows)
-    path.write_text(out.getvalue(), encoding="utf-8")
-
-
-def test_a_share_accounts_cash_is_carried_into_its_cash_readings(tmp_path):
-    """Each statement's cash becomes a cash reading of its day, its class and reference read back
-    out of its source; a reading's cash on file at the same figure is not doubled; a zero no
-    document names goes; the columns leave; and the journal counts what came in."""
-    book, store, share = _with_cash_in_three_places(tmp_path)
-
-    m, changes = M.plan(book)
-    assert m is M.MIGRATIONS[4] and changes, "cash in three places planned no move"
-    M.write(changes)
-    for name in ("cash-readings.csv", "account-statements.csv"):
-        assert (store / name).read_bytes() == (schema.DEMO / "store" / name).read_bytes(), name
-    readings = list(csv.reader((store / "account-readings.csv").open(encoding="utf-8")))
-    assert readings[0] == schema.TABLES["account-readings"].header
-    assert readings[-1][:4] == [share[0], share[1], "", "100.00"], readings[-1]
-    added = [r for r in csv.reader((store / "journal.csv").open(encoding="utf-8"))
-             if r[1] == "migrate"]
-    want = len(list(csv.reader((schema.DEMO / "store" / "cash-readings.csv").open()))) - 3
-    assert [(r[2], r[3], r[4]) for r in added] == [("append", "cash-readings", str(want))], added
-    assert M.plan(book) == (None, []), "a book with cash in one place still planned a move"
-
-
-def test_a_readings_total_its_stock_and_cash_do_not_make_is_moved_by_hand(tmp_path):
-    """The total leaves with the column, so a reading whose three figures never agreed is refused
-    rather than losing the one sign that a figure was mistyped."""
-    book, store, share = _with_cash_in_three_places(tmp_path)
-    path = store / "account-readings.csv"
-    total = f"{100.0 + float(share[2]):.2f}"
-    path.write_text(path.read_text(encoding="utf-8").replace(f",{total},", ",1.0,", 1),
-                    encoding="utf-8")
-    with pytest.raises(ValueError, match="is not its total"):
-        M.plan(book)
-
-
-def test_cash_a_document_never_stated_is_not_made_a_cash_reading(tmp_path):
-    """A statement banked off ii's holdings export, which states no cash, carrying a cash figure
-    another document gave: the column leaves and no cash reading is credited to the export."""
-    book, store, _share = _with_cash_in_three_places(tmp_path)
-    path = store / "account-statements.csv"
-    rows = list(csv.reader(path.open(encoding="utf-8")))
-    at = rows[0].index("source")
-    isa = next(r for r in rows[1:] if r[1] == "2026-06-30" and r[rows[0].index("cash")])
-    isa[at] = f"ii valuation 30 Jun 2026 14:05 ({isa[0]})"
-    _write(path, rows)
-    cash = store / "cash-readings.csv"
-    before = cash.read_text(encoding="utf-8")
-
-    _m, changes = M.plan(book)
-    moved = next(c for c in changes if c.to == cash)
-    assert f"{isa[0]},2026-06-30," not in moved.text, "the export was credited with a cash figure"
-    assert any("does not state" in line for c in changes for line in c.said), changes
-    assert moved.text.count("\n") == before.count("\n") + 4, "the other figures did not come"
-
-
-def test_two_cash_figures_for_one_day_are_moved_by_hand(tmp_path):
-    """A reading's cash at another figure than the cash reading of its day: one of them is wrong,
-    so the migration refuses and names the row, writing nothing."""
-    book, store, share = _with_cash_in_three_places(tmp_path)
-    path = store / "account-readings.csv"
-    path.write_text(path.read_text(encoding="utf-8").replace(
-        f",{share[2]},", f",{float(share[2]) + 1},", 1), encoding="utf-8")
-    with pytest.raises(ValueError, match="move it by hand"):
-        M.plan(book)
-
-
-def test_every_sum_of_money_is_written_to_the_penny(tmp_path):
-    """A demo copy with its money written as it came — 1234.5, 0.0 — in the record's tables and the
-    account history is carried to the demo exactly, the journal saying which tables were rewritten,
-    and a sum with more places than pennies is refused, to be moved by hand."""
-    from portfusion.history import files
-    book = tmp_path / "book"
-    for part in ("store", "_archive"):
-        shutil.copytree(schema.DEMO / part, book / part)
-    store = book / "store"
-    money = {t.name: [f.name for f in t.fields if f.exact] for t in schema.TABLES.values()}
-    money["account-statements"] = list(files.ACCOUNT_MONEY)
-    touched = set()
-    for name, cols in money.items():
-        path = store / f"{name}.csv"
-        rows = list(csv.reader(path.open(encoding="utf-8")))
-        at = [rows[0].index(c) for c in cols]
-        for r in rows[1:]:
-            for j in at:
-                if r[j].endswith("0") and "." in r[j]:
-                    r[j] = r[j][:-1]
-                    touched.add(name)
-        _write(path, rows)
-    assert {"buys", "account-statements"} <= touched, touched
-
-    m, changes = M.plan(book)
-    assert m is M.MIGRATIONS[5] and changes, "money as it came planned no move"
-    M.write(changes)
-    for p in sorted((schema.DEMO / "store").glob("*.csv")):
-        if p.name != "journal.csv":
-            assert (store / p.name).read_bytes() == p.read_bytes(), f"{p.name} moved wrong"
-    added = {r[3] for r in csv.reader((store / "journal.csv").open(encoding="utf-8"))
-             if r[1] == "migrate"}
-    assert added == touched - {"account-statements"}, added
-    assert M.plan(book) == (None, [])
-
-    path = store / "capital-movements.csv"
-    rows = list(csv.reader(path.open(encoding="utf-8")))
-    rows[1][rows[0].index("amount")] = "12.345"
-    _write(path, rows)
-    with pytest.raises(ValueError, match="move it by hand"):
-        M.plan(book)
 
 
 def test_a_books_check_naming_a_retired_table_is_listed_to_move_by_hand(tmp_path):
