@@ -346,10 +346,7 @@ def _evidence_of(source: str, account: str) -> tuple[str, str] | None:
     ev = rules_evidence.evidence_from_source(source)
     if ev is None:
         return None
-    pattern = re.escape(ev.source)
-    for slot in ("reference", "date", "account", "endpoint"):
-        pattern = pattern.replace(re.escape("{%s}" % slot), f"(?P<{slot}>.*?)")
-    m = re.fullmatch(pattern, source)
+    m = rules_evidence.template_pattern(ev).fullmatch(source)
     ref = (m.group("reference") or "").strip() if m and "reference" in m.groupdict() else ""
     made = rules_evidence.evidence_source(ev.key, reference=ref, account=account)
     return (ev.key, ref) if ref and made == source else None

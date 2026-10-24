@@ -89,7 +89,8 @@ def test_a_book_in_the_old_shape_is_carried_to_this_release_and_can_be_put_back(
 # ONE MOVE BEHIND: a demo copy put back in the shape before one move, and carried to the demo.
 #
 # Each old shape below returns the journal rows its move must write, {(op, table): rows or None
-# for any count}, and the files allowed to differ from the demo's (their headers must not).
+# for any count}, and the files allowed to differ from the demo's, each with what its rows must
+# still say (their headers must be the demo's).
 # =====================================================================================
 
 def _demo_copy(tmp_path):
@@ -106,7 +107,8 @@ def _write(path, rows):
 
 
 def _rows_of(path):
-    return list(csv.reader(path.open(encoding="utf-8")))
+    with path.open(encoding="utf-8") as fh:
+        return list(csv.reader(fh))
 
 
 def _out_of_date_order(store):
@@ -125,7 +127,7 @@ def _out_of_date_order(store):
                                      encoding="utf-8")
     with (store / "settings.csv").open("a", encoding="utf-8") as fh:
         fh.write("trade_id_floor,T-050\n")
-    return {("replace", "buys"): None, ("replace", "sales"): None, ("remove", "settings"): "1"}, set()
+    return {("replace", "buys"): None, ("replace", "sales"): None, ("remove", "settings"): "1"}, {}
 
 
 def _with_retired_tables(store):
@@ -139,7 +141,7 @@ def _with_retired_tables(store):
     journal.write_text("".join(lines[:2] + [
         opening.replace(f",{opening.split(',')[3]},", f",{t},", 1)
         for t in M.RETIRED] + lines[2:]), encoding="utf-8")
-    return {}, set()
+    return {}, {}
 
 
 def _with_the_lifecycle(store):
@@ -159,7 +161,7 @@ def _with_the_lifecycle(store):
     restated = next(i for i, ln in enumerate(results) if "Restated:" in ln)
     results.insert(restated, results[restated].split('"Restated:')[0] + "\n")
     (store / "quarter-results.csv").write_text("".join(results), encoding="utf-8")
-    return {("remove", "quarter-nav"): "1", ("remove", "quarter-results"): "1"}, set()
+    return {("remove", "quarter-nav"): "1", ("remove", "quarter-results"): "1"}, {}
 
 
 def _a_share_reading():
@@ -192,7 +194,9 @@ def _with_cash_in_three_places(store):
         [share[0], share[1], "", "100.00", f"{100.0 + float(share[2]):.2f}", share[2],
          *[""] * (len(readings[0]) - 4 - 2), share[3], share[4]]]
     _write(store / "account-readings.csv", readings)
-    return {("append", "cash-readings"): str(len(cash) - 1 - len(kept))}, {"account-readings.csv"}
+    # THE READING KEEPS ITS STOCK where its cash and total leave.
+    return ({("append", "cash-readings"): str(len(cash) - 1 - len(kept))},
+            {"account-readings.csv": lambda rows: rows[-1][:4] == [share[0], share[1], "", "100.00"]})
 
 
 def _money_as_it_came(store):
@@ -211,7 +215,7 @@ def _money_as_it_came(store):
                     touched.add(name)
         _write(store / f"{name}.csv", rows)
     assert {"buys", "account-statements"} <= touched, touched
-    return {("replace", t): None for t in touched if t in schema.TABLES}, set()
+    return {("replace", t): None for t in touched if t in schema.TABLES}, {}
 
 
 @pytest.mark.parametrize("step, old_shape", [
@@ -237,6 +241,7 @@ def test_a_book_one_move_behind_is_carried_to_the_demo(tmp_path, step, old_shape
         got, want = (store / p.name).read_bytes(), p.read_bytes()
         if p.name in may_differ:
             assert got.splitlines()[0] == want.splitlines()[0], f"{p.name}'s header moved wrong"
+            assert may_differ[p.name](_rows_of(store / p.name)), f"{p.name}'s rows moved wrong"
         elif p.name != "journal.csv":
             assert got == want, f"{p.name} moved wrong"
     said = (store / "journal.csv").read_text(encoding="utf-8")

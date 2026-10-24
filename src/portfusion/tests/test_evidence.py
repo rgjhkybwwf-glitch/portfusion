@@ -186,18 +186,12 @@ def _documented(D, table):
             if (ev := D.evidence_from_source(r["source"])) and ev.retrieval != "none"]
 
 
-def _in_its_template(ev, line: str) -> bool:
-    """Is `line` its class's template with the slots filled? An empty account slot is tidied away
-    with its brackets, as `rules_evidence.evidence_source()` writes it."""
-    import re
-    pattern = re.escape(ev.source).replace(r"\ \(\{account\}\)", r"(?: \(.+?\))?")
-    for slot in ("reference", "date", "account", "endpoint"):
-        pattern = pattern.replace(re.escape("{%s}" % slot), ".+?")
-    return re.fullmatch(pattern, line) is not None
-
-
-@pytest.mark.parametrize("table", SOURCED)
-def test_every_row_names_its_document_in_its_class_format(D, table):
+@pytest.mark.parametrize("table, audit", [
+    *(pytest.param(t, False, id=t) for t in SOURCED),
+    # THE SAME, OF THE LOADED BOOK'S OWN ROWS, which `portfusion record` asks (a table with no such
+    # row has nothing to put right there).
+    *(pytest.param(t, True, id=f"{t}, the book", marks=pytest.mark.audit) for t in SOURCED)])
+def test_every_row_names_its_document_in_its_class_format(D, table, audit):
     """The owner, 12 Oct 2026: "I want one format going forward for all accounts."
 
     A trade or sale's `source` is its document's kind, in its class's own words, and the
@@ -209,7 +203,7 @@ def test_every_row_names_its_document_in_its_class_format(D, table):
     that cites no document (not on file, a derivation) says what it is instead."""
     import re
     documented = _documented(D, table)
-    if not documented:
+    if not documented and not audit:
         pytest.skip(f"no {table} row on file names a document — this would assert nothing")
     wrong, unnumbered = [], []
     for rid, row, ev in documented:
@@ -220,7 +214,7 @@ def test_every_row_names_its_document_in_its_class_format(D, table):
             if ev.key in D.REFERENCE_IS_THE_DEAL and not (row["broker_ref"] or "").strip():
                 unnumbered.append(rid)
         else:
-            fits = _in_its_template(ev, row["source"])
+            fits = D.template_pattern(ev).fullmatch(row["source"])
         if not fits:
             wrong.append(f"{rid}: {row['source']!r}")
     assert not wrong, f"not in its class's one format: {wrong}"
