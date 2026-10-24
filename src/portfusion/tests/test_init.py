@@ -160,6 +160,21 @@ page = render("2026-06-30")
 assert "<h1>Q2 2026, from 14 May</h1>" in page and "2026 to 30 Jun, from 14 May" in page
 from portfusion.desk import engine as desk
 assert desk.reports()["quarters"][-1]["quarter"] == "Q2 2026, from 14 May", desk.reports()
+# A RESTATEMENT OF THAT QUARTER JOURNALS IT BY THE SAME NAME. The engine's strike is moved £100,
+# so there is something to restate.
+from portfusion.desk.doors import freeze
+from portfusion.record import schema
+real = Book.freeze_rows
+def moved(self, as_of, accounts=None, restated=None):
+    rows = real(self, as_of, accounts=accounts, restated=restated)
+    for r in rows["quarter_nav"]:
+        r["amount"] = round(r["amount"] + 100.0, 2)
+    return rows
+Book.freeze_rows = moved
+account = next(r[1] for r in schema.load("quarter-nav") if str(r[0]) == "2026-06-30")
+freeze.restate({"2026-06-30": [account]}, "a test moved it")
+said = [r[-1] for r in schema.load("journal") if r[3] == "quarter-results"][-2:]
+assert said[0].startswith("Q2 2026, from 14 May: ") and said[1].startswith("Q3 2026: "), said
 """
 
 
