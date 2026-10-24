@@ -172,6 +172,12 @@ _GIT_NAMED = {"GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@example.test",
               "GIT_COMMITTER_NAME": "t", "GIT_COMMITTER_EMAIL": "t@example.test"}
 
 
+def _git_env() -> dict:
+    """Git under the throwaway name, with this run's portfusion on PATH for the book's hooks."""
+    return {**os.environ, **_GIT_NAMED, "PATH": os.pathsep.join(
+        [str(pathlib.Path(sys.executable).parent), "/usr/bin", "/bin"])}
+
+
 def _started(tmp_path, **made):
     """A new book, made as `create()` is told, with its history begun under a throwaway name."""
     from portfusion.init import start_history
@@ -236,8 +242,7 @@ def test_a_new_book_refuses_a_push_that_takes_anything_from_main(tmp_path):
     deletion or a rewrite of `main`, and a host may protect no branch, so a force push over a
     book's record went through. The guard is the app's, run by the portfusion the book runs."""
     book = _started(tmp_path)
-    env = {**os.environ, **_GIT_NAMED, "PATH": os.pathsep.join(
-        [str(pathlib.Path(sys.executable).parent), "/usr/bin", "/bin"])}
+    env = _git_env()
     env.pop("MAIN_REWRITE", None)
 
     def git(*args):
@@ -270,8 +275,7 @@ def test_a_book_made_to_push_on_commit_says_when_a_commit_is_not_backed_up(tmp_p
     been pushed. It never fails a commit, and a book made without the option has no such hook."""
     assert not (create(tmp_path / "plain") / ".githooks" / "post-commit").exists()
     book = _started(tmp_path, push_on_commit=True)
-    env = {**os.environ, **_GIT_NAMED, "PATH": os.pathsep.join(
-        [str(pathlib.Path(sys.executable).parent), "/usr/bin", "/bin"])}
+    env = _git_env()
 
     def commit(name):
         """What the commit says (git hands a hook's output to stderr); it must never fail."""
@@ -295,11 +299,11 @@ def test_the_loaded_book_holds_what_init_writes_and_its_hooks_are_the_releases(t
     every new book now gets, or keep a hook or ignore list the release has since changed. A new
     book is made beside it and the two compared: every file it holds must be there, and its
     `.gitignore` and hooks byte for byte, so a pin that moves takes them by copying a new book's.
+    A hook only some books take (`--push-on-commit`) is the book's own choice, and not asked for.
     The demo ships inside the app and is no book's folder, so it has nothing here to hold."""
     if schema.BOOK == schema.DEMO:
         return
-    new = create(tmp_path / "new",
-                 push_on_commit=(schema.BOOK / ".githooks" / "post-commit").is_file())
+    new = create(tmp_path / "new")
     written = [p.relative_to(new) for p in new.rglob("*")
                if p.is_file() and ".git" not in p.relative_to(new).parts]
     missing = [str(p) for p in written if not (schema.BOOK / p).is_file()]

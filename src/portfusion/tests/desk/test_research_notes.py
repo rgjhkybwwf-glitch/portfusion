@@ -172,7 +172,7 @@ def test_every_row_on_file_is_a_note_the_repo_publishes_on_a_code_it_covers(D):
             if (note["date"], note["url"]) != (published, url):
                 wrong.append(f"{ref}: the store says {published} {url}, the note "
                              f"{note['date']} {note['url']}")
-            if code not in held or note["ticker"].upper() != _company(code):
+            if code not in held or ref not in {n["ref"] for n in research.for_ticker(code)}:
                 wrong.append(f"{ref}: filed under {code}, which the note does not cover")
     assert not wrong, "\n  ".join(["rows the research repo does not bear out:", *wrong])
 

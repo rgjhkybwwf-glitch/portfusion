@@ -112,10 +112,11 @@ def _provenance_rows(D):
 
 
 def _archive_names():
-    """The loaded book's filed documents: the folder the doors file into."""
+    """The loaded book's filed documents: the folder the doors file into. A dot-file (the Mac's
+    `.DS_Store`) is the machine's, not a document."""
     from portfusion.record import schema
     folder = schema.STATEMENTS
-    return [p.name for p in folder.iterdir()] if folder.is_dir() else []
+    return [p.name for p in folder.iterdir() if not p.name.startswith(".")] if folder.is_dir() else []
 
 
 @pytest.mark.audit
