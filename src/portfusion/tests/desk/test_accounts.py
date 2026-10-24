@@ -214,7 +214,7 @@ PANEL_COLUMNS = {
     },
     "accounts": {
         "REGISTER_COLUMNS": ("code", "account", "holder", "broker_firm", "number", "feed_key",
-                             "opens", "cash", "cash_read"),
+                             "record_begins", "cash", "cash_read"),
         "MOVEMENT_COLUMNS": ("date", "account", "amount", "source", "detail"),
         "SUMMARY_COLUMNS": ("account", "total"),
         "INCOME_COLUMNS": ("date", "category", "detail", "currency", "local_amount", "rate_date",

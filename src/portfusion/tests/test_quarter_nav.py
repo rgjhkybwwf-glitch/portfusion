@@ -5,7 +5,7 @@ The rule these tests exist to protect: A SPREAD-BET ACCOUNT CONTRIBUTES ITS EQUI
 NEVER ITS NOTIONAL. An IG statement prints both on one page, the notional several times the
 equity, and the gap between them is the most expensive mistake available against a record.
 
-An account's record may begin after the book's (accounts.csv `opens`): a quarter end before it
+An account's record may begin after the book's (accounts.csv `record_begins`): a quarter end before it
 holds no row for the account, and its funds enter as a flow on the day.
 """
 import re
@@ -100,12 +100,12 @@ def test_a_row_before_its_account_opens_is_refused_on_load(store_copy, table, ro
     """AN ACCOUNT HOLDS NOTHING BEFORE IT OPENS, so a quarter end then has no row for it: a 0.00
     row standing in for that reads as a figure. The record will not load, naming the row."""
     from harness import append_rows
-    if not D.ACCOUNT_OPENS:
+    if not D.ACCOUNT_BEGINS:
         pytest.skip("no account in this book opened after it")
-    account, opens = next(iter(D.ACCOUNT_OPENS.items()))
+    account, opens = next(iter(D.ACCOUNT_BEGINS.items()))
     before = [q for q in D.QSNAP_FROZEN if q < opens] or ["2025-12-31"]
     append_rows(store_copy / f"{table}.csv", [row.format(q=before[-1], a=account)])
-    with pytest.raises(ValueError, match=rf"(?s)BEFORE IT OPENS.*{table}\.csv: {account} at"):
+    with pytest.raises(ValueError, match=rf"(?s)BEFORE ITS RECORD BEGINS.*{table}\.csv: {account} at"):
         D.reload_store()
 
 

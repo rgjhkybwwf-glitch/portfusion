@@ -145,7 +145,7 @@ not *realized*.
 | An income row's kind | **Category** |
 | Reasoning headings | **Why we entered · Why we exited** |
 | A Bench field | **Sale ID · Closes trade · Rate (per £1) · IG contract · Document kind · Reference · Also retires · Renumbers · Symbol · Quote unit · Points per unit · Shares per unit · Epic · Cash (GBP) · Amount** |
-| An account, as the register holds it | **Account · Account no. · Holder · Code · Feed · Opens** — the day its record began, blank for one held from the book's opening |
+| An account, as the register holds it | **Account · Account no. · Holder · Code · Feed · Record begins** — the day its record began, blank for one held from the book's opening |
 | What a line is | **Sector · Region · Held as · Funding** — how IG funds a contract, daily or dated |
 | A deal's own terms | **Trade ID · Broker ref · Deal ccy · Stake (£/pt) · Level (points) · Entry level (points) · Exit level (points) · Trade value (GBP)** |
 | When | **Date · As at · Exit date · Days held · Age (days) · Quarter** |
@@ -320,7 +320,7 @@ asserted on import; the rest are held by the suite.
 | Table | What it holds | Columns, as the desk heads them |
 |---|---|---|
 | `account-readings.csv` | What the book holds each account to be worth RIGHT NOW, and the observation it rests on | `account` Account · `as_of` As at · `at` Recorded · `positions` · `funds` · `running_pl` · `equity` · `deposit` · `available` · `evidence` Document kind · `reference` Reference |
-| `accounts.csv` | The account register | `account` Account · `holder` Holder · `broker_firm` Broker firm · `number` Account no. · `code` Code · `held_as` Held as · `feed_key` Feed · `opens` Opens |
+| `accounts.csv` | The account register | `account` Account · `holder` Holder · `broker_firm` Broker firm · `number` Account no. · `code` Code · `held_as` Held as · `feed_key` Feed · `record_begins` Record begins |
 | `buys.csv` | THE LEDGER — one row per buy leg | `trade_id` Trade ID · `date` Date · `source` Source · `account` Account · `ticker` Ticker · `cur` Deal ccy · `qty` Quantity · `stake` Stake (£/pt) · `cost` Cost (GBP) · `level_points` Level (points) · `broker_ref` Broker ref · `note` Notes · `contract` IG contract · `traded_price` Traded price · `rate` Rate (per £1) |
 | `capital-movements.csv` | External capital in and out, one row per event | `date` Date · `account` Account · `amount` Amount (GBP) · `source` Source · `detail` Detail |
 | `cash-readings.csv` | HOW MUCH CASH A SHARE ACCOUNT HELD, AND WHEN: THE RECORD'S ONE PLACE FOR CASH | `account` Account · `as_of` As at · `cash` Cash (GBP) · `evidence` Document kind · `reference` Reference |

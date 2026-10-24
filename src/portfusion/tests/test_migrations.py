@@ -235,11 +235,11 @@ def _journal_on_uk_time(store):
     return {}, {}
 
 
-def _register_without_opens(store):
+def _register_without_record_begins(store):
     """The register as it was before an account could say when it opened. The move gives every
-    account a blank `opens`; the day one opened later is dated by hand."""
+    account a blank `record_begins`; the day one opened later is dated by hand."""
     rows = _rows_of(store / "accounts.csv")
-    at = rows[0].index("opens")
+    at = rows[0].index("record_begins")
     _write(store / "accounts.csv", [r[:at] + r[at + 1:] for r in rows])
     return {}, {"accounts.csv": lambda got: all(r[-1] == "" for r in got[1:])}
 
@@ -251,7 +251,7 @@ def _register_without_opens(store):
     pytest.param(4, _with_cash_in_three_places, id="cash in three places"),
     pytest.param(5, _money_as_it_came, id="money as it came"),
     pytest.param(6, _journal_on_uk_time, id="the journal on UK time"),
-    pytest.param(7, _register_without_opens, id="a register without openings")])
+    pytest.param(7, _register_without_record_begins, id="a register without openings")])
 def test_a_book_one_move_behind_is_carried_to_the_demo(tmp_path, step, old_shape):
     """The move planned is that one, and it lands the demo exactly: every file the demo's bytes,
     no file the demo lacks, the journal the demo's plus the rows the move must write, and nothing

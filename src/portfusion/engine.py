@@ -382,9 +382,9 @@ def build_ledger() -> pd.DataFrame:
 
     # PRE-record_begins(): opened before the record began.
     ledger["pre_baseline"] = ledger["date"] < record_begins()
-    # AN ACCOUNT OPENED AFTER THE BOOK holds nothing on a day before it (`rules.ACCOUNT_OPENS`),
+    # AN ACCOUNT OPENED AFTER THE BOOK holds nothing on a day before it (`rules.ACCOUNT_BEGINS`),
     # though a leg the statement it opened at carries keeps its own deal date.
-    ledger["opens"] = pd.to_datetime(ledger["acct"].map(D.ACCOUNT_OPENS))
+    ledger["begins"] = pd.to_datetime(ledger["acct"].map(D.ACCOUNT_BEGINS))
     return ledger
 
 
@@ -1692,7 +1692,7 @@ class Book:
     def accounts_open(self, date) -> list[str]:
         """The accounts whose record had begun by `date`, in register order: those a quarter end
         on that day holds a row for (`rules.accounts_open()`, read from this book's record)."""
-        return [a for a in self.D.ACCOUNT_ORDER if self.D.ACCOUNT_OPENS.get(a, "") <= str(date)[:10]]
+        return [a for a in self.D.ACCOUNT_ORDER if self.D.ACCOUNT_BEGINS.get(a, "") <= str(date)[:10]]
 
     #: Words in a holder's name that do not name them, kept when a holder is taken out.
     HOLDER_TITLES = frozenset({"Mr", "Mrs", "Ms", "Miss", "Mx", "Dr"})
@@ -3000,7 +3000,7 @@ class Book:
         leg_sold = {tid: sold_on[eid] for eid, tid in self.D.EXIT_LEG_MATCH.items()}
         out: dict[str, dict] = {}
         for r in self.ledger.to_dict("records"):
-            if not (r["pre_baseline"] or r["date"] <= d) or r["opens"] > d:
+            if not (r["pre_baseline"] or r["date"] <= d) or r["begins"] > d:
                 continue
             if account is not None and r["acct"] != account:
                 continue
@@ -3282,7 +3282,7 @@ class Book:
                     f"as_of({date!r}, account={account!r}): no legs at all. An account with "
                     f"nothing in the ledger is a name that does not match — check it against "
                     f"rules.ACCOUNT_ORDER rather than reading the empty frame as a holding.")
-        L = L[(L["pre_baseline"] | (L["date"] <= d)) & ~(L["opens"] > d)].copy()
+        L = L[(L["pre_baseline"] | (L["date"] <= d)) & ~(L["begins"] > d)].copy()
 
         def qty(r):
             return -r["qty"] if r["direction"] == "Sell" else r["qty"]

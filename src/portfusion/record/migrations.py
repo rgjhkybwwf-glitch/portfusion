@@ -104,9 +104,9 @@ MIGRATIONS = (
         rows=lambda store: _on_one_clock(store),
     ),
     Migration(
-        issue="an account opened after the book says when: the register's `opens`",
+        issue="an account opened after the book says when: the register's `record_begins`",
         tables={}, columns={}, splits={}, marks={}, code=(),
-        rows=lambda store: _opens_column(store),
+        rows=lambda store: _record_begins_column(store),
     ),
 )
 
@@ -508,17 +508,17 @@ def _on_one_clock(store: pathlib.Path) -> list[Change]:
     return out
 
 
-def _opens_column(store: pathlib.Path) -> list[Change]:
-    """The register given its `opens` column, blank on every row: each account held from the
+def _record_begins_column(store: pathlib.Path) -> list[Change]:
+    """The register given its `record_begins` column, blank on every row: each account held from the
     book's opening. One opened later is dated by hand, with the 0.00 rows that stood in for its
     quarter ends before it, since only their prose says which they were."""
     path = store / "accounts.csv"
     lines, rows, eol = _rows(path.read_text(encoding="utf-8"))
-    if "opens" in rows[0]:
+    if "record_begins" in rows[0]:
         return []
-    return [Change(path, path, "".join(_line([*r, "" if i else "opens"], eol)
+    return [Change(path, path, "".join(_line([*r, "" if i else "record_begins"], eol)
                                        for i, r in enumerate(rows)),
-                   ["accounts.csv: an `opens` column, blank: date an account opened later by hand"])]
+                   ["accounts.csv: a `record_begins` column, blank: date an account opened later by hand"])]
 
 
 def plan(book: pathlib.Path) -> tuple[Migration | None, list[Change]]:

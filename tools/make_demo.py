@@ -50,9 +50,9 @@ INVENTED = "Invented for the demo"
 UNFUNDED = "Account not yet funded"
 
 ISA, TRADING, SPREAD = "Voss ii ISA", "Voss ii Trading", "Voss IG Spread bet"
-#: The day each account opened that the record began without (accounts.csv `opens`): a quarter end
+#: The day each account opened that the record began without (accounts.csv `record_begins`): a quarter end
 #: before it holds no row for the account.
-OPENS = {TRADING: "2026-02-27", SPREAD: "2026-07-01"}
+BEGINS = {TRADING: "2026-02-27", SPREAD: "2026-07-01"}
 
 #: When the journal opened, and every count in it is taken.
 OPENED = "2026-09-30T17:00:00Z"
@@ -142,10 +142,10 @@ def _book() -> dict[str, list[dict]]:
         {"account": ISA, "holder": "Ms Nia Voss", "broker_firm": "interactive investor",
          "number": "7421950", "code": "A1", "held_as": "shares"},
         {"account": TRADING, "holder": "Ms Nia Voss", "broker_firm": "interactive investor",
-         "number": "7421951", "code": "A2", "held_as": "shares", "opens": OPENS[TRADING]},
+         "number": "7421951", "code": "A2", "held_as": "shares", "record_begins": BEGINS[TRADING]},
         {"account": SPREAD, "holder": "Ms Nia Voss", "broker_firm": "IG Index Ltd",
          "number": "XK9P3", "code": "A3", "held_as": "spread bet", "feed_key": "VOSS_IG",
-         "opens": OPENS[SPREAD]},
+         "record_begins": BEGINS[SPREAD]},
     ]
     T["capital-movements"] = [
         {"date": d, "account": a, "amount": v, "source": NOT_ON_FILE, "detail": "Deposit"}
@@ -172,7 +172,7 @@ def _book() -> dict[str, list[dict]]:
          "traded_price": 1.5, **shares,
          "_note": _note("DMU3XE", "11:12", "22/05/2026", "KELSTRAND FOODS PLC", "ORD GBP0.05")},
         # DEALT BEFORE THE ACCOUNT OPENED, and carried in by the statement it opened at with its
-        # own deal date: the account holds it from its opening (`OPENS`), not from this day.
+        # own deal date: the account holds it from its opening (`BEGINS`), not from this day.
         {"date": "2026-06-26", "ticker": "VELD SB", "stake": 1, "level_points": 9850.0,
          "contract": "VELD-SEP26", **bets, "broker_ref": "DIAAAADEMOVELD06",
          "_statement": "2026-07-06"},
@@ -311,7 +311,7 @@ def _quarter_nav() -> list[dict]:
                                  (TRADING, trading, "positions at market"),
                                  (SPREAD, equity, "account equity"),
                                  (SPREAD, notional, "notional"))
-                 if OPENS.get(a, "") <= as_of]
+                 if BEGINS.get(a, "") <= as_of]
     return rows
 
 

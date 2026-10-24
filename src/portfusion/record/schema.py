@@ -251,7 +251,7 @@ ACCOUNTS = Table(
         # THE DAY THE ACCOUNT'S RECORD BEGINS, for one opened after the book's; blank for one held
         # from the book's opening. Before it the account holds nothing and has no quarter-end
         # row (`rules.accounts_open()`), whatever deal dates the statement it opened at carries.
-        Field("opens", "date", null=True),
+        Field("record_begins", "date", null=True),
     ),
 )
 

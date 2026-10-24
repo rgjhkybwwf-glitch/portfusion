@@ -669,16 +669,16 @@ QUARTER_NAV = [QuarterNAV(*_r) for _r in schema.load("quarter-nav")]
 #: THE ACCOUNTS, in the register's own order, and what kind each is.
 ACCOUNT_ORDER = [r[0] for r in register]
 ACCOUNT_KIND = {r[0]: r[schema.TABLES["accounts"].header.index("held_as")] for r in register}
-#: THE DAY EACH ACCOUNT OPENED AFTER THE BOOK'S OWN OPENING, as an ISO date; an account held from
+#: THE DAY EACH ACCOUNT'S RECORD BEGAN, FOR ONE OPENED AFTER THE BOOK'S OWN OPENING, as an ISO date; an account held from
 #: the opening is not here.
-ACCOUNT_OPENS = {r[0]: str(o) for r in register
-                 if (o := r[schema.TABLES["accounts"].header.index("opens")])}
+ACCOUNT_BEGINS = {r[0]: str(o) for r in register
+                 if (o := r[schema.TABLES["accounts"].header.index("record_begins")])}
 
 
 def accounts_open(date) -> list[str]:
     """The accounts whose record had begun by `date`, in register order: the ones a quarter end on
     that day holds a row for, and the freeze values."""
-    return [a for a in ACCOUNT_ORDER if ACCOUNT_OPENS.get(a, "") <= str(date)[:10]]
+    return [a for a in ACCOUNT_ORDER if ACCOUNT_BEGINS.get(a, "") <= str(date)[:10]]
 
 # A READING IS ITS ACCOUNT'S KIND, AND IG'S ARITHMETIC HOLDS. A spread-bet reading is IG's five
 # figures and no share figure; a share reading carries none of IG's. Where a spread-bet reading
@@ -779,14 +779,14 @@ if _twice_frozen:
     raise ValueError("A QUARTER END IS FROZEN ONCE:\n  " + "\n  ".join(_twice_frozen))
 
 # NO QUARTER-END ROW BEFORE AN ACCOUNT OPENS: it held nothing then, and a 0.00 row standing in for
-# that reads as a figure. The day it opened is the register's (`ACCOUNT_OPENS`).
-_before_open = sorted({f"{t}.csv: {r[1]} at {r[0]}, before it opens on {ACCOUNT_OPENS[r[1]]}"
+# that reads as a figure. The day it opened is the register's (`ACCOUNT_BEGINS`).
+_before_open = sorted({f"{t}.csv: {r[1]} at {r[0]}, before its record begins on {ACCOUNT_BEGINS[r[1]]}"
                        for t, rows in (("quarter-nav", QUARTER_NAV), ("quarter-snapshots", _qsnap),
                                        ("quarter-results", QUARTER_RESULTS))
-                       for r in rows if r[1] in ACCOUNT_OPENS and str(r[0]) < ACCOUNT_OPENS[r[1]]})
+                       for r in rows if r[1] in ACCOUNT_BEGINS and str(r[0]) < ACCOUNT_BEGINS[r[1]]})
 if _before_open:
-    raise ValueError("A QUARTER END HOLDS NO ROW FOR AN ACCOUNT BEFORE IT OPENS (accounts.csv "
-                     "`opens`):\n  " + "\n  ".join(_before_open))
+    raise ValueError("A QUARTER END HOLDS NO ROW FOR AN ACCOUNT BEFORE ITS RECORD BEGINS "
+                     "(accounts.csv `record_begins`):\n  " + "\n  ".join(_before_open))
 
 
 # A SALE THAT NAMES ITS LEG MUST NAME ONE OF ITS OWN, ONCE. `schema.REFERENCES` holds that the leg

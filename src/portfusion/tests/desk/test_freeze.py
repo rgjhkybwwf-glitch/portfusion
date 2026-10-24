@@ -185,10 +185,10 @@ def test_an_account_opens_on_its_day_holding_nothing_before_it():
     import datetime as _dt
     from portfusion.engine import Book
     from portfusion.record import rules as D
-    if not D.ACCOUNT_OPENS:
+    if not D.ACCOUNT_BEGINS:
         pytest.skip("no account in this book opened after it")
     b = Book()
-    for account, opens in D.ACCOUNT_OPENS.items():
+    for account, opens in D.ACCOUNT_BEGINS.items():
         eve = (_dt.date.fromisoformat(opens) - _dt.timedelta(days=1)).isoformat()
         assert b.as_of(eve, account).empty and b.holdings_at(eve, account).empty, account
         assert not b._valued_legs_at(eve, account), f"{account}'s legs are valued before it opens"
