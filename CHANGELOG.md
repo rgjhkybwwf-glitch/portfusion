@@ -5,6 +5,11 @@ prints it.
 
 ## Unreleased
 
+- **Money is written to the penny, a quote to at most six places.** Every figure column declares
+  its places in the schema, every writer writes figures one way, and the loader refuses a sum of
+  money not written to exactly two places or a price, rate or level written to more than six. A
+  typed figure is written as it will read back: "0" becomes "0.00". `portfusion migrate` rewrites
+  a book's money to the penny; no value moves.
 - **A share account's cash is in one place, its cash readings.** An account reading's `recon_cash`
   and `stmt_value` and a statement's `cash` are retired: a reading off a document that states the
   cash writes it as a cash reading of its day, in the same write, and the reading's total is its

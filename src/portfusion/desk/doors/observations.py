@@ -121,11 +121,11 @@ def _merged(existing: list[str], reading: dict) -> list[str]:
     states no cash kept another document's — figures filed under evidence that never stated
     them. Only what is not a reading's (the account) stays from the row on file.
     """
-    header = schema.TABLES[TABLE].header
+    fields = schema.TABLES[TABLE].fields
     cells = list(existing)
-    for field in SETTABLE:
-        v = reading.get(field)
-        cells[header.index(field)] = "" if v is None or v == "" else str(v)
+    for i, f in enumerate(fields):
+        if f.name in SETTABLE:
+            cells[i] = schema.cell(f, reading.get(f.name))
     return cells
 
 

@@ -134,12 +134,24 @@ class Field(NamedTuple):
     reads as "" whatever `null` holds, rightly, since most notes are empty — so a string that
     must be filled says so here, where the loader enforces it on every route a row can arrive by.
     Off by default.
+
+    `places` is how many decimal places a figure may hold, and `exact` that it holds exactly that
+    many: MONEY, written to the penny, and QUOTE, a price, rate or level to at most six. The loader
+    refuses a cell written otherwise, and `cell()` writes every figure so.
     """
     name: str
     kind: str                    # str | int | float | number | bool | date
     null: bool = False
     enum: tuple = ()
     required: bool = False
+    places: int | None = None
+    exact: bool = False
+
+
+#: A SUM OF MONEY, in sterling or its line's own currency: written to the penny, always two places.
+MONEY = {"places": 2, "exact": True}
+#: A PRICE, A RATE OR A LEVEL: at most six places, a trailing nought never written.
+QUOTE = {"places": 6}
 
 
 class Table(NamedTuple):
@@ -216,8 +228,8 @@ SECURITIES = Table(
         # company's shares one unit of the listing stands for (a depositary receipt's ratio;
         # blank is one). Together with the stake they turn a bet into share-equivalents.
         # Blank on a share.
-        Field("points_per_unit", "float", null=True),
-        Field("shares_per_unit", "float", null=True),
+        Field("points_per_unit", "float", null=True, **QUOTE),
+        Field("shares_per_unit", "float", null=True, **QUOTE),
     ),
 )
 
@@ -249,7 +261,7 @@ CAPITAL_MOVEMENTS = Table(
         # 12 Oct 2026, when no row on file lacked a date.
         Field("date", "str", required=True),   # ISO string: the ledger's own date convention
         Field("account", "str"),
-        Field("amount", "float"),
+        Field("amount", "float", **MONEY),
         Field("source", "str"),
         Field("detail", "str"),
     ),
@@ -286,8 +298,9 @@ BUYS = Table(
         Field("cur", "str"),
         Field("qty", "int", null=True),    # shares; blank on a spread bet, whose size is its stake
         Field("stake", "number", null=True),      # £ per point, a bet's size; blank on a share
-        Field("cost", "float", null=True),          # a share's settled GBP; blank on a bet
-        Field("level_points", "float", null=True),  # a bet's entry level in points; blank on a share
+        Field("cost", "float", null=True, **MONEY),          # a share's settled GBP; blank on a bet
+        # A BET'S ENTRY LEVEL IN POINTS; blank on a share.
+        Field("level_points", "float", null=True, **QUOTE),
         Field("broker_ref", "str", null=True),
         Field("note", "str"),
         # WHICH IG CONTRACT A SPREAD-BET LEG IS ON — what prices it, open or closed. Blank on a
@@ -297,8 +310,8 @@ BUYS = Table(
         # where the document gives one, units of the share's currency per £1. Never worked out
         # from `cost`: that carries the dealing charge. Empty when nothing filed
         # gives it, and on a spread bet, whose level is `level_points`.
-        Field("traded_price", "float", null=True),
-        Field("rate", "float", null=True),
+        Field("traded_price", "float", null=True, **QUOTE),
+        Field("rate", "float", null=True, **QUOTE),
     ),
 )
 
@@ -347,10 +360,10 @@ SALES = Table(
         Field("ticker", "str"),            # the security's code in securities.csv
         Field("qty", "int", null=True),    # shares; blank on a spread-bet sale
         Field("stake", "number", null=True),      # £ per point, a bet sale's size; blank on a share
-        Field("traded_price", "float"),    # per share, or a bet's closing level in points
+        Field("traded_price", "float", **QUOTE),    # per share, or a bet's closing level in points
         Field("cur", "str", required=True),  # the currency `traded_price` is stated in, as buys.cur
-        Field("rate", "float", null=True),   # the broker's, where the document states one
-        Field("proceeds", "float"),        # GBP, always
+        Field("rate", "float", null=True, **QUOTE),   # the broker's, where the document states one
+        Field("proceeds", "float", **MONEY),        # GBP, always
         Field("source", "str"),
         # THE BROKER'S REFERENCE FOR THIS SALE: an IG close's closing deal, an ii contract
         # number, HL's sale reference. Nullable where no document on file prints one. ONE
@@ -380,7 +393,7 @@ INCOME = Table(
         Field("account", "str"),
         Field("category", "str", enum=INCOME_CATEGORIES),
         Field("detail", "str"),
-        Field("amount", "float"),         # ALWAYS GBP — the figure the book adds up
+        Field("amount", "float", **MONEY),         # ALWAYS GBP — the figure the book adds up
         Field("source", "str"),
         Field("note", "str"),              # often "", and that is a real value
         # THE CONVERSION, AS DATA. A foreign-currency income row states its currency and its
@@ -388,8 +401,8 @@ INCOME = Table(
         # at; a blank `rate` converts at the day's TradingView close on fx-history.csv, as a
         # deal's does. Blank on every GBP row, meaning "no conversion".
         Field("currency", "str"),          # the currency the income was PAID in
-        Field("local_amount", "float", null=True),
-        Field("rate", "float", null=True),  # units of the currency per £1, the broker's
+        Field("local_amount", "float", null=True, **MONEY),
+        Field("rate", "float", null=True, **QUOTE),  # units of the currency per £1, the broker's
         # THE LINE A DIVIDEND WAS PAID ON, a code in securities.csv, so a company's life can count
         # it. Blank on interest, fees and funding, which no one line earns.
         Field("ticker", "str"),
@@ -420,7 +433,7 @@ QUARTER_NAV = Table(
     fields=(
         Field("as_of", "str"),
         Field("account", "str"),
-        Field("amount", "float"),
+        Field("amount", "float", **MONEY),
         # `contribution`: HOW THIS ACCOUNT CONTRIBUTES TO NET ASSET VALUE — positions at market,
         # account equity, notional. Not `basis` (docs/glossary.md §2).
         Field("contribution", "str"),      # positions at market | account equity
@@ -440,7 +453,7 @@ FX = Table(
         # `currency` IS THE KEY, as a ticker is current-prices.csv's; a currency held in nothing
         # has no row.
         Field("currency", "str"),
-        Field("rate", "float"),            # units of the currency per £1
+        Field("rate", "float", **QUOTE),            # units of the currency per £1
         Field("as_of", "str"),
         Field("source", "str"),
         # `struck`: a session close or a live read, as current-prices.csv says it.
@@ -462,7 +475,7 @@ CURRENT_PRICES = Table(
          "2026; the feed is the only party that knows, so it now says so in a column."),
     fields=(
         Field("mark_key", "str"),          # a share's ticker, or a spread bet's CONTRACT
-        Field("price", "float"),
+        Field("price", "float", **QUOTE),
         Field("currency", "str"),
         Field("as_of", "str"),
         Field("source", "str"),
@@ -493,10 +506,10 @@ QUARTER_SNAPSHOTS = Table(
         # of nothing, a different claim. value and cost are 0.0 there, rightly: the
         # account adds nothing to either total.
         Field("qty", "number", null=True),
-        Field("price", "float", null=True),
+        Field("price", "float", null=True, **QUOTE),
         Field("currency", "str", null=True),
-        Field("value", "float"),
-        Field("cost", "float"),
+        Field("value", "float", **MONEY),
+        Field("cost", "float", **MONEY),
         Field("quality", "str", enum=QUALITIES),
         Field("source", "str"),
     ),
@@ -529,13 +542,13 @@ ACCOUNT_READINGS = Table(
         Field("as_of", "date"),            # A REAL DATE. The whole point of the split.
         Field("at", "str"),                # ISO UTC, e.g. 2026-09-30T17:40Z; blank if unknown
         # A SHARE ACCOUNT'S READING, blank on a spread-bet row.
-        Field("positions", "float", null=True),   # positions at market
+        Field("positions", "float", null=True, **MONEY),   # positions at market
         # A SPREAD-BET ACCOUNT'S READING, IG'S OWN FIGURES, blank on a share row.
-        Field("funds", "float", null=True),
-        Field("running_pl", "float", null=True),
-        Field("equity", "float", null=True),
-        Field("deposit", "float", null=True),     # IG's word for the margin
-        Field("available", "float", null=True),   # the feed's; a statement prints none
+        Field("funds", "float", null=True, **MONEY),
+        Field("running_pl", "float", null=True, **MONEY),
+        Field("equity", "float", null=True, **MONEY),
+        Field("deposit", "float", null=True, **MONEY),     # IG's word for the margin
+        Field("available", "float", null=True, **MONEY),   # the feed's; a statement prints none
         # PROVENANCE, STRUCTURALLY: the evidence class and the reference, the same pair
         # cash-readings.csv carries. Without them nothing could bank an observation into
         # history (a banked row needs a source and a quality) or colour a row from its own file.
@@ -598,7 +611,7 @@ CASH_READINGS = Table(
     fields=(
         Field("account", "str"),
         Field("as_of", "date"),
-        Field("cash", "float"),
+        Field("cash", "float", **MONEY),
         # REQUIRED, with account-readings' matching pair.
         Field("evidence", "str", required=True),   # an EVIDENCE_CLASSES id
         Field("reference", "str", required=True),   # what retrieves it: a statement, or the query
@@ -635,12 +648,12 @@ QUARTER_RESULTS = Table(
     fields=(
         Field("as_of", "str"),
         Field("account", "str"),           # blank for the book
-        Field("opening_nav", "float"),
-        Field("capital_deployed", "float"),
-        Field("return_income", "float"),
-        Field("closing_nav", "float"),
-        Field("gain", "float", null=True),     # blank where there is nothing to measure from
-        Field("return", "float", null=True),   # a fraction, to six places
+        Field("opening_nav", "float", **MONEY),
+        Field("capital_deployed", "float", **MONEY),
+        Field("return_income", "float", **MONEY),
+        Field("closing_nav", "float", **MONEY),
+        Field("gain", "float", null=True, **MONEY),  # blank where there is nothing to measure from
+        Field("return", "float", null=True, places=6),   # a fraction, to six places
         Field("note", "str"),
     ),
 )
@@ -781,6 +794,8 @@ def _parse(field: Field, raw: str, table: str, row_no: int):
             # kind of quiet type drift this schema exists to stop.
             return int(text)
         if field.kind == "float":
+            if field.places is not None:
+                _held_to_places(field, text)
             return float(text)
         if field.kind == "number":
             # INT OR FLOAT, WHICHEVER THE TEXT SAYS. A spread-bet stake is 1 or 0.25, a limit
@@ -799,6 +814,47 @@ def _parse(field: Field, raw: str, table: str, row_no: int):
     except ValueError as exc:
         raise ValueError(f"{where}: {exc}") from None
     raise KeyError(f"{where}: unknown field kind {field.kind!r}")
+
+
+def _held_to_places(field: Field, text: str) -> None:
+    """Raise unless `text` is written to the field's places: exactly, for money; at most, else."""
+    digits = text.strip().partition(".")[2]
+    if any(c in text for c in "eE") or (len(digits) != field.places if field.exact
+                                        else len(digits) > field.places):
+        raise ValueError(f"{text!r} is not written to {'exactly' if field.exact else 'at most'} "
+                         f"{field.places} decimal places"
+                         + ("; `portfusion migrate` writes a book's money to the penny"
+                            if field.exact else ""))
+
+
+def figure(value, places: int, exact: bool = False) -> str:
+    """A number written to `places`: exactly that many for money, which must already be whole
+    pennies (raises otherwise, never rounding a sum someone entered); at most that many for a
+    quote, rounded there, its trailing noughts dropped."""
+    v = float(value)
+    if exact:
+        if abs(v - round(v, places)) > 1e-9 * max(1.0, abs(v)):
+            raise ValueError(f"{value!r} is not a sum to {places} decimal places")
+        return f"{round(v, places) + 0.0:.{places}f}"      # + 0.0: never "-0.00"
+    return repr(round(v, places) + 0.0)
+
+
+def cell(field: Field, value) -> str:
+    """One cell as every writer writes it: a figure to its field's places (`figure()`), anything
+    else as given. Blank for None or an empty string; a figure that will not read as a number is
+    left for the loader to refuse by name."""
+    if value is None or value == "":
+        return ""
+    if field.kind == "float" and field.places is not None:
+        try:
+            number = float(value)
+        except (TypeError, ValueError):
+            return str(value)
+        try:
+            return figure(number, field.places, field.exact)
+        except ValueError as e:
+            raise ValueError(f"{field.name}: {e}") from None
+    return str(value)
 
 
 def _render(field: Field, value) -> str:
@@ -820,7 +876,7 @@ def _render(field: Field, value) -> str:
     if field.kind == "number":
         # repr, so an int writes "1" and a float writes "1.0" and the distinction survives.
         return repr(value)
-    return str(value)
+    return cell(field, value)
 
 
 # WHICH COLUMNS POINT AT ANOTHER TABLE'S ROW. An account name mistyped with a lowercase L would

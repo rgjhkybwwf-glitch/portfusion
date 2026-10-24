@@ -11,8 +11,9 @@ NAMES, NOT FACTS. Beside the tables, the journal's `table` and the Bench's items
 open) carry table and column names, and move with them. A book's own `checks/` is its code: the
 lines that name an old one are listed, never edited.
 
-Imports nothing of the record but its order (`order.py`) and its evidence classes
-(`rules_evidence.py`), both pure: a book in the old shape will not load, which is why it is here.
+Imports nothing of the record but its order (`order.py`), its evidence classes
+(`rules_evidence.py`), its schema and the histories' files, all pure: a book in the old shape will
+not load, which is why it is here.
 """
 from __future__ import annotations
 
@@ -24,7 +25,8 @@ import pathlib
 import re
 from typing import Callable, NamedTuple
 
-from portfusion.record import order, rules_evidence
+from portfusion.history import files
+from portfusion.record import order, rules_evidence, schema
 
 
 class Migration(NamedTuple):
@@ -89,6 +91,11 @@ MIGRATIONS = (
         tables={}, columns={}, splits={}, marks={},
         code=(r"\.(recon_cash|stmt_value|cash_retired)\b",),
         rows=lambda store: _cash_in_one_place(store),
+    ),
+    Migration(
+        issue="every sum of money written to the penny",
+        tables={}, columns={}, splits={}, marks={}, code=(),
+        rows=lambda store: _to_the_penny(store),
     ),
 )
 
@@ -427,6 +434,39 @@ def _cash_in_one_place(store: pathlib.Path) -> list[Change]:
                        f"statements"]))
     return out + _journalled(store, [("append", "cash-readings", len(new),
                                       "cash moved here from account readings and statements")])
+
+
+def _to_the_penny(store: pathlib.Path) -> list[Change]:
+    """Every sum of money written to exactly two places (`schema.MONEY`), in the record's tables
+    and the account history. No value moves; a sum with more places than pennies is moved by
+    hand. Untouched lines keep their bytes."""
+    money = {t.name: [f.name for f in t.fields if f.exact] for t in schema.TABLES.values()}
+    money |= {pathlib.Path(name).stem: [c for c, how in places.items() if how.get("exact")]
+              for name, places in files.PLACES.items()}
+    out, journal = [], []
+    for name, cols in money.items():
+        path = store / f"{name}.csv"
+        if not cols or not path.is_file():
+            continue
+        lines, rows, eol = _rows(path.read_text(encoding="utf-8"))
+        at = [rows[0].index(c) for c in cols if c in rows[0]]
+        n = 0
+        for i, r in enumerate(rows[1:], 1):
+            new = list(r)
+            for j in at:
+                try:
+                    new[j] = schema.figure(r[j], 2, exact=True) if r[j] != "" else ""
+                except ValueError:
+                    raise ValueError(f"{path.name} row {i + 1}: {r[j]!r} is not a sum to the "
+                                     f"penny: move it by hand") from None
+            if new != r:
+                lines[i], n = _line(new, eol), n + 1
+        if n:
+            out.append(Change(path, path, "".join(lines),
+                              [f"{path.name}: {n} row(s) with money written to the penny"]))
+            if name in schema.TABLES:
+                journal.append(("replace", name, n, "money written to the penny; no value moved"))
+    return out + _journalled(store, journal)
 
 
 def plan(book: pathlib.Path) -> tuple[Migration | None, list[Change]]:

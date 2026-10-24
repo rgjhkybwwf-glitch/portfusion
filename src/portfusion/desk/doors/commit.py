@@ -273,8 +273,9 @@ def _shown(path) -> str:
 
 
 def _rendered(table: str, values: dict) -> list[str]:
-    """One row as cells, in schema field order. Blank for a null, which is what the loader
-    reads back as None — a missing number is a GAP and never zero.
+    """One row as cells, in schema field order, each as `schema.cell()` writes it: a figure to its
+    places. Blank for a null, which is what the loader reads back as None — a missing number is a
+    GAP and never zero.
 
     A KEY THE TABLE HAS NO COLUMN FOR IS REFUSED, never dropped. Dropped, a column renamed in the
     schema but not in a writer is written blank with nothing said: a test row keyed `basis` wrote
@@ -284,11 +285,7 @@ def _rendered(table: str, values: dict) -> list[str]:
     if stray:
         raise ValueError(f"{table} has no column {sorted(stray)}: a writer is using a name the "
                          f"schema does not")
-    out = []
-    for f in schema.TABLES[table].fields:
-        v = values.get(f.name)
-        out.append("" if v is None else str(v))
-    return out
+    return [schema.cell(f, values.get(f.name)) for f in schema.TABLES[table].fields]
 
 
 def _csv_line(cells: list[str]) -> str:

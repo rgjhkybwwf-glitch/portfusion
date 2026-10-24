@@ -219,6 +219,19 @@ def test_a_save_that_fails_leaves_the_history_as_it_was(store_copy):
         "a refused save left its working file in the store"
 
 
+@needs("price-history")
+def test_a_price_written_to_more_than_six_places_is_refused_on_reading(store_copy):
+    """A history holds its figures to their places (`files.PLACES`), as the record's loader does,
+    so a hand edit cannot leave a price the bank would never have written."""
+    path = store_copy / PH.CSV_NAME
+    lines = path.read_text(encoding="utf-8").splitlines()
+    cells = lines[1].split(",")
+    cells[2] = "1.2345678"
+    path.write_text("\n".join([lines[0], ",".join(cells)] + lines[2:]) + "\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="price: .*decimal places"):
+        PH.load()
+
+
 def test_a_row_that_does_not_fit_the_header_is_refused_on_reading(store_copy):
     """A HAND-EDITED ROW WITH AN EXTRA CELL is refused where the file is READ, so the bank never
     gets as far as writing over a history it could not have written back whole."""

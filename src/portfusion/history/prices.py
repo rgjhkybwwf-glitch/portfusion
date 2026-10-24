@@ -43,7 +43,8 @@ QUALITIES = ("sourced", "derived")
 
 # --- the file itself ------------------------------------------------------------------------
 _FILE = AppendOnlyCSV(CSV_NAME, FIELDS, numeric=("price",), sort_key=lambda r: (r["date"], r["mark_key"]),
-                      identity=("mark_key", "date"), nullable=False, figure="price")
+                      identity=("mark_key", "date"), nullable=False, figure="price",
+                      places=files.PLACES[CSV_NAME])
 
 load = _FILE.load
 save = _FILE.save

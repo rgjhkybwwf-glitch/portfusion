@@ -8,6 +8,8 @@ Each history reads its own pair from here (`prices.CSV_NAME`, `prices.FIELDS` an
 names a caller already uses stand.
 """
 
+from portfusion.record import schema
+
 # The FILE, not a path to it: `AppendOnlyCSV` resolves it against whichever store the record
 # is reading.
 PRICES = "price-history.csv"
@@ -19,3 +21,10 @@ FX_FIELDS = ["currency", "date", "rate", "kind", "quality", "struck", "source"]
 ACCOUNTS = "account-statements.csv"
 ACCOUNT_FIELDS = ["account", "as_of", "positions_value", "funds", "running_pl", "equity",
                   "deposit", "source", "quality"]
+#: Its sums of money, each written to the penny (`schema.MONEY`).
+ACCOUNT_MONEY = ("positions_value", "funds", "running_pl", "equity", "deposit")
+
+#: HOW EACH HISTORY WRITES ITS FIGURES, as the schema's MONEY and QUOTE say it for the record's
+#: own tables. The schema loads no book, so a file that may not can still read it.
+PLACES = {PRICES: {"price": schema.QUOTE}, FX: {"rate": schema.QUOTE},
+          ACCOUNTS: {c: schema.MONEY for c in ACCOUNT_MONEY}}

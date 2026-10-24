@@ -377,8 +377,9 @@ def validate_row(table: str, values: dict) -> list[str]:
             if _blank_refused(f, table):
                 problems.append(f"{name}: required, and empty")
             continue
+        # AS IT WILL BE WRITTEN (`schema.cell()`): a figure typed "0" is written "0.00".
         try:
-            schema._parse(f, raw, table, 0)
+            schema._parse(f, schema.cell(f, raw), table, 0)
         except ValueError as e:
             problems.append(f"{name}: {e}")
     vocab = vocabulary()
@@ -576,8 +577,8 @@ def matching_row(table: str, values: dict):
         if len(present) < need:
             return None
         try:
-            want = tuple(schema._parse(fields[c], str(values.get(c, "")), table, 0)
-                         for c in present)
+            want = tuple(schema._parse(fields[c], schema.cell(fields[c], values.get(c, "")),
+                                       table, 0) for c in present)
         except (ValueError, KeyError):
             return "unreadable"
         for existing in schema.load(table):
@@ -1226,8 +1227,11 @@ def paste_block(item: dict) -> list[dict]:
         fields = schema.TABLES[table].fields
         cells = []
         for f in fields:
-            v = row["values"].get(f.name, "")
-            v = "" if v is None else str(v)
+            raw = row["values"].get(f.name, "")
+            try:
+                v = schema.cell(f, raw)
+            except ValueError:               # the gate names it; the line still shows it
+                v = str(raw)
             cells.append(f'"{v}"' if ("," in v or '"' in v) else v)
         out.append({"table": table, "target": f"store/{table}.csv", "line": ",".join(cells)})
     return out
