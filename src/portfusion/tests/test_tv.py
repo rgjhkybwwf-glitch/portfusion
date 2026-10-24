@@ -519,8 +519,8 @@ def test_a_minute_bar_from_before_the_session_opened_is_not_todays_price():
 
 def test_a_minute_still_running_is_struck_when_read_and_never_called_a_close():
     """The rates' minute bars are current: the newest may be a minute still running. Its instant
-    is the read, not the minute's end; and its source must not say "close", the word
-    `desk/doors/marks.py` knows a rate's close by."""
+    is the read, not the minute's end; and its source must not say "close", which a reader
+    takes for a session's close."""
     now = dt.datetime(2026, 9, 29, 13, 0, 20, tzinfo=UTC)
     conn = FakeConnection(bars={"FX_IDC:GBPUSD": [{"t": _t("2026-09-28T22:00:00"), "c": 1.3239}]},
                           minutes={"FX_IDC:GBPUSD": [_minute("2026-09-29T13:00:00", 1.3221)]},

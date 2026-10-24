@@ -64,7 +64,7 @@ def test_there_is_exactly_one_palette_derivation(imports_of):
     # And nothing else may reconstruct it: app.py serves what engine hands it.
     app_py = SRC / "desk" / "app.py"
     assert "house" not in imports_of(app_py), \
-        "app.py is deriving colours itself — it must serve record.tokens_css()"
+        "app.py is deriving colours itself — it must serve engine.tokens_css()"
 
 
 def test_every_token_the_desk_is_handed_is_worn(repo_root):

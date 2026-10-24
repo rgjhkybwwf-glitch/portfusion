@@ -826,7 +826,7 @@ def test_every_pointer_in_a_guide_leads_somewhere(repo_root, project_files):
     assert not broken, "these pointers lead nowhere:\n  " + "\n  ".join(broken)
 
 
-def test_the_evidence_list_is_in_the_order_the_owner_gave(D):
+def test_the_evidence_list_runs_by_broker_strongest_first(D):
     """THE ORDER IS THE FEATURE, not an accident of when each class was added.
 
     The two brokers that send documents first, each with its kinds running strongest to

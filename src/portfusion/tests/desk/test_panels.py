@@ -368,7 +368,7 @@ def test_the_tabs_run_in_the_order_of_the_work():
         ["Method", "Access"], "the pages below the rule are a decision written here"
 
 
-def test_the_stage_5_query_routes_defer_to_their_panels():
+def test_the_query_routes_defer_to_their_panels():
     """The routes do no narrowing of their own — same rule as run_action and bench_commit.
     A bad grouping is a 400 from the PANEL's own refusal, not a second validation here."""
     from fastapi import HTTPException

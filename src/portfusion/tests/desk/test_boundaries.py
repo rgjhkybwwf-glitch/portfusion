@@ -157,7 +157,7 @@ def test_reaches_is_not_a_fourth_value_on_writes():
                        writes="network", gate="g")
 
 
-def test_the_blanket_date_gate_is_lifted():
+def test_there_is_no_blanket_date_gate():
     """NO BLANKET GATE (`WRITES_ENABLED_FROM` is None): the desk closes a quarter itself, so a gate
     that opens the day AFTER the close protects nothing. The per-action date is the next test."""
     assert actions.WRITES_ENABLED_FROM is None

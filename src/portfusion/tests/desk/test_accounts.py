@@ -268,8 +268,8 @@ def test_the_gap_list_quotes_the_engines_rule_rather_than_composing_one(repo_roo
     assert "esc(r.rule)" in drawn, \
         "the gap list no longer renders the engine's own rule for each row"
     assert "no broker figure at all" not in drawn, (
-        "app.js has grown a hard-coded explanation of why a row cannot be judged. There are "
-        "two reasons and they are not interchangeable; the engine's `rule` says which.")
+        "app.js hard-codes why a row cannot be judged; there are three gaps, and the "
+        "engine's `rule` says which.")
     assert '"struck-apart": "gap"' in drawn, \
         "a struck-apart row has no tag of its own and falls through to the default"
 
@@ -515,9 +515,8 @@ def test_the_panels_share_one_shaping_helper(repo_root):
         if local:
             offenders[path.name] = sorted(local)
     assert not offenders, (
-        f"these panels define their own shaping helpers again: {offenders}. "
-        f"desk/panels/_shape.py has plain(), iso(), rows() and uniques() — import them. "
-        f"A second copy is how the `return`-keyword fix came to exist in one panel of four.")
+        f"these panels define their own shaping helpers: {offenders}. "
+        f"desk/panels/_shape.py has plain(), iso(), rows() and uniques() — import them.")
 
 
 def test_the_shared_shaping_survives_a_column_named_for_a_keyword():

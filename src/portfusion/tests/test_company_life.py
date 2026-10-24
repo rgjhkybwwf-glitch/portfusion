@@ -184,7 +184,7 @@ def _lives(book, company):
 
 
 @needs("accounts")
-def test_the_owners_example_reads_both_ways(store_copy):
+def test_a_bet_in_a_dip_reads_by_holding_and_by_life(store_copy):
     """100 shares at 100p; in a dip, a £1-per-point bet at 80p, so while both are held the
     company is 200 share-equivalents at 90p. The bet closes at 110p for £30. By holding the shares
     still cost 100p and stand £10 up; by company life £30 is realised, the life is £40 up to date,

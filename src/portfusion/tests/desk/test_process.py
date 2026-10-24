@@ -138,8 +138,7 @@ def test_every_font_size_comes_from_the_scale(repo_root):
     declared = set(re.findall(r"(--text-[a-z]+):", css))
     assert declared == scale, f"declared {sorted(declared)}, expected {sorted(scale)}"
     assert declared == used, (
-        f"declared but never used: {sorted(declared - used)} — a step nothing renders is the "
-        f"defect --step-2 was")
+        f"declared but never used: {sorted(declared - used)}")
 
 
 def test_nothing_in_a_data_row_is_bold(repo_root):
@@ -181,7 +180,7 @@ def test_every_filter_row_has_the_same_shape(repo_root):
     js = (SRC / "desk" / "static" / "app.js").read_text()
     assert "const filterField" in js and "const filters" in js
     assert 'class="controls"' not in js, (
-        "a panel is still using the retired inline filter row")
+        'a panel draws a class="controls" filter row rather than filters()')
 
     order = ["account", "company", "ticker", "from", "to", "direction", "group by", "view"]
     # A row is drawn by `filters([...])`, or handed to the page template as

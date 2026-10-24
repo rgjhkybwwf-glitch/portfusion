@@ -161,7 +161,7 @@ def record_begins() -> pd.Timestamp:
 # Book.HEADLINE), `measure`, `evidence` or `contribution`: four names for four questions
 # (docs/glossary.md §2). Every frame carries it as `held_as`, the heading a reader meets.
 MONEY_KINDS = frozenset({"shares"})
-assert MONEY_KINDS < set(D.schema.KINDS), "book.MONEY_KINDS and the schema disagree"
+assert MONEY_KINDS < set(D.schema.KINDS), "engine.MONEY_KINDS and the schema disagree"
 
 MEASURE_BASIS = {
     "exposure":       "notional",

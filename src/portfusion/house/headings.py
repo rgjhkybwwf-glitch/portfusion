@@ -219,7 +219,7 @@ BY_TAB = {
 #: STORE COLUMNS NO PAGE HEADS, each with why; `table.column` where the name heads another idea.
 #: Every other store column is headed under its own name (`tests/test_figures.py`).
 STORE_ONLY: dict[str, str] = {
-    "struck": "whether a mark can be fetched again; the marks door reads it, no page",
+    "struck": "whether a mark can be fetched again; the engine reads it, no page",
     "published": "a research note's date, inside the Research notes link",
     "url": "a research note's address, the Research notes link's",
     "settings.key": "a setting's name", "settings.value": "a setting's value, not sterling",

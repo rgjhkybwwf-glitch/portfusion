@@ -48,42 +48,11 @@ FLIPPED = {"companies", "securities", "accounts", "capital-movements",
            # BUILD may depend on when a row was entered, only on what it says. Its own guards
            # are in test_journal.py.
            "journal"}
-EMITTED = {}          # none: every table loads from its CSV
+
 
 def test_every_registered_table_is_accounted_for():
     """A table in the schema that no test knows about is an unguarded table."""
-    assert set(schema.TABLES) == FLIPPED | set(EMITTED)
-
-
-def test_the_store_reproduces_the_record():
-    """THE TRANSCRIPTION IS FAITHFUL, cell for cell and type for type.
-
-    Runs over EMITTED — tables whose CSV is written but whose literals are still the
-    source. Tuple equality is deliberately strict: it fails on 4375 becoming 4375.0, on
-    a date becoming a string, and on None becoming "" — the three ways a CSV round trip
-    goes quietly wrong.
-
-    When a table flips it moves to FLIPPED and drops out of here, because afterwards
-    both sides are the same object and the comparison proves nothing.
-
-    A LOOP AND NOT A PARAMETRIZE, on purpose: an empty parametrize SKIPS, and a test
-    that reports "skipped" every run between emits is furniture. This one passes
-    vacuously and starts working the moment a table is emitted.
-    """
-    for name in sorted(EMITTED):
-        loaded = schema.load(name)
-        expected = [tuple(r) for r in EMITTED[name]()]
-        assert len(loaded) == len(expected), \
-            f"{name}: store has {len(loaded)} rows, the record has {len(expected)}"
-        for i, (got, want) in enumerate(zip(loaded, expected)):
-            assert got == want, f"{name} row {i + 2} (file line): {got!r} != {want!r}"
-            # TYPE, NOT JUST VALUE. `1 == 1.0` is True and `True == 1` is True, so
-            # equality alone would pass while an int quietly became a float. The stakes mix
-            # int and float, which is what makes this necessary rather than paranoid.
-            for col, (a, b) in enumerate(zip(got, want)):
-                assert type(a) is type(b), (
-                    f"{name} row {i + 2}, column {schema.TABLES[name].fields[col].name!r}: "
-                    f"store gives {type(a).__name__}, the record has {type(b).__name__}")
+    assert set(schema.TABLES) == FLIPPED
 
 
 @pytest.mark.parametrize("name", sorted(schema.TABLES))
@@ -341,7 +310,7 @@ def test_the_schema_imports_nothing_third_party(repo_root, imports_of):
                                                   "os", "pathlib", "threading", "typing"}
 
 
-def test_the_build_still_does_not_import_the_schema_directly(build_imports):
+def test_the_build_never_imports_the_schema_directly(build_imports):
     """The build reads facts through record/rules.py and only through it. That is what
     keeps 'a trade goes in one file' true — and what makes the record the single place
     the store is assembled."""
@@ -352,7 +321,7 @@ def test_the_build_still_does_not_import_the_schema_directly(build_imports):
 # THE REASONING TABLE — a fact, so it lives in the store and not in a renderer.
 # =====================================================================================
 
-def test_the_reasoning_is_no_longer_a_literal_inside_a_renderer(repo_root):
+def test_the_reasoning_is_never_a_literal_inside_a_renderer(repo_root):
     """THE REASONING IS A FACT, so it lives in `store/reasoning.csv`, where the bench writes it,
     never as a literal in a renderer. Checked on the syntax tree.
     """
@@ -412,10 +381,10 @@ def test_a_sale_can_carry_its_own_broker_reference():
     reference, the opening deal it closes is a relationship between two rows.
     """
     fields = {f.name: f for f in schema.TABLES["sales"].fields}
-    assert "broker_ref" in fields, "a sale has nowhere to record its reference again"
+    assert "broker_ref" in fields, "a sale has nowhere to record its reference"
     assert fields["broker_ref"].null, (
-        "exits.broker_ref must be nullable — a sale read off a statement has no deal "
-        "reference of its own, and a required column would make every one fail to load")
+        "sales.broker_ref is required, so a sale read off a statement, which has no deal "
+        "reference of its own, fails to load")
 
 
 def test_a_sales_deal_reference_is_in_its_column_never_its_note():
