@@ -727,8 +727,8 @@ def journal_rows() -> list:
     rows = schema.load("journal")
     unzoned = [r[0] for r in rows if not str(r[0]).endswith("Z")]
     if unzoned:
-        raise ValueError(f"A JOURNAL INSTANT IS IN UTC, MARKED Z; {len(unzoned)} are not, "
-                         f"`portfusion migrate` writes a book's older ones so: {unzoned[:5]}")
+        raise ValueError(f"A JOURNAL INSTANT IS IN UTC, MARKED Z; {len(unzoned)} are not: "
+                         f"{unzoned[:5]}")
     return rows
 
 # THE QUARTER-END COMPOSITIONS — every account's holdings, line by line, at each quarter end, from
@@ -935,5 +935,5 @@ for _t in _order.DATED:
     elif _t in _order.NUMBERED and (_at := _order.misnumbered(_t, _h, _rows)) is not None:
         _out_of_order.append(f"{_t}.csv row {_at}'s id is not its place in date order")
 if _out_of_order:
-    raise ValueError("THE RECORD IS NOT IN DATE ORDER; `portfusion migrate` puts a book in it:\n  "
+    raise ValueError("THE RECORD IS NOT IN DATE ORDER:\n  "
                      + "\n  ".join(_out_of_order))

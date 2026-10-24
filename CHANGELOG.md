@@ -3,6 +3,18 @@
 Each release, newest first. The version is `portfusion/__init__.py`'s, and `portfusion --version`
 prints it.
 
+## 0.3.0 — beta, 24 Oct 2026
+
+The clean break. This release carries no 0.2.0 book: one takes 0.2.1 first and runs
+`portfusion migrate --write` there, then takes this.
+
+- **The moves that carried a 0.2.0 book are retired**, with their tests. `portfusion migrate`
+  stays, for the next release that changes the store, held by tests on moves of their own; with
+  nothing declared it finds nothing to move.
+- **A refusal states its rule alone.** A journal instant without its `Z`, a table out of date
+  order and a sum of money not written to the penny no longer send a book to `portfusion migrate`.
+- **A holdings item's reading is read by its own names**, `cash` and `total`.
+
 ## 0.2.1 — beta, 24 Oct 2026
 
 The stepping stone. A 0.2.0 book takes this release and runs `portfusion migrate --write` before

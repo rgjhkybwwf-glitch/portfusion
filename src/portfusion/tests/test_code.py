@@ -161,8 +161,6 @@ DATED_PROSE_LINES = 30
 #: commit log holds them. CSS is not asked, since a colour there is a hash and three digits.
 _HISTORY = re.compile(r"\bthe review of\b|(?<![\w/&])#\d{1,3}(?!\w)|\bPR \d+\b", re.I)
 _DATED = re.compile(r"\b\d{1,2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]* 20\d\d\b")
-#: The migration moves describe the shapes they move from, and leave with them.
-_MOVES = ("record/migrations.py", "migrate/", "tests/test_migrations.py")
 
 
 def _prose(path):
@@ -203,8 +201,7 @@ def test_comments_state_the_rule_not_its_history(project_files):
         for n, text in _prose(path):
             dated += [f"{rel}:{n}"] if _DATED.search(text) else []
             told += [f"{rel}:{n} {text.strip()[:80]}"] if (
-                path.suffix != ".css" and _HISTORY.search(text)
-                and not any(m in rel for m in _MOVES)) else []
+                path.suffix != ".css" and _HISTORY.search(text)) else []
     assert not told, "prose names a review, an issue or a pull request:\n  " + "\n  ".join(told)
     assert len(dated) <= DATED_PROSE_LINES, (
         f"{len(dated)} lines of prose carry a dated year, above the {DATED_PROSE_LINES} on file: "

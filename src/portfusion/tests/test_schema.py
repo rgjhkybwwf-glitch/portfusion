@@ -220,8 +220,9 @@ def test_money_is_written_to_the_penny_and_a_quote_to_at_most_six_places():
     (schema.Field("q", "float", **schema.QUOTE), "1.2345678"),
     (schema.Field("q", "float", **schema.QUOTE), "1e-3")])
 def test_a_figure_written_to_other_places_is_refused_on_load(field, text):
-    """Money written to one place, or a quote to seven, is refused where the cell is read."""
-    with pytest.raises(ValueError, match="decimal places"):
+    """Money written to one place, or a quote to seven, is refused where the cell is read, the
+    refusal saying the places and nothing more."""
+    with pytest.raises(ValueError, match="decimal places$"):
         schema._parse(field, text, "t", 2)
 
 

@@ -897,9 +897,7 @@ def reading_of(item: dict) -> dict:
     return {"account": r.get("account") or item.get("account") or "",
             "as_of": when.isoformat() if when else "", "at": r.get("at") or "",
             "positions": r.get("positions"),
-            # AN ITEM MAY HOLD THEM AS `recon_cash` AND `stmt_value`.
-            "cash": r.get("cash", r.get("recon_cash")),
-            "total": r.get("total", r.get("stmt_value")),
+            "cash": r.get("cash"), "total": r.get("total"),
             "evidence": item.get("evidence_class") or "",
             "reference": str(ev.get("reference") or "").strip()}
 

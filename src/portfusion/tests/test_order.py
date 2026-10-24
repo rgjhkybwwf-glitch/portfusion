@@ -70,14 +70,14 @@ def test_the_loader_finds_a_row_out_of_order_and_an_id_not_its_place():
 @pytest.mark.parametrize("table", ["buys", "income"])
 def test_a_hand_edit_out_of_date_order_is_refused_on_load(store_copy, table):
     """A row moved to the end of its file by hand: the record will not load, and says which
-    table, and how a book is put back in order."""
+    table."""
     from portfusion.record import rules
     path = store_copy / f"{table}.csv"
     head, *lines = path.read_text(encoding="utf-8").splitlines(keepends=True)
     if len(lines) < 2 or len({ln.split(",")[1 if table == "buys" else 0] for ln in lines}) < 2:
         pytest.skip(f"the book holds no two {table} rows on different days")
     path.write_text(head + "".join(lines[1:] + lines[:1]), encoding="utf-8")
-    with pytest.raises(ValueError, match=rf"(?s)NOT IN DATE ORDER.*{table}\.csv"):
+    with pytest.raises(ValueError, match=rf"NOT IN DATE ORDER:\n  {table}\.csv"):
         rules.reload_store()
 
 
