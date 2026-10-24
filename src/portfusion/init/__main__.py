@@ -24,6 +24,17 @@ import sys
 from portfusion.log import log
 
 
+def _begins(value: str) -> int | str:
+    """A year, or a day as YYYY-MM-DD: anything else is refused as the command line's own error."""
+    import datetime as _dt
+    if value.isdigit():
+        return int(value)
+    try:
+        return _dt.date.fromisoformat(value).isoformat()
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"{value!r} is neither a year nor a day (YYYY-MM-DD)")
+
+
 def main(argv=None):
     # IT READS NO BOOK, and the record refuses to load in a folder that holds none: the demo
     # stands in while the new one is written.
@@ -35,7 +46,7 @@ def main(argv=None):
     kind = p.add_mutually_exclusive_group()
     kind.add_argument("--practice", action="store_true",
                       help="a practice book: a copy of the demo, marked as one")
-    kind.add_argument("--begins", type=lambda v: int(v) if v.isdigit() else v, metavar="YEAR|DATE",
+    kind.add_argument("--begins", type=_begins, metavar="YEAR|DATE",
                       help="the year, or the day (YYYY-MM-DD), the record begins")
     p.add_argument("--no-git", action="store_true", help="do not start its git history")
     p.add_argument("--push-on-commit", action="store_true",

@@ -209,6 +209,10 @@ def test_init_runs_where_there_is_no_book(tmp_path):
                          text=True)
     assert run.returncode == 0, run.stderr
     assert "record_begins,2026-05-15" in (tmp_path / "dated/store/settings.csv").read_text()
+    run = subprocess.run([sys.executable, "-m", "portfusion", "init", "undated", "--no-git",
+                          "--begins", "15 May"], cwd=tmp_path, env=env, capture_output=True, text=True)
+    assert run.returncode == 2 and "neither a year nor a day" in run.stderr, run.stderr
+    assert not (tmp_path / "undated").exists()
 
 
 def test_a_new_books_history_starts_with_it(tmp_path):

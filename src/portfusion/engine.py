@@ -1770,9 +1770,10 @@ class Book:
 
     def quarter_opens(self, quarter_end: str) -> str:
         """The day a quarter's figures measure from: the previous quarter end, but in the quarter the
-        record began, its opening (`quarter_label()` names such a quarter by it)."""
+        record began, its opening (`quarter_label()` names such a quarter by it). The opening itself
+        has nothing recorded before it, so its own is the quarter end before."""
         before = (pd.Timestamp(quarter_end) - pd.offsets.QuarterEnd(1)).date().isoformat()
-        return max(before, self.baseline_asof)
+        return max(before, self.baseline_asof) if quarter_end > self.baseline_asof else before
 
     def ytd_window(self) -> dict:
         """What the live year-to-date figures measure, for a page to state: `year`, the day they

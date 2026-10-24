@@ -375,6 +375,7 @@ def test_a_record_that_begins_on_any_day_is_measured_from_its_opening(store_copy
     assert b.year_opens(year) == f"{year}-05-14" and b.year_opens(year + 1) == f"{year}-12-31"
     assert b.quarter_opens(f"{year}-06-30") == f"{year}-05-14"
     assert b.quarter_opens(f"{year}-09-30") == f"{year}-06-30"
+    assert b.quarter_opens(f"{year}-03-31") == f"{year - 1}-12-31", "the opening opened from itself"
 
 
 def test_a_negative_quantity_carries_no_value(D):
