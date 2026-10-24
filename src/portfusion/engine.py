@@ -2054,11 +2054,15 @@ class Book:
         "Total" row, one column per category — POSITION_INCOME's first, which reach the
         return, then ACCOUNT_INCOME's — and `total`. Bounded by `_window()`; `year` keeps that
         calendar year's rows, as `income_rows()` does.
-        An account with none reads 0.00, never absent."""
+        An account with none reads 0.00, never absent — but a window that ends before an account
+        opened (`accounts_open()`) has no row for it unless the account earned in it, as a quarter's
+        other tables have none."""
         df = self._window(self.store["income"], start, end, year)
         cats = list(self.D.POSITION_INCOME) + list(self.D.ACCOUNT_INCOME)
+        shown = set(self.accounts_open(end)) | set(df["account"]) if end else set(self.D.ACCOUNT_ORDER)
         wide = (df.groupby(["account", "category"])["amount"].sum().unstack()
-                  .reindex(index=list(self.D.ACCOUNT_ORDER), columns=cats).fillna(0.0))
+                  .reindex(index=[a for a in self.D.ACCOUNT_ORDER if a in shown], columns=cats)
+                  .fillna(0.0))
         wide["total"] = wide[cats].sum(axis=1)
         wide.loc["Total"] = wide.sum()
         wide.index.name = "account"

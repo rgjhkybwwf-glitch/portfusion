@@ -248,11 +248,13 @@ def _register_without_record_begins(store):
     ("2026-07-01T13:30:00", "2026-07-01T12:30:00Z"),     # summer: an hour ahead
     ("2026-12-01T13:30:00", "2026-12-01T13:30:00Z"),     # winter: the same
     ("2026-10-25T01:30:00", "2026-10-25T00:30:00Z"),     # the hour the clocks make twice: the first
-    ("2026-07-01T12:30:00Z", "2026-07-01T12:30:00Z")])   # already on the record's clock
+    ("2026-07-01T12:30:00Z", "2026-07-01T12:30:00Z"),    # already on the record's clock
+    ("2026-07-01T13:30:00+00:00", "2026-07-01T13:30:00Z"),  # its own offset: moved by it,
+    ("2026-12-01T13:30:00+01:00", "2026-12-01T12:30:00Z")])  # never read as UK time
 def test_the_clock_move_reads_a_uk_time_as_the_clock_on_the_wall_said_it(uk, utc):
-    """An instant written before the record kept UTC is UK wall-clock time. The hour the clocks
-    going back make twice is read as its first, summer, one, as the move says: a reading that
-    took the second, or refused the hour, would move every such row by an hour unnoticed."""
+    """What `_utc()` promises, held: a reading that took the later of October's repeated hour, or
+    refused it, would shift each such row sixty minutes unnoticed, and an offset the instant
+    carries was once overwritten as though London's."""
     assert M._utc(uk) == utc
 
 

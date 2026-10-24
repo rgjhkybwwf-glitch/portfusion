@@ -81,9 +81,10 @@ def test_dates_are_iso(rows):
 
 @needs("account-statements")
 def test_every_account_is_covered_at_every_quarter_end(rows):
-    """A quarter-end NAV is only meaningful if every account has a value at it. A
+    """A quarter-end NAV is only meaningful if every account open then has a value at it. A
     missing account contributes silently nothing, which understates NAV and no check
-    downstream would catch it."""
+    downstream would catch it. One not yet open (`rules.accounts_open()`) needs none: a 0.00
+    statement standing in for it was the last of the stand-ins the quarter tables retired."""
     from portfusion.record import rules as D
     # THE DATES DERIVE from the quarter series, which also fixes a stale guard: the typed
     # list this replaces stopped at Q2 and never checked 30 Sep.
@@ -91,7 +92,7 @@ def test_every_account_is_covered_at_every_quarter_end(rows):
     assert dates, "no quarter series on file — this asserts nothing"
     for d in dates:
         covered = set(A.at(d, rows))
-        missing = sorted(set(D.ACCOUNT_ORDER) - covered)
+        missing = sorted(set(D.accounts_open(d)) - covered)
         assert not missing, f"no statement on or before {d} for: {missing}"
 
 

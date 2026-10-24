@@ -1,13 +1,9 @@
 account,as_of,positions_value,funds,running_pl,equity,deposit,source,quality
 Voss ii ISA,2025-12-31,2000.00,,,,,Not on file: invented for the demo,derived
-Voss ii Trading,2025-12-31,0.00,,,,,Account not yet funded,derived
-Voss IG Spread bet,2025-12-31,,,,0.00,,Account not yet funded,derived
 Voss ii ISA,2026-03-31,4180.00,,,,,Not on file: invented for the demo,derived
 Voss ii Trading,2026-03-31,1050.00,,,,,Not on file: invented for the demo,derived
-Voss IG Spread bet,2026-03-31,,,,0.00,,Account not yet funded,derived
 Voss ii ISA,2026-06-30,9377.27,,,,,Not on file: invented for the demo,derived
 Voss ii Trading,2026-06-30,1100.00,,,,,Not on file: invented for the demo,derived
-Voss IG Spread bet,2026-06-30,,,,0.00,,Account not yet funded,derived
 Voss ii ISA,2026-09-30,8260.53,,,,,Not on file: invented for the demo,sourced
 Voss ii Trading,2026-09-30,1175.00,,,,,Not on file: invented for the demo,sourced
 Voss IG Spread bet,2026-09-30,24122.00,,,8140.80,,"IG REST /accounts XK9P3, read 2026-09-30 at 16:00",sourced
