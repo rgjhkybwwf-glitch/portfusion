@@ -353,7 +353,8 @@ def _cash_in_one_place(store: pathlib.Path) -> list[Change]:
     figure a cash reading of its day, unless one is on file at it. A figure on file at another, or
     a statement's cash whose source names no class, is moved by hand, and so is a reading whose
     stock and cash are not its total. A statement's cash of zero whose source names none is an
-    account not yet funded, and goes; a spread bet's is its funds, on the same row, and goes.
+    account not yet funded, and goes; a spread bet's is its funds, on the same row, and goes; and
+    so does one whose document states no cash (ii's holdings export), being another document's.
     Untouched lines keep their bytes."""
     path = store / "cash-readings.csv"
     if not path.is_file():
@@ -363,6 +364,10 @@ def _cash_in_one_place(store: pathlib.Path) -> list[Change]:
     new, out = [], []
 
     def owe(account, day, cash, evidence, reference, where):
+        ev = rules_evidence.EVIDENCE_BY_KEY.get(evidence)
+        if ev is not None and ev.covers and not rules_evidence.states_cash(ev):
+            said.append(f"  {where}: cash {cash} its {ev.label} does not state, dropped")
+            return
         was = on_file.get((account, day))
         if was is not None and abs(float(was) - float(cash)) >= 0.005:
             raise ValueError(f"{where}: cash {cash} for {account} on {day}, but cash-readings.csv "

@@ -281,6 +281,26 @@ def test_a_readings_total_its_stock_and_cash_do_not_make_is_moved_by_hand(tmp_pa
         M.plan(book)
 
 
+def test_cash_a_document_never_stated_is_not_made_a_cash_reading(tmp_path):
+    """A statement banked off ii's holdings export, which states no cash, carrying a cash figure
+    another document gave: the column leaves and no cash reading is credited to the export."""
+    book, store, _share = _with_cash_in_three_places(tmp_path)
+    path = store / "account-statements.csv"
+    rows = list(csv.reader(path.open(encoding="utf-8")))
+    at = rows[0].index("source")
+    isa = next(r for r in rows[1:] if r[1] == "2026-06-30" and r[rows[0].index("cash")])
+    isa[at] = f"ii valuation 30 Jun 2026 18:31 ({isa[0]})"
+    _write(path, rows)
+    cash = store / "cash-readings.csv"
+    before = cash.read_text(encoding="utf-8")
+
+    _m, changes = M.plan(book)
+    moved = next(c for c in changes if c.to == cash)
+    assert f"{isa[0]},2026-06-30," not in moved.text, "the export was credited with a cash figure"
+    assert any("does not state" in line for c in changes for line in c.said), changes
+    assert moved.text.count("\n") == before.count("\n") + 4, "the other figures did not come"
+
+
 def test_two_cash_figures_for_one_day_are_moved_by_hand(tmp_path):
     """A reading's cash at another figure than the cash reading of its day: one of them is wrong,
     so the migration refuses and names the row, writing nothing."""
