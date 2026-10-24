@@ -152,12 +152,14 @@ b = Book()
 assert b.ytd_opens() == b.baseline_asof == "2026-05-14", b.ytd_opens()
 assert not math.isnan(b.headline()["YTD return (MWR)"]), "the year has nothing to open from"
 first = b.quarter_returns().iloc[0]
-assert (first["quarter"], first["opens"]) == ("Q2 2026, from 15 May", "2026-05-14"), first
-assert b.year_to_quarter("2026-09-30")["opens"] == "2026-05-14"
+assert (first["quarter"], first["opens"]) == ("Q2 2026, from 14 May", "2026-05-14"), first
+year = b.year_to_quarter("2026-09-30")
+assert (year["quarter"], year["opens"]) == ("2026 to 30 Sep, from 14 May", "2026-05-14"), year
 assert completeness("2026-06-30") == [], completeness("2026-06-30")
-assert "<h1>Q2 2026, from 15 May</h1>" in render("2026-06-30")
+page = render("2026-06-30")
+assert "<h1>Q2 2026, from 14 May</h1>" in page and "2026 to 30 Jun, from 14 May" in page
 from portfusion.desk import engine as desk
-assert desk.reports()["quarters"][-1]["quarter"] == "Q2 2026, from 15 May", desk.reports()
+assert desk.reports()["quarters"][-1]["quarter"] == "Q2 2026, from 14 May", desk.reports()
 """
 
 
