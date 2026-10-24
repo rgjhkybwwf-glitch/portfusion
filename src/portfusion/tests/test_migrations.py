@@ -218,12 +218,30 @@ def _money_as_it_came(store):
     return {("replace", t): None for t in touched if t in schema.TABLES}, {}
 
 
+def _journal_on_uk_time(store):
+    """Every journal instant, and the bench item each ties to, as UK wall-clock time with no zone,
+    the way the record wrote them before it kept UTC."""
+    import datetime as _dt
+    import zoneinfo
+
+    def uk(at):
+        return (_dt.datetime.fromisoformat(at.replace("Z", "+00:00"))
+                .astimezone(zoneinfo.ZoneInfo("Europe/London")).strftime("%Y-%m-%dT%H:%M:%S"))
+    rows = _rows_of(store / "journal.csv")
+    _write(store / "journal.csv", [rows[0], *([uk(r[0]), *r[1:]] for r in rows[1:])])
+    for path in (store.parent / "_archive" / "bench").glob("*.json"):
+        at = json.loads(path.read_text(encoding="utf-8"))["written_at"]
+        path.write_text(path.read_text(encoding="utf-8").replace(at, uk(at)), encoding="utf-8")
+    return {}, {}
+
+
 @pytest.mark.parametrize("step, old_shape", [
     pytest.param(1, _out_of_date_order, id="date order and ids"),
     pytest.param(2, _with_retired_tables, id="two tables retired"),
     pytest.param(3, _with_the_lifecycle, id="the lifecycle column"),
     pytest.param(4, _with_cash_in_three_places, id="cash in three places"),
-    pytest.param(5, _money_as_it_came, id="money as it came")])
+    pytest.param(5, _money_as_it_came, id="money as it came"),
+    pytest.param(6, _journal_on_uk_time, id="the journal on UK time")])
 def test_a_book_one_move_behind_is_carried_to_the_demo(tmp_path, step, old_shape):
     """The move planned is that one, and it lands the demo exactly: every file the demo's bytes,
     no file the demo lacks, the journal the demo's plus the rows the move must write, and nothing
@@ -244,6 +262,8 @@ def test_a_book_one_move_behind_is_carried_to_the_demo(tmp_path, step, old_shape
             assert may_differ[p.name](_rows_of(store / p.name)), f"{p.name}'s rows moved wrong"
         elif p.name != "journal.csv":
             assert got == want, f"{p.name} moved wrong"
+    for p in sorted((schema.DEMO / "_archive" / "bench").glob("*.json")):
+        assert (book / "_archive" / "bench" / p.name).read_bytes() == p.read_bytes(), p.name
     said = (store / "journal.csv").read_text(encoding="utf-8")
     assert said.startswith((demo / "journal.csv").read_text(encoding="utf-8"))
     added = {(r[2], r[3]): r[4] for r in csv.reader(io.StringIO(said)) if r[1] == "migrate"}

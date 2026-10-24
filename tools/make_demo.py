@@ -52,7 +52,7 @@ UNFUNDED = "Account not yet funded"
 ISA, TRADING, SPREAD = "Voss ii ISA", "Voss ii Trading", "Voss IG Spread bet"
 
 #: When the journal opened, and every count in it is taken.
-OPENED = "2026-09-30T18:00:00"
+OPENED = "2026-09-30T17:00:00Z"
 
 
 # =====================================================================================
@@ -392,7 +392,6 @@ def _histories() -> dict[str, tuple[list[str], list[dict]]]:
             ("BRYC.L", "2025-12-31", 2.0, "GBP"), ("BRYC.L", "2026-03-31", 2.1, "GBP"),
             ("TARN.L", "2026-03-31", 2.6, "GBP"), ("BRYC.L", "2026-06-30", 2.2, "GBP"),
             ("KELS.L", "2026-06-30", 1.6, "GBP"), ("QNLR", "2026-06-30", 105.0, "USD"),
-            ("VELD SB", "2026-07-31", 10020.0, "USD"),
             ("BRYC.L", "2026-09-30", 2.35, "GBP"), ("KELS.L", "2026-09-30", 1.7, "GBP"),
             ("QNLR", "2026-09-30", 112.0, "USD"))
     ] + [
@@ -480,7 +479,7 @@ def _bench_item(T: dict) -> dict:
     }
 
 
-WRITTEN_AT = "2026-08-12T10:03:15"
+WRITTEN_AT = "2026-08-12T09:03:15Z"
 
 
 def _journal(T: dict, item: dict) -> list[dict]:
@@ -500,10 +499,10 @@ def _journal(T: dict, item: dict) -> list[dict]:
             continue
         for table in ("quarter-snapshots", "quarter-nav", "quarter-results"):
             n = sum(1 for r in T[table] if r["as_of"] == as_of)
-            writes.append({"at": f"{as_of}T17:30:00", "route": "freeze", "op": "append",
+            writes.append({"at": f"{as_of}T16:30:00Z", "route": "freeze", "op": "append",
                            "table": table, "rows": n, "ref": as_of,
                            "detail": f"{n} row(s) freezing {as_of}, from the engine"})
-    writes.append({"at": "2026-10-13T20:31:10", "route": "hand", "op": "replace",
+    writes.append({"at": "2026-10-13T19:31:10Z", "route": "hand", "op": "replace",
                    "table": "quarter-results", "rows": restated,
                    "ref": "restatement 2026-10-13",
                    "detail": f"restatements of the three closed quarters, "

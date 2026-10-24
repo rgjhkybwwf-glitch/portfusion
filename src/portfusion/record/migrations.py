@@ -23,6 +23,7 @@ import io
 import json
 import pathlib
 import re
+import zoneinfo
 from typing import Callable, NamedTuple
 
 from portfusion.history import files
@@ -96,6 +97,11 @@ MIGRATIONS = (
         issue="every sum of money written to the penny",
         tables={}, columns={}, splits={}, marks={}, code=(),
         rows=lambda store: _to_the_penny(store),
+    ),
+    Migration(
+        issue="the journal on one clock: every instant in UTC",
+        tables={}, columns={}, splits={}, marks={}, code=(),
+        rows=lambda store: _on_one_clock(store),
     ),
 )
 
@@ -464,6 +470,37 @@ def _to_the_penny(store: pathlib.Path) -> list[Change]:
             if name in schema.TABLES:
                 journal.append(("replace", name, n, "money written to the penny; no value moved"))
     return out + _journalled(store, journal)
+
+
+def _utc(at: str) -> str:
+    """An instant on the record's clock (`schema.record_instant`): one marked `Z` as it is, one
+    with no zone read as UK wall-clock time. An hour the clocks going back make twice is read as
+    its first, summer, one."""
+    if not at or at.endswith("Z"):
+        return at
+    uk = _dt.datetime.fromisoformat(at).replace(tzinfo=zoneinfo.ZoneInfo("Europe/London"))
+    return uk.astimezone(_dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def _on_one_clock(store: pathlib.Path) -> list[Change]:
+    """Every journal instant written before the record kept UTC, and the bench items it ties to
+    (`written_at`), on the one clock. No row moves; untouched lines keep their bytes."""
+    out, path = [], store / "journal.csv"
+    if path.is_file():
+        lines, rows, eol = _rows(path.read_text(encoding="utf-8"))
+        moved = [i for i, r in enumerate(rows[1:], 1) if r and _utc(r[0]) != r[0]]
+        for i in moved:
+            lines[i] = _line([_utc(rows[i][0]), *rows[i][1:]], eol)
+        if moved:
+            out.append(Change(path, path, "".join(lines),
+                              [f"journal.csv: {len(moved)} instant(s) written in UTC"]))
+    for item in sorted((store.parent / "_archive" / "bench").glob("*.json")):
+        raw = item.read_text(encoding="utf-8")
+        at = json.loads(raw).get("written_at") or ""
+        new = re.sub(rf'("written_at"\s*:\s*"){re.escape(at)}"', rf'\g<1>{_utc(at)}"', raw, count=1)
+        if new != raw:
+            out.append(Change(item, item, new, [f"bench item {item.name}: written_at in UTC"]))
+    return out
 
 
 def plan(book: pathlib.Path) -> tuple[Migration | None, list[Change]]:

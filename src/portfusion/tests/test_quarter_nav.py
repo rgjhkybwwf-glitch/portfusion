@@ -116,20 +116,23 @@ def test_the_csv_store_agrees_with_the_record():
     fact is how this project's worst defects have always started, so they are tied
     rather than trusted.
 
-    NOT A QUARTER THE FREEZE WROTE. Its NAV is the engine's valuation at the quarter end, not a
-    copy of a statement, and its tie to the broker is the reconciliation inside
-    `rules.CLOSE_CHECK_WINDOW_DAYS`, which `report/gate.py:completeness()` gates. The journal says which
-    quarter ends the freeze wrote."""
+    ONLY A ROW COPIED FROM A STATEMENT, its quality `sourced`. A `derived` row is the engine's
+    valuation at the quarter end (what the freeze writes), and its tie to the broker is the
+    reconciliation inside `rules.CLOSE_CHECK_WINDOW_DAYS`, which `report/gate.py:completeness()`
+    gates. The row says which it is, so no other file is asked: the journal once was, and a book
+    whose journal began afresh had its engine's valuations tied to statements they never copied.
+    A spread bet's notional is exposure, not NAV, and has no statement figure here."""
     from portfusion.history import accounts as A
-    from portfusion.record import schema
-    header = [f.name for f in schema.TABLES["journal"].fields]
-    frozen = {j["ref"] for j in (dict(zip(header, r)) for r in schema.load("journal"))
-              if j["route"] == "freeze" and j["table"] == "quarter-nav"}
-    for d in sorted(set(NAV_TOTAL) - frozen):
-        csv_nav = sum(A.nav_component(r) for r in A.at(d).values())
-        assert round(csv_nav, 2) == NAV_TOTAL[d], (
-            f"at {d} the CSV store says {csv_nav:,.2f} and the record says "
-            f"{NAV_TOTAL[d]:,.2f}")
+    statements, wrong = A.load(), []
+    for q in D.QUARTER_NAV:
+        if q.quality != "sourced" or q.contribution == "notional":
+            continue
+        on_file = A.at(str(q.as_of), statements).get(q.account)
+        stated = None if on_file is None else round(A.nav_component(on_file), 2)
+        if stated != round(q.amount, 2):
+            wrong.append(f"{q.as_of} {q.account}: the record says {q.amount:,.2f}, the statement "
+                         + ("on file says nothing" if stated is None else f"{stated:,.2f}"))
+    assert not wrong, wrong
 
 
 @needs("quarter-nav")

@@ -570,46 +570,27 @@ def test_narrowing_to_an_account_narrows_a_line_that_several_accounts_hold(book)
 
 
 # =====================================================================================
-# A LINE'S MARK HISTORY — every key it was ever priced under
+# A LINE'S MARK HISTORY — a spread bet's is its contracts'
 # =====================================================================================
 
-@needs("buys")
-def test_a_lines_mark_history_spans_every_key_it_was_ever_priced_under(book):
-    """price-history still holds TICKER-KEYED rows from before the contract convention.
+_A_BET = next((c for c, kind in D.KIND_OF_CODE.items() if kind == "spread bet"), None)
 
-    A line's honest history spans every spelling it was ever marked under — ORLA SB here
-    reads as `ORLA-DEC26` twice and the older `ORLA SB` once, from when that ticker had one
-    contract open and the two keys meant the same thing. Showing only the contract would
-    make a position opened in May look as though it began in August.
 
-    THE LINE IS FOUND, NOT NAMED: any ticker the history prices under its own key AND under
-    one of its mapped contracts. A book with no such line fails the premise loudly.
-
-    A RETIRED CONTRACT CONTRIBUTES WHAT IT HAS, which may be nothing: closed, and never
-    priced. That is an absence rather than a gap.
-    """
-    from portfusion.record import rules as D
-    leg_ticker = {t.trade_id: t.ticker for t in D.buys}
-    contracts_of = {}
-    for leg, contract in D.LEG_CONTRACT.items():
-        if leg in leg_ticker:
-            contracts_of.setdefault(leg_ticker[leg], set()).add(contract)
-    keys_on_file = set(book.store["history.prices"]["mark_key"])
-    spanned = sorted(t for t, cs in contracts_of.items()
-                     if t in keys_on_file and cs & keys_on_file)
-    assert spanned, ("no line is priced under both its own key and a contract's — the "
-                     "legacy-spelling claim has nothing to bite on in this book")
-    line = spanned[0]
-
-    history = book.mark_history(line)
-    assert not history.empty, f"{line} has no marks at all"
-    assert len(set(history["mark_key"])) > 1, (
-        f"{line}'s history is under one key only: {set(history['mark_key'])} — the legacy "
-        f"ticker-keyed rows are being dropped")
-    assert "source" in history.columns and history["source"].notna().all(), \
-        "a mark arrives without its source string, which is the point of opening this"
-    dates = list(history["date"])
-    assert dates == sorted(dates, reverse=True), "the history is not newest-first"
+@needs("contracts")
+@pytest.mark.parametrize("file, row", [
+    ("price-history.csv", "{bet},2026-01-02,101.5,USD,sourced,close,a mark under the bet's code"),
+    ("current-prices.csv", "{bet},101.5,USD,2026-01-02,a mark under the bet's code,close,")])
+def test_a_spread_bet_priced_under_its_own_code_is_refused_by_name(store_copy, file, row):
+    """A SPREAD BET IS PRICED BY ITS CONTRACT. A mark under the bet's own code is one level for a
+    position that may sit on several contracts at several levels, and valued it at that one,
+    saying nothing; the engine read such marks as a fall-back once, from before each contract had
+    a key. The store refuses one now, naming the file, the code and the day."""
+    from portfusion.engine import load_store
+    from harness import append_rows
+    append_rows(store_copy / file, [row.format(bet=_A_BET)])
+    D.reload_store()
+    with pytest.raises(ValueError, match=rf"(?s)PRICED BY ITS CONTRACT.*{file}: {_A_BET} 2026-01-02"):
+        load_store()
 
 
 @needs("buys")
@@ -623,6 +604,20 @@ def test_a_multi_contract_line_opens_every_contracts_marks(book):
         assert priced_by <= set(history["mark_key"]), (
             f"{ticker} is priced by {priced_by} but its history covers "
             f"{set(history['mark_key'])}")
+        assert history["level"].all(), f"{ticker}'s marks are not all read as levels"
+
+
+@needs("buys")
+def test_a_lines_mark_history_reads_newest_first_each_mark_with_its_source(book):
+    """The evidence under a holding's value: every mark newest first, each with the source string
+    that is the point of opening it. Asked of every line marked on more than one day."""
+    histories = {code: book.mark_history(code) for code in D.KIND_OF_CODE}
+    dated = {c: h for c, h in histories.items() if h["date"].nunique() > 1}
+    assert dated, "no line is marked on two days — the order asserts nothing"
+    for code, h in dated.items():
+        assert list(h["date"]) == sorted(h["date"], reverse=True), f"{code} is not newest first"
+        assert h["source"].notna().all() and (h["source"] != "").all(), \
+            f"a mark of {code} arrives without its source"
 
 
 # =====================================================================================
