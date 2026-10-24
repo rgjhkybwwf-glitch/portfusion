@@ -289,7 +289,7 @@ def test_cash_a_document_never_stated_is_not_made_a_cash_reading(tmp_path):
     rows = list(csv.reader(path.open(encoding="utf-8")))
     at = rows[0].index("source")
     isa = next(r for r in rows[1:] if r[1] == "2026-06-30" and r[rows[0].index("cash")])
-    isa[at] = f"ii valuation 30 Jun 2026 18:31 ({isa[0]})"
+    isa[at] = f"ii valuation 30 Jun 2026 14:05 ({isa[0]})"
     _write(path, rows)
     cash = store / "cash-readings.csv"
     before = cash.read_text(encoding="utf-8")
