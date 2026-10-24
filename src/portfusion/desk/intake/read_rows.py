@@ -333,6 +333,7 @@ def _ii_ledger(text: str, out: dict) -> dict:
     out["account"] = out["account"] or _ii_account(lines)
     account = out["account"]
     source = D.evidence_source("ii-transactions", reference=out["reference"], account=account)
+    known = [r[0] for r in D.SECURITIES]
 
     for ln in sorted(lines, key=lambda x: x["when"]):
         line = f"{ln['when']} {ln['desc']}"
@@ -355,6 +356,11 @@ def _ii_ledger(text: str, out: dict) -> dict:
                   "source": source, "detail": ln["desc"]}
         if code.table == "income":
             values["category"] = code.category
+        # A DIVIDEND'S TICKER IS ITS SYMBOL'S CODE IN THE BOOK, when the book registers one; else
+        # blank, for a person.
+        if code.category == "Dividend":
+            ticker = D.book_code(ln["symbol"], known)
+            values["ticker"] = ticker if ticker in known else ""
         already = bench_matching(code.table, values)
         if already and already != "unreadable":
             out["seen"].append({"line": line, "in_record": already,
