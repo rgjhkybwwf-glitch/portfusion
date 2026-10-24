@@ -5,6 +5,12 @@ prints it.
 
 ## Unreleased
 
+- **A correction replaces its row.** A mark, a rate or a statement read again on its own day takes
+  its row's place, and a restated quarter end replaces its rows and results, the journal saying
+  why; git keeps what each row said. The `status` column five tables carried to keep a corrected
+  row beside its replacement is retired, with the Holdings mark history's struck-through marks,
+  and the loader refuses a quarter end written twice. `portfusion migrate` drops the column and
+  any row it marked superseded.
 - **Two tables retire: `realisations` and `baseline-reconstruction`.** A round trip's entry date
   and note come from its own buys and sales, which already said what the first table did, and
   nothing read the second. `portfusion migrate` removes both files and the journal rows that name

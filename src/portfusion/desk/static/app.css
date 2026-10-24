@@ -769,8 +769,6 @@ dl.method dd { margin: var(--space-1) 0 0; }
 .detail-row dl.detail dt { font-weight: 600; margin-top: var(--space-2); }
 .detail-row dl.detail dd { margin: 0; max-width: var(--measure); }
 .detail-row dl.detail dd.wide { max-width: none; }
-/* A CORRECTION, under the mark that replaced it: on file, and not the answer. */
-tr.superseded td { text-decoration: line-through; color: var(--muted); }
 
 /* THE THREE EVIDENCE BOXES LINE UP. `.f` was a flex COLUMN, so each
    field's input sat directly under its own label — and the three statement-grade limbs carry

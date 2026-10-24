@@ -90,6 +90,19 @@ def test_every_account_is_covered_at_every_quarter_end():
         assert covered == set(D.ACCOUNT_ORDER), f"{d} missing: {set(D.ACCOUNT_ORDER) - covered}"
 
 
+@pytest.mark.parametrize("table", ["quarter-nav", "quarter-snapshots", "quarter-results"])
+def test_a_quarter_end_written_twice_is_refused_on_load(store_copy, table):
+    """A RESTATEMENT REPLACES ITS ROW, so a second row for one key is two answers to one question:
+    a row copied beside itself by hand, and the record will not load, naming the table."""
+    path = store_copy / f"{table}.csv"
+    head, *lines = path.read_text(encoding="utf-8").splitlines(keepends=True)
+    if not lines:
+        pytest.skip(f"the book holds no {table} row")
+    path.write_text(head + lines[0] + "".join(lines), encoding="utf-8")
+    with pytest.raises(ValueError, match=rf"(?s)FROZEN ONCE.*{table}\.csv"):
+        D.reload_store()
+
+
 def test_every_row_names_a_source_and_a_known_quality():
     """The vocabulary is `schema.QUALITIES`, read rather than restated — it says what each
     state means, and a copy here would permit whatever it had last been told."""

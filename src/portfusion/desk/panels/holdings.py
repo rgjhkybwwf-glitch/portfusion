@@ -66,9 +66,7 @@ HELD_COLUMNS = ("qty", "stake")
 #: value, which What Changed and the charts carry further. Every mark stays on file, because a
 #: past valuation, What Changed and the IG checks are worked out from them. Whether a mark is a
 #: close, a bid or a reconstruction its source already says, so `quality` and `struck` are not
-#: drawn; a correction (a superseded mark) is carried by its `status` and drawn struck through
-#: under the mark that replaced it, and a live read a later read replaced is not on file at all.
-#: Its price prints as Holdings' own do: a spread bet's `level` in points, a share's at its
+#: drawn; a mark a later read of its day replaced is not on file at all. Its price prints as Holdings' own do: a spread bet's `level` in points, a share's at its
 #: currency's places, house/precision.py's.
 MARK_COLUMNS = ("date", "mark_key", "price", "currency", "source")
 MARK_REFRESHES = 5
@@ -133,14 +131,12 @@ def query(account: str | None = None, by: str = GROUPINGS[0]) -> dict:
     }
 
 
-def _marks(history, live) -> list[dict]:
-    """The marks of the line's last MARK_REFRESHES refresh dates, newest first, each superseded
-    mark under the live one that replaced it. Selection: the engine's rows, fewer of them."""
+def _marks(history) -> list[dict]:
+    """The marks of the line's last MARK_REFRESHES refresh dates, newest first, in the engine's
+    order. Selection: the engine's rows, fewer of them."""
     days = sorted(set(history["date"]), reverse=True)[:MARK_REFRESHES]
-    shown = history[history["date"].isin(days)].copy()
-    shown["_order"] = (shown["status"] != live).astype(int)
-    shown = shown.sort_values(["date", "mark_key", "_order"], ascending=[False, True, True])
-    return _shape.rows(shown, MARK_COLUMNS + ("status", "level"), dates=("date",))
+    return _shape.rows(history[history["date"].isin(days)], MARK_COLUMNS + ("level",),
+                       dates=("date",))
 
 
 def _split(b, account) -> tuple:
@@ -195,6 +191,6 @@ def _rows(frame, columns: list, b, by: str, account) -> list[dict]:
 
     for row, key, size in zip(out, keys, held):
         row.update(size)
-        row["marks"] = _marks(b.mark_history(key, by=by, account=account), b.D.LIVE_MARK)
+        row["marks"] = _marks(b.mark_history(key, by=by, account=account))
         row["reasons"] = reasons.get(key, [])
     return out

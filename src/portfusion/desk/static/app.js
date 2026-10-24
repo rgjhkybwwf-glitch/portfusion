@@ -1282,7 +1282,8 @@ const filters = (fields, clearId) => `
    `cells` DRAWS A DECLARED COLUMN BY HAND, in its own place: Trades' Quantity and Traded price
    read a spread bet in its own terms, a stake per point at a level in points.
 
-   `rowClass` NAMES A ROW'S STATE for the stylesheet: a superseded mark is drawn struck through. */
+   `rowClass` NAMES A ROW'S STATE for the stylesheet: Performance rules off where the next
+   account starts. */
 /* EVERY TABLE SORTS BY ITS HEADINGS. A heading pressed sorts its column —
    figures largest first, words and dates A to Z first — pressed again reverses it, and a third
    press puts the page's own order back. A row's detail moves with it. The sort is held per page
@@ -1537,11 +1538,10 @@ const DETAIL_PART = {
       `<span class="muted small">${esc(day(n.date))}</span>`).join(" · ")}</dd>`,
   /* THE LINE'S LAST FIVE REFRESHES, newest first. A spread bet on two contracts shows both, at
      their own levels, and a line whose older marks were banked under its TICKER shows those
-     too. A correction — a superseded mark — sits struck through under the mark that replaced
-     it. */
+     too. */
   marks: (x, markCols) => !(x.marks || []).length ? "" :
     `<dt>${head("marks")}</dt><dd class="wide">${table(x.marks, markCols, "", () => "",
-      { sort: false, rowClass: (m) => m.status === "superseded" ? "superseded" : "",
+      { sort: false,
         /* A MARK PRINTS AS THE LINE'S OWN PRICE DOES: a bet's level in points, a share's
            price at its currency's places — not the raw number it was banked as. */
         cells: { price: (m) => m.level ? pointsCell(m.price)
@@ -2722,7 +2722,7 @@ RENDER_LATE = {
           out.textContent = `Banked the closes of ${(res.days || []).join(", ") || res.day}: `
             + `${res.banked.prices} price(s), `
             + `${res.banked.rates} rate(s)${res.already ? `, ${res.already} already on file` : ""}.`
-            + ((res.superseded || []).length ? `\n\n${res.superseded.join("\n")}` : "");
+            + ((res.replaced || []).length ? `\n\n${res.replaced.join("\n")}` : "");
           return;
         }
         LAST_REFRESH = res;

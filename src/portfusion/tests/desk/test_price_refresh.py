@@ -740,12 +740,11 @@ def test_a_close_outranks_its_days_live_read_and_the_next_bank_leaves_it(store_c
     marks.write(prices=[_live_read(line)])
     out = marks.bank_closes(_DAY, prices=[_close(ticker=line, currency=RATE_CUR)])
     assert out["banked"]["prices"] == 1
-    assert out["superseded"] == [f"{line} {_DAY}: the live read 249.0 is replaced by that "
-                                 f"day's close 250.0"]
+    assert out["replaced"] == [f"{line} {_DAY}: the live read 249.0 is replaced by that "
+                               f"day's close 250.0"]
     refresh.bank()
     day = [r for r in PH.load() if (r["mark_key"], r["date"]) == (line, _DAY)]
-    assert sorted((r["struck"], r["status"], r["price"]) for r in day) == [
-        ("close", "live", 250.0)]
+    assert [(r["struck"], r["price"]) for r in day] == [("close", 250.0)]
     assert PH.check() == [] and marks.banked()["ok"]
     assert Book()._marks_at(_DAY)[0][line] == (_DAY, 250.0)
 
@@ -756,28 +755,27 @@ def test_a_days_closing_rate_outranks_its_live_rate(store_copy):
     from portfusion.history import fx as FX
     FX.save(FX.load() + [{"currency": RATE_CUR, "date": _DAY, "rate": 1.33,
                           "kind": "spot", "quality": "sourced", "struck": "live",
-                          "status": FX.LIVE,
                           "source": f"TradingView FX_IDC:GBP{RATE_CUR} quote, live — test"}])
     out = marks.bank_closes(_DAY, rates=[_rate()])
-    assert out["banked"]["rates"] == 1 and len(out["superseded"]) == 1
+    assert out["banked"]["rates"] == 1 and len(out["replaced"]) == 1
     day = [r for r in FX.load() if (r["currency"], r["date"]) == (RATE_CUR, _DAY)]
-    assert sorted((r["status"], r["rate"]) for r in day) == [("live", 1.34)]
+    assert [r["rate"] for r in day] == [1.34]
     assert FX.rate_on(RATE_CUR, _DAY) == 1.34
 
 
 def test_a_live_read_its_close_outranks_needs_no_banking(store_copy, monkeypatch):
     """The one path where the read reached no history first. The close is that day's mark, so the
     read is not owed to the history and the archive step neither files it nor strikes it over the
-    close (until 12 Oct 2026 it was filed, superseded)."""
+    close (until 12 Oct 2026 it was filed, and kept beside it)."""
     from portfusion.history import prices as PH
     read = {"mark_key": TICK, "date": _DAY, "price": 249.0, "currency": TICK_CUR,
-            "quality": "sourced", "struck": "live", "status": PH.LIVE, "source": "a read — test"}
+            "quality": "sourced", "struck": "live", "source": "a read — test"}
     PH.save(PH.load() + [{**read, "price": 250.0, "struck": "close", "source": "a close — test"}])
     monkeypatch.setattr(PH, "current_marks", lambda: [read])
     assert PH.check() == []
     PH.archive(verbose=False)
     day = [r for r in PH.load() if (r["mark_key"], r["date"]) == (TICK, _DAY)]
-    assert sorted((r["struck"], r["status"]) for r in day) == [("close", "live")]
+    assert [r["struck"] for r in day] == ["close"]
     assert PH.check() == []
 
 
@@ -1064,13 +1062,13 @@ def _a_lacking_date(store_copy):
     day = "2025-12-10"
     FX.save(FX.load() + [{"currency": RATE_CUR, "date": day, "rate": 1.29,
                           "kind": "spot", "quality": "derived", "struck": "",
-                          "status": FX.LIVE, "source": "typed for the test"}])
+                          "source": "typed for the test"}])
     return day
 
 
 def test_a_rate_the_record_lacks_leaves_the_list_when_its_close_is_banked(store_copy):
     """THE LOOP: a typed rate is owed its day's close; the close banked through the past-day door
-    supersedes it, keeps it on file, and the date is owed nothing more."""
+    replaces it, and the date is owed nothing more."""
     from portfusion.engine import Book
     from portfusion.desk.doors import marks
     from portfusion.history import fx as FX
@@ -1082,9 +1080,9 @@ def test_a_rate_the_record_lacks_leaves_the_list_when_its_close_is_banked(store_
                                          "struck": "close"}])
     assert out["banked"]["rates"] == 1 and out["days"] == [day]
     assert not [g for g in Book().rate_gaps() if (g["currency"], g["date"]) == (RATE_CUR, day)]
-    on_day = sorted((r["status"], r["rate"]) for r in FX.load()
-                    if (r["currency"], r["date"]) == (RATE_CUR, day))
-    assert on_day == [("live", 1.2917), ("superseded", 1.29)]
+    on_day = [r["rate"] for r in FX.load() if (r["currency"], r["date"]) == (RATE_CUR, day)]
+    assert on_day == [1.2917]
+    assert out["replaced"] == [f"{RATE_CUR} rate {day}: 1.29 is replaced by that day's close 1.2917"]
 
 
 def test_a_weekend_date_is_served_by_the_friday_close():
@@ -1094,13 +1092,13 @@ def test_a_weekend_date_is_served_by_the_friday_close():
     from portfusion.engine import Book
     b = Book()
     fh = b.store["history.fx"]
-    closes = fh[(fh["struck"] == "close") & (fh["status"] == "live") & (fh["kind"] == "spot")]
+    closes = fh[(fh["struck"] == "close") & (fh["kind"] == "spot")]
     friday = next((d for d in closes["date"] if pd.Timestamp(d).weekday() == 4), None)
     if friday is None:
         pytest.skip("no Friday close on file to stand a Saturday on")
     cur = closes[closes["date"] == friday]["currency"].iloc[0]
     saturday = (pd.Timestamp(friday) + pd.Timedelta(days=1)).date().isoformat()
-    later = fh[(fh["currency"] == cur) & (fh["date"] == saturday) & (fh["status"] == "live")]
+    later = fh[(fh["currency"] == cur) & (fh["date"] == saturday)]
     assert later.empty, "a rate dated the Saturday would answer before the Friday's close"
     b.store["income"] = pd.concat([b.store["income"], pd.DataFrame([{
         "date": pd.Timestamp(saturday), "account": "x", "category": "Cash interest",

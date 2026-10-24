@@ -443,12 +443,10 @@ def bank_closes(day: str, prices: list[dict] | None = None,
 
     A CLOSE OUTRANKS A LIVE READ OF ITS OWN DAY. A
     (line, date) already on file at the same figure is skipped; held by a live read of that day,
-    the read is REPLACED — it leaves the file, the close lands, and a line says so (a live read
-    is that day seen earlier, never a wrong figure: `history/prices.py`); held by a statement's
-    price or a reconstruction, that is SUPERSEDED and kept, a correction; held by a DIFFERENT
-    close, the whole write is refused, because one of the two is wrong and a door cannot say
-    which. `history/prices.py` keeps the next archive step
-    from striking the live read back over the close. Refused too, writing nothing: a line without its figure, date and source,
+    or by a statement's price or a reconstruction, that row is REPLACED — it leaves the file, the
+    close lands, and a line says so; held by a DIFFERENT close, the whole write is refused,
+    because one of the two is wrong and a door cannot say which. `history/prices.py` keeps the
+    next archive step from striking the live read back over the close. Refused too, writing nothing: a line without its figure, date and source,
     a carried line, a line dated after `day`, and anything that is not a close — a live read
     describes an instant, and a quarter is valued at closes.
 
@@ -472,7 +470,7 @@ def bank_closes(day: str, prices: list[dict] | None = None,
     held = carried()
 
     def _settle(what, key, date, value, on_file, struck_of):
-        """None to append, "same" to skip, the live read the close supersedes — or Refused."""
+        """None to append, "same" to skip, the row the close replaces — or Refused."""
         if date > day:
             raise Refused(f"{what} is dated {date}, after {day}: a later day's close is not "
                           f"that day's.")
@@ -486,21 +484,16 @@ def bank_closes(day: str, prices: list[dict] | None = None,
                           f"says {value[1]}. One of them is wrong, and this door does not choose.")
         return was
 
-    def _supersede(was, field, figure, said):
-        """A live read leaves the file; anything else is superseded, its status moving and its
-        provenance staying — `AppendOnlyCSV.restruck()`'s rule, both histories'."""
-        if was.get("struck") == "live":
-            dropped.append(id(was))
-            superseded.append(f"{said} {was['date']}: the live read {was[field]} is replaced by "
-                              f"that day's close {figure}")
-            return
-        superseded.append(f"{said} {was['date']}: {was[field]} is superseded by that day's "
-                          f"close {figure}")
-        was["status"] = "superseded"
+    def _replace(was, field, figure, said):
+        """The row on file leaves it, and a line says so — `AppendOnlyCSV.restruck()`'s rule."""
+        dropped.append(id(was))
+        what = "the live read " if was.get("struck") == "live" else ""
+        replaced.append(f"{said} {was['date']}: {what}{was[field]} is replaced by that day's "
+                        f"close {figure}")
 
     rows_p, rows_f = PH.load(), FX.load()
-    on_file_p = {(r["mark_key"], r["date"]): r for r in rows_p if r["status"] == PH.LIVE}
-    new_p, superseded, same, dropped = [], [], 0, []
+    on_file_p = {(r["mark_key"], r["date"]): r for r in rows_p}
+    new_p, replaced, same, dropped = [], [], 0, []
     for row in prices:
         _require(row, ("mark_key", "price", "currency", "as_of", "source"),
                  f"close {row.get('mark_key')!r}")
@@ -517,15 +510,14 @@ def bank_closes(day: str, prices: list[dict] | None = None,
             same += 1
         else:
             if said:
-                _supersede(said, "price", price, row["mark_key"])
+                _replace(said, "price", price, row["mark_key"])
             new_p.append({"mark_key": row["mark_key"], "date": date, "price": price,
                           "currency": row["currency"], "quality": "sourced", "struck": "close",
-                          "status": PH.LIVE, "source": row["source"]})
+                          "source": row["source"]})
             # A LINE TWICE IN ONE WRITE: its twin is then "same", and another figure refused.
             on_file_p[(row["mark_key"], date)] = new_p[-1]
 
-    on_file_f = {(r["currency"], r["date"]): r for r in rows_f
-                 if r["status"] == FX.LIVE and r["kind"] == "spot"}
+    on_file_f = {(r["currency"], r["date"]): r for r in rows_f if r["kind"] == "spot"}
     new_f = []
     for row in rates:
         _require(row, ("currency", "rate", "as_of", "source"), f"rate {row.get('currency')!r}")
@@ -543,10 +535,10 @@ def bank_closes(day: str, prices: list[dict] | None = None,
             same += 1
         else:
             if said:
-                _supersede(said, "rate", rate, what)
+                _replace(said, "rate", rate, what)
             new_f.append({"currency": row["currency"], "date": date,
                           "rate": rate, "kind": "spot", "quality": "sourced", "struck": "close",
-                          "status": FX.LIVE, "source": row["source"]})
+                          "source": row["source"]})
             on_file_f[(row["currency"], date)] = new_f[-1]
 
     if new_p or new_f:
@@ -559,4 +551,4 @@ def bank_closes(day: str, prices: list[dict] | None = None,
         D.reload_store()
     return {"day": day, "days": sorted({r["date"] for r in new_p + new_f}),
             "banked": {"prices": len(new_p), "rates": len(new_f)},
-            "already": same, "superseded": superseded}
+            "already": same, "replaced": replaced}

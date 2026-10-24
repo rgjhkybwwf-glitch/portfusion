@@ -9,8 +9,8 @@ ACCOUNT STATEMENTS — what the broker said an account was worth, and when.
 Run it as `-m`, not as a path: by path, history/ goes on sys.path instead of the project root
 and the imports fail before any work starts.
 
-APPEND-ONLY: a new statement adds a row and never replaces one, which is what gives each
-account a value series at all.
+APPEND-ONLY: a new statement adds a row, which is what gives each account a value series at all.
+A statement of a day already on file at other figures replaces that row (`restruck()`).
 
 A share row holds positions_value and cash; a spread-bet row holds IG's own figures — funds,
 running_pl, equity, deposit — and the statement's Position (net), the notional, under
@@ -37,10 +37,6 @@ CSV_NAME, FIELDS = files.ACCOUNTS, files.ACCOUNT_FIELDS
 NUMERIC = ("positions_value", "cash", "funds", "running_pl", "equity", "deposit")
 #: The subset this table permits, from `schema.QUALITIES`.
 QUALITIES = ("sourced", "derived")
-#: ITS LIFECYCLE, `schema.MARK_STATUSES`. A broker's reading is followed by a later reading at a
-#: later date; a figure put right at the SAME date — a quarter end restated — is
-#: superseded and kept, never edited, and is no longer what `at()` returns.
-STATUSES = D.MARK_STATUSES
 
 def _is_spread_bet(account: str) -> bool:
     """The register's kind for the account (`accounts.csv`), never its name."""
@@ -49,8 +45,7 @@ def _is_spread_bet(account: str) -> bool:
 
 # --- the file itself ------------------------------------------------------------------------
 # ITS FIGURES ARE ALL OF NUMERIC: a re-reading of one day that moves any figure both rows state
-# is a new statement of that day, and `bank()` supersedes the earlier one, kept (`restruck()`).
-# There is no `struck` column here, so nothing on file is a live read to drop.
+# is a new statement of that day, and `bank()` replaces the earlier one (`restruck()`).
 _FILE = AppendOnlyCSV(CSV_NAME, FIELDS, numeric=tuple(NUMERIC), sort_key=lambda r: (r["as_of"], r["account"]),
                       identity=("as_of", "account"), nullable=True, figure=tuple(NUMERIC))
 
@@ -83,7 +78,6 @@ def live_observations() -> list[dict]:
             # one day are told apart by nothing else (rules.reference_resolves).
             "source": D.evidence_source(r.evidence, reference=r.reference, account=r.acct),
             "quality": "sourced" if ev.retrieval != "none" else "derived",
-            "status": D.LIVE_MARK,
         })
     return out
 
@@ -107,14 +101,13 @@ def archive(verbose: bool = True) -> list[dict]:
     """Append the current observations. Idempotent on (as_of, account) at the SAME figures.
 
     The outgoing value is banked before a door replaces it, as for prices and rates. A re-reading
-    of a day already on file AT OTHER FIGURES supersedes that row, which stays on file: until
-    21 Oct 2026 it found its day banked and appended nothing, so the history kept the earlier
-    figures of the day for good.
+    of a day already on file AT OTHER FIGURES replaces that row: until 21 Oct 2026 it found its
+    day banked and appended nothing, so the history kept the earlier figures of the day for good.
     """
-    new, _, superseded = _FILE.bank(live_observations())
+    new, replaced = _FILE.bank(live_observations())
     if verbose:
-        for r in sorted(superseded, key=lambda r: r["account"]):
-            log.info(f"    superseded {r['as_of']}  {r['account']:22} — read again the same day")
+        for r in sorted(replaced, key=lambda r: r["account"]):
+            log.info(f"    replaced {r['as_of']}  {r['account']:22} — read again the same day")
         if new:
             log.info(f"  archived {len(new)} new observation(s):")
             for m in sorted(new, key=lambda m: (m["as_of"], m["account"])):
@@ -144,11 +137,11 @@ def nav_component(row: dict) -> float | None:
 
 
 def at(date: str, rows: list[dict] | None = None) -> dict:
-    """Every account's latest LIVE statement on or before `date`."""
+    """Every account's latest statement on or before `date`."""
     rows = load() if rows is None else rows
     latest = {}
     for r in rows:
-        if r["as_of"] <= date and r["status"] == D.LIVE_MARK:
+        if r["as_of"] <= date:
             cur = latest.get(r["account"])
             if cur is None or r["as_of"] > cur["as_of"]:
                 latest[r["account"]] = r
@@ -179,8 +172,7 @@ def show(account: str | None = None) -> None:
                 bits.append(f"cash {r['cash']:>10,.2f}")
             if r.get("funds") is not None:
                 bits.append(f"funds {r['funds']:>10,.2f}")
-            flag = "".join(f"  ({w})" for w in (r["quality"], r["status"])
-                           if w not in ("sourced", D.LIVE_MARK))
+            flag = "" if r["quality"] == "sourced" else f"  ({r['quality']})"
             log.info(f"     {r['as_of']}  " + "  ".join(bits)
                   + (f"   -> NAV {nav:>12,.2f}" if nav is not None else ""))
             log.info(f"                 {r['source'][:88]}{flag}")

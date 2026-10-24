@@ -1093,7 +1093,7 @@ def test_an_account_has_exactly_one_observation_row(D):
     twice = sorted({a for a in seen if seen.count(a) > 1})
     assert not twice, (
         f"these accounts have more than one observation row: {twice}. The table is replaced, "
-        f"not appended — the superseded figure is already banked in account-statements.csv, "
+        f"not appended — the outgoing figure is already banked in account-statements.csv, "
         f"which is the append-only history and the place a past observation lives.")
 
 

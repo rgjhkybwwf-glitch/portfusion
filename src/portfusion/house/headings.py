@@ -221,7 +221,6 @@ BY_TAB = {
 #: Every other store column is headed under its own name (#43, `tests/test_figures.py`).
 STORE_ONLY: dict[str, str] = {
     "struck": "whether a mark can be fetched again; the marks door reads it, no page since 13 Oct",
-    "status": "keeps a replaced row on file; the engine reads only live rows",
     "published": "a research note's date, inside the Research notes link",
     "url": "a research note's address, the Research notes link's",
     "settings.key": "a setting's name", "settings.value": "a setting's value, not sterling",

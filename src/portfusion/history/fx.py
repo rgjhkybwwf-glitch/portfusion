@@ -18,7 +18,7 @@ TWO KINDS OF RATE, NEVER TO BE CONFUSED
 
 An average has no single date, so it is filed at its period end and marked `average`.
 rate_on() returns SPOT ONLY: an annual average given as the rate on 3 April 2023 would be a
-wrong answer that looks right. An average on file is superseded once a leg's own price at its
+wrong answer that looks right. An average on file is replaced once a leg's own price at its
 day's close is on file.
 
 A tool alongside the build, never part of it.
@@ -38,11 +38,8 @@ from portfusion.log import log
 # The file and its columns are `history/files.py`'s, where the demo's generator reads them.
 CSV_NAME, FIELDS = files.FX, files.FX_FIELDS
 KINDS = ("spot", "average")
-# Provenance and lifecycle, as in `history/prices.py`: a typed rate a close replaced is kept,
-# superseded, so both histories answer "is this still the mark" the same way.
+# Provenance, as in `history/prices.py`; a rate put right replaces its row there too.
 QUALITIES = ("sourced", "derived")
-STATUSES = D.MARK_STATUSES
-LIVE = D.LIVE_MARK
 
 # GBP is not stored. A GBP/GBP rate of 1.0 is an identity, not an observation, and
 # putting it in a table of observations invites someone to "refresh" it.
@@ -68,7 +65,7 @@ def live_marks() -> list[dict]:
     """The live rates, one per currency, in this file's shape: a spot rate on its `as_of`, a
     feed's, so sourced."""
     return [{"currency": ccy, "date": _iso(as_of), "rate": rate, "kind": "spot",
-             "quality": "sourced", "struck": struck, "status": D.LIVE_MARK, "source": src}
+             "quality": "sourced", "struck": struck, "source": src}
             for ccy, rate, as_of, src, struck in D.fx_rows
             if ccy != BASE and _iso(as_of) is not None]
 
@@ -78,11 +75,10 @@ def archive(verbose: bool = True) -> list[dict]:
     idempotent at the same figure, and a second read of a day replaces a live read of it
     — until 14 Oct 2026 the first read of a day stayed, and fx.csv and this file
     disagreed about that day after a second refresh."""
-    new, dropped, superseded = _FILE.bank(live_marks())
+    new, replaced = _FILE.bank(live_marks())
     if verbose:
-        for r in sorted(dropped + superseded, key=lambda r: r["currency"]):
-            log.info(f"    {'replaced  ' if r in dropped else 'superseded'} {r['currency']:4} "
-                  f"{r['date']}  {r['rate']:>10.5f}")
+        for r in sorted(replaced, key=lambda r: r["currency"]):
+            log.info(f"    replaced {r['currency']:4} {r['date']}  {r['rate']:>10.5f}")
         if new:
             log.info(f"  archived {len(new)} new rate(s):")
             for m in sorted(new, key=lambda m: (m["currency"], m["date"])):
@@ -127,7 +123,7 @@ def rate_on(currency: str, date: str, rows: list[dict] | None = None) -> float |
     rows = load() if rows is None else rows
     cand = [r for r in rows
             if r["currency"] == currency and r["kind"] == "spot"
-            and r["status"] == LIVE and r["date"] <= date]
+            and r["date"] <= date]
     return max(cand, key=lambda r: r["date"])["rate"] if cand else None
 
 
@@ -140,11 +136,9 @@ def show(currency: str | None = None) -> None:
     if not rows:
         log.info("  no history on file yet — run --archive")
         return
-    # Superseded rows are found by `status`, as in `history/prices.py`, so the first rate ever
-    # replaced will not print as a movement on its own date.
-    by, dead = defaultdict(list), defaultdict(list)
+    by = defaultdict(list)
     for r in rows:
-        (by if r["status"] == LIVE else dead)[r["currency"]].append(r)
+        by[r["currency"]].append(r)
     for c in ([currency] if currency else sorted(by)):
         series = sorted(by.get(c, []), key=lambda r: (r["kind"], r["date"]))
         if not series:
@@ -162,8 +156,6 @@ def show(currency: str | None = None) -> None:
             if r["kind"] == "average":
                 log.info(f"     {r['date']}  {r['rate']:>10.5f}    period average"
                       f"{'' if r['quality'] == 'sourced' else '  (derived)'}")
-        for r in sorted(dead.get(c, []), key=lambda r: r["date"]):
-            log.info(f"     {r['date']}  {r['rate']:>10.5f} {'':>9}  (superseded)")
         log.info("")
 
 

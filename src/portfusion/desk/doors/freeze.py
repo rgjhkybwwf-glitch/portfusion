@@ -10,7 +10,8 @@ from the price and FX histories, each line at its mark nearest the quarter end w
 `rules.CLOSE_CHECK_WINDOW_DAYS` either side, so the freeze can run on the day or days after it: a
 quarter end needs only to be close.
 
-A STORE DOOR, the fourth under desk/ (`tests/desk/test_boundaries.py`), and it only APPENDS.
+A STORE DOOR, the fourth under desk/ (`tests/desk/test_boundaries.py`). A freeze APPENDS; only a
+restatement replaces.
 
 WHAT IT WILL NOT DO:
 
@@ -25,9 +26,9 @@ THE RESULTS GO IN LAST. Once the inputs are on file the engine computes the clos
 quarter is held to from then on.
 
 A RESTATEMENT IS NOT A SECOND FREEZE. `restate()` strikes named accounts at frozen quarter ends
-again from the record as it now stands, superseding their rows rather than editing them, and
-appends a results row, saying why, for each quarter whose figures moved. It is
-called from Python with the dates, the accounts and the reason, and is a decision each time.
+again from the record as it now stands, replacing their rows and the results of each quarter whose
+figures moved, the journal saying why and git keeping what they were. It is called from Python
+with the dates, the accounts and the reason, and is a decision each time.
 """
 from __future__ import annotations
 
@@ -84,7 +85,7 @@ def write(as_of: str) -> dict:
     try:
         with commit.atomic(*paths):
             for table, rows in by_table.items():
-                _append(table, [{**r, "status": D.LIVE_MARK} for r in rows])
+                _append(table, rows)
             # THE QUARTER IS COMPUTED FROM WHAT WAS JUST FROZEN, so the record is reloaded first.
             D.reload_store()
             from portfusion.engine import Book
@@ -106,22 +107,21 @@ def restate(changes: dict[str, list[str]], why: str, lines_only: bool = False) -
     engine at the marks nearest it (`Book.freeze_rows()`), and every closed quarter a restated
     date ends or opens held to its new figures.
 
-    NO FIGURE ON FILE CHANGES; A CORRECTION SUPERSEDES. Each account's live rows at the date are
-    SUPERSEDED, kept with their own provenance, and the new ones appended beside them, live. Then
-    `quarter-results.csv` gains a row, noted "Restated: <why>", for the book and each account whose
-    six figures moved from the newest held, which the rows before it stay under.
+    A CORRECTION REPLACES. Each account's rows at the date give way to the ones struck again, and
+    `quarter-results.csv`'s row for the book and each account whose six figures moved is replaced,
+    noted "Restated: <why>". The journal says why; git keeps what each row said.
 
     A date with no frozen composition — the opening, 31 Dec 2025, never had one — has its net
     asset value restated alone, unless `lines_only` asks for its LINES ALONE: the named accounts'
-    composition, struck as a freeze strikes it and APPENDED, with nothing superseded and the
+    composition, struck as a freeze strikes it and APPENDED, with nothing replaced and the
     date's net asset value and results left as they stand (the first quarter's contributors
     need an opening composition). A date with lines on file is refused
-    then: they are restated with its net asset value. An account whose struck rows match its live
-    ones to the figure is left as it is. The statements history copies quarter-nav at the quarter ends the freeze did
+    then: they are restated with its net asset value. An account whose struck rows match its rows
+    on file to the figure is left as it is. The statements history copies quarter-nav at the quarter ends the freeze did
     not write; restating one of those is mirrored there by hand (`test_quarter_nav.py` ties them).
 
-    Raises `Refused`, writing nothing: no reason given, a date to come, an account with no live
-    row at the date, a line the close window does not reach, nothing that would move, or lines
+    Raises `Refused`, writing nothing: no reason given, a date to come, an account with no row at
+    the date, a line the close window does not reach, nothing that would move, or lines
     asked for where lines are on file.
     """
     from portfusion.engine import Book
@@ -129,7 +129,6 @@ def restate(changes: dict[str, list[str]], why: str, lines_only: bool = False) -
         raise Refused("a restatement says why: its reason is the results rows' note")
     today = _dt.date.today()
     nav_hdr, snap_hdr = schema.TABLES["quarter-nav"].header, schema.TABLES["quarter-snapshots"].header
-    live = D.LIVE_MARK
     on_nav = [dict(zip(nav_hdr, r)) for r in schema.load("quarter-nav")]
     on_snap = [dict(zip(snap_hdr, r)) for r in schema.load("quarter-snapshots")]
     b = Book()
@@ -137,7 +136,7 @@ def restate(changes: dict[str, list[str]], why: str, lines_only: bool = False) -
     for as_of, accounts in sorted(changes.items()):
         if _dt.date.fromisoformat(as_of) > today:
             raise Refused(f"{as_of} has not come yet")
-        was_nav = [r for r in on_nav if str(r["as_of"]) == as_of and r["status"] == live]
+        was_nav = [r for r in on_nav if str(r["as_of"]) == as_of]
         missing = sorted(set(accounts) - {r["account"] for r in was_nav})
         if missing:
             raise Refused(f"{', '.join(missing)}: no frozen row at {as_of} to restate. A quarter "
@@ -152,7 +151,7 @@ def restate(changes: dict[str, list[str]], why: str, lines_only: bool = False) -
             raise Refused(f"{len(rows['off_date'])} line(s) have no mark within "
                           f"{D.CLOSE_CHECK_WINDOW_DAYS} days of {as_of}: "
                           + "; ".join(rows["off_date"]) + f". {_way_in(rows['off_keys'], as_of)}")
-        was_snap = [r for r in on_snap if str(r["as_of"]) == as_of and r["status"] == live]
+        was_snap = [r for r in on_snap if str(r["as_of"]) == as_of]
         composed = bool(was_snap)
         if lines_only:
             if composed:
@@ -184,16 +183,13 @@ def restate(changes: dict[str, list[str]], why: str, lines_only: bool = False) -
         with commit.atomic(*paths):
             for table, new in (("quarter-nav", new_nav), ("quarter-snapshots", new_snap)):
                 keys = {k for k, composed in struck.items() if table == "quarter-nav" or composed}
-                gone = _supersede(table, keys)
-                _append(table, [{**r, "status": live} for r in new])
+                gone = _replace(table, keys, new)
                 for as_of in sorted({d for d, _ in keys}):
                     names = ", ".join(a for d, a in sorted(keys) if d == as_of)
-                    n_gone = sum(1 for d, _ in gone if d == as_of)
-                    n_new = sum(1 for r in new if r["as_of"] == as_of)
-                    journal += [("freeze", "replace", table, n_gone, f"restated {as_of}",
-                                 f"{names}: {n_gone} row(s) at {as_of} superseded, kept"),
-                                ("freeze", "append", table, n_new, f"restated {as_of}",
-                                 f"{names}: {n_new} row(s) restating {as_of}, from the engine")]
+                    journal += _journalled(table, f"restated {as_of}",
+                                           sum(1 for d, _ in gone if d == as_of),
+                                           sum(1 for r in new if r["as_of"] == as_of),
+                                           f"{names} at {as_of}, from the engine: {why}")
             D.reload_store()
             b = Book()
             closed = {str(q)[:10] for q in b.quarter_returns()["quarter_end"]}
@@ -201,15 +197,16 @@ def restate(changes: dict[str, list[str]], why: str, lines_only: bool = False) -
             touched = {d for d, _ in struck} | {_next_quarter_end(d) for d, _ in struck}
             held = {(str(r[0]), r[1] or ""): r for r in D.QUARTER_RESULTS}
             hdr = schema.TABLES["quarter-results"].header
+            keys = set()
             for q in sorted(touched & closed):
                 moved = [r for r in b.quarter_results(q)
-                         if _moved(r, held.get((q, r["account"])), hdr)]
+                         if _moved(r, held.get((q, r["account"] or "")), hdr)]
                 results += [{**r, "note": f"Restated: {why}"} for r in moved]
-                if moved:
-                    journal.append(("freeze", "append", "quarter-results", len(moved),
-                                    f"restated {q}",
-                                    f"{len(moved)} restatement row(s) of {Book.quarter_label(q)}"))
-            _append("quarter-results", results)
+                keys |= {(q, r["account"] or "") for r in moved}
+                journal += _journalled("quarter-results", f"restated {q}",
+                                       sum(1 for r in moved if (q, r["account"] or "") in held),
+                                       len(moved), f"{Book.quarter_label(q)}: {why}")
+            _replace("quarter-results", keys, results)
             commit.journal([j for j in journal if j[3]], at=at)
     finally:
         D.reload_store()
@@ -255,7 +252,7 @@ def _append_lines(rows: list[dict], struck: list[tuple]) -> dict:
     paths = [schema.TABLES["quarter-snapshots"].path, schema.TABLES["journal"].path]
     try:
         with commit.atomic(*paths):
-            _append("quarter-snapshots", [{**r, "status": D.LIVE_MARK} for r in rows])
+            _append("quarter-snapshots", rows)
             journal = []
             for as_of in sorted({d for d, _ in struck}):
                 names = ", ".join(a for d, a in struck if d == as_of)
@@ -299,28 +296,32 @@ def _moved(new: dict, was, hdr: list[str]) -> bool:
     return False
 
 
-def _supersede(table: str, keys: set) -> list[tuple]:
-    """Mark the live rows of these (as_of, account) keys superseded, in place: every other line
-    keeps its bytes, and the count does not move. Returns the keys of the rows marked."""
+def _replace(table: str, keys: set, rows: list[dict]) -> list[tuple]:
+    """`rows` into one table in place of every row of these (as_of, account) keys: every other
+    line keeps its bytes. Returns the keys of the rows taken out, one per row."""
     path = schema.TABLES[table].path
-    hdr = schema.TABLES[table].header
-    at, live = hdr.index("status"), D.LIVE_MARK
     original = path.read_bytes()
     eol = commit._eol(original)
     lines = original.decode("utf-8").split(eol.decode())
     gone, out = [], []
     for i, line in enumerate(lines):
         cells = next(csv.reader([line])) if i and line else None
-        if cells and (cells[0], cells[1]) in keys and cells[at] == live:
-            cells[at] = "superseded"
+        if cells and (cells[0], cells[1]) in keys:
             gone.append((cells[0], cells[1]))
-            line = commit._csv_line(cells)
+            continue
         out.append(line)
-    before = len(schema.load(table))
     path.write_bytes(eol.join(line.encode("utf-8") for line in out))
-    if len(schema.load(table)) != before:
-        raise Refused(f"{table}.csv changed its row count superseding rows")
+    _append(table, rows)
     return gone
+
+
+def _journalled(table: str, ref: str, gone: int, new: int, said: str) -> list[tuple]:
+    """A replacement's journal rows: one `replace` where as many rows came as went, which adds
+    none, and otherwise the rows taken out and the rows put in."""
+    if gone == new:
+        return [("freeze", "replace", table, new, ref, said)]
+    return [("freeze", "remove", table, gone, ref, said),
+            ("freeze", "append", table, new, ref, said)]
 
 
 def _append(table: str, rows: list[dict]) -> None:

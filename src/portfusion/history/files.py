@@ -11,11 +11,11 @@ names a caller already uses stand.
 # The FILE, not a path to it: `AppendOnlyCSV` resolves it against whichever store the record
 # is reading.
 PRICES = "price-history.csv"
-PRICE_FIELDS = ["mark_key", "date", "price", "currency", "quality", "struck", "status", "source"]
+PRICE_FIELDS = ["mark_key", "date", "price", "currency", "quality", "struck", "source"]
 
 FX = "fx-history.csv"
-FX_FIELDS = ["currency", "date", "rate", "kind", "quality", "struck", "status", "source"]
+FX_FIELDS = ["currency", "date", "rate", "kind", "quality", "struck", "source"]
 
 ACCOUNTS = "account-statements.csv"
 ACCOUNT_FIELDS = ["account", "as_of", "positions_value", "cash", "funds", "running_pl", "equity",
-                  "deposit", "source", "quality", "status"]
+                  "deposit", "source", "quality"]

@@ -48,8 +48,6 @@ DEMO = HERE / "src" / "portfusion" / "demo"     # inside the app, which ships it
 NOT_ON_FILE = D.evidence_source("not-on-file", reference="invented for the demo")
 INVENTED = "Invented for the demo"
 UNFUNDED = "Account not yet funded"
-#: `rules.LIVE_MARK`, which this file cannot import: `rules` loads a store, and none exists yet.
-LIVE = "live"
 
 ISA, TRADING, SPREAD = "Voss ii ISA", "Voss ii Trading", "Voss IG Spread bet"
 
@@ -309,7 +307,7 @@ def _quarter_nav() -> list[dict]:
                                  (TRADING, trading, "positions at market"),
                                  (SPREAD, equity, "account equity"),
                                  (SPREAD, notional, "notional"))]
-    return [{**r, "status": LIVE} for r in rows]
+    return rows
 
 
 def _quarter_snapshots() -> list[dict]:
@@ -341,7 +339,7 @@ def _quarter_snapshots() -> list[dict]:
         held("2026-09-30", SPREAD, "VELD SB", 1.8, 10490.0, 18882.0, 17980.0, "USD",
              f"{_ig_bid(10610.0)} + {_ig_bid(10340.0)}"),
     ]
-    return [{**r, "quality": "derived", "status": LIVE} for r in rows]
+    return [{**r, "quality": "derived"} for r in rows]
 
 
 #: The note a restated quarter-results row carries.
@@ -376,30 +374,30 @@ def _quarter_results() -> list[dict]:
         ("2026-09-30", ISA, 9377.27, -1800.0, 0.0, 8260.53, 683.26, 0.081161),
         ("2026-09-30", SPREAD, 0.0, 6500.0, 0.0, 8140.8, 1640.8, 0.280062),
     ]
-    return ([dict(zip(cols, r)) for r in frozen]
-            + [{**dict(zip(cols, r)), "note": RESTATED} for r in restated])
+    # A RESTATEMENT REPLACES THE ROW IT RESTATES.
+    restated = {r[:2]: {**dict(zip(cols, r)), "note": RESTATED} for r in restated}
+    return [restated.get(r[:2]) or dict(zip(cols, r)) for r in frozen]
 
 
 def _histories() -> dict[str, tuple[list[str], list[dict]]]:
     """The three append-only histories, by file name: (their columns, their rows)."""
     prices = [
         {"mark_key": t, "date": d, "price": p, "currency": c, "quality": "derived",
-         "struck": "close", "status": s, "source": INVENTED}
-        for t, d, p, c, s in (
-            ("BRYC.L", "2025-12-31", 2.0, "GBP", LIVE), ("BRYC.L", "2026-03-31", 2.1, "GBP", LIVE),
-            ("TARN.L", "2026-03-31", 2.6, "GBP", LIVE), ("BRYC.L", "2026-06-30", 2.2, "GBP", LIVE),
-            ("KELS.L", "2026-06-30", 1.6, "GBP", LIVE), ("QNLR", "2026-06-30", 105.0, "USD", LIVE),
-            ("VELD SB", "2026-07-31", 10020.0, "USD", LIVE),
-            ("BRYC.L", "2026-09-30", 2.35, "GBP", LIVE), ("KELS.L", "2026-09-30", 1.7, "GBP", LIVE),
-            ("QNLR", "2026-09-30", 111.5, "USD", "superseded"),
-            ("QNLR", "2026-09-30", 112.0, "USD", LIVE))
+         "struck": "close", "source": INVENTED}
+        for t, d, p, c in (
+            ("BRYC.L", "2025-12-31", 2.0, "GBP"), ("BRYC.L", "2026-03-31", 2.1, "GBP"),
+            ("TARN.L", "2026-03-31", 2.6, "GBP"), ("BRYC.L", "2026-06-30", 2.2, "GBP"),
+            ("KELS.L", "2026-06-30", 1.6, "GBP"), ("QNLR", "2026-06-30", 105.0, "USD"),
+            ("VELD SB", "2026-07-31", 10020.0, "USD"),
+            ("BRYC.L", "2026-09-30", 2.35, "GBP"), ("KELS.L", "2026-09-30", 1.7, "GBP"),
+            ("QNLR", "2026-09-30", 112.0, "USD"))
     ] + [
         {"mark_key": t, "date": "2026-09-30", "price": p, "currency": "USD", "quality": "derived",
-         "struck": "live", "status": LIVE, "source": _ig_bid(p)}
+         "struck": "live", "source": _ig_bid(p)}
         for t, p in (("VELD-DEC26", 10610.0), ("VELD-MAR27", 10340.0), ("QNLR-DEC26", 10480.0))]
     fx = [
         {"currency": c, "date": d, "rate": r, "kind": "spot", "quality": "derived",
-         "struck": s, "status": LIVE, "source": INVENTED}
+         "struck": s, "source": INVENTED}
         for c, d, r, s in (("USD", "2026-04-14", 1.3158, ""), ("USD", "2026-06-30", 1.32, "close"),
                            ("USD", "2026-07-06", 1.325, "close"),
                            ("USD", "2026-08-03", 1.31, "close"),
@@ -429,8 +427,7 @@ def _histories() -> dict[str, tuple[list[str], list[dict]]]:
          "source": "IG REST /accounts XK9P3, read 2026-09-30 at 16:00", "quality": "sourced"}]
     return {history_files.PRICES: (history_files.PRICE_FIELDS, prices),
             history_files.FX: (history_files.FX_FIELDS, fx),
-            history_files.ACCOUNTS: (history_files.ACCOUNT_FIELDS,
-                                       [{**r, "status": LIVE} for r in statements])}
+            history_files.ACCOUNTS: (history_files.ACCOUNT_FIELDS, statements)}
 
 
 # =====================================================================================
@@ -486,9 +483,9 @@ WRITTEN_AT = "2026-08-12T10:03:15"
 
 def _journal(T: dict, item: dict) -> list[dict]:
     """Every table's count when the journal opened, then each write, oldest first."""
-    after = {"quarter-results": sum(1 for r in T["quarter-results"] if r.get("note") == RESTATED)}
+    restated = sum(1 for r in T["quarter-results"] if r.get("note") == RESTATED)
     opened = [{"at": OPENED, "route": "baseline", "op": "open", "table": t,
-               "rows": len(T[t]) - after.get(t, 0), "detail": "rows on file when the journal opened"}
+               "rows": len(T[t]), "detail": "rows on file when the journal opened"}
               for t in schema.TABLES if t != "journal"]
     writes = []
     for as_of in ("2026-03-31", "2026-06-30", "2026-08-12", "2026-09-30"):
@@ -500,15 +497,15 @@ def _journal(T: dict, item: dict) -> list[dict]:
                         "detail": "why for " + ", ".join(item["reasoning_written"])}]
             continue
         for table in ("quarter-snapshots", "quarter-nav", "quarter-results"):
-            n = sum(1 for r in T[table] if r["as_of"] == as_of and r.get("note") != RESTATED)
+            n = sum(1 for r in T[table] if r["as_of"] == as_of)
             writes.append({"at": f"{as_of}T17:30:00", "route": "freeze", "op": "append",
                            "table": table, "rows": n, "ref": as_of,
                            "detail": f"{n} row(s) freezing {as_of}, from the engine"})
-    writes.append({"at": "2026-10-13T20:31:10", "route": "hand", "op": "append",
-                   "table": "quarter-results", "rows": after["quarter-results"],
+    writes.append({"at": "2026-10-13T20:31:10", "route": "hand", "op": "replace",
+                   "table": "quarter-results", "rows": restated,
                    "ref": "restatement 2026-10-13",
                    "detail": f"restatements of the three closed quarters, "
-                             f"{after['quarter-results']} rows: the return is day-weighted, so "
+                             f"{restated} rows: the return is day-weighted, so "
                              f"every return on a quarter with a flow moves and nothing else does"})
     return opened + writes
 

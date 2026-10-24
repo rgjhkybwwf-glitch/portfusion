@@ -49,10 +49,11 @@ happened, never an instruction or how a figure was reached; those go in the comm
 - **A live price is on a line still held.** The sale that leaves a share in no account banks its
   price and takes it out of `current-prices.csv`, as a contract's last close does; the audit
   names any price nothing holds.
-- **A mark has three axes**: `quality` (provenance), `status` (lifecycle) and `struck` (`close`
-  or `live`). A blank `struck` compares with nothing.
-- **A frozen quarter end is restated, never edited.** `restate()` supersedes the rows and appends
-  new ones, and `quarter-results.csv` records why.
+- **A mark has two axes**: `quality` (provenance) and `struck` (`close` or `live`). A blank
+  `struck` compares with nothing.
+- **A correction replaces its row.** A mark read again on its own day takes its row's place, and
+  `restate()` replaces a frozen quarter end's rows and results, the journal saying why; git keeps
+  what each row said. One row per fact, so no reader filters.
 - **Every file is LF.** Another line ending turns a two-row append into a whole-file diff.
 
 **After any change here, check that the headline figures moved only in ways you can explain.**

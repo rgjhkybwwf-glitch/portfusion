@@ -437,7 +437,7 @@ def test_no_reading_entered_from_now_on_rests_on_a_closed_class(D):
     """A row written after the door closed may not cite a closed class.
 
     THE AUDIT'S QUESTION, not the guard's: no code change can make this true or false, only a
-    row can. A reading written on a closed class before the door closed is to be superseded by
+    row can. A reading written on a closed class before the door closed is to be replaced by
     an admissible document, never edited, and the journal row records the move.
     """
     CLOSED_ON = "2026-09-11"

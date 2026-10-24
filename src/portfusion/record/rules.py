@@ -10,6 +10,7 @@ everything that shows one reads it from here.
 A book's store must hold every table the schema registers, checked just below before anything
 is read.
 """
+import collections as _collections
 import contextlib as _contextlib
 import datetime as _dt
 import re as _re
@@ -134,25 +135,6 @@ if (_begins.month, _begins.day) != (1, 1):
 #: is in scope and one opened last year is not, with no list to keep. PER HALF: the thesis is
 #: dated by the entry and the exit reason by the exit. `Book.with_reasoning()` applies it.
 REVIEW_FROM = _dt.date.fromisoformat(SETTINGS["reasoning_owed_from"])
-
-
-# ==============================================================================================
-# WHICH MARKS A LOOKUP MAY SEE. `superseded` means a better mark replaced this one and it was KEPT,
-# with its real date: on file, and not the answer to "what was this worth". A lookup that does not
-# filter on it returns the replaced figure.
-#
-# A LIFECYCLE, NOT A PROVENANCE: `schema.MARK_STATUSES` says so. Here, because `engine.py` may not
-# import `history/` and both need it. The frozen quarters carry it too, read through `live_rows()`.
-MARK_STATUSES = schema.MARK_STATUSES
-LIVE_MARK = "live"
-
-
-def live_rows(table: str) -> list:
-    """A table's LIVE rows, read at call time, each without its `status` cell, so a reader sees the
-    shape it always has: a superseded row stays on file and is never an answer."""
-    hdr = schema.TABLES[table].header
-    at = hdr.index("status")
-    return [tuple(r[:at]) + tuple(r[at + 1:]) for r in schema.load(table) if r[at] == LIVE_MARK]
 
 
 # ==============================================================================================
@@ -681,7 +663,7 @@ class QuarterNAV(NamedTuple):
     source: str
 
 
-QUARTER_NAV = [QuarterNAV(*_r) for _r in live_rows("quarter-nav")]
+QUARTER_NAV = [QuarterNAV(*_r) for _r in schema.load("quarter-nav")]
 
 # THE QUARTER TOTALS ARE THE ENGINE'S, AND ONLY THE ENGINE'S: Book.NAV_BASES, EXPOSURE_BASES and
 # _classified(), which refuses an unclassified basis outright — a total with no stated basis is a
@@ -758,7 +740,7 @@ def journal_rows() -> list:
 # THE QUARTER-END COMPOSITIONS — every account's holdings, line by line, at each quarter end, from
 # store/quarter-snapshots.csv; `as_of` lets one table hold every quarter.
 # Tuple shape: (account, ticker, qty, price, currency, value, cost, quality, source)
-_qsnap             = live_rows("quarter-snapshots")
+_qsnap             = schema.load("quarter-snapshots")
 
 # WHICH QUARTER ENDS ARE FROZEN — asked by the build's close reminder, answered from `as_of`. The
 # record's opening may hold lines too, the ones its first quarter is measured from: they
@@ -766,9 +748,20 @@ _qsnap             = live_rows("quarter-snapshots")
 QSNAP_FROZEN       = sorted({r[0] for r in _qsnap if r[0] >= SETTINGS["record_begins"]})
 
 # WHAT EACH CLOSED QUARTER IS HELD TO — store/quarter-results.csv, the engine's six figures per
-# account as the freeze wrote them, the newest row for a quarter end and an account in force. Read
-# by the test that holds the engine to them; no renderer shows them.
+# account as the freeze wrote them. Read by the test that holds the engine to them; no renderer
+# shows them.
 QUARTER_RESULTS    = schema.load("quarter-results")
+
+# A QUARTER END'S FIGURE IS ONE ROW. A restatement replaces it (desk/doors/freeze.py:restate()), so
+# a second row for one key is two answers to one question, and nothing would say which is meant.
+_twice_frozen = [f"{t}.csv holds {', '.join(str(c or 'the book') for c in k)} more than once"
+                 for t, rows, at in (("quarter-nav", QUARTER_NAV, (0, 1, 3)),
+                                     ("quarter-snapshots", _qsnap, (0, 1, 2)),
+                                     ("quarter-results", QUARTER_RESULTS, (0, 1)))
+                 for k, n in _collections.Counter(tuple(r[i] for i in at)
+                                                  for r in rows).items() if n > 1]
+if _twice_frozen:
+    raise ValueError("A QUARTER END IS FROZEN ONCE:\n  " + "\n  ".join(_twice_frozen))
 
 
 # A SALE THAT NAMES ITS LEG MUST NAME ONE OF ITS OWN, ONCE. `schema.REFERENCES` holds that the leg

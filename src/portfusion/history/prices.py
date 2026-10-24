@@ -2,9 +2,9 @@
 THE PRICE HISTORY — an append-only record of what each instrument was worth, and when.
 
 Current prices are replaced on every refresh, so without this file the book could say what was
-held on any past date but not what it was worth. Prices ACCUMULATE here; nothing is overwritten,
-and the one row ever deleted is a live read that a later read of its own day replaces
-(`AppendOnlyCSV.restruck()`). CSV because this is the table whose diff is worth reading.
+held on any past date but not what it was worth. Prices ACCUMULATE here, one row per line and
+day; a row is replaced only by a later read of its own day (`AppendOnlyCSV.restruck()`), and git
+keeps what it said. CSV because this is the table whose diff is worth reading.
 
     python3 -m portfusion.history.prices --archive      # before a refresh: bank the current marks
     python3 -m portfusion.history.prices --show TSSL    # one instrument's series
@@ -36,26 +36,10 @@ CSV_NAME, FIELDS = files.PRICES, files.PRICE_FIELDS
 # `struck`, not `kind`: fx-history.csv's `kind` already answers a different question.
 STRUCK_KINDS = schema.STRUCK_KINDS
 
-# TWO AXES. `quality` is the PROVENANCE: sourced (a statement, contract note or named feed) or
-# derived (a reconstruction). `status` is the LIFECYCLE: live, or
-# superseded — replaced by a better mark and kept on file. They cannot share a column: a sourced
-# mark superseded by another sourced one is both. A superseded row keeps its REAL date; a date
-# altered to keep (ticker, date) unique would show a correction as a price move.
-#
-# A LIVE READ IS NOT CORRECTED, IT IS REPLACED (12 Oct 2026): the rule both mark histories keep,
+# `quality` is the PROVENANCE: sourced (a statement, contract note or named feed) or derived (a
+# reconstruction). A mark put right REPLACES its row, the rule every history keeps,
 # `AppendOnlyCSV.restruck()`, and `desk/doors/marks.py:bank_closes()` with them.
 QUALITIES = ("sourced", "derived")
-STATUSES = D.MARK_STATUSES
-
-LIVE = D.LIVE_MARK          # the status a lookup or a series should see
-
-
-
-
-
-
-
-
 
 # --- the file itself ------------------------------------------------------------------------
 _FILE = AppendOnlyCSV(CSV_NAME, FIELDS, numeric=("price",), sort_key=lambda r: (r["date"], r["mark_key"]),
@@ -69,31 +53,23 @@ def current_marks() -> list[dict]:
     """The live CURRENT_PRICES set, in this file's shape. `struck` is the column the feed wrote
     with the price — the one party that knows whether it fetched a close or a live read."""
     return [{"mark_key": t, "date": d, "price": p, "currency": c,
-             "quality": "sourced", "struck": struck, "status": D.LIVE_MARK, "source": src}
+             "quality": "sourced", "struck": struck, "source": src}
             for t, p, c, d, src, struck, _at in D.CURRENT_PRICES]
 
-
-#: The same-day rule, the one both mark histories keep (`AppendOnlyCSV`).
-_outranked = AppendOnlyCSV.outranked
-_restruck = _FILE.restruck
 
 
 def archive(verbose: bool = True) -> list[dict]:
     """Append today's marks. Idempotent on (ticker, date) at the SAME price — safe to run
     twice, and safe to run late, so long as CURRENT_PRICES has not been overwritten yet.
 
-    A same-day mark at a DIFFERENT price replaces a live read on file and supersedes anything
-    else (`_restruck()`). A live read of a day whose close is on file is not banked at all
-    (`_outranked()`): the close is that day's mark.
+    A same-day mark at a DIFFERENT price replaces the row on file (`AppendOnlyCSV.restruck()`).
+    A live read of a day whose close is on file is not banked at all: the close is that day's mark.
     """
-    new, dropped, superseded = _FILE.bank(current_marks())
+    new, replaced = _FILE.bank(current_marks())
     if verbose:
-        for r in sorted(dropped, key=lambda r: r["mark_key"]):
-            log.info(f"    replaced   {r['mark_key']:12} {r['date']}  {r['price']:>12,.4f} "
-                  f"— a live read, read again the same day")
-        for r in sorted(superseded, key=lambda r: r["mark_key"]):
-            log.info(f"    superseded {r['mark_key']:12} {r['date']}  {r['price']:>12,.4f} "
-                  f"— corrected the same day")
+        for r in sorted(replaced, key=lambda r: r["mark_key"]):
+            log.info(f"    replaced {r['mark_key']:12} {r['date']}  {r['price']:>12,.4f} "
+                  f"— read again the same day")
         if new:
             log.info(f"  archived {len(new)} new mark(s):")
             for m in sorted(new, key=lambda m: m["mark_key"]):
@@ -125,10 +101,9 @@ def show(ticker: str | None = None) -> None:
     if not rows:
         log.info("  no history on file yet — run --archive")
         return
-    # Superseded rows are found by `status`, the lifecycle — not by `quality`.
-    by, dead = defaultdict(list), defaultdict(list)
+    by = defaultdict(list)
     for r in rows:
-        (by if r["status"] == LIVE else dead)[r["mark_key"]].append(r)
+        by[r["mark_key"]].append(r)
     tickers = [ticker] if ticker else sorted(by)
     for t in tickers:
         series = sorted(by.get(t, []), key=lambda r: r["date"])
@@ -138,14 +113,10 @@ def show(ticker: str | None = None) -> None:
         log.info(f"  {t}  ({len(series)} marks, {series[0]['currency']})")
         prev = None
         for r in series:
-            # The move chain runs over LIVE marks only. A superseded mark is not a
-            # price movement — it is a correction, and showing it as one would lie.
             move = "" if prev is None else f"{(r['price'] / prev - 1) * 100:+7.2f}%"
             flag = "" if r["quality"] == "sourced" else "  (derived)"
             log.info(f"     {r['date']}  {r['price']:>12,.4f} {move:>9}{flag}")
             prev = r["price"]
-        for r in sorted(dead.get(t, []), key=lambda r: r["date"]):
-            log.info(f"     {r['date']}  {r['price']:>12,.4f} {'':>9}  (superseded)")
         log.info("")
 
 
