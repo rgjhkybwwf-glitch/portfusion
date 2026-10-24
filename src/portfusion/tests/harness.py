@@ -43,6 +43,8 @@ SKIPS_FILE = "skips.txt"
 NO_CHECKOUT = "reads the checkout (its guides, tools or git), and this copy of the app is installed"
 #: A test that reads the checkout and asks for neither fixture says so with this.
 needs_checkout = pytest.mark.skipif(ROOT is None, reason=NO_CHECKOUT)
+#: Why a test of the demo's own documents skips on another book.
+DEMO_ONLY = "reads the demo's own documents, and another book is loaded"
 
 
 def app_name(path) -> str:
@@ -237,9 +239,10 @@ def _test_id(nodeid: str) -> str:
 
 def _the_books(report) -> bool:
     """Is this skip about the BOOK? One about the copy — the guards that read a checkout skip on an
-    installed copy, by design (`NO_CHECKOUT`) — is the machine's, and no book lists it."""
+    installed copy, by design (`NO_CHECKOUT`) — is the machine's, and one about the demo's own
+    documents (`DEMO_ONLY`) is the demo's: no book lists either."""
     reason = report.longrepr[-1] if isinstance(report.longrepr, tuple) else str(report.longrepr)
-    return NO_CHECKOUT not in str(reason)
+    return not any(why in str(reason) for why in (NO_CHECKOUT, DEMO_ONLY))
 
 
 def pytest_runtest_logreport(report):
