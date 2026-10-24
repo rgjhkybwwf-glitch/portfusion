@@ -205,7 +205,7 @@ def restate(changes: dict[str, list[str]], why: str, lines_only: bool = False) -
                 keys |= {(q, r["account"] or "") for r in moved}
                 journal += _journalled("quarter-results", f"restated {q}",
                                        sum(1 for r in moved if (q, r["account"] or "") in held),
-                                       len(moved), f"{Book.quarter_label(q)}: {why}")
+                                       len(moved), f"{b.quarter_label(q, b.quarter_opens(q))}: {why}")
             _replace("quarter-results", keys, results)
             commit.journal([j for j in journal if j[3]], at=at)
     finally:

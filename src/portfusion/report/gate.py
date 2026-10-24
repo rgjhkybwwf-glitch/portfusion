@@ -6,6 +6,8 @@ missing. The desk's Reports page and `portfusion report --check` both ask it.
 """
 from __future__ import annotations
 
+import datetime as _dt
+
 from portfusion.record import rules as D
 
 
@@ -38,8 +40,10 @@ def completeness(quarter_end: str) -> list[str]:
 
 
 def _opening(quarter_end: str) -> str | None:
-    """The quarter end before `quarter_end`, which its quarter opens from; None for a date that is
-    not a quarter end."""
+    """The day `quarter_end`'s quarter opens from, as `Book.quarter_opens()` says; None for a date
+    that is not a quarter end. The record's own opening has nothing before it to open from."""
     year = int(quarter_end[:4])
-    return {"03-31": f"{year - 1}-12-31", "06-30": f"{year}-03-31", "09-30": f"{year}-06-30",
-            "12-31": f"{year}-09-30"}.get(quarter_end[5:])
+    before = {"03-31": f"{year - 1}-12-31", "06-30": f"{year}-03-31", "09-30": f"{year}-06-30",
+              "12-31": f"{year}-09-30"}.get(quarter_end[5:])
+    opening = (_dt.date.fromisoformat(D.SETTINGS["record_begins"]) - _dt.timedelta(days=1)).isoformat()
+    return max(before, opening) if before and quarter_end > opening else before

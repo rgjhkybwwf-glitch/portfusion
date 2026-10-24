@@ -357,17 +357,25 @@ def test_research_note_tickers_resolve_to_something_held(D):
 T_QTY = 7
 
 
-def test_a_record_that_does_not_begin_on_a_1_january_is_refused(store_copy):
-    """The year's return is measured from the 31 December before it, so a record beginning on any
-    other day is refused on load, rather than as a KeyError on the first page asking for a return."""
+def test_a_record_that_begins_on_any_day_is_measured_from_its_opening(store_copy):
+    """A BOOK MAY BEGIN ON ANY DAY. Its first year and its first quarter measure from its opening,
+    the day before it begins, since nothing before that was recorded; every later one from the
+    31 December, or the quarter end, before it."""
+    from portfusion.engine import Book
     from portfusion.record import rules
     path = store_copy / "settings.csv"
     begins = rules.SETTINGS["record_begins"]
+    year = int(begins[:4])
     text = path.read_text()
     assert text.count(f"record_begins,{begins}") == 1
-    path.write_text(text.replace(f"record_begins,{begins}", f"record_begins,{begins[:4]}-04-01"))
-    with pytest.raises(ValueError, match="must begin on a 1 January"):
-        rules.reload_store()
+    path.write_text(text.replace(f"record_begins,{begins}", f"record_begins,{year}-05-15"))
+    rules.reload_store()
+    b = Book()
+    assert b.baseline_asof == f"{year}-05-14"
+    assert b.year_opens(year) == f"{year}-05-14" and b.year_opens(year + 1) == f"{year}-12-31"
+    assert b.quarter_opens(f"{year}-06-30") == f"{year}-05-14"
+    assert b.quarter_opens(f"{year}-09-30") == f"{year}-06-30"
+    assert b.quarter_opens(f"{year}-03-31") == f"{year - 1}-12-31", "the opening opened from itself"
 
 
 def test_a_negative_quantity_carries_no_value(D):
