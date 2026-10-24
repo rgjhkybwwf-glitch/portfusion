@@ -107,3 +107,28 @@ def test_the_release_has_one_home_and_every_reader_meets_it(monkeypatch):
     monkeypatch.setattr(about, "_installed_commit", lambda: "abc1234")       # an install
     assert about.release() == "PortFusion 9.9.0.dev0 · abc1234"
     assert main(["--version"]) == 0
+
+
+def test_a_release_is_installed_and_described_by_its_own_number(repo_root):
+    """The README installs the newest release, and the changelog opens on what the number says: a
+    release's own entry, dated, or between releases `Unreleased` above the release installed."""
+    import datetime
+    import re
+    import portfusion
+    readme = (repo_root / "README.md").read_text(encoding="utf-8")
+    changelog = (repo_root / "CHANGELOG.md").read_text(encoding="utf-8")
+    pins = set(re.findall(r"portfusion@v(\d+\.\d+\.\d+)\b", readme))
+    entries = re.findall(r"^## (.+)$", changelog, re.M)
+    dated = [e for e in entries if e != "Unreleased"]
+    assert len(pins) == 1 and dated, f"the README installs {sorted(pins)}; the changelog's entries {entries[:2]}"
+    number, _, day = dated[0].partition(f" — {portfusion.LABEL}, ")
+    assert re.fullmatch(r"\d+\.\d+\.\d+", number) and day, f"a heading not `N.N.N — label, day`: {dated[0]}"
+    datetime.datetime.strptime(day, "%d %b %Y")
+    version, _, dev = portfusion.__version__.partition(".dev")
+    assert entries[0] == ("Unreleased" if dev else dated[0]), entries[0]
+    if dev:
+        assert tuple(map(int, version.split("."))) > tuple(map(int, number.split("."))), \
+            f"version {portfusion.__version__} is not ahead of the newest release, {number}"
+    else:
+        assert number == version, f"version {version}, but the changelog's newest entry is {number}"
+    assert pins == {number}, f"the README installs v{pins.pop()}, the changelog's newest release is {number}"
