@@ -248,6 +248,10 @@ ACCOUNTS = Table(
         Field("held_as", "str", enum=KINDS, required=True),
         # THE LABEL OF THE ACCOUNT'S BLOCK IN credentials.json, for an account a feed reads.
         Field("feed_key", "str", null=True),
+        # THE DAY THE ACCOUNT'S RECORD BEGINS, for one opened after the book's; blank for one held
+        # from the book's opening. Before it the account holds nothing and has no quarter-end
+        # row (`rules.accounts_open()`), whatever deal dates the statement it opened at carries.
+        Field("record_begins", "date", null=True),
     ),
 )
 

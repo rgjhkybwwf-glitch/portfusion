@@ -382,6 +382,9 @@ def build_ledger() -> pd.DataFrame:
 
     # PRE-record_begins(): opened before the record began.
     ledger["pre_baseline"] = ledger["date"] < record_begins()
+    # AN ACCOUNT OPENED AFTER THE BOOK holds nothing on a day before it (`rules.ACCOUNT_BEGINS`),
+    # though a leg the statement it opened at carries keeps its own deal date.
+    ledger["begins"] = pd.to_datetime(ledger["acct"].map(D.ACCOUNT_BEGINS))
     return ledger
 
 
@@ -1686,6 +1689,11 @@ class Book:
         """
         return list(D.ACCOUNT_ORDER)
 
+    def accounts_open(self, date) -> list[str]:
+        """The accounts whose record had begun by `date`, in register order: those a quarter end
+        on that day holds a row for (`rules.accounts_open()`, read from this book's record)."""
+        return [a for a in self.D.ACCOUNT_ORDER if self.D.ACCOUNT_BEGINS.get(a, "") <= str(date)[:10]]
+
     #: Words in a holder's name that do not name them, kept when a holder is taken out.
     HOLDER_TITLES = frozenset({"Mr", "Mrs", "Ms", "Miss", "Mx", "Dr"})
 
@@ -2549,7 +2557,7 @@ class Book:
         out = (rows.groupby("account")
                    .agg(amount=("amount", "sum"), contribution=("contribution", joined),
                         quality=("quality", joined), source=("source", joined))
-                   .reindex(self.D.ACCOUNT_ORDER))
+                   .reindex(self.accounts_open(as_of)))
         out["amount"] = out["amount"].fillna(0.0).round(2)
         out["contribution"] = out["contribution"].fillna("—")
         out["quality"] = out["quality"].fillna("—")
@@ -2616,7 +2624,7 @@ class Book:
         dates = sorted(self._classified()["as_of"].unique())
         wide = pd.DataFrame(
             {d: self.quarter_nav_rows(d, measure).set_index("account")["amount"]
-             for d in dates}).T.reindex(columns=self.D.ACCOUNT_ORDER, fill_value=0.0)
+             for d in dates}).T.reindex(columns=self.D.ACCOUNT_ORDER).fillna(0.0)
         wide.index.name = "as_of"
         wide["TOTAL"] = wide.sum(axis=1).round(2)
         return wide.round(2).reset_index()
@@ -2753,7 +2761,7 @@ class Book:
         return [held("", firm.iloc[0])] + [held(r["account"], r) for _, r in accounts.iterrows()]
 
     def account_quarter_returns(self, include_open: bool = False) -> pd.DataFrame:
-        """The day-weighted return per account per quarter — every account, in ACCOUNT_ORDER.
+        """The day-weighted return per account per quarter, in ACCOUNT_ORDER, from the one it opens in.
 
         Each account's NAV CONTRIBUTION against the CAPITAL DEPLOYED into its positions: for a
         share account, positions at market against purchases less sales; for a spread-bet
@@ -2785,6 +2793,8 @@ class Book:
             spans = list(zip(dates, dates[1:]))
             if live:
                 spans.append(live[:2])
+            # A QUARTER THAT ENDS BEFORE THE ACCOUNT OPENS is not its own: it held nothing then.
+            spans = [s for s in spans if account in self.accounts_open(s[1])]
             for start, end in spans:
                 is_open = live is not None and end == live[1]
                 bv = float(wide.loc[start, account])
@@ -2990,7 +3000,7 @@ class Book:
         leg_sold = {tid: sold_on[eid] for eid, tid in self.D.EXIT_LEG_MATCH.items()}
         out: dict[str, dict] = {}
         for r in self.ledger.to_dict("records"):
-            if not (r["pre_baseline"] or r["date"] <= d):
+            if not (r["pre_baseline"] or r["date"] <= d) or r["begins"] > d:
                 continue
             if account is not None and r["acct"] != account:
                 continue
@@ -3272,7 +3282,7 @@ class Book:
                     f"as_of({date!r}, account={account!r}): no legs at all. An account with "
                     f"nothing in the ledger is a name that does not match — check it against "
                     f"rules.ACCOUNT_ORDER rather than reading the empty frame as a holding.")
-        L = L[L["pre_baseline"] | (L["date"] <= d)].copy()
+        L = L[(L["pre_baseline"] | (L["date"] <= d)) & ~(L["begins"] > d)].copy()
 
         def qty(r):
             return -r["qty"] if r["direction"] == "Sell" else r["qty"]
@@ -3365,7 +3375,7 @@ class Book:
 
         px, fx = self._marks_at(as_of, window)
         ph = self.store["history.prices"]
-        order = [a for a in self.D.ACCOUNT_ORDER if accounts is None or a in accounts]
+        order = [a for a in self.accounts_open(as_of) if accounts is None or a in accounts]
         # A SPREAD-BET ACCOUNT'S EQUITY is by_account()'s, which values every account: asked only
         # when one is wanted, so a share account can be struck on a day the others cannot.
         nav = (self.by_account(as_of, window=window).set_index("account")["nav"]

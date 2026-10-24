@@ -5,8 +5,8 @@ The rule these tests exist to protect: A SPREAD-BET ACCOUNT CONTRIBUTES ITS EQUI
 NEVER ITS NOTIONAL. An IG statement prints both on one page, the notional several times the
 equity, and the gap between them is the most expensive mistake available against a record.
 
-A spread-bet account's record may begin at a statement after the year opened; before it the
-account's rows are 0.00 placeholders, and its funds enter as a flow on the day.
+An account's record may begin after the book's (accounts.csv `record_begins`): a quarter end before it
+holds no row for the account, and its funds enter as a flow on the day.
 """
 import re
 
@@ -84,10 +84,29 @@ def test_a_contribution_nobody_classified_stops_every_reader():
 
 def test_every_account_is_covered_at_every_quarter_end():
     """A missing account contributes silently nothing, which understates NAV and no
-    downstream check would catch it."""
+    downstream check would catch it. One that had not opened holds no row
+    (`rules.accounts_open()`)."""
     for d in sorted(NAV_TOTAL):
         covered = {q.account for q in D.QUARTER_NAV if q.as_of == d}
-        assert covered == set(D.ACCOUNT_ORDER), f"{d} missing: {set(D.ACCOUNT_ORDER) - covered}"
+        want = set(D.accounts_open(d))
+        assert covered == want, f"{d}: missing {want - covered}, before opening {covered - want}"
+
+
+@pytest.mark.parametrize("table, row", [
+    ("quarter-nav", "{q},{a},0.00,account equity,derived,a stand-in"),
+    ("quarter-snapshots", "{q},{a},(no positions),,,,0.00,0.00,derived,a stand-in"),
+    ("quarter-results", "{q},{a},0.00,0.00,0.00,0.00,,,a stand-in")])
+def test_a_row_before_its_account_opens_is_refused_on_load(store_copy, table, row):
+    """AN ACCOUNT HOLDS NOTHING BEFORE IT OPENS, so a quarter end then has no row for it: a 0.00
+    row standing in for that reads as a figure. The record will not load, naming the row."""
+    from harness import append_rows
+    if not D.ACCOUNT_BEGINS:
+        pytest.skip("no account in this book opened after it")
+    account, opens = next(iter(D.ACCOUNT_BEGINS.items()))
+    before = [q for q in D.QSNAP_FROZEN if q < opens] or ["2025-12-31"]
+    append_rows(store_copy / f"{table}.csv", [row.format(q=before[-1], a=account)])
+    with pytest.raises(ValueError, match=rf"(?s)BEFORE ITS RECORD BEGINS.*{table}\.csv: {account} at"):
+        D.reload_store()
 
 
 @pytest.mark.parametrize("table", ["quarter-nav", "quarter-snapshots", "quarter-results"])

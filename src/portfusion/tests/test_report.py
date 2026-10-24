@@ -410,7 +410,7 @@ def test_a_quarter_end_counts_the_positions_it_froze():
     for d in _frozen_quarters():
         n = b.headline(d)["Open positions"]
         assert n == len(b.quarter_lines(d)), d
-        assert f"{len(D.ACCOUNT_ORDER)} / {n:,.0f}" in render(d), d
+        assert f"{len(D.accounts_open(d))} / {n:,.0f}" in render(d), d
 
 
 @needs("quarter-nav", "buys")

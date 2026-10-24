@@ -191,6 +191,7 @@ BY_TAB = {
         "cash": "Cash / Funds (GBP)",      # an IG row's is its funds, from its reading
         "cash_read": "Read from",           # the document, then its day, as Reconcile names one
         "feed_key": "Feed",
+        "record_begins": "Record begins",                   # blank for an account held from the book's opening
     },
     # WHO OPENS THE HOSTED DESK, on the Mac's Access page. `at` is when a sign-in was tried, so
     # it is not What Changed's "Recorded".

@@ -213,8 +213,8 @@ PANEL_COLUMNS = {
         "LIFE_DETAIL_COLUMNS": ("realisations", "lines"),
     },
     "accounts": {
-        "REGISTER_COLUMNS": ("code", "account", "holder", "broker_firm", "number", "feed_key", "cash",
-                             "cash_read"),
+        "REGISTER_COLUMNS": ("code", "account", "holder", "broker_firm", "number", "feed_key",
+                             "record_begins", "cash", "cash_read"),
         "MOVEMENT_COLUMNS": ("date", "account", "amount", "source", "detail"),
         "SUMMARY_COLUMNS": ("account", "total"),
         "INCOME_COLUMNS": ("date", "category", "detail", "currency", "local_amount", "rate_date",

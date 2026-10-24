@@ -12,7 +12,7 @@ from portfusion.record import rules as D
 def completeness(quarter_end: str) -> list[str]:
     """What is still missing before this quarter can be reported. Empty means ready.
 
-    IT CHECKS WHAT THE PAGE READS (14 Oct 2026): every account's quarter-nav row at the
+    IT CHECKS WHAT THE PAGE READS (14 Oct 2026): every open account's quarter-nav row at the
     date and at the quarter's opening, the previous quarter end its return runs from, and the
     composition frozen at the date. Both are checked against the DATE ITSELF, not "on or
     before": a figure from six weeks earlier does not describe the quarter that just closed. THE
@@ -22,12 +22,11 @@ def completeness(quarter_end: str) -> list[str]:
     account's last check, or that there is none.
     """
     missing = []
-    accounts = set(D.ACCOUNT_ORDER)
-
     opening = _opening(quarter_end)
     if opening is None:
         return [f"{quarter_end} is not a quarter end"]
     for day, what in ((quarter_end, "NAV row"), (opening, "opening NAV row")):
+        accounts = set(D.accounts_open(day))
         nav = {q.account for q in D.QUARTER_NAV if q.as_of == day}
         if nav != accounts:
             missing.append(f"quarter-nav: no {what} at {day} for "
