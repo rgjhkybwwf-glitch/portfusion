@@ -3,7 +3,10 @@
 Each release, newest first. The version is `portfusion/__init__.py`'s, and `portfusion --version`
 prints it.
 
-## Unreleased
+## 0.2.1 — beta, 24 Oct 2026
+
+The stepping stone. A 0.2.0 book takes this release and runs `portfusion migrate --write` before
+it takes 0.3.0, which will not carry a 0.2.0 book's store.
 
 - **An IG reading is one pass with its marks only until they are struck again.** A level struck
   later on the reading's own day takes the place of the one it was read with, so the reading reads
