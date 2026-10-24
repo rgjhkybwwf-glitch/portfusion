@@ -16,8 +16,9 @@ cd ~/my-book && python3 -m venv .venv && .venv/bin/python3 -m pip install -r req
 source .venv/bin/activate && portfusion desk      # every command reads the book in the folder it is typed in
 ```
 
-`portfusion init --practice` makes a copy of the demo to try things on, and `--push-on-commit`
-a book whose every commit is pushed to its remote as it lands. On a Mac,
+`portfusion init --practice` makes a copy of the demo to try things on, `--begins 2026-05-15` a
+book whose record begins that day, and `--push-on-commit` a book whose every commit is pushed to
+its remote as it lands. On a Mac,
 `portfusion desk --install-agent` starts the desk at login for the book it is typed in.
 
 A book is a folder:

@@ -3,6 +3,8 @@ portfusion init — A NEW BOOK, in a folder that is empty or does not exist yet.
 
     portfusion init <folder>                 an empty book; its record begins this 1 January
     portfusion init <folder> --begins 2027   an empty book whose record begins on 1 January 2027
+    portfusion init <folder> --begins 2027-05-15
+                                             an empty book whose record begins on 15 May 2027
     portfusion init <folder> --practice      a practice book: a copy of the demo, marked as one,
                                              to try the desk on. Its figures are invented
     portfusion init <folder> --no-git        without starting its git history
@@ -33,7 +35,8 @@ def main(argv=None):
     kind = p.add_mutually_exclusive_group()
     kind.add_argument("--practice", action="store_true",
                       help="a practice book: a copy of the demo, marked as one")
-    kind.add_argument("--begins", type=int, metavar="YEAR", help="the year the record begins")
+    kind.add_argument("--begins", type=lambda v: int(v) if v.isdigit() else v, metavar="YEAR|DATE",
+                      help="the year, or the day (YYYY-MM-DD), the record begins")
     p.add_argument("--no-git", action="store_true", help="do not start its git history")
     p.add_argument("--push-on-commit", action="store_true",
                    help="a hook that pushes each commit to origin as it lands")

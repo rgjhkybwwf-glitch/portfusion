@@ -96,8 +96,7 @@ def render(quarter_end: str) -> str:
     """
     b = Book()
     label = _dt.date.fromisoformat(quarter_end).strftime("%d %B %Y")
-    q = {"03-31": "Q1", "06-30": "Q2", "09-30": "Q3", "12-31": "Q4"}[quarter_end[5:]]
-    year = quarter_end[:4]
+    name = b.quarter_label(quarter_end, b.quarter_opens(quarter_end))
 
     # One call, so an amount and the basis printed beside it cannot come from different rows.
     navs = b.quarter_nav_rows(quarter_end)
@@ -139,14 +138,14 @@ def render(quarter_end: str) -> str:
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{q} {year} — {html.escape(brand.NAME)}</title>
+<title>{name} — {html.escape(brand.NAME)}</title>
 <style>{CSS}</style></head><body>
 <div class="wrap">
 
 <header>
   {brand.lockup()}
   <div class="eyebrow">Quarterly report</div>
-  <h1>{q} {year}</h1>
+  <h1>{name}</h1>
   <p class="lede">As at {label}. All figures GBP.</p>
   {notice(quarter_end)}
 </header>{_RULE}{body}

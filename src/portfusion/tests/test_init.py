@@ -36,12 +36,17 @@ def test_an_empty_book_holds_every_table_with_its_header_and_no_rows(tmp_path):
 
 
 def test_an_empty_books_settings_name_every_key_and_date_its_record(tmp_path):
-    """Every key once, in the schema's order; the record begins on a 1 January, as the record
-    requires, and nothing that names a place outside the book is filled in."""
+    """Every key once, in the schema's order; the record begins on a year's 1 January or on the day
+    given, its first report is due when that day's quarter ends, and nothing that names a place
+    outside the book is filled in."""
     rows = dict(settings(2027))
     assert list(rows) == list(schema.SETTING_KEYS)
     assert rows["record_begins"] == "2027-01-01"
     assert rows["first_report"] == "2027-03-31"
+    for begins, first in (("2027-05-15", "2027-06-30"), ("2027-10-01", "2027-12-31")):
+        dated = dict(settings(begins))
+        assert (dated["record_begins"], dated["reasoning_owed_from"], dated["first_report"]) == (
+            begins, begins, first), dated
     assert not any(rows[k] for k in ("hosted_origin", "passkey_domain", "deploy_repo", "research_repo"))
 
 
@@ -135,6 +140,61 @@ def test_an_empty_book_opens(tmp_path):
     assert run.returncode == 0, run.stderr[-2000:]
 
 
+#: What a book that began on 15 May is asked, in its own process: its year and its first quarter
+#: measure from its opening, the quarter says so on the desk's list and the report, and the gate
+#: asks for that opening rather than a 31 March the record never had.
+_MID_YEAR = """
+import math
+from portfusion.engine import Book
+from portfusion.report.gate import completeness
+from portfusion.report.page import render
+b = Book()
+assert b.ytd_opens() == b.baseline_asof == "2026-05-14", b.ytd_opens()
+assert not math.isnan(b.headline()["YTD return (MWR)"]), "the year has nothing to open from"
+first = b.quarter_returns().iloc[0]
+assert (first["quarter"], first["opens"]) == ("Q2 2026, from 15 May", "2026-05-14"), first
+assert b.year_to_quarter("2026-09-30")["opens"] == "2026-05-14"
+assert completeness("2026-06-30") == [], completeness("2026-06-30")
+assert "<h1>Q2 2026, from 15 May</h1>" in render("2026-06-30")
+from portfusion.desk import engine as desk
+assert desk.reports()["quarters"][-1]["quarter"] == "Q2 2026, from 15 May", desk.reports()
+"""
+
+
+def _begun_mid_quarter(tmp_path):
+    """A practice book whose record begins on 15 May 2026: its opening is the demo's frozen
+    31 March, dated the day before, and nothing is frozen, deposited or earned before it."""
+    import csv
+    book = create(tmp_path / "book", practice=True)
+    store = book / "store"
+
+    def edit(table, keep=lambda r: True, change=lambda r: r):
+        path = store / f"{table}.csv"
+        with path.open(newline="", encoding="utf-8") as fh:
+            head, *rows = list(csv.reader(fh))
+        with path.open("w", newline="", encoding="utf-8") as fh:
+            csv.writer(fh, lineterminator="\n").writerows([head, *(change(r) for r in rows if keep(r))])
+    begins = {"record_begins": "2026-05-15", "reasoning_owed_from": "2026-05-15",
+              "first_report": "2026-06-30"}
+    edit("settings", change=lambda r: [r[0], begins.get(r[0], r[1])])
+    for table in ("quarter-nav", "quarter-snapshots"):
+        edit(table, keep=lambda r: r[0] >= "2026-03-31",
+             change=lambda r: ["2026-05-14", *r[1:]] if r[0] == "2026-03-31" else r)
+    edit("quarter-results", keep=lambda r: r[0] > "2026-03-31")
+    for table in ("capital-movements", "income"):
+        edit(table, keep=lambda r: r[0] >= "2026-05-15")
+    return book
+
+
+def test_a_book_begun_mid_quarter_is_measured_from_its_opening(tmp_path):
+    """A BOOK MAY BEGIN ON ANY DAY (#7). It was refused unless it began on a 1 January, because the
+    year and its first quarter were measured from a 31 December and a quarter end the record
+    never had."""
+    run = subprocess.run([sys.executable, "-c", _MID_YEAR], capture_output=True, text=True,
+                         env={**os.environ, schema.ENV: str(_begun_mid_quarter(tmp_path))})
+    assert run.returncode == 0, run.stderr[-2000:]
+
+
 def test_init_runs_where_there_is_no_book(tmp_path):
     """A new user's first command is typed where no book is yet, and every other command refuses
     there: `init` alone must not, by either route to it."""
@@ -143,6 +203,12 @@ def test_init_runs_where_there_is_no_book(tmp_path):
         run = subprocess.run([sys.executable, *route, f"book{n}"], cwd=tmp_path, env=env,
                              capture_output=True, text=True)
         assert run.returncode == 0 and (tmp_path / f"book{n}" / "store").is_dir(), run.stderr
+    # `--begins` TAKES A DAY as well as a year, and the book's record begins on it.
+    run = subprocess.run([sys.executable, "-m", "portfusion", "init", "dated", "--no-git",
+                          "--begins", "2026-05-15"], cwd=tmp_path, env=env, capture_output=True,
+                         text=True)
+    assert run.returncode == 0, run.stderr
+    assert "record_begins,2026-05-15" in (tmp_path / "dated/store/settings.csv").read_text()
 
 
 def test_a_new_books_history_starts_with_it(tmp_path):

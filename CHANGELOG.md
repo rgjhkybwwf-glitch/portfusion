@@ -5,6 +5,11 @@ prints it.
 
 ## Unreleased
 
+- **A book can begin on any day (#7).** `portfusion init --begins` takes a day as well as a year.
+  The year to date, the year to each quarter and the return since the start measure from the
+  record's opening in the year it began, and its first quarter from that opening, named for it:
+  "Q2 2026, from 15 May" on the desk and the report, whose gate asks for that opening. A record
+  that begins on another day than 1 January is no longer refused.
 - **An account can open after the book does.** The register's `record_begins` is the day an
   account's record began, blank for one held from the book's opening. Before it the account holds
   nothing, whatever deal dates the statement it opened at carries, the freeze writes no row for it,
