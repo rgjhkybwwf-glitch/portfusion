@@ -88,6 +88,35 @@ echo "  Install it (pip install -r requirements.txt) or activate the venv that h
 exit 1
 """
 
+#: THE BOOK'S BACKUP, as `.githooks/post-commit`, written only on `--push-on-commit`: each commit
+#: is pushed as it lands, so committed and backed up are one act. A book with no remote, or one
+#: backed up another way, has no use for it.
+BACKUP_HOOK = """\
+#!/bin/sh
+# THIS BOOK'S BACKUP, written by `portfusion init --push-on-commit`: each commit is pushed to origin
+# the moment it lands, so "committed" and "backed up" are one act rather than two.
+#
+# It must never block or fail a commit: the commit has already happened by the time this runs.
+# A failure prints and is ignored. A merge does not fire this hook: push one by hand.
+#
+# A DETACHED HEAD HAS NO BRANCH TO PUSH, so a commit there is on this machine alone and nothing
+# points at it. It says so rather than exiting quietly: a backup that fails silently looks exactly
+# like one that works. A rebase passes through detached commits by design and ends on a branch.
+branch=$(git symbolic-ref --short HEAD 2>/dev/null) || {
+    gitdir=$(git rev-parse --git-dir)
+    [ -d "$gitdir/rebase-merge" ] || [ -d "$gitdir/rebase-apply" ] || {
+        echo "post-commit: DETACHED HEAD — this commit is on no branch and is NOT backed up."
+        echo "  To keep it and push it:  git switch -c <name> && git push -u origin <name>"
+    }
+    exit 0
+}
+if ! git push --quiet origin "$branch" 2>/dev/null; then
+    echo "post-commit: could not push '$branch' to origin — commit is safe locally, backup is NOT current"
+fi
+exit 0
+"""
+
+
 def pin() -> str:
     """The requirement line for the portfusion running now, as `pip install -r` takes it: the
     commit it was installed from, the folder or file, or else the release by its number."""
@@ -159,10 +188,12 @@ PRACTICE = ("practice", "yes")
 PRACTICE_JOURNAL = "hand,append,settings,1,portfusion init --practice,the practice setting"
 
 
-def create(folder, practice: bool = False, begins: int | None = None) -> pathlib.Path:
+def create(folder, practice: bool = False, begins: int | None = None,
+           push_on_commit: bool = False) -> pathlib.Path:
     """Write a new book at `folder`: with `practice`, a copy of the demo whose settings say it is
-    one; else an empty book whose record begins in `begins` (this year when not given). Returns
-    the folder, absolute; `start_history()` makes it a repository.
+    one; else an empty book whose record begins in `begins` (this year when not given). With
+    `push_on_commit`, its hooks push each commit as it lands (`BACKUP_HOOK`). Returns the folder,
+    absolute; `start_history()` makes it a repository.
 
     Side effects: makes `folder` and writes the book's files inside it, nothing outside it.
     Raises Refused when `folder` exists and is not empty.
@@ -203,7 +234,10 @@ def create(folder, practice: bool = False, begins: int | None = None) -> pathlib
         (folder / name).mkdir(parents=True, exist_ok=True)
     (folder / ".gitignore").write_text(GITIGNORE, encoding="utf-8")
     (folder / ".githooks").mkdir(exist_ok=True)
-    for name, text in (("pre-commit", HOOK), ("pre-push", PUSH_HOOK)):
+    hooks = [("pre-commit", HOOK), ("pre-push", PUSH_HOOK)]
+    if push_on_commit:
+        hooks.append(("post-commit", BACKUP_HOOK))
+    for name, text in hooks:
         hook = folder / ".githooks" / name
         hook.write_text(text, encoding="utf-8")
         hook.chmod(0o755)

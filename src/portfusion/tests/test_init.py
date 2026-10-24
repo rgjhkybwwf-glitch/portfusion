@@ -172,10 +172,10 @@ _GIT_NAMED = {"GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@example.test",
               "GIT_COMMITTER_NAME": "t", "GIT_COMMITTER_EMAIL": "t@example.test"}
 
 
-def _started(tmp_path):
-    """A new book with its history begun under a throwaway name."""
+def _started(tmp_path, **made):
+    """A new book, made as `create()` is told, with its history begun under a throwaway name."""
     from portfusion.init import start_history
-    book = create(tmp_path / "book")
+    book = create(tmp_path / "book", **made)
     with pytest.MonkeyPatch.context() as m:
         for k, v in _GIT_NAMED.items():
             m.setenv(k, v)
@@ -262,6 +262,51 @@ def test_a_new_books_gate_refuses_when_it_cannot_run(tmp_path):
     book = _started(tmp_path)
     result = _commit(book, ["/usr/bin", "/bin"])
     assert result.returncode != 0 and "could not run" in result.stderr, result.stderr
+
+
+def test_a_book_made_to_push_on_commit_says_when_a_commit_is_not_backed_up(tmp_path):
+    """`--push-on-commit` pushes a BRANCH, and a detached HEAD has none. The hook used to exit
+    without a word, so a commit there sat on the machine alone looking exactly like one that had
+    been pushed. It never fails a commit, and a book made without the option has no such hook."""
+    assert not (create(tmp_path / "plain") / ".githooks" / "post-commit").exists()
+    book = _started(tmp_path, push_on_commit=True)
+    env = {**os.environ, **_GIT_NAMED, "PATH": os.pathsep.join(
+        [str(pathlib.Path(sys.executable).parent), "/usr/bin", "/bin"])}
+
+    def commit(name):
+        """What the commit says (git hands a hook's output to stderr); it must never fail."""
+        (book / name).write_text("a trade, and why")
+        subprocess.run(["git", "add", name], cwd=book, env=env, check=True)
+        done = subprocess.run(["git", "commit", "-qm", name], cwd=book, env=env,
+                              capture_output=True, text=True)
+        assert done.returncode == 0, done.stderr
+        return done.stdout + done.stderr
+
+    on_branch = commit("notes.md")
+    assert "could not push" in on_branch and "DETACHED" not in on_branch, on_branch
+    subprocess.run(["git", "checkout", "-q", "--detach"], cwd=book, env=env, check=True)
+    detached = commit("more.md")
+    assert "NOT backed up" in detached and "git switch -c" in detached, detached
+
+
+@pytest.mark.audit
+def test_the_loaded_book_holds_what_init_writes_and_its_hooks_are_the_releases(tmp_path):
+    """A BOOK MADE BY AN EARLIER RELEASE, or filled from another folder's files, can lack a file
+    every new book now gets, or keep a hook or ignore list the release has since changed. A new
+    book is made beside it and the two compared: every file it holds must be there, and its
+    `.gitignore` and hooks byte for byte, so a pin that moves takes them by copying a new book's.
+    The demo ships inside the app and is no book's folder, so it has nothing here to hold."""
+    if schema.BOOK == schema.DEMO:
+        return
+    new = create(tmp_path / "new",
+                 push_on_commit=(schema.BOOK / ".githooks" / "post-commit").is_file())
+    written = [p.relative_to(new) for p in new.rglob("*")
+               if p.is_file() and ".git" not in p.relative_to(new).parts]
+    missing = [str(p) for p in written if not (schema.BOOK / p).is_file()]
+    assert written and not missing, f"a new book holds these and this one does not: {missing}"
+    differ = [str(p) for p in written if p.parts[0] in (".gitignore", ".githooks")
+              and (schema.BOOK / p).read_bytes() != (new / p).read_bytes()]
+    assert not differ, f"not what this release writes; take its copy from a new book: {differ}"
 
 
 def test_a_new_book_names_the_portfusion_it_runs(tmp_path):

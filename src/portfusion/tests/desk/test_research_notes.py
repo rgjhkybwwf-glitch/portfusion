@@ -1,8 +1,14 @@
-"""THE RESEARCH NOTES DOOR — a published note's rows, on one press from the Bench.
+"""THE RESEARCH NOTES DOOR — a published note's rows, on one press from the Bench — and the
+loaded book's own rows, held to the research repo its settings name.
 
-A FIXTURE REPO, never the owner's: a test reading the real one would pass or fail on whatever was
-published that week. Its note names a company the LOADED book has held, so the suite says the
-same on any book.
+THE DOOR'S TESTS READ A FIXTURE REPO, never the owner's: a test reading the real one would pass or
+fail on whatever was published that week. Its note names a company the LOADED book has held, so
+the suite says the same on any book.
+
+THE BOOK'S ROWS ARE HELD TO ITS OWN REPO. `store/research-notes.csv` exists so the book builds on
+a machine without the repo, which makes it a second home for a fact, so it is tied rather than
+trusted. A book that names no `research_repo` has no notes, and nothing here to hold; one that
+names a repo this machine does not have skips, and a book that lists its skips fails on it.
 """
 from __future__ import annotations
 
@@ -116,3 +122,69 @@ def test_the_codes_held_are_those_open_at_the_baseline_or_dealt_in_since():
     held = b.codes_held()
     assert "ZZZQ" not in held, "a line dealt in only before the record began covers a note"
     assert "ZZZR" in held and set(at_baseline["ticker"]) <= set(held)
+
+
+def _the_books_repo():
+    """The research reader on the loaded book's own repo, or None when the book names none."""
+    from portfusion.desk.intake import research
+    if research.REPO is None:
+        return None
+    if not research.available():
+        pytest.skip(f"the book's research_repo, {research.REPO}, is not on this machine")
+    return research
+
+
+def _company(code: str) -> str:
+    """A code's company, as a note names it: ORLA and ORLA SB are one (`research.for_ticker`)."""
+    return code.split()[0].upper()
+
+
+def test_each_ref_on_file_is_one_companys_and_links_its_note_over_https(D):
+    """A ref is one published note, so the same ref against two companies means one of them is
+    mislabelled; against a company's shares and its spread bet it is right. A link is the note's
+    page, or blank when the book names no `insights_url`."""
+    company_of, wrong = {}, []
+    for code, entries in D.RESEARCH_NOTES.items():
+        for ref, _, url in entries:
+            if company_of.setdefault(ref, _company(code)) != _company(code):
+                wrong.append(f"{ref} names {company_of[ref]} and {_company(code)}")
+            if url and not url.startswith("https://"):
+                wrong.append(f"{ref} for {code} links {url!r}")
+    assert not wrong, wrong
+
+
+def test_every_row_on_file_is_a_note_the_repo_publishes_on_a_code_it_covers(D):
+    """THE ROWS AGAINST THE NOTES. Each row's ref is in the repo, with the date and link the store
+    copied, on a code of the note's company that the book has held since the record began (the
+    rule `desk/doors/research_notes.py` writes by). If the store has drifted, the NOTE is right; a
+    ref the repo does not have is a typo or a withdrawn note, and both need a human."""
+    research = _the_books_repo()
+    if research is None:
+        return
+    from portfusion.engine import Book
+    live, held, wrong = research.by_ref(), set(Book().codes_held()), []
+    for code, entries in D.RESEARCH_NOTES.items():
+        for ref, published, url in entries:
+            note = live.get(ref)
+            if note is None:
+                wrong.append(f"{ref}: not in the research repo")
+                continue
+            if (note["date"], note["url"]) != (published, url):
+                wrong.append(f"{ref}: the store says {published} {url}, the note "
+                             f"{note['date']} {note['url']}")
+            if code not in held or note["ticker"].upper() != _company(code):
+                wrong.append(f"{ref}: filed under {code}, which the note does not cover")
+    assert not wrong, "\n  ".join(["rows the research repo does not bear out:", *wrong])
+
+
+@pytest.mark.audit
+def test_every_published_note_on_a_held_company_is_on_file():
+    """THE TIE RUN THE OTHER WAY: what the repo publishes on a company the book holds is cited.
+    Once the book holds a company, every code a note on it covers needs a row, and the Bench
+    records them in one press. A note waiting is something the record needs, not a code defect."""
+    if _the_books_repo() is None:
+        return
+    from portfusion.desk.doors import research_notes
+    owed = [f"{n['ref']} ({n['date']}) for {', '.join(n['codes'])}" for n in research_notes.owed()]
+    assert not owed, ("published and not on file: " + "; ".join(owed)
+                      + ". Record each from the Bench's Research notes waiting.")
