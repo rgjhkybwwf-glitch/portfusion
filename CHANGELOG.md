@@ -5,6 +5,9 @@ prints it.
 
 ## Unreleased
 
+- **An IG reading is one pass with its marks only until they are struck again.** A level struck
+  later on the reading's own day takes the place of the one it was read with, so the reading reads
+  `struck-apart` rather than a difference that was never there.
 - **An ii dividend arrives knowing its line (#39).** The ii reader reads a line's description before
   its Symbol, so a dividend, which names its security as a deal does, is proposed rather than
   reported as a dealing line, with its ticker the Symbol's code in the book; blank where the book

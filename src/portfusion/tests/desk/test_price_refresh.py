@@ -892,7 +892,9 @@ def test_a_reading_writes_its_levels_beside_its_equity(store_copy):
 
 def test_an_ig_check_describes_its_own_instant(store_copy):
     """AN IG CHECK DESCRIBES ITS OWN INSTANT: a sweep on a later day leaves the reconciliation of the
-    reading before it as it was, its tie included. On the loaded book's own reading."""
+    reading before it as it was, its tie included; one later on the reading's own day takes the
+    place of the levels it was read with, so the reading is no longer one pass with its marks.
+    On the loaded book's own reading."""
     import datetime as dt
     from portfusion.desk.doors import marks
     from portfusion.engine import Book
@@ -909,6 +911,14 @@ def test_an_ig_check_describes_its_own_instant(store_copy):
     marks.write(prices=[_level(price=round(_BY_TICKER[contract][1] * 0.9, 1), as_of=later,
                                at=f"{later}T14:02:11Z")])
     assert row() == was, "a later day's level moved the reconciliation of the reading before it"
+    read_at = next(r.at for r in _rules.ac_rows if r.acct == SPREAD_BET_ACCOUNT)
+    after = (dt.datetime.fromisoformat(read_at) + dt.timedelta(minutes=1)).strftime(
+        "%Y-%m-%dT%H:%M:%SZ")
+    marks.write(prices=[_level(price=round(_BY_TICKER[contract][1] * 0.9, 1),
+                               as_of=str(day)[:10], at=after)])
+    now = row()
+    assert now["comparable"] == "False" and "struck after the equity was read" in \
+        now["comparability"], now["comparability"]
 
 
 def test_a_refused_reading_rolls_back_the_levels_too(store_copy):

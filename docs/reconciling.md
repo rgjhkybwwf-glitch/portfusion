@@ -59,7 +59,8 @@ on `not-on-file`.
 
 **The reading is taken on Price Refresh**: *fetch everything*, tick the accounts, *write the
 ticked marks*. Equity and contract levels are read in one pass and written together, which is
-what lets the pair compare at all. A reading moves the book (`docs/prices.md`).
+what lets the pair compare at all. A level struck later the same day ends the pass: the reading
+reads `struck-apart` until it is read again. A reading moves the book (`docs/prices.md`).
 
 **Events come from `python3 -m portfusion.feeds.ig --ig-events`.** Its window is 30 days; sweep
 inside it, or use `--since`.

@@ -2206,7 +2206,7 @@ class Book:
             # evidence class, in `reconciliation_verdict()`.
             sb = self.is_spread_bet(a)
             if sb:
-                comparable, why = self.comparability(a, r.as_of, r.evidence)
+                comparable, why = self.comparability(a, r.as_of, r.evidence, r.at)
                 book_total = _nav_at(r.as_of).get(a)
             else:
                 comparable, why, book_total = None, "", None
@@ -2295,7 +2295,7 @@ class Book:
         out["agrees"] = (out["book"] - out["broker"]).abs() < 1e-9
         return out
 
-    def comparability(self, account: str, as_of, evidence) -> tuple[bool, str]:
+    def comparability(self, account: str, as_of, evidence, at=None) -> tuple[bool, str]:
         """Does a SPREAD-BET account's broker reading describe the SAME STATE OF THE MARKET as the
         book's side?
 
@@ -2306,7 +2306,9 @@ class Book:
         comparability, not tolerance. A SHARE ACCOUNT IS NOT ASKED THIS: it
         is checked on units at the door, which a close does not move.
 
-        A MARK THAT DOES NOT SAY WHICH INSTANT IT DESCRIBES COMPARES WITH NOTHING.
+        A MARK THAT DOES NOT SAY WHICH INSTANT IT DESCRIBES COMPARES WITH NOTHING. One pass is the
+        reading's day, and no mark of it struck after the reading's own instant `at`: a later read
+        of that day takes the earlier one's place, so the reading would meet levels it never saw.
 
         Returns `(comparable, why)`, `why` in a reader's words, so a renderer never composes it.
 
@@ -2339,6 +2341,16 @@ class Book:
             return False, (f"the equity was read on {day} and the marks are from "
                            f"{stalest if stalest == newest else stalest + ' to ' + newest}"
                            f" — not one pass")
+        if at:
+            live = self.store["prices"]
+            live = live[live["mark_key"].isin(keys) & (live["as_of"].astype(str).str[:10] == day)
+                        & (live["at"].fillna("").astype(str) != "")]
+            read = pd.Timestamp(utc_of(at))
+            later = sorted(k for k, t in zip(live["mark_key"], live["at"])
+                           if pd.Timestamp(utc_of(t)) > read)
+            if later:
+                return False, (f"{', '.join(later)} struck after the equity was read at "
+                               f"{utc_of(at)} — not one pass")
         return True, "read in one pass"
 
     def _struck_at(self, as_of: str) -> dict:
