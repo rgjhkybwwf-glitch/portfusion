@@ -1760,12 +1760,24 @@ class Book:
         return max([int(str(self.valued_at())[:4]), *rows])
 
     def ytd_opens(self, as_of: str | None = None) -> str:
-        """The 31 December the year-to-date figures measure from, as a store key."""
-        return f"{self.ytd_year(as_of) - 1}-12-31"
+        """The day the year-to-date figures measure from, as a store key (`year_opens()`)."""
+        return self.year_opens(self.ytd_year(as_of))
+
+    def year_opens(self, year: int) -> str:
+        """The day `year`'s figures measure from: the 31 December before it, but in the year the
+        record began, its opening, since nothing earlier was recorded."""
+        return max(f"{year - 1}-12-31", self.baseline_asof)
+
+    def quarter_opens(self, quarter_end: str) -> str:
+        """The day a quarter's figures measure from: the previous quarter end, but in the quarter the
+        record began, its opening (`quarter_label()` names such a quarter by it). The opening itself
+        has nothing recorded before it, so its own is the quarter end before."""
+        before = (pd.Timestamp(quarter_end) - pd.offsets.QuarterEnd(1)).date().isoformat()
+        return max(before, self.baseline_asof) if quarter_end > self.baseline_asof else before
 
     def ytd_window(self) -> dict:
-        """What the live year-to-date figures measure, for a page to state: `year`, the 31 December
-        they open at (`opens`), and whether that day's net asset value is `frozen` on file.
+        """What the live year-to-date figures measure, for a page to state: `year`, the day they
+        open at (`opens`, `year_opens()`), and whether that day's net asset value is `frozen` on file.
 
         Until it is, every year-to-date figure is BLANK (`by_account()`), and `frozen` is the
         reason a page gives — the newest mark alone cannot say which year a "YTD" is of, because
@@ -1867,7 +1879,7 @@ class Book:
                              + (unrealised - self._unrealised_at_baseline(order))
                              + income_since)
 
-        # THE YEAR'S TERMS open at the previous 31 December's frozen net asset value. Before
+        # THE YEAR'S TERMS open at the frozen net asset value of `year_opens()`'s day. Before
         # that quarter end is frozen there is nothing to measure from, so the opening is BLANK —
         # never zero, which would read as every account opened in the year.
         opens = self.ytd_opens(as_of)
@@ -2630,15 +2642,20 @@ class Book:
         return wide.round(2).reset_index()
 
     @staticmethod
-    def quarter_label(date: str) -> str:
-        """A quarter-end date -> the quarter's NAME. "2026-06-30" -> "Q2 2026".
+    def quarter_label(date: str, opens: str | None = None) -> str:
+        """A quarter-end date -> the quarter's NAME. "2026-06-30" -> "Q2 2026". A quarter that
+        `opens` after the quarter end before it, the one the record began inside, names the day it
+        opens at, as the year does ("from 31 Dec"): "Q2 2026, from 14 May".
 
         DERIVED, NEVER TYPED: deriving the name here is what lets the quarter blocks key on
         identical values and be read across — typing "Q1 2026" in a second place is how they
         would drift apart.
         """
         d = pd.Timestamp(date)
-        return f"Q{(d.month - 1) // 3 + 1} {d.year}"
+        name = f"Q{(d.month - 1) // 3 + 1} {d.year}"
+        if opens is not None and pd.Timestamp(opens) > d - pd.offsets.QuarterEnd(1):
+            name += f", from {pd.Timestamp(opens):%-d %b}"
+        return name
 
     @staticmethod
     def quarter_start(quarter_end: str) -> str:
@@ -2719,7 +2736,7 @@ class Book:
         rows = []
         dates = list(navs.index)
         for prev, end in zip(dates, dates[1:]):
-            rows.append({"quarter": self.quarter_label(end),
+            rows.append({"quarter": self.quarter_label(end, prev),
                          **self._dietz(prev, end, navs[prev], navs[end])})
 
         # THE QUARTER IN PROGRESS, when asked for: it ends at valued_at(), and its label says "to
@@ -2729,7 +2746,7 @@ class Book:
             prev = dates[-1]
             end = self.valued_at()
             if end > prev:
-                rows.append({"quarter": f"{self.quarter_label(end)} to date",
+                rows.append({"quarter": f"{self.quarter_label(end, prev)} to date",
                              **self._dietz(prev, end, navs[prev], self.nav())})
         return pd.DataFrame(rows, columns=["quarter", "opens", "quarter_end",
                                            *self.RESULT_FIGURES])
@@ -2811,7 +2828,7 @@ class Book:
                 blank = (self.is_spread_bet(account)
                          and not self._quarter_observed(account, start)
                          and (is_open or not self._quarter_observed(account, end)))
-                label = self.quarter_label(end)
+                label = self.quarter_label(end, start)
                 rows.append({"account": account,
                              "quarter": f"{label} to date" if is_open else label,
                              "opens": start, "quarter_end": end,
@@ -2909,17 +2926,22 @@ class Book:
 
     def year_to_quarter(self, quarter_end: str) -> dict:
         """The year to a FROZEN quarter end, measured exactly as its quarters are: `_dietz()` from
-        the previous 31 December's net asset value to the quarter end's. Unlike the live year to
+        the net asset value at `year_opens()` to the quarter end's. Unlike the live year to
         date, both ends are frozen, so a report regenerates it the same. Labelled "2026 to 30 Sep"
-        under `quarter`. KeyError if either end is not frozen."""
+        under `quarter`, and "2026 to 30 Sep, from 14 May" in the year the record began inside.
+        KeyError if either end is not frozen."""
         navs = self.quarter_nav_total()
-        start = f"{int(quarter_end[:4]) - 1}-12-31"
-        return {"quarter": f"{quarter_end[:4]} to {pd.Timestamp(quarter_end):%-d %b}",
+        year = int(quarter_end[:4])
+        start = self.year_opens(year)
+        label = f"{year} to {pd.Timestamp(quarter_end):%-d %b}"
+        if start != f"{year - 1}-12-31":
+            label += f", from {pd.Timestamp(start):%-d %b}"
+        return {"quarter": label,
                 **self._dietz(start, quarter_end, navs[start], navs[quarter_end])}
 
     def since_start(self, ytd: float | None = None) -> float:
-        """THE RETURN SINCE THE RECORD BEGAN: each full year's, fixed at its
-        frozen 31 December by `year_to_quarter()`, linked with the year to date —
+        """THE RETURN SINCE THE RECORD BEGAN: each full year's, fixed at its frozen 31 December by
+        `year_to_quarter()` (the first from the record's opening), linked with the year to date —
         (1 + 2026) × (1 + 2027 to date) − 1. LINKED, NOT ONE PERIOD: one money-weighted figure
         over several years would let one year's flows weigh on another's; linked, each year's
         weighting stays inside it, as the YTD return's does.

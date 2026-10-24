@@ -5,7 +5,7 @@ AN EMPTY BOOK IS THE DEMO'S STORE WITH EVERY ROW TAKEN OUT. Each table's header 
 demo the app ships (`record/schema.py:DEMO`), so a table or a history joins a new book by joining
 the demo, and there is no second list of headers to drift. The settings are the one table that
 is not left empty: every key in `schema.SETTING_KEYS` gets a row, the three dates the record
-cannot load without set from the year the record begins, and the rest blank, which each feature
+cannot load without set from the day the record begins, and the rest blank, which each feature
 that needs one reads as "not set up" and says so.
 
 It writes into a folder that does not exist or is empty, and nowhere else: a book is never
@@ -173,12 +173,16 @@ class Refused(Exception):
     """The folder already holds something, so no book is written there."""
 
 
-def settings(begins: int) -> list[tuple[str, str]]:
-    """Every settings key, in `SETTING_KEYS` order: the record begins on 1 January of `begins`,
-    a reason is owed from then, and the first report is that year's first quarter end."""
+def settings(begins: int | str) -> list[tuple[str, str]]:
+    """Every settings key, in `SETTING_KEYS` order: the record begins on `begins`, an ISO date or
+    a year's 1 January, a reason is owed from then, and the first report is due at the quarter end
+    that day falls in."""
     from portfusion.record import schema           # here, not at the top: see `create()`
-    dated = {"record_begins": f"{begins}-01-01", "reasoning_owed_from": f"{begins}-01-01",
-             "first_report": f"{begins}-03-31"}
+    day = _dt.date(begins, 1, 1) if isinstance(begins, int) else _dt.date.fromisoformat(begins)
+    month = (day.month - 1) // 3 * 3 + 3
+    first = _dt.date(day.year, month, 31 if month in (3, 12) else 30)
+    dated = {"record_begins": day.isoformat(), "reasoning_owed_from": day.isoformat(),
+             "first_report": first.isoformat()}
     return [(key, dated.get(key, "")) for key in schema.SETTING_KEYS]
 
 
@@ -188,10 +192,11 @@ PRACTICE = ("practice", "yes")
 PRACTICE_JOURNAL = "hand,append,settings,1,portfusion init --practice,the practice setting"
 
 
-def create(folder, practice: bool = False, begins: int | None = None,
+def create(folder, practice: bool = False, begins: int | str | None = None,
            push_on_commit: bool = False) -> pathlib.Path:
     """Write a new book at `folder`: with `practice`, a copy of the demo whose settings say it is
-    one; else an empty book whose record begins in `begins` (this year when not given). With
+    one; else an empty book whose record begins on `begins`, a date or a year's 1 January (this
+    year's when not given). With
     `push_on_commit`, its hooks push each commit as it lands (`BACKUP_HOOK`). Returns the folder,
     absolute; `start_history()` makes it a repository.
 

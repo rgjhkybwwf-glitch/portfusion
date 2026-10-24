@@ -124,7 +124,7 @@ def reports() -> dict:
         closed = [str(q)[:10] for q in b.quarter_returns()["quarter_end"]]
         to_close = str(b.quarter_to_close().date())
         ends = closed + ([to_close] if to_close not in closed else [])
-        quarters = [{"quarter": b.quarter_label(q), "quarter_end": q,
+        quarters = [{"quarter": b.quarter_label(q, b.quarter_opens(q)), "quarter_end": q,
                      "reported": q >= first, "closed": q in closed,
                      "ended": q <= b.valued_at(), "gaps": completeness(q)} for q in ends]
         years = sorted({q[:4] for q in ends}, reverse=True)

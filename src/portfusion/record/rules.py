@@ -120,16 +120,6 @@ ARCHIVE_CONVENTION = (
 SETTINGS = dict(schema.load("settings"))
 assert len(SETTINGS) == len(schema.load("settings")), "settings.csv names a key twice"
 
-#: THE RECORD BEGINS ON A 1 JANUARY. The year's return and the return since the start are each
-#: measured from a frozen 31 December (`Book.year_to_quarter()`), and a record beginning on any
-#: other day has no such date. Refused here, where the setting is read, rather than as a
-#: KeyError on the first page that asks.
-_begins = _dt.date.fromisoformat(SETTINGS["record_begins"])
-if (_begins.month, _begins.day) != (1, 1):
-    raise ValueError(
-        f"settings.csv record_begins is {_begins}, and the record must begin on a 1 January: "
-        f"the year's return is measured from the 31 December before it.")
-
 #: REASONING IS OWED FROM HERE. A reason written once the outcome is known is worth close to
 #: nothing, so an earlier blank is never owed. A DATE, NOT A PURGE: a position opened next week
 #: is in scope and one opened last year is not, with no list to keep. PER HALF: the thesis is
