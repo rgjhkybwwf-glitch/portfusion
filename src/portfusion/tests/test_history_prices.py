@@ -219,6 +219,7 @@ def test_a_save_that_fails_leaves_the_history_as_it_was(store_copy):
         "a refused save left its working file in the store"
 
 
+@needs("price-history")
 def test_a_price_written_to_more_than_six_places_is_refused_on_reading(store_copy):
     """A history holds its figures to their places (`files.PLACES`), as the record's loader does,
     so a hand edit cannot leave a price the bank would never have written."""
