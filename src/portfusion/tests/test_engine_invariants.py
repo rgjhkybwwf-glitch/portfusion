@@ -850,15 +850,52 @@ def _walk(monkeypatch, events):
 
 def test_a_share_sale_releases_the_average_and_the_last_takes_what_remains(monkeypatch):
     """Two buys at different prices make one pool. A partial sale takes quantity x the average;
-    the sale that empties it takes all that is left, so rounding strands nothing."""
+    the sale that empties it takes all that is left, so rounding strands nothing. A SALE RELEASES
+    ITS OWN COST ON ITS OWN DAY: a buy after it leaves its release alone."""
     p = _walk(monkeypatch, [("B1", "2026-01-05", "Buy", 3, 10.00, None),
                             ("B2", "2026-02-05", "Buy", 3, 20.00, None),
                             ("S1", "2026-03-05", "Sell", 1, 0, "R-TEST"),
-                            ("S2", "2026-04-05", "Sell", 5, 0, "R-TEST")])
-    assert p.at["S1", "released"] == 5.00
-    assert p.at["S2", "released"] == 25.00, "the last sale did not take what remained"
+                            ("B3", "2026-03-20", "Buy", 2, 60.00, None),
+                            ("S2", "2026-04-05", "Sell", 7, 0, "R-TEST")])
+    assert p.at["S1", "released"] == 5.00, "a later buy moved an earlier sale's release"
+    assert p.at["S2", "released"] == 85.00, "the last sale did not take what remained"
     assert (p["parcel"] == "R-TEST").all() and (p["emptied"] == pd.Timestamp("2026-04-05")).all()
     assert (p["opened"] == pd.Timestamp("2026-01-05")).all()
+
+
+@needs("sales")
+def test_a_round_trip_is_closed_out_in_its_own_account_while_another_holds_the_code(store_copy):
+    """A ROUND TRIP IS CLOSED OUT PER HOLDING, one account's line: a line sold out of one account
+    is closed out there, though another account goes on to buy the same code. The buy is the
+    line's own first, for one share, so it converts as the book's own did."""
+    from portfusion.record import schema
+    book = Book()
+    shares = [a for a in book.account_order() if not book.is_spread_bet(a)]
+    held = {(r.acct, r.ticker) for r in book.ledger[book.ledger["open_leg"]].itertuples()}
+    rt = book.round_trips()
+    case = next(((r.account, r.ticker, other) for r in rt[rt["fully_closed"]].itertuples()
+                 if r.held_as == "shares" for other in shares
+                 if other != r.account and (other, r.ticker) not in held), None)
+    if case is None:
+        pytest.skip("no share line closed out of one account that another could buy")
+    account, ticker, other = case
+    head = schema.TABLES["buys"].header
+    first = dict(zip(head, next(r for r in schema.load("buys")
+                                if r[head.index("account")] == account
+                                and r[head.index("ticker")] == ticker)))
+    write_rows("buys", {**first, "trade_id": "T-999", "account": other, "qty": 1,
+                        "cost": round(first["cost"] / first["qty"], 2), "broker_ref": "",
+                        "source": "a test buy", "note": ""})
+    if ticker not in {r[0] for r in D.CURRENT_PRICES}:
+        cur = book._identity().set_index("ticker")["currency"][ticker]
+        write_rows("current-prices", {"mark_key": ticker, "price": first["traded_price"] or 1.0,
+                                      "currency": cur, "as_of": str(book.valued_at())[:10],
+                                      "source": "a test mark", "struck": "close"})
+    D.reload_store()
+    after = Book().round_trips()
+    mine = after[(after["account"] == account) & (after["ticker"] == ticker)]
+    assert not mine.empty and mine["fully_closed"].all(), \
+        f"{ticker}, closed out of {account}, reopened when {other} bought it"
 
 
 def test_a_pool_sold_out_and_bought_again_is_a_new_holding(monkeypatch):
