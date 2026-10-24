@@ -1,9 +1,10 @@
 # Glossary
 
-The words the record, the desk and the report use, and where each is defined. **Where a term has
-a home in code, this points at it and stops**: a second telling is the one that goes stale, and
-`test_record.py` refuses one for the rules the record states once. If this file and the code
-disagree, the code is right.
+The words the record, the desk and the report use, and where each is defined.
+
+**Where a term has a home in code, this points at it and stops**: a second telling is the one
+that goes stale, and `test_record.py` refuses one for the rules the record states once. If this
+file and the code disagree, the code is right.
 
 ---
 
@@ -20,12 +21,12 @@ disagree, the code is right.
 
 | The question | Word | Values | Where |
 |---|---|---|---|
-| What kind of number is this? | **`basis`** | `capital` · `notional` · `mixed` · `count` | `Book.HEADLINE`, `MEASURE_BASIS` |
-| What document is this row's evidence? | **`source`** | free text | every table |
+| What kind of number is this? | **`basis`** | `capital` · `notional` · `count` | `Book.HEADLINE`, `MEASURE_BASIS` |
+| What document is this row's evidence? | **`source`** | `trade_source()`'s form on buys and sales | the event, mark and quarter-end tables; a reading's is `evidence` · `reference` |
 | How does this account contribute to net asset value? | **`contribution`** | `positions at market` · `account equity` · `notional` | `quarter-nav.csv` |
-| Do we own it, or have exposure to it? | **`held_as`**, shown as **Held as** | `shares` · `spread bet`; `mixed` on a company row holding both | `schema.KINDS`; every table and frame |
+| Do we own it, or have exposure to it? | **`held_as`**, shown as **Held as** | `shares` · `spread bet`; `mixed` on a company row holding both | `schema.KINDS`; `securities.csv`, `accounts.csv` and every frame |
 | Which set of measures? | **`measure=`** | `nav` · `exposure` | `quarter_nav_rows()` |
-| What unit is this price quoted in? | **Price unit** | points · GBP | the column heading |
+| What unit is a listing quoted in? | **`quote_unit`**, shown as **Quote unit** | `GBX` · a currency | `securities.csv` |
 | The accounting sense | **cost basis** | — | — |
 
 `basis` pairs with *measure*, a column you can total, in `MEASURE_BASIS` and `roll_up()`.
@@ -43,7 +44,7 @@ disagree, the code is right.
 
 | Sense | Spelling |
 |---|---|
-| A broker-side figure for an account, at an instant | **reading** — a row of `account-readings.csv` |
+| A broker-side figure for an account, at an instant | **reading** — a row of `account-readings.csv`, or of `cash-readings.csv` (a cash reading) |
 | A document retrieved by asking again, for a new instant | **`reading`**, one of `rules.RETRIEVAL_KINDS` |
 | What a Claude session hands the Bench after transcribing a document | **proposal** — `desk/intake/propose.py` |
 
@@ -64,7 +65,7 @@ keeps what the row said.
 |---|---|
 | What a reader reads | **As at** — the date a value was measured, when it is not a quarter boundary |
 | A column or a Python name | **`as_of`** |
-| The instant a figure was read | **`at`**, ISO and UTC, on `current-prices.csv` and `account-readings.csv`; the journal's `at` is local time |
+| The instant a figure was read or written | **`at`**, ISO and UTC, marked `Z`, on `current-prices.csv`, `account-readings.csv` and `journal.csv` |
 | What instant a mark describes | **`struck`** — `close`, a session close that can be fetched again, or `live`, a read that cannot |
 
 **"As at" is a label; `as_of` is a name.** A name need not be what a reader sees, but it must
@@ -89,7 +90,7 @@ One idea, one column name, in every table.
 | An instrument's currency | `currency` |
 | The currency a deal's price is stated in | `cur` — not always the instrument's |
 | The provenance line | `source` |
-| An evidence-class key | `evidence`, on the two observation tables only |
+| An evidence-class key | `evidence`, on the two readings tables only |
 | Owned, or exposure | `held_as` |
 | A sterling amount on an event | `amount` |
 | A share leg's settled sterling | `cost` |
@@ -140,7 +141,7 @@ not *realized*.
 | A cell naming several accounts | **Accounts** |
 | A total row | **Total** |
 | Net asset value, as a column | **Net asset value** |
-| Spread-bet notional, as a column | **Spread-bet notional** |
+| Spread-bet notional, on Holdings' strip | **Spread-bet notional** |
 | The year's income, fees and cash interest included | **YTD income** |
 | An income row's kind | **Category** |
 | Reasoning headings | **Why we entered · Why we exited** |
@@ -159,7 +160,7 @@ not *realized*.
 | The judgement | **Why · Research notes** |
 | Who opens the hosted desk | **Reader · Level · Since · Devices · Last signed in · Now · Device · Enrolled · Last used · At · Result · Address · Named as** |
 | A currency as a category, on the Dashboard | **Currency** |
-| What a row opens to | **Detail** — one link, in one order (`DETAIL` in `app.js`) |
+| What happened, on a capital movement, an income row, a write or a sign-in | **Detail**; a row's detail link opens in `DETAIL`'s order (`app.js`) |
 
 **Entry price and Traded price are different quantities**: the first is the weighted mean of the
 legs still held, the second what one fill paid.
@@ -210,7 +211,7 @@ column headings.
 | The screen a refresh is run from | **Price Refresh** | |
 | One pass over the feeds for every mark, written nowhere | **Sweep** | `feeds/refresh.py` |
 | A mark kept in its history before it is replaced | **Banked** | |
-| A mark left at its last level by decision, with the reason on the row | **Carried** | not *unpriced*; the stored key is `held` |
+| A mark left at its last level by decision, with the reason on the row | **Carried** | not *unpriced*; `rules.STATEMENT_PRICED`, and for a rate `rate_carried` |
 | A figure a feed returned | **Fetched** | |
 | A figure read off a filed broker document | **Filed** | |
 | A line the sweep could not price | **Unpriced** | the reason on hover |
@@ -259,11 +260,12 @@ positions. `roll_up()` and `MEASURE_BASIS` keep them apart.
 
 ## 9 · The record's own words, generated
 
-**Everything below this line is DERIVED from the `record/` modules and
-`Book.HEADLINE` by `glossary.py`, and `tests/test_record.py` asserts that the
-checked-in file matches what those constants produce.** It cannot drift. It is an
-INDEX — names, values and where they live. What a word MEANS stays where it is
-defined, and `test_record.py` refuses this block if it starts to define one.
+**Everything below this line is DERIVED from the `record/` modules,
+`house/headings.py` and `Book.HEADLINE` by `tools/glossary.py`, and
+`tests/test_record.py` asserts that the checked-in file matches what those constants
+produce.** It cannot drift. It is an INDEX — names, values and where they live. What a
+word MEANS stays where it is defined, and `test_record.py` refuses this block if it
+starts to define one.
 
 ### Every registered headline figure
 
@@ -282,7 +284,7 @@ defined, and `test_record.py` refuses this block if it starts to define one.
 | YTD income | `capital` | gbp | **no — live only** |
 | Capital employed (opening + deployed) | `capital` | gbp | **no — live only** |
 | YTD return (MWR) | `capital` | pct | **no — live only** |
-| Return since 1 Jan 2026 (MWR) | `capital` | pct | **no — live only** |
+| Return since the day the record begins (MWR) | `capital` | pct | **no — live only** |
 | Open positions | `count` | count | yes |
 | Closed round trips | `count` | count | **no — live only** |
 
@@ -318,22 +320,22 @@ asserted on import; the rest are held by the suite.
 
 | Table | What it holds | Columns, as the desk heads them |
 |---|---|---|
-| `account-readings.csv` | What the book holds each account to be worth RIGHT NOW, and the observation it rests on | `account` Account · `as_of` As at · `at` Recorded · `positions` · `funds` · `running_pl` · `equity` · `deposit` · `available` · `evidence` Document kind · `reference` Reference |
+| `account-readings.csv` | What the book holds each account to be worth RIGHT NOW, and the observation it rests on | `account` Account · `as_of` As at · `at` · `positions` · `funds` · `running_pl` · `equity` · `deposit` · `available` · `evidence` Document kind · `reference` Reference |
 | `accounts.csv` | The account register | `account` Account · `holder` Holder · `broker_firm` Broker firm · `number` Account no. · `code` Code · `held_as` Held as · `feed_key` Feed · `record_begins` Record begins |
 | `buys.csv` | THE LEDGER — one row per buy leg | `trade_id` Trade ID · `date` Date · `source` Source · `account` Account · `ticker` Ticker · `cur` Deal ccy · `qty` Quantity · `stake` Stake (£/pt) · `cost` Cost (GBP) · `level_points` Level (points) · `broker_ref` Broker ref · `note` Notes · `contract` IG contract · `traded_price` Traded price · `rate` Rate (per £1) |
 | `capital-movements.csv` | External capital in and out, one row per event | `date` Date · `account` Account · `amount` Amount (GBP) · `source` Source · `detail` Detail |
 | `cash-readings.csv` | HOW MUCH CASH A SHARE ACCOUNT HELD, AND WHEN: THE RECORD'S ONE PLACE FOR CASH | `account` Account · `as_of` As at · `cash` Cash (GBP) · `evidence` Document kind · `reference` Reference |
 | `companies.csv` | One row per ISSUER — the company, not the holding | `company` Company · `sector` Sector · `region` Region |
 | `contracts.csv` | One row per IG contract a spread-bet leg names, with the epic that prices it, how IG funds it, and the ticker of the line it is on | `contract` IG contract · `epic` Epic · `funding` Funding · `ticker` Ticker |
-| `current-prices.csv` | What things are worth NOW — never what was paid, which is the ledger | `mark_key` Mark key · `price` Price · `currency` Ccy · `as_of` As at · `source` Source · `struck` · `at` Recorded |
-| `fx.csv` | The rate each currency is converted at NOW, one row per currency, as current-prices | `currency` Ccy · `rate` Rate (per £1) · `as_of` As at · `source` Source · `struck` |
+| `current-prices.csv` | What things are worth NOW — never what was paid, which is the ledger | `mark_key` Mark key · `price` Price · `currency` Ccy · `as_of` As at · `source` Source · `struck` · `at` |
+| `fx.csv` | The rate each currency is converted at NOW, one row per currency, as current-prices.csv holds what each line is worth now: replaced at every refresh, banked into fx-history.csv first | `currency` Ccy · `rate` Rate (per £1) · `as_of` As at · `source` Source · `struck` |
 | `income.csv` | Dividends, interest and fees | `date` Date · `account` Account · `category` Category · `detail` Detail · `amount` Amount (GBP) · `source` Source · `note` Notes · `currency` Ccy · `local_amount` Amount · `rate` Rate (per £1) · `ticker` Ticker |
 | `journal.csv` | RECORD TIME — when the book LEARNED a thing, as against when the thing HAPPENED | `at` Recorded · `route` Route · `op` Did · `table` Table · `rows` Rows · `ref` Retrieves · `detail` Detail |
 | `quarter-nav.csv` | Each account's CONTRIBUTION to net asset value at each quarter end | `as_of` As at · `account` Account · `amount` Amount (GBP) · `contribution` Contribution · `quality` Quality · `source` Source |
 | `quarter-results.csv` | Each closed quarter's six figures, for the book and for each account, as the engine gave them — what a closed quarter is HELD TO, never what a renderer shows | `as_of` As at · `account` Account · `opening_nav` Opening NAV · `capital_deployed` Capital deployed · `return_income` Income · `closing_nav` Closing NAV · `gain` Gain · `return` Return · `note` Notes |
-| `quarter-snapshots.csv` | Every account's HOLDINGS, line by line, at each quarter end — the working behind quarter-nav | `as_of` As at · `account` Account · `ticker` Ticker · `qty` Quantity · `price` Price · `currency` Ccy · `value` Value (GBP) · `cost` Cost (GBP) · `quality` Quality · `source` Source |
+| `quarter-snapshots.csv` | Every account's HOLDINGS, line by line, at each quarter end — the working behind quarter-nav.csv's per-account totals | `as_of` As at · `account` Account · `ticker` Ticker · `qty` Quantity · `price` Price · `currency` Ccy · `value` Value (GBP) · `cost` Cost (GBP) · `quality` Quality · `source` Source |
 | `reasoning.csv` | WHY a position was taken and why it was closed — one row per DECISION: the ticker, the date of the trade or sale it explains, and the why | `ticker` Ticker · `date` Date · `why_entered` Why we entered · `why_exited` Why we exited |
-| `research-notes.csv` | WHICH RESEARCH NOTES COVER WHICH INSTRUMENT | `ticker` Ticker · `ref` Retrieves · `published` · `url` |
+| `research-notes.csv` | WHICH RESEARCH NOTES COVER WHICH INSTRUMENT | `ticker` Ticker · `ref` · `published` · `url` |
 | `sales.csv` | One row per sale | `sale_id` Sale ID · `date` Date · `account` Account · `ticker` Ticker · `qty` Quantity · `stake` Stake (£/pt) · `traded_price` Traded price · `cur` Deal ccy · `rate` Rate (per £1) · `proceeds` Proceeds (GBP) · `source` Source · `broker_ref` Broker ref · `realisation_id` Realisation ID · `closes` Closes trade · `note` Notes |
 | `securities.csv` | One row per CODE held, reserved or closed | `ticker` Ticker · `company` Company · `held_as` Held as · `currency` Ccy · `symbol` Symbol · `quote_unit` Quote unit · `points_per_unit` Points per unit · `shares_per_unit` Shares per unit |
 | `settings.csv` | The book's own settings: one row per key in SETTING_KEYS | `key` · `value` |
@@ -344,5 +346,8 @@ asserted on import; the rest are held by the suite.
 
 ## Changing a word
 
-A word changes here and in its declaration in the same commit. `python3 tools/glossary.py
---write` regenerates §9.
+A word changes here and in its declaration in the same commit, and §9 is regenerated:
+
+```bash
+python3 tools/glossary.py --write
+```

@@ -1,8 +1,8 @@
 # Access levels
 
-Who reads the hosted desk (`docs/desk-app.md`), what each level opens, and how a reader is added,
-changed or removed. The desk on the Mac has no levels: every page and every button, on
-localhost only.
+Who reads the hosted desk ([`desk-app.md`](desk-app.md)), what each level opens, and how a
+reader is added, changed or removed. The desk on the Mac has no levels: every page and every
+button, on localhost only.
 
 ## The levels
 
@@ -52,6 +52,7 @@ Access shows the last 30 days of sign-ins, enrolments, refusals and limits. Wort
 - **Refusals from an unknown address**: noise, unless it grows.
 - **One address on every line, yours included**: Netlify is not naming the caller, so the
   sign-in limit is shared by everyone.
-- **A run of *not through the hosted desk***: someone found the tunnel. It buys them nothing.
+- **A run of *not through the hosted desk***: the proxy secrets differ, or someone found the
+  tunnel, which buys them nothing.
 
 The readers, passkeys and log are three files in the book's folder, which git ignores.

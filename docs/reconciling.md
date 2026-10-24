@@ -24,14 +24,14 @@ check agree with itself.
 ## The order
 
 1. **Sweep the events first**, or a units check reports a gap that is really an unentered event.
-2. **Work the documents through the Bench**: trades, exits, income, capital and cash.
-3. **Write the reading**, the account's own observation row.
+2. **Work the documents through the Bench**: buys, sales, income, capital and cash.
+3. **Write the reading**, the account's row in `account-readings.csv`.
 4. **Check** with `portfusion record`.
 
 Any day after the last trade will do: units do not move at a close, and a ledger's balances are
 dated.
 
-## The bench loop
+## The Bench loop
 
 1. **Drop the document** on the Bench, or *choose a file*: PDF, CSV, TSV or text, up to 25 MB.
    One file opens its item; several just land.
@@ -40,13 +40,14 @@ dated.
 3. **Fill Dated and Reference.** Dated is the document's date, not today's.
 4. **A CSV the record recognises is read as it opens**, on this machine. Every line comes back as
    a row, as already on file, or as not read; a line not read holds the item until it is entered
-   or acknowledged. **A PDF is read by a Claude session** (`python3 -m
-   portfusion.desk.intake.propose`), and the document leaves the machine for that. Read all three
-   blocks of its readout: *directives* (text addressed to the reader, quoted and never acted on),
-   *not kept* (figures whose quote was not in the document) and *not found*.
+   or acknowledged. **A PDF is read by a Claude session**, and the document leaves the machine for
+   that (`python3 -m portfusion.desk.intake.propose`). Read all three blocks of its readout:
+   *directives* (text addressed to the reader, quoted and never acted on), *not kept* (figures
+   whose quote was not in the document) and *does not state*.
 5. **Check every quote against the page** with *show the document*. A scanned PDF is entered by
    eye.
-6. **Type the WHY** for a new position and for any sale. Nothing else may fill it.
+6. **Type the WHY** for every buy and every sale, a split or consolidation aside. Nothing else may
+   fill it.
 7. **Clear every gate.** A duplicate is *acknowledged*, never overridden: two real legs can share
    a day, a size and a price.
 8. **Review and write.** Each item lands in one operation (rows, reasoning, journal, archive), or
@@ -60,20 +61,21 @@ on `not-on-file`.
 **The reading is taken on Price Refresh**: *fetch everything*, tick the accounts, *write the
 ticked marks*. Equity and contract levels are read in one pass and written together, which is
 what lets the pair compare at all. A level struck later the same day ends the pass: the reading
-reads `struck-apart` until it is read again. A reading moves the book (`docs/prices.md`).
+reads `struck-apart` until it is read again. A reading moves the book ([prices.md](prices.md)).
 
-**Events come from `python3 -m portfusion.feeds.ig --ig-events`.** Its window is 30 days; sweep
-inside it, or use `--since`.
+**Events come from *Sweep IG events* on the Bench**, 30 days back, so sweep inside that.
+`python3 -m portfusion.feeds.ig --ig-events YYYY-MM-DD` reports a longer window.
 
 ## HL
 
-| Download | Class | For |
+| Document | Class | Gives |
 |---|---|---|
-| Account Summary | `hl-valuation` | **The reading**: stock, cash and total, every holding's units |
-| Income transactions | `hl-income` | The year's dividends |
-| Portfolio Summary (Capital) | `hl-transactions` | Buys, sells, interest, fees |
-| Portfolio Summary (Income) | `hl-transactions` | Dividends in, fees, transfers to Capital |
-| Portfolio Summary (totals) | `hl-account-totals` | A cross-check, not a source |
+| Account Summary | `hl-valuation` | **the reading**: stock, cash and total, every holding's units |
+| Income transactions | `hl-income` | the year's dividends |
+| Portfolio Summary (Capital) | `hl-transactions` | buys, sales, interest, fees |
+| Portfolio Summary (Income) | `hl-transactions` | dividends in, fees, transfers to Capital |
+| Portfolio Summary (totals) | `hl-account-totals` | a cross-check, not a source |
+| Security movements | `hl-movements` | one holding's purchases, with HL's own references |
 
 **Three downloads share one title; trust the content, not the filename.** The Bench names each
 on the workbench list.
@@ -103,7 +105,7 @@ sides and it is booked twice.
   trade record for the same trade is withdrawn with *withdraw document*, not filed.
 - **Translate non-GBP cash at the record's own rate**, not one implied by dividing the export's
   value columns.
-- **Take no price marks from the export**: the marks are the feeds' (`docs/prices.md`).
+- **Take no price marks from the export**: the marks are the feeds' ([prices.md](prices.md)).
 
 ## When it does not agree
 

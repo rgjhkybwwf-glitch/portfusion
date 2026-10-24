@@ -222,6 +222,9 @@ STORE_ONLY: dict[str, str] = {
     "struck": "whether a mark can be fetched again; the engine reads it, no page",
     "published": "a research note's date, inside the Research notes link",
     "url": "a research note's address, the Research notes link's",
+    "research-notes.ref": "a research note's reference, the Research notes link's",
+    "current-prices.at": "a live mark's instant, read against its reading's; no page",
+    "account-readings.at": "a reading's instant, in its date where a reading is shown",
     "settings.key": "a setting's name", "settings.value": "a setting's value, not sterling",
     **{c: "the broker's own figure on a reading (glossary §2b)" for c in (
         "positions", "funds", "running_pl", "equity", "deposit",

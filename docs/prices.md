@@ -1,18 +1,22 @@
 # Prices
 
-How the book's marks are fetched, when, and the three rules that stop a bad one entering. What
-the sweep does, step by step, is `feeds/refresh.py`'s docstring.
+How the book's marks are fetched, when, and the three rules that stop a bad one entering.
 
 ```bash
 portfusion desk                              # Price Refresh: fetch, tick, write
-python3 -m portfusion.feeds.refresh          # the same sweep, printed; --on D for a past day's closes
+python3 -m portfusion.feeds.refresh          # bank, then sweep; --on D for a past day's closes
 python3 -m portfusion.feeds.refresh --check  # are both histories current?
 ```
 
-The terminal sweep writes nothing. On the desk, the write banks the outgoing marks first, then
-lands the ticked marks and IG readings together. A history keeps every close, each line's mark
-at every quarter end and opening, and its two newest; a live read between them leaves at the
-next bank, and git keeps it.
+The terminal sweep banks the current marks, then prints; it replaces no mark. On the desk, the
+write banks the outgoing marks first, then lands the ticked marks and IG readings together. A
+history keeps every close, each line's mark at every quarter end, opening and account reading,
+and its two newest; a live read between them leaves at the next bank, and git keeps it. What the
+sweep does, step by step, is `feeds/refresh.py`'s docstring.
+
+**Each feed's allowlist refuses anything that is not a read**, before a request is built. IG's
+API deals, and TradingView's edits alerts and watchlists. The tests stop a change to either, and
+they are meant to.
 
 ## When to run it
 
@@ -30,8 +34,8 @@ from the next day on. A close outranks a live read of its own day.
 
 ## The three rules
 
-A person sits between the fetch and the record because of these. Rule 1 is enforced at the
-door; rule 2 only on the past-day route; rule 3 is judgement.
+A person sits between the fetch and the record because of these. Rules 1 and 2 are enforced at
+the door; rule 3 is judgement.
 
 1. **Update a price and its date together.** A stale price wearing today's date is worse than a
    stale price, because the freshness indicator then agrees everything is fine.
@@ -58,21 +62,18 @@ The spread-bet contract levels, and each account's equity.
 ```bash
 python3 -m portfusion.feeds.ig --ig-search "NAME"   # find an epic, first
 python3 -m portfusion.feeds.ig --ig-verify          # live levels against the record
-python3 -m portfusion.feeds.ig --ig-events          # trades, closes, costs and cash against the book
+python3 -m portfusion.feeds.ig --ig-events          # buys, sales, costs, capital against the book
 ```
 
 - **Never guess an epic.** A wrong one returns a plausible price for the wrong contract and
-  passes the audit. A first bet on a new contract is set up from the IG sweep on the Bench, which
-  takes the epic from the deal and reads the contract's first mark; `--ig-search` and
+  passes the audit. A first bet on a new contract is set up from *Sweep IG events* on the Bench,
+  which takes the epic from the deal and reads the contract's first mark; `--ig-search` and
   `--ig-verify` check one by hand.
-- **Credentials are three per account**: identifier, password and API key, in
-  `credentials.json` in the book's folder. Git ignores it.
+- **Credentials are three per account**: identifier, password and API key, with `env` (`demo` or
+  `live`), under the account's `feed_key` in the book's `credentials.json`, which git ignores. An
+  IG command run without it prints the template.
 - **A reading moves the book.** It writes the equity and re-marks the contracts, because the two
   compare only when struck together. **Its funds are not spendable cash**, and are never added to
   the equity.
 - **A far contract's past close is its statement's level.** IG prints no evening bars for it, so
-  file that day's statement on the bench first.
-
-**Each feed's allowlist refuses anything that is not a read**, before a request is built. IG's
-API deals, and TradingView's edits alerts and watchlists. The tests stop a change to either, and
-they are meant to.
+  file that day's statement on the Bench first.

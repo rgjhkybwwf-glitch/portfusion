@@ -1,18 +1,20 @@
 # Contributing to PortFusion
 
-For anyone changing PortFusion, a collaborator or a Claude session arriving cold. `README.md`
-says what PortFusion is; this says how a change is worked.
+How a change to PortFusion is worked, for a collaborator or a Claude session arriving cold;
+[`README.md`](README.md) says what PortFusion is.
 
 ## Setting up
 
 ```bash
 git config core.hooksPath .githooks       # the gate that keeps credentials out of git
 python3 -m venv .venv && .venv/bin/python3 -m pip install -e '.[dev]' -c requirements.lock
-PORTFUSION_BOOK=demo python3 -m pytest     # the guard, on the demo
-python3 tools/clean_room.py                # the app on its own: a copy, a new book and a wheel
+source .venv/bin/activate                 # once per terminal
+PORTFUSION_BOOK=demo python3 -m pytest    # the guard, on the demo
+python3 tools/clean_room.py               # the app on its own: a copy, a new book and a wheel
 ```
 
-`docs/testing.md` says what each layer of the guard proves, and what to do when a test fails.
+[`docs/testing.md`](docs/testing.md) says what each layer of the guard proves, and what to do when
+a test fails.
 
 ## Agree first, and stop when a decision appears
 
@@ -28,11 +30,11 @@ python3 tools/clean_room.py                # the app on its own: a copy, a new b
 | To add | Write it in | Held by |
 |---|---|---|
 | a table, or a value in a vocabulary | `record/schema.py` | `tests/test_schema.py` |
-| a table or column renamed or split | its move in `record/migrations.py` | `tests/test_migrations.py` |
+| a change the loader would refuse an older book for | its move in `record/migrations.py` | `tests/test_migrations.py` |
 | a headline figure | a `Book` method and its entry in `Book.HEADLINE` | `tests/test_figures.py` |
 | a column heading | `house/headings.py` | `tests/test_figures.py` |
 | a desk panel | `desk/panels/<name>.py` | `tests/desk/test_panels.py` |
-| anything that writes a file, or opens a CSV | its door, named in `DESK_WRITERS` or `CSV_FILE_READERS` | `tests/desk/test_boundaries.py`, `tests/test_store_doors.py` |
+| anything under `desk/` that writes a file, or anything that opens a CSV | its door, named in `DESK_WRITERS` or `CSV_FILE_READERS` | `tests/desk/test_boundaries.py`, `tests/test_store_doors.py` |
 | a kind of document | an `Evidence` in `record/rules_evidence.py` | `tests/test_evidence.py` |
 | a feed endpoint | the allowlist in `feeds/ig.py` or `feeds/tv.py` | `tests/test_ig.py`, `tests/test_tv.py` — meant to stop you |
 
@@ -43,7 +45,8 @@ than a second version.
 
 - **Examples are invented.** Use the demo's names, never a real book's people, holdings,
   references, figures or dates: in code, guides, commits, branches, issues or pull requests.
-- **The pre-push hook checks it** on the book `PORTFUSION_BOOK` names. CI runs on the demo and cannot.
+- **The pre-push hook checks it** on the book `PORTFUSION_BOOK` names. CI runs on the demo and
+  cannot.
 
 ## Commits and pull requests
 

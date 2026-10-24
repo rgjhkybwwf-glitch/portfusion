@@ -39,6 +39,9 @@ def _figures() -> list[str]:
     from portfusion.engine import Book
     out = ["| Figure | Basis | Unit | A dated page may quote it |", "|---|---|---|---|"]
     for label, spec in Book.HEADLINE.items():
+        # THE LOADED BOOK'S DAY IS NOT A CONSTANT: the since-start label carries it, so the index
+        # names the day rather than printing one book's.
+        label = "Return since the day the record begins (MWR)" if label == Book.SINCE_START else label
         # `point_in_time` asks whether the figure HAS A VALUE AT A DATE. A quarterly report may
         # print one that does; one that does not is live-only — "YTD income" and the YTD return
         # are year-to-date by construction, and the rest are as-they-stand-now.
@@ -99,7 +102,7 @@ def _tables() -> list[str]:
     out = ["| Table | What it holds | Columns, as the desk heads them |", "|---|---|---|"]
     for name in sorted(schema.TABLES):
         table = schema.TABLES[name]
-        first = (table.doc or "").split(".")[0].replace("\n", " ").strip()
+        first = " ".join((table.doc or "").split()).split(". ")[0].rstrip(".")
         cols = []
         for f in table.fields:
             word = store_heading(name, f.name)
@@ -113,11 +116,12 @@ def generate() -> str:
     parts = [BEGIN, "",
              "## 9 · The record's own words, generated",
              "",
-             "**Everything below this line is DERIVED from the `record/` modules and",
-             "`Book.HEADLINE` by `glossary.py`, and `tests/test_record.py` asserts that the",
-             "checked-in file matches what those constants produce.** It cannot drift. It is an",
-             "INDEX — names, values and where they live. What a word MEANS stays where it is",
-             "defined, and `test_record.py` refuses this block if it starts to define one.",
+             "**Everything below this line is DERIVED from the `record/` modules,",
+             "`house/headings.py` and `Book.HEADLINE` by `tools/glossary.py`, and",
+             "`tests/test_record.py` asserts that the checked-in file matches what those constants",
+             "produce.** It cannot drift. It is an INDEX — names, values and where they live. What a",
+             "word MEANS stays where it is defined, and `test_record.py` refuses this block if it",
+             "starts to define one.",
              "",
              "### Every registered headline figure", ""]
     parts += _figures()

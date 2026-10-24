@@ -12,7 +12,7 @@ endobj
 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
 endobj
 5 0 obj
-<< /Length 351 >>
+<< /Length 591 >>
 stream
 BT /F1 10 Tf 14 TL 50 800 Td
 (INVENTED FOR THE DEMO BOOK - no such statement was issued) Tj T*
@@ -21,6 +21,12 @@ BT /F1 10 Tf 14 TL 50 800 Td
 (Date Deal ID Market Direction Size Opening level) Tj T*
 (26/06/2026 DIAAAADEMOVELD06 VELD-SEP26 Buy 1 9850.0) Tj T*
 (06/07/2026 DIAAAADEMOVELD07 VELD-DEC26 Buy 1 9900.0) Tj T*
+(06 July 2026) Tj T*
+(Open positions) Tj T*
+(DIAAAADEMOVELD06) Tj T*
+(VELD-SEP26 \(24 Hours\) £ +1 9,850.0 9,930.0 0.00 0.00 0.00 0.00) Tj T*
+(DIAAAADEMOVELD07) Tj T*
+(VELD-DEC26 \(24 Hours\) £ +1 9,900.0 9,920.0 0.00 0.00 0.00 0.00) Tj T*
 ET
 endstream
 endobj
@@ -35,5 +41,5 @@ xref
 trailer
 << /Size 6 /Root 1 0 R >>
 startxref
-739
+979
 %%EOF

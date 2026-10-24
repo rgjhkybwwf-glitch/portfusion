@@ -1,5 +1,7 @@
 # Running the desk
 
+How the desk is started on the Mac, kept current, and served to readers beyond it.
+
 ```bash
 portfusion desk                         # start it, in the book's folder
 portfusion desk --reload                # while working ON the desk
@@ -15,7 +17,7 @@ the hosted desk, below, is the one way in from outside.
 `--install-agent` writes a LaunchAgent (`desk/agent.py`) that runs the desk on the venv that typed
 the command, for the book it was typed in, logging to `~/Library/Logs/portfusion-desk.log`. One
 desk agent per Mac user. It starts at login and is not restarted if it stops. A book that moves
-needs `--uninstall-agent` in the old folder and `--install-agent` in the new.
+needs `--uninstall-agent`, then `--install-agent` in its new folder.
 
 To put it in the Dock: Safari → `http://127.0.0.1:8765/` → **File → Add to Dock**. The web app
 only opens the page; if the desk is not running, Safari shows a blank error. It copies the icon
@@ -35,13 +37,16 @@ restart. A rebuilt venv or an upgraded package is not noticed: restart after eit
 ## The hosted desk
 
 The same screen, served by Netlify from a deploy-only repository, reading the Mac through a
-Tailscale Funnel to a second door on `:8768`. Every figure still comes from the Mac, so it answers
-only while the Mac is awake. It needs three of the book's settings — `hosted_origin`,
-`passkey_domain` and `deploy_repo` — and without them it refuses, naming the key.
+Tailscale Funnel to the desk's remote door on `:8768`. Every figure still comes from the Mac, so
+it answers only while the Mac is awake. It needs three of the book's settings in
+`store/settings.csv` — `hosted_origin`, `passkey_domain` and `deploy_repo` — and without them it
+refuses, naming the key.
 
 **Once:** install Tailscale and run `tailscale funnel --bg 8768`; make a private deploy
 repository, clone it to `deploy_repo`, and import it into Netlify with access to that repository
-only, deploy previews off, and your domain on it. Then set the proxy secret, publish, and enrol.
+only, deploy previews off, and your domain on it. Then set the proxy secret; run
+`portfusion desk --install-agent` again, which opens the remote door on `8768` (or
+`portfusion desk --remote-port 8768`); publish; and enrol.
 
 **The proxy secret** is how the Mac knows a request came through Netlify. Held twice: in Netlify as
 `DESK_PROXY_SECRET` (scoped to Runtime), and in the book's folder as `.desk_proxy_secret.json`,
@@ -53,9 +58,9 @@ python3 -c "import json,secrets,pathlib; s=secrets.token_urlsafe(32); p=pathlib.
 
 Until both hold the same value, every request is refused, and the Access page says why.
 
-| | |
+| To | Do |
 |---|---|
-| **Publish** | `portfusion desk --publish`, on a clean tree; restart the Mac's desk first if its code changed |
-| **Readers** | `docs/access-levels.md` |
-| **Is it up?** | the desk shows the hosted desk's state: *live*, *tunnel off*, *not published*, *behind*, or *restart first* |
-| **Turn it off** | `tailscale funnel --https=443 off` |
+| Publish | `portfusion desk --publish`, from the book's `main`, clean and pushed, with the deploy clone on a clean `main`; restart the Mac's desk first if its code changed |
+| Manage readers | [`access-levels.md`](access-levels.md) |
+| See whether it is up | the desk's header shows its state: *live*, *tunnel off*, *not published*, *behind*, or *restart first*; nothing while the remote door is shut |
+| Turn it off | `tailscale funnel --https=443 off` |

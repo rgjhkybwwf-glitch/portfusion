@@ -588,9 +588,15 @@ def _statement_name(day: str) -> str:
     return f"{dt.date.fromisoformat(day):%d %b %Y} {authority} ({SPREAD}).pdf"
 
 
+#: Each contract's level at the close of its invented IG statement's day, as the statement's open
+#: positions print it: what `desk/intake/statement_closes.py` reads off a filed statement.
+STATEMENT_LEVELS = {"VELD-SEP26": 9930.0, "VELD-DEC26": 9920.0}
+
+
 def _statement_lines(day: str, rows: list[dict], account_number: str) -> list[str]:
     """An invented IG statement of one day: the legs opened on it, each under its deal id, its
-    stake in pounds per point and its opening level, as IG states them."""
+    stake in pounds per point and its opening level, as IG states them; then its date alone, as
+    IG prints it, and each position open that day at its level."""
     import datetime as dt
     lines = ["INVENTED FOR THE DEMO BOOK - no such statement was issued",
              f"Statement for account {account_number}, {dt.date.fromisoformat(day):%d %B %Y}",
@@ -599,6 +605,11 @@ def _statement_lines(day: str, rows: list[dict], account_number: str) -> list[st
     for row in rows:
         lines.append(f"{_ddmmyyyy(row['date'])} {row['broker_ref']} {row['contract']} Buy "
                      f"{row['stake']} {row['level_points']}")
+    lines += [f"{dt.date.fromisoformat(day):%d %B %Y}", "Open positions"]
+    for row in rows:
+        lines += [row["broker_ref"],
+                  f"{row['contract']} (24 Hours) £ +{row['stake']} {row['level_points']:,.1f} "
+                  f"{STATEMENT_LEVELS[row['contract']]:,.1f} 0.00 0.00 0.00 0.00"]
     return lines
 
 

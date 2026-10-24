@@ -1,5 +1,9 @@
 # The environment
 
+The Python a checkout runs on, and which book each command reads.
+
+## The venv
+
 Python 3.13 or newer, and one venv per checkout. `pyproject.toml` names the packages and
 `requirements.lock` the exact set the suite was proved on.
 
@@ -12,15 +16,14 @@ source .venv/bin/activate          # once per terminal: `python3` is then the ve
 its `python:` line, so a report can still be built the day a venv breaks.
 
 **A venv does not survive its folder being moved.** It records its own absolute path, so after a
-move `python3` falls back to the system's, and the first sign is a desk test failing with
-`No module named 'fastapi'`. Rebuild it with the first line above, after `rm -rf .venv`; do the
-same after changing Python.
+move `python3` falls back to the system's, and the first sign is the tests refusing to run.
+Rebuild it with the first line above, after `rm -rf .venv`; do the same after changing Python.
 
 **A second checkout needs a venv of its own**: the tests refuse unless the app comes from their
 own `src/`.
 
 **A running desk keeps what it imported.** Rebuilding the venv or changing Python reaches it only
-when it restarts (`docs/desk-app.md`).
+when it restarts ([`desk-app.md`](desk-app.md)).
 
 ## Which book
 
