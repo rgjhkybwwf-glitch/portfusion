@@ -11,8 +11,8 @@ NAMES, NOT FACTS. Beside the tables, the journal's `table` and the Bench's items
 open) carry table and column names, and move with them. A book's own `checks/` is its code: the
 lines that name an old one are listed, never edited.
 
-Imports nothing of the record but its order (`order.py`, which is pure): a book in the old shape
-will not load, which is why it is here.
+Imports nothing of the record but its order (`order.py`) and its evidence classes
+(`rules_evidence.py`), both pure: a book in the old shape will not load, which is why it is here.
 """
 from __future__ import annotations
 
@@ -24,7 +24,7 @@ import pathlib
 import re
 from typing import Callable, NamedTuple
 
-from portfusion.record import order
+from portfusion.record import order, rules_evidence
 
 
 class Migration(NamedTuple):
@@ -83,6 +83,12 @@ MIGRATIONS = (
         tables={}, columns={}, splits={}, marks={},
         code=(r"\b(LIVE_MARK|MARK_STATUSES|live_rows)\b",),
         rows=lambda store: _lifecycle(store),
+    ),
+    Migration(
+        issue="a share account's cash in one place, its cash readings",
+        tables={}, columns={}, splits={}, marks={},
+        code=(r"\.(recon_cash|stmt_value|cash_retired)\b",),
+        rows=lambda store: _cash_in_one_place(store),
     ),
 )
 
@@ -324,6 +330,103 @@ def _retired(store: pathlib.Path) -> list[Change]:
             out.append(Change(journal, journal, "".join(kept), [
                 f"journal.csv: {len(lines) - len(kept)} row(s) naming a retired table removed"]))
     return out
+
+
+def _evidence_of(source: str, account: str) -> tuple[str, str] | None:
+    """The evidence class and reference a `source` line was made from: the class that composed it
+    (`rules_evidence.evidence_from_source()`), and the reference its template holds, where the
+    two make the line again exactly. None otherwise."""
+    ev = rules_evidence.evidence_from_source(source)
+    if ev is None:
+        return None
+    pattern = re.escape(ev.source)
+    for slot in ("reference", "date", "account", "endpoint"):
+        pattern = pattern.replace(re.escape("{%s}" % slot), f"(?P<{slot}>.*?)")
+    m = re.fullmatch(pattern, source)
+    ref = (m.group("reference") or "").strip() if m and "reference" in m.groupdict() else ""
+    made = rules_evidence.evidence_source(ev.key, reference=ref, account=account)
+    return (ev.key, ref) if ref and made == source else None
+
+
+def _cash_in_one_place(store: pathlib.Path) -> list[Change]:
+    """A share reading's cash and total, and a statement's cash, out of their own columns: each
+    figure a cash reading of its day, unless one is on file at it. A figure on file at another, or
+    a statement's cash whose source names no class, is moved by hand, and so is a reading whose
+    stock and cash are not its total. A statement's cash of zero whose source names none is an
+    account not yet funded, and goes; a spread bet's is its funds, on the same row, and goes; and
+    so does one whose document states no cash (ii's holdings export), being another document's.
+    Untouched lines keep their bytes."""
+    path = store / "cash-readings.csv"
+    if not path.is_file():
+        return []
+    lines, rows, eol = _rows(path.read_text(encoding="utf-8"))
+    on_file = {(r[0], r[1]): r[2] for r in rows[1:]}
+    new, out = [], []
+
+    def owe(account, day, cash, evidence, reference, where):
+        ev = rules_evidence.EVIDENCE_BY_KEY.get(evidence)
+        if ev is not None and ev.covers and not rules_evidence.states_cash(ev):
+            said.append(f"  {where}: cash {cash} its {ev.label} does not state, dropped")
+            return
+        was = on_file.get((account, day))
+        if was is not None and abs(float(was) - float(cash)) >= 0.005:
+            raise ValueError(f"{where}: cash {cash} for {account} on {day}, but cash-readings.csv "
+                             f"says {was}: move it by hand")
+        if was is None:
+            on_file[(account, day)] = cash
+            new.append([account, day, cash, evidence, reference])
+
+    _p, register, _e = _rows((store / "accounts.csv").read_text(encoding="utf-8"))
+    kind = register[0].index("held_as" if "held_as" in register[0] else "kind")
+    named = register[0].index("account")
+    accounts = [r[named] for r in register[1:]]
+    spread_bets = {r[named] for r in register[1:] if r[kind] == "spread bet"}
+    for name, drop in (("account-readings", ("recon_cash", "stmt_value")),
+                       ("account-statements", ("cash",))):
+        table = store / f"{name}.csv"
+        if not table.is_file():
+            continue
+        _l, trows, teol = _rows(table.read_text(encoding="utf-8"))
+        at = {c: i for i, c in enumerate(trows[0])}
+        if drop[0] not in at:
+            continue
+        said = [f"{table.name}: {', '.join(c for c in drop if c in at)} retired, its cash a "
+                f"cash reading"]
+        for i, r in enumerate(trows[1:], 2):
+            cash, where = r[at[drop[0]]], f"{table.name} row {i}"
+            if cash == "":
+                continue
+            if name == "account-readings":
+                total, stock = r[at["stmt_value"]], r[at["positions"]]
+                if total and stock and abs(float(stock) + float(cash) - float(total)) >= 0.005:
+                    raise ValueError(f"{where}: stock {stock} plus cash {cash} is not its total "
+                                     f"{total}: move it by hand")
+                owe(r[at["account"]], r[at["as_of"]], cash, r[at["evidence"]],
+                    r[at["reference"]], where)
+            elif r[at["account"]] in spread_bets:
+                said.append(f"  {where}: a spread bet's cash, its funds on the same row, dropped")
+            elif (r[at["account"]], r[at["as_of"]]) in on_file:
+                owe(r[at["account"]], r[at["as_of"]], cash, "", "", where)   # compared, not added
+            elif found := _evidence_of(r[at["source"]], r[at["account"]]):
+                owe(r[at["account"]], r[at["as_of"]], cash, *found, where)
+            elif float(cash) == 0:
+                said.append(f"  {where}: cash 0 of an account no document names, dropped")
+            else:
+                raise ValueError(f"{where}: its cash {cash} names no evidence class in its "
+                                 f"source, so it cannot be a cash reading: move it by hand")
+        keep = [j for j, c in enumerate(trows[0]) if c not in drop]
+        out.append(Change(table, table, "".join(_line([r[j] for j in keep], teol) for r in trows),
+                          said))
+    if not new:
+        return out
+    line_of = {id(r): line for r, line in zip(rows[1:], lines[1:])}
+    placed = order.placed("cash-readings", rows[0], rows[1:], new, accounts)
+    out.append(Change(path, path, lines[0] + "".join(line_of.get(id(r)) or _line(r, eol)
+                                                     for r in placed),
+                      [f"cash-readings.csv: {len(new)} cash reading(s) from the readings and "
+                       f"statements"]))
+    return out + _journalled(store, [("append", "cash-readings", len(new),
+                                      "cash moved here from account readings and statements")])
 
 
 def plan(book: pathlib.Path) -> tuple[Migration | None, list[Change]]:

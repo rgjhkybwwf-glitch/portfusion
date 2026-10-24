@@ -286,8 +286,7 @@ def _holdings_reading(text: str, key: str, out: dict) -> None:
         values = [_number(_value(r, header, "Market Value £")) for r in body
                   if _value(r, header, D.HOLDINGS_COLUMNS[key][0])]
         stock, cash, total = f"{sum(float(v) for v in values if v):.2f}", "", ""
-    out["reading"] = {"account": account, "positions": stock, "recon_cash": cash,
-                      "stmt_value": total,
+    out["reading"] = {"account": account, "positions": stock, "cash": cash, "total": total,
                       "at": D.utc_instant(out["instant"]) if out["instant"] else ""}
 
 

@@ -247,10 +247,14 @@ def _book() -> dict[str, list[dict]]:
             ("QNLR SB", "2026-09-15", False,
              "Invented for the demo: why the smaller leg closed."),
         )]
+    # EACH SHARE ACCOUNT'S CASH AT EACH QUARTER END, in the record's one place for it.
     T["cash-readings"] = [
-        {"account": a, "as_of": "2026-09-30", "cash": c, "evidence": "not-on-file",
+        {"account": a, "as_of": d, "cash": c, "evidence": "not-on-file",
          "reference": "invented for the demo"}
-        for a, c in ((ISA, 4271.1), (TRADING, 487.5))]
+        for a, d, c in ((ISA, "2025-12-31", 0.0), (ISA, "2026-03-31", 4000.0),
+                        (TRADING, "2026-03-31", 475.0), (ISA, "2026-06-30", 2470.0),
+                        (TRADING, "2026-06-30", 475.0), (ISA, "2026-09-30", 4271.1),
+                        (TRADING, "2026-09-30", 487.5))]
     T["research-notes"] = []
     T["quarter-results"] = _quarter_results()
     T["settings"] = [{"key": k, "value": v} for k, v in (
@@ -408,20 +412,18 @@ def _histories() -> dict[str, tuple[list[str], list[dict]]]:
                            ("USD", "2026-09-30", 1.33, "close"), ("SEK", "2026-09-30", 12.4, ""))]
     unfunded_ig = {"account": SPREAD, "equity": 0.0, "source": UNFUNDED, "quality": "derived"}
     statements = []
-    for as_of, isa, trading in (("2025-12-31", (2000.0, 0.0), None),
-                                ("2026-03-31", (4180.0, 4000.0), (1050.0, 475.0)),
-                                ("2026-06-30", (9377.27, 2470.0), (1100.0, 475.0))):
+    for as_of, isa, trading in (("2025-12-31", 2000.0, None), ("2026-03-31", 4180.0, 1050.0),
+                                ("2026-06-30", 9377.27, 1100.0)):
         statements += [
-            {"account": ISA, "as_of": as_of, "positions_value": isa[0], "cash": isa[1],
+            {"account": ISA, "as_of": as_of, "positions_value": isa,
              "source": NOT_ON_FILE, "quality": "derived"},
-            {"account": TRADING, "as_of": as_of, "positions_value": (trading or (0.0, 0.0))[0],
-             "cash": (trading or (0.0, 0.0))[1], "source": NOT_ON_FILE if trading else UNFUNDED,
-             "quality": "derived"},
+            {"account": TRADING, "as_of": as_of, "positions_value": trading or 0.0,
+             "source": NOT_ON_FILE if trading else UNFUNDED, "quality": "derived"},
             {**unfunded_ig, "as_of": as_of}]
     statements += [
-        {"account": ISA, "as_of": "2026-09-30", "positions_value": 8260.53, "cash": 4271.1,
+        {"account": ISA, "as_of": "2026-09-30", "positions_value": 8260.53,
          "source": NOT_ON_FILE, "quality": "sourced"},
-        {"account": TRADING, "as_of": "2026-09-30", "positions_value": 1175.0, "cash": 487.5,
+        {"account": TRADING, "as_of": "2026-09-30", "positions_value": 1175.0,
          "source": NOT_ON_FILE, "quality": "sourced"},
         {"account": SPREAD, "as_of": "2026-09-30", "positions_value": 24122.0, "equity": 8140.8,
          "source": "IG REST /accounts XK9P3, read 2026-09-30 at 16:00", "quality": "sourced"}]

@@ -17,5 +17,5 @@ FX = "fx-history.csv"
 FX_FIELDS = ["currency", "date", "rate", "kind", "quality", "struck", "source"]
 
 ACCOUNTS = "account-statements.csv"
-ACCOUNT_FIELDS = ["account", "as_of", "positions_value", "cash", "funds", "running_pl", "equity",
+ACCOUNT_FIELDS = ["account", "as_of", "positions_value", "funds", "running_pl", "equity",
                   "deposit", "source", "quality"]

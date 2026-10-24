@@ -700,8 +700,8 @@ function drawItem(d) {
   const readingBlock = !rdg ? "" : `
     <h2>The account's reading</h2>
     ${figures([["Account", esc(rdg.account || "—")], ["Stock", num(rdg.positions)]].concat(
-      rdg.recon_cash === "" && rdg.stmt_value === "" ? []
-        : [["Cash", num(rdg.recon_cash)], ["Total", num(rdg.stmt_value)]]))}
+      rdg.cash === "" && rdg.total === "" ? []
+        : [["Cash", num(rdg.cash)], ["Total", num(rdg.total)]]))}
     ${rdg.note ? `<p class="muted">${esc(rdg.note)}</p>` : ""}`;
 
   /* WHAT KIND OF DOCUMENT THIS IS. ii gives contract notes and quarterly statements — official,

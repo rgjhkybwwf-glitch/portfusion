@@ -465,16 +465,6 @@ def test_whether_a_leg_is_still_held_comes_from_the_sales(D, book):
     assert len(gone) and not gone["open_leg"].any(), "a leg of a ticker nobody holds reads as held"
 
 
-def test_dead_cash_slot_on_account_rows_stays_dead(D):
-    """
-    ac_rows' third field is a retired cash slot; cash lives in store/cash-readings.csv so
-    that a balance carries its own date and source. The build asserts it is None. A value
-    reappearing here is cash with no date — the exact defect that move fixed.
-    """
-    live = [(r.acct, r.cash_retired) for r in D.ac_rows if r.cash_retired is not None]
-    assert not live, f"the retired cash slot has been written to: {live}"
-
-
 # =====================================================================================
 # No silent gaps — a missing row must stop the build, not degrade quietly
 # =====================================================================================

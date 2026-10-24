@@ -900,8 +900,10 @@ def reading_of(item: dict) -> dict:
     when = commit._archive_date(dated)
     return {"account": r.get("account") or item.get("account") or "",
             "as_of": when.isoformat() if when else "", "at": r.get("at") or "",
-            "positions": r.get("positions"), "recon_cash": r.get("recon_cash"),
-            "stmt_value": r.get("stmt_value"),
+            "positions": r.get("positions"),
+            # AN ITEM READ BEFORE CASH HAD ONE PLACE (24 Oct 2026) holds them under their old names.
+            "cash": r.get("cash", r.get("recon_cash")),
+            "total": r.get("total", r.get("stmt_value")),
             "evidence": item.get("evidence_class") or "",
             "reference": str(ev.get("reference") or "").strip()}
 
@@ -920,9 +922,7 @@ def _reading_gate(item: dict) -> dict:
         observations.preflight(reading, commit._archive_name(item, name),
                                os.path.join(_reader().INBOX, name))
     except observations.Refused as e:
-        return {"name": "the account's reading", "ok": False,
-                "detail": str(e) + (" Read it again." if _read_before_cash_came_off(item, reading)
-                                    else "")}
+        return {"name": "the account's reading", "ok": False, "detail": str(e)}
     except FileNotFoundError:
         # A DOCUMENT GONE FROM THE WORKBENCH is this gate failing, not the Bench: raised, it took
         # every item's page down with a 500 (the review of 21 Oct 2026).
@@ -930,22 +930,11 @@ def _reading_gate(item: dict) -> dict:
                 "detail": f"{name} is no longer on the workbench: drop it there again to read it"}
     agree = sum(1 for u in item.get("units") or [] if u["agrees"])
     # A CASH OF NOTHING IS STILL A CASH: `or ''` read 0.00 as none and dropped it from the line.
-    cash = ("" if reading["recon_cash"] is None or str(reading["recon_cash"]).strip() == ""
-            else f", cash {reading['recon_cash']}, total {reading['stmt_value']}")
+    cash = ("" if reading["cash"] is None or str(reading["cash"]).strip() == ""
+            else f", cash {reading['cash']}, total {reading['total']}")
     return {"name": "the account's reading", "ok": True,
             "detail": (f"{reading['account']}: {agree} of {len(item.get('units') or [])} "
                        f"holdings agree; stock {reading['positions']}{cash}")}
-
-
-def _read_before_cash_came_off(item: dict, reading: dict) -> bool:
-    """Was this item read before 2 Oct 2026 (3a53c69), when the Bench stopped reading a cash and
-    a total off a document that states neither? Such an item still holds them, the readings
-    door refuses them, and only reading the document again clears them."""
-    from portfusion.record import rules as _D
-    ev = _D.EVIDENCE_BY_KEY.get(item.get("evidence_class") or "")
-    return ev is not None and not _D.states_cash(ev) and any(
-        reading.get(f) is not None and str(reading[f]).strip() != ""
-        for f in ("recon_cash", "stmt_value"))
 
 
 def why(item: dict) -> dict:

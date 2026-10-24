@@ -449,20 +449,6 @@ def test_no_reading_entered_from_now_on_rests_on_a_closed_class(D):
         + "\n    ".join(stragglers))
 
 
-@pytest.mark.audit
-def test_no_share_reading_carries_cash_its_document_does_not_state(D):
-    """A share reading's cash and total are figures its own document states, or there are none
-    (`observations.SHARE_CASH` says why, the owner, 2 Oct 2026). The readings door refuses the rest;
-    this asks the rows on file, which a hand edit could still reach."""
-    found = [f"{r.acct} — {r.evidence}: cash {r.recon_cash}, total {r.stmt_value}"
-             for r in D.ac_rows
-             if D.ACCOUNT_KIND[r.acct] != "spread bet"
-             and not D.states_cash(D.EVIDENCE_BY_KEY.get(r.evidence))
-             and (r.recon_cash is not None or r.stmt_value is not None)]
-    assert not found, ("share readings carrying a figure their document does not state:\n    "
-                       + "\n    ".join(found))
-
-
 
 @pytest.mark.parametrize("key", sorted(__import__("portfusion.record.rules", fromlist=["x"])
                                        .REFERENCE_IS_A_DATE))

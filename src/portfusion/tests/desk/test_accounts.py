@@ -8,7 +8,7 @@ from portfusion.record import rules as _rules
 from portfusion.desk import actions, app, panels, engine
 from desk_support import _static
 from portfusion.desk.intake import bench as _bench
-from harness import SRC, append_rows, needs
+from harness import SRC, append_rows, needs, write_rows
 
 
 # =====================================================================================
@@ -666,30 +666,38 @@ def _ensure_prior_reading(store_copy, account):
         return
     with (store_copy / "account-readings.csv").open("a", encoding="utf-8",
                                                         newline="") as fh:
-        fh.write(f"{account},2026-09-28,,1.00,2.00,1.00,,,,,,not-on-file,"
+        fh.write(f"{account},2026-09-28,,1.00,,,,,,not-on-file,"
                  f"a prior reading for the replace door\n")
     rules.reload_store()
 
 
+def _clear_day(store_copy, account, day="2026-09-30"):
+    """Clear any banked statement and any cash reading of `account` on `day` in the COPY, so
+    what a reading writes there is its own."""
+    from portfusion.record import rules
+    for name in ("account-statements.csv", "cash-readings.csv"):
+        path, pref = store_copy / name, f"{account},{day},".encode()
+        path.write_bytes(b"".join(line for line in path.read_bytes().splitlines(keepends=True)
+                                  if not line.startswith(pref)))
+    rules.reload_store()
+
+
 def _share_filed(store_copy):
-    """File the invented export in the COPIED archive and clear any banked row at its key,
-    so the bank below is this write's own. Returns the account it reads for."""
+    """File the invented export in the COPIED archive and clear any banked row and cash at its
+    key, so what the write puts there is its own. Returns the account it reads for."""
     from portfusion.record import schema
     account, number = _shares_register()[0]
     _ensure_prior_reading(store_copy, account)
     schema.STATEMENTS.mkdir(parents=True, exist_ok=True)
     (schema.STATEMENTS / _hl_name(account)).write_text(
         _hl_export(account, number, _book_units(account)), encoding="utf-8")
-    hist = store_copy / "account-statements.csv"
-    pref = f"{account},2026-09-30,".encode()
-    hist.write_bytes(b"".join(line for line in hist.read_bytes().splitlines(keepends=True)
-                              if not line.startswith(pref)))
+    _clear_day(store_copy, account)
     return account
 
 
 def _share(**over):
     row = {"account": _shares_register()[0][0], "as_of": "2026-09-30", "at": "",
-           "positions": 50000.00, "recon_cash": 250.00, "stmt_value": 50250.00,
+           "positions": 50000.00, "cash": 250.00, "total": 50250.00,
            "evidence": "hl-valuation", "reference": _HL_REF, "note": ""}
     row.update(over)
     return row
@@ -740,27 +748,27 @@ def test_a_failed_reading_takes_back_the_banking_too(store_copy, monkeypatch):
 
 def test_a_field_the_new_reading_does_not_carry_is_blank_not_the_old_value():
     """A READING IS WHOLE. The door swapped in only the fields a reading carried, so an IG
-    statement (no `available`, no pull time) kept the last feed read's, and a share export that
-    states no cash kept another document's cash and total."""
+    statement (no `available`, no pull time) kept the last feed read's."""
     from portfusion.record import schema
     from portfusion.desk.doors import observations
     header = schema.TABLES[observations.TABLE].header
     old = {"account": "X", "as_of": "2026-09-01", "at": "2026-09-01T09:00Z", "positions": "10",
-           "stmt_value": "15", "recon_cash": "5", "funds": "", "running_pl": "", "equity": "",
+           "funds": "", "running_pl": "", "equity": "",
            "deposit": "", "available": "7", "evidence": "hl-valuation", "reference": "old"}
     reading = {"account": "X", "as_of": "2026-09-30", "positions": 12.0,
                "evidence": "ii-valuation", "reference": "new", "available": None}
     merged = dict(zip(header, observations._merged([old[c] for c in header], reading)))
     assert merged["account"] == "X"
     assert (merged["as_of"], merged["positions"], merged["reference"]) == ("2026-09-30", "12.0", "new")
-    assert [merged[c] for c in ("at", "stmt_value", "recon_cash", "available")] == [""] * 4, merged
+    assert [merged[c] for c in ("at", "available")] == [""] * 2, merged
 
 
 @needs("accounts", "account-readings", "buys")
 def test_a_share_reading_is_written_and_banked_with_its_account(store_copy):
     """The hand edit this replaces was two steps — the observation, then `history.accounts
     --archive` — and the report reads the second. One write does both, and the banked row
-    names the account, because two ii valuations filed on one day differ in nothing else."""
+    names the account, because two ii valuations filed on one day differ in nothing else. ITS
+    CASH IS A CASH READING of its own day, in the same write, and the journal says so."""
     from portfusion.record import schema
     account = _share_filed(store_copy)
 
@@ -769,11 +777,42 @@ def test_a_share_reading_is_written_and_banked_with_its_account(store_copy):
     assert out["ok"] is True, out.get("refused")
     h = schema.TABLES["account-readings"].header
     read = next(r for r in schema.load("account-readings") if r[0] == account)
-    assert tuple(read[h.index(c)] for c in ("positions", "stmt_value", "recon_cash")) \
-        == (50000.00, 50250.00, 250.00), read
+    assert read[h.index("positions")] == 50000.00, read
+    assert [(c.as_of.isoformat(), c.cash, c.evidence, c.reference) for c in _rules.cash_readings
+            if c.account == account and c.as_of.isoformat() == "2026-09-30"] == [
+        ("2026-09-30", 250.00, "hl-valuation", _HL_REF)]
+    assert out["cash"] == 1 and ("marks", "append", "cash-readings") in {
+        tuple(r[1:4]) for r in schema.load("journal")}
     from portfusion.history import accounts as AH
     banked = [r for r in AH.load() if r["account"] == account and r["as_of"] == "2026-09-30"]
     assert banked and f"({account})" in banked[0]["source"], banked
+
+
+@needs("accounts", "account-readings", "buys")
+def test_a_readings_cash_that_disagrees_with_its_days_cash_reading_is_refused(store_copy):
+    """Two documents of one day stating two cash figures: one of them is wrong, and the door does
+    not choose. Refused whole, at the Bench's gate as at the write, and nothing moves."""
+    from portfusion.desk.doors import observations
+    account = _share_filed(store_copy)
+    write_rows("cash-readings", {"account": account, "as_of": "2026-09-30", "cash": "999.00",
+                                 "evidence": "not-on-file", "reference": "another document's cash"})
+    _rules.reload_store()
+    before = {p: p.read_bytes() for p in observations.paths() if p.is_file()}
+
+    out = _write([_share()])
+
+    assert out["ok"] is False and "does not choose" in out["refused"], out
+    assert all(p.read_bytes() == b for p, b in before.items()), "a refused write moved a file"
+
+
+@needs("accounts", "account-readings", "buys")
+def test_one_write_reading_a_day_twice_files_its_cash_once(store_copy):
+    """The same account and day twice in one write is one cash reading, not two."""
+    account = _share_filed(store_copy)
+    out = _write([_share(), _share()])
+    assert out["ok"] is True and out["cash"] == 1, out
+    assert sum(1 for c in _rules.cash_readings
+               if (c.account, c.as_of.isoformat()) == (account, "2026-09-30")) == 1
 
 
 @needs("accounts", "account-readings", "buys")
@@ -829,7 +868,7 @@ def test_a_share_reading_that_does_not_add_up_is_refused_and_writes_nothing(stor
     _filed(monkeypatch, [_hl_name(_shares_register()[0][0])])
     before = {p: p.read_bytes() for p in observations.paths() if p.is_file()}
 
-    out = _write([_share(stmt_value=110501.00)])
+    out = _write([_share(total=110501.00)])
 
     assert out["ok"] is False and "not the total" in out["refused"], out
     assert all(p.read_bytes() == b for p, b in before.items()), "a refused write moved a file"
@@ -906,7 +945,7 @@ def _ii_filed(store_copy):
 
 def _ii(**over):
     row = {"account": _ii_account(), "as_of": "2026-09-30", "at": "2026-09-30T14:05Z",
-           "positions": 40000.00, "recon_cash": "", "stmt_value": "",
+           "positions": 40000.00, "cash": "", "total": "",
            "evidence": "ii-valuation", "reference": _II_REF, "note": ""}
     row.update(over)
     return row
@@ -914,18 +953,13 @@ def _ii(**over):
 
 @needs("accounts", "account-readings", "buys")
 def test_a_reading_off_a_document_that_states_no_cash_is_its_stock_alone(store_copy):
-    """The owner, 2 Oct 2026: a reading off ii's holdings export is the stock, and its blank cash
-    and total CLEAR what the account's previous reading carried (`observations.SHARE_CASH`).
-    The reconciliation still shows a total, derived."""
+    """The owner, 2 Oct 2026: a reading off ii's holdings export is the stock alone, and writes no
+    cash reading (`observations.SHARE_CASH`). The reconciliation still shows a total, from the
+    account's cash readings."""
     from portfusion.record import schema
     from portfusion.engine import Book
     account = _ii_filed(store_copy)
-    # THE PRIOR READING, CARRYING CASH it had no document for — what the 2 Oct copy did.
-    path = store_copy / "account-readings.csv"
-    with path.open("a", encoding="utf-8", newline="") as fh:
-        fh.write(f"{account},2026-09-29,2026-09-29T14:05Z,1.00,41200.00,1200.00,,,,,,"
-                 f"not-on-file,carried by the copy this test retires\n")
-    _rules.reload_store()
+    cash_before = len(_rules.cash_readings)
 
     out = _write([_ii(as_of="2026-10-01", at="2026-10-01T07:31Z",
                       reference="1 Oct 2026 08:31")])
@@ -934,7 +968,8 @@ def test_a_reading_off_a_document_that_states_no_cash_is_its_stock_alone(store_c
     header = schema.TABLES["account-readings"].header
     read = next(dict(zip(header, r)) for r in schema.load("account-readings")
                 if r[0] == account)
-    assert (read["positions"], read["stmt_value"], read["recon_cash"]) == (40000.00, None, None), read
+    assert read["positions"] == 40000.00 and out["cash"] == 0, (read, out)
+    assert len(_rules.cash_readings) == cash_before, "a reading that states no cash wrote one"
     # CASH DATED AFTER THE READING, and after any on file, is the account's newest cash, a
     # different fact, and moves nothing at the reading.
     _rules.reload_store()
@@ -959,7 +994,7 @@ def test_a_cash_figure_on_a_reading_whose_document_states_none_is_refused(store_
     from portfusion.desk.doors import observations
     before = {p: p.read_bytes() for p in observations.paths() if p.is_file()}
 
-    out = _write([_ii(recon_cash=1200.00, stmt_value=41200.00)])
+    out = _write([_ii(cash=1200.00, total=41200.00)])
 
     assert out["ok"] is False and "states no cash" in out["refused"], out
     assert all(p.read_bytes() == b for p, b in before.items()), "a refused write moved a file"
@@ -969,8 +1004,8 @@ def test_a_cash_figure_on_a_reading_whose_document_states_none_is_refused(store_
 def test_a_reading_off_a_document_that_states_its_cash_still_needs_it(store_copy):
     """The other half: HL's export states its cash and its total, so a reading off it without
     them is short of figures the document holds."""
-    out = _write([_share(recon_cash="", stmt_value="")])
-    assert out["ok"] is False and "no recon_cash, stmt_value" in out["refused"], out
+    out = _write([_share(cash="", total="")])
+    assert out["ok"] is False and "no cash, total" in out["refused"], out
 
 
 # =====================================================================================
@@ -996,10 +1031,7 @@ def holdings_on_the_bench(store_copy, tmp_path, monkeypatch):
     monkeypatch.setattr(_rules.schema, "STATEMENTS", statements)
     monkeypatch.setattr(commit, "ARCHIVE", tmp_path / "archive")
     # The history banks a reading once; forget any banked row at this export's key.
-    hist = store_copy / "account-statements.csv"
-    pref = f"{account},2026-09-30,".encode()
-    hist.write_bytes(b"".join(line for line in hist.read_bytes().splitlines(keepends=True)
-                              if not line.startswith(pref)))
+    _clear_day(store_copy, account)
     _ensure_prior_reading(store_copy, account)
     _ensure_prior_reading(store_copy, _ii_account())
     return inbox, statements
@@ -1043,8 +1075,9 @@ def test_a_holdings_export_is_filed_with_its_reading_in_one_step(holdings_on_the
     assert [p.name for p in statements.iterdir()], "the document was not filed"
     h = schema.TABLES["account-readings"].header
     read = next(r for r in schema.load("account-readings") if r[0] == account)
-    assert tuple(read[h.index(c)] for c in ("positions", "stmt_value", "recon_cash")) \
-        == (50000.00, 50250.00, 250.00), read
+    assert read[h.index("positions")] == 50000.00, read
+    assert (account, 250.00) in {(c.account, c.cash) for c in _rules.cash_readings
+                                 if c.as_of.isoformat() == "2026-09-30"}
 
 
 @needs("accounts", "account-readings", "buys")
@@ -1134,27 +1167,9 @@ def test_an_ii_holdings_export_on_the_bench_reads_its_stock_alone(holdings_on_th
 
     assert it["reading"]["account"] == account, "the units name the account"
     r = bench.reading_of(it)
-    assert (r["positions"], r["recon_cash"], r["stmt_value"]) == ("40000.00", "", ""), r
+    assert (r["positions"], r["cash"], r["total"]) == ("40000.00", "", ""), r
     gate = next(g for g in bench.gates(it) if g["name"] == "the account's reading")
     assert gate["ok"] and gate["detail"].endswith("stock 40000.00"), gate["detail"]
-
-
-@needs("accounts", "account-readings", "buys")
-def test_an_ii_item_read_before_the_cash_came_off_is_told_to_read_it_again(holdings_on_the_bench):
-    """An ii item read before 2 Oct 2026 still holds the cash and total the Bench then copied in.
-    The readings door refuses them, rightly, and until 14 Oct 2026 said nothing of the one thing
-    that clears them (the code review of 2 Oct)."""
-    import os
-    from portfusion.desk.intake import bench
-    inbox, _ = holdings_on_the_bench
-    (inbox / "ii.csv").write_text(_ii_export(_ii_account()), encoding="utf-8")
-    pulled = _dt.datetime(2026, 9, 30, 15, 5).timestamp()
-    os.utime(inbox / "ii.csv", (pulled, pulled))
-    it = bench.for_document("ii.csv")
-    it["reading"].update(recon_cash="180.00", stmt_value="40180.00")   # as read before 2 Oct
-
-    gate = next(g for g in bench.gates(it) if g["name"] == "the account's reading")
-    assert not gate["ok"] and gate["detail"].endswith("Read it again."), gate["detail"]
 
 
 @needs("accounts", "account-readings", "buys")
@@ -1163,6 +1178,6 @@ def test_a_cash_of_nothing_is_still_shown_as_a_cash(holdings_on_the_bench):
     reader stores figures as text, where "0.00" is truthy; a saved item can hold the number."""
     from portfusion.desk.intake import bench
     it = bench.for_document("summary.csv")
-    it["reading"].update(recon_cash=0, stmt_value=float(it["reading"]["positions"]))
+    it["reading"].update(cash=0, total=float(it["reading"]["positions"]))
     gate = next(g for g in bench.gates(it) if g["name"] == "the account's reading")
     assert gate["ok"] and ", cash 0, total " in gate["detail"], gate["detail"]

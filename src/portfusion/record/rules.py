@@ -547,9 +547,9 @@ FX_RATE_AGE_LIMIT_DAYS = 14
 # CASH — one dated, sourced balance per account, recorded the way a price is: a value, the date it
 # was true, and a named source.
 #
-# ITS OWN TABLE, not account-statements.csv's `cash` column, which means cash AT THAT STATEMENT'S
-# DATE as part of the total it reconciles against; a cash-only row there would become the latest
-# statement and feed None into the quarter-NAV cross-check. Two questions, two tables.
+# THE ONE PLACE FOR A SHARE ACCOUNT'S CASH: a reading's cash is a row here of its own day, and its
+# total the stock plus that cash. Not account-statements.csv, which answers what an account was
+# worth: a cash-only row there would become its latest statement, with no net asset value.
 #
 # None, NEVER ZERO, for an account with no figure: one silently contributing nothing would
 # understate cash with no check to catch it. A spread-bet account's figure is FUNDS, already inside
@@ -583,11 +583,8 @@ def cash_latest(on: _dt.date | None = None) -> dict[str, CashReading]:
 class AccountRow(NamedTuple):
     acct: str
     positions: float | None     # a share account's positions at market; None on a spread bet
-    cash_retired: None          # DEAD SLOT. Cash moved to CASH_ROWS; the build asserts this is None
     equity: float | None        # spread-bet accounts only: funds plus running P/L
-    stmt_value: float | None    # a share account's total
     asof: str                   # DISPLAY ONLY — "19 Jul 15:21". Rebuilt from as_of + at.
-    recon_cash: float | None    # a share account's cash
     as_of: _dt.date             # THE REAL DATE, and the reason contradiction H existed
     evidence: str = ""          # an EVIDENCE_CLASSES key — limbs 2 and 3, structurally
     reference: str = ""         # what retrieves this reading a second time
@@ -599,9 +596,8 @@ class AccountRow(NamedTuple):
     available: float | None = None
 
 
-# ACCOUNT OBSERVATIONS, from store/account-readings.csv, read BY NAME. The retired cash slot
-# is supplied as None, and `asof` is a display string rebuilt from the date and the UK time of the
-# instant.
+# ACCOUNT OBSERVATIONS, from store/account-readings.csv, read BY NAME. `asof` is a display string
+# rebuilt from the date and the UK time of the instant.
 #
 # THE STORE MUST JOIN UP, and it is checked HERE, on load, rather than in the test suite — which
 # would catch a broken reference only after a page had been built from rows that silently
@@ -611,11 +607,10 @@ schema.check_references()
 _ac = [dict(zip(schema.TABLES["account-readings"].header, r))
        for r in schema.load("account-readings")]
 ac_rows = [
-    AccountRow(acct=r["account"], positions=r["positions"], cash_retired=None,
-               equity=r["equity"], stmt_value=r["stmt_value"],
+    AccountRow(acct=r["account"], positions=r["positions"], equity=r["equity"],
                asof=(f"{r['as_of'].day} {r['as_of']:%b} {_in_uk(r['at']):%H:%M}" if r["at"]
                      else f"{r['as_of'].day} {r['as_of']:%b}"),
-               recon_cash=r["recon_cash"], as_of=r["as_of"], evidence=r["evidence"],
+               as_of=r["as_of"], evidence=r["evidence"],
                reference=r["reference"], at=str(r["at"] or ""),
                funds=r["funds"], running_pl=r["running_pl"], deposit=r["deposit"],
                available=r["available"])
@@ -683,9 +678,9 @@ ACCOUNT_KIND = {r[0]: r[schema.TABLES["accounts"].header.index("held_as")] for r
 _reading_wrong = []
 for _r in ac_rows:
     if ACCOUNT_KIND.get(_r.acct) == "spread bet":
-        if any(v is not None for v in (_r.positions, _r.stmt_value, _r.recon_cash)):
-            _reading_wrong.append(f"{_r.acct}: a spread-bet reading is IG's five figures; positions, "
-                                  f"stmt_value and recon_cash are a share reading's")
+        if _r.positions is not None:
+            _reading_wrong.append(f"{_r.acct}: a spread-bet reading is IG's five figures; "
+                                  f"positions are a share reading's")
         if (None not in (_r.funds, _r.running_pl, _r.equity)
                 and abs(_r.funds + _r.running_pl - _r.equity) > 0.005):
             _reading_wrong.append(f"{_r.acct}: funds {_r.funds} + running P/L {_r.running_pl} is not "
@@ -754,12 +749,14 @@ QUARTER_RESULTS    = schema.load("quarter-results")
 
 # A QUARTER END'S FIGURE IS ONE ROW. A restatement replaces it (desk/doors/freeze.py:restate()), so
 # a second row for one key is two answers to one question, and nothing would say which is meant.
-_twice_frozen = [f"{t}.csv holds {', '.join(str(c or 'the book') for c in k)} more than once"
+# The book's own quarter-results row has no account, and is named for what it is.
+_twice_frozen = [f"{t}.csv holds {', '.join(map(str, k))} more than once"
                  for t, rows, at in (("quarter-nav", QUARTER_NAV, (0, 1, 3)),
                                      ("quarter-snapshots", _qsnap, (0, 1, 2)),
                                      ("quarter-results", QUARTER_RESULTS, (0, 1)))
-                 for k, n in _collections.Counter(tuple(r[i] for i in at)
-                                                  for r in rows).items() if n > 1]
+                 for k, n in _collections.Counter(
+                     tuple(r[i] or "the book" if i == 1 else r[i] for i in at)
+                     for r in rows).items() if n > 1]
 if _twice_frozen:
     raise ValueError("A QUARTER END IS FROZEN ONCE:\n  " + "\n  ".join(_twice_frozen))
 

@@ -319,11 +319,11 @@ asserted on import; the rest are held by the suite.
 
 | Table | What it holds | Columns, as the desk heads them |
 |---|---|---|
-| `account-readings.csv` | What the book holds each account to be worth RIGHT NOW, and the observation it rests on | `account` Account · `as_of` As at · `at` Recorded · `positions` · `stmt_value` · `recon_cash` · `funds` · `running_pl` · `equity` · `deposit` · `available` · `evidence` Document kind · `reference` Reference |
+| `account-readings.csv` | What the book holds each account to be worth RIGHT NOW, and the observation it rests on | `account` Account · `as_of` As at · `at` Recorded · `positions` · `funds` · `running_pl` · `equity` · `deposit` · `available` · `evidence` Document kind · `reference` Reference |
 | `accounts.csv` | The account register | `account` Account · `holder` Holder · `broker_firm` Broker firm · `number` Account no. · `code` Code · `held_as` Held as · `feed_key` Feed |
 | `buys.csv` | THE LEDGER — one row per buy leg | `trade_id` Trade ID · `date` Date · `source` Source · `account` Account · `ticker` Ticker · `cur` Deal ccy · `qty` Quantity · `stake` Stake (£/pt) · `cost` Cost (GBP) · `level_points` Level (points) · `broker_ref` Broker ref · `note` Notes · `contract` IG contract · `traded_price` Traded price · `rate` Rate (per £1) |
 | `capital-movements.csv` | External capital in and out, one row per event | `date` Date · `account` Account · `amount` Amount (GBP) · `source` Source · `detail` Detail |
-| `cash-readings.csv` | HOW MUCH CASH AN ACCOUNT HELD, AND WHEN | `account` Account · `as_of` As at · `cash` Cash (GBP) · `evidence` Document kind · `reference` Reference |
+| `cash-readings.csv` | HOW MUCH CASH A SHARE ACCOUNT HELD, AND WHEN: THE RECORD'S ONE PLACE FOR CASH | `account` Account · `as_of` As at · `cash` Cash (GBP) · `evidence` Document kind · `reference` Reference |
 | `companies.csv` | One row per ISSUER — the company, not the holding | `company` Company · `sector` Sector · `region` Region |
 | `contracts.csv` | One row per IG contract a spread-bet leg names, with the epic that prices it, how IG funds it, and the ticker of the line it is on | `contract` IG contract · `epic` Epic · `funding` Funding · `ticker` Ticker |
 | `current-prices.csv` | What things are worth NOW — never what was paid, which is the ledger | `mark_key` Mark key · `price` Price · `currency` Ccy · `as_of` As at · `source` Source · `struck` · `at` Recorded |

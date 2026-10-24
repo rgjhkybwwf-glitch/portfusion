@@ -154,8 +154,8 @@ class AppendOnlyCSV:
 
     def _same(self, was: dict, mark: dict) -> bool:
         """Do the row on file and this mark say the same of their day? Compared on every figure
-        BOTH state: an account's row on file can carry what no reading does — the cash off a
-        ledger, a statement's notional — and that is not a second reading of the day."""
+        BOTH state: an account's row on file can carry what no reading does — a statement's
+        notional — and that is not a second reading of the day."""
         return all(was[c] == mark[c] for c in self.figure
                    if was[c] is not None and mark[c] is not None)
 
