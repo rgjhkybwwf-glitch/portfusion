@@ -245,6 +245,8 @@ def _sentinel_store(tmp_path):
                       ("current-prices.csv", 4)):
         path = target / name
         lines = path.read_bytes().decode("utf-8").splitlines()
+        if len(lines) < 2:
+            continue                # an empty history has nothing to carry a sentinel
         # AS CSV, not split on commas: a quoted cell holding one — a mark's source — moved
         # every column after it.
         import io

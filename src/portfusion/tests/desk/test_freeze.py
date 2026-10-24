@@ -348,6 +348,8 @@ def test_the_records_opening_is_never_a_frozen_quarter(store_copy):
         rows = list(csv.reader(f))
     # PLANTED WHERE NONE ARE ON FILE: a book with an opening composition already holds the case.
     if not any(r[0] == BASELINE_ASOF for r in rows[1:]):
+        if not D.QSNAP_FROZEN:
+            pytest.skip("the book holds no frozen quarter end to open from")
         newest = max(D.QSNAP_FROZEN)
         write_rows("quarter-snapshots", *[dict(zip(rows[0], [BASELINE_ASOF, *r[1:]]))
                                           for r in rows[1:] if r[0] == newest])

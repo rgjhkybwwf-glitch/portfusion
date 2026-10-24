@@ -517,25 +517,19 @@ ACCOUNT_READINGS = Table(
          "from this table instead. `as_of` is a real date here and `at` the instant it was "
          "read, ISO and UTC, as on current-prices: it was `observed`, a display qualifier "
          "such as '(API)', until 1 Oct 2026. The two are recombined for DISPLAY.\n\n"
-         "THE DEAD SLOT IS GONE. `ac_rows` carried `cash_retired`, a column required to be "
-         "None on every row, kept so the tuple shape would not change when cash moved to "
-         "CASH_ROWS on 6 Aug 2026. A schema cannot honestly declare a column whose only rule "
-         "is that it is always empty.\n\n"
          "TWO KINDS OF READING, EACH IN ITS OWN COLUMNS (13 Oct 2026). A share account's is "
-         "its document's stock, cash and total: `positions`, `recon_cash`, `stmt_value`. A "
+         "its document's stock, `positions`; the cash its document states is a cash reading "
+         "of the same day (cash-readings.csv), and its total is the two together. A "
          "spread-bet account's is IG's five figures under IG's names, once each: `funds`, "
          "`running_pl`, `equity`, `deposit` (IG's word for the margin) and `available`; its "
          "notional is not typed here but derived, and the load holds funds + running P/L to "
-         "the equity and equity − deposit to the available (record/rules.py). Before this, "
-         "the equity was written twice and the funds sat under `recon_cash`."),
+         "the equity and equity − deposit to the available (record/rules.py)."),
     fields=(
         Field("account", "str"),
         Field("as_of", "date"),            # A REAL DATE. The whole point of the split.
         Field("at", "str"),                # ISO UTC, e.g. 2026-09-30T17:40Z; blank if unknown
         # A SHARE ACCOUNT'S READING, blank on a spread-bet row.
         Field("positions", "float", null=True),   # positions at market
-        Field("stmt_value", "float", null=True),  # the total this row reconciles against
-        Field("recon_cash", "float", null=True),
         # A SPREAD-BET ACCOUNT'S READING, IG'S OWN FIGURES, blank on a share row.
         Field("funds", "float", null=True),
         Field("running_pl", "float", null=True),
@@ -579,21 +573,22 @@ RESEARCH_NOTES = Table(
 
 CASH_READINGS = Table(
     name="cash-readings",
-    doc=("HOW MUCH CASH AN ACCOUNT HELD, AND WHEN. Append-only: a new reading adds a row and "
-         "never replaces one. The Accounts tab's 'Cash now' is the NEWEST row per account.\n\n"
+    doc=("HOW MUCH CASH A SHARE ACCOUNT HELD, AND WHEN: THE RECORD'S ONE PLACE FOR CASH. "
+         "Append-only: a new reading adds a row and never replaces one. The Accounts tab's "
+         "'Cash now' is the NEWEST row per account, and a share reading's total is its stock "
+         "plus the cash here on or before its date.\n\n"
          "MOVED OUT OF CODE 2 September 2026. It was `CASH_ROWS` in rules.py — a hand-edited "
          "Python literal — and it was the last fact in the book that no upload could reach. "
          "An observation found it: an ii transactions download carries a Running "
          "Balance whose top row is dated, sourced and statement-grade, and there was no route "
          "from it into the record. The literal had also run "
          "AHEAD of the store, carrying an 11 Aug and a 20 Aug figure the record had never seen.\n\n"
-         "WHY NOT account-statements.csv, which has a `cash` column. That table answers 'what was "
-         "this account WORTH', and `accounts.at(date)` reads it as the latest STATEMENT. A "
-         "cash-only row there would have become that latest row, and `nav_component` would have "
-         "returned None into the quarter-NAV cross-check — first firing at a quarter close, which "
-         "is the worst available moment. Two questions, two tables. The `cash` column on a "
-         "statement row stays what it always was: cash AT THAT STATEMENT'S DATE, part of the total "
-         "the row reconciles against.\n\n"
+         "ONE PLACE (24 Oct 2026). A share reading's cash and total, and a statement's cash, "
+         "were columns of their own until then, so one day's cash could sit in three files and "
+         "disagree. A reading off a document that states cash writes it here, the same day. "
+         "Not in account-statements.csv, which answers 'what was this account WORTH': a "
+         "cash-only row there would become an account's latest statement, with no net asset "
+         "value.\n\n"
          "THIS DOES NOT REACH NAV OR THE RETURN, and there is no date on which it starts to. "
          "Cash left the return on 2 Sep 2026 and the plan to add it to NAV on 30 Sep was dropped "
          "the same day. This is a RECORD of cash and a cell on a tab.\n\n"

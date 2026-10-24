@@ -360,40 +360,36 @@ def test_the_two_populations_stay_apart(book):
     ties(rt["realised"].sum(), book.realised(), "realised spans BOTH populations")
 
 
-def test_an_accounts_cash_is_its_newest_reading_of_either_kind(book):
-    """`Book.newest_cash()` takes the newer of an account's newest cash reading and the cash its
-    own reading states, the cash reading on a tie, and never a cash figure beside a reading
-    whose document states none (ii's holdings export). Decided 13 Oct 2026, when both IG
-    accounts' cash readings were six weeks older than their account readings."""
+def test_an_accounts_cash_is_read_from_its_one_place(book):
+    """`Book.newest_cash()`: a share account's newest cash reading, and a spread-bet account's
+    funds on its reading, under IG's own name. Cash has no other home to be newer in."""
     held = book.newest_cash().set_index("account")
     assert list(held.index) == list(D.ACCOUNT_ORDER)
     for a in D.ACCOUNT_ORDER:
-        o = D.cash_latest().get(a)
         r = next((x for x in D.ac_rows if x.acct == a), None)
-        own = (r.funds if book.is_spread_bet(a) else r.recon_cash) if r is not None else None
-        stated = (own is not None
-                  and (book.is_spread_bet(a) or D.states_cash(D.EVIDENCE_BY_KEY.get(r.evidence))))
-        if stated and (o is None or r.as_of > o.as_of):
-            want = (own, r.as_of.isoformat(), r.evidence)
-        elif o is not None:
-            want = (o.cash, o.as_of.isoformat(), o.evidence)
+        o = D.cash_latest().get(a)
+        if book.is_spread_bet(a):
+            want = (r.funds, r.as_of.isoformat(), r.evidence) if r and r.funds is not None \
+                else (None, None, None)
         else:
-            want = (None, None, None)
+            want = (o.cash, o.as_of.isoformat(), o.evidence) if o else (None, None, None)
         label = D.EVIDENCE_BY_KEY[want[2]].label if want[2] else None
         assert (held.loc[a, "cash"], held.loc[a, "as_of"], held.loc[a, "document"]) == \
             (want[0], want[1], label), a
 
 
-def test_a_reading_that_states_its_cash_keeps_its_own(book):
-    """Where the document gives the cash — HL's does — the reconciliation shows the reading's
-    own cash and total, dated to it, never a cash reading of another day swapped in."""
+def test_a_share_readings_total_is_its_stock_and_the_cash_of_its_day(book):
+    """A share reading holds its stock alone; the reconciliation's cash is the account's cash
+    reading on or before the reading's date — the one its document wrote, where it states cash —
+    and the total the two together, never a cash reading of a later day."""
     rc = book.reconciliation().set_index("account")
     for r in D.ac_rows:
-        if book.is_spread_bet(r.acct) or not D.states_cash(D.EVIDENCE_BY_KEY.get(r.evidence)):
+        if book.is_spread_bet(r.acct):
             continue
-        row = rc.loc[r.acct]
-        assert (row["cash_at_recon"], row["statement"]) == (r.recon_cash, r.stmt_value), r.acct
-        assert row["cash_at_recon_at"] == row["struck_on"], r.acct
+        held, row = D.cash_latest(on=r.as_of).get(r.acct), rc.loc[r.acct]
+        assert row["cash_at_recon"] == (held.cash if held else None), r.acct
+        assert row["statement"] == (round(r.positions + held.cash, 2)
+                                    if held and r.positions is not None else None), r.acct
 
 
 @pytest.mark.audit

@@ -51,6 +51,9 @@ happened, never an instruction or how a figure was reached; those go in the comm
   names any price nothing holds.
 - **A mark has two axes**: `quality` (provenance) and `struck` (`close` or `live`). A blank
   `struck` compares with nothing.
+- **A share account's cash is in one place, its cash readings.** A reading off a document that
+  states the cash writes it as a cash reading of that day, and the reading's total is its stock
+  plus that cash. A spread bet's cash is IG's funds, on its reading.
 - **A correction replaces its row.** A mark read again on its own day takes its row's place, and
   `restate()` replaces a frozen quarter end's rows and results, the journal saying why; git keeps
   what each row said. One row per fact, so no reader filters.

@@ -2146,9 +2146,9 @@ class Book:
         """Each account against its statement: what the book says, what the broker said.
 
         THE DIFFERENCE COLUMN IS THE POINT: near zero means the book's own figures explain the
-        account's movement; anything else is a question. `cash_at_recon` is the cash at the
-        reading's own date, which a share reading's total rests on; an account's newest cash is
-        `newest_cash()`, a different fact.
+        account's movement; anything else is a question. `cash_at_recon` is the cash on or
+        before the reading's date, which a share reading's total rests on; an account's newest
+        cash is `newest_cash()`, a different fact.
         """
         # THE BOOK'S OWN NUMBER FOR A SPREAD-BET ACCOUNT IS THE DERIVED ONE — capital in, plus
         # realised, unrealised and income — because that is the figure with something to prove.
@@ -2184,18 +2184,13 @@ class Book:
             else:
                 comparable, why, book_total = None, "", None
             struck_on = str(r.as_of)[:10] if r.as_of else ""
-            # A SHARE READING WHOSE DOCUMENT STATES NO CASH — ii's holdings export — holds its
-            # stock alone, so its cash and its total are derived here from the account's newest
-            # cash reading on or before the reading's date, and are never stored beside the stock.
-            # Every other reading's cash is its own document's, of the reading's own date.
             # A SPREAD-BET READING IS IG'S FIVE FIGURES: its cash is the funds, its total the
-            # equity. A share reading's are its document's cash and total.
+            # equity. A SHARE READING HOLDS ITS STOCK ALONE: its cash is the account's newest cash
+            # reading on or before the reading's date — the one its own document wrote, where it
+            # states cash — and its total the two together.
             if sb:
                 cash, cash_on, total = r.funds, struck_on if r.funds is not None else None, r.equity
             else:
-                cash, cash_on, total = r.recon_cash, \
-                    struck_on if r.recon_cash is not None else None, r.stmt_value
-            if not self._reading_states_cash(r):
                 held = self._cash_at_reading.get(a)
                 cash = held.cash if held else None
                 cash_on = held.as_of.isoformat() if held else None
@@ -2232,34 +2227,23 @@ class Book:
             "running_pl", "deposit", "available", "book", "statement", "difference", "as_of",
             "struck_on", "at", "comparable", "comparability", "evidence"])
 
-    def _reading_states_cash(self, r) -> bool:
-        """Whether an account reading's own document gives the account's cash: a spread-bet
-        account's always does, and a share account's when its evidence class says so. ii's
-        holdings export does not, and a cash figure beside one is not the document's."""
-        return self.is_spread_bet(r.acct) or bool(
-            self.D.states_cash(self.D.EVIDENCE_BY_KEY.get(r.evidence)))
-
     def newest_cash(self) -> pd.DataFrame:
         """Each account's newest cash on file and what it was read from: one row per account in
         ACCOUNT_ORDER — account, cash, as_of (ISO), and document, the evidence class's label —
         None throughout where the record holds none.
 
-        FROM EITHER KIND OF READING. A cash reading (`cash_latest()`) is the record's own place
-        for cash, but an account reading whose document states the cash holds as good a figure,
-        and the feed's IG read writes only that kind, so an IG account's cash readings fall behind
-        its account readings. The account reading's cash is taken only when it is NEWER than every
-        cash reading.
+        ONE PLACE PER KIND: a share account's cash readings (`cash_latest()`), and a spread-bet
+        account's FUNDS, under IG's own name on its reading.
         """
         rows = []
         for a in self.D.ACCOUNT_ORDER:
-            o = self._cash_latest.get(a)
-            best = (o.as_of, o.cash, o.evidence) if o else None
-            r = next((x for x in self.D.ac_rows if x.acct == a), None)
-            # A spread-bet reading's cash is its FUNDS, under IG's own name.
-            stated = (r.funds if self.is_spread_bet(a) else r.recon_cash) if r is not None else None
-            if (r is not None and stated is not None and r.as_of
-                    and self._reading_states_cash(r) and (best is None or r.as_of > best[0])):
-                best = (r.as_of, stated, r.evidence)
+            if self.is_spread_bet(a):
+                r = next((x for x in self.D.ac_rows if x.acct == a), None)
+                best = ((r.as_of, r.funds, r.evidence)
+                        if r is not None and r.funds is not None and r.as_of else None)
+            else:
+                o = self._cash_latest.get(a)
+                best = (o.as_of, o.cash, o.evidence) if o else None
             ev = self.D.EVIDENCE_BY_KEY.get(best[2]) if best else None
             rows.append({"account": a, "cash": best[1] if best else None,
                          "as_of": best[0].isoformat() if best else None,

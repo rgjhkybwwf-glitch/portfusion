@@ -442,16 +442,22 @@ def test_a_close_banked_after_the_live_mark_does_not_move_where_the_lines_end(st
     An audit, for the reason `test_the_lines_end_where_the_book_is` gives: it starts from the
     live record's marks."""
     import csv
+    from portfusion.history import files
     before = Book()
     live = {r["mark_key"]: (r["price"], str(r["as_of"])[:10], r["currency"])
             for r in before.store["prices"].to_dict("records")}
+    # BY THE HISTORY'S OWN COLUMNS, and never over a day already banked: one row per line and day.
+    banked = {(k, str(d)) for k, d in zip(before.store["history.prices"]["mark_key"],
+                                          before.store["history.prices"]["date"])}
     ahead = []
     for key, (price, as_of, currency) in live.items():
         later = (pd.Timestamp(as_of) + pd.Timedelta(days=3)).date().isoformat()
-        ahead.append([key, later, round(float(price) * 1.05, 4), currency, "sourced", "close",
-                      f"a close banked after the live mark, {later}"])
+        if (key, later) not in banked:
+            ahead.append({"mark_key": key, "date": later, "price": round(float(price) * 1.05, 4),
+                          "currency": currency, "quality": "sourced", "struck": "close",
+                          "source": f"a close banked after the live mark, {later}"})
     with (store_copy / "price-history.csv").open("a", newline="", encoding="utf-8") as f:
-        csv.writer(f, lineterminator="\n").writerows(ahead)
+        csv.DictWriter(f, fieldnames=files.PRICE_FIELDS, lineterminator="\n").writerows(ahead)
     book = Book()
     assert book.owned() == before.owned() and book.exposure() == before.exposure(), (
         "banking a close moved a published figure — it must wait for a refresh")

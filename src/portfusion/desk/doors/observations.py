@@ -46,16 +46,15 @@ TABLE = "account-readings"
 #: and no carried line to protect — every row is a live reading and every one is replaceable.
 KEYED_BY = "account"
 
-#: What a reading may set. `positions`, `stmt_value` and `recon_cash` are a SHARE account's: the
-#: stock, cash and total off a filed document. The five after them are a SPREAD-BET account's,
-#: IG's own, and `_check()` holds each kind to its own.
-SETTABLE = ("as_of", "at", "positions", "stmt_value", "recon_cash",
+#: What a reading may set. `positions` is a SHARE account's: the stock off a filed document. The
+#: five after it are a SPREAD-BET account's, IG's own, and `_check()` holds each kind to its own.
+SETTABLE = ("as_of", "at", "positions",
             "funds", "running_pl", "equity", "deposit", "available", "evidence", "reference")
 
 #: A spread-bet reading's own figures: what IG prints on a statement, and the feed returns.
 #: `available` is the feed's alone (a statement prints none), so it is not required.
 SB_REQUIRED = ("funds", "running_pl", "equity", "deposit")
-SB_NEVER = ("positions", "stmt_value", "recon_cash")
+SB_NEVER = ("positions", "cash", "total")
 
 #: What a SHARE account's reading must carry beyond REQUIRED: the stock its broker document states.
 #: NOT the time it was pulled: the check is on units, which a close does
@@ -65,8 +64,9 @@ SHARE_REQUIRED = ("positions",)
 #: ...and the cash and the total they make, where the document states the cash
 #: (`rules.states_cash()`) — and NEVER where it does not. ii's holdings export states none, so a
 #: cash figure on a reading off it would be another document's, filed under this one's evidence
-#: and left to age there. `Book.reconciliation()` derives that cash instead.
-SHARE_CASH = ("recon_cash", "stmt_value")
+#: and left to age there. THE CASH IS WRITTEN AS A CASH READING of the reading's day, the record's
+#: one place for it (`_cash_rows()`); the total is checked and not kept, being the two together.
+SHARE_CASH = ("cash", "total")
 
 #: Without these a reading is not one. `as_of` because a figure with no date lets the freshness
 #: indicator agree everything is fine; `evidence` and `reference` because limb 3 of
@@ -83,8 +83,8 @@ def paths() -> list:
     the journal. See `marks.paths()` for why a caller is given this rather than a list to copy.
     """
     from portfusion.history import accounts as AH
-    return [schema.TABLES[TABLE].path, _pathlib.Path(AH._FILE.path),
-            schema.TABLES["journal"].path]
+    return [schema.TABLES[TABLE].path, schema.TABLES["cash-readings"].path,
+            _pathlib.Path(AH._FILE.path), schema.TABLES["journal"].path]
 
 
 def banked() -> dict:
@@ -249,6 +249,7 @@ def preflight(reading: dict, filed_as: str, document) -> None:
     from `document`, where it still is. The Bench asks this at its gate, so a holdings export is
     never filed with a reading this door would then turn away."""
     _check(reading, filed=[filed_as], document=document)
+    _cash_rows([reading])
     if reading["account"] not in _rows_on_file():
         raise Refused(f"{TABLE}.csv has no row for {reading['account']}. This door REPLACES a "
                       f"reading; it does not add one.")
@@ -289,6 +290,28 @@ def share_classes() -> list[dict]:
             for e in D.EVIDENCE_CLASSES if _baseline_class(e)]
 
 
+def _cash_rows(readings: list[dict]) -> list[dict]:
+    """The cash readings these readings' documents state, each dated its reading's day, less any
+    on file at the same figure. Raises `Refused` where one is on file for that day at another:
+    two documents of one day disagree, and this door does not choose."""
+    on_file = {(c.account, c.as_of.isoformat()): c.cash for c in D.cash_readings}
+    out = []
+    for r in readings:
+        if r.get("cash") is None or str(r["cash"]).strip() == "":
+            continue
+        account, day, cash = r["account"], str(r["as_of"])[:10], float(r["cash"])
+        was = on_file.get((account, day))
+        if was is not None and abs(was - cash) < 0.005:
+            continue
+        if was is not None:
+            raise Refused(f"{account} already has a cash reading of {was:,.2f} for {day}; this "
+                          f"reading's document says {cash:,.2f}. One of them is wrong, and this "
+                          f"door does not choose.")
+        out.append({"account": account, "as_of": day, "cash": cash,
+                    "evidence": r["evidence"], "reference": r["reference"]})
+    return out
+
+
 @commit.held
 def write(readings: list[dict] | None = None) -> dict:
     """Bank the outgoing readings, then replace them. The one writing action on this door.
@@ -312,6 +335,7 @@ def write(readings: list[dict] | None = None) -> dict:
             f"does not add one. A new account is a decision, not an observation.")
 
     new_rows = {r["account"]: _merged(on_file[r["account"]], r) for r in readings}
+    cash = _cash_rows(readings)
     path = schema.TABLES[TABLE].path
     at = schema.record_instant()
 
@@ -355,10 +379,16 @@ def write(readings: list[dict] | None = None) -> dict:
         # `replace`, NOT `append` — this door adds no rows, so the reconciliation arithmetic
         # must not count these against the table's opening figure. The ref is the reading's
         # own date, which is what retrieves it: account-statements.csv holds what it displaced.
+        # A READING'S CASH, the same write: a cash reading of its own day, appended in its place.
+        if cash:
+            commit.place({"cash-readings": [commit._rendered("cash-readings", c) for c in cash]})
+        ref = " ".join(sorted({str(r["as_of"]) for r in readings}))
         commit.journal(
-            [("marks", "replace", TABLE, len(readings),
-              " ".join(sorted({str(r["as_of"]) for r in readings})),
-              f"{len(readings)} account reading{'' if len(readings) == 1 else 's'} replaced")],
+            [("marks", "replace", TABLE, len(readings), ref,
+              f"{len(readings)} account reading{'' if len(readings) == 1 else 's'} replaced")]
+            + ([("marks", "append", "cash-readings", len(cash), ref,
+                 f"{len(cash)} cash reading(s), as the readings' documents state them")]
+               if cash else []),
             at=at)
 
         D.reload_store()
@@ -367,4 +397,4 @@ def write(readings: list[dict] | None = None) -> dict:
         # history agreeing — the same second half `marks.write()` performs.
         banked_after = len(AH.archive(verbose=False))
     return {"written": len(readings), "accounts": sorted(r["account"] for r in readings),
-            "banked_before": archived, "banked_after": banked_after}
+            "cash": len(cash), "banked_before": archived, "banked_after": banked_after}

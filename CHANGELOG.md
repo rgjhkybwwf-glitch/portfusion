@@ -5,6 +5,11 @@ prints it.
 
 ## Unreleased
 
+- **A share account's cash is in one place, its cash readings.** An account reading's `recon_cash`
+  and `stmt_value` and a statement's `cash` are retired: a reading off a document that states the
+  cash writes it as a cash reading of its day, in the same write, and the reading's total is its
+  stock plus that cash. The Accounts page's cash now reads one place. `portfusion migrate` moves
+  each figure across, reading a statement's class and reference back out of its source.
 - **A correction replaces its row.** A mark, a rate or a statement read again on its own day takes
   its row's place, and a restated quarter end replaces its rows and results, the journal saying
   why; git keeps what each row said. The `status` column five tables carried to keep a corrected

@@ -11,6 +11,8 @@ import json
 import re
 import shutil
 
+import pytest
+
 from portfusion.record import migrations as M, schema
 
 
@@ -208,6 +210,72 @@ def test_a_book_with_the_lifecycle_loses_the_column_and_every_row_it_kept_beside
     assert {(r[2], r[3], r[4]) for r in added} == {
         ("remove", "quarter-nav", "1"), ("remove", "quarter-results", "1")}, added
     assert M.plan(book) == (None, []), "a book without the lifecycle still planned a move"
+
+
+def _with_cash_in_three_places(tmp_path):
+    """A demo copy in the shape before cash had one place: a statement's cash in its own column,
+    the demo's cash readings bar the last quarter's gone from `cash-readings`, an unfunded
+    account's statement carrying a cash of zero, and a share reading with its cash and total."""
+    book = tmp_path / "book"
+    for part in ("store", "_archive"):
+        shutil.copytree(schema.DEMO / part, book / part)
+    store = book / "store"
+    cash = list(csv.reader((store / "cash-readings.csv").open(encoding="utf-8")))
+    held = {(r[0], r[1]): r[2] for r in cash[1:]}
+    rows = list(csv.reader((store / "account-statements.csv").open(encoding="utf-8")))
+    at = rows[0].index("positions_value") + 1
+    rows = [rows[0][:at] + ["cash"] + rows[0][at:]] + [
+        r[:at] + [held.get((r[0], r[1]), "0.0" if "not yet funded" in r[-2] and r[2] else "")]
+        + r[at:] for r in rows[1:]]
+    _write(store / "account-statements.csv", rows)
+    _write(store / "cash-readings.csv", cash[:1] + [r for r in cash[1:] if r[1] == "2026-09-30"])
+    readings = list(csv.reader((store / "account-readings.csv").open(encoding="utf-8")))
+    at = readings[0].index("positions") + 1
+    share = next(r for r in cash[1:] if r[1] == "2026-09-30")
+    readings = [readings[0][:at] + ["stmt_value", "recon_cash"] + readings[0][at:]] + [
+        r[:at] + ["", ""] + r[at:] for r in readings[1:]] + [
+        [share[0], share[1], "", "100.0", str(100.0 + float(share[2])), share[2],
+         *[""] * (len(readings[0]) - 4 - 2), share[3], share[4]]]
+    _write(store / "account-readings.csv", readings)
+    return book, store, share
+
+
+def _write(path, rows):
+    out = io.StringIO()
+    csv.writer(out, lineterminator="\n").writerows(rows)
+    path.write_text(out.getvalue(), encoding="utf-8")
+
+
+def test_a_share_accounts_cash_is_carried_into_its_cash_readings(tmp_path):
+    """Each statement's cash becomes a cash reading of its day, its class and reference read back
+    out of its source; a reading's cash on file at the same figure is not doubled; a zero no
+    document names goes; the columns leave; and the journal counts what came in."""
+    book, store, share = _with_cash_in_three_places(tmp_path)
+
+    m, changes = M.plan(book)
+    assert m is M.MIGRATIONS[4] and changes, "cash in three places planned no move"
+    M.write(changes)
+    for name in ("cash-readings.csv", "account-statements.csv"):
+        assert (store / name).read_bytes() == (schema.DEMO / "store" / name).read_bytes(), name
+    readings = list(csv.reader((store / "account-readings.csv").open(encoding="utf-8")))
+    assert readings[0] == schema.TABLES["account-readings"].header
+    assert readings[-1][:4] == [share[0], share[1], "", "100.0"], readings[-1]
+    added = [r for r in csv.reader((store / "journal.csv").open(encoding="utf-8"))
+             if r[1] == "migrate"]
+    want = len(list(csv.reader((schema.DEMO / "store" / "cash-readings.csv").open()))) - 3
+    assert [(r[2], r[3], r[4]) for r in added] == [("append", "cash-readings", str(want))], added
+    assert M.plan(book) == (None, []), "a book with cash in one place still planned a move"
+
+
+def test_two_cash_figures_for_one_day_are_moved_by_hand(tmp_path):
+    """A reading's cash at another figure than the cash reading of its day: one of them is wrong,
+    so the migration refuses and names the row, writing nothing."""
+    book, store, share = _with_cash_in_three_places(tmp_path)
+    path = store / "account-readings.csv"
+    path.write_text(path.read_text(encoding="utf-8").replace(
+        f",{share[2]},", f",{float(share[2]) + 1},", 1), encoding="utf-8")
+    with pytest.raises(ValueError, match="move it by hand"):
+        M.plan(book)
 
 
 def test_a_books_check_naming_a_retired_table_is_listed_to_move_by_hand(tmp_path):

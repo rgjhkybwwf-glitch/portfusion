@@ -1,2 +1,2 @@
-account,as_of,at,positions,stmt_value,recon_cash,funds,running_pl,equity,deposit,available,evidence,reference
-Voss IG Spread bet,2026-09-30,2026-09-30T15:00Z,,,,6500.0,,8140.8,,,ig-accounts,"XK9P3, read 2026-09-30 at 16:00"
+account,as_of,at,positions,funds,running_pl,equity,deposit,available,evidence,reference
+Voss IG Spread bet,2026-09-30,2026-09-30T15:00Z,,6500.0,,8140.8,,,ig-accounts,"XK9P3, read 2026-09-30 at 16:00"

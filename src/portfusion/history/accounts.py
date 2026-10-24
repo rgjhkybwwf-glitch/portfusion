@@ -12,14 +12,13 @@ and the imports fail before any work starts.
 APPEND-ONLY: a new statement adds a row, which is what gives each account a value series at all.
 A statement of a day already on file at other figures replaces that row (`restruck()`).
 
-A share row holds positions_value and cash; a spread-bet row holds IG's own figures — funds,
-running_pl, equity, deposit — and the statement's Position (net), the notional, under
-positions_value. NAV per account is positions_value for a share account and equity for a
-spread-bet one.
+A share row holds positions_value; a spread-bet row holds IG's own figures — funds, running_pl,
+equity, deposit — and the statement's Position (net), the notional, under positions_value. NAV per
+account is positions_value for a share account and equity for a spread-bet one.
 
-CASH IS RECORDED BUT NEVER IN NAV. A statement total is positions plus cash, so the
-reconciliation needs it; the return counts flows into positions, so NAV does not.
-`Book.by_account()` agrees, and tests/test_quarter_nav.py cross-checks the two.
+CASH IS NOT HERE AND NEVER IN NAV. A share account's cash is its cash readings
+(cash-readings.csv), the record's one place for it; the return counts flows into positions, so
+NAV does not. `Book.by_account()` agrees, and tests/test_quarter_nav.py cross-checks the two.
 """
 from __future__ import annotations
 
@@ -34,7 +33,7 @@ from portfusion.log import log
 
 # The file and its columns are `history/files.py`'s, where the demo's generator reads them.
 CSV_NAME, FIELDS = files.ACCOUNTS, files.ACCOUNT_FIELDS
-NUMERIC = ("positions_value", "cash", "funds", "running_pl", "equity", "deposit")
+NUMERIC = ("positions_value", "funds", "running_pl", "equity", "deposit")
 #: The subset this table permits, from `schema.QUALITIES`.
 QUALITIES = ("sourced", "derived")
 
@@ -69,7 +68,6 @@ def live_observations() -> list[dict]:
             "account": r.acct,
             "as_of": r.as_of.isoformat(),
             "positions_value": r.positions,
-            "cash": r.recon_cash,
             "funds": r.funds,
             "running_pl": r.running_pl,
             "equity": r.equity,
@@ -132,7 +130,7 @@ def nav_component(row: dict) -> float | None:
     positions for a share account — never notional (`rules.SPREAD_BET`)."""
     if _is_spread_bet(row["account"]):
         return row["equity"]
-    # POSITIONS ONLY: cash is on the row but never in NAV (module docstring).
+    # POSITIONS ONLY: cash is never in NAV (module docstring).
     return row["positions_value"]
 
 
@@ -168,8 +166,6 @@ def show(account: str | None = None) -> None:
             bits = [f"positions {r['positions_value']:>12,.2f}" if r["positions_value"] is not None else f"{'positions —':>22}"]
             if r["equity"] is not None:
                 bits.append(f"equity {r['equity']:>11,.2f}")
-            if r["cash"] is not None:
-                bits.append(f"cash {r['cash']:>10,.2f}")
             if r.get("funds") is not None:
                 bits.append(f"funds {r['funds']:>10,.2f}")
             flag = "" if r["quality"] == "sourced" else f"  ({r['quality']})"

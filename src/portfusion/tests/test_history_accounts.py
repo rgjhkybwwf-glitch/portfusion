@@ -15,8 +15,8 @@ from collections import Counter
 import pytest
 
 from portfusion.history import accounts as A
-from portfusion.record import rules as D           # RECONCILES is derived from the record, below
-from harness import an_account, append_rows, holds, needs
+from portfusion.record import rules as D
+from harness import needs
 
 ISO = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
@@ -116,107 +116,18 @@ def test_show_prints_a_reading_with_no_net_asset_value_part(monkeypatch, capsys)
     """`show()` dropped such a reading's whole line: its conditional bound the line, not the NAV
     suffix, until step 5. No reading on file lacks the part today, so this one is planted."""
     share = next(a for a in D.ACCOUNT_ORDER if D.ACCOUNT_KIND.get(a) != "spread bet")
-    row = {"account": share, "as_of": "2026-06-30", "positions_value": None, "cash": 12.0,
+    row = {"account": share, "as_of": "2026-06-30", "positions_value": None,
            "funds": None, "running_pl": None, "equity": None, "deposit": None,
            "source": "a planted reading", "quality": "sourced"}
     monkeypatch.setattr(A, "load", lambda: [row])
     A.show()
     out = capsys.readouterr().out
-    assert "2026-06-30" in out and "cash" in out, out
+    assert "2026-06-30" in out and "positions —" in out, out
     assert "-> NAV" not in out
 
 
 def test_the_build_does_not_import_this(build_imports):
     assert "history.accounts" not in build_imports
-
-
-# =====================================================================================
-# CASH IS DATED, AND THE DATE IS PART OF THE FACT
-#
-# The defect this catches: the store's `cash` column had drifted into meaning "the latest cash
-# we know" rather than "cash at this date". Two 19 Jul rows carried cash read in August, one
-# of them on a row whose own note says the cash was NOT VISIBLE that day.
-#
-# NOTHING PUBLISHED WAS WRONG — nav_component never adds cash, so it reached no total. That is
-# exactly why it survived: no check could see it. Cash never joins NAV, so the drift is fixed
-# on its own merits below rather than by a deadline.
-#
-# The reconciliation is what exposes it, and it is what is asserted here: for a share
-# account, POSITIONS + CASH ON THE SAME DATE must equal the statement total the record
-# holds for that observation. A cash figure borrowed from another date breaks it.
-# =====================================================================================
-
-# (account, store date, the statement/app total the record reconciles that row against).
-#
-# DERIVED FROM THE RECORD: store/account-readings.csv carries a real `as_of`, so the
-# mapping is a query. It was once typed by hand, because observations were dated in FREE TEXT
-# — "19 Jul 23:20", "30 Jun (stmt)" — which nothing could join on.
-#
-# THE RULE, STATED ONCE: a SHARE account (no equity — a spread-bet account has one) that
-# carries a statement total to reconcile against. An account with no total is excluded by the
-# second half, rightly: there is nothing to check against. The IG accounts are excluded by the
-# first: `positions` there is NOTIONAL, and positions-plus-cash is not a question you may ask
-# of a spread bet.
-#
-# The list GROWS BY ITSELF when a share account gets a statement value, which is the whole
-# point — a hand-written version would silently keep checking the accounts it started with.
-def _reconciles():
-    return [(r.acct, r.as_of.isoformat(), r.stmt_value)
-            for r in D.ac_rows if r.equity is None and r.stmt_value is not None]
-
-
-RECONCILES = _reconciles()
-
-
-def _unreconciled(reconciles, statements):
-    """Each of `reconciles` its own day's statement row does not add up to, as a sentence."""
-    st = {(r["account"], r["as_of"]): r for r in statements}
-    out = []
-    for account, date, total in reconciles:
-        r = st.get((account, date))
-        missing = ("no row" if r is None else "no positions value"
-                   if r["positions_value"] is None else "no cash" if r["cash"] is None else "")
-        if missing:
-            out.append(f"{account} at {date}: {missing} to reconcile")
-            continue
-        got = r["positions_value"] + r["cash"]
-        if abs(got - total) >= 0.01:
-            out.append(
-                f"{account} at {date}: positions {r['positions_value']:,.2f} + cash "
-                f"{r['cash']:,.2f} = {got:,.2f}, but the account totalled {total:,.2f}. "
-                f"A cash figure from another date is the usual cause.")
-    return out
-
-
-def test_cash_on_a_row_reconciles_that_row():
-    if not RECONCILES:
-        pytest.skip("the book holds no share reading with a statement total yet")
-    problems = _unreconciled(RECONCILES, A.load())
-    assert not problems, "\n".join(problems)
-
-
-@holds(an_account("shares"), what="a share account")
-def test_a_row_carrying_another_days_cash_does_not_reconcile(store_copy):
-    """THE CHECK ABOVE, SHOWN TO FAIL, on any book: two days' readings with a statement total
-    written to a copy, one whose row adds up and one whose row carries other cash. Only the
-    second is named."""
-    import datetime as dt
-    account = an_account("shares")
-    on_file = [r["as_of"] for r in A.load() if r["account"] == account]
-    on_file += [r.as_of.isoformat() for r in D.ac_rows if r.acct == account]
-    newest = dt.date.fromisoformat(max(on_file, default="2026-01-01"))
-    days = [(newest + dt.timedelta(days=n)).isoformat() for n in (1, 2)]
-    append_rows(store_copy / "account-readings.csv",
-                [f"{account},{day},{day}T14:05Z,1000.00,1250.00,250.00,,,,,,ii-statement,"
-                 f"a reading" for day in days])
-    append_rows(store_copy / "account-statements.csv",
-                [f"{account},{day},1000.00,{cash},,,,,Not on file: a test,derived"
-                 for day, cash in zip(days, ("250.00", "240.00"))])
-    D.reload_store()
-    ours = [r for r in _reconciles() if r[0] == account and r[1] in days]
-    assert len(ours) == 2, f"the two written readings are not reconciled at all: {ours}"
-    problems = _unreconciled(ours, A.load())
-    assert len(problems) == 1 and problems[0].startswith(f"{account} at {days[1]}"), problems
 
 
 # =====================================================================================

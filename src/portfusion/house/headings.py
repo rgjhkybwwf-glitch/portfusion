@@ -225,7 +225,7 @@ STORE_ONLY: dict[str, str] = {
     "url": "a research note's address, the Research notes link's",
     "settings.key": "a setting's name", "settings.value": "a setting's value, not sterling",
     **{c: "the broker's own figure on a reading (glossary §2b)" for c in (
-        "positions", "stmt_value", "recon_cash", "funds", "running_pl", "equity", "deposit",
+        "positions", "funds", "running_pl", "equity", "deposit",
         "available")},
 }
 
