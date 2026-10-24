@@ -142,7 +142,8 @@ def test_the_csv_store_agrees_with_the_record():
     whose journal began afresh had its engine's valuations tied to statements they never copied.
     A spread bet's notional is exposure, not NAV, and has no statement figure here."""
     from portfusion.history import accounts as A
-    assert not _untied(A.load()), _untied(A.load())
+    wrong = _untied(A.load())
+    assert not wrong, wrong
 
 
 def _untied(statements, rows=None) -> list[str]:

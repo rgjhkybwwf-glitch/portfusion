@@ -505,8 +505,11 @@ def test_a_quarters_income_table_lists_the_accounts_open_then():
     if not D.ACCOUNT_BEGINS:
         pytest.skip("no account in this book opened after it")
     for d in D.QSNAP_FROZEN:
-        t = b.income_summary(start=b.quarter_opens(d), end=d).set_index("account")
-        assert list(t.index)[:-1] == b.accounts_open(d), (d, list(t.index))
+        start = b.quarter_opens(d)
+        earned = {r.account for r in D.ci_rows if start < str(r.date)[:10] <= d}
+        want = [a for a in D.ACCOUNT_ORDER if a in set(b.accounts_open(d)) | earned]
+        t = b.income_summary(start=start, end=d).set_index("account")
+        assert list(t.index)[:-1] == want, (d, list(t.index))
 
 
 @needs("quarter-nav", "buys")
