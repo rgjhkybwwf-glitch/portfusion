@@ -1,5 +1,5 @@
 """
-ONE APPEND-ONLY CSV, shared by the three histories.
+ONE HISTORY CSV, shared by the three histories.
 
 They were the same module written three times, and three copies of a parse rule are three
 parse rules: one coerced blanks to None while two raised on them.
@@ -16,16 +16,18 @@ same files with pandas for a different job — frames for analysis, not rows for
 from __future__ import annotations
 
 import csv
+import datetime as _dt
 import io
 import os
 import tempfile
+from collections import defaultdict
 
 from portfusion.record import rules as D
 from portfusion.record import schema
 
 
 class AppendOnlyCSV:
-    """One append-only history file: read it, sort it, write it, and say what is already in.
+    """One history file: read it, sort it, write it, and say what is already in.
 
     `numeric` names the columns to coerce to float. `nullable` says whether a blank in one of
     them is a legitimate absence (None) or an error worth raising — accounts carry blanks by
@@ -39,11 +41,16 @@ class AppendOnlyCSV:
 
     `places` says how each numeric column is written, as the schema's `MONEY` or `QUOTE` says it
     for the record's own tables: every save writes them so (`schema.figure()`).
+
+    `series` names the columns that make one line's marks — a price's `mark_key`, a rate's
+    currency and kind — for a history that keeps only the marks a figure can take (`kept()`).
+    None keeps every row: an account's history is its value series.
     """
 
     def __init__(self, name: str, fields: tuple, numeric: tuple, sort_key,
                  identity: tuple | None = None, nullable: bool = False,
-                 figure: str | tuple | None = None, places: dict | None = None) -> None:
+                 figure: str | tuple | None = None, places: dict | None = None,
+                 series: tuple | None = None) -> None:
         # A FILENAME, never a folder: the folder is whichever store `schema.STORE` points at
         # when the file is used, so the histories follow the record when a test moves it.
         self._name = str(name)
@@ -56,6 +63,7 @@ class AppendOnlyCSV:
         # read compares. None for a history that holds none (`restruck()` is then never asked).
         self.figure = (figure,) if isinstance(figure, str) else figure
         self.places = places or {}
+        self.series = series
         # The fields their figures are held to on reading, built once.
         self._held = {k: schema.Field(k, "float", **how) for k, how in self.places.items()}
 
@@ -106,7 +114,7 @@ class AppendOnlyCSV:
 
         Side effects: REPLACES the file. Callers append to what load() gave them; nothing
         here edits or drops a row. The one caller that drops one is `bank()`, for a row a later
-        read of its own day replaces (`restruck()`).
+        read of its own day replaces (`restruck()`) and a live read no figure can take (`kept()`).
 
         THE FILE ON DISK IS EITHER THE OLD ONE OR THE NEW ONE, never a truncated one. The rows
         are rendered whole first — a row the writer refuses raises before anything is touched —
@@ -215,5 +223,56 @@ class AppendOnlyCSV:
         rows = [r for r in rows if not any(r is d for d in replaced)]
         new = self.unbanked(live, rows)
         if new or replaced:
-            self.save(rows + new)
+            self.save(self.kept(rows + new, live))
         return new, replaced
+
+    # ---- WHAT A HISTORY KEEPS: the marks a figure can take -------------------------------------
+    #
+    # A live read between the days the book is valued on drives no figure, and every refresh adds
+    # one per line. Kept, per series: every row not struck live; the mark each valued day takes —
+    # the newest on or before it (`Book._marks_at()`) and the nearest within
+    # `rules.CLOSE_CHECK_WINDOW_DAYS`, the earlier on a tie (a freeze's window); the live table's
+    # own and the one before it, which What Changed sets it against; and the two newest. Git keeps
+    # the rest.
+
+    def kept(self, rows: list[dict], live: list[dict] = ()) -> list[dict]:
+        """`rows` less the live reads no figure can take. Side effects: none."""
+        if self.series is None or not rows:
+            return rows
+        held = self.known(live)
+        live_on = {tuple(m[c] for c in self.series): m["date"] for m in live}
+        days = [_dt.date.fromisoformat(d)
+                for d in valued_days(min(r["date"] for r in rows), max(r["date"] for r in rows))]
+        lines = defaultdict(list)
+        for r in rows:
+            lines[tuple(r[c] for c in self.series)].append(r)
+        keep = set()
+        for series, line in lines.items():
+            line.sort(key=lambda r: r["date"])
+            upto = [r for r in line if r["date"] <= live_on.get(series, line[-1]["date"])]
+            keep |= {id(r) for r in line[-2:] + upto[-2:]}
+            on = [(_dt.date.fromisoformat(r["date"]), r) for r in line]
+            for day in days:
+                before = [r for d, r in on if d <= day]
+                if before:
+                    keep.add(id(before[-1]))
+                near = [(abs((d - day).days), d, id(r)) for d, r in on
+                        if abs((d - day).days) <= D.CLOSE_CHECK_WINDOW_DAYS]
+                if near:
+                    keep.add(min(near)[2])
+        return [r for r in rows
+                if r.get("struck") != "live" or id(r) in keep or self.key(r) in held]
+
+
+def valued_days(first: str, last: str) -> list[str]:
+    """The days the book is valued on, for marks from `first` to `last`: every quarter end from the
+    year before `first`, whose last a freeze's window reaches past; each opening — the record's and
+    each account's — with the day before it, where an opening is valued; and each account's current
+    reading, which the reconciliation values at its own day."""
+    ends = [f"{y}-{md}" for y in range(int(first[:4]) - 1, int(last[:4]) + 1)
+            for md in ("03-31", "06-30", "09-30", "12-31")]
+    opens = [str(o)[:10] for o in (D.SETTINGS.get("record_begins"), *D.ACCOUNT_BEGINS.values())
+             if o]
+    eve = [(_dt.date.fromisoformat(o) - _dt.timedelta(days=1)).isoformat() for o in opens]
+    read = [str(r.as_of)[:10] for r in D.ac_rows if r.as_of]
+    return sorted(set(ends) | set(opens) | set(eve) | set(read))
