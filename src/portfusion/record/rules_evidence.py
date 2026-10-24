@@ -4,8 +4,8 @@ A vocabulary and the functions that read it, holding no state and touching no ta
 is what lets `rules.reload_store()` re-execute `rules` alone and still be right: nothing here
 derives from the store, so nothing here needs reloading.
 
-`rules` re-exports every name, so `D.EVIDENCE_CLASSES` and `D.identify()` work as ever. Import
-THIS module only for the vocabulary without the record.
+`rules` re-exports every name, so `D.EVIDENCE_CLASSES` and `D.identify()` work. Import THIS
+module only for the vocabulary without the record.
 """
 from __future__ import annotations
 
@@ -159,7 +159,7 @@ EVIDENCE_CLASSES = (
              "HL valuation {reference} ({account})", True, "document",
              ("Code,Stock,Units held", "Amount available to invest"), covers=("positions", "cash")),
     # THE YEAR'S INCOME — HL's "Income transactions" download. One row per payment, with a
-    # total, and it is the only one of the five that states a period rather than an instant.
+    # total, and it is the only HL class that states a period rather than an instant.
     Evidence("hl-income", "HL income transactions", "HL income transactions download",
              "the period, and the instant it was pulled, e.g. 2025 to 3 Mar 2025",
              "HL income transactions {reference} ({account})", False, "document",
@@ -311,10 +311,10 @@ def evidence_source(key, reference="", date="", account="", endpoint=""):
 
 
 def trade_source(key, date, endpoint=""):
-    """A TRADE OR SALE'S `source`, ONE FORMAT FOR EVERY ACCOUNT (12 Oct 2026): who issued the
-    document and what it is, in its class's own words, then its date — "ii contract note
-    3 Mar 2025", "HL security movements 4 Mar 2025", "IG statement 7 Mar 2025". An API read
-    names its endpoint before the day it was read: "IG REST /history/activity 29 Sep 2026".
+    """A TRADE OR SALE'S `source`, ONE FORMAT FOR EVERY ACCOUNT: who issued the document and
+    what it is, in its class's own words, then its date — "ii contract note 3 Mar 2025",
+    "HL security movements 4 Mar 2025", "IG statement 7 Mar 2025". An API read names its endpoint
+    before the day it was read: "IG REST /history/activity 10 Mar 2025".
 
     NOTHING ELSE. The deal's own reference is the row's `broker_ref`, and its account and
     security are its own columns, so a line repeating them says the same thing twice and the
@@ -409,10 +409,8 @@ def archive_reference(line, stored_reference=""):
     contract note by the deal's NUMBER, which the row stores (`REFERENCE_IS_THE_DEAL`), both
     matched against `ARCHIVE_CONVENTION`. "" for a statement whose line carries no date, or a
     contract note whose row stores no number: it cites a document and says nothing that could
-    find it, which is a gap and not "no document".
-    A pattern over the whole line once took "RECORDING" out of a statement's own prose as a
-    reference, and a guard that invents a reference out of English sends you looking for a
-    document that was there.
+    find it, which is a gap and not "no document". Never a reference pattern the class does not
+    name: one invented out of English sends you looking for a document that was there.
     """
     ev = evidence_from_source(line)
     if ev is None or ev.retrieval != "document":
@@ -421,8 +419,7 @@ def archive_reference(line, stored_reference=""):
     if ev.key in REFERENCE_IS_A_DATE:
         m = _re.search(rf"\b(\d{{1,2}})\s+({_MONTHS})\s*(\d{{4}})?", text)
         # NO DATE IS A GAP, NOT "NO DOCUMENT": the line cites a statement and says nothing that
-        # finds it. None here once let "ii statement Q2 25" read as citing nothing at all, so it
-        # was never reported missing.
+        # finds it.
         return f"{m.group(1).zfill(2)} {m.group(2)} {m.group(3) or ''}".strip() if m else ""
     return str(stored_reference or "").strip()
 
@@ -496,14 +493,14 @@ def reference_resolves(line, archive_names, stored_reference="", account=""):
     "answered another way" from "answered, and the answer is missing".
 
     THE ROW'S OWN STORED REFERENCE WINS. `broker_ref` says WHICH document; the date in the `source`
-    line is when the statement was READ, and matching it against filenames reported documents
-    missing that were archived all along.
+    line is when the statement was READ, and matching it against filenames would report archived
+    documents missing.
 
     A DATE IS NOT A DOCUMENT. Where the reference is only a date, the name must also carry the
     class's authority, and the account: the one the line names, or else the row's own (`account`),
     which a trade's line leaves to its column. On a quarter end every broker's documents share
-    the date, and a date alone found an HL valuation "on file" on the strength of an IG
-    statement. A contract note number identifies its document by itself.
+    the date, and a date alone would match one broker's document to another's. A contract note
+    number identifies its document by itself.
     """
     names = filed_as(line, archive_names, stored_reference, account)
     return None if names is None else bool(names)

@@ -14,8 +14,8 @@ session is written to disk, and a stolen cookie dies with the process.
 
 A LEVEL BELONGS TO A READER, NOT TO A DEVICE, and it is read on every request rather than carried
 in the session, so a change on the Mac's Access page holds from the next request. What each level
-opens is `desk/remote.py`'s `OPENS`. A reader with no level, as every passkey enrolled before
-levels existed is, signs in to nothing until the owner gives them one.
+opens is `desk/remote.py`'s `OPENS`. A reader with no level signs in to nothing until the owner
+gives them one.
 
 THREE FILES, ALL ON THIS MAC AND OUT OF GIT (.gitignore): the passkeys, the readers and their
 levels, and the sign-in log. None of them is the record.
@@ -157,7 +157,7 @@ _code: dict | None = None
 _PENDING: dict[bytes, dict] = {}
 
 #: AN IPv6 CALLER IS ITS /64. One network is handed a /64 and can draw a fresh address from it for
-#: every request, so a limit per IPv6 address was no limit (the review of 21 Oct 2026).
+#: every request, so a limit per IPv6 address is no limit.
 IPV6_PREFIX = 64
 
 
@@ -397,8 +397,8 @@ def _pending(kind: str, who: str | None, now: float, address: str = "",
     if sum(limit_key(p["address"]) == key for p in _PENDING.values()) >= MAX_PENDING:
         raise Refused("too many sign-ins at once; try again in a few minutes")
     while len(_PENDING) >= MAX_PENDING_ALL:
-        # NOT THE OLDEST OF ALL, which put a flood from many networks ahead of a reader part-way
-        # through signing in, or through an enrolment whose code was already spent.
+        # NOT THE OLDEST OF ALL, which puts a flood from many networks ahead of a reader part-way
+        # through signing in, or through an enrolment whose code is already spent.
         # A SIGN-IN GOES BEFORE AN ENROLMENT, which cannot be begun again without a new code.
         pool = [c for c in _PENDING if _PENDING[c]["kind"] != "enrol"] or list(_PENDING)
         counts = {}
@@ -446,8 +446,8 @@ def enrol_options(code: str, rp_id: str, now: float | None = None, address: str 
             _code = None
         raise Refused("that is not the code")
     who = held["who"]
-    # THE CEREMONY IS OPENED BEFORE THE CODE IS SPENT: refused for too many waiting, it left the
-    # code used up and nothing to answer.
+    # THE CEREMONY IS OPENED BEFORE THE CODE IS SPENT, so a refusal for too many waiting leaves
+    # the code unspent.
     challenge = _pending("enrol", who, now, address, held["level"])
     _code = None
     options = generate_registration_options(

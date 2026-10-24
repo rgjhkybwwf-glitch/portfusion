@@ -13,9 +13,9 @@ check — the value IS the cell, and matching a quote back to the page would be 
 we started from. So a recognised document is read here, with nothing to verify; anything
 unrecognised is read by a session through `propose.py`.
 
-IT RUNS WHEN THE DOCUMENT IS OPENED: a download need not be sent anywhere to be read. Built
-on 9 Sep, it was never connected, so every CSV went to the model; `bench.read_here()` now calls
-it for any class in `LOCAL`, and a proposal is asked for only for the rest.
+IT RUNS WHEN THE DOCUMENT IS OPENED: a download need not be sent anywhere to be read.
+`bench.read_here()` calls it for any class in `LOCAL`, and a proposal is asked for only for the
+rest.
 
 IT PRODUCES THE SAME ROW SHAPE. `table`, `values`, `sources`, `machine` — so the gates, the
 duplicate check and `commit.py` never learn there were two ways in.
@@ -151,8 +151,7 @@ def read(name: str) -> dict:
 
     from portfusion.desk.intake import propose
     # A PAIR, and only the first half is the account. `account_from()` returns the name and the
-    # line it was found on, so the derivation stays checkable; taking the tuple whole put a
-    # Python repr into a store cell.
+    # line it was found on, so the derivation stays checkable.
     found = propose.account_from(text)
     out["account"] = found[0] if found else ""
 
@@ -173,8 +172,7 @@ def read(name: str) -> dict:
             cash = _labelled(text, "Total cash:")
             if cash and out["account"]:
                 # The row's columns and no more: cash-readings carries its provenance
-                # as evidence + reference, and a stray "source" key is refused at commit —
-                # the column left the schema and this writer had kept it.
+                # as evidence + reference, and a stray "source" key is refused at commit.
                 values = {"account": out["account"], "as_of": (out["instant"] or "")[:10],
                           "cash": _number(cash), "evidence": key,
                           "reference": out["reference"]}
@@ -415,8 +413,8 @@ def _on_file(table: str, already: str) -> str:
 
 
 #: How many of a ledger's lines must match one account's rows on file, and no other account's,
-#: before the ledger is taken for that account's. One coincidence — an interest payment of the
-#: same pennies on the same day in a second account — was enough to file a whole ledger there.
+#: before the ledger is taken for that account's. One coincidence — the same interest on the same
+#: day in another account — must not file a whole ledger there.
 LINES_TO_NAME_AN_ACCOUNT = 2
 
 

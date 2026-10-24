@@ -1,10 +1,8 @@
 """
 ACCOUNT STATEMENTS — the third append-only store.
 
-The book held one snapshot per account, overwritten each time a statement arrived, so
-"what was this account worth at 30 June" had no answer. That gap had a real cost: the
-book concluded Q3 could publish no quarter return because no 30 Jun NAV existed. It
-existed; it just had not been fetched.
+One row per account per date, never overwritten, so "what was this account worth at 30 June"
+has an answer.
 
 The property these tests protect is the one that would be most expensive to lose:
 A SPREAD-BET ACCOUNT CONTRIBUTES ITS EQUITY TO NAV, NEVER ITS NOTIONAL.
@@ -43,7 +41,7 @@ def test_spread_bet_accounts_contribute_equity_not_notional(rows):
 
 @needs("account-statements")
 def test_cash_is_never_in_nav_for_a_share_account(rows):
-    """CASH IS NOT IN NAV, at any date (the owner).
+    """CASH IS NOT IN NAV, at any date.
 
     The return is on capital deployed and does not chase cash, so nothing needs cash in NAV.
     Adding it from some date would make `nav_component` and `Book.by_account()` disagree about
@@ -83,11 +81,9 @@ def test_dates_are_iso(rows):
 def test_every_account_is_covered_at_every_quarter_end(rows):
     """A quarter-end NAV is only meaningful if every account open then has a value at it. A
     missing account contributes silently nothing, which understates NAV and no check
-    downstream would catch it. One not yet open (`rules.accounts_open()`) needs none: a 0.00
-    statement standing in for it was the last of the stand-ins the quarter tables retired."""
+    downstream would catch it. One not yet open (`rules.accounts_open()`) needs none."""
     from portfusion.record import rules as D
-    # THE DATES DERIVE from the quarter series, which also fixes a stale guard: the typed
-    # list this replaces stopped at Q2 and never checked 30 Sep.
+    # THE DATES DERIVE from the quarter series, never typed.
     dates = sorted({str(q.as_of) for q in D.QUARTER_NAV})
     assert dates, "no quarter series on file — this asserts nothing"
     for d in dates:
@@ -97,10 +93,8 @@ def test_every_account_is_covered_at_every_quarter_end(rows):
 
 
 def test_the_usage_names_what_the_command_reads():
-    """THE USAGE IS WHAT `main()` READS. It offered `--at DATE`, which no branch read, and
-    `--nav [DATE]`, whose date was required; and `--nav` added the accounts' readings into a net
-    asset value of its own, the one sum of accounts into net asset value outside the engine, until
-    step 5. Summing accounts is the engine's; the desk's Accounts and Reconcile show the readings."""
+    """THE USAGE IS WHAT `main()` READS. Summing accounts is the engine's; the desk's Accounts and
+    Reconcile show the readings."""
     import ast
     import pathlib
     src = pathlib.Path(A.__file__).read_text(encoding="utf-8")
@@ -114,8 +108,8 @@ def test_the_usage_names_what_the_command_reads():
 
 @needs("account-statements")
 def test_show_prints_a_reading_with_no_net_asset_value_part(monkeypatch, capsys):
-    """`show()` dropped such a reading's whole line: its conditional bound the line, not the NAV
-    suffix, until step 5. No reading on file lacks the part today, so this one is planted."""
+    """Such a reading keeps its line; only the NAV suffix is left off. No reading on file lacks
+    the part today, so this one is planted."""
     share = next(a for a in D.ACCOUNT_ORDER if D.ACCOUNT_KIND.get(a) != "spread bet")
     row = {"account": share, "as_of": "2026-06-30", "positions_value": None,
            "funds": None, "running_pl": None, "equity": None, "deposit": None,
@@ -134,10 +128,8 @@ def test_the_build_does_not_import_this(build_imports):
 # =====================================================================================
 # THE BANKING FLOOR — archive() and check(), as the other two histories have
 #
-# Without them an outgoing account observation could not be banked, and `marks.banked()` had
-# nothing to ask about accounts. The bank-before-replace rule that marks.py keeps for a price
-# and an FX rate had no equivalent here, which is how the reconciliation baseline once went
-# eight days stale by hand edit with no guard noticing.
+# They bank an outgoing account observation, as marks.py does a price and an FX rate, so
+# `marks.banked()` can ask of accounts.
 # =====================================================================================
 
 @pytest.mark.audit
@@ -152,12 +144,8 @@ def test_every_live_observation_is_archived():
 
 @needs("account-statements")
 def test_an_observation_that_cannot_be_filed_is_reported_not_skipped():
-    """THE FX BUG, WHICH THIS MODULE WAS WRITTEN KNOWING ABOUT.
-
-    history/fx.py's live_marks() skipped a row whose period it could not parse, and check()
-    asked only about the rows live_marks() RETURNED — so three refreshed rates were replaced in
-    the record and banked nowhere while every check read clean. The skip is unavoidable: a row
-    that cannot be described cannot be filed. What is avoidable is the silence.
+    """A ROW THAT CANNOT BE FILED IS REPORTED. The skip is unavoidable: a row that cannot be
+    described cannot be filed. What is avoidable is the silence.
 
     Asserted against a TAMPERED COPY of the live rows rather than the record, so the record
     is untouched and the test says nothing about today's data.
@@ -171,8 +159,7 @@ def test_an_observation_that_cannot_be_filed_is_reported_not_skipped():
             acct="Tampered", evidence="not-a-real-class", reference="")]
         reported = AH.unbankable()
         assert any(r["account"] == "Tampered" for r in reported), (
-            "an observation with an unknown evidence class was skipped silently — "
-            "the exact shape of the FX defect this function exists to prevent")
+            "an observation with an unknown evidence class was skipped silently")
         assert all("Tampered" != r["account"] for r in AH.live_observations()), (
             "an unclassifiable observation reached live_observations(), where it would be "
             "banked with an invented quality")
@@ -185,11 +172,8 @@ def test_an_observation_that_cannot_be_filed_is_reported_not_skipped():
 
 @needs("account-statements")
 def test_a_same_day_re_reading_at_other_figures_replaces_the_first(store_copy):
-    """A SECOND READING OF ONE DAY WAS NEVER BANKED. The history keyed on (as_of, account) alone,
-    so a re-read of the same day at other figures found its day on file and appended nothing:
-    account-statements.csv went on holding the earlier figures, and the reading the book then
-    showed was in no history (the review of 21 Oct 2026). Now the new one takes the earlier row's
-    place, as a corrected mark does."""
+    """A SAME-DAY RE-READING AT OTHER FIGURES TAKES THE EARLIER ROW'S PLACE, as a corrected mark
+    does."""
     from portfusion.history import accounts as AH
     live = AH.live_observations()
     assert live, "the book has no bankable account reading"

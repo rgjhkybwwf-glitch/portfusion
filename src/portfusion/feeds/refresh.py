@@ -171,8 +171,7 @@ def _print(r: dict) -> None:
         log.info(f"  {row['mark_key']:<14}{row['price']:>12} {row['currency']}  {row['struck']:<5}  "
               f"{row['source']}")
     for row in tv.get("rates", []):
-        # A RATE ROW NAMES ITS CURRENCY: both producers drop `key`, so printing it raised once
-        # the rates were banked, after the sweep had done its work.
+        # A RATE ROW NAMES ITS CURRENCY: both producers drop `key`.
         log.info(f"  {row['currency']:<14}{row['rate']:>12}      {row['struck']:<5}  {row['source']}")
     for f in tv.get("failed", []):
         log.info(f"  NOT PRICED {f['key']}: {f['why']}")

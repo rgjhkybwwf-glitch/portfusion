@@ -26,7 +26,7 @@ ORDER = 90
 APART = True
 
 #: A READER'S "SINCE" is when they were given their first level, kept beside it in the readers
-#: file; it was sent and drawn nowhere until 13 Oct 2026.
+#: file.
 READER_COLUMNS = ("who", "level", "since", "devices", "last_signed_in", "now")
 DEVICE_COLUMNS = ("device", "enrolled", "last_used")
 SIGNIN_COLUMNS = ("at", "result", "who", "device", "address", "detail")

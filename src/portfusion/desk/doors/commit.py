@@ -278,8 +278,7 @@ def _rendered(table: str, values: dict) -> list[str]:
     GAP and never zero.
 
     A KEY THE TABLE HAS NO COLUMN FOR IS REFUSED, never dropped. Dropped, a column renamed in the
-    schema but not in a writer is written blank with nothing said: a test row keyed `basis` wrote
-    an empty `evidence` for three weeks after the 7 Sep 2026 rename. Raises ValueError."""
+    schema but not in a writer is written blank with nothing said. Raises ValueError."""
     from portfusion.record import schema
     stray = set(values) - {f.name for f in schema.TABLES[table].fields}
     if stray:
@@ -494,8 +493,7 @@ def commit(item_id: str) -> dict:
                         "why for " + ", ".join(reasoned))] if reasoned else []))
         if entries:
             journal(entries, at=written_at)
-        # THE MARKS DOOR'S REFUSAL IS THIS COMMIT'S: raised as its own class, it went past the
-        # route's 409 and answered a bare 500, the envelope having put every file back.
+        # THE MARKS DOOR'S REFUSAL IS THIS COMMIT'S, so the route answers it with a 409.
         try:
             retired = marks.retire(retiring, "bench", item["id"], written_at) if retiring else []
         except marks.Refused as e:
@@ -505,11 +503,10 @@ def commit(item_id: str) -> dict:
         except marks.Refused as e:
             raise Refused(f"the contract could not be marked, so nothing was written — {e}") from e
 
-        # FILED, THEN THE READING, AND BOTH OR NEITHER. The readings door checks the document is
-        # in _archive/statements/, so it is moved first; if the reading is refused it goes back
-        # to the workbench and every file above is restored. AN ITEM WITH NO READING FILES ITS
-        # DOCUMENT HERE TOO, inside the envelope, so rows never land without the document they
-        # cite: until 14 Oct 2026 it was filed after the write, and a missing file was skipped.
+        # FILED, THEN THE READING, AND BOTH OR NEITHER. The readings door checks the document is in
+        # _archive/statements/, so it is moved first; if the reading is refused it goes back to the
+        # workbench and every file above is restored. AN ITEM WITH NO READING FILES ITS DOCUMENT
+        # HERE TOO, inside the envelope, so rows never land without the document they cite.
         document = _file_with_reading(item, reading) if reading else _archive_document(item)
 
         # LAST, AND INSIDE THE ENVELOPE: the book must still load with all of this written.
@@ -624,9 +621,9 @@ def _instant_in(reference: str, when) -> tuple[str, str]:
     day, else ("", the reference unchanged).
 
     THE INSTANT IS NAMED ONCE. A download is referenced by the instant it was pulled, and the
-    name already leads with the date and the time, so repeating them in the reference wrote
-    both twice in two spellings. A period that ENDS on that day keeps its date, because there
-    the date is the period's, not the pull's.
+    name already leads with the date and the time, so repeating them in the reference would
+    write both twice. A period that ENDS on that day keeps its date, because there the date is
+    the period's, not the pull's.
     """
     m = re.search(rf"\b0?{when.day} {when:%b} {when.year}[ ,]+([01]\d|2[0-3])[:.\-]([0-5]\d)\b",
                   reference)

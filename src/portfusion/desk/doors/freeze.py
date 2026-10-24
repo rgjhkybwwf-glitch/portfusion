@@ -3,12 +3,10 @@
     python3 -m portfusion.desk.doors.freeze 2026-09-30             what would be written, and what is not ready
     python3 -m portfusion.desk.doors.freeze 2026-09-30 --write     write it
 
-Until 25 Sep 2026 the close checklist had a person copy HOLDINGS into `quarter-snapshots.csv`
-and each account's contribution into `quarter-nav.csv` — the one place a close typed figures,
-and only while HOLDINGS happened to show that day's prices. `Book.freeze_rows()` derives both
-from the price and FX histories, each line at its mark nearest the quarter end within
-`rules.CLOSE_CHECK_WINDOW_DAYS` either side, so the freeze can run on the day or days after it: a
-quarter end needs only to be close.
+`Book.freeze_rows()` derives `quarter-snapshots.csv` and `quarter-nav.csv` from the price and FX
+histories, each line at its mark nearest the quarter end within `rules.CLOSE_CHECK_WINDOW_DAYS`
+either side, so the freeze can run on the day or days after it: a quarter end needs only to be
+close.
 
 A STORE DOOR, the fourth under desk/ (`tests/desk/test_boundaries.py`). A freeze APPENDS; only a
 restatement replaces.
@@ -111,14 +109,14 @@ def restate(changes: dict[str, list[str]], why: str, lines_only: bool = False) -
     `quarter-results.csv`'s row for the book and each account whose six figures moved is replaced,
     noted "Restated: <why>". The journal says why; git keeps what each row said.
 
-    A date with no frozen composition — the opening, 31 Dec 2025, never had one — has its net
-    asset value restated alone, unless `lines_only` asks for its LINES ALONE: the named accounts'
-    composition, struck as a freeze strikes it and APPENDED, with nothing replaced and the
-    date's net asset value and results left as they stand (the first quarter's contributors
-    need an opening composition). A date with lines on file is refused
-    then: they are restated with its net asset value. An account whose struck rows match its rows
-    on file to the figure is left as it is. The statements history copies quarter-nav at the quarter ends the freeze did
-    not write; restating one of those is mirrored there by hand (`test_quarter_nav.py` ties them).
+    A date with no frozen composition, such as a book's opening, has its net asset value
+    restated alone, unless `lines_only` asks for its LINES ALONE: the named accounts'
+    composition, struck as a freeze strikes it and APPENDED, with nothing replaced and the date's
+    net asset value and results left as they stand (the first quarter's contributors need an
+    opening composition). A date with lines on file is refused then: they are restated with its
+    net asset value. An account whose struck rows match its rows on file to the figure is left
+    as it is. The statements history copies quarter-nav at the quarter ends the freeze did not
+    write; restating one of those is mirrored there by hand (`test_quarter_nav.py` ties them).
 
     Raises `Refused`, writing nothing: no reason given, a date to come, an account with no row at
     the date, a line the close window does not reach, nothing that would move, or lines
@@ -215,11 +213,10 @@ def restate(changes: dict[str, list[str]], why: str, lines_only: bool = False) -
 
 
 def _way_in(keys, as_of: str) -> str:
-    """WHERE A MISSING MARK COMES FROM, line by line (14 Oct 2026). The
-    Price Refresh's closes of a past day read only the lines priced now (`current-prices.csv`), so
-    a line closed since is out of its reach: its close is read in a session and banked through the
-    marks door's `bank_closes()`. A rate, or no key, is the Price
-    Refresh's."""
+    """WHERE A MISSING MARK COMES FROM, line by line. The Price Refresh's closes of a past day
+    read only the lines priced now (`current-prices.csv`), so a line closed since is out of its
+    reach: its close is read in a session and banked through the marks door's `bank_closes()`.
+    A rate, or no key, is the Price Refresh's."""
     priced = {str(r[0]) for r in schema.load("current-prices")}
     now = sorted(k for k in set(keys) if k in priced)
     gone = sorted(k for k in set(keys) if k not in priced)

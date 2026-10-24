@@ -1,9 +1,8 @@
 """
 THE REPORT PAGE — and its completeness gate.
 
-The Q3 Report tab is retired, so the rendered page is the ONLY report artefact
-there is. A quarter's INPUTS are frozen: a report regenerates identically forever
-because the marks it valued at cannot move.
+The rendered page is the ONLY report artefact. A quarter's INPUTS are frozen: a report
+regenerates identically forever because the marks it valued at cannot move.
 
 THE GATE IS THE THING WORTH TESTING. A report built from a half-arrived quarter looks
 finished and is wrong, which is the worst failure available to a document somebody reads.
@@ -38,9 +37,8 @@ def test_a_closed_quarter_is_reportable():
 
 
 def test_the_engine_names_every_price_and_rate_a_date_lacks():
-    """THE WHOLE LIST, NOT THE FIRST (13 Oct 2026): Q1 2026's page named one missing price when it
-    lacked seven and a rate, so fetching the one named would only have revealed the next. The
-    report reads no mark since step 4, so the list is the freeze door's to give (`freeze.plan()`).
+    """THE WHOLE LIST, NOT THE FIRST: fetching only the first named would only reveal the next.
+    The report reads no mark, so the list is the freeze door's to give (`freeze.plan()`).
 
     For every quarter the desk lists: a line whose marks cannot be found has every missing key in
     `valuation_gaps()`, a line that can be priced has none there, and every currency without a
@@ -68,9 +66,7 @@ def test_the_engine_names_every_price_and_rate_a_date_lacks():
 
 @holds(COMPLETE, what="a complete quarter before the first report")
 def test_the_gate_asks_for_the_frozen_composition_the_page_reads(monkeypatch):
-    """A quarter end without its holdings frozen is not ready, whatever its marks: the gate once
-    valued the ledger instead, so it could pass a date whose page then stopped on the missing
-    composition."""
+    """A quarter end without its holdings frozen is not ready, whatever its marks."""
     monkeypatch.setattr(D, "QSNAP_FROZEN", [d for d in D.QSNAP_FROZEN if d != COMPLETE])
     said = " ".join(completeness(COMPLETE))
     assert "quarter-snapshots" in said and "frozen composition" in said, said
@@ -103,15 +99,12 @@ def test_an_unclosed_quarter_is_refused_and_says_why():
     """Naming what is missing is half the value. 'Not ready' on its own sends someone
     hunting through four stores.
 
-    NO MARKS GAP, and asserting its absence is the stronger check. A marks gap here was once a
-    DEFECT rather than a fact: _mark_for() collapsed MORA SB onto MORA-DEC26 — a closed leg,
-    unpriced by design — so the gate asked for a price for a contract nothing holds, and the
-    instruction could not be followed. What is genuinely missing from an unclosed quarter is
-    its own NAV rows, which arrive when it is frozen. This fails if the ticker collapse ever
-    returns.
+    NO MARKS GAP, and asserting its absence is the stronger check: a gap here would be an open leg
+    keyed to a closed contract, unpriced by design. An unclosed quarter lacks only its own NAV
+    rows, which arrive when it is frozen.
 
-    A MISSING BROKER READING IS NOT A GAP (the owner, 30 Sep 2026): the report prints each
-    account's check as status, so the gate never asks for one.
+    A MISSING BROKER READING IS NOT A GAP: the report prints each account's check as status, so
+    the gate never asks for one.
     """
     gaps = completeness(NOT_YET)
     assert gaps, f"{NOT_YET} has not closed — the gate must refuse it"
@@ -126,10 +119,9 @@ def test_an_unclosed_quarter_is_refused_and_says_why():
 
 
 def test_the_report_is_rendered_and_never_written(tmp_path, monkeypatch):
-    """`_reports/` RETIRED (the owner, 14 Oct 2026). The desk renders every report for the request,
-    so a page written to a folder was a second copy left to age: the two on file predated the
-    14 Oct restatement of Q1 to Q3. Nothing in report/ writes a file, and its command line only
-    asks whether a quarter is ready."""
+    """The desk renders every report for the request, so a page written to a folder is a second
+    copy left to age. Nothing in report/ writes a file, and its command line only asks whether a
+    quarter is ready."""
     import re
     import portfusion.report.__main__ as cli
     import portfusion.report.page as page
@@ -144,10 +136,8 @@ def test_the_report_is_rendered_and_never_written(tmp_path, monkeypatch):
 
 @needs("quarter-nav", "buys")
 def test_a_page_asks_one_engine(monkeypatch):
-    """ONE PAGE, ONE `Book()`. Its headline figures came from a second engine, built inside
-    `summary_figures()`, so every page loaded the record twice; the Beta page's re-cut of the
-    Report tab found it (14 Oct 2026). `summary_figures()` takes the page's engine, and alone
-    builds its own, which is how the registry's test calls it."""
+    """ONE PAGE, ONE `Book()`. `summary_figures()` takes the page's engine, and alone builds its
+    own, which is how the registry's test calls it."""
     import portfusion.report.page as page
     made = []
 
@@ -173,7 +163,7 @@ def test_the_cli_says_not_ready_and_exits_nonzero():
 
 @needs("quarter-nav", "buys")
 def test_the_page_carries_the_statements_that_must_travel_with_the_figures():
-    """WHAT MUST TRAVEL WITH THE FIGURES, and it is no longer a warning.
+    """WHAT MUST TRAVEL WITH THE FIGURES.
 
     The page carries the BASIS of each figure rather than a paragraph explaining the split:
     the concept is stated once, in rules.SPREAD_BET, and a basis per figure makes the same
@@ -201,9 +191,9 @@ def test_every_report_says_the_positions_are_the_firms_own():
 @needs("quarter-nav", "buys")
 @pytest.mark.parametrize("quarter_end", [COMPLETE, FIRST_REPORTED])
 def test_the_report_names_every_account_by_its_code_and_no_holder(quarter_end):
-    """THE REPORT IS THE DOCUMENT THAT LEAVES THE BOOK (the owner, 6 Oct 2026), so wherever it is
-    read, on the Mac or on the hosted desk, an account is its register code and label, and no
-    holder's name, register name or account number is on the page."""
+    """THE REPORT IS THE DOCUMENT THAT LEAVES THE BOOK, so wherever it is read, on the Mac or on
+    the hosted desk, an account is its register code and label, and no holder's name, register
+    name or account number is on the page."""
     import re
     b = Book()
     page = render(quarter_end)
@@ -246,26 +236,18 @@ def test_it_values_at_the_quarter_end_not_today(tmp_path):
 
 # THE PAGE COMPUTES NOTHING ITSELF — tests/test_figures.py holds that for both
 # renderers, walking the syntax tree for aggregation calls against an allow-list that carries
-# a reason per line. It lived here once as a scan for "/ 2", "Dietz(", "def _return" and
-# "def _nav", and passed the whole time this file computed five figures it promised not to.
-# Four banned substrings are not a rule about deriving figures; they are a rule about four
-# substrings.
+# a reason per line.
 
 
 # =====================================================================================
 # THE FIGURES ON THE PAGE
-#
-# A module that asserted three sentences and ZERO numbers let three defects live in the page
-# it guards: an account equity figure printed under the word "notional", a "Total market
-# exposure" hundreds of pounds away from the engine's, and an "activity in the quarter" section that
-# began six weeks before the quarter.
 # =====================================================================================
 
 def _section(page: str, heading: str) -> str:
     """The HTML of one section, found by its HEADING and not by its number.
 
-    ANCHORED ON THE TITLE. Split on "Section 8", the page's sections could not be renumbered
-    without breaking four tests that were not testing the numbering at all.
+    ANCHORED ON THE TITLE: renumbering the sections breaks no test that is not testing the
+    numbering.
 
     It is the rule this suite follows for a table: anchor on a heading's text, never on a
     position, because a positional literal goes stale silently. A section number is the
@@ -288,11 +270,8 @@ def _account_rows(page: str) -> list[tuple[str, str, str]]:
 
 @needs("quarter-nav", "buys")
 def test_the_by_account_amount_and_its_basis_come_from_the_same_row():
-    """THE DEFECT THIS EXISTS FOR: the report took the amount by dict comprehension (last
-    row wins) and the basis by next() (FIRST row wins) over quarter-nav. A spread-bet account held
-    two rows at 2026-06-30 — one notional, one account equity — so the page
-    printed account equity labelled "notional" — a NAV figure
-    wearing the exposure word is the one mistake this book says out loud it must not make.
+    """THE AMOUNT AND ITS BASIS COME FROM ONE ROW: a spread-bet account holds a notional row and
+    an equity row, and NAV must never wear the exposure word.
     """
     b = Book()
     label = dict(zip(b.account_codes()["account"], b.account_codes()["label"]))
@@ -308,7 +287,7 @@ def test_the_by_account_amount_and_its_basis_come_from_the_same_row():
 
 @needs("quarter-nav", "buys")
 def test_a_net_asset_value_column_never_shows_an_exposure_basis():
-    """The general form of the defect above. The By account amount is headed "Net asset value",
+    """The general form of the rule above. The By account amount is headed "Net asset value",
     so every basis beside it must be one the engine is willing to SUM INTO NAV. `notional` is
     not, and a page that shows it there is claiming exposure is money."""
     b = Book()
@@ -328,8 +307,7 @@ def test_the_by_account_rows_total_to_the_engines_net_asset_value():
 
 @needs("quarter-nav", "buys")
 def test_the_activity_section_covers_the_quarter_and_nothing_before_it():
-    """It was hand-rolled as first-of-month minus 62 days, which is 1 MARCH for a Q2 page.
-    The Q2 report rendered a 25 Mar trade under a heading that says Q2."""
+    """Its start is `Book.quarter_start()`, never a hand-rolled offset."""
     import datetime as dt
     import re
     shown = re.findall(r'<td class="dim">(\d{1,2} [A-Z][a-z]{2} \d{4})</td>',
@@ -353,8 +331,7 @@ def test_the_quarter_start_is_derived_not_typed():
 def test_a_quarter_opens_where_the_last_one_closed():
     """ONE NAME, ONE DATE. `Book.quarter_start()` is a quarter's first day; the day its return is
     measured FROM is the quarter end before, which the returns carry as `opens`, the engine's word
-    for that day (`ytd_opens()`). Both were `quarter_start` until step 5, and the report read both
-    on one page."""
+    for that day (`ytd_opens()`)."""
     from portfusion.engine import Book
     b = Book()
     frozen = set(b.quarter_nav_total().index)
@@ -368,7 +345,7 @@ def test_a_quarter_opens_where_the_last_one_closed():
 
 
 # =====================================================================================
-# THE FROZEN QUARTER END, READ WHOLE (the owner, 30 Sep 2026)
+# THE FROZEN QUARTER END, READ WHOLE
 #
 # The holdings, the split and the contributions read the composition the freeze wrote, so the
 # page adds to its own headline instead of explaining a gap to a revaluation of the same day.
@@ -401,11 +378,8 @@ def test_a_quarter_the_freeze_wrote_adds_up_to_its_exposure():
 
 
 def test_a_quarter_end_counts_the_positions_it_froze():
-    """THE PAGE QUOTES THE REGISTRY, AND THE REGISTRY READS THE STORE (14 Oct 2026). The
-    page once counted its own frozen lines while the registered count valued the ledger at the
-    marks, and for Q2 they differed: three bets the ledger held in an account whose record had not
-    begun, which the frozen exposure leaves out. Every frozen quarter end, the page's count and the
-    registry's are the composition's own."""
+    """THE PAGE QUOTES THE REGISTRY, AND THE REGISTRY READS THE STORE. Every frozen quarter end,
+    the page's count and the registry's are the composition's own."""
     b = Book()
     for d in _frozen_quarters():
         n = b.headline(d)["Open positions"]
@@ -416,7 +390,7 @@ def test_a_quarter_end_counts_the_positions_it_froze():
 @needs("quarter-nav", "buys")
 def test_a_composition_apart_from_its_exposure_says_both_figures(monkeypatch):
     """A gap either way reads true: the lines' total beside Section 1's exposure. A negative one
-    once printed as "£-500 short"."""
+    never reads "short"."""
     q = max(D.QSNAP_FROZEN)
     real = Book.quarter_lines_total
     monkeypatch.setattr(Book, "quarter_lines_total", lambda self, d: {**real(self, d), "gap": -500.0})
@@ -452,9 +426,9 @@ def test_a_line_is_named_by_its_ticker_first():
 
 
 def test_the_quarters_trades_read_as_the_desks_trades():
-    """R3: Section 6 takes the desk's Trades columns in their order,
-    the deal as struck with a spread bet in its own terms, then Realised gain, which the report
-    keeps because it has no Round Trips page to carry it. A price prints one way on both."""
+    """Section 6 takes the desk's Trades columns in their order, the deal as struck with a spread
+    bet in its own terms, then Realised gain, which the report keeps because it has no Round
+    Trips page to carry it. A price prints one way on both."""
     import re
     from portfusion.desk.panels import trades
     from portfusion.house.headings import heading
@@ -541,8 +515,7 @@ HELD = {"on file", "NOT on file", "read live", "retrieved another way", None}
 
 
 def test_what_a_figure_rests_on_is_decided_by_the_engine_not_the_page():
-    """Section 9 prints `Book.quarter_evidence()`. It read the archive and classified each
-    check itself once, the one renderer that did."""
+    """Section 9 prints `Book.quarter_evidence()`."""
     for path in sorted((SRC / "report").glob("*.py")):
         src = path.read_text()
         for name in ("_archive", "reference_resolves", "evidence_from_source"):
@@ -566,10 +539,9 @@ def test_the_archive_decides_on_file_and_a_live_read_needs_none():
 
 @needs("quarter-nav", "buys")
 def test_another_accounts_statement_does_not_put_this_one_on_file():
-    """A DATE IS NOT A DOCUMENT, AND NEITHER IS A DATE AND A BROKER. The reconciliation asked
-    whether a reading's statement was filed without saying whose reading it was, so a line naming
-    no account was "on file" on the strength of another account's statement of the same day
-    (the review of 21 Oct 2026). Here every statement the archive holds is another account's."""
+    """A DATE IS NOT A DOCUMENT, AND NEITHER IS A DATE AND A BROKER. A statement is on file for
+    its own account only, never on the strength of another's of the same day. Here every
+    statement the archive holds is another account's."""
     b = Book()
     q = str(b.quarter_nav_total().index.max())[:10]
     at = b.quarter_readings(q, latest=True, checks=True).set_index("account")
@@ -587,8 +559,8 @@ def test_another_accounts_statement_does_not_put_this_one_on_file():
 
 @needs("quarter-nav", "buys")
 def test_no_check_answers_none_never_nan():
-    """No reading at all answers None in every column. A missing str came back NaN once — pandas 3
-    stores one so, and NaN is truthy — and the page printed "nan" in place of the words."""
+    """No reading at all answers None in every column. pandas 3 stores a missing str as NaN,
+    which is truthy, and the page would print "nan"."""
     b = Book()
     before = b.quarter_evidence("2020-03-31")
     assert list(before["account"]) == list(D.ACCOUNT_ORDER)
@@ -598,9 +570,9 @@ def test_no_check_answers_none_never_nan():
 def test_a_quarter_end_cites_a_broker_check_or_says_there_is_none():
     """THE LAST BROKER CHECK, NEVER THE RECORD'S OWN FIGURE. The statements
     history mirrors the frozen quarter-nav rows, so an account's newest reading at a quarter end
-    could be the engine's own derivation, or "Account not yet funded", and Section 9 cited it as
-    "not a classified document". A reading whose source names no evidence class is no check: the
-    account shows the check before it, or "no broker check"."""
+    could be the engine's own derivation, or "Account not yet funded". A reading whose source
+    names no evidence class is no check: the account shows the check before it, or "no broker
+    check"."""
     b = Book()
     for d in _frozen_quarters():
         rows = b.quarter_evidence(d).to_dict("records")
@@ -612,9 +584,9 @@ def test_a_quarter_end_cites_a_broker_check_or_says_there_is_none():
 
 @needs("quarter-nav", "buys")
 def test_the_reports_footer_says_whose_it_is():
-    """The owner, 12 Oct 2026: the desk's footer says whose it is, and the report, the document
-    that leaves the book, says it too, in the same words from the book's brand, beside the stamp
-    of the code and data that made it. A book whose brand gives none has the stamp alone."""
+    """The desk's footer says whose it is, and the report, the document that leaves the book,
+    says it too, in the same words from the book's brand, beside the stamp of the code and data
+    that made it. A book whose brand gives none has the stamp alone."""
     import datetime
     import html
     from portfusion import brand
@@ -625,10 +597,8 @@ def test_the_reports_footer_says_whose_it_is():
 
 
 def test_check_is_read_wherever_it_stands(monkeypatch):
-    """`portfusion report 2026-09-30 --check` once wrote the page: the command read --check only
-    before the date, and after it the flag was ignored without a word (found 14 Oct 2026, S4
-    package three). The flag is read wherever it stands, and a command with no date says how it
-    is used rather than raising."""
+    """`--check` is read wherever it stands, and a command with no date says how it is used
+    rather than raising."""
     import portfusion.report.__main__ as cli
     monkeypatch.setattr(cli, "completeness", lambda date: [])
     assert cli.main(["--check", COMPLETE]) == 0
@@ -637,7 +607,7 @@ def test_check_is_read_wherever_it_stands(monkeypatch):
 
 
 # =====================================================================================
-# THE REPORT'S OWN WORDS (14 Oct 2026)
+# THE REPORT'S OWN WORDS
 # =====================================================================================
 
 #: EVERY WORD THE REPORT TYPES ABOUT ITSELF, counted one way (`_report_words()`): the notes
@@ -645,7 +615,6 @@ def test_check_is_read_wherever_it_stands(monkeypatch):
 #: table prints, its row labels, the lede and the notice, the evidence words, and the engine's one
 #: sentence it prints (`Book.OPENED_IN_PERIOD`). Headings are house/headings.py's and section
 #: titles are headings, so neither counts. DESK_CHROME_WORDS holds the desk's in the same way.
-#: Set at its first count, 14 Oct 2026, when the report's sentences were held by nothing.
 REPORT_PROSE_WORDS = 160
 
 #: Where the page types prose, in report/page.py's own source.
@@ -668,10 +637,9 @@ def _report_words() -> int:
 
 @holds(COMPLETE, what="a complete quarter before the first report")
 def test_the_reports_own_prose_only_goes_down():
-    """Its sentences were the one thing in the report that nothing held: its figures are the
-    engine's and its headings the registry's. A sentence
-    added is a decision, so the count only goes down; raising it takes a reason written beside
-    it, as DESK_CHROME_WORDS does."""
+    """Its figures are the engine's and its headings the registry's; this holds its sentences. A
+    sentence added is a decision, so the count only goes down; raising it takes a reason written
+    beside it, as DESK_CHROME_WORDS does."""
     words = _report_words()
     assert words <= REPORT_PROSE_WORDS, (
         f"the report now types {words} words of its own, above the {REPORT_PROSE_WORDS} on file. "

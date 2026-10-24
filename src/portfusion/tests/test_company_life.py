@@ -2,8 +2,8 @@
 
 The first half holds any book: the lives add up to the book's own realised and unrealised gain,
 every sale and buy sits in exactly one life, and a company's lives follow one another. The second
-half builds lives on a copy of the store, from a company invented for each test, so each shape —
-the owner's own example among them — is held whatever book is loaded.
+half builds lives on a copy of the store, from a company invented for each test, so each shape
+is held whatever book is loaded.
 """
 from __future__ import annotations
 
@@ -185,10 +185,10 @@ def _lives(book, company):
 
 @needs("accounts")
 def test_the_owners_example_reads_both_ways(store_copy):
-    """THE OWNER'S EXAMPLE, exactly. 100 shares at 100p; in a dip, a £1-per-point bet at 80p, so
-    while both are held the company is 200 share-equivalents at 90p. The bet closes at 110p for
-    £30. By holding the shares still cost 100p and stand £10 up; by company life £30 is realised,
-    the life is £40 up to date, and the life cost per share is 70p."""
+    """100 shares at 100p; in a dip, a £1-per-point bet at 80p, so while both are held the
+    company is 200 share-equivalents at 90p. The bet closes at 110p for £30. By holding the shares
+    still cost 100p and stand £10 up; by company life £30 is realised, the life is £40 up to date,
+    and the life cost per share is 70p."""
     if an_account("spread bet") is None:
         pytest.skip("the book has no spread-bet account")
     co = _Company(store_copy, "HRWG", price=1.10)

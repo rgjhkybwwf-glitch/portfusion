@@ -5,10 +5,10 @@
     n.rename({"account": "Sam IG Spread bet", "note": "per Alex"})
         # {"account": "A4 · IG Spread bet", "note": "per [withheld]"}
 
-DECIDED 6 OCT 2026: an account is named by its register code to anyone but the
-owner, and a holder's name and an account's number are taken out of every word such a reader is
-sent, notes included. The register is `Book.account_register()`; the codes and labels are
-`Book.account_codes()`. Nothing here is typed: a new account or holder joins by being registered.
+An account is named by its register code to anyone but the owner, and a holder's name and an
+account's number are taken out of every word such a reader is sent, notes included. The register
+is `Book.account_register()`; the codes and labels are `Book.account_codes()`. Nothing here is
+typed: a new account or holder joins by being registered.
 
 THREE KINDS OF WORD, LONGEST FIRST, matched in any case wherever no letter or digit touches them:
 

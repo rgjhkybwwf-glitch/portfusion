@@ -1,9 +1,8 @@
 """
 THE PRICE HISTORY.
 
-price-history.csv exists so the book can answer "what was this
-worth on that date?" — which it could not do while CURRENT_PRICES was overwritten in
-place on every refresh.
+price-history.csv exists so the book can answer "what was this worth on that date?":
+CURRENT_PRICES is overwritten in place on every refresh.
 
 These tests guard the properties that make it trustworthy rather than merely present:
 the live set is banked, and no date carries two marks: a mark put right replaces its row.
@@ -49,10 +48,10 @@ def test_no_duplicate_marks(rows):
 
 @needs("price-history")
 def test_struck_values_are_known(rows):
-    """`STRUCK_KINDS` was once declared and read by nothing, and a vocabulary no code checks is
-    only a comment. Every mark on file is one of its kinds or blank — and blank means the row
-    never said what instant it describes, which is a fact about the row, not an error. The live
-    marks cannot be blank: current-prices.csv's loader refuses it (`schema.CURRENT_PRICES`)."""
+    """A vocabulary no code checks is only a comment. Every mark on file is one of `STRUCK_KINDS` or
+    blank — and blank means the row never said what instant it describes, which is a fact about the
+    row, not an error. The live marks cannot be blank: current-prices.csv's loader refuses it
+    (`schema.CURRENT_PRICES`)."""
     allowed = set(PH.STRUCK_KINDS) | {""}
     bad = {r["struck"] for r in rows} - allowed
     assert not bad, f"unknown struck value(s) on file: {bad}"
@@ -91,11 +90,6 @@ def test_the_build_does_not_import_this(build_imports):
 
 # ---------------------------------------------------------------------------------
 # QUARTER-END COVERAGE
-#
-# A holding once went missing. Its trade date was later CORRECTED back across a quarter end --
-# moving it into the earlier quarter. The Performance reconstruction
-# picked the correction up; the Q Snapshots tab did not, and the price history seeded from
-# the snapshot inherited the hole.
 #
 # A quarter-end valuation is only as complete as its price coverage, so the coverage
 # is asserted rather than assumed.
@@ -158,15 +152,11 @@ def _row(ticker, price, struck, source):
 
 
 def test_a_same_day_restrike_replaces_the_row_on_file():
-    """THE HOLE THIS CLOSES. The identity is (ticker, date), so the second reading of a day
-    found itself already banked and appended nothing — leaving price-history holding the
-    morning's level while current-prices held the afternoon's. Two files disagreeing about one
-    date is what makes changes_since() stop tying to the book, which is a failure two invariants
-    are there to catch and a reader is not.
-
-    ONE OUTCOME (23 Oct 2026). A live read on file is the same day seen earlier; a close or a
-    statement's price a different figure replaces was wrong. Either way the row leaves the file
-    and the new figure takes its place: git keeps what it said, and no reader filters.
+    """A SAME-DAY RESTRIKE REPLACES THE ROW ON FILE, or price-history and current-prices disagree
+    about the date and changes_since() stops tying to the book. A live read on file is the same
+    day seen earlier; a close or a statement's price a different figure replaces was wrong.
+    Either way the row leaves the file and the new figure takes its place: git keeps what it
+    said, and no reader filters.
 
     In memory only: nothing here touches the store.
     """
@@ -193,9 +183,8 @@ def test_a_same_day_reading_at_the_same_price_is_a_no_op():
 @needs("price-history")
 def test_a_restruck_mark_reads_as_unbanked(monkeypatch):
     """check() is the PRECONDITION the Price Refresh's step 1 and desk/doors/marks.py both read
-    before allowing a write. It asked only whether the (ticker, date) was on file, so a
-    re-struck mark reported as banked while its price sat nowhere — the write gate opening on
-    a guarantee that had not been met."""
+    before allowing a write. A re-struck mark reads as unbanked, so the write gate never opens on
+    a guarantee not met."""
     rows = PH.load()
     live, ticker = _restrike(rows)
     monkeypatch.setattr(PH, "current_marks", lambda: live)
@@ -205,9 +194,8 @@ def test_a_restruck_mark_reads_as_unbanked(monkeypatch):
 
 @needs("price-history")
 def test_a_save_that_fails_leaves_the_history_as_it_was(store_copy):
-    """A SAVE THAT RAISES MUST NOT TRUNCATE. It once opened the file for writing and then
-    rendered the rows, so a row the writer refused — a cell under a column the history does not
-    have — left price-history.csv empty: every mark ever banked, gone in one refresh."""
+    """A SAVE THAT RAISES MUST NOT TRUNCATE. A row the writer refuses — a cell under a column the
+    history does not have — leaves price-history.csv as it was."""
     path = store_copy / PH.CSV_NAME
     before = path.read_bytes()
     rows = PH.load()
@@ -247,9 +235,8 @@ def test_a_row_that_does_not_fit_the_header_is_refused_on_reading(store_copy):
 
 
 def test_a_close_at_the_figure_of_its_days_live_read_still_replaces_it(store_copy):
-    """A CLOSE IS THE DAY'S MARK, whatever figure it lands on. One that equalled the live read
-    already banked for its day was skipped as "the same figure", so the history kept a live read
-    for that day and the day read as owed its close (the review of 21 Oct 2026)."""
+    """A CLOSE IS THE DAY'S MARK, whatever figure it lands on. One equal to the live read banked
+    for its day still replaces it."""
     close = next((m for m in PH.current_marks() if m["struck"] == "close"), None)
     if close is None:
         pytest.skip("the book holds no close among its live marks")

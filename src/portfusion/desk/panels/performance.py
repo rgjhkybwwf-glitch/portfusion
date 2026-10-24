@@ -27,12 +27,10 @@ ORDER = 30
 #: and read left to right: what it opened at, what went in, what it earned, what it closed at,
 #: and the gain and return those make.
 #:
-#: THE ACCOUNT IS A COLUMN, as on every other page that lists accounts, and leads both tables
-#: (13 Oct 2026, the first formatting pass): it was a title row per group, bold on a band, six
-#: rows of the table that carried no figure.
+#: THE ACCOUNT IS A COLUMN, as on every other page that lists accounts, and leads both tables.
 #:
 #: NO START OR END DATE, as the report has none: the Quarter names the span ("Q4 2026 to date"
-#: for the open one), and a "Quarter start" column showed the previous quarter's END.
+#: for the open one).
 COLUMNS = ("account", "quarter", "opening_nav", "capital_deployed", "return_income",
            "closing_nav", "gain", "return")
 
@@ -49,9 +47,9 @@ DETAIL_COLUMNS = ("source", "quality")
 #: what YTD return is built on, so a row rebuilds its own return. The whole year's income, fees
 #: and cash interest included, is the Dashboard's YTD income.
 #:
-#: IN THE QUARTER TABLE'S ORDER (the first formatting pass): what it opened at, what went in,
-#: what it earned, where it stands, and the growth and return those make — then what only the
-#: year carries: capital employed, market exposure and the account's kind.
+#: IN THE QUARTER TABLE'S ORDER: what it opened at, what went in, what it earned, where it
+#: stands, and the growth and return those make — then what only the year carries: capital
+#: employed, market exposure and the account's kind.
 YEAR_COLUMNS = ("account", "opening_nav", "capital_deployed", "return_income", "nav",
                 "capital_growth", "ytd", "capital_employed", "exposure", "held_as")
 
@@ -66,8 +64,8 @@ def data() -> dict:
         "detail": list(DETAIL_COLUMNS),
         "columns": list(COLUMNS),
         # THE BOOK FIRST, as the quarter table puts it: the engine's all-accounts row
-        # (`Book.totals()`, money only) beside the book's total market exposure. Its YTD return
-        # is the Dashboard's, and no row of this page carried it.
+        # (`Book.totals()`, its YTD return the Dashboard's) beside the book's total market
+        # exposure.
         "year": [{c: _shape.plain(v) for c, v in
                   {"account": "The book", "held_as": None, "exposure": b.total_exposure(),
                    **b.totals()}.items() if c in YEAR_COLUMNS}]
@@ -95,8 +93,7 @@ def _rests_on(b, frame) -> list[dict]:
 def _caveats(b) -> list[dict]:
     """What a reader must know before quoting one of these numbers. Stated, not implied."""
     out = [{
-        # ONE STATEMENT OF THE RETURN: the renderer typed a second one beside this until 13 Oct
-        # 2026, saying half of it again.
+        # ONE STATEMENT OF THE RETURN: the renderer adds none of its own.
         "scope": "The return",
         "detail": ("Modified Dietz, day-weighted, on net asset value against capital deployed "
                    "into positions, each flow weighted by the days after it: "

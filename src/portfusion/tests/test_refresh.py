@@ -20,7 +20,7 @@ def _run(args, repo_root):
 
 
 def test_help_does_not_start_a_refresh(repo_root):
-    """--help fell through into a live broker fetch in the first cut. It must not."""
+    """--help prints the usage and fetches nothing."""
     r = _run(["--help"], repo_root)
     assert r.returncode == 0
     assert "THE PRICE SWEEP" in r.stdout
@@ -78,8 +78,7 @@ def test_no_sweep_starts_if_the_bank_fails(monkeypatch, capsys):
 def test_refresh_never_opens_a_file_for_writing(repo_root):
     """It prints for review and never writes; the desk's Price Refresh is the door.
 
-    Checked on the syntax tree: the first version of this test grepped for
-    "record/rules.py" and failed on the docstring that says it does not write there.
+    Checked on the syntax tree: a grep would fail on a docstring that names a file.
     """
     import ast
     tree = ast.parse((SRC / "feeds" / "refresh.py").read_text())
@@ -177,9 +176,8 @@ def test_one_vendors_failure_is_not_the_others(monkeypatch):
 def test_a_sweep_with_no_sign_in_anywhere_names_each_vendor_and_raises_nothing(
         tmp_path, monkeypatch):
     """THE REAL FEEDS, NOT STUBS, with no IG credentials and no TradingView session: each
-    fails before a request is built, and the sweep must hand that back part by part. Until
-    29 Sep 2026 the missing credentials file escaped as SystemExit and the desk showed a 500.
-    Any request that did get built fails this test rather than leaving the machine."""
+    fails before a request is built, and the sweep must hand that back part by part. Any request
+    that did get built fails this test rather than leaving the machine."""
     import urllib.request
     from portfusion.feeds import ig, tv
     def no_network(*a, **k):
@@ -206,9 +204,8 @@ def test_a_past_day_is_closes_only(monkeypatch):
 
 
 def test_the_sweep_prints_its_rates(capsys):
-    """A RATE ROW HAS NO `key`: both producers drop it and name the currency. Printing `key` raised
-    a KeyError once the rates were banked, so the command failed after the sweep had done its
-    work (the review of 21 Oct 2026)."""
+    """A RATE ROW HAS NO `key`, only its currency (both producers drop it): `_print` prints it by
+    the currency, and raises no KeyError."""
     R._print({"on": None, "ig_levels": {"ok": True, "rows": []},
               "tv": {"ok": True, "prices": [], "failed": [], "rates": [
                   {"currency": "USD", "rate": 1.3611, "struck": "close", "source": "test"}]}})

@@ -2,9 +2,9 @@
 prints (`tests/test_code.py` holds it at none).
 
 A COMMAND'S OUTPUT IS ITS INTERFACE — the audit's findings, the sweep the Price Refresh takes its
-lines from — so the handler writes the bare message and a command reads exactly as it did when it
-printed: info and debug to stdout, warnings and errors to stderr, each line flushed as it is
-written. The stream is looked up per line, so a redirected or captured stdout receives it.
+lines from — so the handler writes the bare message: info and debug to stdout, warnings and errors
+to stderr, each line flushed as it is written. The stream is looked up per line, so a redirected or
+captured stdout receives it.
 
     from portfusion.log import log         then log.info(...), log.error(...)
     portfusion -q <action>                 warnings and errors only;  -v  adds the debug lines

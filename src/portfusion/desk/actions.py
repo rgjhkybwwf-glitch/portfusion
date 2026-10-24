@@ -13,13 +13,13 @@ boolean would make "does this write?" answerable and "what may it write?" unansw
 whole decision lives in the second question.
 
 `tests/desk/test_boundaries.py` asserts no registered action declares `writes="events"`
-(`test_no_registered_action_writes_an_event`) and pins the set of writing actions the way
-`_EXPECTED_FLAGS` pins the flag count (`test_every_writing_action_is_pinned`). A new writing
-button therefore FAILS THE SUITE until someone declares it on purpose.
+(`test_no_registered_action_writes_an_event`) and pins the set of writing actions
+(`test_every_writing_action_is_pinned`). A new writing button therefore FAILS THE SUITE until
+someone declares it on purpose.
 
-`reaches` IS A SECOND AXIS: whether the action leaves this machine. Reading a document with the
-model writes nothing to the store and does send it to a third party. The set of reaching actions
-is pinned the same way (`test_every_reaching_action_is_pinned`).
+`reaches` IS A SECOND AXIS: whether the action leaves this machine. Asking IG for events writes
+nothing and does reach the broker. The set of reaching actions is pinned the same way
+(`test_every_reaching_action_is_pinned`).
 """
 from __future__ import annotations
 
@@ -48,14 +48,11 @@ WRITE_KINDS = (None, "marks", "events")
 # it may write marks and reach nothing.
 REACH_KINDS = (None, "network")
 
-# NO BLANKET DATE GATE, and the mechanism is kept.
-#
-# `None` means NO BLANKET GATE — not "no gate". A single action may still name its own
-# `enabled_from`, and the real guard was never a date: it is
+# `None` means NO BLANKET DATE GATE — not "no gate". A single action may still name its own
+# `enabled_from`: it costs nothing, and an action may want to defer itself. The guard is
 # `test_every_writing_action_is_pinned`, which fails the suite the moment a new writing button
-# appears and keeps failing until someone declares it on purpose. That is a guard on WHAT
-# WRITES rather than on WHEN — a rule naming a property survives, a rule naming a moment
-# expires.
+# appears and keeps failing until someone declares it on purpose. That is a guard on WHAT WRITES
+# rather than on WHEN — a rule naming a property survives, a rule naming a moment expires.
 WRITES_ENABLED_FROM: Optional[_dt.date] = None
 
 
@@ -103,8 +100,7 @@ class Action:
     def available(self) -> bool:
         """False while a writing action is still behind a date it names.
 
-        With the blanket gate lifted this answers for per-action `enabled_from` only. Kept
-        because the mechanism costs nothing and a future action may want to defer itself.
+        With WRITES_ENABLED_FROM None, this answers for per-action `enabled_from` only.
         """
         due = self.enabled_from or (WRITES_ENABLED_FROM if self.writes else None)
         return True if due is None else _dt.date.today() >= due
@@ -135,9 +131,9 @@ def _load_panels():
     """Import every panel, so their actions are registered before the registry is read.
 
     An action registers when the panel declaring it is imported, which means asking "what can
-    the desk do?" before any panel has loaded gave the honest-but-useless answer "nothing" —
-    and the whole claim about this file is that it is the ONE place with the answer. A registry
-    that has to be primed by the caller is not that.
+    the desk do?" before any panel has loaded would answer "nothing" — and the whole claim
+    about this file is that it is the ONE place with the answer. A registry that has to be
+    primed by the caller is not that.
 
     Imported inside the function because panels import THIS module; at module level it would be
     a cycle.

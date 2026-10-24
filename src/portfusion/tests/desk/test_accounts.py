@@ -19,9 +19,9 @@ def test_the_tie_rule_has_one_implementation():
     """EVERY ROW IS DECIDED BY ONE FUNCTION, ON THE ENGINE — Book.reconciliation_verdict — and
     this pins each branch. A verdict is a classification, so it cannot live in a renderer.
 
-    TWO CHECKS, told apart by the evidence class (the owner, 30 Sep 2026): an IG reading is held to
-    one band when struck in one pass with the marks; a share account's holdings export agreed on
-    units at the door, so no value is judged and no band applies.
+    TWO CHECKS, told apart by the evidence class: an IG reading is held to one band when struck in
+    one pass with the marks; a share account's holdings export agreed on units at the door, so no
+    value is judged and no band applies.
     """
     from portfusion.record import rules as D
     v = _engine.Book.reconciliation_verdict
@@ -58,10 +58,8 @@ def test_the_accounts_panel_asks_that_function_rather_than_deciding():
     b = _engine.Book()
     rows = {r["account"]: r for r in panels.get("reconcile").data()["rows"]}
     for r in b.reconciliation().itertuples(index=False):
-        # THE EVIDENCE CLASS, not the date. Passing `r.as_of` here resolved to no class at all,
-        # so every row came back `live=False` — and this still passed, because both paths
-        # happened to reach "differs" at the time. A test that calls the shared rule must call
-        # it the way the panel does, or it is pinning its own mistake.
+        # THE EVIDENCE CLASS, not the date. A test that calls the shared rule must call it the
+        # way the panel does, or it is pinning its own mistake.
         expected = _engine.Book.reconciliation_verdict(r.statement, r.difference, r.evidence,
                                                  r.comparable, r.comparability)
         assert rows[r.account]["verdict"] == expected["verdict"]
@@ -69,10 +67,9 @@ def test_the_accounts_panel_asks_that_function_rather_than_deciding():
 
 @needs("accounts", "account-readings", "buys")
 def test_each_reconcile_row_names_the_reading_its_broker_side_rests_on():
-    """NEITHER SIDE WAS DATED AND NO DOCUMENT WAS NAMED : a reader met a
-    broker figure without the day it was read or what it was read from. Each row now carries the
-    report's two cells, from the same engine answer the report asks — and for the SAME reading
-    the row compares, which is the half that could quietly drift."""
+    """EACH ROW CARRIES THE DAY ITS BROKER FIGURE WAS READ AND WHAT FROM: the report's two cells,
+    from the same engine answer the report asks — and for the SAME reading the row compares, which
+    is the half that could quietly drift."""
     b = engine.book()
     rests = b.quarter_evidence(None).set_index("account")
     struck = b.reconciliation().set_index("account")["struck_on"]
@@ -103,7 +100,7 @@ def test_an_account_with_no_broker_figure_is_a_gap_not_a_pass():
     assert apart["rule"] == "the marks are not one pass", "the verdict prints comparability's words"
     assert not apart["checkable"], "a struck-apart row is not a pass"
     # ALL THREE KINDS, ON THE RULE: the loop below reads the book's own gaps, and on a book with
-    # none it checked nothing, so each kind says why here whatever the book holds.
+    # none it checks nothing, so each kind says why here whatever the book holds.
     none = v(100.0, 1.0, "ii-statement")
     assert none["verdict"] == "no-holdings" and not none["checkable"], none
     for gap in (v(None, None, "ii-valuation"), apart, none):
@@ -119,25 +116,24 @@ def test_an_account_with_no_broker_figure_is_a_gap_not_a_pass():
 #: Every column the desk draws, panel by panel. A census, not a target, in the shape
 #: test_boundaries.py's `DESK_WRITERS` already uses.
 #:
-#: Why it exists (the owner: "additional content should not be added without my acceptance").
-#: `tests/test_figures.py` holds both renderers to `Book.HEADLINE` — but only for headline
-#: figures. A table column could be added, removed or reordered with nothing failing anywhere,
-#: which is how `price_effect` came to be headed `Price` over a money column and stayed that
-#: way. A new column fails this until somebody writes down what it is.
+#: Why it exists: no content is added without acceptance. `tests/test_figures.py` holds both
+#: renderers to `Book.HEADLINE` — but only for headline figures. A table column could be added,
+#: removed or reordered with nothing failing anywhere. A new column fails this until somebody
+#: writes down what it is.
 #:
 #: It pins what is SHOWN, not what the engine holds. `Book` may grow a field freely; the
 #: decision this guards is the one about putting it in front of a reader.
 PANEL_COLUMNS = {
-    # WHO OPENS THE HOSTED DESK (6 Oct 2026): readers, each one's devices, the sign-in log, and
-    # the key from an account's code to its name, the one place the owner reads both.
+    # WHO OPENS THE HOSTED DESK: readers, each one's devices, the sign-in log, and the key from an
+    # account's code to its name, the one place the owner reads both.
     "access": {
         "CODE_COLUMNS": ("code", "label", "account"),
         "DEVICE_COLUMNS": ("device", "enrolled", "last_used"),
         "READER_COLUMNS": ("who", "level", "since", "devices", "last_signed_in", "now"),
         "SIGNIN_COLUMNS": ("at", "result", "who", "device", "address", "detail"),
     },
-    # THE BENCH'S FORMS (12 Oct 2026): every column of the five tables it writes, each headed in
-    # the desk's words rather than its store name. Derived from the schema, so a new column joins.
+    # THE BENCH'S FORMS: every column of the five tables it writes, each headed in the desk's words
+    # rather than its store name. Derived from the schema, so a new column joins.
     "bench": {
         "FORM_COLUMNS": ("trade_id", "date", "source", "account", "ticker", "cur", "qty",
                          "stake", "cost", "level_points", "broker_ref", "note", "contract",
@@ -150,12 +146,11 @@ PANEL_COLUMNS = {
         "REVIEW_COLUMNS": ("retires", "renumbers"),
     },
     "reconcile": {
-        # WHAT THE BROKER'S SIDE RESTS ON (13 Oct 2026): the report's two columns, last.
+        # WHAT THE BROKER'S SIDE RESTS ON: the report's two columns, last.
         "COLUMNS": ("account", "book", "broker", "difference", "verdict", "last_check",
                     "document"),
     },
     "price-refresh": {
-        # The grid's heads were typed in app.js until 2 Oct 2026; the columns are not new.
         "GRID_COLUMNS": ("mark_key", "was", "was_at", "new", "new_at", "source", "origin", "take"),
         "PRICE_COLUMNS": ("mark_key", "price", "currency", "as_of", "age_days", "stale", "contract"),
     },
@@ -165,17 +160,16 @@ PANEL_COLUMNS = {
             "change", "value_to", "priced_from", "priced_at"
         ),
         "JOURNAL_COLUMNS": ("at", "route", "op", "table", "rows", "ref", "detail"),
-        # A SPREAD BET HAS NO FX PART (13 Oct 2026): the notional block drops From FX.
+        # A SPREAD BET HAS NO FX PART: the notional block drops From FX.
         "NOTIONAL_COLUMNS": (
             "mark_key", "company", "price_move_pct", "price_effect", "transacted", "change",
             "value_to", "priced_from", "priced_at"
         ),
     },
     "performance": {
-        # WHAT A QUARTER-END NAV RESTS ON (13 Oct 2026), under each account row's detail.
+        # WHAT A QUARTER-END NAV RESTS ON, under each account row's detail.
         "DETAIL_COLUMNS": ("source", "quality"),
-        # NO START OR END DATE (13 Oct 2026), as the report has none; the ACCOUNT a column,
-        # leading, where it was a title row per group (the first formatting pass).
+        # NO START OR END DATE, as the report has none; the ACCOUNT a column, leading.
         "COLUMNS": (
             "account", "quarter", "opening_nav", "capital_deployed", "return_income",
             "closing_nav", "gain", "return"
@@ -203,10 +197,10 @@ PANEL_COLUMNS = {
         ),
         "REASON_COLUMNS": ("whys", "research_notes"),
         "DETAIL_COLUMNS": ("why_entered", "why_exited", "research_notes", "note"),
-        # A SPREAD BET IN ITS OWN TERMS (13 Oct 2026): its stake per point for a
-        # quantity, and its entry and exit as levels in points, as Trades reads one.
+        # A SPREAD BET IN ITS OWN TERMS: its stake per point for a quantity, and its entry and
+        # exit as levels in points, as Trades reads one.
         "BET_COLUMNS": ("stake", "entry_level_points", "exit_level_points"),
-        # A COMPANY LIFE (23 Oct 2026, #37): Round Trips' second view.
+        # A COMPANY LIFE: Round Trips' second view.
         "LIFE_COLUMNS": ("company", "held_as", "accounts", "state", "opened", "closed",
                          "days_held", "realised", "unrealised", "dividends", "funding_interest",
                          "life_gain", "life_pct", "qty", "life_cost_per_share", "price", "currency"),
@@ -224,9 +218,8 @@ PANEL_COLUMNS = {
         "COLUMNS": ("ticker", "direction", "account", "currency", "qty", "traded_price",
                     "value", "date"),
         "BET_COLUMNS": ("stake", "level_points"),
-        # A BET LEG'S CONTRACT AND ITS FUNDING (13 Oct 2026): where the funding-interest rows rest.
-        # A FOREIGN DEAL'S RATE AND WHOSE IT IS (14 Oct 2026). A SALE'S OWN ID UNDER ITS OWN NAME,
-        # where it read as a trade id (#44).
+        # A BET LEG'S CONTRACT AND ITS FUNDING: where the funding-interest rows rest.
+        # A FOREIGN DEAL'S RATE AND WHOSE IT IS. A SALE'S OWN ID UNDER ITS OWN NAME.
         "DETAIL_COLUMNS": ("why_entered", "why_exited", "note", "source", "broker_ref",
                            "trade_id", "sale_id", "realisation_id", "contract", "funding",
                            "fx_at_trade", "fx_from"),
@@ -260,26 +253,16 @@ def test_the_desk_draws_only_the_columns_that_were_agreed():
 
 
 def test_the_gap_list_quotes_the_engines_rule_rather_than_composing_one(repo_root):
-    """The data was right and the screen lied.
+    """THE GAP LIST DRAWS EACH ROW'S OWN `rule`, never one sentence over every unjudgeable row:
+    "no broker figure at all" is true of `no-statement` and false of the others. A struck-apart
+    row has a tag of its own.
 
-    The test above proves each gap carries the engine's own `rule`, and the two rules differ.
-    The renderer ignored both and printed ONE hard-coded sentence over every unjudgeable row —
-    "no broker figure at all, so nothing here can be checked against it" — which was true of
-    `no-statement` and false of `struck-apart`. On the day it was found BOTH gaps were
-    struck-apart, and the larger of them was five figures apart with a broker figure on file.
-    A five-figure disagreement rendered as an absence.
-
-    It is the same defect `rule` was created to close, one renderer along: the classification
-    had just moved into the engine so no renderer would compose one, and this one went on
-    composing one regardless. That is why the guard is on the FILE and not only on the data
-    — a panel handing over a correct field proves nothing about what gets drawn.
+    The guard is on the FILE and not only on the data — a panel handing over a correct field
+    proves nothing about what gets drawn.
     """
     import re
     js = _static("app.js")
-    # Comments are stripped before the ban, because the ban is on what RENDERS and the comment
-    # recording this defect has to be able to quote the sentence it is about. The same trap
-    # test_panels.py's RETIRED_TAB_TITLES documents: the thing policing a phrase must not be its
-    # own casualty.
+    # Comments are stripped before the ban, because the ban is on what RENDERS.
     drawn = re.sub(r"/\*.*?\*/", "", js, flags=re.S)
 
     assert "esc(r.rule)" in drawn, \
@@ -314,9 +297,8 @@ def test_the_ig_actions_are_reads_that_leave_the_machine():
 def test_the_route_honours_a_date_the_registry_names(monkeypatch):
     """The REGISTRY is the gate, not the route. This checks the route honours it.
 
-    The CLAIM was never about the quarter. It is that the route does no permission thinking of
-    its own and defers to the registry — so the test names the date on the action itself, the
-    mechanism that survived the blanket gate's lift.
+    The route does no permission thinking of its own and defers to the registry — so the test
+    names the date on the action itself.
     """
     from fastapi import HTTPException
     tomorrow = _dt.date.today() + _dt.timedelta(days=1)
@@ -329,9 +311,8 @@ def test_the_route_honours_a_date_the_registry_names(monkeypatch):
     assert exc.value.status_code == 409
     assert tomorrow.isoformat() in exc.value.detail
 
-    # THE OTHER HALF — the behaviour that changed. A writing action naming no date is not
-    # refused; with no blanket gate, the only thing standing here is
-    # test_every_writing_action_is_pinned.
+    # THE OTHER HALF. A writing action naming no date is not refused; with no blanket gate, the
+    # only thing standing here is test_every_writing_action_is_pinned.
     ran = []
     immediate = actions.Action(name="test-now", label="Apply marks", panel="accounts",
                                run=lambda: ran.append(1), writes="marks",
@@ -342,10 +323,9 @@ def test_the_route_honours_a_date_the_registry_names(monkeypatch):
 
 
 def test_the_registry_answers_without_being_primed():
-    """An action registers when its panel is imported, so asking the registry before any panel
-    had loaded gave the honest-but-useless answer "nothing" — and the whole claim about
-    actions.py is that it is the ONE place with the answer. A registry the caller has to prime
-    is not that."""
+    """An action registers when its panel is imported, so asking it before any panel loads would
+    give the honest-but-useless answer "nothing" — and the whole claim about actions.py is that it
+    is the ONE place with the answer. A registry the caller has to prime is not that."""
     import subprocess
     import sys as _sys
     r = subprocess.run(
@@ -453,13 +433,10 @@ def test_a_second_reading_for_one_account_on_one_date_is_a_duplicate():
 
 @needs("accounts", "account-readings", "buys")
 def test_a_two_column_signature_is_required_in_full():
-    """THE REGRESSION THIS WAS FOUND BY. matching_row() required at least THREE filled
-    signature columns before it would compare — right for a five-column event signature, where
-    three filled is enough to be sure. cash-readings has TWO, so the minimum could never be
-    met and the gate was SILENTLY DISABLED for the table: every duplicate came back None.
+    """A SIGNATURE IS REQUIRED IN FULL: every column that identifies the thing. A minimum of three
+    would silently disable cash-readings' two-column gate.
 
-    The rule was never "three columns", it was "all of the ones that identify this thing".
-    Adding `cash` to reach three would have been the wrong fix — see the test above.
+    Adding `cash` to reach three would be the wrong fix — see the test above.
     """
     assert len(_bench.SIGNATURE["cash-readings"]) == 2
     assert _bench.matching_row("cash-readings",
@@ -521,15 +498,7 @@ def test_the_committed_reading_becomes_the_newest_cash(store_copy, item, tmp_pat
 def test_the_panels_share_one_shaping_helper(repo_root):
     """ONE SHAPING MODULE, desk/panels/_shape.py.
 
-    Four panels had each grown their own `_plain`/`_rows`/`_uniques`. They were not merely
-    duplicated — they had DRIFTED, in both of the ways copies do:
-
-      * performance.py went through to_dict("records") and said why: `return` is a Python
-        keyword, so pandas renames that column on a namedtuple and getattr(row, "return")
-        is quietly None for every row. The other three still used itertuples. One copy had
-        the bug fix; three did not.
-      * `_uniques` coerced with str() in round_trips.py and did not in trades.py — one
-        name, one signature, two return types.
+    Copies drift: a fix reaches one and not the others, and one name returns two types.
 
     A count of copies would go stale. This asserts the property instead: no panel defines a
     shaping helper of its own, because there is one and it is importable.
@@ -552,8 +521,8 @@ def test_the_panels_share_one_shaping_helper(repo_root):
 
 
 def test_the_shared_shaping_survives_a_column_named_for_a_keyword():
-    """The specific bug the copies disagreed about, pinned by behaviour rather than by
-    reading the source. itertuples() renames `return`; to_dict("records") does not."""
+    """A column named `return`, pinned by behaviour rather than by reading the source. itertuples()
+    renames `return`; to_dict("records") does not."""
     import pandas as pd
     from portfusion.desk.panels import _shape
     frame = pd.DataFrame({"quarter_end": [pd.Timestamp("2026-06-30")], "return": [0.0721]})
@@ -581,16 +550,11 @@ def test_the_shared_shaping_is_tolerant_where_a_panel_needs_it():
 
 @needs("accounts", "account-readings", "buys")
 def test_the_bay_says_what_it_can_replace_rather_than_what_is_due(repo_root):
-    """THE LABEL WAS THE DEFECT. `marks_due()` returned every replaceable mark whatever its age,
-    so step 3 read "N price(s) due" with some of them fetched minutes earlier by a reading on
-    the Reconcile tab — a form listing what it CAN replace, labelled as what NEEDS replacing.
+    """THE BAY LISTS WHAT IT CAN REPLACE, and nothing calls those lines "due".
 
-    The LIST is deliberately still the whole set: docs/prices.md records the owner's rule that the
-    book is refreshed whole or not at all, so filtering by age would break the practice to fix
-    the wording. What was missing was a way to SAY which lines are old.
-
-    Since 12 Oct 2026 the step says the marks' age against the limit, as the
-    Dashboard does, and a line past the limit says so in its own row; nothing calls them due.
+    The LIST is the whole set, never filtered by age: docs/prices.md's rule is that the book is
+    refreshed whole or not at all. The step says the marks' age against the limit, as the
+    Dashboard does, and a line past the limit says so in its own row.
     """
     from portfusion import engine
     js = _static("app.js")
@@ -723,10 +687,9 @@ def _write(readings):
 
 @needs("accounts", "account-readings", "buys")
 def test_a_failed_reading_takes_back_the_banking_too(store_copy, monkeypatch):
-    """THE HISTORY IS INSIDE THE ENVELOPE, as on the marks door: the outgoing readings were
-    banked before `atomic()`, so a reading that failed after the bank still moved
-    account-statements.csv. The outgoing reading is unbanked here, so the bank has work, and the
-    write fails at its journal line, after the bank."""
+    """THE HISTORY IS INSIDE THE ENVELOPE, as on the marks door, so a reading that fails after the
+    bank moves no account-statements.csv. The outgoing reading is unbanked here, so the bank has
+    work, and the write fails at its journal line, after the bank."""
     from portfusion.history import accounts as AH
     from portfusion.desk.doors import commit, observations
     _share_filed(store_copy)
@@ -747,8 +710,7 @@ def test_a_failed_reading_takes_back_the_banking_too(store_copy, monkeypatch):
 
 
 def test_a_field_the_new_reading_does_not_carry_is_blank_not_the_old_value():
-    """A READING IS WHOLE. The door swapped in only the fields a reading carried, so an IG
-    statement (no `available`, no pull time) kept the last feed read's."""
+    """A READING IS WHOLE: a field it does not carry is blank, never the last read's."""
     from portfusion.record import schema
     from portfusion.desk.doors import observations
     header = schema.TABLES[observations.TABLE].header
@@ -765,10 +727,9 @@ def test_a_field_the_new_reading_does_not_carry_is_blank_not_the_old_value():
 
 @needs("accounts", "account-readings", "buys")
 def test_a_share_reading_is_written_and_banked_with_its_account(store_copy):
-    """The hand edit this replaces was two steps — the observation, then `history.accounts
-    --archive` — and the report reads the second. One write does both, and the banked row
-    names the account, because two ii valuations filed on one day differ in nothing else. ITS
-    CASH IS A CASH READING of its own day, in the same write, and the journal says so."""
+    """One write files the reading and banks it for the report, and the banked row names the
+    account, because two ii valuations filed on one day differ in nothing else. ITS CASH IS A CASH
+    READING of its own day, in the same write, and the journal says so."""
     from portfusion.record import schema
     account = _share_filed(store_copy)
 
@@ -817,8 +778,7 @@ def test_one_write_reading_a_day_twice_files_its_cash_once(store_copy):
 
 @needs("accounts", "account-readings", "buys")
 def test_a_reading_writes_a_crlf_table_back_in_crlf(store_copy):
-    """The readings door rebuilt account-readings.csv with "\\n" whatever it found (the code
-    review of 2 Oct 2026; latent while the store is LF)."""
+    """The readings door writes account-readings.csv back in the ending it found."""
     from desk_support import all_crlf, to_crlf
     _share_filed(store_copy)
     to_crlf("account-readings")
@@ -830,9 +790,9 @@ def test_a_reading_writes_a_crlf_table_back_in_crlf(store_copy):
 @needs("accounts", "account-readings", "buys")
 def test_a_share_reading_whose_units_differ_from_the_book_is_refused_by_name(store_copy,
                                                                             monkeypatch):
-    """The owner, 30 Sep 2026: a share account is checked on units. A contract note brings every
-    trade, so a difference is what none carries — a reinvested dividend, a corporate action, a
-    wrong quantity — and the door names each holding rather than writing a reading over it."""
+    """A share account is checked on units. A contract note brings every trade, so a difference
+    is what none carries — a reinvested dividend, a corporate action, a wrong quantity — and the
+    door names each holding rather than writing a reading over it."""
     from portfusion.desk.doors import observations
     from portfusion.desk.intake import read_rows
     account = _share_filed(store_copy)
@@ -953,9 +913,9 @@ def _ii(**over):
 
 @needs("accounts", "account-readings", "buys")
 def test_a_reading_off_a_document_that_states_no_cash_is_its_stock_alone(store_copy):
-    """The owner, 2 Oct 2026: a reading off ii's holdings export is the stock alone, and writes no
-    cash reading (`observations.SHARE_CASH`). The reconciliation still shows a total, from the
-    account's cash readings."""
+    """A reading off ii's holdings export is the stock alone, and writes no cash reading
+    (`observations.SHARE_CASH`). The reconciliation still shows a total, from the account's cash
+    readings."""
     from portfusion.record import schema
     from portfusion.engine import Book
     account = _ii_filed(store_copy)
@@ -989,8 +949,8 @@ def test_a_reading_off_a_document_that_states_no_cash_is_its_stock_alone(store_c
 
 @needs("accounts", "account-readings", "buys")
 def test_a_cash_figure_on_a_reading_whose_document_states_none_is_refused(store_copy):
-    """The copy removed on 2 Oct 2026, refused at the door. A cash figure on an ii export's reading is the
-    account's ledger's, wearing the export's evidence."""
+    """Refused at the door: a cash figure on an ii export's reading is the account's ledger's,
+    wearing the export's evidence."""
     from portfusion.desk.doors import observations
     before = {p: p.read_bytes() for p in observations.paths() if p.is_file()}
 
@@ -1009,14 +969,14 @@ def test_a_reading_off_a_document_that_states_its_cash_still_needs_it(store_copy
 
 
 # =====================================================================================
-# A HOLDINGS EXPORT FILED ON THE BENCH WRITES ITS READING (the owner, 30 Sep 2026)
+# A HOLDINGS EXPORT FILED ON THE BENCH WRITES ITS READING
 # =====================================================================================
 
 @pytest.fixture
 def holdings_on_the_bench(store_copy, tmp_path, monkeypatch):
     """The INVENTED Account Summary on a workbench of its own, with the Bench, the archive
-    and the readings door all pointed at temp folders. The 8 Sep incident document stays in
-    the docstrings; the export worked here is built from the loaded book's own units."""
+    and the readings door all pointed at temp folders. The export is built from the loaded
+    book's own units."""
     from portfusion.desk.doors import commit
     from portfusion.desk.intake import bench, read_document
     inbox, statements = tmp_path / "_inbox", tmp_path / "statements"
@@ -1041,8 +1001,8 @@ def holdings_on_the_bench(store_copy, tmp_path, monkeypatch):
 @needs("accounts", "account-readings", "buys")
 def test_a_reading_whose_document_has_left_the_workbench_fails_its_gate(holdings_on_the_bench):
     """THE DOCUMENT GONE IS ONE GATE FAILING. The reading's gate reads the document from the
-    workbench, and a file moved or withdrawn meanwhile raised through `gates()`: the Bench
-    answered 500 for the item rather than saying what was missing (the review of 21 Oct 2026)."""
+    workbench, and a file moved or withdrawn meanwhile fails that gate, saying what is missing,
+    never a 500."""
     from portfusion.desk.intake import bench
     inbox, _ = holdings_on_the_bench
     it = bench.for_document("summary.csv")
@@ -1084,8 +1044,8 @@ def test_a_holdings_export_is_filed_with_its_reading_in_one_step(holdings_on_the
 def test_a_document_goes_back_to_the_workbench_when_the_book_will_not_load(
         holdings_on_the_bench, monkeypatch):
     """The document is filed before the reading, because the readings door asks for it in the
-    archive; the book is loaded last of all. A refusal there restored every CSV and left the
-    document filed, evidence no row cites, with the item still pointing into `_inbox/`."""
+    archive; the book is loaded last of all. A refusal there puts the document back too, or it
+    is filed evidence no row cites."""
     from portfusion.desk.doors import commit
     from portfusion.desk.intake import bench
     inbox, statements = holdings_on_the_bench
@@ -1106,9 +1066,7 @@ def test_a_document_goes_back_to_the_workbench_when_the_book_will_not_load(
 @needs("accounts", "account-readings", "buys")
 @pytest.mark.parametrize("typed", ["30 Sep 2026", "30 September 2026"])
 def test_a_reading_dated_in_words_reads_its_date(holdings_on_the_bench, typed):
-    """THE DATE AS THE FILING READS IT. Its first ten characters were taken until 14 Oct 2026, so
-    "30 Sep 2026" became "30 Sep 202" and the gate RAISED (the code review of 2 Oct, Todo's
-    P3): the bench item errored instead of saying anything."""
+    """THE DATE AS THE FILING READS IT, whole."""
     from portfusion.desk.intake import bench
     it = bench.for_document("summary.csv")
     it["evidence"]["dated"] = typed
@@ -1119,8 +1077,8 @@ def test_a_reading_dated_in_words_reads_its_date(holdings_on_the_bench, typed):
 
 @needs("accounts", "account-readings", "buys")
 def test_a_reading_whose_date_will_not_read_is_refused_by_name(holdings_on_the_bench):
-    """A date that reads as no date is a refusal that names it, never an error, and never the
-    misleading one a blank date led to (a filed name nobody would look for)."""
+    """A date that reads as no date is a refusal that names it, never an error, and never a filed
+    name nobody would look for."""
     from portfusion.desk.intake import bench
     it = bench.for_document("summary.csv")
     it["evidence"]["dated"] = "end of September"
@@ -1153,7 +1111,7 @@ def test_a_holdings_export_whose_units_differ_is_not_filed(holdings_on_the_bench
 @needs("accounts", "account-readings", "buys")
 def test_an_ii_holdings_export_on_the_bench_reads_its_stock_alone(holdings_on_the_bench):
     """The reading the Bench files off ii's export is the stock alone, cash and total blank —
-    never a cash reading copied in when the export was opened (the owner, 2 Oct 2026)."""
+    never a cash reading copied in when the export was opened."""
     import os
     from portfusion.desk.intake import bench
     inbox, _ = holdings_on_the_bench
@@ -1174,8 +1132,8 @@ def test_an_ii_holdings_export_on_the_bench_reads_its_stock_alone(holdings_on_th
 
 @needs("accounts", "account-readings", "buys")
 def test_a_cash_of_nothing_is_still_shown_as_a_cash(holdings_on_the_bench):
-    """`or ''` read a cash of 0 as none, and the gate's line dropped the cash and the total. The
-    reader stores figures as text, where "0.00" is truthy; a saved item can hold the number."""
+    """A cash of 0 is a cash, which `or ''` would read as none. The reader stores figures as text,
+    where "0.00" is truthy; a saved item can hold the number."""
     from portfusion.desk.intake import bench
     it = bench.for_document("summary.csv")
     it["reading"].update(cash=0, total=float(it["reading"]["positions"]))

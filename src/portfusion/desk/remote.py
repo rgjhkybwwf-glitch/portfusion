@@ -8,9 +8,9 @@ process, so a restart moves both and neither can be running older code than the 
 to the tunnel, so to the browser this door is the hosted page's own origin.
 
 READ ONLY, AND PINNED. `REMOTE_ROUTES` is every route this door has, and `REMOTE_PANELS` every
-page it will draw. Bench and Price Refresh are where the desk WORKS — every action it has is
-registered on one of them — so they stay on the Mac. Opening one more is a line in a pinned list
-that `tests/desk/test_remote.py` names, never a quiet change.
+page it will draw. Bench, Price Refresh and Access hold the desk's buttons, so they stay on the
+Mac. Opening one more is a line in a pinned list that `tests/desk/test_remote.py` names, never a
+quiet change.
 
 THE SAME ANSWERS AS THE MAC'S. Each route is the local door's own function, or a narrowing of its
 answer, so the two doors cannot disagree about a figure.
@@ -79,9 +79,9 @@ class Opens:
     names: bool
 
 
-#: WHAT EACH LEVEL OPENS, agreed on 6 Oct 2026. The
-#: principal reads every page the owner reads here, and every account, with no holder in it; no
-#: level has a button. Narrowing one is a line here that `tests/desk/test_remote.py` names.
+#: WHAT EACH LEVEL OPENS. The principal reads every page the owner reads here, and every account,
+#: with no holder in it; no level has a button. Narrowing one is a line here that
+#: `tests/desk/test_remote.py` names.
 OPENS = {
     "owner": Opens(pages=REMOTE_PANELS, names=True),
     "principal": Opens(pages=REMOTE_PANELS, names=False),
@@ -104,8 +104,8 @@ AUTH_PER_MINUTE = 30
 #: WHERE A REQUEST CAME FROM, as the proxy in front of this door says: Netlify names the browser's
 #: address in its own header. The tunnel's own connection is always this Mac, so it is the last
 #: resort. Read only once the request is signed, so the address is Netlify's word and not the
-#: caller's. NOT `X-Forwarded-For`: its first entry is whatever the caller sent, so it let a
-#: caller name a fresh address on every request and step round the limit.
+#: caller's. NOT `X-Forwarded-For`: its first entry is whatever the caller sent, so a caller
+#: could name a fresh address on every request and step round the limit.
 ADDRESS_HEADERS = ("x-nf-client-connection-ip",)
 
 #: Netlify's signature on a proxied request: a JWS, HS256, over issuer, deploy context and expiry.

@@ -121,9 +121,8 @@ def test_prices_past_the_age_limit_are_a_problem(book):
 
 @needs("buys", "current-prices")
 def test_the_dashboard_and_the_audit_read_one_price_age(book):
-    """THE AGE IS WHAT TURNS INTO A PROBLEM, so the Dashboard's Prices line leads with it (the owner,
-    12 Oct 2026). `portfusion record` printed "13 days" while the desk gave only the dates; both
-    now read `price_ageing()`'s, the figure the age limit judges."""
+    """THE AGE IS WHAT TURNS INTO A PROBLEM, so the Dashboard's Prices line leads with it. It and
+    `portfusion record` both read `price_ageing()`'s, the figure the age limit judges."""
     from portfusion.desk import panels
     age = book.price_ageing()["age_days"]
     assert panels.get("dashboard").data()["prices"]["age_days"] == age
@@ -145,8 +144,7 @@ def test_a_reconciliation_past_its_band_is_a_problem(book, monkeypatch):
 
 @needs("buys", "current-prices")
 def test_a_difference_that_rounds_to_nothing_carries_no_sign(book, monkeypatch):
-    """On 15 Oct 2026 the Dashboard and the audit said an IG account's book and broker "agree to
-    -0.00": the subtraction left less than a penny, and its sign outlived the rounding."""
+    """Less than a penny reads "agree to 0.00": its sign does not outlive the rounding."""
     rec = book.reconciliation()
     ig = rec[rec["comparable"] == True].index[0]                       # noqa: E712
     agree = f"{rec.loc[ig, 'account']}: book and broker agree to "
@@ -210,8 +208,8 @@ def test_the_close_procedure_names_the_freeze_and_its_window(monkeypatch):
 # ---- the price limits ------------------------------------------------------------------------
 
 def test_the_two_price_limits_are_the_agreed_values(repo_root):
-    """Tuned by the owner to a weekly-or-wider refresh cadence. Changing either is a decision,
-    not a tweak — this is the reminder."""
+    """Tuned to a weekly-or-wider refresh cadence. Changing either is a decision, not a tweak —
+    this is the reminder."""
     from portfusion.record import rules as B
     assert B.PRICE_AGE_LIMIT == 21, "the absolute stale limit moved without a decision"
     assert B.PRICE_SPREAD_LIMIT == 4, "the spread limit moved without a decision"
@@ -223,8 +221,7 @@ def test_price_freshness_flags_a_stale_and_a_straggling_set(book, monkeypatch):
     fails on SPREAD even though its newest mark is fresh — which is the whole reason the
     second limit exists.
 
-    JUDGED BY THE FINDINGS THEMSELVES. The test once worked the two limits out with arithmetic of
-    its own and asserted that, so it held its own copy of the rule and never the record's."""
+    JUDGED BY THE FINDINGS THEMSELVES. The test holds no copy of the rule."""
     import datetime as dt
     from portfusion.record import rules as B
     today = dt.date.today()
@@ -246,7 +243,7 @@ def test_price_freshness_flags_a_stale_and_a_straggling_set(book, monkeypatch):
     assert verdict([25, 25]) == (True, False), "a set left 25 days must fail on age"
     assert verdict([0, 30]) == (True, True), "a ticker missed 30 days ago fails both"
     assert verdict([0, 9]) == (False, True), (
-        "THE CASE THE OLD RULE COULD NOT SEE: newest mark is today, one ticker is nine "
+        "THE SPREAD CASE: newest mark is today, one ticker is nine "
         "days behind. Age passes, spread must not")
 
 
@@ -303,8 +300,8 @@ def test_the_book_is_named_from_where_the_command_was_typed(repo_root):
     """A relative PORTFUSION_BOOK is a path from the folder the command runs in, and is written
     back absolute, so a process started elsewhere reads the same book. The word `demo`, from any
     folder, is the demo book the app ships. UNSET, it is the book in the folder the command runs
-    in, and a folder holding no book is REFUSED rather than read as the demo, which once let a
-    forgotten setting show invented figures as a book's own."""
+    in, and a folder holding no book is REFUSED rather than read as the demo, so a forgotten
+    setting cannot show invented figures as a book's own."""
     import os
     import subprocess
     import sys
@@ -324,10 +321,8 @@ def test_the_book_is_named_from_where_the_command_was_typed(repo_root):
 
 
 def test_a_foreign_income_row_with_no_rate_on_file_is_a_problem(store_copy):
-    """A ROW WITH NO RATE IS THE ONE THE CONVERSIONS CHECK EXISTS FOR, and it was never reported:
-    beside a row with a rate, pandas held its missing distance as NaN, which read as fresh; with
-    no row beside it, the note's `int(max)` raised and every problem was dropped (the review of
-    21 Oct 2026). Both shapes, each a problem by name."""
+    """A ROW WITH NO RATE IS THE ONE THE CONVERSIONS CHECK EXISTS FOR, reported by name beside a
+    row with a rate or with none."""
     from portfusion.history import fx as FX
     from portfusion.record import schema
     rates = FX.load()

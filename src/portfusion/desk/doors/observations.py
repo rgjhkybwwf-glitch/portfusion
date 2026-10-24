@@ -1,13 +1,12 @@
 """THE OBSERVATIONS DOOR — the one place in `desk/` that REPLACES an account reading.
 
 The third store door, beside `commit.py` (appends an event) and `marks.py` (replaces a mark).
-`store/account-readings.csv` is what `Book.reconciliation()` compares the book to; without a
-door it was hand-edited, which is how it sat stale while the marks moved underneath it.
+`store/account-readings.csv` is what `Book.reconciliation()` compares the book to.
 
-THE MARKS RULE ALREADY COVERED THIS. *A feed may write a MARK — "a price, an FX rate, live equity" —
-on the owner's per-line tick.* Live equity is named in that sentence. This door is not a new
-permission; it is the one the marks rule granted. The journal route is `marks` for the same reason:
-this is a marks-class door, not a fourth kind of write.
+THE MARKS RULE COVERS THIS. *A feed may write a MARK — "a price, an FX rate, live equity" — on
+the owner's per-line tick.* Live equity is named in that sentence. This door is not a new
+permission; the marks rule grants it. The journal route is `marks` for the same reason: this is a
+marks-class door, not a fourth kind of write.
 
 WHAT IT REPLACES, AND WHAT IT LEAVES ALONE
 ------------------------------------------
@@ -115,11 +114,9 @@ def _rows_on_file() -> dict[str, list[str]]:
 def _merged(existing: list[str], reading: dict) -> list[str]:
     """The row on file with every SETTABLE cell taken from the reading; the rest stands.
 
-    EVERY SETTABLE CELL IS THE NEW READING'S, and a field it does not carry is BLANK. Until
-    21 Oct 2026 a field the reading omitted kept the old reading's value, so a statement's
-    equity sat beside the previous feed read's `available` and `at`, and a share export that
-    states no cash kept another document's — figures filed under evidence that never stated
-    them. Only what is not a reading's (the account) stays from the row on file.
+    EVERY SETTABLE CELL IS THE NEW READING'S, and a field it does not carry is BLANK: the old
+    value would be a figure filed under evidence that never stated it. Only what is not a
+    reading's (the account) stays from the row on file.
     """
     fields = schema.TABLES[TABLE].fields
     cells = list(existing)

@@ -23,13 +23,9 @@ def test_the_interpreter_is_reported_not_typed(repo_root):
 # =====================================================================================
 # THE BACKUP REPORTS ITS OWN STATE
 #
-# The owner reported that the repo backup "had never fired". It had: every commit was in the
-# bare repo within seconds. NOTHING WAS BROKEN — but nothing ever said so either, because the
-# hook that pushed printed only on failure. A working backup and an absent one looked
-# identical from the outside, and after a while the owner stopped believing in it.
-#
-# That is a real defect in a backup. These check that the line tells the truth in both
-# directions, because a freshness line that only ever says "current" is furniture.
+# A hook that prints only on failure makes a working backup look like an absent one. These
+# check that the line tells the truth in both directions, because a freshness line that only
+# ever says "current" is furniture.
 # =====================================================================================
 
 def _bare_repo(tmp_path, work):
@@ -68,7 +64,7 @@ def _state_in(work):
 
 
 def test_backup_says_never_pushed_before_the_first_push(sandbox):
-    """The state that matters most, and the one the owner believed the repository was in."""
+    """Before the first push, the line says the branch HAS NEVER BEEN PUSHED."""
     work, _ = sandbox
     assert "HAS NEVER BEEN PUSHED" in _state_in(work)
 
@@ -112,8 +108,7 @@ def test_backup_says_when_the_hooks_are_off(sandbox):
 
 
 def test_backup_says_a_detached_head_pushes_nothing(sandbox):
-    """The hook pushes a branch; on a detached HEAD there is none. This line used to read
-    `'' HAS NEVER BEEN PUSHED`, which is true and sounds like a glitch."""
+    """The hook pushes a branch; on a detached HEAD there is none."""
     import subprocess
     work, _ = sandbox
     subprocess.run(["git", "push", "-q", "origin", "master"], cwd=work, check=True)
@@ -127,7 +122,7 @@ def test_backup_says_a_detached_head_pushes_nothing(sandbox):
 
 def test_backup_counts_the_hooks_on_in_a_worktree_pointed_at_the_main_checkout(sandbox, tmp_path):
     """The desktop app gives a session worktree an ABSOLUTE core.hooksPath, to the main checkout's
-    `.githooks`. Those hooks run; comparing the setting as text called them NOT ACTIVE."""
+    `.githooks`. Those hooks run, whatever the setting's spelling."""
     import subprocess
     work, _ = sandbox
     tree = tmp_path / "tree"
@@ -143,9 +138,7 @@ def test_backup_counts_the_hooks_on_in_a_worktree_pointed_at_the_main_checkout(s
 
 
 def test_an_installed_book_runs_on_its_own_venv(tmp_path, monkeypatch):
-    """A BOOK OF ITS OWN READ AS THE SYSTEM PYTHON: the audit judged the venv against the
-    checkout's, so a book whose `.venv` runs the release it names was told `NOT the project
-    .venv` on every run. Where the app is installed, the project is the loaded book."""
+    """A BOOK RUNS ON ITS OWN VENV: where the app is installed, the project is the loaded book."""
     from portfusion import about
     from portfusion.record import schema
     venv = tmp_path / ".venv"
@@ -158,9 +151,8 @@ def test_an_installed_book_runs_on_its_own_venv(tmp_path, monkeypatch):
 
 
 def test_an_installed_release_names_its_own_commit(monkeypatch):
-    """THE FOOTER NAMED THE BOOK'S COMMIT AS PORTFUSION'S: installed in a book's `.venv`, the app
-    asked git from its own folder and found the book's repository around it. Installed, the code's
-    commit is the one it was installed from (issue #18)."""
+    """INSTALLED, THE CODE'S COMMIT is the one it was installed from, never that of the book's
+    repository around it."""
     import portfusion
     from portfusion import about
     from portfusion.record import schema

@@ -6,9 +6,9 @@ LOCAL_PRICE_FIELDS says which fields are one. Its precision is per currency: GBP
 because LSE prices are quoted in pence and stored /100 (a line at 12.35p is 0.1235, which 2dp would
 round to 0.12). The desk sends all of it to the page with every panel answer, as it stands.
 
-EVERY PERCENTAGE THE PROJECT PRINTS has one precision, PCT_DP (the desk review, Holdings decision
-4, 10 Oct 2026): the desk, `portfusion record`, the report and the Method page. Printing only —
-stored figures keep their own precision (quarter-results to six places).
+EVERY PERCENTAGE THE PROJECT PRINTS has one precision, PCT_DP: the desk, `portfusion record`, the
+report and the Method page. Printing only — stored figures keep their own precision
+(quarter-results to six places).
 
 EVERY DATE A READER SEES reads "14 Oct 2026": the day without
 a leading nought, the month's three letters, the year; a moment adds the time, "14 Oct 2026,

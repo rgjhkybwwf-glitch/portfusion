@@ -74,8 +74,7 @@ def test_a_line_already_in_the_record_is_reported_and_not_read_again(tmp_path, m
     row the first one entered.
 
     AND IT ONLY WORKS IF THE DATES AGREE. The gate keys on (date, account, category, amount),
-    so a dividend the book holds at a date HL does not use is offered again as new — six were,
-    until their dates were corrected.
+    so a dividend the book holds at a date HL does not use is offered again as new.
     """
     monkeypatch.setattr(read_document, "INBOX", str(tmp_path))
     monkeypatch.setattr(read_rows, "bench_matching", lambda table, values: "an existing row")
@@ -257,8 +256,8 @@ def test_the_ii_ledger_rules_are_literal_prefixes():
 
 def test_a_documents_download_time_is_uk_time_wherever_the_mac_is(tmp_path, monkeypatch):
     """A DOCUMENT THAT STATES NO INSTANT IS DATED BY ITS DOWNLOAD TIME, read as UK wall-clock time
-    the way its own would be. It was read in the Mac's zone, so a Mac in New York filed a 13:00
-    London download as 08:00 (the review of 21 Oct 2026)."""
+    the way its own would be. A Mac in New York reads a 13:00 London download as 13:00, never
+    08:00."""
     import calendar
     import datetime as dt
     import os
@@ -280,9 +279,8 @@ def test_a_documents_download_time_is_uk_time_wherever_the_mac_is(tmp_path, monk
 
 def test_one_coincidence_does_not_name_a_ledgers_account(monkeypatch):
     """AN ii LEDGER THAT PRINTS NO CLIENT NUMBER is given an account from its lines that match
-    rows on file. One match was enough, so an interest payment of the same pennies on the same
-    day in another account filed the whole ledger there (the review of 21 Oct 2026). Now it takes
-    two lines agreeing, or a dealing line, and anything less is left blank for a person."""
+    rows on file. One match may be a coincidence of pennies on a day, so it takes two lines
+    agreeing, or a dealing line, and anything less is left blank for a person."""
     import datetime as dt
     from portfusion.desk.intake import bench
     from portfusion.record import rules as D
@@ -304,9 +302,8 @@ def test_one_coincidence_does_not_name_a_ledgers_account(monkeypatch):
 
 
 def test_a_utf16_export_is_read_as_utf16(tmp_path):
-    """A SPREADSHEET SAVED AS UTF-16 starts with its byte-order mark. cp1252 takes any byte, so it
-    read one as letters with a NUL between each, and the document loaded as garbage (the review of
-    21 Oct 2026)."""
+    """A SPREADSHEET SAVED AS UTF-16 starts with its byte-order mark. cp1252 takes any byte, so the
+    mark is read first, or each letter would carry a NUL."""
     from portfusion.desk.intake import read_document
     doc = tmp_path / "export.csv"
     doc.write_bytes("Symbol,Qty\nWEND,100\n".encode("utf-16"))

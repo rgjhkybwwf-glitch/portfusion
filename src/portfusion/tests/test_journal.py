@@ -55,9 +55,8 @@ def test_every_record_table_has_exactly_one_opening_count():
 
 
 def test_the_opening_counts_share_one_instant():
-    """One opening, not nineteen. The check reads rows at or after a table's own opening, and
-    staggered openings would make "since the journal opened" mean a different moment per
-    table."""
+    """One opening. The check reads rows at or after a table's own opening, and staggered
+    openings would make "since the journal opened" mean a different moment per table."""
     at = {r["at"] for r in _rows() if r["route"] == "baseline"}
     assert len(at) == 1, f"the journal opened at {sorted(at)}; it must open once"
 
@@ -87,8 +86,7 @@ def test_every_archived_bench_item_is_in_the_journal():
     """THE SEED IS A COPY AND THIS IS WHAT KEEPS IT ONE.
 
     Every item in `_archive/bench/` already carries `written_at` and `written_to` — the fact
-    this table exists to hold, recorded before the journal existed and never read back.
-    Seeding from them moves a fact the book already had into the place it belongs.
+    this table exists to hold, so each must match its journal row.
 
     DERIVED FROM THE ARCHIVE ON EVERY RUN, never a fixture. An item committed tomorrow fails
     this until its journal row exists — the same claim the door guards make from the other
@@ -154,8 +152,8 @@ def test_the_journal_claims_no_bench_write_the_record_does_not_have():
 
 def test_writes_in_the_same_second_read_newest_first():
     """ONE SECOND CAN HOLD SEVERAL WRITES — a refresh replaces marks, rates and readings at one
-    instant — and the later row in the file is the newer. Sorted unstably by time alone, What
-    Changed showed one second's rows in file order and another's reversed (13 Oct 2026)."""
+    instant — and the later row in the file is the newer. Sorted unstably by time alone, a
+    second's rows could read in either order."""
     from portfusion.engine import Book
     keys = ("at", "route", "op", "table", "ref")
     written = [tuple(r[k] for k in keys) for r in _rows() if r["route"] != "baseline"]
@@ -194,13 +192,11 @@ def test_the_journal_closes_against_the_record_as_it_stands():
 
 
 def test_a_row_added_by_hand_is_reported_as_unaccounted(store_copy):
-    """THE CHECK EARNING ITS PLACE. Until the journal existed, a hand-edited row and a
-    committed one were indistinguishable the moment the file was saved. This is the difference:
-    a row that arrived by no journalled route now has somewhere to show up.
+    """THE CHECK EARNING ITS PLACE. A row that arrived by no journalled route shows up as
+    unaccounted.
     """
-    # MEASURED AS A DELTA. Asserting the WHOLE frame rested on the live record carrying no other
-    # unaccounted row, and went red when one did — reporting a mechanism failure where there was
-    # a record finding. The mechanism is "a hand-added row shows up", and that is a difference.
+    # MEASURED AS A DELTA. Another unaccounted row on the live record is a finding, not a
+    # mechanism failure. The mechanism is "a hand-added row shows up", and that is a difference.
     def _unaccounted():
         return {r["table"]: r["unaccounted"]
                 for r in _book().journal_unaccounted().to_dict("records")}
@@ -252,10 +248,8 @@ def test_a_replace_leaves_the_reconciliation_where_it_was(store_copy):
         return ({r["table"]: r["unaccounted"] for r in rows},
                 next(r["replaced"] for r in rows if r["table"] == "current-prices"))
 
-    # THE DELTA, NOT THE ABSOLUTE. Read against the whole store, this passed only while no real
-    # refresh had ever been journalled; the first one through the Price Refresh put 18 replaced
-    # marks on file and the test failed on a store that was entirely correct. What is asserted is
-    # what THIS journal entry does, so it is measured either side of it.
+    # THE DELTA, NOT THE ABSOLUTE. Refreshes on file carry replaced marks, so what THIS entry
+    # does is measured either side of it.
     before, before_replaced = state()
     commit.journal([("marks", "replace", "current-prices", 12, "2026-09-04",
                      "12 marks replaced")])
@@ -275,8 +269,8 @@ def test_a_row_written_before_the_opening_is_inside_it(store_copy):
 
     WRITTEN HERE, ON EITHER SIDE OF THE INSTANT, rather than looked for in the loaded book: a
     book holds such rows only if its journal was seeded from writes made before it, and a test
-    that needed them stopped testing on every other book, a new one included. The row before
-    must not count; the row after must, which is what shows the check can fail.
+    that needed them would test no other book. The row before must not count; the row after
+    must, which is what shows the check can fail.
     """
     import datetime as dt
     opening = _book().journal_opened()

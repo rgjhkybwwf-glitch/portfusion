@@ -4,7 +4,7 @@
 it is made up and every source says so. It ships with the code, so nothing of a real book may
 appear in its files: `test_what_leaves.py` holds them, with the code, to the book loaded.
 
-THE TWO TESTS HERE RUN ON ANY BOOK, since they read `demo/` whichever is loaded: a fresh run of
+THE TESTS HERE RUN ON ANY BOOK, since they read `demo/` whichever is loaded: a fresh run of
 the generator writes exactly the files tracked there, and the demo's one bench record is what the
 bench gives its filed note today.
 """
@@ -77,10 +77,10 @@ def test_the_demos_bench_record_is_what_the_bench_gives_its_note_today(tmp_path,
 
 
 def test_the_generator_loads_no_book(tmp_path, repo_root):
-    """IT RUNS TO WRITE A BOOK, so it must not need one. It imported the histories, which import
-    the record, which loads a store on import — so after a schema change, with no book yet in the
-    new shape, the demo could not be rebuilt (the review of 21 Oct 2026). Loaded here with the
-    book pointed at an empty folder: it imports, and the record is never loaded."""
+    """IT RUNS TO WRITE A BOOK, so it must not need one. The histories import the record, which
+    loads a store on import, so a generator importing them could not rebuild the demo after a
+    schema change. Loaded here with the book pointed at an empty folder: it imports, and the
+    record is never loaded."""
     import subprocess
     import sys
     probe = (f"import importlib.util, sys\n"

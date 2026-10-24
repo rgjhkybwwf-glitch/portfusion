@@ -13,8 +13,9 @@ writing a demo the loader refuses. A source line is composed by `rules`, never t
 THE ARCHIVE IS INVENTED TOO. Each ii deal but one has a contract note, written here as a small
 PDF the bench reads the way it reads a real one; the sale of 20 Jun 2026 fell on a Saturday, so it
 stays not on file. One IG statement holds the two legs opened on 6 Jul 2026, so a stored deal id
-leads to a document as a real one must. The one bench record is the last note worked through the bench, in the shape
-the bench writes today: `tests/test_demo.py` opens the filed note on a bench and compares.
+leads to a document as a real one must. The one bench record is the last note worked through
+the bench, in the shape the bench writes: `tests/test_demo.py` opens the filed note on a bench and
+compares.
 
 THE JOURNAL IS DERIVED. It opens once with every table's count, takes the quarter freezes and the
 bench write made before it opened, and the one hand edit after: the restatement of 13 Oct 2026.

@@ -74,9 +74,7 @@ def live_marks() -> list[dict]:
 
 def archive(verbose: bool = True) -> list[dict]:
     """Append the live rates, as the price history appends its marks (`AppendOnlyCSV.bank()`):
-    idempotent at the same figure, and a second read of a day replaces a live read of it
-    — until 14 Oct 2026 the first read of a day stayed, and fx.csv and this file
-    disagreed about that day after a second refresh."""
+    idempotent at the same figure, and a second read of a day replaces a live read of it."""
     new, replaced = _FILE.bank(live_marks())
     if verbose:
         for r in sorted(replaced, key=lambda r: r["currency"]):
@@ -93,9 +91,8 @@ def archive(verbose: bool = True) -> list[dict]:
 def unbankable() -> list[dict]:
     """Live rates whose `as_of` is not a date, so they CANNOT be banked.
 
-    Its own function because the silence was the bug: live_marks() has to skip a row it cannot
-    date, and check() asked only about the rows live_marks() returned, so an undated rate was
-    never reported and was lost on the next refresh. This makes the next one loud.
+    Its own function because live_marks() must skip a row it cannot date: check() reports it, so
+    a refresh never loses it.
     """
     return [{"currency": ccy, "date": None, "kind": None, "rate": rate,
              "why": f"as_of {as_of!r} is not a date, so there is no date to file it under."}

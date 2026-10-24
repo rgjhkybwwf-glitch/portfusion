@@ -100,8 +100,7 @@ def archive(verbose: bool = True) -> list[dict]:
     """Append the current observations. Idempotent on (as_of, account) at the SAME figures.
 
     The outgoing value is banked before a door replaces it, as for prices and rates. A re-reading
-    of a day already on file AT OTHER FIGURES replaces that row: until 21 Oct 2026 it found its
-    day banked and appended nothing, so the history kept the earlier figures of the day for good.
+    of a day already on file AT OTHER FIGURES replaces that row.
     """
     new, replaced = _FILE.bank(live_observations())
     if verbose:

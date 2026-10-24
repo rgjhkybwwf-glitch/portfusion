@@ -26,7 +26,7 @@ def _git(where, *args):
 @pytest.fixture(autouse=True)
 def git_identity(monkeypatch):
     """Who the test repositories' commits are by. A publish commits, and without this the commit
-    takes the machine's own identity: a GitHub runner has none, and every publish failed there."""
+    takes the machine's own identity: a GitHub runner has none, and the publish fails there."""
     for role in ("AUTHOR", "COMMITTER"):
         monkeypatch.setenv(f"GIT_{role}_NAME", "test")
         monkeypatch.setenv(f"GIT_{role}_EMAIL", "test@example.invalid")
@@ -103,10 +103,9 @@ def test_the_redirects_send_the_api_and_the_sign_in_to_the_tunnel_signed():
 
 
 def test_a_crawler_may_read_the_noindex_and_never_reach_the_tunnel():
-    """robots.txt blocked everything until 7 Oct 2026, which hid the noindex on every response
-    from every crawler that obeys it: a crawler reads a rule only on a page it may fetch. It now
-    keeps crawlers off /api and /auth, the tunnel to the Mac, and nothing else; the noindex
-    header keeps the shell out of search."""
+    """Blocking everything would hide the noindex from every crawler that obeys robots.txt: a
+    crawler reads a rule only on a page it may fetch. It keeps crawlers off /api and /auth, the
+    tunnel to the Mac, and nothing else; the noindex header keeps the shell out of search."""
     robots = publish.files(TUNNEL)["bundle/robots.txt"].decode().splitlines()
     assert robots == ["User-agent: *", "Disallow: /api/", "Disallow: /auth/"]
     headers = publish.files(TUNNEL)["bundle/_headers"].decode()
@@ -122,10 +121,9 @@ def test_netlify_serves_the_manifest_as_a_manifest():
 
 
 def test_netlifys_build_is_the_tamper_check():
-    """T step 4's one finding (9 Oct 2026): `verify.py` refuses a hand edit in the deploy
-    repository ONLY because Netlify runs it, and that wiring is one generated line in
-    netlify.toml that nothing held — every other test here exercises verify.py directly,
-    which proves the gate works, not that it is on the gate."""
+    """`verify.py` refuses a hand edit in the deploy repository ONLY because Netlify runs it, and
+    that wiring is one generated line in netlify.toml that this alone holds — every other test
+    here exercises verify.py directly, which proves the gate works, not that it is on the gate."""
     toml = publish.files(TUNNEL)["netlify.toml"].decode()
     assert 'command = "python3 verify.py"' in toml, \
         "the deploy's build no longer runs the tamper check"
@@ -161,9 +159,8 @@ def test_a_value_from_the_record_stops_the_publish(deploy, monkeypatch):
 
 
 def test_a_publish_names_the_code_and_the_book_apart(deploy):
-    """A PUBLISH NAMED THE BOOK'S COMMIT AS PORTFUSION'S: `PortFusion@<commit>` took the commit of
-    whatever repository held the app, which, installed in a book's `.venv`, is the book's. The
-    code is named by its release and the book by its commit, each as what it is (issue #18)."""
+    """INSTALLED IN A BOOK'S `.venv`, THE REPOSITORY HOLDING THE APP IS THE BOOK'S, so the code is
+    named by its release and the book by its commit, each as what it is."""
     from portfusion import about
     clone, origin = deploy
     publish.publish(deploy=clone, tunnel=TUNNEL, commit=SOURCE)
@@ -176,7 +173,7 @@ def test_a_publish_names_the_code_and_the_book_apart(deploy):
 
 def test_the_commit_published_is_the_books(tmp_path, monkeypatch):
     """The commit a publish checks and names is the loaded book's, wherever the app is installed:
-    it read the app's folder, which finds the book only when the app sits inside it."""
+    the app's folder finds the book only when the app sits inside it."""
     from portfusion.desk import engine
     from portfusion.record import schema
     origin, book = tmp_path / "o.git", tmp_path / "book"
@@ -258,10 +255,10 @@ def test_a_publish_is_refused_while_the_mac_holds_no_proxy_secret(deploy, proxy_
 
 
 def test_a_publish_needs_no_web_framework(tmp_path):
-    """`portfusion desk --publish` ran from a terminal without the project's venv until 16 Oct
-    2026, when asking for the proxy secret loaded the remote door and with it FastAPI. The
-    secret lives in `desk/auth.py` so it does not: here the publish module is imported, and the
-    tree built and checked for the secret, with FastAPI and uvicorn made unimportable."""
+    """`portfusion desk --publish` runs from a terminal without the project's venv: the proxy
+    secret lives in `desk/auth.py`, so asking for it loads no remote door and no FastAPI. Here the
+    publish module is imported, and the tree built and checked for the secret, with FastAPI and
+    uvicorn made unimportable."""
     script = tmp_path / "no_web.py"
     script.write_text(
         "import sys\n"
@@ -278,8 +275,8 @@ def test_a_publish_needs_no_web_framework(tmp_path):
 
 
 def test_a_tunnel_daemon_that_does_not_answer_is_no_tunnel(monkeypatch):
-    """`tailscale funnel status` timing out raised through the publish as a traceback; a daemon
-    that does not answer is a tunnel that is not there (the review of 21 Oct 2026)."""
+    """A daemon that does not answer `tailscale funnel status` is a tunnel that is not there, not
+    a traceback through the publish."""
     import subprocess
     from portfusion.desk import publish
     monkeypatch.setattr(publish.shutil, "which", lambda name: "/usr/bin/true")

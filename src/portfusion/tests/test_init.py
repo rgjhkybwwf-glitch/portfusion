@@ -134,8 +134,8 @@ def test_the_loaded_book_opens():
 
 def test_an_empty_book_opens(tmp_path):
     """A NEW BOOK IS THE FIRST THING A NEW USER RUNS, so it must open: every figure nought or
-    blank, every desk page answering, and the gate saying what its first quarter needs. Built
-    from rows, the engine once could not: a table with no row had no columns to read."""
+    blank, every desk page answering, and the gate saying what its first quarter needs. Its tables
+    have no rows, and a frame built from rows alone has no columns."""
     run = _opens(create(tmp_path / "book"), "empty")
     assert run.returncode == 0, run.stderr[-2000:]
 
@@ -204,9 +204,8 @@ def _begun_mid_quarter(tmp_path):
 
 
 def test_a_book_begun_mid_quarter_is_measured_from_its_opening(tmp_path):
-    """A BOOK MAY BEGIN ON ANY DAY (#7). It was refused unless it began on a 1 January, because the
-    year and its first quarter were measured from a 31 December and a quarter end the record
-    never had."""
+    """A BOOK MAY BEGIN ON ANY DAY. Its year and first quarter measure from its opening, never a
+    31 December or quarter end the record never had."""
     run = subprocess.run([sys.executable, "-c", _MID_YEAR], capture_output=True, text=True,
                          env={**os.environ, schema.ENV: str(_begun_mid_quarter(tmp_path))})
     assert run.returncode == 0, run.stderr[-2000:]
@@ -288,8 +287,8 @@ def _commit(book, path_dirs):
 
 
 def test_a_new_book_never_tracks_its_venv_or_what_python_leaves(tmp_path):
-    """The book's venv lives in the book's folder, so a new user's `git add -A` would have
-    committed all of it: the .gitignore `init` wrote named the secrets and the inbox only."""
+    """The book's venv lives in the book's folder, where a `git add -A` would commit it: the
+    .gitignore `init` writes names it, and what Python leaves."""
     book = _started(tmp_path)
     for leftover in (".venv/bin/python3", "store/__pycache__/x.pyc", ".pytest_cache/v",
                      ".DS_Store"):
@@ -301,9 +300,8 @@ def test_a_new_book_never_tracks_its_venv_or_what_python_leaves(tmp_path):
 
 
 def test_a_new_book_never_tracks_a_key_file(tmp_path):
-    """A KEY KEPT BESIDE THE BOOK went into git with the next `git add -A`: the .gitignore `init`
-    wrote named the brokers' and the desk's files, and not the shapes a key arrives in from
-    anywhere else. The gate refuses whatever the list ignores, so naming them forbids them."""
+    """A KEY KEPT BESIDE THE BOOK stays out of git: the .gitignore names the shapes a key arrives
+    in, and the gate refuses whatever it ignores."""
     book = _started(tmp_path)
     for leftover in (".env", "broker.key", "secrets.json"):
         (book / leftover).write_text("")
@@ -313,9 +311,8 @@ def test_a_new_book_never_tracks_a_key_file(tmp_path):
 
 
 def test_a_new_books_secret_gate_refuses_a_credential(tmp_path):
-    """A NEW BOOK HOLDS ITS OWNER'S CREDENTIALS TOO, and had no gate: `init` set no hooks, so a
-    key pasted into a note went into git and out with the next push. The gate is the app's, on
-    from the first commit, run by the portfusion the book has installed."""
+    """A NEW BOOK HOLDS ITS OWNER'S CREDENTIALS TOO, so it has a gate: the app's, on from the
+    first commit, run by the portfusion the book has installed."""
     book = _started(tmp_path)
     assert "pre-commit" in subprocess.run(["git", "ls-files", ".githooks"], cwd=book,
                                           capture_output=True, text=True).stdout
@@ -325,9 +322,8 @@ def test_a_new_books_secret_gate_refuses_a_credential(tmp_path):
 
 
 def test_a_new_book_refuses_a_push_that_takes_anything_from_main(tmp_path):
-    """A BOOK'S MAIN HAD NO GUARD: `init` wrote the secret gate and not the hook that refuses a
-    deletion or a rewrite of `main`, and a host may protect no branch, so a force push over a
-    book's record went through. The guard is the app's, run by the portfusion the book runs."""
+    """A HOST MAY PROTECT NO BRANCH, so `init` writes the hook that refuses a deletion or a
+    rewrite of `main`. The guard is the app's, run by the portfusion the book runs."""
     book = _started(tmp_path)
     env = _git_env()
     env.pop("MAIN_REWRITE", None)
@@ -357,9 +353,9 @@ def test_a_new_books_gate_refuses_when_it_cannot_run(tmp_path):
 
 
 def test_a_book_made_to_push_on_commit_says_when_a_commit_is_not_backed_up(tmp_path):
-    """`--push-on-commit` pushes a BRANCH, and a detached HEAD has none. The hook used to exit
-    without a word, so a commit there sat on the machine alone looking exactly like one that had
-    been pushed. It never fails a commit, and a book made without the option has no such hook."""
+    """`--push-on-commit` pushes a BRANCH, and a detached HEAD has none, so the hook says a commit
+    there is not backed up. It never fails a commit, and a book made without the option has no
+    such hook."""
     assert not (create(tmp_path / "plain") / ".githooks" / "post-commit").exists()
     book = _started(tmp_path, push_on_commit=True)
     env = _git_env()
@@ -413,10 +409,9 @@ def test_a_new_book_names_the_portfusion_it_runs(tmp_path):
 
 
 def test_a_new_books_journal_opens_with_it(tmp_path):
-    """THE JOURNAL'S OPENING COUNTS ARE WRITTEN WITH THE BOOK. `init` wrote the journal's header
-    and nothing else, so a new book's journal never opened: nothing to reconcile against, and the
-    check that catches a hand edit never ran (the review of 21 Oct 2026). One count per table,
-    each of what was written, at one instant."""
+    """THE JOURNAL'S OPENING COUNTS ARE WRITTEN WITH THE BOOK: without them the check that catches
+    a hand edit has nothing to reconcile against. One count per table, each of what was written,
+    at one instant."""
     from portfusion.engine import Book
     from portfusion.record import rules
     book = create(tmp_path / "book", begins=2027)
@@ -432,8 +427,8 @@ def test_a_new_books_journal_opens_with_it(tmp_path):
 
 def test_a_filter_for_the_suite_does_not_fail_the_books_run(monkeypatch):
     """`portfusion check -k <a suite test>` passes the filter to the book's run too, which then
-    selects nothing, and pytest's exit 5 failed the check though nothing had (the review of
-    21 Oct 2026). Without a filter, a book run that selects nothing is still a failure."""
+    selects nothing, and pytest's exit 5 there is no failure. Without a filter, a book run that
+    selects nothing is still a failure."""
     from portfusion import check
     from portfusion.record import schema
     monkeypatch.setattr(schema, "BOOK", schema.DEMO.parent / "not-the-demo")

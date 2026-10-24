@@ -58,7 +58,7 @@ def check(args: list[str] = ()) -> int:
         return code
     book = _pytest([str(OPENS), *_checks(schema.BOOK)], args, str(schema.BOOK))
     # A FILTER THAT SELECTS NOTHING OF THE BOOK'S RUN is the filter's doing: `-k` naming a test of
-    # the suite deselects the book's one test, and pytest's 5 (no test selected) failed the check.
+    # the suite deselects the book's one test, so pytest's 5 (no test selected) is no failure.
     if book == 5 and args:
         book = 0
     return code or book

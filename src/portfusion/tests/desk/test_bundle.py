@@ -68,8 +68,7 @@ def test_the_bundle_carries_nothing_from_the_record(files):
     from portfusion.desk import publish
 
     # THE SCAN MUST AT LEAST LOOK FOR THE WHOLE REGISTER — every account and every security
-    # the loaded book names. A typed floor ("more than 20") said nothing on a smaller book
-    # and nothing useful on this one.
+    # the loaded book names; a count floor says nothing on a smaller book.
     def column(table, name):
         at = schema.TABLES[table].header.index(name)
         return {str(r[at]).strip() for r in schema.load(table) if str(r[at]).strip()}
@@ -98,9 +97,9 @@ def test_the_page_names_its_own_version(files):
 
 
 def test_a_short_ticker_is_not_a_leak_of_the_shells_own_words(files, monkeypatch):
-    """A TICKER THAT IS AN ORDINARY WORD — `A`, `T`, `ON`, `ALL`, `NOW`, `KEY` — matched the
-    shell's own comments and prose, so a book holding one could never publish (the review of
-    21 Oct 2026). Three characters or fewer are looked for outside comments, one not at all."""
+    """A TICKER THAT IS AN ORDINARY WORD — `A`, `T`, `ON`, `ALL`, `NOW`, `KEY` — would match the
+    shell's own comments and prose, so a book holding one could never publish. Three characters
+    or fewer are looked for outside comments, one not at all."""
     from portfusion.desk import publish
     monkeypatch.setattr(publish, "record_values",
                         lambda: {"A", "T", "ON", "ALL", "NOW", "KEY", "IT", "AND", "OR"})

@@ -228,7 +228,7 @@ def create(folder, practice: bool = False, begins: int | str | None = None,
             "key,value\n" + "".join(f"{k},{v}\n" for k, v in rows), encoding="utf-8", newline="")
         # THE JOURNAL OPENS WITH THE BOOK: one opening count per table, of what is written now,
         # all at one instant. Without them the journal has nothing to reconcile against and its
-        # hand-edit check never runs (`Book.journal_opened()`), on every book this made.
+        # hand-edit check never runs (`Book.journal_opened()`).
         at = schema.record_instant()
         with (store / "journal.csv").open("a", encoding="utf-8", newline="") as fh:
             for table in sorted(t for t in schema.TABLES if t != "journal"):

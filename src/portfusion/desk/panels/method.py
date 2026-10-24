@@ -8,7 +8,7 @@ THE RULES ARE RENDERED FROM THE RECORD, never retyped: `rules.SPREAD_BET`, `STAT
 limits and the reasoning cut-off are interpolated from the constants, through the engine's pinned
 record. tests/test_record.py refuses a file that writes the hierarchy out in its own words.
 
-The Mac's desk only, for now: adding it to the hosted desk is the owner's decision.
+The Mac's desk only: it is not in `remote.REMOTE_PANELS`.
 """
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ from portfusion.house.precision import pct
 NAME = "method"
 TITLE = "Method"
 #: After Reports, and apart from the thread of the work: how the numbers are made is not work
-#: on the book (13 Oct 2026).
+#: on the book.
 ORDER = 80
 APART = True
 
@@ -97,12 +97,12 @@ def data() -> dict:
             {"topic": "Spread-bet valuation", "text": (
                 "Marked at IG contract levels, at both ends — entry and mark — never at the "
                 "underlying share price: marking the entry at the contract level and the mark at "
-                "spot was a real defect, a subtraction across two bases. Different legs of one "
-                "underlying can sit on different IG contracts at different prices, so marks are "
-                "keyed by contract, not by ticker. A sweep reads a contract's level live, and a past "
-                "day's close can be dated too: IG's hour bar ending 22:00 UK for a near contract, and "
-                "for a far one the level its filed IG statement prints. Between refreshes a mark ages "
-                "like any other.")},
+                "spot would subtract across two bases. Different legs of one underlying can sit "
+                "on different IG contracts at different prices, so marks are keyed by contract, "
+                "not by ticker. A sweep reads a contract's level live, and a past day's close can "
+                "be dated too: IG's hour bar ending 22:00 UK for a near contract, and for a far "
+                "one the level its filed IG statement prints. Between refreshes a mark ages like "
+                "any other.")},
             {"topic": "Cash", "text": (
                 "Recorded like a price: a balance, the date it was true, a named source. Cash is "
                 "never in net asset value: a share account's is its positions at market, and a "
@@ -117,9 +117,8 @@ def data() -> dict:
             {"topic": "Unrealised gain and position size", "text": (
                 "Unrealised gain is in sterling: (value − cost) ÷ cost, matching the broker app "
                 "and including FX. Position size (weight) is a share of current total market "
-                "exposure, not of entry cost and not of 'portfolio value', a retired term: a "
-                "spread bet contributes its exposure, so a weight is a share of what the book is "
-                "exposed to, not of what it is worth.")},
+                "exposure, not of entry cost: a spread bet contributes its exposure, so a weight "
+                "is a share of what the book is exposed to, not of what it is worth.")},
             {"topic": "Prices, and how fresh they must be", "text": (
                 f"Each line's mark is sourced and dated on its own; Holdings opens to every mark "
                 f"behind a line. Two limits, and they catch different things: a problem when the "

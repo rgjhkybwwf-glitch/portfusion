@@ -5,13 +5,12 @@ purpose. An event happened once and is history, so its table is append-only. A p
 by design at every refresh — which is safe only because the outgoing value is BANKED first, and
 that is the ordering this module refuses to skip.
 
-THE MARKS RULE IS WHAT MAKES THIS LEGAL, and it was written for exactly this: *a feed may write a
-MARK on the owner's tick; it may never write an EVENT.* This is the door `Action(writes="marks")`
-declares.
+THE MARKS RULE IS WHAT MAKES THIS LEGAL: *a feed may write a MARK on the owner's tick; it may
+never write an EVENT.* This is the door `Action(writes="marks")` declares.
 
 THE ORDERING IS ENFORCED BY THE FLOW, NOT REMEMBERED. `feeds/refresh.py` exists because two
-commands meant two chances to forget one. Here the bank runs first and the replace does not
-happen if it fails — the same guarantee, arriving on a screen.
+commands are two chances to forget one. Here the bank runs first and the replace does not happen
+if it fails — the same guarantee, arriving on a screen.
 
 WHAT IT WILL NOT DO:
 
@@ -56,9 +55,9 @@ def paths() -> list:
 
     NAMED SO A CALLER DOES NOT KEEP A SECOND LIST. `write()` already holds these under
     `commit.atomic()`; a caller combining this door with another has to hold the union of both,
-    and a hand-copied list is the drift this project keeps deleting things for. The Reconcile
-    write is that caller — its levels and its equity are ONE observation and must land or fail
-    together, which is the whole reason the reading takes them in one pass.
+    and a hand-copied list drifts. The Reconcile write is that caller — its levels and its equity
+    are ONE observation and must land or fail together, which is the whole reason the reading
+    takes them in one pass.
     """
     from portfusion.history import fx as FX
     from portfusion.history import prices as PH
@@ -218,8 +217,6 @@ def write(prices: list[dict] | None = None, rates: list[dict] | None = None) -> 
 
     THE BANKING IS INSIDE THE ENVELOPE, both halves of it: `paths()` holds the two histories with
     the tables, so a refusal after the outgoing marks were banked takes the banking back too.
-    Until 21 Oct 2026 the first half ran before `atomic()`, which held the tables and the journal
-    alone.
     """
     prices, rates = list(prices or []), list(rates or [])
     if not (prices or rates):

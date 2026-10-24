@@ -1,18 +1,8 @@
 """
 EVERY READ OF THE STORE GOES THROUGH A DECLARED DOOR.
 
-An AST scan of the whole repository against an explicit allow-list. It replaced a check that
-had three holes, and each is a reason for the shape of this one:
-
-  1. It read engine.py as TEXT — `source.split("def load_store()")` — so it enforced the
-     rule by position in a file. Renaming the function or moving it broke the check
-     without changing a single behaviour.
-  2. Its door list was `("read_csv(", "open()", "DictReader(")`, and **"open()" matches
-     nothing anybody writes**. `open(path)` does not contain the substring `open()`.
-     The most common way to open a file was never checked at all.
-  3. It could only ever see engine.py. The identical violation in the report and in all
-     three history modules was invisible to it, while the docs said load_store() was the
-     one door. It was one of five.
+An AST scan of the whole repository against an explicit allow-list. Matched on the call, never
+on a file's text or a substring, and across every module.
 
 The allow-list is the point: each door is named, so closing one is a visible deletion from
 this file rather than a silent improvement nobody can audit.
@@ -46,16 +36,11 @@ BUFFER_HINTS = ("buf", "stringio", "io.")
 #:                        not in schema.TABLES. It asks `D.store_dir()` where the store is,
 #:                        so it reads the same store as every other table (the sentinel tests
 #:                        below).
-#:   history/_appendonly.py  THE THREE HISTORIES, through one reader. Three modules each with
-#:                        their own load/save/known were three parse rules: one coerced a blank
-#:                        to None and two raised on it, for no reason anybody chose. One
-#:                        implementation now, with nullable an argument.
+#:   history/_appendonly.py  THE THREE HISTORIES, through one reader. Nullable is an argument.
 #:
 #: The engine reads the same three files with pandas, and that is deliberate rather than
 #: unfinished: it wants FRAMES for analysis where history/ wants ROWS for appending, and the
-#: travel rules keep the build and the feeds apart on purpose. Two readers for two jobs is not
-#: the defect this list was drawn up to shrink; five readers of one file with five parse rules
-#: was.
+#: travel rules keep the build and the feeds apart on purpose.
 #:   desk/doors/marks.py        a READ in service of a REPLACE. Replacing one mark means reading the
 #:                        file LINE BY LINE and passing every line it is not replacing through
 #:                        as the bytes it read. Going through a csv writer instead would requote
@@ -75,11 +60,10 @@ BUFFER_HINTS = ("buf", "stringio", "io.")
 #:                        it replaces, so every line it is not taking out passes through as the
 #:                        bytes it read.
 #:
-#: `desk/intake/read_document.py` READS DOCUMENTS AND IS NOT HERE. A UK broker's export is CP1252 and
-#: a strict utf-8 open raised on four of five real HL downloads, so it decodes the bytes itself
-#: and parses from memory; the scan resolves a csv call's target back to an assignment and
-#: cannot see one there. That is the scan being honest about what it can prove, and the module
-#: reads _inbox/, which is not the record.
+#: `desk/intake/read_document.py` READS DOCUMENTS AND IS NOT HERE. A UK broker's export is
+#: CP1252, so it decodes the bytes itself and parses from memory; the scan resolves a csv call's
+#: target back to an assignment and cannot see one there. That is the scan being honest about
+#: what it can prove, and the module reads _inbox/, which is not the record.
 CSV_FILE_READERS = {
     "record/schema.py", "engine.py", "record/migrations.py",
     "desk/doors/marks.py", "desk/doors/observations.py", "desk/doors/freeze.py",
@@ -100,8 +84,7 @@ def _csv_calls(path):
 
     Returns (tree, parents, hits). Matched on the call itself, so `open(path)`,
     `pd.read_csv(STORE / x)` and `(ROOT / p).open()` all register through the csv or
-    pandas call wrapped around them — the retired check's `"open()"` literal matched none
-    of those, because `open(path)` does not contain the substring `open()`.
+    pandas call wrapped around them.
     """
     src = path.read_text()
     tree = ast.parse(src)
@@ -146,7 +129,7 @@ def test_the_engine_still_reads_the_record_through_one_function():
     """engine.py's own rule, checked by AST rather than by splitting its text.
 
     Every store read inside the engine is inside load_store(). This survives a rename, a
-    reorder, and a split of engine.py into a package — none of which the retired version did.
+    reorder, and a split of engine.py into a package.
     """
     path = SRC / "engine.py"
     tree, parents, hits = _csv_calls(path)
@@ -168,10 +151,8 @@ def test_the_engine_still_reads_the_record_through_one_function():
 
 def test_the_store_loads_no_frame_nothing_reads(project_files):
     """A FRAME NOTHING READS IS A SECOND COPY OF A TABLE, built with every Book and waiting for a
-    reader to choose it over the record's own rows. Six of fourteen were, until step 5 (15 Oct
-    2026): the engine reads trades, exits, the closed positions and the register through `self.D`,
-    and nothing read the frames beside them. As the registry refuses a figure nothing renders, this
-    refuses a frame nothing outside the tests reads."""
+    reader to choose it over the record's own rows. As the registry refuses a figure nothing
+    renders, this refuses a frame nothing outside the tests reads."""
     from portfusion.engine import load_store
     read = set()
     for path in project_files(".py"):
@@ -191,10 +172,10 @@ def test_the_store_loads_no_frame_nothing_reads(project_files):
 def test_the_engine_imports_nothing_but_the_record_and_pandas(imports_of):
     """The engine's own rule: it imports the record and pandas, and nothing else."""
     assert imports_of(SRC / "engine.py") <= {"__future__", "pandas", "record"}
-    # `record` is a package, so the name above admits all of it. The rule was always the
-    # RECORD'S RULES and nothing else of it — so what engine.py takes from the package is checked
-    # by its DOTTED name, every form alike: `from portfusion.record import schema`, and
-    # `from portfusion.record.schema import TABLES`, which a check of the first form alone passed.
+    # `record` is a package, so the name above admits all of it. The rule is the RECORD'S RULES
+    # alone, so what engine.py takes from the package is checked by its DOTTED name, every form
+    # alike: `from portfusion.record import schema`, and
+    # `from portfusion.record.schema import TABLES`.
     taken = {m for m in imports_of(SRC / "engine.py", dotted=True) if m.startswith("record.")}
     assert taken <= {"record.rules"}, f"engine.py takes {sorted(taken)} from record/"
 
@@ -214,14 +195,7 @@ def test_each_declared_door_still_exists(door):
 # The doors above say WHERE the record is read. These say the doors all read the SAME
 # PLACE, which is a different claim.
 #
-# While `schema.STORE` was the seam in name only — `engine.load_store()` reading three
-# histories from the repo's own path, `history/_appendonly.py` binding a path at import —
-# `store_copy`, the fixture whose whole job is to keep a test off the real record, moved
-# twenty tables and left three behind, and fixtures patched around the ones it missed, per
-# module, by hand.
-#
-# NOTHING FAILED, because the copy and the record agreed. That is the condition these tests
-# exist to end: proof by SENTINEL rather than by two files happening to match.
+# Proof is by SENTINEL, never by a copy and the record happening to agree.
 # =====================================================================================
 
 def _sentinel_store(tmp_path):
@@ -247,8 +221,7 @@ def _sentinel_store(tmp_path):
         lines = path.read_bytes().decode("utf-8").splitlines()
         if len(lines) < 2:
             continue                # an empty history has nothing to carry a sentinel
-        # AS CSV, not split on commas: a quoted cell holding one — a mark's source — moved
-        # every column after it.
+        # AS CSV, not split on commas: a quoted cell may hold one, a mark's source.
         import io
         cells = next(csv.reader([lines[1]]))
         cells[col] = "ZZ-SENTINEL"
@@ -262,8 +235,8 @@ def _sentinel_store(tmp_path):
 
 @needs("buys", "current-prices")
 def test_moving_the_store_moves_every_table_the_engine_reads(tmp_path):
-    """THE THREE THE SEAM USED TO MISS. Each is read with pandas rather than schema.load(),
-    which is deliberate — the engine wants frames — but it must still be the same folder."""
+    """THE THREE READ WITH PANDAS rather than schema.load(), which is deliberate — the engine
+    wants frames — but it must still be the same folder."""
     from portfusion.record import rules
     from portfusion.engine import Book
 
@@ -333,8 +306,8 @@ def test_a_book_answers_from_the_store_it_was_built_from(tmp_path):
     for csv_file in schema.STORE.glob("*.csv"):
         shutil.copy2(csv_file, target / csv_file.name)
     # Any account with a cash reading — the probe is the planting, not the account's name.
-    # A share account's, since 13 Oct 2026: a spread-bet account's funds are on its own
-    # reading and it has no row in the cash readings.
+    # A share account's: a spread-bet account's funds are on its own reading and it has no row
+    # in the cash readings.
     observed = {o.account for o in rules.cash_readings}
     account = next(a for a in rules.ACCOUNT_ORDER if a in observed)
     # AFTER EVERY READING OF EITHER KIND, so the planted cash is the account's newest, and after
@@ -370,7 +343,7 @@ ASKED_WITHOUT_A_BOOK = {
 #: `record/rules_evidence.py` are its, and that module holds no table at all. `schema`'s are held
 #: to this list as well: `filed_statements()` lists `_archive/statements/`, which is no table and
 #: which no Book pins, so a document filed after a Book was built is on file to it.
-#: `funding_nights()` reads a row's own detail with a regex and no table (13 Oct 2026).
+#: `funding_nights()` reads a row's own detail with a regex and no table.
 CALLABLE_THROUGH_THE_PIN = {"evidence_from_source", "reference_resolves", "document_not_on_file",
                             "states_cash", "filed_statements", "funding_nights"}
 
@@ -425,8 +398,7 @@ def test_no_book_method_reads_the_process_record(repo_root):
 
 def test_the_archive_is_listed_in_one_place(project_files, repo_root):
     """`schema.STATEMENTS` is where a document is filed and `schema.filed_statements()` is what is
-    there. Four modules composed the path and five listed the folder until 2 Oct 2026. A new
-    one composes it here or not at all."""
+    there. A module composes the path here or not at all."""
     import re
     composed = re.compile(r"[\"']_archive[\"']\s*/\s*[\"']statements[\"']")
     from harness import app_name
@@ -453,10 +425,7 @@ def test_a_hidden_file_or_a_folder_is_not_a_filed_document(monkeypatch, tmp_path
 
 
 def test_the_import_reader_sees_a_module_imported_from_the_package(imports_of, tmp_path):
-    """`from portfusion import engine` IMPORTS THE ENGINE. The reader took the package for the
-    import and never the name after it, so every boundary guard asking whether a file imports
-    `engine` or `desk` passed this form, which the report already uses (the review of 21 Oct
-    2026). Each name is read, dotted or not."""
+    """`from portfusion import engine` IMPORTS THE ENGINE. Each name is read, dotted or not."""
     src = tmp_path / "m.py"
     src.write_text("from portfusion import engine, desk as d\nimport portfusion.record.rules\n")
     assert {"engine", "desk", "record"} <= imports_of(src)
@@ -464,9 +433,7 @@ def test_the_import_reader_sees_a_module_imported_from_the_package(imports_of, t
 
 
 def test_a_store_that_will_not_load_leaves_the_record_where_it_was(tmp_path):
-    """`store_at()` PUTS THE RECORD BACK EVEN WHEN THE STORE IT WAS GIVEN WILL NOT LOAD. The move
-    happened before the block was entered, so a refusal from it left `schema.STORE` pointing at
-    the store that failed (the review of 21 Oct 2026)."""
+    """`store_at()` PUTS THE RECORD BACK EVEN WHEN THE STORE IT WAS GIVEN WILL NOT LOAD."""
     import shutil
     from portfusion.record import rules, schema
     was = schema.STORE
@@ -495,9 +462,8 @@ def test_a_missing_history_is_refused_by_name(tmp_path):
 
 
 def test_a_book_from_another_store_is_measured_from_its_own_start(tmp_path):
-    """EACH BOOK READS ITS OWN START. The engine read the day the record begins once, when it was
-    imported, so a Book built from another store — or after the setting changed — was measured
-    from the loaded book's start (the review of 21 Oct 2026)."""
+    """EACH BOOK READS ITS OWN START. A Book built from another store is measured from that
+    store's start."""
     import shutil
     from portfusion.engine import Book, record_begins
     from portfusion.record import schema

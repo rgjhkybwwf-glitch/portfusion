@@ -38,8 +38,8 @@ def money(v) -> float | None:
     """A figure to the penny, ONE WAY FOR EVERY PANEL: half-up on the figure as written, as a
     person rounds. None for a missing or NaN figure.
 
-    Python's round() and numpy's disagree on a half-penny, and panels used both: a notional ending
-    in a half-penny showed one penny on one page and the next penny on another.
+    Python's round() and numpy's disagree on a half-penny, so two pages could show a half-penny
+    figure a penny apart.
     """
     try:
         f = float(v)

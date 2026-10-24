@@ -106,8 +106,8 @@ def test_the_allowlist_is_checked_before_a_request_is_built(monkeypatch):
     {"isError": True, "content": [{"type": "text", "text": '{"error": "bad symbol"}'}]},
 ])
 def test_a_refusal_inside_a_normal_reply_is_raised_and_not_read(monkeypatch, result):
-    """29 Sep 2026: the quote screen answered HTTP 200 with `success: false` for twenty minutes.
-    A parser that looked only for `data` would have priced nothing and said nothing."""
+    """The quote screen can answer HTTP 200 with `success: false`: a parser reading only `data`
+    would price nothing and say nothing."""
     conn = object.__new__(tv._Connection)
     monkeypatch.setattr(conn, "_rpc", lambda *a, **k: result, raising=False)
     with pytest.raises(tv.TVRefused):
@@ -115,8 +115,7 @@ def test_a_refusal_inside_a_normal_reply_is_raised_and_not_read(monkeypatch, res
 
 
 def test_a_refusal_in_plain_text_is_a_refusal_in_its_own_words(monkeypatch):
-    """`isError` with a sentence, not JSON. It was parsed first and checked second, so the sweep
-    reported `JSONDecodeError: Expecting value` and lost every TradingView line with it."""
+    """`isError` with a sentence, not JSON. It is checked before it is parsed."""
     conn = object.__new__(tv._Connection)
     monkeypatch.setattr(conn, "_rpc", lambda *a, **k: {
         "isError": True, "content": [{"type": "text", "text": "Rate limit exceeded"}]}, raising=False)
@@ -125,8 +124,7 @@ def test_a_refusal_in_plain_text_is_a_refusal_in_its_own_words(monkeypatch):
 
 
 def test_a_read_that_stalls_is_the_feeds_error_and_not_a_crash(monkeypatch):
-    """A timeout during the read is not a URLError, so it escaped the sweep as a bare
-    TimeoutError and took the whole TradingView half with it."""
+    """A timeout during the read is not a URLError, and is caught as the feed's own error."""
     def stall(*a, **k):
         raise TimeoutError("The read operation timed out")
     monkeypatch.setattr(tv.urllib.request, "urlopen", stall)
@@ -172,9 +170,8 @@ def _answers(monkeypatch, *outcomes):
 
 
 def test_a_handshake_that_fails_is_tried_again(monkeypatch):
-    """1 Oct 2026: one line in the afternoon's sweep came back "bad handshake" while every other
-    line answered. A request that never reached an answer is sent again, after a pause that
-    doubles; every tool on the allowlist only reads, so asking twice changes nothing."""
+    """A request that never reached an answer is sent again, after a pause that doubles; every
+    tool on the allowlist only reads, so asking twice changes nothing."""
     handshake = tv.urllib.error.URLError(ssl.SSLError("bad handshake"))
     queue, pauses = _answers(monkeypatch, handshake, handshake,
                              '{"jsonrpc": "2.0", "id": 1, "result": {"ok": true}}')
@@ -214,9 +211,8 @@ def _replies(monkeypatch, conn, *results):
 
 
 def test_a_bar_refused_before_tradingview_has_its_data_is_asked_again(monkeypatch):
-    """Measured 1 Oct 2026 through this feed's own connection: a fresh session's first two bar
-    requests were refused with "websocket: bad handshake", and the third answered. Every sweep
-    opens a fresh session, so its first line, GRVL, was lost to it every time that afternoon."""
+    """A fresh session's first bar requests may be refused with "websocket: bad handshake", and
+    every sweep opens a fresh session, so such a refusal is asked again."""
     conn = _bare_connection()
     queue, pauses = _replies(monkeypatch, conn, _NOT_YET, _NOT_YET,
                              {"structuredContent": {"success": True, "bars": []}})
@@ -233,7 +229,7 @@ def test_still_not_connected_after_every_try_says_so(monkeypatch):
 
 
 def test_any_other_refusal_is_an_answer_and_is_not_asked_again(monkeypatch):
-    """The quote screen's 429 lasted hours on 1 Oct: asking again would only slow every sweep."""
+    """A 429 can last hours: asking again would only slow every sweep."""
     conn = _bare_connection()
     queue, pauses = _replies(
         monkeypatch, conn,
@@ -249,7 +245,7 @@ def test_any_other_refusal_is_an_answer_and_is_not_asked_again(monkeypatch):
 # =====================================================================================
 
 def test_a_bar_is_dated_by_the_session_it_describes_and_fx_is_stamped_the_evening_before():
-    """The stamps TradingView returned on 29 Sep 2026; `session_date()` says why FX differs."""
+    """TradingView's stamps; `session_date()` says why FX differs."""
     assert tv.session_date(_t("2026-09-28T13:30:00")) == "2026-09-28"     # NASDAQ:GRVL
     assert tv.session_date(_t("2026-09-29T07:00:00")) == "2026-09-29"     # LSE, XETR, OMXCOP
     assert tv.session_date(_t("2026-09-27T22:00:00")) == "2026-09-28"     # FX_IDC:GBPUSD
@@ -349,9 +345,9 @@ def test_a_live_read_is_the_quote_and_never_a_part_formed_bar():
 
 @HOLDS_LINES
 def test_a_venue_that_shut_today_prices_at_todays_close():
-    """17:15 UK: LSE and XETRA have shut. A sweep is the price at the moment it is taken
-    (the owner, 30 Sep 2026), so each takes today's close, dated today — and after midnight the
-    same session still prices the same."""
+    """17:15 UK: LSE and XETRA have shut. A sweep is the price at the moment it is taken, so each
+    takes today's close, dated today — and after midnight the same session still prices the
+    same."""
     r = _sweep(_conn(), NOW_1715_UK)
     assert not r["failed"]
     by = {p["mark_key"]: p for p in r["prices"]}
@@ -368,8 +364,8 @@ def test_a_venue_that_shut_today_prices_at_todays_close():
 
 @HOLDS_LINES
 def test_when_the_quote_screen_refuses_the_trading_lines_are_unpriced_and_named():
-    """THE TWENTY MINUTES OF 29 SEP. Shut lines still price from completed bars; a trading line
-    has no honest price without the quote, so it is reported — never filled from a bar."""
+    """Shut lines still price from completed bars; a trading line has no honest price without the
+    quote, so it is reported — never filled from a bar."""
     r = _sweep(_conn(refuse="tradingview api: …/scan: 429: "), NOW_1400_UK)
     assert [p["mark_key"] for p in r["prices"]] == [US]
     assert {f["key"] for f in r["failed"]} == {PENCE, THIRD}
@@ -399,8 +395,8 @@ def _quote_screen_answers(conn, answer):
 
 @HOLDS_LINES
 def test_a_quote_screen_that_does_not_answer_costs_only_the_lines_still_trading():
-    """An HTTP error on the quote screen raised out of the sweep until 1 Oct 2026, and the US
-    closes the bars had priced were lost with the lines that needed a quote."""
+    """An HTTP error on the quote screen is caught in the sweep: the closes the bars priced stand,
+    and only the lines that needed a quote fail."""
     def no_answer(_):
         raise tv.TVError("TradingView tools/call: HTTP 429")
     r = _sweep(_quote_screen_answers(_conn(), no_answer), NOW_1400_UK)
@@ -418,7 +414,7 @@ def test_a_quote_screen_that_does_not_answer_costs_only_the_lines_still_trading(
 ])
 def test_a_partial_reply_is_not_ok_and_a_line_it_left_out_carries_the_vendors_reason(missing):
     """The vendor reports a market that failed in `partial` and `warnings`, and each symbol it left
-    out in `missing`. All three were dropped, and a partial reply was reported as `ok`."""
+    out in `missing`. A partial reply is not `ok`; a line left out carries the vendor's reason."""
     # the parametrised shapes name the symbol at run time — the book's own third line
     missing = ([{"symbol": SYM[THIRD], "reason": "market unavailable"}]
                if isinstance(missing, list) else {SYM[THIRD]: "market unavailable"})
@@ -436,9 +432,8 @@ def test_a_partial_reply_is_not_ok_and_a_line_it_left_out_carries_the_vendors_re
 
 @HOLDS_LINES
 def test_the_lines_are_asked_five_at_a_time_and_read_in_the_books_order():
-    """33 s one after another on 1 Oct 2026, 5.7 s five at a time. Never more than AT_ONCE in
-    flight, and the answer reads in the book's order whichever line finished first. A Saturday,
-    so every line prices from Friday's session."""
+    """Never more than AT_ONCE in flight, and the answer reads in the book's order whichever line
+    finished first. A Saturday, so every line prices from Friday's session."""
     class Slow(FakeConnection):
         def __init__(self, **kw):
             super().__init__(**kw)
@@ -468,7 +463,7 @@ def test_the_lines_are_asked_five_at_a_time_and_read_in_the_books_order():
 
 
 def test_no_two_requests_in_flight_share_an_id(monkeypatch):
-    """A reply is matched to its request by id, and a sweep now has several in flight."""
+    """A reply is matched to its request by id, and a sweep has several in flight."""
     seen, lock = [], threading.Lock()
 
     def urlopen(req, **k):
@@ -493,8 +488,7 @@ def _minute(stamp, last):
 
 @HOLDS_LINES
 def test_when_the_quote_screen_refuses_a_trading_line_takes_its_last_minute_bar():
-    """1 OCT 2026: the scanner refused every market for hours while the bars answered (the owner:
-    "if a live quote is not available pull the last one minute bar close"). The price is that
+    """When the quote screen refuses, a trading line takes its last minute bar. The price is that
     minute's last trade, struck live at the minute's end — fifteen minutes behind the read for a
     delayed venue — and a line between sessions still prices from its session."""
     minutes = {SYM[PENCE]: [_minute("2026-09-29T12:44:00", 50.05), _minute("2026-09-29T12:45:00", 50.1)],
@@ -524,9 +518,9 @@ def test_a_minute_bar_from_before_the_session_opened_is_not_todays_price():
 
 
 def test_a_minute_still_running_is_struck_when_read_and_never_called_a_close():
-    """The rates' minute bars are current: at 14:27:20 BST on 1 Oct the newest was the 14:27
-    minute, still running. Its instant is the read, not the minute's end; and its source must not
-    say "close", the word `desk/doors/marks.py` knows a rate's close by."""
+    """The rates' minute bars are current: the newest may be a minute still running. Its instant
+    is the read, not the minute's end; and its source must not say "close", the word
+    `desk/doors/marks.py` knows a rate's close by."""
     now = dt.datetime(2026, 9, 29, 13, 0, 20, tzinfo=UTC)
     conn = FakeConnection(bars={"FX_IDC:GBPUSD": [{"t": _t("2026-09-28T22:00:00"), "c": 1.3239}]},
                           minutes={"FX_IDC:GBPUSD": [_minute("2026-09-29T13:00:00", 1.3221)]},
@@ -621,8 +615,8 @@ def _said(check):
 @HOLDS_LINES
 def test_the_lists_agree_with_the_book():
     """Every line held flagged Live, the contracts by their underlying, Exit empty, two Entry
-    candidates not held. A section header is not a symbol. The names are the loaded book's, so the check still bites — it
-    uniquely covers section headers and a contract matched by its underlying's symbol."""
+    candidates not held. A section header is not a symbol. The names are the loaded book's; the
+    check uniquely covers section headers and a contract matched by its underlying's symbol."""
     from portfusion.record import rules as D
     priced = sorted({r[0] for r in D.CURRENT_PRICES} & set(D.LEG_CONTRACT.values()))
     assert priced, "no contract is priced — the underlying-match premise is gone"
@@ -637,7 +631,7 @@ def test_the_lists_agree_with_the_book():
 def test_each_flag_is_read_by_what_it_means():
     """A held line being sold is flagged Exit, which is right while it is held and wrong once
     it is not; a line held and still flagged Entry was entered; one held and flagged nothing
-    is missing. The roles are 1 October's; the names are the loaded book's."""
+    is missing. The names are the loaded book's."""
     held = [US, THIRD, PENCE, "ZZPY-DEC26"]
     lists = {"live": [SYM[US], "NASDAQ:ZZEB"], "exit": [SYM[THIRD], "NASDAQ:TSSL"],
              "entry": [SYM[PENCE]]}
@@ -651,7 +645,7 @@ def test_each_flag_is_read_by_what_it_means():
 
 
 def test_a_flag_list_is_found_by_id_whatever_it_is_called():
-    """The Live List's name changed on 29 Sep ("Live" -> "Live List"); its id did not."""
+    """A list's name may change; its id does not."""
     conn = FakeConnection(watchlist={"name": "Exit List", "symbols": []})
     wl = tv.flag_list("exit", conn)
     assert (wl["id"], wl["name"], wl["symbols"]) == (tv.flag_lists()["exit"], "Exit List", [])
@@ -729,9 +723,7 @@ def test_a_date_before_the_bars_reach_is_named_and_never_filled():
 # =====================================================================================
 
 def test_the_search_reads_the_hits_where_tradingview_puts_them():
-    """THE REPLY NESTS ITS HITS UNDER `data.symbols`. The command read a `results` key the reply
-    no longer has, and printed nothing for every query (found 14 Oct 2026, reading the seven
-    symbols Q1's closes needed)."""
+    """THE REPLY NESTS ITS HITS UNDER `data.symbols`."""
     hits = [{"symbol": "LSE:MARL", "type": "stock", "exchange": "LSE", "description": "Marlow Group plc"},
             {"symbol": "GETTEX:MRL", "type": "stock", "exchange": "GETTEX", "description": "Marlow Group plc"}]
     conn = FakeConnection(hits=hits)

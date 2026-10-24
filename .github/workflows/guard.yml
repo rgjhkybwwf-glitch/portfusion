@@ -1,7 +1,7 @@
-# THE GUARD, ON GITHUB. One job, three checks, each the command a session runs on the Mac: the
-# secret scan over every commit, the linter, and the clean-room test, which is the suite on the
-# demo and on a new book from the tracked files, and `portfusion check` from the wheel built from
-# them. A pull request is merged on GitHub once this is green (CONTRIBUTING.md).
+# THE GUARD, ON GITHUB. One job, three checks, each the command run on the Mac: the secret scan over
+# every commit, the linter, and the clean-room test, which is the suite on the demo and on a new
+# book from the tracked files, and `portfusion check` from the wheel built from them. A pull request
+# is merged on GitHub once this is green (CONTRIBUTING.md).
 #
 # WHEN IT RUNS: on a pull request and on a push to main, not on every branch push: a run on
 # every branch push would spend a free plan's minutes quickly.

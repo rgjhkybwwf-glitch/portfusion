@@ -1,6 +1,6 @@
-"""THE BRAND — PortFusion's look and name unless a book's `brand/` folder says otherwise (
-the owner, 20 Oct 2026). `portfusion.brand` reads the folder once, at import, so each case here
-is a fresh interpreter on a book made for it."""
+"""THE BRAND — PortFusion's look and name unless a book's `brand/` folder says otherwise.
+`portfusion.brand` reads the folder once, at import, so each case here is a fresh interpreter on
+a book made for it."""
 import json
 import os
 import subprocess
@@ -88,10 +88,9 @@ def test_portfusions_icons_are_drawn_at_their_size(size, square):
 
 
 def test_the_release_has_one_home_and_every_reader_meets_it(monkeypatch):
-    """V1–V4 (the owner, 20 Oct 2026): the number is PEP 440 and lives in portfusion/__init__.py
-    alone; `beta` is a label beside it; between releases the dev number travels with its commit,
-    and a release with neither. `portfusion --version`, the desk's footer and the report's stamp
-    all say `about.release()`."""
+    """The number is PEP 440 and lives in portfusion/__init__.py alone; `beta` is a label beside
+    it; between releases the dev number travels with its commit, and a release with neither.
+    `portfusion --version`, the desk's footer and the report's stamp all say `about.release()`."""
     import importlib.metadata
     import re
     import portfusion

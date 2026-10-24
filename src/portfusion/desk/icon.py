@@ -1,6 +1,6 @@
 """THE DESK'S OWN ICONS — PortFusion's stand-in mark, for a book whose brand gives none.
 
-    from desk.icon import png
+    from portfusion.desk.icon import png
     png(64)                  # the tab's: rounded corners, RGBA
     png(512, square=True)    # the Dock's and a home screen's: square and opaque, RGB
 

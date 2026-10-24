@@ -14,8 +14,7 @@ from desk_support import (GOOD_CLASS, GOOD_DOCUMENT, GOOD_TRADE, GOOD_EVIDENCE, 
 #
 # The gates are the whole point, so they are tested one at a time and from BOTH sides:
 # that each refuses what it should, and that it lets the legitimate case through. A gate
-# only tested on the refusing side is how you end up blocking real work — which is exactly
-# what happened here once; see the ticker test below.
+# only tested on the refusing side is how you end up blocking real work.
 # =====================================================================================
 from portfusion.desk.intake import bench as _bench                                    # noqa: E402
 from portfusion.desk.panels import bench as bench_panel
@@ -58,9 +57,8 @@ def test_a_committed_item_lands_in_the_store_and_is_archived(item, store_copy, t
 
 @needs("accounts", "buys")
 def test_the_why_lands_in_the_reasoning_table(item, store_copy, tmp_path, monkeypatch):
-    """THE POINT OF THE WHOLE ROUND. The owner types the thesis once, at the document, and it
-    reaches the table Holdings and Round Trips read — instead of being archived into a bench
-    JSON nobody renders.
+    """The owner types the thesis once, at the document, and it reaches the table Holdings and
+    Round Trips read — instead of being archived into a bench JSON nobody renders.
 
     KEYED BY TICKER, which is how both tabs read it."""
     import csv
@@ -131,17 +129,15 @@ def test_a_second_why_is_added_beside_the_first(item, store_copy, tmp_path, monk
 @needs("accounts", "buys")
 def test_a_sale_the_book_cannot_load_is_refused_and_nothing_moves(item, store_copy, tmp_path,
                                                                   monkeypatch):
-    """29 SEP 2026: the bench's first sale passed the schema and stopped `Book()`, and
-    every panel but the bench went to 500. The schema judges a cell and cannot see that; the
-    engine can. A sale in a parcel with nothing to release is refused in the engine's words,
+    """A sale can pass the schema and stop `Book()`: the schema judges a cell and cannot see that;
+    the engine can. A sale in a parcel with nothing to release is refused in the engine's words,
     and every file, the record in memory and the bench item stay as they were."""
     from portfusion.record import rules, schema
     from portfusion.desk.doors import commit as _commit
     monkeypatch.setattr(_commit, "ARCHIVE", tmp_path / "archive")
     item["evidence"] = dict(GOOD_EVIDENCE, reference="TESTREF3")
     item["why"] = {"why_entered": "", "why_exited": "Booked to release cash."}
-    # A TICKER THE ACCOUNT DOES NOT HOLD, so the parcel has nothing to release — the
-    # incident's own shape (10 CRNT sold from an account holding none).
+    # A TICKER THE ACCOUNT DOES NOT HOLD, so the parcel has nothing to release.
     from portfusion import engine as _engine
     held_here = set(_engine.Book().holdings(account=GOOD_TRADE["account"],
                                           by="ticker")["ticker"])
@@ -194,12 +190,10 @@ def test_an_ig_close_naming_its_leg_is_written_and_the_leg_stops_being_held(
 
 def test_a_close_filed_under_another_holdings_realisation_is_refused(
         item, store_copy, tmp_path, monkeypatch):
-    """The owner, 12 Oct 2026: the IG sweep proposed one holder's first close of a ticker into
-    another holder's realisation of the same ticker, and Round Trips groups by realisation and
-    takes the first sale's account — the sale would have sat inside the other's round trip,
-    under the other's account. The bench names the clash
-    before anything is written; the record refuses it on load, so a write that skipped the
-    bench still could not stand."""
+    """A close filed under another holding's realisation would sit inside that round trip, under its
+    account: Round Trips groups by realisation. The bench names the clash before anything is
+    written; the record refuses it on load, so a write that skipped the bench still could not
+    stand."""
     from portfusion.record import rules, schema
     from portfusion.desk.doors import commit as _commit
     monkeypatch.setattr(_commit, "ARCHIVE", tmp_path / "archive")
@@ -231,9 +225,8 @@ def test_a_close_filed_under_another_holdings_realisation_is_refused(
 
 
 def test_a_realisation_in_another_form_is_refused(item, store_copy, tmp_path, monkeypatch):
-    """The owner, 12 Oct 2026: a realisation id with "=2" on its end passed "every cell valid" on the bench — the box took
-    any text — and was caught only by reading it. The bench names the form before writing, and
-    the record refuses any other on load."""
+    """A REALISATION ID OUTSIDE `rules.REALISATION_FORM` (one ending "=2") is refused by the bench
+    before writing, and by the record on load."""
     from portfusion.record import rules, schema
     from portfusion.desk.doors import commit as _commit
     monkeypatch.setattr(_commit, "ARCHIVE", tmp_path / "archive")
@@ -261,11 +254,7 @@ def test_a_realisation_in_another_form_is_refused(item, store_copy, tmp_path, mo
 
 
 def test_no_document_kind_no_approval_and_the_authority_is_the_kinds(item):
-    """The owner, 12 Oct 2026: with no kind chosen and the three evidence boxes typed, every gate
-    passed — the statement-grade gate asked only that the boxes were filled, and the retrieval
-    gate passed with "no class chosen yet". A trade then went in with a typed source, outside
-    the one format every account's trades share, refused by the guard only once it was in the
-    store. The kind is owed first; the authority is its own words, set on every save."""
+    """The kind is owed first; the authority is its own words, set on every save."""
     from portfusion.desk.intake import propose as P
     _ready(item)
     item["evidence_class"] = ""
@@ -297,11 +286,9 @@ def test_the_authority_box_is_shown_and_not_typed(repo_root):
 
 
 def test_the_bench_speaks_the_desks_words_not_the_stores(item, repo_root):
-    """The owner, 12 Oct 2026: the form labelled every field with its store name — "Cur", "Fx_key",
-    "Eid", "Close_level" — headed a row "sales", offered "+ capital-movements", and named a check
-    owed "why_exited". Every field is headed for the Bench tab in house/headings.py (the panel's
-    FORM_COLUMNS, so test_every_desk_column_has_a_heading_for_its_tab holds each one), every table
-    has its word, and a gate a why blocks reads the why's heading."""
+    """Every field is headed for the Bench tab in house/headings.py (the panel's FORM_COLUMNS, so
+    test_every_desk_column_has_a_heading_for_its_tab holds each one), every table has its word, and
+    a gate a why blocks reads the why's heading."""
     from portfusion.house.headings import COMMON
     js = _renderer_free(repo_root)
     field_fn = js[js.index("function field(spec"):js.index("function drawItem(d)")]
@@ -319,12 +306,7 @@ def _renderer_free(repo_root):
 
 
 def test_one_item_at_a_time_then_a_review_then_one_write_each(item, repo_root):
-    """The owner, 12 Oct 2026, working two swept closes: "you can switch between the two and edit
-    them but it is not intuitive — you should finish one and then click on the next and then have
-    an option to review before you write". And the page froze twice: "work it" made items the
-    list never showed, and a title from an out-of-date list did nothing when clicked.
-
-    An item takes the page; a finished one offers the next still owed, or the review; the review
+    """An item takes the page; a finished one offers the next still owed, or the review; the review
     writes ONE ITEM PER PRESS, so each event keeps its own approval; "work it" redraws the list,
     and an item gone from under it says so."""
     _bench.save(item)
@@ -399,11 +381,9 @@ def test_a_retirement_the_marks_door_refuses_is_the_commits_refusal(
 @needs("accounts", "buys")
 def test_a_sale_closing_a_contracts_last_leg_retires_it_in_the_same_write(
         item, store_copy, tmp_path, monkeypatch):
-    """The owner, 12 Oct 2026: a sale closed a contract's last open leg and the contract stayed
-    priced, a mark nothing held that every refresh would go on fetching, until a hand edit took
-    its live price out and blanked its epic. The write that closes the last leg now does both,
-    through the marks door and inside the commit's envelope, banked first and journalled; the
-    review says so before the press."""
+    """A contract with no open leg is a mark nothing holds, so the write that closes its last leg
+    takes its price out and blanks its epic, through the marks door and inside the commit's
+    envelope, banked first and journalled; the review says so before the press."""
     from portfusion.record import schema
     from portfusion.desk.doors import commit as _commit
     from portfusion.history import prices as PH
@@ -428,8 +408,7 @@ def test_a_sale_closing_a_contracts_last_leg_retires_it_in_the_same_write(
 
 @needs("accounts", "buys")
 def test_a_retirement_writes_crlf_tables_back_in_crlf(item, store_copy, tmp_path, monkeypatch):
-    """The retirement rewrote current-prices.csv and contracts.csv with "\\n" whatever it found
-    (the code review of 2 Oct 2026; latent while the store is LF)."""
+    """The retirement writes current-prices.csv and contracts.csv back in the ending it found."""
     from portfusion.desk.doors import commit as _commit
     from desk_support import all_crlf, to_crlf
     monkeypatch.setattr(_commit, "ARCHIVE", tmp_path / "archive")
@@ -501,10 +480,9 @@ def _selling(item, ticker, held, ref):
 @needs("accounts", "buys")
 def test_a_sale_emptying_a_share_in_every_account_retires_its_price_in_the_same_write(
         item, store_copy, tmp_path, monkeypatch):
-    """A share sold out kept its live price, so every refresh went on fetching a quote nothing
-    read, and a failed fetch counted against the prices' freshness. The write that leaves no
-    account holding it now banks the price and takes it out, as a contract's last close does;
-    the review says so before the press."""
+    """A share no account holds is a quote nothing reads, and a failed fetch of it counts against
+    the prices' freshness: the write that leaves no account holding it banks the price and takes it
+    out, as a contract's last close does; the review says so before the press."""
     from portfusion import engine
     from portfusion.record import schema
     from portfusion.desk.doors import commit as _commit
@@ -560,10 +538,8 @@ def test_a_share_bought_back_in_the_same_item_is_not_retired():
 
 
 def test_an_event_is_dated_on_the_bench_and_on_load():
-    """The owner, 12 Oct 2026: a buy, a sale, an income row or a money movement with a blank date
-    passed every check — only a cash reading's date was required — so the Bench would approve an
-    undated event. No row on file in either book lacked one. The date is required in the schema,
-    so the loader refuses a blank on every route and the Bench's form follows it."""
+    """The date is required in the schema, so the loader refuses a blank on every route and the
+    Bench's form follows it."""
     from portfusion.record import schema
     for table in ("buys", "sales", "income", "capital-movements"):
         date = next(f for f in schema.TABLES[table].fields if f.name == "date")
@@ -639,7 +615,7 @@ def _open_sb_leg_with_parcel():
 def _recorded_share_sale():
     """(row, reference) for a share sale really in the loaded book's sales.csv — the subject
     of the duplicate guards. The reference is the row's own broker_ref, or the document
-    token its source line carries (one sale's note reference lived in the source)."""
+    token its source line carries (a note's reference may sit in the source)."""
     from portfusion.record import rules as D, schema
     eh = schema.TABLES["sales"].header
     rows = [dict(zip(eh, r)) for r in schema.load("sales")
@@ -673,9 +649,7 @@ def _sell_shares(item, tmp_path, monkeypatch, ref, acct, ticker, qty, proceeds):
 
 def test_a_further_trim_of_a_pool_is_one_row_and_moves_no_earlier_sale(
         item, store_copy, tmp_path, monkeypatch):
-    """THE HOLE, CLOSED. A further trim once loaded and spread the typed parcel cost over one
-    more sale: earlier gains grew and the shares sold stayed held. Now the sale is one row;
-    it releases the pool's average and nothing before it moves."""
+    """A FURTHER TRIM IS ONE ROW: it releases the pool's average and nothing before it moves."""
     from portfusion import engine
     from portfusion.record import schema
     account, ticker, earlier_ids, parcel = _trimmed_pool()
@@ -759,9 +733,8 @@ def test_a_sale_from_one_account_leaves_the_others_holdings_alone(
 
 def test_the_bench_fills_a_share_sales_parcel_from_the_book(item, monkeypatch):
     """`realisation` is the record's, never the document's: the parcel the holding already has,
-    or a new one named for its ticker. A spread bet's too, since 12 Oct 2026 — its account's
-    holding's, the answer the IG sweep gives; it was left to IG's ids and the sweep named it by
-    ticker alone."""
+    or a new one named for its ticker. A spread bet's too — its account's holding's, the answer
+    the IG sweep gives."""
     from portfusion.desk import engine
     from portfusion.desk.intake import propose
     monkeypatch.setattr(engine, "_cache", {"key": None, "book": None})
@@ -815,8 +788,7 @@ def test_commit_is_refused_until_every_gate_is_green(item, store_copy):
 
 
 def test_two_rows_of_one_item_under_one_id_are_refused(item):
-    """AN ID ONCE. Two exits proposed as one eid both passed every gate, and the commit wrote
-    both (the review of 21 Oct 2026, reproduced on the demo)."""
+    """AN ID ONCE: two rows of one item under one id fail the rows gate."""
     _ready(item)
     item["rows"].append({"table": "buys", "values": dict(GOOD_TRADE, broker_ref="TESTREF2")})
     rows = next(g for g in _bench.gates(item) if g["name"] == "rows")
@@ -891,11 +863,9 @@ def test_the_desks_reload_re_reads_every_table_in_the_store():
     rather than the files. So for a long-lived process there are two copies of the record, and
     the one on the page is the stale one until something re-reads.
 
-    THE RELOAD IS TOTAL. A narrow one — only the tables a door REPLACES — rested on the argument
-    that an append leaves a reader behind rather than wrong. The desk reloads whenever the
-    store's mtime moves, however it moved, so a `git pull` and a hand-edited trade arrive by the
-    same route as a bench commit, and neither is a replace. The cost that justified narrowness
-    was not real either — 3.9 ms across the whole record.
+    THE RELOAD IS TOTAL. The desk reloads whenever the store's mtime moves, however it moved, so a
+    `git pull` and a hand-edited trade arrive by the same route as a bench commit, and neither is
+    a replace. Reloading the whole record costs milliseconds.
 
     THE ASSERTION IS BEHAVIOURAL, NOT AN AST SCAN. Reading a hand-written reloader for the
     `schema.load` calls it contains could only ever prove it named the right tables. This
@@ -941,13 +911,12 @@ def test_every_table_a_door_replaces_is_covered_by_the_reload():
     """THE DOORS' OWN HALF, still derived from the doors rather than from a list here.
 
     A door that REPLACES a row writes twice — the CSV, and the copy every long-lived process
-    holds. The desk was once found serving a reading replaced forty minutes earlier. Another
-    door, or a second table under an existing one, must not be able to reintroduce that
-    quietly.
+    holds. A desk that misses the second serves a stale reading, and another door, or a second
+    table under an existing one, must not be able to do that quietly.
 
     IT IS SUBSUMED BY THE TEST ABOVE and kept anyway, because the two say different things: that
     one says the reload is total, this one says the doors are known. If the reload is ever
-    narrowed again, this is the test that names which door lost its refresh.
+    narrowed, this is the test that names which door lost its refresh.
     """
     from portfusion.record import schema
     from portfusion.desk.doors import marks, observations
@@ -997,10 +966,8 @@ def test_reading_the_desk_leaves_every_store_file_byte_identical():
 def test_health_says_when_the_code_was_loaded():
     """WHO IS ANSWERING ON THIS PORT, AND WHEN IT LOADED ITS CODE.
 
-    The Dock launcher that compared `started` against the newest source file went with the
-    bundle. THE ENDPOINT IS NOT ORPHANED — `restart.py` and `app.js` both poll it to know when a
-    replacement has finished starting, which is the case that reads as a crash if the page
-    guesses instead of waiting.
+    `app.js` polls it to know when a replacement has finished starting, which is the case that
+    reads as a crash if the page guesses instead of waiting.
 
     Whole seconds, so a caller can compare it with a file mtime without arithmetic.
     """
@@ -1014,13 +981,10 @@ def test_health_says_when_the_code_was_loaded():
 def test_nothing_on_the_bench_writes_to_the_store(repo_root):
     """THE CLAIM THAT MATTERS, for bench.py specifically. It works on a JSON note in
     _inbox/.bench/ and produces text to paste. THE WRITE LIVES IN desk/doors/commit.py, which is a
-    separate module on purpose: this guard stays exactly as sharp as it was before the desk
-    could write.
+    separate module on purpose: this guard stays sharp.
 
-    CHECKED ON THE SYNTAX TREE, not by grepping the source. The first version of this test
-    searched for the string "store/" and failed on bench.py's own docstring, which says it does
-    not write there — the same trap test_refresh.py records having fallen into. Prose is not
-    behaviour; the calls are.
+    CHECKED ON THE SYNTAX TREE, not by grepping the source. Prose is not behaviour; the calls
+    are.
     """
     import ast
     tree = ast.parse((SRC / "desk" / "intake" / "bench.py").read_text())
@@ -1061,13 +1025,10 @@ def test_the_bench_writes_only_inside_its_own_directory(item, tmp_path, monkeypa
 
 @needs("accounts", "buys")
 def test_THE_SAME_SALE_CANNOT_BE_ENTERED_TWICE_UNNOTICED(item, store_copy):
-    """THE DEFECT THIS SUITE MISSED, pinned by name and by the real row.
+    """A SALE ENTERED TWICE, pinned by name and by the real row.
 
-    The owner re-dropped the PENR contract note to walk the workflow, and the desk wrote the sale a
-    SECOND time — a new id beside the first, the same note, the same shares, the same proceeds.
-    The record said twice the shares sold that the note says. `commit.py`'s own docstring had
-    warned about "a duplicate the schema cannot see", the id check passed because the new id was
-    genuinely free, and nothing else looked.
+    A note dropped again would write its sale a SECOND time under a fresh id, which the id check
+    passes.
 
     TWO INDEPENDENT SIGNALS, because they fail separately: the DOCUMENT's reference is already
     in the book, and the EVENT's date/account/holding/size/money is already in the book.
@@ -1196,8 +1157,8 @@ def test_an_item_written_before_the_split_still_reads(item):
 
 
 def test_a_reason_is_never_refused_for_its_length(item):
-    """NO WORD CAP (the owner). The gate asks whether a reason is owed and written, and nothing
-    about how long it runs."""
+    """NO WORD CAP. The gate asks whether a reason is owed and written, and nothing about how long
+    it runs."""
     _ready(item)
     item["why"] = {"why_entered": "word " * 200, "why_exited": ""}
     gate = next(g for g in _bench.gates(item) if g["name"] == "why_entered")
@@ -1215,10 +1176,10 @@ def test_a_closed_vocabulary_refuses_an_invented_spelling(item):
 
 
 def test_an_open_vocabulary_accepts_a_value_the_record_has_never_seen(item):
-    """A FIRST-EVER PURCHASE OF A NEW COMPANY MUST NOT BE REFUSED, and it once was: every
-    derived list was enforced, so a ticker not yet in buys.csv failed the gate — which would
-    have blocked precisely the event the bench exists for. Tickers and income categories grow
-    in the ordinary course of business; accounts and currencies do not."""
+    """A FIRST-EVER PURCHASE OF A NEW COMPANY MUST NOT BE REFUSED: an enforced derived list would
+    fail a ticker not yet in buys.csv, blocking precisely the event the bench exists for. Tickers
+    and income categories grow in the ordinary course of business; accounts and currencies do
+    not."""
     assert _bench.approved(_ready(item, ticker="NEVER-HELD.L"))
 
 
@@ -1243,9 +1204,7 @@ def test_every_gate_is_reported_not_just_the_first(item):
     """A form that stops at the first problem makes the reader find them one at a time.
 
     The claim is that every problem is reported, so the row carries several DIFFERENT KINDS of
-    fault and each must come back named. An empty row counting "required, and empty" complaints
-    proved nothing: it only worked while the bench demanded columns the store is happy to leave
-    blank.
+    fault and each must come back named.
     """
     item["rows"] = [{"table": "sales", "values": {
         "sale_id": "E-999", "date": "2026-09-01", "account": "XXX", "ticker": GOOD_TRADE["ticker"],
@@ -1281,9 +1240,8 @@ def test_the_form_is_generated_from_the_schema():
 
 
 def test_a_currency_with_a_rate_is_offered_before_anything_trades_in_it(monkeypatch):
-    """THE FIRST TRADE IN A NEW CURRENCY. The bench offered only the currencies already traded, so
-    a rate on file for one nothing had traded in yet still refused the trade, and a new book —
-    nothing traded — offered no currency at all (the review of 21 Oct 2026)."""
+    """THE FIRST TRADE IN A NEW CURRENCY. The bench offers every currency with a rate on file, so a
+    new book offers one before anything trades in it."""
     from portfusion.record import rules
     monkeypatch.setattr(rules, "buys", [])
     monkeypatch.setattr(rules, "fx_rows", [("JPY", 190.0, "2026-09-30", "test", "close")])
@@ -1319,11 +1277,10 @@ def test_discarding_an_item_never_touches_a_document(item, tmp_path):
 
 
 # =====================================================================================
-# THE RESEARCH REPO, READ ONLY  (the owner)
+# THE RESEARCH REPO, READ ONLY
 #
-# `research_note` is a ref into the research repo, and CLAUDE.md makes that repo the source of
-# truth for a ref — so the bench READS it and OFFERS what it finds, and a box you type into was
-# never the answer.
+# `research_note` is a ref into the research repo, and that repo is the source of truth for a
+# ref — so the bench READS it and OFFERS what it finds.
 #
 # THESE USE A FIXTURE REPO, for the reason `tests/desk/test_research_notes.py` gives.
 # =====================================================================================
@@ -1380,8 +1337,8 @@ def test_the_ticker_suffix_is_stripped_when_matching(fake_repo):
 
 
 def test_the_book_works_with_no_research_repo_at_all(tmp_path, monkeypatch):
-    """THE RESEARCH REPO IS NOT PART OF THE TRAVEL SET — it is a different project — so its
-    absence must be silent: the Bench shows no research notes waiting, and nothing raises."""
+    """THE RESEARCH REPO IS ANOTHER PROJECT, so its absence must be silent: the Bench shows no
+    research notes waiting, and nothing raises."""
     from portfusion.desk.doors import research_notes
     from portfusion.desk.intake import research
     monkeypatch.setattr(research, "REPO", tmp_path / "nowhere")
@@ -1395,10 +1352,10 @@ def test_the_book_works_with_no_research_repo_at_all(tmp_path, monkeypatch):
 # =====================================================================================
 # IG EVENTS ONTO THE BENCH — the third route on
 #
-# After `+ new item` and a document. The marks rule settled that an event must go to the bench
-# rather than into the record: a trade, close, dividend or capital movement happened once and
-# is history, so it needs evidence, a reason and approval. `ig-events` REPORTS; this carries
-# one of its events onto the bench.
+# After `+ new item` and a document. The marks rule sends an event to the bench rather than into the
+# record: a trade, close, dividend or capital movement happened once and is history, so it needs
+# evidence, a reason and approval. `ig-events` REPORTS; this carries one of its events onto the
+# bench.
 # =====================================================================================
 
 # The event's numbers are canned (an API reply is checked for shape, not against holdings);
@@ -1530,7 +1487,7 @@ def test_a_swept_event_reaches_the_bench_with_its_evidence_filled(swept):
     assert item["evidence_class"] == "ig-api"
     assert item["evidence"]["reference"] == "DIAAAATESTCLOSE"
     # ITS TITLE IS THE EVENT'S OWN WORDS, as the Trades page says it; the deal is the reference
-    # beside it, no longer the title's tail as well (12 Oct 2026).
+    # beside it.
     assert item["title"] == _IG_CLOSE["what"]
     assert item["evidence"]["dated"] == "2026-08-28"
     assert "IG REST" in item["evidence"]["authority"]
@@ -1550,9 +1507,7 @@ def test_a_swept_event_never_arrives_with_its_reason_written(swept):
 
 
 def test_pressing_work_it_twice_lands_on_the_same_item(swept):
-    """Idempotent on the DEAL ID, the same shape for_document() has for a document. Two presses
-    made two identical empty items when documents worked that way, and the owner hit it within a
-    minute of the first drag-and-drop."""
+    """Idempotent on the DEAL ID, the same shape for_document() has for a document."""
     first, second = swept(), swept()
     assert first["id"] == second["id"]
     from portfusion.desk.intake import bench as _b
@@ -1595,20 +1550,20 @@ def test_carrying_an_event_writes_nothing_to_the_record(swept):
 
 def test_the_carry_action_is_declared_and_does_not_write():
     """The marks rule: an action may never declare writes='events' — Action refuses to be
-    constructed. This one is what the marks rule PRESCRIBED, not an exception to it, so it writes
+    constructed. This one is what the marks rule prescribes, not an exception to it, so it writes
     nothing and names the human step that runs it."""
     from portfusion.desk import actions
     a = actions.get("ig-event-to-bench")
     assert a.writes is None
     assert a.gate, "a button that stages a record row names the human step that presses it"
     # ON THE BENCH, with the sweep that produces the event it carries: pressed from another
-    # tab, it moved you across tabs to reach the thing you had just made.
+    # tab, it would move you across tabs to what you had just made.
     assert a.panel == "bench"
 
 
 def test_a_row_scoped_action_is_not_a_panel_button():
-    """"Work this event" once appeared as a standing panel button with nothing to work. It only
-    means anything against ONE event from a sweep, and it is rendered on that event's row.
+    """"Work this event" means anything only against ONE event from a sweep, and it is rendered on
+    that event's row.
 
     The property, not the name: an action declares `inline` and the panel filters on that, so
     the next row-scoped action does not have to be special-cased in the UI.
@@ -1621,8 +1576,8 @@ def test_a_row_scoped_action_is_not_a_panel_button():
     listed = [x.name for x in actions.all_actions() if x.panel == "accounts" and not x.inline]
     assert "ig-event-to-bench" not in listed
     # RECONCILE HOLDS NONE. A share account's reading is filed with its holdings export on the
-    # Bench (30 Sep 2026); IG equity is read with its levels on the Price Refresh; and the event
-    # sweep lives on the Bench, where its output goes.
+    # Bench; IG equity is read with its levels on the Price Refresh; and the event sweep lives on
+    # the Bench, where its output goes.
     assert listed == []
     bench_listed = [x.name for x in actions.all_actions()
                     if x.panel == "bench" and not x.inline]
@@ -1641,15 +1596,11 @@ def test_the_panel_list_in_the_browser_skips_inline_actions(repo_root):
 # =====================================================================================
 
 def test_a_column_the_store_lets_be_blank_is_not_required_here():
-    """FOUND BY USING IT. Working a swept funding-interest charge, the bench demanded a `note`
-    on a row the sweep had already described in full.
+    """`required = not field.null` would be stricter than the store. `schema._parse` returns ""
+    for a blank str column whatever `null` says — only a blank NUMBER raises — and income.note's
+    own schema comment reads: often `""`, "and that is a real value".
 
-    `required = not field.null` was the rule, and it is stricter than the store. `schema._parse`
-    returns "" for a blank str column whatever `null` says — only a blank NUMBER raises — and
-    income.note's own schema comment reads: often `""`, "and that is a real value".
-
-    validate_row's docstring already promised the bench "cannot accept something the store would
-    then reject". The inverse was never considered, and it is the one a person meets.
+    The bench refuses nothing the store accepts, as it accepts nothing the store refuses.
     """
     required = {f["name"]: f["required"] for f in _bench.form_for("income")}
     assert required["note"] is False, "the store accepts a blank note; the bench must too"
@@ -1662,7 +1613,7 @@ def test_a_column_the_store_lets_be_blank_is_not_required_here():
 
 
 def test_a_blank_number_is_still_refused():
-    """The loosening goes exactly as far as the store goes and no further."""
+    """Blank is accepted exactly as far as the store accepts it."""
     row = {"date": "2026-08-21", "account": SPREAD_BET_ACCOUNT,
            "category": "Funding interest", "detail": "d", "amount": "",
            "source": "s", "note": ""}
@@ -1671,7 +1622,7 @@ def test_a_blank_number_is_still_refused():
 
 def test_required_is_the_stores_own_answer_for_every_table():
     """The property, not the column. Anything the loader would accept blank must be accepted
-    blank here, across every table the bench produces — so the two cannot drift apart again."""
+    blank here, across every table the bench produces — so the two cannot drift apart."""
     from portfusion.record import schema
     for table in _bench.TABLES:
         for spec in _bench.form_for(table):
@@ -1687,11 +1638,8 @@ def test_required_is_the_stores_own_answer_for_every_table():
 
 
 def test_an_empty_list_says_nothing_and_the_page_explains_itself_once(repo_root):
-    """The owner, 12 Oct 2026. The status line counted "0 on the bench" and "0 document(s)
-    waiting", and two headed lists said it again ("clear · nothing on the bench"); an empty list
-    is not drawn. The sweep's button carried sixty words naming a rule, and the fold spoke
-    of committing and reversing in git — "mean nothing to a user". The page explains itself in
-    one place, its fold, in a reader's words and in the order the work comes in."""
+    """An empty list is not drawn. The page explains itself in one place, its fold, in a reader's
+    words and in the order the work comes in."""
     js = (SRC / "desk" / "static" / "app.js").read_text()
     rendered = [line for line in js.splitlines() if "<li" in line and "clear</span>" in line]
     assert not any("nothing on the bench" in line or "no documents waiting" in line
@@ -1716,9 +1664,8 @@ def test_a_swept_event_row_is_not_held_to_the_prose_measure(repo_root):
 
 def test_the_sweep_can_ask_what_became_of_its_events():
     """A SNAPSHOT DOES NOT KNOW WHAT HAPPENED NEXT. The sweep's result is held in the browser so
-    that returning to its tab is not another 30-day call to the broker — and that meant a row
-    already carried across offered "work it" again, and a row already WRITTEN stayed on the list
-    as though it were still missing. The owner hit both.
+    that returning to its tab is not another 30-day call to the broker; each row's state is asked
+    here, or a carried row offers "work it" again and a WRITTEN one reads as missing.
 
     The events come from the snapshot; their state comes from here, fresh every render.
     """
@@ -1768,9 +1715,8 @@ def test_a_negative_income_row_is_labelled_a_cost(repo_root):
 def test_the_header_is_re_read_on_every_panel_switch(repo_root):
     """The status line has to be current when the reader arrives at it.
 
-    `/api/state` was once fetched at boot and nowhere else, so a bench commit moved the store
-    while the header went on quoting its page-load stamp. Found on screen, the same way
-    desk/doors/commit.py's rollback defect was.
+    Fetched at boot alone, `/api/state` would quote its page-load stamp while a bench commit
+    moved the store.
 
     THE HOOK IS THE SWITCH, NOT THE WRITE, for the reason `book()` keys its cache on the
     store's mtime rather than trusting its callers: the desk's writers are not the only way
@@ -1794,12 +1740,6 @@ def test_the_header_is_re_read_on_every_panel_switch(repo_root):
 def test_the_bench_accepts_the_source_line_every_trade_already_carries():
     """THE CENSUS, and it is the strongest form this check has: if the bench would refuse a
     value the store already holds on every row, the bench is wrong and not the store.
-
-    When `trades.basis` was renamed to `trades.evidence`, `evidence` — closed, for the
-    EVIDENCE_CLASSES key on `cash-readings` — began refusing the provenance PROSE that
-    trades column held, and every trade the bench could produce failed the rows gate. A
-    carve-out mended it until 1 Oct 2026, when the trades column became `source`, as every
-    other table spells the provenance line.
     """
     from portfusion.record import rules as D
     from portfusion.desk.intake import bench
@@ -1847,7 +1787,7 @@ def test_a_free_prose_column_offers_no_choices_either(repo_root):
 def test_the_archive_name_carries_the_instant_the_document_states(tmp_path, monkeypatch):
     """THREE HL EXPORTS ARRIVE THE SAME DAY UNDER THE SAME TITLE, and two of them can differ
     for no reason but being pulled minutes apart — HL values shares at a bid delayed
-    fifteen minutes, and New York was still open. Without the time the archive disambiguates
+    fifteen minutes, and New York may be open. Without the time the archive disambiguates
     them with a bench item id, which tells a later reader nothing about which instant the
     figures were struck at.
 
@@ -1883,9 +1823,9 @@ def test_a_document_that_states_no_instant_still_gets_a_name():
 
 
 def test_a_recognised_document_prefills_only_what_it_states(tmp_path, monkeypatch):
-    """DERIVATION, NOT A PROPOSAL. Every value filled here is read out of the document's own
-    text — `propose._derived()` has worked this way since it was written: fill a blank from
-    something checkable, never overwrite, and say where it came from.
+    """DERIVATION, NOT A PROPOSAL. Every value filled here is read out of the document's own text —
+    `propose._derived()` works this way: fill a blank from something checkable, never overwrite, and
+    say where it came from.
 
     ONE MATCH ONLY. Two is ambiguous, and a class decides which columns mean what, so guessing
     between them is worse than leaving both blank — a pre-filled wrong answer is the one nobody
@@ -1973,11 +1913,9 @@ def test_an_unrecognised_document_is_left_entirely_blank(tmp_path, monkeypatch):
 def test_a_document_read_in_full_that_yields_nothing_can_still_be_closed():
     """NONE PROPOSED AND NONE LEFT ARE NOT THE SAME STATE.
 
-    HL's Capital-side transaction list is every dealing line on the account, and the first time
-    it was worked every one of them was already in the record. That document is not unfinished
-    work — it is the PROOF that the dealing side reconciles, which is the question it was pulled
-    to answer, so it has to be archivable. Before this it could not be: `commit.py` refused an
-    item with no rows and the gate called it "no rows proposed yet", which is not what happened.
+    A document whose every dealing line is already in the record is not unfinished work — it is
+    the PROOF that the dealing side reconciles, which is the question it was pulled to answer, so
+    it has to be archivable.
     """
     from portfusion.desk.intake import bench
     read = {"evidence": {"dated": "2025-03-03", "authority": "HL Portfolio Summary download",
@@ -1996,9 +1934,9 @@ def test_a_document_read_in_full_that_yields_nothing_can_still_be_closed():
 
 
 def test_a_zero_row_document_keeps_its_account_in_the_archived_name():
-    """`_covers()` reads the tickers or accounts off the ROWS, so a document that yields none
-    was filed under a name that did not say whose account it was. The reader derives the account
-    from the client number the document prints; this is that derivation, one step later."""
+    """`_covers()` reads the tickers or accounts off the ROWS, so a document that yields none would
+    be filed under a name that does not say whose account it is. The reader derives the account from
+    the client number the document prints; this is that derivation, one step later."""
     from portfusion.desk.doors import commit
     item = {"rows": [], "account": "Rowe HL ISA"}
     assert commit._covers(item) == "Rowe HL ISA"
@@ -2098,9 +2036,8 @@ def test_a_document_class_owes_a_document(item):
 
 
 def test_a_document_named_but_not_on_the_workbench_is_refused(item):
-    """A NAME IS NOT A FILE. Until 14 Oct 2026 the gate passed on the document's name alone, so
-    a document taken off the workbench after its item was opened still let the rows commit,
-    citing a document that was never filed (the code review of 2 Oct)."""
+    """A NAME IS NOT A FILE. A document taken off the workbench after its item was opened lets no
+    row commit."""
     _ready(item)
     assert _gate(item)["ok"], "the fixture's own document, on its workbench, was refused"
     item["document"] = {"name": "Contract_Note_NOT_ON_THE_BENCH.pdf"}
@@ -2113,8 +2050,7 @@ def test_a_document_gone_before_it_is_filed_writes_nothing(item, store_copy, tmp
                                                           monkeypatch):
     """THE DOOR'S OWN REFUSAL, behind the gate's. The document is filed INSIDE the write's
     envelope, so if it is gone when the filing comes — whatever a gate said a moment before —
-    every row and the journal are taken back out and the item stays on the bench. Until 14 Oct
-    2026 the filing came after the write and returned quietly on a missing file."""
+    every row and the journal are taken back out and the item stays on the bench."""
     from portfusion.record import schema
     from portfusion.desk.doors import commit as _commit
     monkeypatch.setattr(_commit, "ARCHIVE", tmp_path / "archive")
@@ -2147,7 +2083,7 @@ def test_an_api_read_owes_no_file(item):
 
 def test_a_screenshot_is_refused_at_the_door(item):
     """THE CLASS THAT SAYS SO ITSELF. `retrieval="none"` means nothing retrieves the figure a
-    second time, which is exactly what statement-grade forbids from 1 July 2026.
+    second time, which is exactly what statement-grade forbids.
 
     It stays on the list of classes — an honest weak claim that shows up as one is better than
     a figure filed under "statement" — and the door is where it stops.
@@ -2216,9 +2152,9 @@ def test_every_save_raises_the_revision_and_an_old_item_starts_at_nought(item):
 
 
 def test_a_page_drawn_before_a_reading_cannot_save_over_it(item):
-    """19 OCT 2026, replayed. The page draws the item; a session hands in a reading, which adds a
-    row; the page, still showing the item without it, removes a row and saves its own copy. That
-    save is refused, the reading's row stands, and a save from the item as it now is goes in."""
+    """The page draws the item; a session hands in a reading, which adds a row; the page, still
+    showing the item without it, removes a row and saves its own copy. That save is refused, the
+    reading's row stands, and a save from the item as it now is goes in."""
     from fastapi.testclient import TestClient
     client = TestClient(app.app, base_url="http://127.0.0.1:8765")
     url = f"/api/bench/{item['id']}"
@@ -2354,7 +2290,7 @@ def test_a_backdated_row_renumbers_what_follows_and_the_review_says_so_first(
 def test_a_contract_reopened_in_the_same_item_is_not_retired():
     """THE ITEM'S OWN NEW LEG HOLDS THE CONTRACT OPEN. A sale of its only open leg retires it,
     which is the premise; the same sale beside a fresh trade on that contract retires nothing.
-    Retired, its live price went and the item was refused whole."""
+    Retired, its live price would go and the item be refused whole."""
     from portfusion.desk.doors import commit
     from portfusion.record import rules as D
     closed = {e.closes for e in D.sales if e.closes}
@@ -2381,18 +2317,17 @@ def _drawn_js():
 
 def test_a_row_the_owner_edited_is_no_longer_the_machines():
     """A HAND CORRECTION SURVIVES A RE-READ. A re-read replaces the rows a reading put there
-    (`machine`), and the page sent an edited row back still marked so, so the correction went
-    with the reading it corrected (the review of 21 Oct 2026). `collect()` clears the mark the
-    moment any field differs from what was drawn."""
+    (`machine`), so an edited row sent back still marked would go with the reading it corrects.
+    `collect()` clears the mark the moment any field differs from what was drawn."""
     js = _drawn_js()
     assert "const mine = Object.keys(values).some((k) => !untouched(k));" in js
     assert "machine: r.machine && !mine" in js
 
 
 def test_bench_saves_go_one_at_a_time_and_keep_the_field_being_typed():
-    """EVERY CHANGE SAVED AT ONCE: two in flight raced to a spurious 409, and each answer redrew
-    the item over a field still being typed (the review of 21 Oct 2026). Each save waits for the
-    one before; the field in hand is put back after the redraw; any refusal is said."""
+    """EVERY CHANGE SAVED AT ONCE: two in flight would race to a spurious 409, and a redraw would
+    overwrite a field being typed. Each save waits for the one before; the field in hand is put back
+    after the redraw; any refusal is said."""
     js = _drawn_js()
     assert "const run = SAVING.then(() => saveNow(patch));" in js
     assert js.count("keepingTheField(() => drawItem(d))") == 2
@@ -2404,8 +2339,7 @@ def test_bench_saves_go_one_at_a_time_and_keep_the_field_being_typed():
 
 def test_a_dated_statement_filed_before_is_named_as_filed(monkeypatch):
     """WHETHER A DOCUMENT IS ALREADY FILED IS THE ARCHIVE'S RULE TO SAY: a valuation pulled at an
-    instant is filed under a name that writes the instant another way, and the bench missed one
-    worked twice."""
+    instant is filed under a name that writes the instant another way."""
     from portfusion.record import schema
     account = "Rowe HL ISA"
     filed = f"03 Mar 2025 14.05 HL Account Summary download 3 Mar 2025 14-05 ({account}).csv"

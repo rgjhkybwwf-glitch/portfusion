@@ -366,9 +366,9 @@ def test_a_passkey_answering_another_page_is_refused(door):
 
 
 def test_a_refused_passkey_tells_the_log_why_and_the_caller_only_that(door):
-    """THE DOOR ANSWERS ANYONE BEFORE SIGN-IN, and a passkey the library refused came back with
-    the library's own words, which name what the desk expected. The caller is told the passkey was
-    not accepted; the sign-in log keeps why (CodeQL's first scan of the public repository)."""
+    """THE DOOR ANSWERS ANYONE BEFORE SIGN-IN, so the library's own words on a refused passkey,
+    which name what the desk expected, never reach the caller. The caller is told the passkey was
+    not accepted; the sign-in log keeps why."""
     pk = SoftPasskey()
     assert _enrol(door, pk, _code()).status_code == 200
     pk.origin = "https://evil.example"
@@ -389,9 +389,8 @@ def test_an_answer_counts_once_and_a_stranger_counts_never(door):
 
 
 def test_signing_in_is_limited_per_address(door, monkeypatch):
-    """ONE STRANGER CANNOT KEEP ANYONE ELSE OUT. The limit was 30 a minute shared by every caller,
-    so one flood shut the owner out with it (6 Oct 2026). A flood
-    from one address leaves one "limited" line, and another address is still answered."""
+    """ONE STRANGER CANNOT KEEP ANYONE ELSE OUT. A flood from one address leaves one "limited"
+    line, and another address is still answered."""
     monkeypatch.setattr(auth, "MAX_PENDING", remote.AUTH_PER_MINUTE + 5)
     flood = {**HOSTED, "x-nf-client-connection-ip": "203.0.113.9"}
     codes = [door.post("/auth/options", headers=flood).status_code
@@ -441,9 +440,8 @@ def test_an_ipv6_caller_is_limited_as_its_network(door):
 
 
 def test_a_flood_does_not_evict_an_enrolment_or_spend_its_code(monkeypatch):
-    """A FULL TABLE GAVE UP ITS OLDEST CEREMONY, whoever's: a flood from many networks evicted a
-    reader's enrolment, whose code was already spent. Now a sign-in goes first, from the network
-    holding the most, and a refused enrolment leaves its code to be used."""
+    """A FULL TABLE GIVES UP A SIGN-IN BEFORE AN ENROLMENT, whose code is spent; a refused
+    enrolment leaves its code to be used."""
     monkeypatch.setattr(auth, "_PENDING", {})
     monkeypatch.setattr(auth, "MAX_PENDING_ALL", 5)
     enrol = auth._pending("enrol", "reader", 0.0, "198.51.100.7", "read")
@@ -463,8 +461,8 @@ def test_a_flood_does_not_evict_an_enrolment_or_spend_its_code(monkeypatch):
 
 
 def test_the_sign_in_limit_remembers_a_bounded_number_of_callers(monkeypatch):
-    """A FLOOD OF FRESH NETWORKS grew the table without end; past its bound the longest quiet
-    caller is forgotten."""
+    """A FLOOD OF FRESH NETWORKS cannot grow the table without end: past its bound the longest
+    quiet caller is forgotten."""
     monkeypatch.setattr(remote, "_asked", {})
     monkeypatch.setattr(remote, "MAX_ASKED", 3)
     for i in range(10):
@@ -509,11 +507,10 @@ def test_a_mac_running_older_code_says_so_on_both_routes(client, session, monkey
 
 
 def test_the_hosted_page_says_restart_when_the_mac_runs_older_code(repo_root):
-    """ON 7 OCT A FRESH PUBLISH LEFT THE HOSTED PAGE BLANK, and every message on both screens said
-    publish. The Mac's desk had started before the pull, so it worked its version out partly from
-    the code it had loaded, which no publish could match; a restart was the fix. So a stale Mac
-    says restart: on the hosted page, with the command the guide gives, and in the Mac's header,
-    which no longer says publish until the desk has restarted."""
+    """A MAC RUNNING OLDER CODE CANNOT BE MATCHED BY A PUBLISH: it works its version out partly
+    from the code it has loaded, so a restart is the fix. A stale Mac says restart: on the hosted
+    page, with the command the guide gives, and in the Mac's header, which does not say publish
+    until the desk has restarted."""
     js = (SRC / "desk" / "static" / "app.js").read_text()
     other = js[js.index("function otherVersion("):js.index("function drawUnreachable(")]
     restart = "launchctl kickstart -k gui/$UID/org.portfusion.desk"
@@ -528,10 +525,9 @@ def test_the_hosted_page_says_restart_when_the_mac_runs_older_code(repo_root):
 
 
 def test_a_tunnel_that_is_off_reads_as_the_mac_not_answering(repo_root):
-    """WITH THE FUNNEL TURNED OFF, NETLIFY ANSWERS 500 WITH AN EMPTY BODY, not a 502 or a 504
-    (found 5 Oct 2026 with `tailscale funnel --https=443 off`), so the page said "The desk could
-    not start" with no reason. An empty 500 now counts as unreachable. The desk's own 500 always
-    carries "Internal Server Error", so a crash on the Mac still reads as a crash."""
+    """WITH THE FUNNEL TURNED OFF, NETLIFY ANSWERS 500 WITH AN EMPTY BODY, not a 502 or a 504, so
+    an empty 500 counts as unreachable. The desk's own 500 always carries "Internal Server Error",
+    so a crash on the Mac still reads as a crash."""
     js = (SRC / "desk" / "static" / "app.js").read_text()
     body = js[js.index("async function get(path)"):js.index("async function readJson(")]
     assert "r.status === 500 && !text.trim()" in body, \
@@ -556,10 +552,8 @@ def test_the_hosted_page_checks_the_version_before_drawing(repo_root):
 
 
 def test_the_hosted_page_points_at_no_page_it_cannot_open(repo_root):
-    """UNTIL 15 OCT 2026 THE HOSTED DASHBOARD AND HOLDINGS SAID "run a refresh", and Reconcile
-    named the Price Refresh and the Bench as where its readings are taken: plain text on the
-    hosted desk, an instruction none of its readers could follow. A pointer to a page the door
-    does not list is left out, and Reconcile's reading line goes with it."""
+    """A POINTER TO A PAGE THE DOOR DOES NOT LIST, an instruction no hosted reader can follow, is
+    left out, and Reconcile's reading line goes with it."""
     js = (SRC / "desk" / "static" / "app.js").read_text()
     link = js[js.index("const panelLink ="):js.index("const reportLink =")]
     assert '!PANELS.has(panel) ? ""' in link, "a page the door does not list is still named"
@@ -666,8 +660,8 @@ def test_an_answer_the_renaming_cannot_clear_is_refused(client, principal, monke
 
 
 def test_a_reader_with_no_level_opens_nothing(door):
-    """The owner's own passkey predates levels: refused at sign-in until Access gives it one, and a
-    session whose reader loses theirs is closed at its next request."""
+    """A passkey with no level is refused at sign-in until Access gives it one, and a session
+    whose reader loses theirs is closed at its next request."""
     pk = SoftPasskey()
     r = _enrol(door, pk, _code("rowe", "principal"))
     held = _session(r)

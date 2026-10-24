@@ -100,7 +100,7 @@ def test_a_key_shape_is_refused_without_any_credential_file(repo):
 
 
 def test_a_commit_from_a_worktree_is_checked_against_the_main_checkout(repo, tmp_path):
-    """Claude's sessions commit from worktrees, which have no credentials beside them."""
+    """A worktree has no credentials beside it."""
     tree = tmp_path / "tree"
     assert _git(repo, "worktree", "add", "-q", str(tree), "-b", "side").returncode == 0
     result = _commit(tree, "notes.md", f"pw {PASSWORD}")

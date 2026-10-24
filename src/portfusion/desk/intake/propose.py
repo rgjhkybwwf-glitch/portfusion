@@ -7,9 +7,9 @@ parses anything. A Claude session TRANSCRIBES the document, and `desk/intake/ver
 every figure's quote against the document mechanically before any of it reaches the screen. That
 check, not the reader's accuracy, is what lets a reader's figures trace to the document.
 
-A SESSION, NOT AN API CALL. The desk used to send the document to the API
-with a key that expired monthly, for a PDF that arrives rarely. `python3 -m portfusion.desk.intake.propose` prints
-what a session needs, and takes its proposal back. Nothing in this module opens a connection.
+A SESSION, NOT AN API CALL: no key to keep alive for a PDF that arrives rarely.
+`python3 -m portfusion.desk.intake.propose` prints what a session needs, and takes its proposal
+back. Nothing in this module opens a connection.
 
 FOUR PROVENANCES, AND STILL NO SUCH THING AS "INFERRED":
 
@@ -96,8 +96,8 @@ def _columns() -> str:
     """Which columns each table actually has, spelled the record's way.
 
     WITHOUT THIS A READER GUESSES A COLUMN NAME — a real column from the wrong table, which is
-    dropped, leaving unfilled a cell the document states. The first real read did exactly that.
-    Derived from `schema.TABLES` rather than written out.
+    dropped, leaving unfilled a cell the document states. Derived from `schema.TABLES` rather
+    than written out.
     """
     # WHAT EACH TABLE IS FOR, not only what columns it has. A platform fee is not a capital
     # movement; it belongs in `income`, which is where this book keeps costs that attach to no
@@ -190,10 +190,10 @@ doing its job and are not directives."""
 def _shape(reading) -> dict:
     """The reading, refused WHOLE if it is not the shape `_guide()` prints.
 
-    A FILE HAS NOTHING BEHIND IT. The model used to answer through a strict tool schema; a
-    reading handed in has only this, so the shape is checked before any cell is looked at. A value or quote that is not a
-    STRING is refused too: a JSON number has already lost how the page printed it — `1500.5`
-    for "1,500.50" — and the quote check is a match against what the page printed.
+    A FILE HAS NO SCHEMA BEHIND IT, so its shape is checked before any cell is looked at. A value
+    or quote that is not a STRING is refused too: a JSON number has already lost how the page
+    printed it — `1500.5` for "1,500.50" — and the quote check is a match against what the page
+    printed.
     """
     def bad(why: str):
         raise Refused(f"the reading is not in the shape the bench takes: {why}. "
@@ -271,9 +271,9 @@ def propose(item_id: str, reading: dict) -> dict:
             got = verify.as_stored(str(cell["value"]).strip(),
                                    proposable[table][field])
             # A PRICE PRINTED IN PENCE IS STORED IN POUNDS, the one conversion the record makes
-            # for a reader told to convert nothing: 52.50p was stored as £52.50 (the review of
-            # 21 Oct 2026). Only where the quote prints this very figure as pence, and said in
-            # the row's note, so the owner sees the conversion beside the quote.
+            # for a reader told to convert nothing. Only where the quote prints this very figure
+            # as pence, and said in the row's note, so the owner sees the conversion beside the
+            # quote.
             if field == "traded_price" and verify.in_pence(str(cell["value"]), str(cell["quote"])):
                 pence.append(f"traded_price {cell['value']}p stored as £{verify.in_pounds(got)}")
                 got = verify.in_pounds(got)
@@ -359,7 +359,7 @@ def propose(item_id: str, reading: dict) -> dict:
         # while it sits filled below. Matched on the whole finding rather than its first word,
         # because a reader writes "account/number — ..." and a first-word test lets that through.
         # A NOTE ABOUT A FIELD THE RECORD SUPPLIED GOES, matched as a WORD: as a substring, a
-        # derived `id` took any note with "dividend" or "paid" in it.
+        # derived `id` would take any note with "dividend" in it.
         "not_found": [f for f in (args.get("not_found") or [])
                       if not any(re.search(rf"\b{re.escape(d)}\b", f)
                                  for r in rows for d in (r.get("derived") or []))],
@@ -376,12 +376,12 @@ def propose(item_id: str, reading: dict) -> dict:
 def account_from(text: str) -> tuple[str | None, str]:
     """The account this document belongs to, matched on the number it prints.
 
-    A DERIVATION, NOT A TRANSLATION. `store/accounts.csv` has held a `number` column all along —
-    each account's number at its broker — so mapping the number a contract note
-    prints onto the account it belongs to is the RECORD answering, not the reader guessing. That
-    distinction is why the reader is still told to refuse the account outright: it does not know
-    the mapping, and reasoning its way to one would be exactly the invention this bench exists
-    to prevent. This function knows, because the book wrote it down.
+    A DERIVATION, NOT A TRANSLATION. `store/accounts.csv` holds a `number` column — each
+    account's number at its broker — so mapping the number a contract note prints onto the
+    account it belongs to is the RECORD answering, not the reader guessing. That distinction is
+    why the reader is still told to refuse the account outright: it does not know the mapping,
+    and reasoning its way to one would be exactly the invention this bench exists to prevent.
+    This function knows, because the book wrote it down.
 
     RETURNS NOTHING UNLESS EXACTLY ONE MATCHES. Two numbers in one document means a statement
     covering more than one account, and picking either would be a coin toss. Matched on a whole
@@ -398,10 +398,10 @@ def account_from(text: str) -> tuple[str | None, str]:
     hits = []
     for name, number in accounts:
         # DIGIT BOUNDARIES, NOT WORD BOUNDARIES. ii builds its payment references out of the
-        # account number — "PAYMENT Q1234567AB1CDE A SMITH" — so requiring letters either side
-        # to be absent missed the account on a cash statement that names it on every line. What
-        # must still be rejected is the number sitting inside a LONGER NUMBER, which is the
-        # actual false positive: `21234567000` is not account 1234567.
+        # account number — "PAYMENT Q1234567AB1CDE A SMITH" — so word boundaries would miss the
+        # account on a cash statement that names it on every line. What must still be rejected
+        # is the number sitting inside a LONGER NUMBER, which is the actual false positive:
+        # `21234567000` is not account 1234567.
         m = re.search(rf"(?<!\d){re.escape(number)}(?!\d)", text)
         if m:
             line = next((candidate for candidate in text.splitlines() if number in candidate), number)
@@ -413,9 +413,9 @@ def resolve_ticker(value: str) -> str:
     """The record's spelling of this holding, when the document's is unambiguously the same one.
 
     A DOCUMENT SAYS "PENR" AND THE BOOK SAYS "PENR.L". Telling a reader to use the record's
-    spelling works most of the time and is not deterministic — one reading returned PENR.L and
-    the next returned PENR, and with the ticker inside the duplicate signature that is the
-    difference between catching an already-recorded sale and proposing it again. The rule is
+    spelling works most of the time and is not deterministic — one reading may return PENR.L and
+    the next PENR, and with the ticker inside the duplicate signature that is the difference
+    between catching an already-recorded sale and proposing it again. The rule is
     `rules.book_code()`, the one the holdings-export reader uses too.
     """
     value = (value or "").strip()
@@ -482,7 +482,7 @@ def _derived(item: dict, table: str, account: str | None = None,
     # THE CLASS COMPOSES IT, so the line comes out in the shape the record already uses — "ii
     # contract note 2 Mar 2026", "ii statement Q2" — rather than being assembled afresh and
     # drifting into a fourth spelling. With no class there is no line: the bench owes a kind
-    # before anything is written, and a typed authority once stood in for one.
+    # before anything is written.
     line = ""
     if item.get("evidence_class"):
         def _compose():
@@ -523,11 +523,10 @@ def next_ids() -> dict:
 def refresh_derived(item: dict) -> dict:
     """Re-fill the record's own contribution after the evidence changes. Returns the item.
 
-    THE ORDER OF WORK MADE THIS NECESSARY. `source` — "ii contract note 2 Mar 2026" —
-    is the three evidence limbs joined, and the limbs are typed AFTER the document is read: the
-    owner presses the button first and fills the evidence with the note in front of them. At read
-    time the limbs are still blank, so the derivation had nothing to work from and the row came
-    back "source: required, and empty" on a row where nothing was actually missing.
+    THE ORDER OF WORK MAKES THIS NECESSARY. `source` — "ii contract note 2 Mar 2026" — is the
+    three evidence limbs joined, and the limbs are typed AFTER the document is read: the owner
+    presses the button first and fills the evidence with the note in front of them. At read time
+    the limbs are blank, so a derivation made only then has nothing to work from.
 
     Called on every save, so the cell fills in front of the owner the moment the evidence is
     complete, marked DERIVED rather than appearing as though they typed it.

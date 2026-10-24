@@ -1,20 +1,13 @@
 """
 THE FROZEN QUARTER SNAPSHOTS, checked against the ledger.
 
-Q2 2026 is the opening point for the Q3 return, so what the book says was held at a
-quarter end has stopped being a display question and become an input to a published
-figure. This file reconstructs each quarter from the ledger and compares.
+A quarter end opens the next quarter's return, so what the book says was held then is an
+input to a published figure. This file reconstructs each quarter from the ledger and compares.
 
 WHY THE LEDGER IS THE AUTHORITY HERE. It is the sourced event log — contract notes and
 statements, one row per event. A frozen snapshot is a rendering of it made at a moment
-in time, and a rendering can go stale when a trade is later corrected. That is exactly
-what happened twice; both were cured when the quarter ends were restated on 14 Oct 2026, and
-KNOWN below is where a next one would be explained.
-
-THE BASELINE. The record was deliberately begun at 1 January 2026, so a leg with no
-parseable date can only be PRE-BASELINE — it was already held when the book opened.
-Seven legs are in that position and they are not a defect; treating them as one is how
-you end up inventing dates for a boundary that was chosen on purpose.
+in time, and a rendering can go stale when a trade is later corrected. KNOWN below is where
+such a case is explained.
 """
 import re
 from collections import defaultdict
@@ -51,10 +44,7 @@ def held_at(date, account=None):
 # ---------------------------------------------------------------------------------
 # KNOWN DISCREPANCIES — explained, and deliberately NOT silently corrected.
 #
-# NONE IS OPEN. The last three — an account's Q1 snapshot (holdings missing, quantities from
-# before the ledger's corrections), its Q2 snapshot (a holding missing), and a holding filed
-# under another account's code — were cured on 14 Oct 2026, when the owner had the frozen
-# quarter ends restated and Marlow Group folded to one code.
+# NONE IS OPEN.
 #
 # Anything NOT in this list fails. That is the point: the known set is fixed and
 # visible, so new drift cannot hide behind it.
@@ -73,10 +63,9 @@ def _accounts(rows):
 def test_snapshot_matches_the_ledger(date, rows):
     """Every account's frozen snapshot agrees with the event log, or is a KNOWN case.
 
-    AN ACCOUNT THE SNAPSHOT LEAVES OUT ALTOGETHER IS COMPARED TOO: only the accounts it named were,
-    so one omitted while it held positions was never checked. An explicit "(no positions)" row is
-    the snapshot's own statement, with its reason beside it, and stands as stated: an account
-    whose record begins after the quarter end says so in one."""
+    AN ACCOUNT THE SNAPSHOT LEAVES OUT ALTOGETHER IS COMPARED TOO. An explicit "(no positions)"
+    row is the snapshot's own statement, with its reason beside it, and stands as stated: an
+    account whose record begins after the quarter end says so in one."""
     problems = []
     named = {r[0] for r in rows}
     for acct in sorted(set(_accounts(rows))
@@ -166,7 +155,7 @@ def _missing_at_quarter_ends(qn) -> list[tuple[str, str]]:
 @pytest.mark.audit
 def test_no_account_with_history_is_missing_from_a_frozen_quarter_end():
     """`by_account()` opens an account with no row at the frozen 31 December at zero: true of one
-    opened during the year, false of one that already held something (2 Oct 2026)."""
+    opened during the year, false of one that already held something."""
     missing = _missing_at_quarter_ends(Book().quarter_nav())
     assert not missing, f"held before a frozen quarter end and missing from it: {missing}"
 

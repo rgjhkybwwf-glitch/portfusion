@@ -14,14 +14,14 @@ from portfusion.record import rules as D
 def completeness(quarter_end: str) -> list[str]:
     """What is still missing before this quarter can be reported. Empty means ready.
 
-    IT CHECKS WHAT THE PAGE READS (14 Oct 2026): every open account's quarter-nav row at the
-    date and at the quarter's opening, the previous quarter end its return runs from, and the
-    composition frozen at the date. Both are checked against the DATE ITSELF, not "on or
-    before": a figure from six weeks earlier does not describe the quarter that just closed. THE
-    MARKS ARE NOT ASKED FOR: the page reads none, and the freeze that froze the quarter checked
-    them, which is where a missing one is named (`desk/doors/freeze.py`). THE BROKER CHECKS DO
-    NOT GATE IT EITHER: they confirm the figures rather than make them, and section 9 prints each
-    account's last check, or that there is none.
+    IT CHECKS WHAT THE PAGE READS: every open account's quarter-nav row at the date and at the
+    quarter's opening, the previous quarter end its return runs from, and the composition frozen at
+    the date. Both are checked against the DATE ITSELF, not "on or before": a figure from six weeks
+    earlier does not describe the quarter that just closed. THE MARKS ARE NOT ASKED FOR: the page
+    reads none, and the freeze that froze the quarter checked them, which is where a missing one is
+    named (`desk/doors/freeze.py`). THE BROKER CHECKS DO NOT GATE IT EITHER: they confirm the
+    figures rather than make them, and section 9 prints each account's last check, or that there is
+    none.
     """
     missing = []
     opening = _opening(quarter_end)

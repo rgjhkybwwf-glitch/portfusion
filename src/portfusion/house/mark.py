@@ -10,7 +10,7 @@ gives no icons of its own: rounded for a tab, square and opaque for the Dock and
 which draw their own corner. It stands until PortFusion has a mark, and its proportions are here
 as data, each a fraction of the icon's side.
 
-Imports nothing, like the rest of house/.
+Imports only the standard library.
 """
 import html
 

@@ -89,7 +89,7 @@ def verdict(code: int, output: str) -> list[str]:
     failed = set(re.findall(r"^(?:FAILED|ERROR) (\S+)", output, re.M))
     # EXIT 1 NAMES A FAILURE, or the run failed in a way no test reported — a crash after the
     # tests, or the harness failing a run that moved the loaded book. Read as "no failure", it
-    # passed (the review of 21 Oct 2026).
+    # would pass.
     if code == 1 and not failed:
         return ["pytest exited 1 and named no failed test: the run itself failed"]
     return [f"FAILED: {t}" for t in sorted(failed)]

@@ -1,10 +1,11 @@
 """THE DROP-OFF — a document, from the browser onto the intake workbench.
 
 WHY IT EXISTS. **ii and HL have no retail API**, so their documents reach this book as files
-(IG needs none — `python3 -m portfusion.feeds.ig --ig-events` reads the account directly). The document is
-already beside the browser; switching to Finder to drop it into `_inbox/` was pure ceremony.
+(IG needs none — `python3 -m portfusion.feeds.ig --ig-events` reads the account directly). The
+document is already beside the browser; switching to Finder to drop it into `_inbox/` is pure
+ceremony.
 
-IT WRITES, AND THAT WAS A STRUCTURAL DECISION, NOT A CONVENIENCE. `DESK_WRITERS` in
+IT WRITES, AND THAT IS A STRUCTURAL DECISION, NOT A CONVENIENCE. `DESK_WRITERS` in
 `tests/desk/test_boundaries.py` names it, as it names every module under desk/ that writes.
 
 THE SYMMETRY IS WITH commit.py. That is the door by which an event enters `store/`; this is the
@@ -17,7 +18,7 @@ look:
 WHAT IT CANNOT DO IS THE POINT. It never overwrites, never deletes, never renames, never moves
 a document out, never reads the record and never touches `store/`. `docs/intake.md` says a
 document leaves that folder by being archived or by going back where it came from — this module
-has no way to make one leave, which is why the rule survives the new route in.
+has no way to make one leave, so the rule holds for this route too.
 """
 from __future__ import annotations
 
