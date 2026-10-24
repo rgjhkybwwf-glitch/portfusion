@@ -32,6 +32,19 @@ def test_the_guard_names_an_app_that_is_not_installed(monkeypatch):
     assert f"{harness.SRC.name} is not installed" in harness.environment_faults()
 
 
+def test_a_skip_about_the_copy_or_the_demo_is_no_books():
+    """A book lists the skips its rows explain. One about the installed copy, or about the demo's
+    own documents, is the same on every book: no book lists it, and none fails its run for it."""
+    import types
+    import harness
+
+    def skipped(why):
+        return types.SimpleNamespace(longrepr=("a_test.py", 1, f"Skipped: {why}"))
+    assert harness._the_books(skipped("the book holds no income rows yet"))
+    assert not harness._the_books(skipped(harness.NO_CHECKOUT))
+    assert not harness._the_books(skipped(harness.DEMO_ONLY))
+
+
 # =====================================================================================
 # THE BACKUP REPORTS ITS OWN STATE
 #

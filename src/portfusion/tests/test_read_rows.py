@@ -193,6 +193,8 @@ def ledger(tmp_path, monkeypatch):
     monkeypatch.setattr(bench, "accounts_citing",
                         lambda ref: {"Voss ii Trading"} if ref == "ABC123" else set())
     monkeypatch.setattr(read_rows, "bench_currencies", lambda account: {"GBP"})
+    # The register holds KELS.L and QNLR and nothing for ZQX, whichever book is loaded.
+    monkeypatch.setattr(read_rows.D, "SECURITIES", [("KELS.L",), ("QNLR",)])
     (tmp_path / "ledger.csv").write_text(LEDGER, encoding="utf-8")
     return "ledger.csv"
 

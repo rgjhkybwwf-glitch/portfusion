@@ -3,6 +3,17 @@
 Each release, newest first. The version is `portfusion/__init__.py`'s, and `portfusion --version`
 prints it.
 
+## 0.3.2 — beta, 24 Oct 2026
+
+The whole suite runs clean on a book of its own, not only on the demo. Nothing in the app moves.
+
+- **The IG reading check strikes a contract the reading's account holds.** On a book with two
+  IG accounts, it had struck the other account's.
+- **The ii ledger's test reads against a register of its own**, as it stubs the rest of the
+  record, so a dividend's ticker is the same whichever book is loaded.
+- **A test of the demo's own documents skips on another book without failing its run**: like a
+  test that reads the checkout, no book lists it (`tests/harness.py`, `DEMO_ONLY`).
+
 ## 0.3.1 — beta, 24 Oct 2026
 
 The restructure's last loose ends. A 0.3.0 book takes it with nothing to move, unless a

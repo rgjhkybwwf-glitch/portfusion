@@ -9,7 +9,7 @@ import pathlib
 
 import pytest
 
-from harness import holds
+from harness import DEMO_ONLY, holds
 
 _ON = dt.date(2026, 5, 17)
 _DAY = _ON.isoformat()
@@ -166,7 +166,7 @@ def test_the_demos_ig_statement_gives_each_contract_its_level():
     from portfusion.desk.intake import statement_closes as S
     from portfusion.record import rules as D, schema
     if D.store_dir().resolve() != (schema.DEMO / "store").resolve():
-        pytest.skip("the demo's own statement, read with the demo loaded")
+        pytest.skip(DEMO_ONLY)
     got = S.closes("2026-07-06")
     assert not got["problems"], got["problems"]
     assert {c: r["level"] for c, r in got["rows"].items()} == {"VELD-SEP26": 9930.0,

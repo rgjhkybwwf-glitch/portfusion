@@ -818,13 +818,14 @@ def _account_number(account):
                 if r[hdr.index("account")] == account)
 
 
-def _mapped_contract():
+def _mapped_contract(among=None):
     """A still-quoted contract the book maps a leg to AND marks, with its epic — the only kind
-    of level a reading may ride in on (`price_refresh._write` gates on `D.LEG_CONTRACT.values()`)."""
+    of level a reading may ride in on (`price_refresh._write` gates on `D.LEG_CONTRACT.values()`).
+    With `among`, one of those mark keys: a book with two IG accounts holds each contract in one."""
     from portfusion.record import schema
     epic_of = {r[0]: str(r[1] or "").strip() for r in schema.load("contracts")}
     return next((c, epic_of[c]) for c in sorted(_CONTRACTS)
-                if c in _BY_TICKER and epic_of.get(c))
+                if c in _BY_TICKER and epic_of.get(c) and (among is None or c in among))
 
 
 def _reading(account=SPREAD_BET_ACCOUNT, **over):
@@ -888,14 +889,18 @@ def test_an_ig_check_describes_its_own_instant(store_copy):
         pytest.skip(f"{SPREAD_BET_ACCOUNT}'s reading is not one pass with its marks")
     day = next(r.as_of for r in _rules.ac_rows if r.acct == SPREAD_BET_ACCOUNT)
     later = (dt.date.fromisoformat(str(day)[:10]) + dt.timedelta(days=1)).isoformat()
-    contract, _ = _mapped_contract()
-    marks.write(prices=[_level(price=round(_BY_TICKER[contract][1] * 0.9, 1), as_of=later,
-                               at=f"{later}T14:02:11Z")])
+    # A level moves only the reading of the account holding its contract on the reading's day.
+    held = {k for _, k in Book()._held_by_mark_key(str(day)[:10], SPREAD_BET_ACCOUNT)}
+    if not (held & _CONTRACTS):
+        pytest.skip(f"{SPREAD_BET_ACCOUNT} holds no contract on {str(day)[:10]}")
+    contract, _ = _mapped_contract(held)
+    marks.write(prices=[_level(contract, price=round(_BY_TICKER[contract][1] * 0.9, 1),
+                               as_of=later, at=f"{later}T14:02:11Z")])
     assert row() == was, "a later day's level moved the reconciliation of the reading before it"
     read_at = next(r.at for r in _rules.ac_rows if r.acct == SPREAD_BET_ACCOUNT)
     after = (dt.datetime.fromisoformat(read_at) + dt.timedelta(minutes=1)).strftime(
         "%Y-%m-%dT%H:%M:%SZ")
-    marks.write(prices=[_level(price=round(_BY_TICKER[contract][1] * 0.9, 1),
+    marks.write(prices=[_level(contract, price=round(_BY_TICKER[contract][1] * 0.9, 1),
                                as_of=str(day)[:10], at=after)])
     now = row()
     assert now["comparable"] == "False" and "struck after the equity was read" in \
