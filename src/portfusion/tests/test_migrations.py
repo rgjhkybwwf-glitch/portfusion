@@ -244,6 +244,18 @@ def _register_without_record_begins(store):
     return {}, {"accounts.csv": lambda got: all(r[-1] == "" for r in got[1:])}
 
 
+@pytest.mark.parametrize("uk, utc", [
+    ("2026-07-01T13:30:00", "2026-07-01T12:30:00Z"),     # summer: an hour ahead
+    ("2026-12-01T13:30:00", "2026-12-01T13:30:00Z"),     # winter: the same
+    ("2026-10-25T01:30:00", "2026-10-25T00:30:00Z"),     # the hour the clocks make twice: the first
+    ("2026-07-01T12:30:00Z", "2026-07-01T12:30:00Z")])   # already on the record's clock
+def test_the_clock_move_reads_a_uk_time_as_the_clock_on_the_wall_said_it(uk, utc):
+    """An instant written before the record kept UTC is UK wall-clock time. The hour the clocks
+    going back make twice is read as its first, summer, one, as the move says: a reading that
+    took the second, or refused the hour, would move every such row by an hour unnoticed."""
+    assert M._utc(uk) == utc
+
+
 @pytest.mark.parametrize("step, old_shape", [
     pytest.param(1, _out_of_date_order, id="date order and ids"),
     pytest.param(2, _with_retired_tables, id="two tables retired"),
