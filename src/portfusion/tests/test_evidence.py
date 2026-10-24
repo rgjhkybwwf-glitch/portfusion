@@ -167,29 +167,63 @@ def test_the_evidence_chain_census_has_not_moved(D):
         f"for every row naming it — check that before changing this set.")
 
 
-def test_every_trade_names_its_document_in_one_format(D):
+#: EVERY TABLE WHOSE ROWS NAME THEIR DOCUMENT. A trade's line is its document's kind and date; every
+#: other table's is its evidence class's own template, slots filled.
+SOURCED = ("buys", "sales", "income", "capital-movements", "account-statements")
+
+
+def _documented(D, table):
+    """(row id, row) for each row of `table` citing a document something retrieves: not a row
+    not on file, nor a derivation, which say what they are instead."""
+    if table == "account-statements":
+        from portfusion.history import accounts as A
+        rows = [(f"{r['account']} {r['as_of']}", r) for r in A.load()]
+    else:
+        hdr = D.schema.TABLES[table].header
+        rows = [(f"{table} row {n}", dict(zip(hdr, r)))
+                for n, r in enumerate(D.schema.load(table), 2)]
+    return [(rid, r, ev) for rid, r in rows
+            if (ev := D.evidence_from_source(r["source"])) and ev.retrieval != "none"]
+
+
+def _in_its_template(ev, line: str) -> bool:
+    """Is `line` its class's template with the slots filled? An empty account slot is tidied away
+    with its brackets, as `rules_evidence.evidence_source()` writes it."""
+    import re
+    pattern = re.escape(ev.source).replace(r"\ \(\{account\}\)", r"(?: \(.+?\))?")
+    for slot in ("reference", "date", "account", "endpoint"):
+        pattern = pattern.replace(re.escape("{%s}" % slot), ".+?")
+    return re.fullmatch(pattern, line) is not None
+
+
+@pytest.mark.parametrize("table", SOURCED)
+def test_every_row_names_its_document_in_its_class_format(D, table):
     """The owner, 12 Oct 2026: "I want one format going forward for all accounts."
 
     A trade or sale's `source` is its document's kind, in its class's own words, and the
     document's date — "ii contract note 03 Feb 2022", "HL security movements 23 Jul 2026"; an API
     read names its endpoint before the day. Nothing else: the deal's reference is `broker_ref`
     (an ii contract note's number above all, since the archive finds the note by it), and the
-    account and security are the row's own columns. Before the rewrite, 68 ii rows carried the
-    number in the line and 33 of them nowhere else, and 15 HL rows repeated their security and
-    account. A row that cites no document (not on file, a derivation) says what it is instead."""
+    account and security are the row's own columns. Every other row naming a document is its
+    class's template, slots filled, so one kind of document reads one way in every table. A row
+    that cites no document (not on file, a derivation) says what it is instead."""
     import re
+    documented = _documented(D, table)
+    if not documented:
+        pytest.skip(f"no {table} row on file names a document — this would assert nothing")
     wrong, unnumbered = [], []
-    for row in list(D.buys) + list(D.sales):
-        rid = getattr(row, "trade_id", None) or row.sale_id
-        ev = D.evidence_from_source(row.source)
-        if ev is None or ev.retrieval == "none":
-            continue
-        prefix = ev.source.split("{")[0].strip()
-        if not re.fullmatch(rf"{re.escape(prefix)}( /\S+)? \d{{2}} [A-Z][a-z]{{2}} \d{{4}}", row.source):
-            wrong.append(f"{rid}: {row.source!r}")
-        if ev.key in D.REFERENCE_IS_THE_DEAL and not (row.broker_ref or "").strip():
-            unnumbered.append(rid)
-    assert not wrong, f"not in the one format, kind then date: {wrong}"
+    for rid, row, ev in documented:
+        if table in ("buys", "sales"):
+            prefix = ev.source.split("{")[0].strip()
+            fits = re.fullmatch(rf"{re.escape(prefix)}( /\S+)? \d{{2}} [A-Z][a-z]{{2}} \d{{4}}",
+                                row["source"])
+            if ev.key in D.REFERENCE_IS_THE_DEAL and not (row["broker_ref"] or "").strip():
+                unnumbered.append(rid)
+        else:
+            fits = _in_its_template(ev, row["source"])
+        if not fits:
+            wrong.append(f"{rid}: {row['source']!r}")
+    assert not wrong, f"not in its class's one format: {wrong}"
     assert not unnumbered, f"an ii contract note with no number in broker_ref: {unnumbered}"
 
 
