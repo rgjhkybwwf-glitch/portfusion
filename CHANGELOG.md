@@ -5,6 +5,11 @@ prints it.
 
 ## Unreleased
 
+- **A book's folder and its research notes are held by PortFusion.** The audit asks that a book
+  holds every file `portfusion init` writes, with the release's hooks and ignore list, that every
+  filed document is named as the record reads it, and that its research-notes rows agree with
+  the research repo it names, every published note on a held company on file.
+  `portfusion init --push-on-commit` writes a hook that pushes each commit as it lands.
 - **Every row naming a document is held to its class's one format**, in buys, sales, income,
   capital movements and the account history: a trade's line its document's kind and date, every
   other its class's template. The migration tests become one carry test and one refusals test,

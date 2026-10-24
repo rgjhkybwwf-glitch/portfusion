@@ -112,42 +112,28 @@ def _provenance_rows(D):
 
 
 def _archive_names():
-    """The loaded book's filed documents: the folder the doors file into."""
+    """The loaded book's filed documents: the folder the doors file into. A dot-file (the Mac's
+    `.DS_Store`) is the machine's, not a document."""
     from portfusion.record import schema
     folder = schema.STATEMENTS
-    return [p.name for p in folder.iterdir()] if folder.is_dir() else []
+    return [p.name for p in folder.iterdir() if not p.name.startswith(".")] if folder.is_dir() else []
 
 
-def archive_census(names, D, companions=frozenset()):
-    """Every document in the archive, by whether its name follows ARCHIVE_CONVENTION.
+@pytest.mark.audit
+def test_every_filed_document_is_named_as_the_record_reads_it(D):
+    """Every document in the archive leads with its date, may carry its own instant, then an
+    authority the record declares (`rules.ARCHIVE_CONVENTION`). A name that does not was filed
+    by hand under a name the record cannot read: rename the file, never the rule.
 
-    `companions` are a book's own documents filed before a rule that now withdraws them: a
-    second artefact about a trade its contract note already covers. A book's own check names
-    them, since only that book has them.
-
-    ONE CENSUS, AND IT RETURNS EVERY CATEGORY, so a second consumer never counts for itself.
-
-    THE MATCHER IS DERIVED FROM THE RECORD, not from a second statement of the shape: a name
-    must lead with the date, may then carry the document's own instant, and must continue with
-    an `Evidence.authority` the record declares. That is the convention's first three parts,
-    and they are the only ones a filename can be held to — `(what it covers)` is judgement,
-    and a REF is absent from any class retrieved by its date.
-    """
-    authorities = sorted({e.authority for e in D.EVIDENCE_CLASSES}, key=len, reverse=True)
-    shape = re.compile(r"^(\d{2} [A-Z][a-z]{2} \d{4})(?: (\d{2}\.\d{2}))? (.+)$")
-    out = {"conforming": 0, "companion": 0, "non_conforming": 0, "offenders": []}
-    for name in names:
-        if name in companions:
-            out["companion"] += 1
-            continue
-        m = shape.match(name.rsplit(".", 1)[0])
-        tail = m.group(3) if m else ""
-        if m and any(tail.lower().startswith(a.lower()) for a in authorities):
-            out["conforming"] += 1
-        else:
-            out["non_conforming"] += 1
-            out["offenders"].append(name)
-    return out
+    THE MATCHER IS DERIVED FROM THE RECORD, not from a second statement of the shape. Those are
+    the convention's first three parts, and the only ones a filename can be held to: `(what it
+    covers)` is judgement, and a REF is absent from any class retrieved by its date."""
+    authorities = tuple({e.authority.lower() for e in D.EVIDENCE_CLASSES})
+    shape = re.compile(r"^\d{2} [A-Z][a-z]{2} \d{4}(?: \d{2}\.\d{2})? (.+)$")
+    misnamed = [name for name in _archive_names()
+                if not ((m := shape.match(name.rsplit(".", 1)[0]))
+                        and m.group(1).lower().startswith(authorities))]
+    assert not misnamed, f"filed under a name the record cannot read: {misnamed}"
 
 
 @pytest.mark.audit

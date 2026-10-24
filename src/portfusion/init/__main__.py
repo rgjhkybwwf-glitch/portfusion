@@ -6,6 +6,9 @@ portfusion init — A NEW BOOK, in a folder that is empty or does not exist yet.
     portfusion init <folder> --practice      a practice book: a copy of the demo, marked as one,
                                              to try the desk on. Its figures are invented
     portfusion init <folder> --no-git        without starting its git history
+    portfusion init <folder> --push-on-commit
+                                             with a hook that pushes each commit to origin
+                                             as it lands, once you add one
 
 Each is a git repository from its first commit, unless --no-git: kept on this machine, and
 pushed anywhere only if you add a remote — a private one.
@@ -32,9 +35,12 @@ def main(argv=None):
                       help="a practice book: a copy of the demo, marked as one")
     kind.add_argument("--begins", type=int, metavar="YEAR", help="the year the record begins")
     p.add_argument("--no-git", action="store_true", help="do not start its git history")
+    p.add_argument("--push-on-commit", action="store_true",
+                   help="a hook that pushes each commit to origin as it lands")
     args = p.parse_args(argv)
     try:
-        folder = create(args.folder, practice=args.practice, begins=args.begins)
+        folder = create(args.folder, practice=args.practice, begins=args.begins,
+                        push_on_commit=args.push_on_commit)
     except Refused as e:
         log.error(str(e))
         return 2
