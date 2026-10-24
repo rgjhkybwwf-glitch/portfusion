@@ -818,11 +818,13 @@ def _parse(field: Field, raw: str, table: str, row_no: int):
 
 def _held_to_places(field: Field, text: str) -> None:
     """Raise unless `text` is written to the field's places: exactly, for money; at most, else."""
-    digits = text.partition(".")[2]
+    digits = text.strip().partition(".")[2]
     if any(c in text for c in "eE") or (len(digits) != field.places if field.exact
                                         else len(digits) > field.places):
         raise ValueError(f"{text!r} is not written to {'exactly' if field.exact else 'at most'} "
-                         f"{field.places} decimal places")
+                         f"{field.places} decimal places"
+                         + ("; `portfusion migrate` writes a book's money to the penny"
+                            if field.exact else ""))
 
 
 def figure(value, places: int, exact: bool = False) -> str:
@@ -831,10 +833,10 @@ def figure(value, places: int, exact: bool = False) -> str:
     quote, rounded there, its trailing noughts dropped."""
     v = float(value)
     if exact:
-        if abs(v - round(v, places)) > 1e-9:
+        if abs(v - round(v, places)) > 1e-9 * max(1.0, abs(v)):
             raise ValueError(f"{value!r} is not a sum to {places} decimal places")
-        return f"{v:.{places}f}"
-    return repr(round(v, places))
+        return f"{round(v, places) + 0.0:.{places}f}"      # + 0.0: never "-0.00"
+    return repr(round(v, places) + 0.0)
 
 
 def cell(field: Field, value) -> str:

@@ -56,6 +56,8 @@ class AppendOnlyCSV:
         # read compares. None for a history that holds none (`restruck()` is then never asked).
         self.figure = (figure,) if isinstance(figure, str) else figure
         self.places = places or {}
+        # The fields their figures are held to on reading, built once.
+        self._held = {k: schema.Field(k, "float", **how) for k, how in self.places.items()}
 
     @property
     def path(self) -> str:
@@ -91,9 +93,9 @@ class AppendOnlyCSV:
                 if self.nullable and r[k] in ("", None):
                     r[k] = None
                     continue
-                if k in self.places:
+                if k in self._held:
                     try:
-                        schema._held_to_places(schema.Field(k, "float", **self.places[k]), r[k])
+                        schema._held_to_places(self._held[k], r[k])
                     except ValueError as e:
                         raise ValueError(f"{self._name} line {i}, {k}: {e}") from None
                 r[k] = float(r[k])

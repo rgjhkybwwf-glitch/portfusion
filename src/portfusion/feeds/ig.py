@@ -766,7 +766,14 @@ def _event(table, ref, kind, account, what, values):
                          f"every column is filled explicitly or the paste misaligns")
     ordered = {c: values[c] for c in ROW_COLUMNS[table]}
     return {"table": table, "values": ordered, "ref": ref, "kind": kind,
-            "account": account, "what": what, "line": _csv_row(list(ordered.values()))}
+            "account": account, "what": what,
+            # AS IT WILL BE WRITTEN: each figure to its places (`schema.cell()`).
+            "line": _csv_row([_schema.cell(_field(table, c), v) for c, v in ordered.items()])}
+
+
+def _field(table: str, column: str):
+    """The schema's field for a column of a row this feed proposes."""
+    return next(f for f in _schema.TABLES[table].fields if f.name == column)
 
 
 def _csv_row(values):

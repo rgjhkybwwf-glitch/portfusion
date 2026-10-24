@@ -1227,7 +1227,11 @@ def paste_block(item: dict) -> list[dict]:
         fields = schema.TABLES[table].fields
         cells = []
         for f in fields:
-            v = schema.cell(f, row["values"].get(f.name, ""))
+            raw = row["values"].get(f.name, "")
+            try:
+                v = schema.cell(f, raw)
+            except ValueError:               # the gate names it; the line still shows it
+                v = str(raw)
             cells.append(f'"{v}"' if ("," in v or '"' in v) else v)
         out.append({"table": table, "target": f"store/{table}.csv", "line": ",".join(cells)})
     return out

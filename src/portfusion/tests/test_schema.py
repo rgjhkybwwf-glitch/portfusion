@@ -245,6 +245,11 @@ def test_money_is_written_to_the_penny_and_a_quote_to_at_most_six_places():
     with pytest.raises(ValueError, match="sum to 2 decimal places"):
         schema.cell(money, 12.345)
     assert [schema.cell(quote, v) for v in (0.1235, "2", 1.2917000001)] == ["0.1235", "2.0", "1.2917"]
+    assert schema.cell(money, -0.0) == "0.00" and schema.cell(money, 12345678.91) == "12345678.91"
+    from portfusion.desk.intake import bench
+    [line] = bench.paste_block({"rows": [{"table": "capital-movements",
+                                          "values": {"amount": "12.345", "account": "x"}}]})
+    assert "12.345" in line["line"], "a figure the gate refuses vanished from its own line"
     from portfusion.desk.doors import commit
     assert commit._rendered("capital-movements", {"amount": "250"})[2] == "250.00"
 
