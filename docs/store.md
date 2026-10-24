@@ -1,7 +1,7 @@
 # The store
 
 A book's `store/` folder is its record: every sourced fact, one row per event, in a file for each
-table `record/schema.py` registers, and the three append-only histories.
+table `record/schema.py` registers, and the three histories.
 
 **A trade goes in `buys.csv`, a sale in `sales.csv`, a dividend in `income.csv`**, never in a
 Python literal. **A new column or table is a `record/schema.py` change**, not a CSV one: the
