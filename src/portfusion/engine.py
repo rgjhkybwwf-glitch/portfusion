@@ -39,9 +39,9 @@ from portfusion.record import rules as D
 # each frame also names its tuple's fields: a new book, whose tables are empty, still has columns.
 
 def utc_of(at: str) -> str:
-    """A journal instant on its one clock (`schema.record_instant`): UTC, to the second, marked
-    `Z`. One written so is returned as it is; an older one, a UK wall-clock time with no zone, is
-    read as UK time."""
+    """An instant a reader names, on the journal's clock (`schema.record_instant`): UTC, to the
+    second, marked `Z`. One written so is returned as it is; one with no zone is UK wall-clock
+    time, as the desk shows it, and is read as that."""
     at = str(at)
     if not at or at.endswith("Z"):
         return at
@@ -52,13 +52,6 @@ def utc_of(at: str) -> str:
 def uk_instant(at: str) -> str:
     """A journal instant as UK wall-clock time, for a reader: "2026-10-21T15:29:09"."""
     return pd.Timestamp(utc_of(at)).tz_convert("Europe/London").strftime("%Y-%m-%dT%H:%M:%S")
-
-
-def _on_one_clock(journal: pd.DataFrame) -> pd.DataFrame:
-    """The journal with every instant in UTC (`utc_of`), so its rows compare and order as they
-    happened, whichever clock wrote them."""
-    journal["at"] = journal["at"].map(utc_of)
-    return journal
 
 
 def load_store() -> dict[str, pd.DataFrame]:
@@ -104,10 +97,20 @@ def load_store() -> dict[str, pd.DataFrame]:
         # `rules.journal_rows()` is a function, never loaded at import: the build must never
         # depend on WHEN a row was entered. COLUMNS FROM THE SCHEMA, never typed here: a typed
         # list is a second copy of it.
-        # ON ONE CLOCK: rows written before UTC record time carry UK time with no zone.
-        "journal":       _on_one_clock(pd.DataFrame(D.journal_rows(),
-                                                    columns=list(D.JOURNAL_FIELDS))),
+        "journal":       pd.DataFrame(D.journal_rows(), columns=list(D.JOURNAL_FIELDS)),
     }
+    # A SPREAD BET IS PRICED BY ITS CONTRACT, one underlying sitting on several at several levels,
+    # so a mark under the bet's own code values none of them and is refused by name.
+    bets = {code for code, kind in D.KIND_OF_CODE.items() if kind == "spread bet"}
+    by_code = [f"{file}: {key} {day}" for file, frame, on in (
+                   ("price-history.csv", "history.prices", "date"),
+                   ("current-prices.csv", "prices", "as_of"))
+               for key, day in store[frame][["mark_key", on]].itertuples(index=False)
+               if key in bets]
+    if by_code:
+        raise ValueError("A SPREAD BET IS PRICED BY ITS CONTRACT, NOT ITS OWN CODE: key each of "
+                         "these by the contract it prices (contracts.csv):\n  "
+                         + "\n  ".join(by_code))
     # Dates as real dates, not strings. Doing this once, here, is what makes every
     # "give me Q2" question downstream a one-liner instead of string slicing.
     for name in ("income", "movements"):
@@ -2957,17 +2960,6 @@ class Book:
         fx = pick(fh[fh["kind"] == "spot"], "currency", "rate")
         return px, fx
 
-    def _contracts_open_at(self, ticker: str, as_of: str) -> set[str]:
-        """Which spread-bet contracts this ticker had open on a date."""
-        out = set()
-        for t in self.D.buys:
-            if t.ticker != ticker or t.mode != "sb":
-                continue
-            c = self.D.LEG_CONTRACT.get(t.trade_id)
-            if c and str(t.date) <= as_of:
-                out.add(c)
-        return out
-
     def _valued_legs_at(self, as_of: str, account: str | None = None) -> dict[str, dict]:
         """Every VALUED leg at a date, by leg id, with the MARK KEY it is priced from.
 
@@ -3042,12 +3034,9 @@ class Book:
         """Every (key, level, quantity) lot needed to value one holding at a date.
 
         A SHARE IS ONE LOT, keyed by its ticker. A SPREAD BET IS ONE LOT PER CONTRACT, which is why
-        the live price table is keyed by contract: a lookup keyed by ticker keeps one contract and
-        values a multi-contract position at one level, saying nothing.
-
-        THE TICKER FALL-BACK. The older price-history rows are keyed by TICKER, from when each
-        spread-bet ticker had one contract open. They are used when the per-contract split cannot
-        answer, and only when the ticker had at most one contract open.
+        its marks are keyed by contract (`load_store()` refuses one under the bet's own code): a
+        lookup keyed by ticker keeps one contract and values a multi-contract position at one
+        level, saying nothing.
         """
         lots = {k: q for (tk, k), q in self._held_by_mark_key(as_of, account).items()
                 if tk == ticker}
@@ -3057,13 +3046,6 @@ class Book:
         if splittable:
             return [(k, px[k][1], lots[k]) for k in sorted(lots)]
         if ticker in px:
-            open_contracts = self._contracts_open_at(ticker, as_of)
-            if len(open_contracts) > 1:
-                raise KeyError(
-                    f"{ticker} had {len(open_contracts)} contracts open on {as_of} "
-                    f"({sorted(open_contracts)}) and price-history holds only a ticker-keyed "
-                    f"mark. One level cannot value a position held at several — bank a "
-                    f"contract-keyed mark for that date.")
             return [(ticker, px[ticker][1], qty)]
         missing = sorted(k for k in lots if k not in px) or [ticker]
         raise MissingMark(missing,
@@ -3704,12 +3686,11 @@ class Book:
         """Every banked mark behind one HOLDINGS ROW, newest first, with its source string — the
         evidence under the row's value.
 
-        A line's marks may sit under two keys: the older ticker-keyed rows and the contract-keyed
-        ones, both shown, so a position's history starts where it really did. A retired, unpriced
-        contract adds nothing.
+        A share's marks are under its ticker, a spread bet's under each contract it held, so a
+        multi-contract line shows every contract's. A retired, unpriced contract adds nothing.
 
         `level` says which marks are a spread bet's LEVEL IN POINTS, as IG states it, rather than a
-        price in the line's currency: a contract's, and a bet's own ticker-keyed ones.
+        price in the line's currency: a contract's.
         """
         if by == "issuer":
             company = self._identity().set_index("ticker")["company"]
@@ -3717,8 +3698,7 @@ class Book:
         else:
             tickers = {key}
 
-        # THE TICKER IS ITSELF A MARK KEY — always for a share, and for a spread bet
-        # wherever those legacy rows are. The contracts join it from the open legs.
+        # A SHARE'S TICKER IS ITS MARK KEY; a spread bet's contracts join from the open legs.
         keys = set(tickers)
         for leg in self._valued_legs_at(self.valued_at(), account).values():
             if leg["ticker"] in tickers:
@@ -3726,8 +3706,7 @@ class Book:
 
         prices = self.store["history.prices"]
         out = prices[prices["mark_key"].isin(keys)].copy()
-        out["level"] = [k in self.D.CONTRACTS or self.D.KIND_OF_CODE.get(k) == "spread bet"
-                        for k in out["mark_key"]]
+        out["level"] = out["mark_key"].isin(set(self.D.CONTRACTS))
         return out.sort_values(["date", "mark_key"], ascending=[False, True]) \
                   .reset_index(drop=True)
 

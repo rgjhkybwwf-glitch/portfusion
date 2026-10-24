@@ -1,31 +1,31 @@
 at,route,op,table,rows,ref,detail
-2026-09-30T18:00:00,baseline,open,companies,5,,rows on file when the journal opened
-2026-09-30T18:00:00,baseline,open,securities,6,,rows on file when the journal opened
-2026-09-30T18:00:00,baseline,open,accounts,3,,rows on file when the journal opened
-2026-09-30T18:00:00,baseline,open,capital-movements,5,,rows on file when the journal opened
-2026-09-30T18:00:00,baseline,open,buys,11,,rows on file when the journal opened
-2026-09-30T18:00:00,baseline,open,sales,4,,rows on file when the journal opened
-2026-09-30T18:00:00,baseline,open,income,4,,rows on file when the journal opened
-2026-09-30T18:00:00,baseline,open,quarter-nav,16,,rows on file when the journal opened
-2026-09-30T18:00:00,baseline,open,quarter-snapshots,15,,rows on file when the journal opened
-2026-09-30T18:00:00,baseline,open,fx,1,,rows on file when the journal opened
-2026-09-30T18:00:00,baseline,open,current-prices,6,,rows on file when the journal opened
-2026-09-30T18:00:00,baseline,open,account-readings,1,,rows on file when the journal opened
-2026-09-30T18:00:00,baseline,open,reasoning,8,,rows on file when the journal opened
-2026-09-30T18:00:00,baseline,open,cash-readings,7,,rows on file when the journal opened
-2026-09-30T18:00:00,baseline,open,research-notes,0,,rows on file when the journal opened
-2026-09-30T18:00:00,baseline,open,quarter-results,12,,rows on file when the journal opened
-2026-09-30T18:00:00,baseline,open,settings,12,,rows on file when the journal opened
-2026-09-30T18:00:00,baseline,open,contracts,4,,rows on file when the journal opened
-2026-03-31T17:30:00,freeze,append,quarter-snapshots,4,2026-03-31,"4 row(s) freezing 2026-03-31, from the engine"
-2026-03-31T17:30:00,freeze,append,quarter-nav,4,2026-03-31,"4 row(s) freezing 2026-03-31, from the engine"
-2026-03-31T17:30:00,freeze,append,quarter-results,4,2026-03-31,"4 row(s) freezing 2026-03-31, from the engine"
-2026-06-30T17:30:00,freeze,append,quarter-snapshots,5,2026-06-30,"5 row(s) freezing 2026-06-30, from the engine"
-2026-06-30T17:30:00,freeze,append,quarter-nav,4,2026-06-30,"4 row(s) freezing 2026-06-30, from the engine"
-2026-06-30T17:30:00,freeze,append,quarter-results,4,2026-06-30,"4 row(s) freezing 2026-06-30, from the engine"
-2026-08-12T10:03:15,bench,append,sales,1,B-20260812-4c7e2d,ContractNote_DMW5ZG.pdf
-2026-08-12T10:03:15,bench,append,reasoning,1,B-20260812-4c7e2d,why for KELS.L
-2026-09-30T17:30:00,freeze,append,quarter-snapshots,6,2026-09-30,"6 row(s) freezing 2026-09-30, from the engine"
-2026-09-30T17:30:00,freeze,append,quarter-nav,4,2026-09-30,"4 row(s) freezing 2026-09-30, from the engine"
-2026-09-30T17:30:00,freeze,append,quarter-results,4,2026-09-30,"4 row(s) freezing 2026-09-30, from the engine"
-2026-10-13T20:31:10,hand,replace,quarter-results,8,restatement 2026-10-13,"restatements of the three closed quarters, 8 rows: the return is day-weighted, so every return on a quarter with a flow moves and nothing else does"
+2026-09-30T17:00:00Z,baseline,open,companies,5,,rows on file when the journal opened
+2026-09-30T17:00:00Z,baseline,open,securities,6,,rows on file when the journal opened
+2026-09-30T17:00:00Z,baseline,open,accounts,3,,rows on file when the journal opened
+2026-09-30T17:00:00Z,baseline,open,capital-movements,5,,rows on file when the journal opened
+2026-09-30T17:00:00Z,baseline,open,buys,11,,rows on file when the journal opened
+2026-09-30T17:00:00Z,baseline,open,sales,4,,rows on file when the journal opened
+2026-09-30T17:00:00Z,baseline,open,income,4,,rows on file when the journal opened
+2026-09-30T17:00:00Z,baseline,open,quarter-nav,16,,rows on file when the journal opened
+2026-09-30T17:00:00Z,baseline,open,quarter-snapshots,15,,rows on file when the journal opened
+2026-09-30T17:00:00Z,baseline,open,fx,1,,rows on file when the journal opened
+2026-09-30T17:00:00Z,baseline,open,current-prices,6,,rows on file when the journal opened
+2026-09-30T17:00:00Z,baseline,open,account-readings,1,,rows on file when the journal opened
+2026-09-30T17:00:00Z,baseline,open,reasoning,8,,rows on file when the journal opened
+2026-09-30T17:00:00Z,baseline,open,cash-readings,7,,rows on file when the journal opened
+2026-09-30T17:00:00Z,baseline,open,research-notes,0,,rows on file when the journal opened
+2026-09-30T17:00:00Z,baseline,open,quarter-results,12,,rows on file when the journal opened
+2026-09-30T17:00:00Z,baseline,open,settings,12,,rows on file when the journal opened
+2026-09-30T17:00:00Z,baseline,open,contracts,4,,rows on file when the journal opened
+2026-03-31T16:30:00Z,freeze,append,quarter-snapshots,4,2026-03-31,"4 row(s) freezing 2026-03-31, from the engine"
+2026-03-31T16:30:00Z,freeze,append,quarter-nav,4,2026-03-31,"4 row(s) freezing 2026-03-31, from the engine"
+2026-03-31T16:30:00Z,freeze,append,quarter-results,4,2026-03-31,"4 row(s) freezing 2026-03-31, from the engine"
+2026-06-30T16:30:00Z,freeze,append,quarter-snapshots,5,2026-06-30,"5 row(s) freezing 2026-06-30, from the engine"
+2026-06-30T16:30:00Z,freeze,append,quarter-nav,4,2026-06-30,"4 row(s) freezing 2026-06-30, from the engine"
+2026-06-30T16:30:00Z,freeze,append,quarter-results,4,2026-06-30,"4 row(s) freezing 2026-06-30, from the engine"
+2026-08-12T09:03:15Z,bench,append,sales,1,B-20260812-4c7e2d,ContractNote_DMW5ZG.pdf
+2026-08-12T09:03:15Z,bench,append,reasoning,1,B-20260812-4c7e2d,why for KELS.L
+2026-09-30T16:30:00Z,freeze,append,quarter-snapshots,6,2026-09-30,"6 row(s) freezing 2026-09-30, from the engine"
+2026-09-30T16:30:00Z,freeze,append,quarter-nav,4,2026-09-30,"4 row(s) freezing 2026-09-30, from the engine"
+2026-09-30T16:30:00Z,freeze,append,quarter-results,4,2026-09-30,"4 row(s) freezing 2026-09-30, from the engine"
+2026-10-13T19:31:10Z,hand,replace,quarter-results,8,restatement 2026-10-13,"restatements of the three closed quarters, 8 rows: the return is day-weighted, so every return on a quarter with a flow moves and nothing else does"

@@ -728,8 +728,8 @@ JOURNAL = Table(
          "table, the row and the column, rather than joining to nothing downstream."),
     fields=(
         # RECORD TIME, to the second, IN UTC (`record_instant()`) — a `str`, because
-        # `date.fromisoformat` would refuse a time. Rows written before 21 Oct 2026 carry UK
-        # wall-clock time with no zone, and are read as that (`engine.utc_of`).
+        # `date.fromisoformat` would refuse a time. One without its `Z` is refused
+        # (`rules.journal_rows()`).
         Field("at", "str"),
         # WHO WROTE. `baseline` opens a table; `bench` is a press on the Bench: commit.py, which
         # appends an event, or research_notes.py, a published note's rows; `marks` is marks.py,

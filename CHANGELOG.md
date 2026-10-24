@@ -5,6 +5,12 @@ prints it.
 
 ## Unreleased
 
+- **A spread bet is priced by its contract, and the journal keeps one clock.** A mark under a
+  bet's own code is refused, and the engine's fall-back to one, from before each contract had a
+  key, is retired. A journal instant without its `Z` is refused; `portfusion migrate` writes a
+  book's older ones, and the bench items they tie to, in UTC. A quarter's NAV is tied to its
+  statement where the row says it was copied from one, not where the journal says the freeze
+  did not write it.
 - **A book's folder and its research notes are held by PortFusion.** The audit asks that a book
   holds every file `portfusion init` writes, with the release's hooks and ignore list, that every
   filed document is named as the record reads it, and that its research-notes rows agree with

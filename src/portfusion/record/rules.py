@@ -729,8 +729,16 @@ def journal_rows() -> list:
     Through the record, not past it: read from its own path, the journal and `store_rows()` would
     come from different stores whenever a test moves the schema. A FUNCTION, never loaded on
     import, because nothing in the build may depend on WHEN a row was entered.
+
+    ON ONE CLOCK: an instant without its `Z` is refused, since UK time and UTC differ by an hour
+    half the year and the journal would no longer read as it happened.
     """
-    return schema.load("journal")
+    rows = schema.load("journal")
+    unzoned = [r[0] for r in rows if not str(r[0]).endswith("Z")]
+    if unzoned:
+        raise ValueError(f"A JOURNAL INSTANT IS IN UTC, MARKED Z; {len(unzoned)} are not, "
+                         f"`portfusion migrate` writes a book's older ones so: {unzoned[:5]}")
+    return rows
 
 # THE QUARTER-END COMPOSITIONS — every account's holdings, line by line, at each quarter end, from
 # store/quarter-snapshots.csv; `as_of` lets one table hold every quarter.

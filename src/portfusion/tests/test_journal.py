@@ -157,11 +157,8 @@ def test_writes_in_the_same_second_read_newest_first():
     instant — and the later row in the file is the newer. Sorted unstably by time alone, What
     Changed showed one second's rows in file order and another's reversed (13 Oct 2026)."""
     from portfusion.engine import Book
-    from portfusion.engine import utc_of
     keys = ("at", "route", "op", "table", "ref")
-    # ON THE JOURNAL'S ONE CLOCK, as the engine reads it (`engine.utc_of`).
-    written = [(utc_of(r["at"]), *(r[k] for k in keys[1:])) for r in _rows()
-               if r["route"] != "baseline"]
+    written = [tuple(r[k] for k in keys) for r in _rows() if r["route"] != "baseline"]
     expected = sorted(reversed(written), key=lambda r: r[0], reverse=True)
     shown = [tuple(r[k] for k in keys) for r in Book().journal().to_dict("records")]
     assert shown == expected, "the journal does not read newest first within one second"
@@ -303,18 +300,18 @@ def test_a_row_written_before_the_opening_is_inside_it(store_copy):
         "reading the journal at all")
 
 
-def test_the_journal_reads_one_clock_whichever_wrote_a_row(store_copy):
-    """ONE CLOCK FOR THE JOURNAL: 13:30 in London summer time, an older row's way of writing it, is
-    12:30 UTC, so it reads as before a UTC 12:45 written fifteen minutes later. Compared as
-    written, it read as after it."""
+def test_an_instant_with_no_zone_is_refused(store_copy):
+    """ONE CLOCK FOR THE JOURNAL: 13:30 in London summer time is 12:30 UTC, so a row written
+    without its zone read as after a UTC 12:45 written fifteen minutes later. The record writes
+    UTC (`schema.record_instant()`), and a row without its `Z` is refused, naming
+    `portfusion migrate`, which writes a book's older ones so."""
     from portfusion.engine import Book
     from portfusion.record import rules, schema
+    assert schema.record_instant().endswith("Z")
     path = schema.TABLES["journal"].path
     path.write_text(path.read_text(encoding="utf-8")
-                    + "2026-07-01T13:30:00,hand,append,reasoning,0,old,a UK time with no zone\n"
-                    + "2026-07-01T12:45:00Z,hand,append,reasoning,0,new,a UTC time\n",
+                    + "2026-07-01T13:30:00,hand,append,reasoning,0,old,a UK time with no zone\n",
                     encoding="utf-8")
     rules.reload_store()
-    refs = [r for r in Book().journal()["ref"] if r in ("old", "new")]
-    assert refs == ["new", "old"], f"newest first, on one clock: {refs}"
-    assert schema.record_instant().endswith("Z")
+    with pytest.raises(ValueError, match=r"MARKED Z.*portfusion migrate.*2026-07-01T13:30:00"):
+        Book()
