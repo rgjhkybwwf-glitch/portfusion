@@ -20,6 +20,18 @@ def test_the_interpreter_is_reported_not_typed(repo_root):
     assert ("NOT the project .venv" in d["line"]) is not d["is_project_venv"]
 
 
+def test_the_guard_names_an_app_that_is_not_installed(monkeypatch):
+    """The suite's environment guard, run where the app is not installed: its refusal says so,
+    rather than the guard raising before it can refuse."""
+    import importlib.metadata
+    import harness
+
+    def not_installed(name):
+        raise importlib.metadata.PackageNotFoundError(name)
+    monkeypatch.setattr(importlib.metadata, "requires", not_installed)
+    assert f"{harness.SRC.name} is not installed" in harness.environment_faults()
+
+
 # =====================================================================================
 # THE BACKUP REPORTS ITS OWN STATE
 #

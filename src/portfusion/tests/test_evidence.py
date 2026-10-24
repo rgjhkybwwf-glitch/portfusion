@@ -211,7 +211,10 @@ def test_a_date_alone_does_not_put_a_document_on_file():
     assert E.reference_resolves("IG statement 30 Sep 2026", filed) is True
 
 
-def test_every_source_line_was_composed_by_a_class_the_record_knows(D):
+@pytest.mark.parametrize("audit", [
+    pytest.param(False, id="as loaded"),
+    pytest.param(True, id="the book", marks=pytest.mark.audit)])
+def test_every_source_line_was_composed_by_a_class_the_record_knows(D, audit):
     """A provenance line no class composed has no stated authority and no reference shape.
 
     The vocabulary is `EVIDENCE_CLASSES`, and a line outside it cannot be checked by anything. The

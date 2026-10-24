@@ -3,6 +3,21 @@
 Each release, newest first. The version is `portfusion/__init__.py`'s, and `portfusion --version`
 prints it.
 
+## 0.3.1 — beta, 24 Oct 2026
+
+The restructure's last loose ends. A 0.3.0 book takes it with nothing to move, unless a
+quarter's results name an account its register no longer holds: the load names the row.
+
+- **A quarter's results name an account the register holds, or none.** `quarter-results.account`
+  is checked against `accounts.csv` as every other account column is; a blank, the book's own
+  row, is the one value outside the register that loads.
+- **The audit asks that every source line was composed by an evidence class.** `portfusion
+  record` holds a book to it, as the suite holds the demo.
+- **The FX history is saved in date order**, then currency, as the price history is saved by
+  date, then line. A book's file takes the order at its next bank; no row or figure changes.
+- **The test guard says when the app is not installed**, rather than failing before it can
+  refuse.
+
 ## 0.3.0 — beta, 24 Oct 2026
 
 The clean break. This release carries no 0.2.0 book: one takes 0.2.1 first and runs

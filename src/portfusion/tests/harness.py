@@ -184,8 +184,12 @@ def environment_faults() -> list[str]:
     if found != SRC:
         faults.append(f"`{SRC.name}` is imported from {found or 'nowhere'}, not {SRC}")
     # The app's own requirements always; the development extra only where there is a checkout
-    # to develop in.
-    for wanted in importlib.metadata.requires(SRC.name) or []:
+    # to develop in. An app not installed has none to read, and that is the fault.
+    try:
+        requires = importlib.metadata.requires(SRC.name) or []
+    except importlib.metadata.PackageNotFoundError:
+        return [*faults, f"{SRC.name} is not installed"]
+    for wanted in requires:
         if "extra ==" in wanted and ROOT is None:
             continue
         name = re.match(r"[A-Za-z0-9._-]+", wanted).group(0)

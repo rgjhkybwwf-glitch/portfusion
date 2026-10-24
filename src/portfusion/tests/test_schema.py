@@ -510,6 +510,22 @@ def test_the_reference_check_actually_catches_a_bad_name(tmp_path, monkeypatch):
     assert good in str(e.value), "it must list what the register does hold"
 
 
+@needs("quarter-results")
+def test_a_quarter_result_names_a_registered_account_or_none(store_copy):
+    """A closed quarter's row for an account the register lacks would hold no account's figures
+    to anything. A blank is the one value outside the register that joins: the book's own row."""
+    held = store_copy / "quarter-results.csv"
+    text = held.read_text()
+    good = next(a for a in (r[0] for r in schema.load("accounts")) if f",{a}," in text)
+    bad_name = good[:-1] + good[-1].swapcase()
+    held.write_text(text.replace(f",{good},", f",{bad_name},", 1))
+    with pytest.raises(ValueError) as e:
+        schema.check_references()
+    said = str(e.value)
+    assert "quarter-results.csv row" in said and f"account={bad_name!r} is not in accounts.csv" in said
+    assert "account=''" not in said, "the book's own row names no account, and joins"
+
+
 def test_a_closed_vocabulary_refuses_a_value_outside_it():
     """Field.enum, the other half. Rows are proposed by column name and edited by hand, so a
     mistyped value would reach every total that filters on it with only review in its way. Each

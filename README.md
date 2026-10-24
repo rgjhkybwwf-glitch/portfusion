@@ -9,7 +9,7 @@ in the browser, and a quarterly report. It records your own positions; it gives 
 PortFusion needs Python 3.13 or newer.
 
 ```bash
-python3 -m venv ~/.portfusion && ~/.portfusion/bin/python3 -m pip install "portfusion @ git+https://github.com/rgjhkybwwf-glitch/portfusion@v0.3.0"
+python3 -m venv ~/.portfusion && ~/.portfusion/bin/python3 -m pip install "portfusion @ git+https://github.com/rgjhkybwwf-glitch/portfusion@v0.3.1"
 ~/.portfusion/bin/portfusion desk --book demo     # the invented demo book, in a browser
 ~/.portfusion/bin/portfusion init ~/my-book       # a new, empty book, with its git history
 cd ~/my-book
