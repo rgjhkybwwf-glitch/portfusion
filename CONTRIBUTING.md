@@ -17,6 +17,8 @@ python3 tools/clean_room.py               # the app on its own: a copy, a new bo
 [`docs/testing.md`](docs/testing.md) says what each layer of the guard proves, and what to do when
 a test fails.
 
+Everyone taking part follows the [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md).
+
 ## Agree first, and stop when a decision appears
 
 - **Propose before changing**, in an issue or the conversation, and wait for the maintainer's
