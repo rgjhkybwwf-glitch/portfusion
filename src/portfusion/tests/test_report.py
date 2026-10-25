@@ -78,8 +78,7 @@ def test_the_gate_asks_for_the_quarters_opening():
     """The page reads the quarter's opening as well as its end: its return runs from the previous
     quarter end's net asset value. The record's opening has none before it, so however much is
     frozen there it is never offered as a page of its own."""
-    from portfusion.engine import BASELINE_ASOF
-    said = " ".join(completeness(BASELINE_ASOF))
+    said = " ".join(completeness(Book().baseline_asof))
     assert "opening" in said and "quarter-nav" in said, said
 
 
