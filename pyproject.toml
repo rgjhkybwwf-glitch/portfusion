@@ -25,13 +25,13 @@ dynamic = ["version"]
 # THE BUILD (the report and the engine) needs pandas alone; the rest is the desk's, beside it.
 # The build may not import desk/, feeds/ or history/ (tests/desk/test_boundaries.py).
 dependencies = [
-    "pandas>=2.2",      # the engine. Written on pandas 3; numpy comes with it
-    "fastapi>=0.115",   # desk/app.py
+    "pandas>=2.2.3",    # the engine. Written on pandas 3; numpy comes with it
+    "fastapi>=0.133",   # desk/app.py
     "uvicorn>=0.32",    # serves the desk on localhost
-    "pypdf>=5.0",       # a PDF's text: a document on the Bench, a filed IG statement's closes
+    "pypdf>=6.21.2",    # a PDF's text: a document on the Bench, a filed IG statement's closes
     "webauthn>=3.0",    # passkeys for the hosted desk's sign-in (desk/auth.py)
     # THE GUARD SHIPS WITH THE APP: `portfusion check` runs the suite on whichever book is loaded.
-    "pytest>=8.0",      # the guard
+    "pytest>=8.4",      # the guard
     "httpx2>=2.13",     # Starlette's TestClient requests the desk's routes with it in tests
 ]
 
