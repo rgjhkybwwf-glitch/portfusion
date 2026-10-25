@@ -40,9 +40,9 @@ class AppendOnlyCSV:
     `places` says how each numeric column is written, as the schema's `MONEY` or `QUOTE` says it
     for the record's own tables: every save writes them so (`schema.figure()`).
 
-    `series` names the columns that make one line's marks — a price's `mark_key`, a rate's
-    currency and kind — for a history that keeps only the marks a figure can take (`kept()`).
-    None keeps every row: an account's history is its value series.
+    `series` names the columns that make one line's marks — a price's `mark_key` — for a
+    history that keeps only the marks a figure can take (`kept()`). None keeps every row: an
+    account's history is its value series, and What Changed may take a rate of any day.
     """
 
     def __init__(self, name: str, fields: tuple, numeric: tuple, sort_key,

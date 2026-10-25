@@ -3,8 +3,8 @@ THE FX HISTORY — exchange rates, by date and currency.
 
 The live table, store/fx.csv, holds one rate per currency, the one each refresh replaces. Here
 the currency and a real date identify a rate, and every dated rate the record converts at is on
-this file: a close is never dropped, a live read only once no figure can take it
-(`AppendOnlyCSV.kept()`). Nothing names a rate by a key: a deal or an income
+this file, and every rate stays: What Changed takes the rate of the day before a line's mark,
+which may be any day (`Book.changes_since()`). Nothing names a rate by a key: a deal or an income
 row carries its broker's rate, or converts at its day's close.
 
     python3 -m portfusion.history.fx --archive         # bank the live rates
@@ -49,7 +49,7 @@ BASE = "GBP"
 # --- the file itself ------------------------------------------------------------------------
 _FILE = AppendOnlyCSV(CSV_NAME, FIELDS, numeric=("rate",), sort_key=lambda r: (r["date"], r["currency"], r["kind"]),
                       identity=("currency", "date", "kind"), nullable=False, figure="rate",
-                      places=files.PLACES[CSV_NAME], series=("currency", "kind"))
+                      places=files.PLACES[CSV_NAME])
 
 load = _FILE.load
 save = _FILE.save

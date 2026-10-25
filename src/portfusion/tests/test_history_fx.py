@@ -12,6 +12,7 @@ that looks entirely right.
 import re
 from collections import Counter
 
+import pandas as pd
 import pytest
 
 from portfusion.history import fx as FX
@@ -179,3 +180,42 @@ def test_a_restruck_rate_reads_as_unbanked(monkeypatch):
              for i, m in enumerate(live)]
     monkeypatch.setattr(FX, "live_marks", lambda: moved)
     assert [m["currency"] for m in FX.check() if not m.get("why")] == [moved[0]["currency"]]
+
+
+def test_a_bank_moves_no_figure(store_copy):
+    """WHAT A BANK DROPS NO FIGURE TAKES: What Changed and the headline read the same after the FX
+    history drops what a bank drops (`AppendOnlyCSV.kept()`). What Changed sets a share line
+    against the rate of the day before its mark, so with the live rate a fortnight past the
+    marks and a rate read every day between, a prune of those reads would move it. On a copy."""
+    import csv
+    import datetime as dt
+    from portfusion.engine import Book
+    fx = store_copy / "fx.csv"
+    with fx.open(newline="") as f:
+        live = list(csv.DictReader(f))
+    foreign = [r for r in live if r["currency"] != FX.BASE]
+    if not foreign:
+        pytest.skip("the book holds no foreign rate")
+    newest = max(dt.date.fromisoformat(r["as_of"]) for r in live)
+
+    def day(n):
+        return (newest + dt.timedelta(days=n)).isoformat()
+
+    with fx.open("w", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=list(live[0]), lineterminator="\n")
+        w.writeheader()
+        w.writerows({**r, "as_of": day(14), "struck": "live"} for r in live)
+    D.reload_store()
+    on_file = {FX._FILE.key(r) for r in FX.load()}
+    reads = [{**_rate(day(n), round(float(r["rate"]) * (1 + n / 1000), 5), "live", "test"),
+              "currency": r["currency"]} for r in foreign for n in range(-14, 14)]
+    FX.save(FX.load() + [m for m in reads if FX._FILE.key(m) not in on_file])
+
+    def figures():
+        b = Book()
+        return b.changes_since(), b.headline()
+    changes, headline = figures()
+    FX.save(FX._FILE.kept(FX.load(), FX.live_marks()))
+    after, headline_after = figures()
+    pd.testing.assert_frame_equal(after, changes)
+    pd.testing.assert_series_equal(pd.Series(headline_after), pd.Series(headline))

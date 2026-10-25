@@ -3,6 +3,14 @@
 Each release, newest first. The version is `portfusion/__init__.py`'s, and `portfusion --version`
 prints it.
 
+## Unreleased
+
+- **The FX history keeps every rate.** A bank dropped the live rates read between the days the
+  book is valued on, but What Changed sets a share line against the rate of the day before its
+  mark, which may be one of them: a refresh could move a line's FX effect. 0.2.1's "No figure
+  moves" held for the price history only. The file now grows by a row per currency for each day
+  a refresh reads; a rate a bank already dropped stays in git, not in the file.
+
 ## 0.3.2 — beta, 24 Oct 2026
 
 The whole suite runs clean on a book of its own, not only on the demo. Nothing in the app moves.
