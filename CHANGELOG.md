@@ -26,6 +26,8 @@ prints it.
 - **Publish keeps to its own clone.** It refuses a `deploy_repo` that is, holds or lies inside the
   book, the app or the checkout, or is or holds the home folder, and a clone that tracks files
   but has no version manifest: a publish deletes what it did not write.
+- **The guard on GitHub checks the desk's script parses** (`node --check`). A syntax error in
+  `app.js` blanks the desk, and every test that reads the file passed over one.
 
 ## 0.3.2 — beta, 24 Oct 2026
 

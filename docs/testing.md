@@ -27,6 +27,7 @@ the audit, never in a book's `checks/`.
 | `portfusion check` | the code passes on the demo, and the loaded book opens: figures, findings, every page | that the code is right on your book's rows |
 | `portfusion record` | whether the record is in good order: the findings, then the audit tests | anything about the code |
 | `tools/clean_room.py` | the tracked files install fresh and pass on the demo and on a new, empty book, and the wheel built from them passes `portfusion check` | that nothing of a book is named in what leaves |
+| `node --check src/portfusion/desk/static/app.js` | the desk's script parses: a syntax error there blanks every page | that it runs |
 | `test_engine_ties`, `desk/test_ties.py` | the engine's figures agree seen from more than one side, and each page shows what the engine computed | that the engine is right |
 | `test_engine_invariants` | the engine's arithmetic agrees with itself, assuming nothing | that a figure is the right answer |
 | `test_demo` | `tools/make_demo.py` writes the demo exactly | that the demo's invented figures agree beyond the suite |
