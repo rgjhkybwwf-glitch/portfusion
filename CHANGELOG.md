@@ -23,6 +23,12 @@ prints it.
   strips: a settings key named twice, a spread-bet leg with no contract or on another line, an id
   used twice, a price in a third currency, an income category in neither half, an account code
   repeated or malformed. Each is now refused with a `ValueError`.
+- **The audit tells the truth.** `portfusion record` typed in a checkout reported the checkout's
+  backup under the book's name; it now reads the book's own git. An evidence chain or journal that
+  could not be checked read as good order; each is now a problem, as the conversions' was. The
+  three opening dates in settings (`record_begins`, `reasoning_owed_from`, `first_report`) are
+  refused on load unless each is a date, and the first is read once; `engine.BASELINE` and
+  `BASELINE_ASOF` are gone, a Book's `baseline` answers.
 
 ## 0.3.2 — beta, 24 Oct 2026
 

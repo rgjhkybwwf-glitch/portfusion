@@ -135,7 +135,7 @@ def book_line() -> str:
 
 
 def backup_state() -> str:
-    """Whether GitHub holds this branch's tip, and whether the hooks that keep it so are on.
+    """Whether GitHub holds the book's branch tip, and whether the hooks that keep it so are on.
 
     A push from a hook prints only on FAILURE, so a working backup looks exactly like an absent
     one; a backup you cannot verify is one you stop trusting. This says so on every audit.
@@ -153,9 +153,10 @@ def backup_state() -> str:
     """
     import pathlib
     import subprocess
+    from portfusion.record import schema
 
-    def git(*args):
-        return subprocess.run(["git", *args], capture_output=True, text=True,
+    def git(*args):                             # in the book, wherever the command was typed
+        return subprocess.run(["git", *args], cwd=schema.BOOK, capture_output=True, text=True,
                               timeout=5).stdout.strip()
     try:
         branch, head = git("symbolic-ref", "--short", "HEAD"), git("rev-parse", "HEAD")

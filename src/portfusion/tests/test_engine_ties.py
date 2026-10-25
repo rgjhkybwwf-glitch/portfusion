@@ -16,7 +16,7 @@ import pandas as pd
 import pytest
 
 from portfusion.record import rules as D
-from portfusion.engine import BASELINE, BASELINE_ASOF, Book
+from portfusion.engine import Book
 from harness import an_account, needs
 from quarter_support import book_in_the_next_year
 
@@ -74,7 +74,7 @@ def test_quarter_end_navs_are_per_account_and_roll_up(book):
     be a figure somebody typed.
     """
     q = book.quarter_nav()
-    assert set(q["as_of"]) == {BASELINE_ASOF, *D.QSNAP_FROZEN}, (
+    assert set(q["as_of"]) == {book.baseline_asof, *D.QSNAP_FROZEN}, (
         "quarter-nav and quarter-snapshots must hold the same quarter ends, from the baseline on")
     for date, rows in q.groupby("as_of"):
         assert set(rows["account"]) == set(D.accounts_open(date)), \
@@ -112,7 +112,7 @@ def test_exposure_and_nav_are_the_same_at_every_date_but_one(book):
 def test_the_baseline_nav_is_the_opening_capital_the_return_measures_from(book):
     """One number, reached two ways. The quarter series' baseline total and the
     account block's opening capital are the same money and must agree exactly."""
-    ties(book.quarter_nav_total()[BASELINE_ASOF], book.totals()["opening_nav"],
+    ties(book.quarter_nav_total()[book.baseline_asof], book.totals()["opening_nav"],
          "baseline NAV vs opening capital")
 
 
@@ -171,13 +171,13 @@ def test_as_of_answers_the_opening_day_and_refuses_any_before_it(book):
     """THE BOOK ANSWERS FROM ITS OPENING DAY, valued at its own closes, and refuses any day
     before it (`Book.as_of()` says why)."""
     import datetime as _dt
-    eve = (_dt.date.fromisoformat(BASELINE_ASOF) - _dt.timedelta(days=1)).isoformat()
+    eve = (_dt.date.fromisoformat(book.baseline_asof) - _dt.timedelta(days=1)).isoformat()
     with pytest.raises(ValueError, match="baseline"):
         book.as_of(eve)
-    opening = book.as_of(BASELINE_ASOF)
+    opening = book.as_of(book.baseline_asof)
     assert not opening.empty, "the record opened holding nothing"
-    if not (book.ledger["date"] == BASELINE).any():
-        first = book.as_of(BASELINE.date().isoformat())
+    if not (book.ledger["date"] == book.baseline).any():
+        first = book.as_of(book.baseline.date().isoformat())
         assert opening.equals(first), "nothing dealt on the first day, so it opens as it began"
 
 
@@ -923,11 +923,11 @@ def test_the_return_since_the_start_links_the_years():
     date; after a year end, each full year's frozen return linked with the year to date; and with
     nothing yet to open the year from, blank as that is."""
     first = Book()
-    first.valued_at = lambda: f"{BASELINE.year}-09-30"
+    first.valued_at = lambda: f"{first.baseline.year}-09-30"
     assert first.since_start() == pytest.approx(first.totals()["ytd"], abs=RATE)
 
     b = book_in_the_next_year(frozen=True)
-    years = range(BASELINE.year, b.ytd_year())
+    years = range(b.baseline.year, b.ytd_year())
     assert len(years) >= 1
     want = (1 + b.totals()["ytd"]) * math.prod(
         1 + b.year_to_quarter(f"{y}-12-31")["return"] for y in years) - 1

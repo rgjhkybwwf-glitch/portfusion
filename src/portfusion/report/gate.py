@@ -45,5 +45,5 @@ def _opening(quarter_end: str) -> str | None:
     year = int(quarter_end[:4])
     before = {"03-31": f"{year - 1}-12-31", "06-30": f"{year}-03-31", "09-30": f"{year}-06-30",
               "12-31": f"{year}-09-30"}.get(quarter_end[5:])
-    opening = (_dt.date.fromisoformat(D.SETTINGS["record_begins"]) - _dt.timedelta(days=1)).isoformat()
+    opening = (D.RECORD_BEGINS - _dt.timedelta(days=1)).isoformat()
     return max(before, opening) if before and quarter_end > opening else before

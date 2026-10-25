@@ -25,7 +25,7 @@ import pandas as pd
 import pytest
 
 from portfusion.record import rules as D
-from portfusion.engine import BASELINE_ASOF, MEASURE_BASIS, BasisError, Book, roll_up
+from portfusion.engine import MEASURE_BASIS, BasisError, Book, roll_up
 from harness import needs, write_rows
 
 PENNY = 0.01
@@ -712,14 +712,14 @@ def test_every_figure_the_engine_publishes_is_in_the_registry(book):
 def _valuable_quarters(book):
     """The quarter ends the engine can actually value, and why the others are not here.
 
-    `BASELINE_ASOF` is the year's opening and no quarter's end. A quarter end the book cannot
+    `Book.baseline_asof` is the year's opening and no quarter's end. A quarter end the book cannot
     value is left out rather than valued from a price that does not exist.
 
     Discovered, never listed: a quarter joins by becoming valuable.
     """
     out = []
     for as_of in book.quarter_nav_total().index:
-        if as_of == BASELINE_ASOF:
+        if as_of == book.baseline_asof:
             continue
         try:
             book.headline(as_of)
@@ -937,7 +937,7 @@ def test_a_spread_bet_nav_does_not_depend_on_where_the_baseline_sits(book, monke
     spread bets that predate the baseline count once. The check, assuming nothing: move the
     baseline to a later quarter end, give it the account's worth that day, and today's figure
     must not move."""
-    ends = [str(q)[:10] for q in book.quarter_nav_total().index if str(q)[:10] > BASELINE_ASOF]
+    ends = [str(q)[:10] for q in book.quarter_nav_total().index if str(q)[:10] > book.baseline_asof]
     pick = next(((a, q) for q in reversed(ends) for a in D.ACCOUNT_ORDER
                  if book.is_spread_bet(a)
                  and any(e.acct == a and str(e.date)[:10] <= q for e in D.sales)
