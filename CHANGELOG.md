@@ -32,6 +32,10 @@ prints it.
   three opening dates in settings (`record_begins`, `reasoning_owed_from`, `first_report`) are
   refused on load unless each is a date, and the first is read once; `engine.BASELINE` and
   `BASELINE_ASOF` are gone, a Book's `baseline` answers.
+- **Each Book names its own "Return since" date.** The label was fixed when the app started, so a
+  desk running when `record_begins` changed showed the old date until restarted, and a Book of
+  another store showed the loaded book's. A Book now reads it from its own record, as the registry
+  of headline figures does.
 - **A checkout names the demo.** CONTRIBUTING's setup, CLAUDE.md and the testing guide start with
   `export PORTFUSION_BOOK=demo`, so their commands work first time in a checkout, which holds no
   book. Run without one, the suite says so in one line rather than a page of `INTERNALERROR`.
