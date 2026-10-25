@@ -44,6 +44,9 @@ prints it.
   (2.2.0–2.2.2 do not install on Python 3.13).
 - **The guard on GitHub checks the desk's script parses** (`node --check`). A syntax error in
   `app.js` blanks the desk, and every test that reads the file passed over one.
+- **A checkout names the demo.** CONTRIBUTING's setup, CLAUDE.md and the testing guide start with
+  `export PORTFUSION_BOOK=demo`, so their commands work first time in a checkout, which holds no
+  book. Run without one, the suite says so in one line rather than a page of `INTERNALERROR`.
 
 ## 0.3.2 — beta, 24 Oct 2026
 

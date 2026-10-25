@@ -324,7 +324,11 @@ def pytest_configure(config):
             f"  python3 -m venv .venv && .venv/bin/python3 -m pip install -e '.[dev]' -c requirements.lock\n"
             f"  source .venv/bin/activate && python3 -m pytest -q\n",
             returncode=1)
-    checks = book_checks(config)
+    try:
+        checks = book_checks(config)
+    except SystemExit as no_book:               # the record refuses a folder holding no book
+        pytest.exit(f"{no_book} In a checkout: export PORTFUSION_BOOK=demo (CONTRIBUTING.md)",
+                    returncode=1)
     if checks is not None:
         config.args.append(str(checks))
 

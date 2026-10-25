@@ -9,7 +9,8 @@ How a change to PortFusion is worked, for a collaborator or a Claude session arr
 git config core.hooksPath .githooks       # the gate that keeps credentials out of git
 python3 -m venv .venv && .venv/bin/python3 -m pip install -e '.[dev]' -c requirements.lock
 source .venv/bin/activate                 # once per terminal
-PORTFUSION_BOOK=demo python3 -m pytest    # the guard, on the demo
+export PORTFUSION_BOOK=demo               # once per terminal: a checkout holds no book
+python3 -m pytest                         # the guard, on the demo
 python3 tools/clean_room.py               # the app on its own: a copy, a new book and a wheel
 ```
 

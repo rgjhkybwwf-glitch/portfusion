@@ -7,13 +7,15 @@ worked — read it before changing anything.**
 
 ```bash
 source .venv/bin/activate                 # once per terminal (docs/environment.md)
+export PORTFUSION_BOOK=demo               # once per terminal: a checkout holds no book
 python3 -m pytest                         # the guard: green unless the code broke
 portfusion record                         # the audit: what the record needs
 python3 tools/clean_room.py               # the app on its own: a copy, a new book and a wheel
-portfusion desk                           # the desk, in a browser
+portfusion desk --port 8769               # the desk, in a browser, beside any book's
 ```
 
-Every command reads the book in the folder it is typed in, or the one `PORTFUSION_BOOK` names.
+Every command reads the book `PORTFUSION_BOOK` names, or the one in the folder it is typed in
+([`CONTRIBUTING.md`](CONTRIBUTING.md), Setting up).
 
 ## Pointers
 
