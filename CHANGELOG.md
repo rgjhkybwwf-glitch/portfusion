@@ -15,6 +15,14 @@ prints it.
   held before. A quarter's report is drawn from it under the record's lock, so a record that
   refuses to reload refuses the report too, rather than serving the tables it refused. The
   Bench's reasons and the IG event sweep read the same Book.
+- **A failed write puts the files back, however it fails.** The write envelope, and the reload of
+  the record after it, caught every exception but `SystemExit`, which the record raises when a
+  store goes incomplete; a write that ended that way left its files half-written. The Price
+  Refresh's write reloads the record after its envelope too, as each door's does.
+- **The record's seven load checks hold under `python -O`.** They were `assert`s, which `-O`
+  strips: a settings key named twice, a spread-bet leg with no contract or on another line, an id
+  used twice, a price in a third currency, an income category in neither half, an account code
+  repeated or malformed. Each is now refused with a `ValueError`.
 
 ## 0.3.2 — beta, 24 Oct 2026
 

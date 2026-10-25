@@ -803,7 +803,7 @@ def test_the_record_refuses_two_rows_under_one_id(store_copy):
     path = schema.TABLES["sales"].path
     lines = path.read_text(encoding="utf-8").splitlines()
     path.write_text("\n".join(lines + [lines[-1]]) + "\n", encoding="utf-8")
-    with pytest.raises(AssertionError, match="ids must be distinct"):
+    with pytest.raises(ValueError, match="ids must be distinct"):
         rules.reload_store()
 
 
