@@ -36,6 +36,12 @@ prints it.
   desk running when `record_begins` changed showed the old date until restarted, and a Book of
   another store showed the loaded book's. A Book now reads it from its own record, as the registry
   of headline figures does.
+- **The PDF reader is pypdf 6.21.2**, locked and floored: 6.16.2 had 19 advisories, each a crafted
+  PDF that could hang the desk. The guard on GitHub now asks OSV about every locked pin
+  (`tools/advisories.py`) and fails on any advisory.
+- **The floors are versions the suite runs on**: pytest 8.4 (8.0–8.3 cannot load the harness),
+  fastapi 0.133 (an older one brings a Starlette whose test client needs `httpx`), pandas 2.2.3
+  (2.2.0–2.2.2 do not install on Python 3.13).
 
 ## 0.3.2 — beta, 24 Oct 2026
 
