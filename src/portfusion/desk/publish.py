@@ -12,7 +12,8 @@ the README and the check that runs on Netlify are all generated, and `verify.py`
 deploy whose files differ from the manifest in `version.json`. A hand edit there fails the
 deploy; the desk is changed here and published again.
 
-IT REFUSES rather than guessing. The book must name its deploy repository. This checkout must be on `main`, clean and pushed, so the commit
+IT REFUSES rather than guessing. The book must name its deploy repository, a clone apart from
+the book, the app, the checkout and the home folder, holding only what a publish wrote. This checkout must be on `main`, clean and pushed, so the commit
 a publish names exists on GitHub. The tunnel must be up, because the redirects are written to it.
 And this Mac must hold the proxy secret (`desk/auth.py:PROXY_SECRET`): the redirects ask Netlify
 to sign with its copy, and a door that cannot check the signature refuses everything.
@@ -278,6 +279,23 @@ def tunnel_url(port: int, status: dict | None = None) -> str | None:
 # PUBLISH, AND THE HEADER'S SIGNAL
 # =================================================================================================
 
+def _outside_what_it_must_not_touch(deploy: pathlib.Path) -> None:
+    """A publish deletes every file in the clone it did not write, so the clone is never the book,
+    the app, the checkout or the home folder, never inside the first three, and never holds any."""
+    from portfusion.record import schema
+
+    def within(a: pathlib.Path, b: pathlib.Path) -> bool:
+        # samefile, not ==: a Mac's disk ignores case, so two spellings can name one folder.
+        return any(p.exists() and b.exists() and p.samefile(b) for p in (a, *a.parents))
+
+    deploy = deploy.expanduser().absolute()
+    for name, where, inside in (("the book", schema.BOOK, True), ("the app", schema.APP, True),
+                                ("the checkout", schema.ROOT, True),
+                                ("the home folder", pathlib.Path.home(), False)):
+        if where is not None and (within(where, deploy) or inside and within(deploy, where)):
+            raise Refused(f"deploy_repo {deploy} is too close to {name} ({where})")
+
+
 def published(deploy: pathlib.Path | None = None) -> dict | None:
     deploy = deploy or DEPLOY
     if deploy is None:
@@ -292,9 +310,12 @@ def publish(port: int = 8768, deploy: pathlib.Path | None = None,
     deploy = deploy or DEPLOY
     if deploy is None:
         raise Refused("the book's settings name no deploy_repo (store/settings.csv)")
+    _outside_what_it_must_not_touch(deploy)
     commit = commit or source()
     if not (deploy / ".git").exists():
         raise Refused(f"no clone of the deploy repository at {deploy}")
+    if _git(deploy, "ls-files") and not (deploy / "version.json").exists():
+        raise Refused(f"{deploy} holds files and no version.json: not a clone a publish wrote")
     _on_clean_main(deploy, "the deploy repository")
     tunnel = tunnel or tunnel_url(port)
     if tunnel is None:
