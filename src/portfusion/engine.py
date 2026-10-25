@@ -506,6 +506,39 @@ class _Pinned:
         self.__dict__.update(vars(module))
 
 
+class _OfTheRecord:
+    """A Book attribute the record decides: on a Book, read from that Book's own (`self.D`); asked
+    of the class, from the record loaded now, so a reload moves it. With `method`, the function
+    takes the record first, as a method takes self."""
+
+    def __init__(self, read, method: bool = False):
+        self.read, self.method = read, method
+
+    def __get__(self, book, owner=None):
+        d = D if book is None else book.D
+        return (lambda *args: self.read(d, *args)) if self.method else self.read(d)
+
+
+def _since_start(d) -> str:
+    """The since-start return's label, which carries the day the record begins."""
+    return f"Return since {d.RECORD_BEGINS:%-d %b %Y} (MWR)"
+
+
+def _registry(d) -> dict[str, dict]:
+    """`Book.HEADLINE` for the record `d`: the since-start entry named with its date."""
+    return {k or _since_start(d): v for k, v in Book._HEADLINE.items()}
+
+
+def _basis_of(d, label) -> str:
+    """`Book.basis_of`: the basis a registered figure carries, by its label. KeyError for a label
+    nobody registered: a figure is classified before any renderer shows it."""
+    try:
+        return _registry(d)[label]["basis"]
+    except KeyError:
+        raise KeyError(f"{label!r} is not in Book.HEADLINE: register it, with its basis and "
+                       f"unit, before showing it") from None
+
+
 class Book:
     """The book: every derived figure the desk and the report show, as methods.
 
@@ -602,11 +635,12 @@ class Book:
     # alike (test_figures.py): net asset value, exposure and the parts that make it, the costs and
     # the gains, the year's income and capital, the returns, then the counts.
     #
-    # SINCE_START carries the day the record begins, which is the book's setting, so it is named
-    # once here and a renderer looking the figure up asks for it rather than typing the date.
-    SINCE_START = f"Return since {D.RECORD_BEGINS:%-d %b %Y} (MWR)"
+    # SINCE_START carries the day the record begins, which is the book's setting, so each Book
+    # names it from its own record and a renderer looking the figure up asks for it rather than
+    # typing the date. Its entry here is keyed None and named as the registry is read.
+    SINCE_START = _OfTheRecord(_since_start)
 
-    HEADLINE = {
+    _HEADLINE = {
         "Net asset value":                       {"basis": "capital", "unit": "gbp", "point_in_time": True},
         "Total market exposure":                 {"basis": "notional", "unit": "gbp", "point_in_time": True},
         "— of which securities owned":           {"basis": "capital", "unit": "gbp", "point_in_time": True},
@@ -624,24 +658,18 @@ class Book:
         "YTD income":                            {"basis": "capital", "unit": "gbp", "point_in_time": False},
         "Capital employed (opening + deployed)": {"basis": "capital", "unit": "gbp", "point_in_time": False},
         "YTD return (MWR)":                      {"basis": "capital", "unit": "pct", "point_in_time": False},
-        SINCE_START:                             {"basis": "capital", "unit": "pct", "point_in_time": False},
+        None:                                    {"basis": "capital", "unit": "pct", "point_in_time": False},
         "Open positions":                        {"basis": "count", "unit": "count", "point_in_time": True},
         "Closed round trips":                    {"basis": "count", "unit": "count", "point_in_time": False},
     }
+
+    HEADLINE = _OfTheRecord(_registry)
 
     #: The bases that mean "this is NOT the book's capital". A renderer marks these; the
     #: definition is rules.SPREAD_BET; this is the basis stated per figure.
     NOTIONAL_BASES = frozenset({"notional"})
 
-    @classmethod
-    def basis_of(cls, label) -> str:
-        """The basis a registered figure carries, by its label. KeyError for a label nobody
-        registered: a figure is classified before any renderer shows it."""
-        try:
-            return cls.HEADLINE[label]["basis"]
-        except KeyError:
-            raise KeyError(f"{label!r} is not in Book.HEADLINE: register it, with its basis and "
-                           f"unit, before showing it") from None
+    basis_of = _OfTheRecord(_basis_of, method=True)
 
     def headline(self, as_of: str | None = None) -> dict[str, float]:
         """Every headline figure, keyed by the label every renderer must use.
