@@ -275,5 +275,5 @@ def test_a_history_keeps_only_the_marks_a_figure_can_take(store_copy, monkeypatc
     rate = {"currency": "ZZZ", "kind": "spot", "rate": 1.0, "quality": "sourced",
             "struck": "live", "source": "test"}
     rates = [{**rate, "date": f"2031-{d}"} for d in ("01-03", "01-06", "03-31", "08-20", "08-21")]
-    assert FX._FILE.kept(rates) == [rates[0], *rates[2:]], "the FX history keeps what prices keep"
+    assert FX._FILE.kept(rates) == rates, "the FX history keeps every rate"
     assert AH._FILE.series is None, "an account's history is its value series, every row kept"
