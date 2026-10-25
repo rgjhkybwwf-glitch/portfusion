@@ -146,6 +146,32 @@ def test_publish_refuses_rather_than_guessing(deploy, monkeypatch):
     assert _git(origin, "for-each-ref") == "", "a refused publish pushed something"
 
 
+def test_publish_never_empties_a_folder_it_did_not_write(deploy, monkeypatch):
+    """A publish deletes what it did not write, so a deploy_repo that names the book, the app, the
+    checkout or the home folder, or a clone of something else, is refused before a file goes."""
+    from portfusion.record import schema
+    clone, origin = deploy
+    with pytest.raises(publish.Refused, match="too close to the app"):
+        publish.publish(deploy=schema.APP / "desk", tunnel=TUNNEL, commit=SOURCE)
+    with monkeypatch.context() as m:
+        m.setattr(publish.pathlib.Path, "home", lambda: clone)
+        with pytest.raises(publish.Refused, match="too close to the home folder"):
+            publish.publish(deploy=clone.parent, tunnel=TUNNEL, commit=SOURCE)
+    other_case = clone.parent / clone.name.upper()          # one folder on a Mac's disk
+    for name in ("BOOK", "ROOT"):
+        for where in [clone, clone / "site"] + [other_case] * other_case.exists():
+            with monkeypatch.context() as m:                # itself, a folder in it, respelt
+                m.setattr(schema, name, clone)
+                with pytest.raises(publish.Refused, match="too close to the (book|checkout)"):
+                    publish.publish(deploy=where, tunnel=TUNNEL, commit=SOURCE)
+    (clone / "kept.txt").write_text("not the publish's")
+    _git(clone, "add", "kept.txt")
+    _git(clone, "commit", "-qm", "a clone of something else")
+    with pytest.raises(publish.Refused, match="no version.json"):
+        publish.publish(deploy=clone, tunnel=TUNNEL, commit=SOURCE)
+    assert (clone / "kept.txt").exists() and _git(origin, "for-each-ref") == ""
+
+
 @needs("accounts")
 def test_a_value_from_the_record_stops_the_publish(deploy, monkeypatch):
     clone, origin = deploy
