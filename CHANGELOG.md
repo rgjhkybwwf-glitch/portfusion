@@ -32,6 +32,10 @@ prints it.
   three opening dates in settings (`record_begins`, `reasoning_owed_from`, `first_report`) are
   refused on load unless each is a date, and the first is read once; `engine.BASELINE` and
   `BASELINE_ASOF` are gone, a Book's `baseline` answers.
+- **Each Book names its own "Return since" date.** The label was fixed when the app started, so a
+  desk running when `record_begins` changed showed the old date until restarted, and a Book of
+  another store showed the loaded book's. A Book now reads it from its own record, as the registry
+  of headline figures does.
 - **The PDF reader is pypdf 6.21.2**, locked and floored: 6.16.2 had 19 advisories, each a crafted
   PDF that could hang the desk. The guard on GitHub now asks OSV about every locked pin
   (`tools/advisories.py`) and fails on any advisory.
