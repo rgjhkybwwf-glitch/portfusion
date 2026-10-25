@@ -355,12 +355,19 @@ def test_a_record_that_begins_on_any_day_is_measured_from_its_opening(store_copy
     path = store_copy / "settings.csv"
     begins = rules.SETTINGS["record_begins"]
     year = int(begins[:4])
+    before = Book()
     text = path.read_text()
     assert text.count(f"record_begins,{begins}") == 1
     path.write_text(text.replace(f"record_begins,{begins}", f"record_begins,{year}-05-18"))
     rules.reload_store()
     b = Book()
     assert b.baseline_asof == f"{year}-05-17"
+    # THE LABEL IS EACH BOOK'S OWN: the new date on a Book built after, the old one kept by a Book
+    # built before, and either one registered where that Book is asked.
+    assert b.SINCE_START == Book.SINCE_START == f"Return since 18 May {year} (MWR)"
+    assert before.SINCE_START != b.SINCE_START
+    for book in (before, b):
+        assert book.SINCE_START in book.headline() and book.basis_of(book.SINCE_START) == "capital"
     assert b.year_opens(year) == f"{year}-05-17" and b.year_opens(year + 1) == f"{year}-12-31"
     assert b.quarter_opens(f"{year}-06-30") == f"{year}-05-17"
     assert b.quarter_opens(f"{year}-09-30") == f"{year}-06-30"
