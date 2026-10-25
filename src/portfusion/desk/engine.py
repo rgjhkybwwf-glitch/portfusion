@@ -44,7 +44,7 @@ def _guarded(fn):
         return fn()
     except SystemExit as e:                     # rules's own: the store is not whole
         raise RecordUnavailable(str(e) or "the record refused to load, without a message") from e
-    except (ValueError, AssertionError) as e:
+    except ValueError as e:
         if not _the_records(e):
             raise
         raise RecordUnavailable(f"{type(e).__name__}: {e}") from e

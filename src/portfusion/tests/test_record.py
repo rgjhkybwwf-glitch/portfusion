@@ -242,7 +242,7 @@ def test_a_spread_bet_with_no_contract_is_refused_on_load(store_copy):
     leg.update(trade_id=free_id("buys"), contract="")
     with path.open("a", newline="", encoding="utf-8") as f:
         csv.DictWriter(f, fieldnames=list(rows[0]), lineterminator="\n").writerow(leg)
-    with pytest.raises(AssertionError, match="name no contract"):
+    with pytest.raises(ValueError, match="name no contract"):
         rules.reload_store()
 
 

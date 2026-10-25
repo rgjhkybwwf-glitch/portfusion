@@ -220,18 +220,20 @@ def _write(prices=None, rates=None, readings=None, close_of=None):
         if readings and not any(p.get("mark_key") in contracts for p in prices):
             raise marks.Refused("an IG account's equity is written with the contract levels "
                                 "read in the same pass, and none is among the ticked lines")
-        with commit.atomic(*marks.paths(), *observations.paths()):
+        with (commit._record_follows_the_files(),
+              commit.atomic(*marks.paths(), *observations.paths())):
             written = marks.write(prices=prices, rates=rates) if (prices or rates) else {}
             read = observations.write(readings=readings) if readings else {}
     except (marks.Refused, observations.Refused) as e:
-        D.reload_store()
+        with contextlib.suppress(Exception, SystemExit):
+            D.reload_store()
         return {"ok": False, "refused": str(e)}
     except Exception as e:                          # noqa: BLE001 — reported, never swallowed
         # A FAULT, NOT A REFUSAL, and the files are back just the same: `atomic()` restored them.
         # The record in memory follows them, or it would go on serving marks the files no longer
         # hold; and the page says what failed. The trace goes to the desk's log.
         traceback.print_exc()
-        with contextlib.suppress(Exception):
+        with contextlib.suppress(Exception, SystemExit):
             D.reload_store()
         return {"ok": False, "refused": f"the write failed, and every file is as it was: "
                                         f"{type(e).__name__}: {e}"}

@@ -115,7 +115,8 @@ ARCHIVE_CONVENTION = (
 
 #: THE BOOK'S SETTINGS, store/settings.csv — `schema.SETTING_KEYS` says what each one is.
 SETTINGS = dict(schema.load("settings"))
-assert len(SETTINGS) == len(schema.load("settings")), "settings.csv names a key twice"
+if len(SETTINGS) != len(schema.load("settings")):
+    raise ValueError("settings.csv names a key twice")
 
 #: REASONING IS OWED FROM HERE. A reason written once the outcome is known is worth close to
 #: nothing, so an earlier blank is never owed. A DATE, NOT A PURGE: a position opened next week
@@ -341,11 +342,13 @@ LEG_CONTRACT = {t.trade_id: t.contract for t in buys if t.contract}
 # A SPREAD-BET LEG IS PRICED BY ITS CONTRACT, open or closed. One naming none would be valued at
 # nothing and read as a loss of its whole entry notional.
 _unpriced = [t.trade_id for t in buys if t.mode == "sb" and not t.contract]
-assert not _unpriced, (f"spread-bet legs {_unpriced} name no contract: give each its contract "
-                       f"on buys.csv, and the contract its row in contracts.csv")
+if _unpriced:
+    raise ValueError(f"spread-bet legs {_unpriced} name no contract: give each its contract "
+                     f"on buys.csv, and the contract its row in contracts.csv")
 # A LEG IS ON ITS CONTRACT'S LINE: the contract names its code, and the leg's ticker is that code.
 _off_line = [t.trade_id for t in buys if t.contract and CONTRACT_CODE.get(t.contract) != t.ticker]
-assert not _off_line, f"spread-bet legs {_off_line} name a contract on another line"
+if _off_line:
+    raise ValueError(f"spread-bet legs {_off_line} name a contract on another line")
 
 # ---- Exits: defined before the merged ledger, which is built from them ----
 class Sale(NamedTuple):
@@ -375,9 +378,9 @@ sales = [Sale(*_r) for _r in schema.load("sales")]
 # AN EVENT'S ID IS ITS NAME: an exit names the leg it closes by one, and a sale the parcel it
 # realises. Two rows under one id are one row too many, with nothing to say which.
 for _table, _ids in (("buys", [t.trade_id for t in buys]), ("sales", [e.sale_id for e in sales])):
-    assert len(set(_ids)) == len(_ids), (
-        f"{_table}.csv ids must be distinct: "
-        f"{sorted({i for i in _ids if _ids.count(i) > 1})} appear more than once")
+    if len(set(_ids)) != len(_ids):
+        raise ValueError(f"{_table}.csv ids must be distinct: "
+                         f"{sorted({i for i in _ids if _ids.count(i) > 1})} appear more than once")
 
 # A DEAL'S PRICE IS STATED IN STERLING OR IN ITS SHARE'S OWN CURRENCY, and the broker's rate stands
 # only beside a price in a currency that needed one. A spread bet is sterling.
@@ -389,9 +392,10 @@ _misstated = [
     if cur not in ("GBP", _CURRENCY_OF.get(code))
     or (KIND_OF_CODE.get(code) == "spread bet" and cur != "GBP")
     or (rate is not None and (cur == "GBP" or price is None))]
-assert not _misstated, (f"{_misstated} state a price in neither sterling nor the share's own "
-                        f"currency, or a rate beside no foreign price: cur is the currency the "
-                        f"document states the price in, and rate the broker's for it")
+if _misstated:
+    raise ValueError(f"{_misstated} state a price in neither sterling nor the share's own "
+                     f"currency, or a rate beside no foreign price: cur is the currency the "
+                     f"document states the price in, and rate the broker's for it")
 
 
 # ---- REASONING: why a position was taken and why it was closed, ONE ROW PER DECISION, dated by
@@ -466,8 +470,8 @@ POSITION_INCOME = ("Dividend", "Funding interest")
 ACCOUNT_INCOME = ("Cash interest", "Fee")
 # EVERY CATEGORY IN EXACTLY ONE. The loader refuses a category `schema.INCOME_CATEGORIES` lacks;
 # one declared there and placed in neither would fall silently out of the return.
-assert sorted(POSITION_INCOME + ACCOUNT_INCOME) == sorted(schema.INCOME_CATEGORIES), \
-    "an income category is in neither half, or in both"
+if sorted(POSITION_INCOME + ACCOUNT_INCOME) != sorted(schema.INCOME_CATEGORIES):
+    raise ValueError("an income category is in neither half, or in both")
 
 # ----------------------------------------------------------------------------------------------
 # FUNDING INTEREST IS THE CONTRACT'S, NOT THE ACCOUNT'S. IG charges it on a daily funded bet for
@@ -602,8 +606,8 @@ register = schema.load("accounts")
 # AN ACCOUNT'S CODE IS ITS NAME TO EVERYONE BUT THE OWNER, so two accounts may never share one, and
 # each is A and a number. The label beside it is the engine's, `Book.account_codes()`.
 _codes = [r[schema.TABLES["accounts"].header.index("code")] for r in register]
-assert len(set(_codes)) == len(_codes) and all(_re.fullmatch(r"A[1-9]\d*", c) for c in _codes), (
-    f"accounts.csv codes must be distinct, each A and a number: {_codes}")
+if len(set(_codes)) != len(_codes) or not all(_re.fullmatch(r"A[1-9]\d*", c) for c in _codes):
+    raise ValueError(f"accounts.csv codes must be distinct, each A and a number: {_codes}")
 
 # EXTERNAL CAPITAL, in and out; negative is a withdrawal. In capital-movements.csv.
 #

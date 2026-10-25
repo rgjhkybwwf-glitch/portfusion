@@ -195,9 +195,13 @@ def test_a_refused_write_takes_back_the_banking_too(store_copy):
     assert history.read_bytes() == before, "a refused write banked the outgoing marks"
 
 
-def test_a_fault_mid_write_puts_back_the_files_and_the_record_in_memory(store_copy, monkeypatch):
+@pytest.mark.parametrize("fault", [RuntimeError, SystemExit])
+def test_a_fault_mid_write_puts_back_the_files_and_the_record_in_memory(store_copy, monkeypatch,
+                                                                        fault):
     """A FAULT, NOT A REFUSAL. Anything a write raises puts back the files and the record in
-    memory. Here the mark lands, the record reloads with it, and then the write fails."""
+    memory. Here the mark lands, the record reloads with it, and then the write fails. An exit
+    too, which `except Exception` lets past: the record raises one when a store goes incomplete,
+    and it goes on once the files and the record are back."""
     from portfusion.record import rules as D, schema
     from portfusion.desk.doors import marks
     from portfusion.desk.panels import price_refresh
@@ -208,14 +212,20 @@ def test_a_fault_mid_write_puts_back_the_files_and_the_record_in_memory(store_co
 
     def write_then_fail(**kw):
         real(**kw)
-        raise RuntimeError("the disk went away")
+        raise fault("the disk went away")
     monkeypatch.setattr(marks, "write", write_then_fail)
 
-    out = price_refresh._write(prices=[{
-        "mark_key": TICK, "price": was + 1, "currency": TICK_CUR, "as_of": "2026-09-04",
-        "struck": "close", "source": f"TradingView 1D {TICK}, session 2026-09-04 close — test"}])
+    def write():
+        return price_refresh._write(prices=[{
+            "mark_key": TICK, "price": was + 1, "currency": TICK_CUR, "as_of": "2026-09-04",
+            "struck": "close", "source": f"TradingView 1D {TICK}, session 2026-09-04 close — test"}])
 
-    assert out["ok"] is False and "the disk went away" in out["refused"], out
+    if fault is SystemExit:
+        with pytest.raises(SystemExit):
+            write()
+    else:
+        out = write()
+        assert out["ok"] is False and "the disk went away" in out["refused"], out
     assert path.read_bytes() == before, "the files were not put back"
     assert {r[0]: r[1] for r in D.CURRENT_PRICES}[TICK] == was, \
         "the record in memory kept a mark the files no longer hold"

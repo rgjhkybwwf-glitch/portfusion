@@ -69,12 +69,15 @@ def atomic(*paths: pathlib.Path):
     THE BYTES ARE HELD UNDER `schema.LOCK`, for the whole block. A restore puts back what was read
     on entry, so a second write landing in between would have been erased by the first one's
     refusal.
+
+    WHATEVER ENDS THE BLOCK, `SystemExit` included, which the record raises when a store goes
+    incomplete and which `except Exception` lets past.
     """
     with schema.LOCK:
         held = [(p, p.read_bytes() if p.is_file() else None) for p in paths]
         try:
             yield
-        except Exception:
+        except BaseException:
             for path, original in held:
                 if original is None:
                     path.unlink(missing_ok=True)
@@ -252,13 +255,14 @@ def _record_follows_the_files():
     taken back out. Every door that reloads inside its envelope wears this.
 
     A reload that fails here means the store did not load BEFORE this write either — the desk
-    reports that on its own, and the refusal is still the answer to this write.
+    reports that on its own, and the refusal is still the answer to this write: the record's own
+    exit, an incomplete store, is suppressed with the rest.
     """
     try:
         yield
-    except Exception:
+    except BaseException:                       # as `atomic()`: an exit too
         from portfusion.record import rules
-        with contextlib.suppress(Exception):
+        with contextlib.suppress(Exception, SystemExit):
             rules.reload_store()
         raise
 

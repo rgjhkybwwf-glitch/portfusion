@@ -141,6 +141,15 @@ def test_the_record_is_read_without_a_fallback(project_files):
     assert not found, "the record read with a fallback:\n  " + "\n  ".join(found)
 
 
+def test_the_record_refuses_with_a_raise_never_an_assert():
+    """`python -O` STRIPS AN `assert`, so a refusal written as one loads under -O the record it
+    refuses. The record raises `ValueError`, which the desk names as the record's
+    (`desk/engine.py:_guarded`)."""
+    found = [f"{path.relative_to(SRC)}:{n.lineno}" for path in sorted((SRC / "record").glob("*.py"))
+             for n in ast.walk(_tree(path)) if isinstance(n, ast.Assert)]
+    assert not found, f"the record refuses with an assert: {found}"
+
+
 def test_a_module_is_imported_one_way(project_files):
     """A module imported whole is not also imported by name in the same file."""
     twice = []
