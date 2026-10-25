@@ -318,6 +318,12 @@ def test_the_book_is_named_from_where_the_command_was_typed(repo_root):
     r = subprocess.run([sys.executable, "-c", show], cwd=repo_root / "tools", env=env,
                        capture_output=True, text=True, timeout=60)
     assert r.returncode != 0 and "no book here" in r.stderr, (r.stdout, r.stderr)
+    # THE SUITE SAYS SO IN ONE LINE, and names the demo, rather than a page of INTERNALERROR.
+    r = subprocess.run([sys.executable, "-m", "pytest", "-q", "--co", "-p", "no:cacheprovider"],
+                       cwd=repo_root, env=env, capture_output=True, text=True, timeout=60)
+    said = r.stdout + r.stderr
+    assert r.returncode != 0 and "no book here" in said and "PORTFUSION_BOOK=demo" in said \
+        and "INTERNALERROR" not in said, said
 
 
 def test_a_foreign_income_row_with_no_rate_on_file_is_a_problem(store_copy):

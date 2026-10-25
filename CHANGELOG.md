@@ -26,6 +26,9 @@ prints it.
 - **Publish keeps to its own clone.** It refuses a `deploy_repo` that is, holds or lies inside the
   book, the app or the checkout, or is or holds the home folder, and a clone that tracks files
   but has no version manifest: a publish deletes what it did not write.
+- **A checkout names the demo.** CONTRIBUTING's setup, CLAUDE.md and the testing guide start with
+  `export PORTFUSION_BOOK=demo`, so their commands work first time in a checkout, which holds no
+  book. Run without one, the suite says so in one line rather than a page of `INTERNALERROR`.
 
 ## 0.3.2 — beta, 24 Oct 2026
 

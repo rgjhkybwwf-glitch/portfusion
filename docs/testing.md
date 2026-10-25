@@ -1,7 +1,8 @@
 # Testing
 
 What each layer of the guard proves, how to write a test, and what to do when one fails.
-[`CONTRIBUTING.md`](../CONTRIBUTING.md) has the commands that set up and run it.
+[`CONTRIBUTING.md`](../CONTRIBUTING.md) has the commands that set up and run it; in a checkout,
+which holds no book, they start with `export PORTFUSION_BOOK=demo`.
 
 ```bash
 portfusion check               # the code on the demo, then the loaded book opening with its checks/
