@@ -58,7 +58,7 @@ once, here, beside that test.
 
 | # | Rule | Held by |
 |---|---|---|
-| 14 | **No credential reaches git or a log.** No credential reaches git, in this repository or any book, and none is logged or printed. | `.githooks/pre-commit`, `test_hooks.py::test_a_planted_value_is_refused_by_NAME_and_never_quoted`, `test_hooks.py::test_history_finds_what_no_verify_let_through`, GitHub's push protection; a log (being made to fire) |
+| 14 | **No credential reaches git or a log.** No credential reaches git, in this repository or any book, and none is logged or printed. | `.githooks/pre-commit`, `test_hooks.py::test_a_planted_value_is_refused_by_NAME_and_never_quoted`, `test_hooks.py::test_history_finds_what_no_verify_let_through`, `test_tv.py::test_the_token_travels_in_a_header_and_is_never_printed_or_logged`, GitHub's push protection |
 | 15 | **Nothing of your book leaves the checkout.** Nothing of a book is named in what leaves the checkout. | `test_what_leaves.py::test_what_leaves_names_nothing_of_the_loaded_book`, run by `.githooks/pre-push` on the book `PORTFUSION_BOOK` names; CI runs on the demo and cannot |
 
 ### Who may read and reach
@@ -76,7 +76,7 @@ once, here, beside that test.
 | 19 | **A new book is complete and guarded.** `portfusion init` writes every table, the three histories, the release's hooks and ignore list, and the book names the release it runs. | `test_init.py::test_the_loaded_book_holds_what_init_writes_and_its_hooks_are_the_releases`, `test_init.py::test_a_new_book_names_the_portfusion_it_runs` |
 | 20 | **History and releases never move.** `main` is never rewritten or deleted; a release tag never moves. | `test_hooks.py::test_a_force_push_that_rewrites_main_is_refused`, `test_hooks.py::test_deleting_main_is_refused_however_it_is_spelt`, GitHub's rulesets "main" and "release tags" |
 | 21 | **The engine needs no desk, feed or history.** The build (engine, record, report) imports nothing from `desk/`, `feeds/` or `history/`. | `pyproject.toml::the-build`, an import contract run by `.github/workflows/guard.yml`, which plants an import it must refuse, and by `.githooks/pre-commit` |
-| 22 | **The guard runs on any book.** The guard ships with the app and runs on any book; a test says which rows it needs; a book lists the skips it expects, and any other skip fails. | `tools/clean_room.py`, `harness.py::needs`, `harness.py::expected_skips` |
+| 22 | **The guard runs on any book.** The guard ships with the app and runs on any book; a test says which rows it needs; a book lists the skips it expects, and any other skip fails, as does a listed one that ran. | `tools/clean_room.py`, `harness.py::needs`, `harness.py::expected_skips`, `harness.py::skips_off` |
 
 ## The conventions
 
@@ -124,7 +124,8 @@ One line each; kept by review, and by the test named where there is one.
   (`test_code.py::test_the_engines_comments_type_no_figure`).
 - **Every line a command says goes through `portfusion.log`**
   (`test_code.py::test_nothing_outside_the_tests_prints`).
-- **Hold a module, never its names**: `rules.X`, not `from … import X`.
+- **Hold a module, never its names, where they move**: `rules.X`, not `from … import X`, and the
+  schema's `STORE`, `STATEMENTS` and `INBOX` likewise (`test_code.py::test_a_module_is_imported_one_way`).
 - **A cached frame is returned as a copy.**
 - **The engine keeps its numbered sections in order**, each topic in one place and its window stated
   once (`test_code.py::test_book_py_keeps_each_topic_in_one_place`,

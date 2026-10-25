@@ -34,10 +34,12 @@ TESTS = SRC / "tests"
 _BOOK_STATE = pytest.StashKey[dict]()
 _BOOK_MOVED = pytest.StashKey[list]()
 _SKIPS_OFF = pytest.StashKey[list]()
+_SKIPS_RAN = pytest.StashKey[list]()
 
 #: THE SKIPS A BOOK EXPECTS, one test per line, in that book's `checks/` folder. A test the book
 #: cannot give rows to skips, which is right on a new book and wrong on one that has the rows: a
-#: skip there hides a test. A book that lists its skips has every other one fail the run.
+#: skip there hides a test. A book that lists its skips has every other one fail the run, and a
+#: listed one that ran: its line would let the test skip unseen later.
 SKIPS_FILE = "skips.txt"
 #: Why a test that reads the checkout skips on an installed copy.
 NO_CHECKOUT = "reads the checkout (its guides, tools or git), and this copy of the app is installed"
@@ -230,6 +232,7 @@ def book_state() -> dict:
 def pytest_sessionstart(session):
     session.config.stash[_BOOK_STATE] = book_state()
     _SKIPS_SEEN.clear()
+    _RAN.clear()
 
 
 def _test_id(nodeid: str) -> str:
@@ -248,6 +251,8 @@ def _the_books(report) -> bool:
 def pytest_runtest_logreport(report):
     if report.skipped and report.when in ("setup", "call") and _the_books(report):
         _SKIPS_SEEN.add(_test_id(report.nodeid))
+    elif report.when == "call" and not report.skipped:
+        _RAN.add(_test_id(report.nodeid))
 
 
 def pytest_collectreport(report):
@@ -257,6 +262,12 @@ def pytest_collectreport(report):
 
 #: Filled by the two hooks above; a plugin's report hooks are handed no session to keep it on.
 _SKIPS_SEEN: set[str] = set()
+_RAN: set[str] = set()
+
+
+def skips_off(seen, ran, listed) -> tuple[list[str], list[str]]:
+    """(the skips `listed` lacks, the listed tests that ran): each fails the run."""
+    return sorted(seen - listed), sorted(ran & listed)
 
 
 def expected_skips() -> set[str] | None:
@@ -274,12 +285,13 @@ def pytest_sessionfinish(session, exitstatus):
     or `_archive/` would otherwise pass. Checked once, across the whole run, so a test that
     cleans up after itself is still seen to have touched it. A write the owner made through the
     desk during the run shows here too; run the suite again."""
-    # A SKIP THE BOOK DOES NOT LIST fails the run: a test it has the rows for was not run.
+    # A SKIP THE BOOK DOES NOT LIST fails the run: a test it has the rows for was not run. So
+    # does a listed test that ran.
     listed = expected_skips()
     if listed is not None:
-        off = sorted(_SKIPS_SEEN - listed)
-        if off:
-            session.config.stash[_SKIPS_OFF] = off
+        off, ran = skips_off(_SKIPS_SEEN, _RAN, listed)
+        if off or ran:
+            session.config.stash[_SKIPS_OFF], session.config.stash[_SKIPS_RAN] = off, ran
             session.exitstatus = pytest.ExitCode.TESTS_FAILED
     was = session.config.stash.get(_BOOK_STATE, None)
     if was is None:
@@ -300,6 +312,12 @@ def pytest_terminal_summary(terminalreporter):
             f"FAILED: {len(off)} test(s) skipped that this book's checks/{SKIPS_FILE} does not "
             f"list — it has their rows, so they must run: " + ", ".join(off[:10])
             + (" …" if len(off) > 10 else ""), red=True)
+    ran = terminalreporter.config.stash.get(_SKIPS_RAN, None)
+    if ran:
+        terminalreporter.write_line(
+            f"FAILED: {len(ran)} test(s) ran that this book's checks/{SKIPS_FILE} lists as "
+            f"skipping — delete their lines: " + ", ".join(ran[:10])
+            + (" …" if len(ran) > 10 else ""), red=True)
     moved = terminalreporter.config.stash.get(_BOOK_MOVED, None)
     if moved:
         terminalreporter.write_line(

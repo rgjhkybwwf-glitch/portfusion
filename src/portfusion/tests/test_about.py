@@ -32,9 +32,10 @@ def test_the_guard_names_an_app_that_is_not_installed(monkeypatch):
     assert f"{harness.SRC.name} is not installed" in harness.environment_faults()
 
 
-def test_a_skip_about_the_copy_or_the_demo_is_no_books():
+def test_a_skip_fails_the_run_unless_the_book_lists_it_and_a_listed_one_that_ran_fails():
     """A book lists the skips its rows explain. One about the installed copy, or about the demo's
-    own documents, is the same on every book: no book lists it, and none fails its run for it."""
+    own documents, is the same on every book: no book lists it, and none fails its run for it.
+    A listed test that ran fails the run too: its line would let it skip unseen later."""
     import types
     import harness
 
@@ -43,6 +44,7 @@ def test_a_skip_about_the_copy_or_the_demo_is_no_books():
     assert harness._the_books(skipped("the book holds no income rows yet"))
     assert not harness._the_books(skipped(harness.NO_CHECKOUT))
     assert not harness._the_books(skipped(harness.DEMO_ONLY))
+    assert harness.skips_off(seen={"a", "b"}, ran={"c", "d"}, listed={"b", "c"}) == (["a"], ["c"])
 
 
 # =====================================================================================

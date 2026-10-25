@@ -48,7 +48,7 @@ the audit, never in a book's `checks/`.
 - **Assert a relationship or a shape, never an expected figure.** A real trade moves a number.
 - **Say which rows a test is built from.** `needs("buys", …)` skips it on a book with none
   yet, saying so; never assume a row is there. A book lists the skips it expects in its
-  `checks/skips.txt`, and any other skip there fails the run.
+  `checks/skips.txt`, and any other skip there fails the run, as does a listed test that ran.
 - **Hold any book, not the demo's shape.** A test picks its rows from the loaded book, or stubs
   them, so it passes on a book with two IG accounts as on the demo with one. A test of the
   demo's own documents skips elsewhere with `DEMO_ONLY`, which no book lists.

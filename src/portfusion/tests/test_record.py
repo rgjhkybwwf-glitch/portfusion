@@ -16,17 +16,13 @@ from datetime import date as _date
 import pytest
 from harness import needs, free_id
 
-# Trade tuple field positions. Named here once so a reorder breaks in one place rather than
-# silently reading the wrong column.
-T_ID, T_DATE, T_SOURCE, T_ACCOUNT, T_TICKER, T_CCY = 0, 1, 2, 3, 4, 5
-
 # =====================================================================================
 # Identity and referential integrity
 # =====================================================================================
 
 def test_trade_ids_are_unique(D):
     """A duplicated ID makes DIRECTION and REALISATION_ID collide silently."""
-    dupes = [i for i, n in Counter(t[T_ID] for t in D.buys).items() if n > 1]
+    dupes = [i for i, n in Counter(t.trade_id for t in D.buys).items() if n > 1]
     assert not dupes, f"duplicate trade IDs: {dupes}"
 
 
@@ -43,7 +39,7 @@ def test_every_trade_account_is_a_known_account(D):
     quietly disappears from its account breakdown.
     """
     known = set(D.ACCOUNT_ORDER)
-    unknown = {t[T_ACCOUNT] for t in D.buys} - known
+    unknown = {t.acct for t in D.buys} - known
     assert not unknown, f"trades reference accounts not in ACCOUNT_ORDER: {sorted(unknown)}"
 
 
@@ -134,9 +130,9 @@ def test_every_trade_date_is_a_date(D):
     bad = []
     for t in D.buys:
         try:
-            _dt.date.fromisoformat(t[T_DATE])
+            _dt.date.fromisoformat(t.date)
         except (ValueError, TypeError):
-            bad.append((t[T_ID], t[T_DATE]))
+            bad.append((t.trade_id, t.date))
     assert not bad, f"trade dates that are not ISO dates: {bad}"
 
 
@@ -144,9 +140,9 @@ def test_no_trade_is_dated_in_the_future(D):
     """A fat-fingered year (2062 for 2026) would sail through an ISO parse."""
     today = _dt.date.today()
     future = [
-        (t[T_ID], t[T_DATE])
+        (t.trade_id, t.date)
         for t in D.buys
-        if _dt.date.fromisoformat(t[T_DATE]) > today
+        if _dt.date.fromisoformat(t.date) > today
     ]
     assert not future, f"trades dated in the future: {future}"
 
@@ -226,7 +222,7 @@ def test_no_duplicate_price_instruments(D):
 
 def test_a_contract_is_named_only_on_a_spread_bet_leg(D):
     """Spread bets are priced by contract; shares are priced by ticker."""
-    wrong = sorted(t[T_ID] for t in D.buys if t.contract and t.mode != "sb")
+    wrong = sorted(t.trade_id for t in D.buys if t.contract and t.mode != "sb")
     assert not wrong, f"buys.csv names a contract on legs that are not spread bets: {wrong}"
 
 
@@ -328,7 +324,7 @@ def test_research_note_tickers_resolve_to_something_held(D):
     RESEARCH_NOTES is keyed by the security's code ("HALV SB", not "HALV"). A key in
     another form, or a typo, links the note to nothing, with no error anywhere.
     """
-    display = {t[T_TICKER] for t in D.buys}
+    display = {t.ticker for t in D.buys}
     unresolved = sorted(set(D.RESEARCH_NOTES) - display)
     assert not unresolved, (
         f"RESEARCH_NOTES keys match no ticker in the book: {unresolved} "
@@ -342,9 +338,6 @@ def test_research_note_tickers_resolve_to_something_held(D):
 # A share sale is one sales.csv row, and the pool derives what it released. A trade row with a
 # negative quantity would be summed as a BUY by every quantity and cost figure.
 # =====================================================================================
-
-T_QTY = 7
-
 
 def test_a_record_that_begins_on_any_day_is_measured_from_its_opening(store_copy):
     """A BOOK MAY BEGIN ON ANY DAY. Its first year and its first quarter measure from its opening,
@@ -384,8 +377,10 @@ def test_a_negative_quantity_carries_no_value(D):
     """A share consolidation changes the count and not the cost, so it is the one kind of trade row
     with a negative quantity, and it carries no value. A negative row WITH a value is a sale
     miswritten: it would load cleanly and count as a buy."""
-    bad = [(t[T_ID], t[T_QTY], t.cost) for t in D.buys
-           if t[T_QTY] is not None and t[T_QTY] < 0 and t.cost != 0]
+    def miswritten(t):
+        return t.qty is not None and t.qty < 0 and t.cost != 0
+    assert miswritten(D.Buy._make([None] * len(D.Buy._fields))._replace(qty=-5, cost=12.0))
+    bad = [(t.trade_id, t.qty, t.cost) for t in D.buys if miswritten(t)]
     assert not bad, (f"negative-quantity trades carrying a value — a sale is one sales.csv row, "
                      f"not a negative trade: {bad}")
 
@@ -393,9 +388,6 @@ def test_a_negative_quantity_carries_no_value(D):
 # =====================================================================================
 # Per-leg sourced figures
 # =====================================================================================
-
-T_MODE = 11
-
 
 def test_a_brokers_rate_stands_beside_a_foreign_price(D):
     """A rate means nothing without the price it converted, and a price stated in sterling
@@ -425,7 +417,7 @@ def test_exit_leg_match_joins_real_rows(D):
     silently, on a parcel where a statement actually names the leg.
     """
     exit_ids = {e[0] for e in D.sales}
-    buy_ids = {t[T_ID] for t in D.buys}
+    buy_ids = {t.trade_id for t in D.buys}
     bad = []
     for eid, tid in D.EXIT_LEG_MATCH.items():
         if eid not in exit_ids:

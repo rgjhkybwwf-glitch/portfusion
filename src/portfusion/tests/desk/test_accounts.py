@@ -501,22 +501,24 @@ def test_the_panels_share_one_shaping_helper(repo_root):
     Copies drift: a fix reaches one and not the others, and one name returns two types.
 
     A count of copies would go stale. This asserts the property instead: no panel defines a
-    shaping helper of its own, because there is one and it is importable.
+    shaping helper of its own, because there is one and it is importable. The helpers are what
+    `_shape.py` defines, read from it, so a new one is held by existing and a copy is caught
+    under its own name or a private one; a panel's `_rows` that calls `_shape.rows` builds on it.
     """
     import ast
-    OWNED = {"_plain", "_uniques", "_iso"}
-    offenders = {}
-    for path in sorted((SRC / "desk" / "panels").glob("*.py")):
-        if path.name == "_shape.py":
-            continue
-        tree = ast.parse(path.read_text())
-        local = {n.name for n in ast.walk(tree)
-                 if isinstance(n, ast.FunctionDef) and n.name in OWNED}
-        if local:
-            offenders[path.name] = sorted(local)
+    shape = SRC / "desk" / "panels" / "_shape.py"
+    owned = {n.name for n in ast.parse(shape.read_text()).body if isinstance(n, ast.FunctionDef)}
+
+    def own(src):
+        return sorted({n.name for n in ast.walk(ast.parse(src)) if isinstance(n, ast.FunctionDef)
+                       and n.name.lstrip("_") in owned
+                       and f"_shape.{n.name.lstrip('_')}(" not in ast.unparse(n)})
+    assert own("def plain(v):\n    return v\ndef _iso(v):\n    return v\n") == ["_iso", "plain"]
+    offenders = {path.name: own(path.read_text()) for path in sorted(shape.parent.glob("*.py"))
+                 if path != shape and own(path.read_text())}
     assert not offenders, (
         f"these panels define their own shaping helpers: {offenders}. "
-        f"desk/panels/_shape.py has plain(), iso(), rows() and uniques() — import them.")
+        f"desk/panels/_shape.py has {sorted(owned)} — import them.")
 
 
 def test_the_shared_shaping_survives_a_column_named_for_a_keyword():
