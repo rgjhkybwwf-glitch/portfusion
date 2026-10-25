@@ -1,7 +1,8 @@
-# THE GUARD, ON GITHUB. One job, four checks, each the command run on the Mac: the secret scan over
-# every commit, the linter, the lock's known advisories, and the clean-room test, which is the
-# suite on the demo and on a new book from the tracked files, and `portfusion check` from the wheel
-# built from them. A pull request is merged on GitHub once this is green (CONTRIBUTING.md).
+# THE GUARD, ON GITHUB. One job, five checks, each the command run on the Mac: the secret scan over
+# every commit, the linter, the lock's known advisories, a parse of the desk's script, and the
+# clean-room test, which is the suite on the demo and on a new book from the tracked files, and
+# `portfusion check` from the wheel built from them. A pull request is merged on GitHub once this
+# is green (CONTRIBUTING.md).
 #
 # WHEN IT RUNS: on a pull request and on a push to main, not on every branch push: a run on
 # every branch push would spend a free plan's minutes quickly.
@@ -45,5 +46,7 @@ jobs:
         run: python3 -m ruff check --no-cache --output-format github
       - name: The lock's known advisories
         run: python3 tools/advisories.py
+      - name: The desk's script parses
+        run: node --check src/portfusion/desk/static/app.js
       - name: The clean-room test
         run: python3 tools/clean_room.py
