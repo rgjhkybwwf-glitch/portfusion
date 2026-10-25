@@ -77,15 +77,13 @@ def sandbox(tmp_path):
 
 
 def _state_in(work):
-    """backup_state() as seen from `work`. It shells out to git, so cwd is the input."""
-    import os
+    """backup_state() of a book at `work`, typed from wherever the suite runs: the book is the
+    input, never the folder the command was typed in."""
     from portfusion.about import backup_state
-    old = os.getcwd()
-    try:
-        os.chdir(work)
+    from portfusion.record import schema
+    with pytest.MonkeyPatch.context() as m:
+        m.setattr(schema, "BOOK", work)
         return backup_state()
-    finally:
-        os.chdir(old)
 
 
 def test_backup_says_never_pushed_before_the_first_push(sandbox):

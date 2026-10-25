@@ -13,7 +13,7 @@ import pandas as pd
 import pytest
 
 from harness import an_account, free_id, needs, write_rows
-from portfusion.engine import BASELINE, Book
+from portfusion.engine import Book, record_begins
 
 
 def ties(mine, theirs, what, tol=0.005):
@@ -92,7 +92,7 @@ def test_a_lifes_figures_are_shown_only_where_they_mean_something(book):
 
 def _on(days: int) -> str:
     """`days` after the scenarios' start: inside the loaded book's record, and past."""
-    start = max(BASELINE, pd.Timestamp.today().normalize() - pd.Timedelta(days=150))
+    start = max(record_begins(), pd.Timestamp.today().normalize() - pd.Timedelta(days=150))
     return (start + pd.Timedelta(days=days)).date().isoformat()
 
 

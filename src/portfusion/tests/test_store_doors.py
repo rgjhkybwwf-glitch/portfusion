@@ -332,7 +332,6 @@ def test_a_book_answers_from_the_store_it_was_built_from(tmp_path):
 
 #: Book methods that read `rules` itself, each asked of the CLASS, where there is no Book.
 ASKED_WITHOUT_A_BOOK = {
-    "account_order":          "a typed constant, the same in every store",
     "reconciliation_verdict": "typed constants; the Reconcile panel asks the class",
     "quarter_to_close":       "which quarter the LIVE record has due; desk/doors/freeze.py asks the class",
 }

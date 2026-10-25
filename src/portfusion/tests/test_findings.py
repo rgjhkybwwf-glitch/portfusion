@@ -166,10 +166,22 @@ def test_an_account_with_no_statement_is_a_gap_not_a_problem(book, monkeypatch):
 
 
 def test_the_evidence_line_survives_an_absent_archive(book, monkeypatch, tmp_path):
-    """The findings promise never to fail over a provenance read; with no archive they say so."""
+    """The findings promise never to fail over a provenance read; with no archive they say so.
+    A check that cannot run is a problem, never good order: the audit's status counts them."""
     monkeypatch.setattr(D.schema, "STATEMENTS", tmp_path / "absent")
     note, problem = book._evidence_chain()
     assert "unverifiable" in note and problem is None
+
+    def broken():
+        raise OSError("unreadable")
+    for owner, name, check in ((D.schema, "filed_statements", "evidence chain"),
+                               (book, "journal_unaccounted", "journal"),
+                               (book, "conversions", "conversions")):
+        with monkeypatch.context() as m:
+            m.setattr(owner, name, broken)
+            m.setattr(book, "journal_opened", lambda: "2026-01-01")
+            assert any(f"{check} could not be checked" in p
+                       for p in book.findings()["problems"]), check
 
 
 @needs("buys", "current-prices")

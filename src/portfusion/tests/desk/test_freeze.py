@@ -342,21 +342,22 @@ def test_the_records_opening_is_never_a_frozen_quarter(store_copy):
     gate count frozen quarters, so the opening is read through `quarter_lines()` and never joins
     `rules.QSNAP_FROZEN`."""
     import csv
-    from portfusion.engine import BASELINE_ASOF, Book
+    from portfusion.engine import Book
     from portfusion.record import rules as D, schema
+    opening = Book().baseline_asof
     path = schema.TABLES["quarter-snapshots"].path
     with path.open(newline="") as f:
         rows = list(csv.reader(f))
     # PLANTED WHERE NONE ARE ON FILE: a book with an opening composition already holds the case.
-    if not any(r[0] == BASELINE_ASOF for r in rows[1:]):
+    if not any(r[0] == opening for r in rows[1:]):
         if not D.QSNAP_FROZEN:
             pytest.skip("the book holds no frozen quarter end to open from")
-        newest, held = max(D.QSNAP_FROZEN), set(D.accounts_open(BASELINE_ASOF))
-        write_rows("quarter-snapshots", *[dict(zip(rows[0], [BASELINE_ASOF, *r[1:]]))
+        newest, held = max(D.QSNAP_FROZEN), set(D.accounts_open(opening))
+        write_rows("quarter-snapshots", *[dict(zip(rows[0], [opening, *r[1:]]))
                                           for r in rows[1:] if r[0] == newest and r[1] in held])
         D.reload_store()
-    assert BASELINE_ASOF not in D.QSNAP_FROZEN
-    assert not Book().quarter_lines(BASELINE_ASOF).empty
+    assert opening not in D.QSNAP_FROZEN
+    assert not Book().quarter_lines(opening).empty
 
 
 @needs("quarter-nav", "current-prices")
