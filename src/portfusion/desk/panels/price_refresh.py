@@ -15,7 +15,7 @@ leaves the machine and nothing is written until the owner has seen what will be 
 what will land — the same gate the bench uses for a document, for the same reason.
 
 THIS PANEL DECIDES NOTHING. Which marks can be replaced and which are carried is
-`engine.marks_replaceable()`; whether the outgoing set is on file is `marks.banked()`; what may
+`Book.marks_replaceable()`; whether the outgoing set is on file is `marks.banked()`; what may
 be written and what must be refused is `marks.write()` and `observations.write()`. A panel that classified a mark here
 would be the third place that answers a question the record already answers.
 """
@@ -61,12 +61,10 @@ def query() -> dict:
     """The bay's state. Every figure is the engine's or the door's; nothing is decided here."""
     from portfusion.desk.doors import marks
 
-    # THE ENGINE THROUGH THE DESK'S GUARD, not imported with the module, where a store that will
-    # not load would answer a bare 500, not "record unavailable".
-    def _replaceable():
-        from portfusion.engine import marks_replaceable
-        return marks_replaceable()
-    can = engine._guarded(_replaceable)
+    # ONE BOOK FOR THE WHOLE BAY, the desk's, so the outgoing marks are the record the figures
+    # below are drawn from, and a store that will not load answers "record unavailable".
+    b = engine.book()
+    can = b.marks_replaceable()
     return {
         "steps": [{"key": k, "label": lb, "detail": d} for k, lb, d in STEPS],
         "today": can["today"],
@@ -87,10 +85,10 @@ def query() -> dict:
         "readings": sorted(can["readings"], key=lambda r: r["account"]),
         # THE DATED RATES THE RECORD LACKS, each with the rate its date converts at
         # today: the fetch below reads their closes, and the write banks them into the history.
-        "lacking": engine.book().rate_gaps(),
-        "valued_at": engine.book().valued_at(),
+        "lacking": b.rate_gaps(),
+        "valued_at": b.valued_at(),
         # THE MARKS' AGE, the engine's and the Dashboard's one figure (`Book.price_ageing()`).
-        "age_days": engine.book().price_ageing()["age_days"],
+        "age_days": b.price_ageing()["age_days"],
     }
 
 
@@ -169,7 +167,7 @@ def _with_sources(swept: dict) -> dict:
     """Each IG account's row, given the provenance line its reading will be filed under: the
     record's own words for the reading's evidence and reference (`rules.evidence_source()`),
     so the review shows what the write records and nothing the record will not keep."""
-    from portfusion.record import rules as D
+    D = engine.book().D
     eq = swept.get("ig_equity") or {}
     line = {r["account"]: D.evidence_source(r["evidence"], reference=r["reference"],
                                             account=r["account"])
@@ -195,7 +193,7 @@ def _write(prices=None, rates=None, readings=None, close_of=None):
 
     THE LEVELS AND THE EQUITY ARE ONE OBSERVATION, so they land or fail together. The two doors
     each hold only their own files, so this holds the union, and a refusal from either rolls both
-    back; `D.reload_store()` runs on that path because the files go back and the record in memory
+    back; `rules.reload_store()` runs on that path because the files go back and the record in memory
     has to follow them.
 
     `close_of` is a past day's closes: `marks.bank_closes()` files them into the histories and the
@@ -205,10 +203,9 @@ def _write(prices=None, rates=None, readings=None, close_of=None):
     byte-identical, if any line lacks a source or a date, names a carried line, or names a row
     that is not there.
     """
-    from portfusion.record import rules as D
+    from portfusion.record import rules
     from portfusion.desk.doors import commit, marks, observations
     prices, rates, readings = list(prices or []), list(rates or []), list(readings or [])
-    contracts = set(D.LEG_CONTRACT.values())
     try:
         if not (prices or rates or readings):
             raise marks.Refused("nothing to write — no line was ticked.")
@@ -217,6 +214,7 @@ def _write(prices=None, rates=None, readings=None, close_of=None):
                 raise marks.Refused("a past day's closes carry no account reading: equity is "
                                     "read live, with the levels, or not at all")
             return {"ok": True, **marks.bank_closes(close_of, prices=prices, rates=rates)}
+        contracts = set(engine.book().D.LEG_CONTRACT.values())
         if readings and not any(p.get("mark_key") in contracts for p in prices):
             raise marks.Refused("an IG account's equity is written with the contract levels "
                                 "read in the same pass, and none is among the ticked lines")
@@ -226,7 +224,7 @@ def _write(prices=None, rates=None, readings=None, close_of=None):
             read = observations.write(readings=readings) if readings else {}
     except (marks.Refused, observations.Refused) as e:
         with contextlib.suppress(Exception, SystemExit):
-            D.reload_store()
+            rules.reload_store()
         return {"ok": False, "refused": str(e)}
     except Exception as e:                          # noqa: BLE001 — reported, never swallowed
         # A FAULT, NOT A REFUSAL, and the files are back just the same: `atomic()` restored them.
@@ -234,7 +232,7 @@ def _write(prices=None, rates=None, readings=None, close_of=None):
         # hold; and the page says what failed. The trace goes to the desk's log.
         traceback.print_exc()
         with contextlib.suppress(Exception, SystemExit):
-            D.reload_store()
+            rules.reload_store()
         return {"ok": False, "refused": f"the write failed, and every file is as it was: "
                                         f"{type(e).__name__}: {e}"}
     return {"ok": True, **written, "readings": read.get("written", 0),

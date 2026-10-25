@@ -107,8 +107,10 @@ def reports() -> dict:
 
     THE REPORT'S OWN GATE DECIDES, never the desk: `report.gate.completeness()`, which
     `portfusion report --check` also asks, so the two cannot disagree about whether a quarter is
-    ready. Cached on the store's mtime, as the engine is.
+    ready. Cached on the store's mtime, as the engine is, and asked under `schema.LOCK` after
+    `book()`, so the gate reads the record the Book was built from, or the refusal is raised.
     """
+    from portfusion.record import schema
     key = store_mtime()
     if _reports["key"] == key:
         return _reports["value"]
@@ -116,8 +118,8 @@ def reports() -> dict:
     def _run():
         from portfusion.report.gate import completeness
         from portfusion.report.page import first_reported
-        first = first_reported()
         b = book()
+        first = first_reported()
         closed = [str(q)[:10] for q in b.quarter_returns()["quarter_end"]]
         to_close = str(b.quarter_to_close().date())
         ends = closed + ([to_close] if to_close not in closed else [])
@@ -129,19 +131,27 @@ def reports() -> dict:
         return {"quarters": quarters[::-1], "first_reported": first,
                 "years": [{"year": y, "built": False} for y in years]}
 
-    _reports.update(key=key, value=_guarded(_run))
+    with schema.LOCK:
+        _reports.update(key=key, value=_guarded(_run))
     return _reports["value"]
 
 
 def report_page(quarter_end: str) -> tuple[str | None, list[str]]:
     """One quarter's report, or what stops it. Nothing is written: the page is rendered for the
-    request and handed back, the only way a report is made."""
+    request and handed back, the only way a report is made.
+
+    FROM `book()`'S BOOK, UNDER `schema.LOCK`, as `reports()` asks: a record that refuses to
+    reload refuses the report too, rather than a page drawn from the tables it refused."""
+    from portfusion.record import schema
+
     def _run():
         from portfusion.report.gate import completeness
         from portfusion.report.page import render
+        b = book()
         gaps = completeness(quarter_end)
-        return (None, gaps) if gaps else (render(quarter_end), [])
-    return _guarded(_run)
+        return (None, gaps) if gaps else (render(quarter_end, b), [])
+    with schema.LOCK:
+        return _guarded(_run)
 
 
 def palette() -> dict:
