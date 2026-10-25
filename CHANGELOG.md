@@ -23,6 +23,9 @@ prints it.
   strips: a settings key named twice, a spread-bet leg with no contract or on another line, an id
   used twice, a price in a third currency, an income category in neither half, an account code
   repeated or malformed. Each is now refused with a `ValueError`.
+- **Publish keeps to its own clone.** It refuses a `deploy_repo` that is, holds or lies inside the
+  book, the app or the checkout, or is or holds the home folder, and a clone that tracks files
+  but has no version manifest: a publish deletes what it did not write.
 - **The audit tells the truth.** `portfusion record` typed in a checkout reported the checkout's
   backup under the book's name; it now reads the book's own git. An evidence chain or journal that
   could not be checked read as good order; each is now a problem, as the conversions' was. The
