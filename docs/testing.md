@@ -19,6 +19,8 @@ the audit, never in a book's `checks/`.
 
 **Read a test's docstring before changing it.** It says why the check exists.
 
+**Run the guard unpiped**: a pipe returns the last command's status.
+
 ## What each layer proves
 
 | Layer | Proves | Does not prove |
