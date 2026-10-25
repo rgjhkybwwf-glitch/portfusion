@@ -52,19 +52,15 @@ def test_tokens_are_derived_from_the_palette_not_written_here():
         assert value in css, f"{key} did not reach tokens.css"
 
 
-def test_there_is_exactly_one_palette_derivation(imports_of):
+def test_there_is_exactly_one_palette_derivation():
     """ONE ROUTE TO THE COLOURS: two routes to one answer drift.
 
-    engine.py stays the one way the desk reads; theme.py holds the derivation.
+    engine.py stays the one way the desk reads; theme.py holds the derivation; app.py serves what
+    engine hands it (the `one-palette` import contract).
     """
     from portfusion.desk import theme
     assert engine.palette() == theme.palette()
     assert engine.tokens_css() == theme.tokens_css()
-
-    # And nothing else may reconstruct it: app.py serves what engine hands it.
-    app_py = SRC / "desk" / "app.py"
-    assert "house" not in imports_of(app_py), \
-        "app.py is deriving colours itself — it must serve engine.tokens_css()"
 
 
 def test_every_token_the_desk_is_handed_is_worn(repo_root):

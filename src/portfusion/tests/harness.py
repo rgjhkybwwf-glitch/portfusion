@@ -587,22 +587,6 @@ def build_sources():
 
 
 @pytest.fixture(scope="session")
-def build_imports(imports_of, build_sources):
-    """Every module the build imports, across every file it is made of: each by its first name
-    and by its dotted one, so `"feeds" not in` and `"history.fx" not in` both ask something."""
-    found = set()
-    for f in build_sources:
-        found |= imports_of(f, dotted=True)
-    return found
-
-
-@pytest.fixture(scope="session")
-def build_source_text(build_sources):
-    """The build's whole source, concatenated. For guards that must read prose or syntax."""
-    return "\n".join(f.read_text(encoding="utf-8") for f in build_sources)
-
-
-@pytest.fixture(scope="session")
 def book():
     """The engine, built once. Shared by the ties and the invariant layer."""
     from portfusion.engine import Book

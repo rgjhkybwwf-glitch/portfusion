@@ -23,7 +23,7 @@ license-files = ["LICENSE"]
 dynamic = ["version"]
 # FLOORS, NOT PINS. Nothing below a floor has been run; the lock says what has.
 # THE BUILD (the report and the engine) needs pandas alone; the rest is the desk's, beside it.
-# The build may not import desk/, feeds/ or history/ (tests/desk/test_boundaries.py).
+# The build may not import desk/, feeds/ or history/ (the import contracts below).
 dependencies = [
     "pandas>=2.2.3",    # the engine. Written on pandas 3; numpy comes with it
     "fastapi>=0.133",   # desk/app.py
@@ -37,7 +37,8 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "ruff>=0.17",       # the linter: python3 -m ruff check
+    "ruff>=0.17",               # the linter: python3 -m ruff check
+    "import-linter>=2.15",      # the import contracts below: lint-imports
 ]
 
 [project.scripts]
@@ -73,3 +74,85 @@ select = ["F", "E4", "E7", "E9", "W"]
 # It checks that the book's store is whole BEFORE importing the rest of the record, so a missing
 # table says what is wrong rather than failing three frames deep.
 "src/portfusion/record/rules.py" = ["E402"]
+
+# THE IMPORT CONTRACTS: which part of the app may import which, checked by `lint-imports` in CI's
+# guard (beside a planted import it must refuse) and in this checkout's `.githooks/pre-commit`.
+# A dev tool: a book installs none of it.
+[tool.importlinter]
+root_package = "portfusion"
+include_external_packages = true        # so a contract can forbid pandas or the network
+
+# A module imports only from the layers below it; parts on one line never import each other, and
+# a new part must be given a layer. The desk's own layers wait for its split.
+[[tool.importlinter.contracts]]
+id = "layers"
+name = "a module imports only from the layers below it"
+type = "layers"
+containers = ["portfusion"]
+exhaustive = true
+layers = [
+    "__main__ | hooks | init | migrate",
+    "desk",
+    "feeds | report",
+    "engine | history",
+    "about | brand | check",
+    "record",
+    "house | log | secret_scan",
+]
+ignore_imports = [                      # the audit, `portfusion record`, runs the engine and the suite
+    "portfusion.record.__main__ -> portfusion.engine",
+    "portfusion.record.__main__ -> portfusion.about",
+    "portfusion.record.__main__ -> portfusion.brand",
+    "portfusion.record.__main__ -> portfusion.check",
+]
+
+# Stability rule 21: directly or through any other module.
+[[tool.importlinter.contracts]]
+id = "the-build"
+name = "the build (engine, record, report) imports no desk, feed or history"
+type = "forbidden"
+source_modules = ["portfusion.engine", "portfusion.record", "portfusion.report"]
+forbidden_modules = ["portfusion.desk", "portfusion.feeds", "portfusion.history"]
+
+[[tool.importlinter.contracts]]
+id = "the-engine"
+name = "the engine takes nothing of the app but the record's rules"
+type = "forbidden"
+source_modules = ["portfusion.engine"]
+forbidden_modules = ["portfusion.record.schema", "portfusion.report", "portfusion.about",
+                     "portfusion.brand", "portfusion.house", "portfusion.check", "portfusion.log"]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+id = "the-report"
+name = "the report reads facts through record.rules, never record.schema"
+type = "forbidden"
+source_modules = ["portfusion.report"]
+forbidden_modules = ["portfusion.record.schema"]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+id = "one-palette"
+name = "desk/app.py serves engine.tokens_css(), never deriving colours from house"
+type = "forbidden"
+source_modules = ["portfusion.desk.app"]
+forbidden_modules = ["portfusion.house"]
+allow_indirect_imports = true
+
+# Direct imports only: the desk's engine reaches a feed through the Bench, which the split unties.
+[[tool.importlinter.contracts]]
+id = "the-proposer"
+name = "the proposer imports no feed and nothing that opens a connection"
+type = "forbidden"
+source_modules = ["portfusion.desk.intake.propose"]
+forbidden_modules = ["portfusion.feeds", "urllib", "http", "socket", "requests", "httpx",
+                     "anthropic"]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+id = "the-drop-off"
+name = "the drop-off never reaches the record's rules, the engine or pandas"
+type = "forbidden"
+source_modules = ["portfusion.desk.intake.dropoff"]
+forbidden_modules = ["portfusion.record.rules", "portfusion.engine", "pandas"]
+allow_indirect_imports = true

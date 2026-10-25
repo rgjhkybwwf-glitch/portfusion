@@ -2,12 +2,36 @@
 """THIS CHECKOUT'S SECRET GATE: `portfusion/hooks/pre_commit.py`, run from this checkout's own
 `src/`, so a commit is checked by the code it commits and the gate runs before anything is
 installed. The gate's docstring says what it refuses. Held by tests/test_hooks.py.
+
+Committing this checkout, it then checks the import contracts (`pyproject.toml`) with the
+checkout's own venv, as CI does; a venv without them is warned of, and CI still checks.
 """
 import pathlib
+import subprocess
 import sys
 
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "src"))
+ROOT = pathlib.Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "src"))
 from portfusion.hooks.pre_commit import main  # noqa: E402 — the checkout's own app
+from portfusion.log import log  # noqa: E402
+
+
+def import_contracts() -> int:
+    tool = ROOT / ".venv" / "bin" / "lint-imports"
+    if not tool.exists():
+        log.warning("pre-commit: the import contracts were not checked: .venv has no lint-imports "
+                    "(CONTRIBUTING.md, Setting up)")
+        return 0
+    run = subprocess.run([str(tool), "--no-cache", "--no-logo"], cwd=ROOT, capture_output=True,
+                         text=True)
+    if run.returncode:
+        log.error(run.stdout + run.stderr + "pre-commit: REFUSED. An import breaks a contract "
+                  "in pyproject.toml.")
+    return run.returncode
+
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))
+    code = main(sys.argv[1:])
+    if not code and not sys.argv[1:] and pathlib.Path.cwd().resolve() == ROOT:
+        code = import_contracts()
+    sys.exit(code)

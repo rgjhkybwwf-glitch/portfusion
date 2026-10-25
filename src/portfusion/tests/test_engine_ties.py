@@ -182,18 +182,8 @@ def test_as_of_answers_the_opening_day_and_refuses_any_before_it(book):
 
 
 # =====================================================================================
-# THE BOUNDARY  —  which way the dependency runs
+# HOLDINGS, ACTIVITY AND THE ACCOUNTS
 # =====================================================================================
-
-def test_the_build_does_not_import_the_broker_feed(build_imports):
-    """The build must not import `feeds/ig.py`. That module talks to a broker over the network,
-    and a report build that can fail because IG is down is a worse book. pandas is a library on
-    disk; a broker is not.
-    """
-    imports = build_imports
-    assert "feeds" not in imports, (
-        "the build imports the broker feed — a rebuild must not be able to fail because a "
-        "broker is offline")
 
 
 def test_holdings_by_issuer_merges_each_company_once(book):

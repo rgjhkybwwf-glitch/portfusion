@@ -424,11 +424,15 @@ def test_a_hidden_file_or_a_folder_is_not_a_filed_document(monkeypatch, tmp_path
 
 
 def test_the_import_reader_sees_a_module_imported_from_the_package(imports_of, tmp_path):
-    """`from portfusion import engine` IMPORTS THE ENGINE. Each name is read, dotted or not."""
+    """THE GUARDS ON `imports_of` CAN FIRE. Each asks whether a name is absent, and absence is
+    also what a scan that cannot see the name reports. Under one package every import begins with
+    the package's name, so it is read past it: `from portfusion import engine` IMPORTS THE ENGINE,
+    and each name is read, dotted or not."""
     src = tmp_path / "m.py"
-    src.write_text("from portfusion import engine, desk as d\nimport portfusion.record.rules\n")
-    assert {"engine", "desk", "record"} <= imports_of(src)
-    assert "record.rules" in imports_of(src, dotted=True)
+    src.write_text("from portfusion import engine, desk as d\nimport portfusion.record.rules\n"
+                   "from portfusion.history import fx\nfrom portfusion.record.schema import STORE\n")
+    assert {"engine", "desk", "record", "history"} <= imports_of(src)
+    assert {"record.rules", "history.fx", "record.schema"} <= imports_of(src, dotted=True)
 
 
 def test_a_store_that_will_not_load_leaves_the_record_where_it_was(tmp_path):

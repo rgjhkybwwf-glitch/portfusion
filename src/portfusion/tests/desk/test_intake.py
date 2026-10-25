@@ -167,7 +167,8 @@ def test_the_drop_off_has_no_way_to_make_a_document_LEAVE(repo_root):
     quietly become a route OUT, so the module may call exactly one writing name and no
     removing or renaming one at all.
 
-    Checked on the syntax tree: prose is not behaviour.
+    Checked on the syntax tree: prose is not behaviour. That it never reaches the record's rules
+    or the engine is the `the-drop-off` import contract.
     """
     import ast
     tree = ast.parse((SRC / "desk" / "intake" / "dropoff.py").read_text())
@@ -183,17 +184,6 @@ def test_the_drop_off_has_no_way_to_make_a_document_LEAVE(repo_root):
     assert not (called & forbidden), (
         f"dropoff.py calls {sorted(called & forbidden)}. It is a way IN to _inbox/ and must "
         f"never become a way out: a document leaves by being archived.")
-
-    # AND IT MUST NOT REACH THE RECORD. Nothing about landing a file needs the engine, the
-    # schema or the store, and a module that imported one could grow a reason to.
-    imported = set()
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Import):
-            imported.update(a.name.split(".")[0] for a in node.names)
-        elif isinstance(node, ast.ImportFrom) and node.module:
-            imported.add(node.module.split(".")[0])
-    assert not (imported & {"book", "rules", "schema", "pandas"}), \
-        f"dropoff.py imports the record: {sorted(imported)}"
 
 
 def test_the_route_hands_a_refusal_back_as_a_400(inbox):
@@ -891,18 +881,11 @@ def test_a_scan_is_refused_rather_than_guessed_at(item, monkeypatch):
 
 
 def test_the_proposal_reaches_no_network(repo_root):
-    """THE READER IS A SESSION, NOT AN API CALL. Nothing in propose.py may open a connection or
-    import what would, so no key is needed and none can expire. Checked on the syntax tree, the
-    way every guard here is checked."""
+    """THE READER IS A SESSION, NOT AN API CALL. Nothing in propose.py may open a connection, so
+    no key is needed and none can expire. Checked on the syntax tree; that it imports nothing
+    that would is the `the-proposer` import contract."""
     import ast
     tree = ast.parse((SRC / "desk" / "intake" / "propose.py").read_text())
-    imported = set()
-    for n in ast.walk(tree):
-        if isinstance(n, ast.Import):
-            imported |= {a.name.split(".")[0] for a in n.names}
-        elif isinstance(n, ast.ImportFrom) and n.module:
-            imported.add(n.module.split(".")[0])
-    assert not imported & {"urllib", "http", "socket", "requests", "httpx", "anthropic"}, imported
     calls = {getattr(n.func, "attr", None) or getattr(n.func, "id", None)
              for n in ast.walk(tree) if isinstance(n, ast.Call)}
     assert not calls & {"urlopen", "urlretrieve", "create_connection"}, calls

@@ -119,15 +119,6 @@ def test_every_live_rate_is_dated(monkeypatch):
     assert FX.live_marks() == [] and [m["currency"] for m in FX.check()] == ["USD"]
 
 
-def test_the_build_does_not_import_this(build_imports):
-    """A tool alongside the build, never part of it — the same contract feeds/ig.py
-    works to. A report build must not be able to fail because a CSV moved.
-
-    Checked as an IMPORT rather than a grep: the prose mentions these tools by name.
-    """
-    assert "history.fx" not in build_imports
-
-
 # =====================================================================================
 # A RATE READ TWICE IN ONE DAY — the price history's rule too
 # =====================================================================================

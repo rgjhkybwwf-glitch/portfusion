@@ -9,11 +9,15 @@ cffi==2.1.1
 click==8.5.0
 cryptography==50.0.2
 fastapi==0.141.1
+grimp==3.17
 h11==0.16.0
 httpcore2==2.13.1
 httpx2==2.13.1
 idna==3.19
+import-linter==2.15
 iniconfig==2.3.0
+markdown-it-py==4.2.0
+mdurl==0.1.2
 numpy==2.5.2
 packaging==26.3
 pandas==3.0.5
@@ -28,6 +32,7 @@ pyOpenSSL==26.4.0
 pypdf==6.21.2
 pytest==9.1.1
 python-dateutil==2.9.0.post0
+rich==15.0.0
 ruff==0.17.1
 six==1.17.0
 starlette==1.6.0

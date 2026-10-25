@@ -121,10 +121,6 @@ def test_show_prints_a_reading_with_no_net_asset_value_part(monkeypatch, capsys)
     assert "-> NAV" not in out
 
 
-def test_the_build_does_not_import_this(build_imports):
-    assert "history.accounts" not in build_imports
-
-
 # =====================================================================================
 # THE BANKING FLOOR — archive() and check(), as the other two histories have
 #

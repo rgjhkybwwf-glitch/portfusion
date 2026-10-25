@@ -1,6 +1,7 @@
 """THE DESK'S TWO LOAD-BEARING CLAIMS, and the named set of modules that may write.
 
-  1. THE BOOK DOES NOT DEPEND ON THE DESK. Delete desk/ and the report builds unchanged.
+  1. THE BOOK DOES NOT DEPEND ON THE DESK. Delete desk/ and the report builds unchanged: the
+     import contracts in `pyproject.toml`.
   2. NO ACTION CAN WRITE AN EVENT. The marks rule lets a feed write a MARK on the owner's tick and
      never an event, and `Action` refuses to be constructed otherwise.
 
@@ -12,38 +13,6 @@ import datetime as _dt
 import pytest
 from portfusion.desk import actions
 from harness import SRC, write_call
-
-
-# =====================================================================================
-# 1. The book does not depend on the desk.
-# =====================================================================================
-
-def test_nothing_in_the_book_imports_the_desk(build_imports):
-    """The build must not reach the second renderer. Same shape as the guard that keeps
-    feeds/ig.py out of the build: a report build cannot be allowed to fail because
-    something about the desk is broken."""
-    assert "desk" not in build_imports
-
-
-def test_the_engine_and_the_record_do_not_import_the_desk(repo_root, imports_of):
-    """The dependency runs desk -> book, never book -> desk. If it ever ran both ways, the
-    'delete desk/ and nothing changes' claim would quietly stop being true."""
-    from harness import SRC
-    report = [f"report/{p.name}" for p in sorted((SRC / "report").glob("*.py"))]
-    for name in ("engine.py", "record/rules.py", "record/schema.py", "feeds/refresh.py", *report):
-        assert "desk" not in imports_of(SRC / name), f"{name} imports desk"
-
-
-def test_an_import_guard_sees_an_import_under_the_package(tmp_path, imports_of):
-    """THE GUARDS ABOVE CAN FIRE. Every one asks whether a name is absent, and absence is also
-    what a scan that cannot see the name reports. Under one package every import begins with the
-    package's name, so a scan of first names, or a dotted guard (`history.fx`) asking one, would
-    hold whatever is imported."""
-    f = tmp_path / "m.py"
-    f.write_text("from portfusion.desk import app\nimport portfusion.history.fx\n"
-                 "from portfusion.record import schema\n")
-    assert {"desk", "history", "record"} <= imports_of(f)
-    assert {"history.fx", "record.schema"} <= imports_of(f, dotted=True)
 
 
 # =====================================================================================

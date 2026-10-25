@@ -50,6 +50,12 @@ prints it.
 - **The stability rules are in CONTRIBUTING**: 22 rules under six headings, each beside the test
   or hook that holds it, and eight parts not yet held marked "being made to fire". The conventions
   follow, one line each; "run the guard unpiped" is a tip in docs/testing.md.
+- **The import contracts are checked by a tool**, import-linter (`lint-imports`), in CI and in a
+  checkout's pre-commit: seven contracts in `pyproject.toml` say which part of the app may import
+  which. The build's independence of the desk, the feeds and the histories (rule 21) is now held
+  for the record too, where a planted import passed every test; CI plants one to prove it is
+  refused. Ten hand-written import tests and two fixtures retire, and three tests lose their
+  import half. A dev tool only: a book installs none of it.
 
 ## 0.3.2 — beta, 24 Oct 2026
 
