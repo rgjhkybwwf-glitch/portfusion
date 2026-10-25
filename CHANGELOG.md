@@ -47,6 +47,9 @@ prints it.
 - **A checkout names the demo.** CONTRIBUTING's setup, CLAUDE.md and the testing guide start with
   `export PORTFUSION_BOOK=demo`, so their commands work first time in a checkout, which holds no
   book. Run without one, the suite says so in one line rather than a page of `INTERNALERROR`.
+- **The stability rules are in CONTRIBUTING**: 22 rules under six headings, each beside the test
+  or hook that holds it, and eight parts not yet held marked "being made to fire". The conventions
+  follow, one line each; "run the guard unpiped" is a tip in docs/testing.md.
 
 ## 0.3.2 — beta, 24 Oct 2026
 
