@@ -130,20 +130,11 @@ def _lookup(keys: pd.Series, by: pd.Series) -> pd.Series:
 # The record begins on the book's `record_begins` date. Positions opened before then are in the
 # book so their COST BASIS is known; they are not part of the performance record. A pre-baseline
 # leg is an opening holding, HELD AT THE BASELINE, and carries a flag.
-BASELINE = pd.Timestamp(D.SETTINGS["record_begins"])
-
-
-# The same date as a store key. QUARTER_NAV is keyed by ISO string, so the baseline
-# is spelled once here rather than typed at each lookup.
-BASELINE_ASOF = (BASELINE - pd.Timedelta(days=1)).date().isoformat()
-
 
 def record_begins() -> pd.Timestamp:
     """The day the record begins, read from the record as it stands now: what code that has no
-    Book reads. `BASELINE` is the same date as the book loaded at import, which a reload of a
-    changed setting, or a Book built from another store, does not move; a Book reads its own
-    (`Book.baseline`)."""
-    return pd.Timestamp(D.SETTINGS["record_begins"])
+    Book reads. A Book reads its own (`Book.baseline`)."""
+    return pd.Timestamp(D.RECORD_BEGINS)
 
 
 # =====================================================================================
@@ -530,7 +521,7 @@ class Book:
         """The day this Book's record begins: its own setting, pinned with the rest of the record
         it was built from, so a Book of another store, or one built after the setting changed,
         is measured from its own start, not from the date the loaded book held at import."""
-        return pd.Timestamp(self.D.SETTINGS["record_begins"])
+        return pd.Timestamp(self.D.RECORD_BEGINS)
 
     @property
     def baseline_asof(self) -> str:
@@ -613,7 +604,7 @@ class Book:
     #
     # SINCE_START carries the day the record begins, which is the book's setting, so it is named
     # once here and a renderer looking the figure up asks for it rather than typing the date.
-    SINCE_START = f"Return since {BASELINE:%-d %b %Y} (MWR)"
+    SINCE_START = f"Return since {D.RECORD_BEGINS:%-d %b %Y} (MWR)"
 
     HEADLINE = {
         "Net asset value":                       {"basis": "capital", "unit": "gbp", "point_in_time": True},
@@ -1677,14 +1668,13 @@ class Book:
 
     # ---- THE REGISTER  —  who holds what, named as filed -----------------------------
 
-    @staticmethod
-    def account_order() -> list[str]:
-        """Every account in the record's canonical order — shares first, then spread bets.
+    def account_order(self) -> list[str]:
+        """Every account in this book's register order — shares first, then spread bets.
 
         An order, not a sort: the break separates the two valuation bases, and alphabetically a
         spread-bet account lands among the share ones.
         """
-        return list(D.ACCOUNT_ORDER)
+        return list(self.D.ACCOUNT_ORDER)
 
     def accounts_open(self, date) -> list[str]:
         """The accounts whose record had begun by `date`, in register order: those a quarter end
@@ -3949,7 +3939,10 @@ class Book:
             problems.append(problem)
 
         # ---- RECORD TIME ----------------------------------------------------------------
-        notes.append(self._journal_state())
+        note, problem = self._journal_state()
+        notes.append(note)
+        if problem:
+            problems.append(problem)
 
         return {"problems": problems, "gaps": gaps, "notes": notes, "prices": prices}
 
@@ -4040,23 +4033,27 @@ class Book:
                     f"{len(gaps)} row(s) cite a document that is in no archived filename: "
                     f"{', '.join(sorted(gaps))} — file it, or correct the row's source")
         except Exception as e:                       # noqa: BLE001 — never fail over provenance
-            return f"evidence: unknown ({type(e).__name__})", None
+            # NOT CHECKED IS A PROBLEM, as the conversions' is.
+            return (f"evidence: unknown ({type(e).__name__})",
+                    f"the evidence chain could not be checked: {type(e).__name__}: {e}")
 
-    def _journal_state(self) -> str:
-        """What the journal accounts for, in one line. A difference is a FINDING, not a problem:
-        a hand edit with a commit message is a correction the store allows."""
+    def _journal_state(self) -> tuple[str, str | None]:
+        """What the journal accounts for, in one line, and a problem if it could not be read. A
+        difference is a FINDING, not a problem: a hand edit with a commit message is a correction
+        the store allows."""
         try:
             opened = self.journal_opened()
             if opened is None:
-                return "journal: no opening count — nothing to reconcile against"
+                return "journal: no opening count — nothing to reconcile against", None
             off = self.journal_unaccounted()
             wrote = self.journal(since=opened)
             if off.empty:
                 return (f"journal: every row accounted for since {pd.Timestamp(opened):%-d %b %Y} · "
-                        f"{len(wrote)} write(s) recorded")
+                        f"{len(wrote)} write(s) recorded"), None
             parts = "; ".join(f"{r['table']} {r['unaccounted']:+d}"
                               for r in off.to_dict("records"))
             return (f"journal: {len(off)} table(s) hold rows no route accounts for — {parts}. "
-                    f"That is a hand edit; git log will say which.")
+                    f"That is a hand edit; git log will say which."), None
         except Exception as e:                       # noqa: BLE001 — never fail over the journal
-            return f"journal: unknown ({type(e).__name__})"
+            return (f"journal: unknown ({type(e).__name__})",
+                    f"the journal could not be checked: {type(e).__name__}: {e}")

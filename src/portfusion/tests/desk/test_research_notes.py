@@ -111,14 +111,14 @@ def test_the_codes_held_are_those_open_at_the_baseline_or_dealt_in_since():
     covers no note; one dealt in since, or open when it began, does. Two invented lines are laid
     on the ledger, one each side of the baseline, with the holdings at the baseline held fixed."""
     import pandas as pd
-    from portfusion.engine import BASELINE, Book
+    from portfusion.engine import Book
     b = Book()
-    at_baseline = b.as_of(BASELINE.date().isoformat())
+    at_baseline = b.as_of(b.baseline.date().isoformat())
     b.as_of = lambda date, account=None: at_baseline
     leg = b.ledger.head(1)
     b.ledger = pd.concat([b.ledger,
-                          leg.assign(ticker="ZZZQ", date=BASELINE - pd.Timedelta(days=400)),
-                          leg.assign(ticker="ZZZR", date=BASELINE + pd.Timedelta(days=10))],
+                          leg.assign(ticker="ZZZQ", date=b.baseline - pd.Timedelta(days=400)),
+                          leg.assign(ticker="ZZZR", date=b.baseline + pd.Timedelta(days=10))],
                          ignore_index=True)
     held = b.codes_held()
     assert "ZZZQ" not in held, "a line dealt in only before the record began covers a note"

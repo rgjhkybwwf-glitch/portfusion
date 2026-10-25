@@ -117,6 +117,19 @@ ARCHIVE_CONVENTION = (
 SETTINGS = dict(schema.load("settings"))
 if len(SETTINGS) != len(schema.load("settings")):
     raise ValueError("settings.csv names a key twice")
+#: THE THREE DATES A BOOK OPENS WITH, refused unless each is a date: every figure, owed reason and
+#: report is measured from one of them.
+for _key in ("record_begins", "reasoning_owed_from", "first_report"):
+    try:                            # YYYY-MM-DD exactly: the readers compare the text as well
+        if _dt.date.fromisoformat(SETTINGS.get(_key) or "").isoformat() != SETTINGS[_key]:
+            raise ValueError
+    except ValueError:
+        raise ValueError(f"settings.csv: {_key} must be a date, YYYY-MM-DD, not "
+                         f"{SETTINGS.get(_key)!r}") from None
+
+#: THE DAY THE RECORD BEGINS. Its opening, the day before, is what the first year and quarter are
+#: measured from; a position opened before it is an opening holding.
+RECORD_BEGINS = _dt.date.fromisoformat(SETTINGS["record_begins"])
 
 #: REASONING IS OWED FROM HERE. A reason written once the outcome is known is worth close to
 #: nothing, so an earlier blank is never owed. A DATE, NOT A PURGE: a position opened next week
@@ -743,7 +756,7 @@ _qsnap             = schema.load("quarter-snapshots")
 # WHICH QUARTER ENDS ARE FROZEN — asked by the build's close reminder, answered from `as_of`. The
 # record's opening may hold lines too, the ones its first quarter is measured from: they
 # open a quarter rather than close one, so a date before the record begins is not counted here.
-QSNAP_FROZEN       = sorted({r[0] for r in _qsnap if r[0] >= SETTINGS["record_begins"]})
+QSNAP_FROZEN       = sorted({r[0] for r in _qsnap if r[0] >= RECORD_BEGINS.isoformat()})
 
 # WHAT EACH CLOSED QUARTER IS HELD TO — store/quarter-results.csv, the engine's six figures per
 # account as the freeze wrote them. Read by the test that holds the engine to them; no renderer

@@ -26,6 +26,12 @@ prints it.
 - **Publish keeps to its own clone.** It refuses a `deploy_repo` that is, holds or lies inside the
   book, the app or the checkout, or is or holds the home folder, and a clone that tracks files
   but has no version manifest: a publish deletes what it did not write.
+- **The audit tells the truth.** `portfusion record` typed in a checkout reported the checkout's
+  backup under the book's name; it now reads the book's own git. An evidence chain or journal that
+  could not be checked read as good order; each is now a problem, as the conversions' was. The
+  three opening dates in settings (`record_begins`, `reasoning_owed_from`, `first_report`) are
+  refused on load unless each is a date, and the first is read once; `engine.BASELINE` and
+  `BASELINE_ASOF` are gone, a Book's `baseline` answers.
 - **The PDF reader is pypdf 6.21.2**, locked and floored: 6.16.2 had 19 advisories, each a crafted
   PDF that could hang the desk. The guard on GitHub now asks OSV about every locked pin
   (`tools/advisories.py`) and fails on any advisory.
