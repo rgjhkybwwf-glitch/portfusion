@@ -365,6 +365,12 @@ def test_a_record_that_begins_on_any_day_is_measured_from_its_opening(store_copy
     assert b.quarter_opens(f"{year}-06-30") == f"{year}-05-17"
     assert b.quarter_opens(f"{year}-09-30") == f"{year}-06-30"
     assert b.quarter_opens(f"{year}-03-31") == f"{year - 1}-12-31", "the opening opened from itself"
+    for key in ("record_begins", "reasoning_owed_from", "first_report"):
+        for bad in ("", f"{year}0518"):                     # blank, or a date in another form
+            path.write_text("\n".join(f"{key},{bad}" if line.startswith(f"{key},") else line
+                                      for line in text.splitlines()) + "\n")
+            with pytest.raises(ValueError, match=f"{key} must be a date"):
+                rules.reload_store()
 
 
 def test_a_negative_quantity_carries_no_value(D):

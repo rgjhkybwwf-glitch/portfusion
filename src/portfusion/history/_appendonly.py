@@ -267,8 +267,7 @@ def valued_days(first: str, last: str) -> list[str]:
     reading, which the reconciliation values at its own day."""
     ends = [f"{y}-{md}" for y in range(int(first[:4]) - 1, int(last[:4]) + 1)
             for md in ("03-31", "06-30", "09-30", "12-31")]
-    opens = [str(o)[:10] for o in (D.SETTINGS.get("record_begins"), *D.ACCOUNT_BEGINS.values())
-             if o]
+    opens = [str(o)[:10] for o in (D.RECORD_BEGINS, *D.ACCOUNT_BEGINS.values()) if o]
     eve = [(_dt.date.fromisoformat(o) - _dt.timedelta(days=1)).isoformat() for o in opens]
     read = [str(r.as_of)[:10] for r in D.ac_rows if r.as_of]
     return sorted(set(ends) | set(opens) | set(eve) | set(read))
