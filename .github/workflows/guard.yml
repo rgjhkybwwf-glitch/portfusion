@@ -1,8 +1,8 @@
-# THE GUARD, ON GITHUB. One job, five checks, each the command run on the Mac: the secret scan over
-# every commit, the linter, the lock's known advisories, a parse of the desk's script, and the
-# clean-room test, which is the suite on the demo and on a new book from the tracked files, and
-# `portfusion check` from the wheel built from them. A pull request is merged on GitHub once this
-# is green (CONTRIBUTING.md).
+# THE GUARD, ON GITHUB. One job, six checks, each the command run on the Mac: the secret scan over
+# every commit, the linter, the import contracts, the lock's known advisories, a parse of the
+# desk's script, and the clean-room test, which is the suite on the demo and on a new book from
+# the tracked files, and `portfusion check` from the wheel built from them. A pull request is
+# merged on GitHub once this is green (CONTRIBUTING.md).
 #
 # WHEN IT RUNS: on a pull request and on a push to main, not on every branch push: a run on
 # every branch push would spend a free plan's minutes quickly.
@@ -44,6 +44,14 @@ jobs:
         run: python3 -m pip install -q -e '.[dev]' -c requirements.lock
       - name: The linter
         run: python3 -m ruff check --no-cache --output-format github
+      - name: The import contracts, and a planted import they refuse
+        run: |
+          lint-imports --no-cache --no-logo
+          echo "import portfusion.feeds.ig" >> src/portfusion/record/rules.py
+          if lint-imports --no-cache --no-logo --contract the-build > /dev/null; then
+            echo "::error::the-build kept with record/rules.py importing a feed"; exit 1
+          fi
+          git checkout -- src/portfusion/record/rules.py
       - name: The lock's known advisories
         run: python3 tools/advisories.py
       - name: The desk's script parses

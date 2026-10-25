@@ -75,7 +75,7 @@ once, here, beside that test.
 | 18 | **Your book opens on the next release.** The loader refuses an old shape by name; `portfusion migrate --write` makes the moves, and puts every file back if the book will not open or audit. | `test_migrations.py::test_a_book_in_the_old_shape_is_carried_to_this_release_and_can_be_put_back`; the command's put-back (being made to fire) |
 | 19 | **A new book is complete and guarded.** `portfusion init` writes every table, the three histories, the release's hooks and ignore list, and the book names the release it runs. | `test_init.py::test_the_loaded_book_holds_what_init_writes_and_its_hooks_are_the_releases`, `test_init.py::test_a_new_book_names_the_portfusion_it_runs` |
 | 20 | **History and releases never move.** `main` is never rewritten or deleted; a release tag never moves. | `test_hooks.py::test_a_force_push_that_rewrites_main_is_refused`, `test_hooks.py::test_deleting_main_is_refused_however_it_is_spelt`, GitHub's rulesets "main" and "release tags" |
-| 21 | **The engine needs no desk, feed or history.** The build (engine, record, report) imports nothing from `desk/`, `feeds/` or `history/`. | `test_boundaries.py::test_the_engine_and_the_record_do_not_import_the_desk` (being made to fire) |
+| 21 | **The engine needs no desk, feed or history.** The build (engine, record, report) imports nothing from `desk/`, `feeds/` or `history/`. | `pyproject.toml::the-build`, an import contract run by `.github/workflows/guard.yml`, which plants an import it must refuse, and by `.githooks/pre-commit` |
 | 22 | **The guard runs on any book.** The guard ships with the app and runs on any book; a test says which rows it needs; a book lists the skips it expects, and any other skip fails. | `tools/clean_room.py`, `harness.py::needs`, `harness.py::expected_skips` |
 
 ## The conventions
@@ -111,11 +111,12 @@ One line each; kept by review, and by the test named where there is one.
 | a route on the hosted desk | `REMOTE_ROUTES` in `desk/remote.py` | `tests/desk/test_remote.py` |
 | anything under `desk/` that writes a file, or anything that opens a CSV | its door, named in `DESK_WRITERS` or `CSV_FILE_READERS` | `tests/desk/test_boundaries.py`, `tests/test_store_doors.py` |
 | a kind of document | an `Evidence` in `record/rules_evidence.py` | `tests/test_evidence.py` |
+| which part of the app may import which | an import contract in `pyproject.toml` | `lint-imports` |
 | a feed endpoint | the allowlist in `feeds/ig.py` or `feeds/tv.py` | `tests/test_ig.py`, `tests/test_tv.py` — meant to stop you |
 
 ### The code
 
-- **The linter finds nothing**: `python3 -m ruff check`.
+- **The linter and the import contracts find nothing**: `python3 -m ruff check`, `lint-imports`.
 - **A comment or docstring states the rule as it is**, not its history, and a function it names
   exists (`test_code.py::test_comments_state_the_rule_not_its_history`,
   `test_code.py::test_every_function_a_comment_names_exists`).

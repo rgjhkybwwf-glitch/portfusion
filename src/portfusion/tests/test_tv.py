@@ -657,10 +657,6 @@ def test_a_flag_list_is_found_by_id_whatever_it_is_called():
 # THE RULES IT SHARES WITH feeds/ig.py
 # =====================================================================================
 
-def test_the_build_does_not_import_the_share_feed(build_imports):
-    assert "feeds" not in build_imports
-
-
 def test_it_writes_nothing_but_its_own_sign_in():
     """IT PRINTS. YOU TICK. `desk/doors/marks.py` writes. On the syntax tree: the one file opened for
     writing is SESSION_FILE, and no CSV writer is built."""

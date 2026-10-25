@@ -193,21 +193,8 @@ def test_mapped_epics_are_well_formed():
 
 
 # =====================================================================================
-# Keeping the network out of the build, and the credentials out of git
+# Keeping the credentials out of git
 # =====================================================================================
-
-def test_the_build_does_not_import_the_sweep(build_source_text):
-    """The build imports no feed.
-
-    Defends against: the build gaining a network dependency, so that a broker
-    outage or an expired token stops the report being built.
-
-    READS THE WHOLE BUILD, not one filename. A check naming the entry point alone would pass
-    over the rest of report/, where the code lives — a check that has stopped being a check.
-    """
-    src = build_source_text
-    assert "import feeds" not in src and "from feeds" not in src
-
 
 def test_credentials_file_is_gitignored(repo_root):
     """The one rule that must not fail: no credential ever enters this repo."""

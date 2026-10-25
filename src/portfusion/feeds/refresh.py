@@ -20,7 +20,7 @@ nothing:
 A PAST DAY (`on`) IS CLOSES ONLY: TradingView's day bars, IG's close bars, and for a contract IG
 does not quote through the evening, the level on that day's filed statement. The caller reads the
 statement, because the reader lives in the desk and this module may not import it
-(`tests/desk/test_boundaries.py`). A past day has no equity: a reading is an instant.
+(the import contracts in `pyproject.toml`). A past day has no equity: a reading is an instant.
 
 IT PRINTS AND NEVER WRITES THE RECORD. The desk's Price Refresh is the door: it banks the outgoing
 marks, writes the ticked lines and banks those, in one operation. Nothing printed here is for

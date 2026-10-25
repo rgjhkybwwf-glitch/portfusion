@@ -79,15 +79,6 @@ def test_every_mark_names_a_source(rows):
     assert not bare, f"marks with no source: {bare}"
 
 
-def test_the_build_does_not_import_this(build_imports):
-    """A tool alongside the build, never part of it — the same contract feeds/ig.py
-    works to. A report build must not be able to fail because a CSV moved.
-
-    Checked as an IMPORT rather than a grep: the prose mentions these tools by name.
-    """
-    assert "history.prices" not in build_imports
-
-
 # ---------------------------------------------------------------------------------
 # QUARTER-END COVERAGE
 #

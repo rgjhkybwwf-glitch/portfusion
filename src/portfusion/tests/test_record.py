@@ -774,7 +774,7 @@ def _guide_pointers(text):
             path = re.split(r":+", t, maxsplit=1)[0]
             if re.fullmatch(r"\.\w+", path):
                 continue
-            if (re.search(r"\.(py|md|csv|json|css|js|html|ini|txt|xlsx)$", path)
+            if (re.search(r"\.(py|md|csv|json|css|js|html|ini|toml|txt|xlsx)$", path)
                     or ("/" in path and re.fullmatch(r"[\w./-]+", path))):
                 out.append((n, t))
     return out

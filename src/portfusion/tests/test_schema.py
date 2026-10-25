@@ -311,13 +311,6 @@ def test_the_schema_imports_nothing_third_party(repo_root, imports_of):
                                                   "os", "pathlib", "threading", "typing"}
 
 
-def test_the_build_never_imports_the_schema_directly(build_imports):
-    """The build reads facts through record/rules.py and only through it. That is what
-    keeps 'a trade goes in one file' true — and what makes the record the single place
-    the store is assembled."""
-    assert "record.schema" not in build_imports
-
-
 # =====================================================================================
 # THE REASONING TABLE — a fact, so it lives in the store and not in a renderer.
 # =====================================================================================

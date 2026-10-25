@@ -93,12 +93,6 @@ def test_refresh_never_opens_a_file_for_writing(repo_root):
                 f"feeds/refresh.py opens a file for writing (mode {mode!r}) — it must only print"
 
 
-def test_the_build_does_not_import_this(build_imports):
-    """The build must not depend on the sweep. Checked as an IMPORT, because the
-    build's prose says "refresh" hundreds of times and a grep is meaningless here."""
-    assert "feeds" not in build_imports
-
-
 # =================================================================================================
 # THE SWEEP, with each vendor replaced
 # =================================================================================================
