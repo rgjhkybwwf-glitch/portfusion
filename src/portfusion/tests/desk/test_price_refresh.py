@@ -85,6 +85,15 @@ def test_a_rate_replaces_its_own_line_and_every_other_line_is_byte_identical(sto
     assert after[moved[0]].startswith(f"{RATE_CUR},")
 
 
+def _the_desk_reads(monkeypatch):
+    """The desk's Book rebuilt over the record as patched, and cached at the store's own time, so
+    a panel reads the patch and no reload wipes it (`desk.engine.book()`)."""
+    from portfusion import engine as E
+    from portfusion.desk import engine as desk
+    monkeypatch.setitem(desk._cache, "key", desk.store_mtime())
+    monkeypatch.setitem(desk._cache, "book", E.Book())
+
+
 @pytest.fixture
 def one_carried_rate(monkeypatch):
     """A currency carried by decision, injected. A carry is a setting (settings.csv
@@ -94,6 +103,7 @@ def one_carried_rate(monkeypatch):
     from portfusion.record import rules as R
     currency = R.fx_rows[0][0]
     monkeypatch.setattr(R, "RATE_CARRIED", {currency: R.RATE_CARRIED_WHY})
+    _the_desk_reads(monkeypatch)
     return currency
 
 
@@ -262,7 +272,7 @@ def test_a_carried_rate_is_flagged_by_the_engine_and_carries_its_reason(one_carr
     """A decision the code cannot read is a decision the code eventually breaks: the bay would
     ask for a rate nobody intends to supply unless the returned shape says otherwise."""
     from portfusion import engine
-    rates = {r["currency"]: r for r in engine.marks_replaceable()["fx"]}
+    rates = {r["currency"]: r for r in engine.Book().marks_replaceable()["fx"]}
     assert rates, "no live rates at all"
     carried = [r for r in rates.values() if r["carried"]]
     assert [r["currency"] for r in carried] == [one_carried_rate]
@@ -280,7 +290,7 @@ def test_a_live_rate_says_how_old_it_is_as_a_price_does():
     import pandas as pd
     from portfusion import engine
     from portfusion.record import rules as D
-    can = engine.marks_replaceable()
+    can = engine.Book().marks_replaceable()
     today = pd.Timestamp(can["today"])
     dated = [r for r in can["fx"] if r["as_of"] is not None]
     assert dated, "no live rate carries a date — this asserts nothing"
@@ -312,7 +322,7 @@ def test_the_engine_still_imports_nothing_new_for_the_refresh_set():
     here too because it is the constraint that shaped the function."""
     from portfusion import engine
     assert "datetime" not in {n.split(".")[0] for n in dir(engine) if not n.startswith("_")}
-    assert engine.marks_replaceable()["today"] == _dt.date.today().isoformat()
+    assert engine.Book().marks_replaceable()["today"] == _dt.date.today().isoformat()
 
 
 # =====================================================================================
@@ -557,6 +567,7 @@ def one_carried_price(monkeypatch):
     ticker = R.CURRENT_PRICES[0][0]
     monkeypatch.setattr(R, "STATEMENT_PRICED",
                         {ticker: "no market feed and immaterial — test fixture"})
+    _the_desk_reads(monkeypatch)
     return ticker
 
 
@@ -565,7 +576,7 @@ def test_a_carried_price_leaves_the_replaceable_set_and_says_why(one_carried_pri
     chasing, and the two populations are kept apart so a refresh cannot assert an observation
     nobody made."""
     from portfusion import engine
-    can = engine.marks_replaceable()
+    can = engine.Book().marks_replaceable()
     assert one_carried_price not in [r["mark_key"] for r in can["replaceable"]], \
         "a carried line is still being offered for replacement"
     held = {r["mark_key"]: r for r in can["held"]}
@@ -1002,6 +1013,26 @@ def test_the_bay_sends_what_it_draws_and_a_mark_past_the_limit_says_so(repo_root
     import re
     assert re.search(r"^\.stale \{ color: var\(--warn-ink\); \}", css, re.M), \
         "the warning ink is no longer the desk's on every page"
+
+
+def test_the_bay_reads_a_store_moved_under_the_desk_on_its_first_load(store_copy):
+    """THE OUTGOING MARK IS THE DESK'S BOOK'S, on the first load after the store moved under the
+    desk (a hand edit, a pull, a checkout): the bay asks `engine.book()`, which reloads, so the
+    "Was" column and the figures beside it read one record. On a copy."""
+    from portfusion.desk import engine as desk
+    from portfusion.desk.panels import price_refresh
+    can = {r["mark_key"] for r in desk.book().marks_replaceable()["replaceable"]}
+    if not can:
+        pytest.skip("the book holds no replaceable mark")
+    path = store_copy / "current-prices.csv"
+    lines = path.read_text(encoding="utf-8").splitlines(keepends=True)
+    i = next(i for i, line in enumerate(lines) if line.split(",")[0] in can)
+    cells = lines[i].split(",")
+    cells[1] = f"{float(cells[1]) * 2:g}"
+    lines[i] = ",".join(cells)
+    path.write_text("".join(lines), encoding="utf-8")
+    was = {r["mark_key"]: r["price"] for r in price_refresh.query()["prices"]}
+    assert was[cells[0]] == float(cells[1]), "the bay shows a mark the store no longer holds"
 
 
 def test_each_group_of_the_grid_runs_a_to_z_by_its_line():

@@ -32,6 +32,7 @@ def _doors():
         "atomic": lambda: commit.atomic().__enter__(),
         "reload_store": rules.reload_store,
         "engine.book": lambda: (engine._cache.update(key=None), engine.book()),
+        "engine.report_page": lambda: engine.report_page("1999-12-31"),
     }
 
 
@@ -82,3 +83,25 @@ def test_a_refusal_does_not_erase_a_write_that_landed_during_it(store_copy):
     t.join(30)
     assert line in path.read_text(encoding="utf-8"), \
         "the first request's refusal erased the second request's write"
+
+
+def test_a_panel_reads_the_record_through_the_desks_one_book():
+    """A PANEL READS THE RECORD THROUGH `engine.book()`, the Book built under the lock, never
+    `record.rules` itself: a read beside it can serve rows the Book was not built from, or the
+    tables a reload refused. Reloading after a refused write is the one use a panel may make."""
+    import ast
+    from harness import SRC
+    reads = []
+    for f in sorted((SRC / "desk" / "panels").glob("*.py")):
+        tree = ast.parse(f.read_text(encoding="utf-8"))
+        imports = [n for n in ast.walk(tree) if isinstance(n, ast.ImportFrom)]
+        alias = {a.asname or a.name for n in imports if n.module == "portfusion.record"
+                 for a in n.names if a.name == "rules"}
+        alias |= {a.asname or a.name for n in ast.walk(tree) if isinstance(n, ast.Import)
+                  for a in n.names if a.name == "portfusion.record.rules"}
+        reads += [f"{f.name}:{n.lineno} {a.name}" for n in imports
+                  if n.module == "portfusion.record.rules" for a in n.names]
+        reads += [f"{f.name}:{n.lineno} {n.value.id}.{n.attr}" for n in ast.walk(tree)
+                  if isinstance(n, ast.Attribute) and isinstance(n.value, ast.Name)
+                  and n.value.id in alias and n.attr != "reload_store"]
+    assert not reads, f"a panel reads the record beside the desk's Book: {reads}"

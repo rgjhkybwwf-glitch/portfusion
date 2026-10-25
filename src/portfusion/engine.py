@@ -496,57 +496,6 @@ def value_legs(ledger: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
-def marks_replaceable() -> dict:
-    """WHICH MARKS A REFRESH CAN REPLACE, which are carried, and how old each one is.
-
-    THE WHOLE SET, deliberately: the book is refreshed whole or not at all (`docs/prices.md`), so
-    the form lists everything replaceable and each row says whether it is `stale` against
-    `rules.PRICE_AGE_LIMIT`, rather than filtering by age.
-
-    A classification, so it lives in the engine and not a renderer. A module function, not a
-    `Book` method: it needs no ledger.
-
-      replaceable  every mark a refresh may replace, with its outgoing price, its age and whether
-                   that age is past the limit — because a price updated without its DATE makes the
-                   book claim a freshness it does not have.
-      held         CARRIED lines (key `held`, glossary §5b): no feed and immaterial, at the last
-                   broker price by decision. Kept apart, because a fresh date on a price nobody
-                   can look up is the error being guarded against.
-      fx           the live rate of each currency, saying whether it is carried and why
-                   (`rules.RATE_CARRIED`), and how old it is, as a price and a reading say.
-      readings     each spread-bet account's IG reading — its outgoing equity and date — the one
-                   account figure a refresh replaces, read in the same pass as the levels.
-    """
-    today = pd.Timestamp.today().normalize()
-    stmt = D.STATEMENT_PRICED
-    frozen = D.RATE_CARRIED
-
-    def _dated(text: str) -> dict:
-        day = pd.to_datetime(text, errors="coerce")
-        return ({"as_of": None, "age_days": None} if pd.isna(day)
-                else {"as_of": day.date().isoformat(), "age_days": int((today - day).days)})
-
-    def _row(t: str, price: float, cur: str, as_of: str, src: str, struck: str, at: str) -> dict:
-        age = int((today - pd.Timestamp(as_of)).days)
-        return {"mark_key": t, "price": price, "currency": cur, "as_of": as_of, "source": src,
-                "struck": struck, "at": at, "age_days": age, "stale": age > D.PRICE_AGE_LIMIT,
-                # AN IG CONTRACT'S PRICE IS A LEVEL IN POINTS, beside the market's currency.
-                "contract": t in D.CONTRACTS}
-
-    return {
-        "today": today.date().isoformat(),
-        "age_limit": D.PRICE_AGE_LIMIT,
-        "replaceable": [_row(*r) for r in D.CURRENT_PRICES if r[0] not in stmt],
-        "held": [dict(_row(*r), why=stmt[r[0]]) for r in D.CURRENT_PRICES if r[0] in stmt],
-        "fx":   [{"currency": cur, "rate": rate, "source": src, "struck": struck,
-                  "carried": cur in frozen, "why": frozen.get(cur), **_dated(as_of)}
-                 for cur, rate, as_of, src, struck in D.fx_rows],
-        "readings": [{"account": r.acct, "equity": r.equity, "as_of": str(r.as_of)[:10],
-                      "age_days": int((today - pd.Timestamp(r.as_of)).days)}
-                     for r in D.ac_rows if D.ACCOUNT_KIND.get(r.acct) == "spread bet"],
-    }
-
-
 # =====================================================================================
 # 4 · THE BOOK  —  what you actually call
 # =====================================================================================
@@ -797,6 +746,57 @@ class Book:
         return {"newest": newest.date().isoformat(), "oldest": oldest.date().isoformat(),
                 "spread_days": int((newest - oldest).days), "marks": int(len(dates)),
                 "age_days": int((day - oldest).days)}
+
+    def marks_replaceable(self) -> dict:
+        """WHICH MARKS A REFRESH CAN REPLACE, which are carried, and how old each one is.
+
+        THE WHOLE SET, deliberately: the book is refreshed whole or not at all
+        (`docs/prices.md`), so the form lists everything replaceable and each row says whether it
+        is `stale` against `rules.PRICE_AGE_LIMIT`, rather than filtering by age.
+
+        A classification, so it lives in the engine and not a renderer; a `Book` method, though it
+        needs no ledger, so it reads the record this Book pinned, as every desk read does.
+
+          replaceable  every mark a refresh may replace, with its outgoing price, its age and
+                       whether that age is past the limit — because a price updated without its
+                       DATE makes the book claim a freshness it does not have.
+          held         CARRIED lines (key `held`, glossary §5b): no feed and immaterial, at the
+                       last broker price by decision. Kept apart, because a fresh date on a price
+                       nobody can look up is the error being guarded against.
+          fx           the live rate of each currency, saying whether it is carried and why
+                       (`rules.RATE_CARRIED`), and how old it is, as a price and a reading say.
+          readings     each spread-bet account's IG reading — its outgoing equity and date — the
+                       one account figure a refresh replaces, read in the same pass as the levels.
+        """
+        R = self.D
+        today = pd.Timestamp.today().normalize()
+        stmt = R.STATEMENT_PRICED
+        frozen = R.RATE_CARRIED
+
+        def _dated(text: str) -> dict:
+            day = pd.to_datetime(text, errors="coerce")
+            return ({"as_of": None, "age_days": None} if pd.isna(day)
+                    else {"as_of": day.date().isoformat(), "age_days": int((today - day).days)})
+
+        def _row(t: str, price: float, cur: str, as_of: str, src: str, struck: str, at: str) -> dict:
+            age = int((today - pd.Timestamp(as_of)).days)
+            return {"mark_key": t, "price": price, "currency": cur, "as_of": as_of, "source": src,
+                    "struck": struck, "at": at, "age_days": age, "stale": age > R.PRICE_AGE_LIMIT,
+                    # AN IG CONTRACT'S PRICE IS A LEVEL IN POINTS, beside the market's currency.
+                    "contract": t in R.CONTRACTS}
+
+        return {
+            "today": today.date().isoformat(),
+            "age_limit": R.PRICE_AGE_LIMIT,
+            "replaceable": [_row(*r) for r in R.CURRENT_PRICES if r[0] not in stmt],
+            "held": [dict(_row(*r), why=stmt[r[0]]) for r in R.CURRENT_PRICES if r[0] in stmt],
+            "fx":   [{"currency": cur, "rate": rate, "source": src, "struck": struck,
+                      "carried": cur in frozen, "why": frozen.get(cur), **_dated(as_of)}
+                     for cur, rate, as_of, src, struck in R.fx_rows],
+            "readings": [{"account": r.acct, "equity": r.equity, "as_of": str(r.as_of)[:10],
+                          "age_days": int((today - pd.Timestamp(r.as_of)).days)}
+                         for r in R.ac_rows if R.ACCOUNT_KIND.get(r.acct) == "spread bet"],
+        }
 
     def priced_unheld(self) -> list[str]:
         """The lines `current-prices.csv` prices that nothing holds, sorted: a share no account

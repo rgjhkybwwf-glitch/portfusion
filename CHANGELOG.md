@@ -3,6 +3,14 @@
 Each release, newest first. The version is `portfusion/__init__.py`'s, and `portfusion --version`
 prints it.
 
+## Unreleased
+
+- **Every desk read is the desk's one Book.** The Price Refresh's "Was" column is read from it,
+  so the first load after a hand edit, a pull or a checkout no longer shows the marks the store
+  held before. A quarter's report is drawn from it under the record's lock, so a record that
+  refuses to reload refuses the report too, rather than serving the tables it refused. The
+  Bench's reasons and the IG event sweep read the same Book.
+
 ## 0.3.2 — beta, 24 Oct 2026
 
 The whole suite runs clean on a book of its own, not only on the demo. Nothing in the app moves.
