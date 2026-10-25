@@ -830,7 +830,7 @@ def _every_page(s, path, version, key):
                             f"window (--since).")
 
 
-def ig_events(since=None):
+def ig_events(since=None, book=None):
     """Every IG event in a window, matched against the book, with paste-ready rows for whatever is
     missing. PRINTS, NEVER WRITES.
 
@@ -845,10 +845,14 @@ def ig_events(since=None):
 
     THE WINDOW DEFAULTS TO 30 DAYS. Activity from before the record begins is not reconstructed
     backwards; use --since only when you mean to.
+
+    `book` is the caller's Book (the desk passes its own), so every event is matched against the
+    record it pinned, and every close takes its parcel; without one, the record is read here and
+    a Book is built once, when a close first needs it.
     """
     # The record, for evidence_source(), deferred through _record(), so importing this
     # module still costs nothing and still reaches no store until something asks.
-    D = _record()
+    D = _record() if book is None else book.D
     creds = load_credentials()
     today = _dt.date.today()
     frm = since or (today - _dt.timedelta(days=30)).isoformat()
@@ -867,7 +871,7 @@ def ig_events(since=None):
     # by ticker alone would put one account's close into the other account's round trip. Asked
     # once per holding, so a second close in the same sweep joins the first.
     leg_of = {t.broker_ref: t.trade_id for t in D.buys if t.broker_ref}
-    parcel_of, engine = {}, []
+    parcel_of, engine = {}, [] if book is None else [book]
 
     def _parcel(acct, tk):
         if (acct, tk) not in parcel_of:

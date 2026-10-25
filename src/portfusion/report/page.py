@@ -86,14 +86,15 @@ _NOTE = 'class="note"'
 _RULE = '\n\n<div class="rule"></div>\n\n'
 
 
-def render(quarter_end: str) -> str:
-    """The page. Every figure comes from the engine; nothing is computed here.
+def render(quarter_end: str, b: Book | None = None) -> str:
+    """The page. Every figure comes from the engine (`b`, the desk's own Book, or one built here);
+    nothing is computed here.
 
     THE NINE SECTIONS ARE LISTED HERE, IN ORDER, and numbered by their place in the list, so
     moving one renumbers the rest. Each is its own function and takes what it shows; what two
     sections share is looked up once, here.
     """
-    b = Book()
+    b = Book() if b is None else b
     label = _dt.date.fromisoformat(quarter_end).strftime("%d %B %Y")
     name = b.quarter_label(quarter_end, b.quarter_opens(quarter_end))
 

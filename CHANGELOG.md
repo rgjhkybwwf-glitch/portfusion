@@ -10,6 +10,11 @@ prints it.
   mark, which may be one of them: a refresh could move a line's FX effect. 0.2.1's "No figure
   moves" held for the price history only. The file now grows by a row per currency for each day
   a refresh reads; a rate a bank already dropped stays in git, not in the file.
+- **Every desk read is the desk's one Book.** The Price Refresh's "Was" column is read from it,
+  so the first load after a hand edit, a pull or a checkout no longer shows the marks the store
+  held before. A quarter's report is drawn from it under the record's lock, so a record that
+  refuses to reload refuses the report too, rather than serving the tables it refused. The
+  Bench's reasons and the IG event sweep read the same Book.
 
 ## 0.3.2 — beta, 24 Oct 2026
 

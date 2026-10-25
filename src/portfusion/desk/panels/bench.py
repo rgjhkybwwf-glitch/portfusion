@@ -97,22 +97,18 @@ def _existing_why(item: dict) -> dict:
     shown as the record so far: the thesis an addition builds on, or the reason a trim departs
     from.
     """
-    from portfusion.desk.engine import _guarded
-
     tickers = sorted({str((r.get("values") or {}).get("ticker", "") or "").strip()
                       for r in item.get("rows") or []} - {""})
     if not tickers:
         return {}
 
-    def _load():
-        from portfusion.record import rules as D
-        return {t: [{"date": r.date.isoformat(), "why_entered": r.why_entered,
-                     "why_exited": r.why_exited} for r in D.REASONING[t]]
-                for t in tickers if D.REASONING.get(t)}
     try:
-        return _guarded(_load)
+        why = engine.book().D.REASONING
     except Exception:
         return {}
+    return {t: [{"date": r.date.isoformat(), "why_entered": r.why_entered,
+                 "why_exited": r.why_exited} for r in why[t]]
+            for t in tickers if why.get(t)}
 
 
 def detail(item_id: str) -> dict:
@@ -151,7 +147,7 @@ register(Action(
           "merely opened — a 30-day call to the broker is not something to make by arriving."),
     summary=("Reads 30 days of IG buys, sales, costs and money in or out, and checks each "
              "against the record by its deal number. It writes nothing."),
-    run=lambda since=None: _ig(lambda ig, s: ig.ig_events(s), since),
+    run=lambda since=None: _ig(lambda ig, s: ig.ig_events(s, book=engine.book()), since),
 ))
 
 

@@ -560,7 +560,7 @@ def test_the_bay_says_what_it_can_replace_rather_than_what_is_due(repo_root):
     assert "price(s) due" not in js, "step 3 calls the replaceable lines due again"
     assert "limit ${d.age_limit} days" in js, "step 3 does not say what the threshold is"
 
-    can = engine.marks_replaceable()
+    can = engine.Book().marks_replaceable()
     assert can["age_limit"] == _rules.PRICE_AGE_LIMIT
     assert can["replaceable"], "nothing is replaceable — this asserts nothing"
     for row in can["replaceable"]:
