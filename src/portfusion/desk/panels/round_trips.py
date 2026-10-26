@@ -45,7 +45,7 @@ BET_COLUMNS = ("stake", "entry_level_points", "exit_level_points")
 REASON_COLUMNS = ("whys", "research_notes")
 OWED = ("why_entered_owed", "why_exited_owed")
 
-#: WHAT A ROW'S DETAIL OPENS, under app.js's one desk-wide order: the whys, the research notes,
+#: WHAT A ROW'S DETAIL OPENS, under kit.js's one desk-wide order: the whys, the research notes,
 #: then the note, which says what happened.
 DETAIL_COLUMNS = ("why_entered", "why_exited", "research_notes", "note")
 

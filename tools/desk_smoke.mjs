@@ -1,4 +1,4 @@
-// THE DESK DRAWN, IN NODE: the page and its script from `desk_smoke.py`'s answers loaded into
+// THE DESK DRAWN, IN NODE: the page and its scripts from `desk_smoke.py`'s answers loaded into
 // jsdom, every fetch answered from them, then each panel's tab clicked in turn. Fails on any error,
 // rejected promise, error box or unanswered fetch, at start-up and on each panel. It checks that a
 // page draws, not that its figures are right, and clicks nothing inside a page.
@@ -15,9 +15,10 @@ const vc = new VirtualConsole();
 vc.on("jsdomError", (e) => problems.push(`jsdom: ${e.message}`));
 vc.on("error", (...a) => problems.push(`console.error: ${a.join(" ")}`));
 
-// "outside-only": the page's own <script> tag never runs, so the script runs once, by eval below.
-const script = answers[answers["/"].script].body;
-const dom = new JSDOM(answers["/"].body, { url: `${ORIGIN}/`, runScripts: "outside-only",
+// The page's own <script src> tags never load: jsdom fetches nothing. Each file runs below as a
+// classic script of its own, in the page's order, so they share one global scope as in a browser.
+const scripts = answers["/"].scripts.map((s) => answers[s].body);
+const dom = new JSDOM(answers["/"].body, { url: `${ORIGIN}/`, runScripts: "dangerously",
                                            pretendToBeVisual: true, virtualConsole: vc });
 const w = dom.window, doc = w.document;
 w.scrollTo = () => {};                       // jsdom lays nothing out, so has nothing to scroll
@@ -43,7 +44,11 @@ const errorBox = (where) => {
   if (box) problems.push(`${where}: drew an error: ${box.textContent.slice(0, 200)}`);
 };
 
-try { w.eval(script); } catch (e) { problems.push(`load: ${e.stack ?? e}`); }
+for (const body of scripts) {
+  const el = doc.createElement("script");
+  el.textContent = body;
+  doc.body.append(el);
+}
 await settle();
 errorBox("start");
 if (problems.length) problems.push("  ^ at start-up");

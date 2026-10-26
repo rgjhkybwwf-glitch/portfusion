@@ -64,7 +64,7 @@ jobs:
       - name: The locks' known advisories
         run: python3 tools/advisories.py
       - name: The desk's script parses
-        run: node --check src/portfusion/desk/static/app.js
+        run: for f in src/portfusion/desk/static/*.js; do node --check "$f"; done
       - name: Every desk page drawn, and a planted start-up break it refuses
         run: |
           npm ci --prefix tools --no-audit --no-fund

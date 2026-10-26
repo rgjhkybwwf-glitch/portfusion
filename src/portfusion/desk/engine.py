@@ -172,7 +172,7 @@ def tokens_css() -> str:
 
 def precision() -> dict:
     """The places the page prints, house/precision.py's: sent with every panel, beside its heads,
-    so app.js types none of its own — a percentage's, and a local price's per currency, with
+    so core.js types none of its own — a percentage's, and a local price's per currency, with
     which fields are local prices."""
     from portfusion.house import precision as P
     return {"pct_dp": P.PCT_DP, "local_price_dp": dict(P.LOCAL_PRICE_DP),

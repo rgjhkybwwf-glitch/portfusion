@@ -63,6 +63,14 @@ def engine_files() -> list[Path]:
     return sorted((SRC / "engine").glob("*.py"))
 
 
+def desk_script(name: str | None = None) -> str:
+    """The desk's script: every file of `desk/bundle.py`'s SCRIPTS, in the order the page loads
+    them, or the one file named."""
+    from portfusion.desk import bundle
+    return "".join((SRC / "desk" / "static" / n).read_text(encoding="utf-8")
+                   for n in ([name] if name else bundle.SCRIPTS))
+
+
 def book_classes() -> list:
     """`Book` and every class it is built from, as the engine's files define them: `ClassDef`s."""
     import ast

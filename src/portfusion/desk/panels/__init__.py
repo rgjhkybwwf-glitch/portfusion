@@ -60,7 +60,7 @@ def all_panels() -> list:
 
 def heads(mod) -> dict[str, str]:
     """What each column the panel shows is called: every field in its `*COLUMNS` constants, in
-    `house/headings.py`'s words for its tab. app.js draws a table head from this and from nothing
+    `house/headings.py`'s words for its tab. kit.js draws a table head from this and from nothing
     else, so the desk cannot name a column differently from the report."""
     from portfusion.house.headings import headings
     fields = [f for n in sorted(dir(mod)) if n.endswith("COLUMNS") for f in getattr(mod, n)]
