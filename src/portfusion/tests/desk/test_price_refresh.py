@@ -503,7 +503,7 @@ def test_a_written_refresh_moves_to_what_changed_and_a_refused_one_does_not(repo
     """
     js = desk_script()
     import re
-    m = re.search(r'if \(res\.ok === false\) \{\s*out\.textContent = `refused(.*?)\n        \}',
+    m = re.search(r'if \(error\) \{\s*out\.textContent = refused \? `refused(.*?)\n        \}',
                   js, re.S)
     assert m, "the refusal branch no longer returns before anything else happens"
     assert "return;" in m.group(1), "a refused write no longer stops before navigating"
@@ -552,7 +552,7 @@ def test_a_write_button_is_never_offered_without_something_to_write(repo_root):
     assert "restart-desk" not in [a.name for a in actions.all_actions() if a.panel == "bench"]
 
     # The write action is reachable, and not offered as a standing panel button.
-    assert '"/api/action/refresh-write-marks"' in js, "the bay must post its ticked marks"
+    assert 'runAction("refresh-write-marks"' in js, "the bay must post its ticked marks"
 
 
 # =====================================================================================
@@ -597,7 +597,7 @@ def test_the_bay_cannot_tick_a_carried_line(one_carried_price, one_carried_rate)
     """The panel's half. A carried line is left off the screen, so the one thing to hold is that
     it never reaches a tickable list — a price or a rate."""
     from portfusion.desk.panels import price_refresh
-    q = price_refresh.query()
+    q = price_refresh.data()
     assert one_carried_price not in [r["mark_key"] for r in q["prices"]], \
         "the bay offers a carried line in the tickable list"
     assert one_carried_rate not in [r["currency"] for r in q["rates"]], \
@@ -974,7 +974,7 @@ def test_the_bay_previews_each_ig_account_before_the_fetch():
     """Each spread-bet account comes with the page, before the fetch, its outgoing equity and date
     shown the way a price's are."""
     from portfusion.desk.panels import price_refresh
-    q = price_refresh.query()
+    q = price_refresh.data()
     readings = {r["account"]: r for r in q["readings"]}
     from portfusion.record import rules as D
     assert set(readings) == {a for a in D.ACCOUNT_ORDER if D.ACCOUNT_KIND[a] == "spread bet"}
@@ -1009,7 +1009,7 @@ def test_the_bay_sends_what_it_draws_and_a_mark_past_the_limit_says_so(repo_root
     its home, Holdings' Mark history; and the age of a mark past the limit is drawn in the warning
     ink, which is the desk's on every page."""
     from portfusion.desk.panels import holdings, price_refresh
-    q = price_refresh.query()
+    q = price_refresh.data()
     assert q["prices"] and all(set(r) == set(price_refresh.PRICE_COLUMNS) for r in q["prices"])
     assert not any("source" in r for r in q["prices"] + q["rates"]), \
         "the outgoing mark's source is sent to a page that does not draw it"
@@ -1038,7 +1038,7 @@ def test_the_bay_reads_a_store_moved_under_the_desk_on_its_first_load(store_copy
     cells[1] = f"{float(cells[1]) * 2:g}"
     lines[i] = ",".join(cells)
     path.write_text("".join(lines), encoding="utf-8")
-    was = {r["mark_key"]: r["price"] for r in price_refresh.query()["prices"]}
+    was = {r["mark_key"]: r["price"] for r in price_refresh.data()["prices"]}
     assert was[cells[0]] == float(cells[1]), "the bay shows a mark the store no longer holds"
 
 
@@ -1046,7 +1046,7 @@ def test_each_group_of_the_grid_runs_a_to_z_by_its_line():
     """In the store's own order a contract sits among the shares. A-Z by line puts each contract
     beside its company."""
     from portfusion.desk.panels import price_refresh
-    q = price_refresh.query()
+    q = price_refresh.data()
     for rows, key in ((q["prices"], "mark_key"), (q["rates"], "currency"), (q["readings"], "account")):
         said = [str(r[key]) for r in rows]
         assert said == sorted(said, key=str.upper), f"{key}s are not A-Z: {said}"
@@ -1057,7 +1057,7 @@ def test_the_step_bar_says_the_marks_age_and_draws_the_bank_only_when_it_cannot_
     when the histories cannot be read, and the line says what came back."""
     from portfusion.engine import Book
     from portfusion.desk.panels import price_refresh
-    assert price_refresh.query()["age_days"] == Book().price_ageing()["age_days"]
+    assert price_refresh.data()["age_days"] == Book().price_ageing()["age_days"]
     js = desk_script()
     assert "${d.age_days} days old · limit ${d.age_limit} days" in js
     assert "const bank = !b.unavailable ? [] :" in js, "the Bank step is drawn when all is well"
@@ -1188,7 +1188,7 @@ def test_the_bay_offers_the_rates_the_record_lacks_and_banks_them(repo_root, mon
     from portfusion.engine import Book
     from portfusion.desk.intake import sweep
     from portfusion.desk.panels import price_refresh
-    q = price_refresh.query()
+    q = price_refresh.data()
     assert q["lacking"] == Book().rate_gaps()
     asked = {}
 

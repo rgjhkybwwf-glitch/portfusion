@@ -1,6 +1,6 @@
 /* THE ACCESS PAGE. */
 
-Object.assign(RENDER_LATE, {
+Object.assign(DRAW, {
   /* ACCESS — who can open the hosted desk, at which level, and from which devices. THE MAC ONLY:
      the remote door has no route to it. Every button here is one of the Access panel's
      registered actions, and each refusal comes back in desk/auth.py's own words. */
@@ -12,7 +12,7 @@ Object.assign(RENDER_LATE, {
     const result = (s) => `<span class="tag ${s.result === "signed in" || s.result === "enrolled"
       ? "ok" : s.result === "refused" ? "problem" : "gap"}">${esc(s.result)}</span>`;
 
-    $("#main").innerHTML = page({
+    return page({
       scope: "who can open the hosted desk, at which level, and from which devices",
       work: `
         <h2>Levels</h2>
@@ -51,7 +51,7 @@ Object.assign(RENDER_LATE, {
         </div>
         <p><button class="primary" id="enrol-code">Issue an enrol code</button></p>
         <p id="enrol-out" hidden></p>
-        <pre id="access-out" class="error" hidden></pre>
+        <pre id="access-out" class="error" aria-live="polite" hidden></pre>
 
         <h2>Sign-ins, the last ${d.log_days} days</h2>
         ${table(d.signins, cols.signins.filter((c) => c !== "result"), "", () => "",
@@ -66,21 +66,22 @@ Object.assign(RENDER_LATE, {
                + `for ${d.code_minutes} minutes, typed into the hosted desk's sign-in. A new `
                + `reader's level comes with their first code; after that it is changed above.`]],
     });
+  },
+});
 
+Object.assign(WIRE, {
+  access(d) {
     const out = $("#access-out");
     const act = async (name, body, ask) => {
       if (ask && !confirm(ask)) return null;
       out.hidden = true;
-      const r = await fetch(`/api/action/${name}`, { method: "POST",
-        headers: { "Content-Type": "application/json" }, body: JSON.stringify(body || {}) });
-      const { ok, body: b, raw } = await readJson(r);
-      const res = (b && b.result) || {};
-      if (raw || !ok || res.ok === false) {
+      const { result, error } = await runAction(name, body);
+      if (error) {
         out.hidden = false;
-        out.textContent = raw || res.error || (b && b.detail) || "refused";
+        out.textContent = error;
         return null;
       }
-      return res;
+      return result;
     };
     const again = () => show("access");
 

@@ -122,6 +122,13 @@ prints it.
   that answers nothing now fails only its own line, where it stopped the whole sweep.
   `python3 -m portfusion.history.fx --rate` without a currency and a date says how it is used,
   where it crashed.
+- **A desk request that fails says so.** A Bench button whose answer was not the desk's JSON
+  (opening a new item, saving, reading, writing, withdrawing) left an empty box, or no item; each
+  now shows the server's words. An action the desk refused (a write not yet enabled, say) no
+  longer reads as done. The page last asked for is the one drawn: a slow page no longer draws
+  over a quicker one opened after it. The page open in the rail is marked as the current page
+  for a screen reader, each result box is read out as it fills, and a read-only figure shows its
+  focus ring. Trades' filters redraw the page, as Holdings' and Round Trips' do.
 - **The secret gate reads the commit message, and more of each value.** A key in a commit message
   was committed: a new `commit-msg` hook refuses it, in this repository and in a new book. A
   value is found in either case, URL-encoded and in base64 as well as as it is; `.env` values are
