@@ -35,7 +35,7 @@ def completeness(quarter_end: str) -> list[str]:
                            f"{', '.join(sorted(accounts - nav))}")
     if quarter_end not in D.QSNAP_FROZEN:
         missing.append(f"quarter-snapshots: no frozen composition at {quarter_end}. A quarter end "
-                       f"is frozen by the freeze door: python3 -m portfusion.desk.doors.freeze {quarter_end}")
+                       f"is frozen by the freeze door: portfusion freeze {quarter_end}")
     return missing
 
 
