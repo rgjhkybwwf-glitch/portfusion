@@ -1,7 +1,8 @@
 // THE DESK DRAWN, IN NODE: the page and its scripts from `desk_smoke.py`'s answers loaded into
 // jsdom, every fetch answered from them, then each panel's tab clicked in turn. Fails on any error,
-// rejected promise, error box or unanswered fetch, at start-up and on each panel, and on a figure
-// the page's fixed() rounds otherwise than house. It checks that a page draws, not that its
+// rejected promise, error box or unanswered fetch, at start-up and on each panel, on a figure
+// the page's fixed() rounds otherwise than house, and on an IG sweep that lists an event already
+// in the record rather than counting it. It checks that a page draws, not that its
 // figures are right, and clicks nothing inside a page.
 //
 //     npm ci --prefix tools                     # once: jsdom
@@ -59,6 +60,23 @@ for (const [n, dp, shift, want] of answers["/"].rounding) {
   const got = w.eval(`fixed(${n}, ${dp}, { group: true, shift: ${shift} })`);
   const signed = (n < 0 ? "-" : "") + got;
   if (signed !== want) problems.push(`rounding: fixed(${n}, ${dp}) is ${signed}, house says ${want}`);
+}
+
+// THE IG SWEEP: an event already in the record is counted, and only the rest are listed.
+{
+  const { result, status } = answers["/"].sweep;
+  const rows = ["opens", "closes", "costs", "capital", "setups"].flatMap((k) => result[k] || []);
+  const done = rows.filter((r) => status[r.ref].in_record).length;
+  w.eval(`SWEEP_STATUS = ${JSON.stringify(status)};`);
+  const box = doc.createElement("div");
+  box.innerHTML = w.eval(`ACTION_VIEW["ig-events"](${JSON.stringify(result)})`);
+  const counted = [...box.querySelectorAll("[data-in-record]")]
+    .reduce((n, li) => n + parseInt(li.textContent, 10), 0);
+  const listed = box.querySelectorAll("li.swept").length;
+  if (!done || counted !== done || listed !== rows.length - done) {
+    problems.push(`sweep: of ${rows.length} events, ${done} in the record: ${counted} counted, ` +
+                  `${listed} listed`);
+  }
 }
 
 const panels = JSON.parse(answers["/api/state"].body).panels.map((p) => p.name);
