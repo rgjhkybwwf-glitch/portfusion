@@ -903,9 +903,11 @@ def for_document(name: str, origin: str = "document") -> dict:
     correction is needed, and by then the old item has left the bench anyway.
     """
     # A DOCUMENT IS ONE ON THE WORKBENCH, by its bare name. The name arrives from the browser,
-    # and an item's document is what the reader opens: a path would be read wherever it points.
-    if not name or os.path.basename(name) != name \
-            or not os.path.isfile(os.path.join(schema.inbox(), name)):
+    # and an item's document is what the reader opens: a path would be read wherever it points,
+    # so the name is found in the workbench's own listing and never joined to a path.
+    inbox = schema.inbox()
+    if not name or not inbox.is_dir() \
+            or name not in {p.name for p in inbox.iterdir() if p.is_file()}:
         raise FileNotFoundError(f"no document {name!r} on the workbench")
     for existing in all_items():
         doc = existing.get("document") or {}
