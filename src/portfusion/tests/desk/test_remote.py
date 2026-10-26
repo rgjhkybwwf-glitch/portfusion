@@ -15,7 +15,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from portfusion.desk import actions, app as local, auth, engine, naming, panels, remote
-from harness import SRC, needs
+from harness import needs, desk_script
 
 TUNNEL = "https://mac.example.ts.net"
 
@@ -511,7 +511,7 @@ def test_the_hosted_page_says_restart_when_the_mac_runs_older_code(repo_root):
     from the code it has loaded, so a restart is the fix. A stale Mac says restart: on the hosted
     page, with the command the guide gives, and in the Mac's header, which does not say publish
     until the desk has restarted."""
-    js = (SRC / "desk" / "static" / "app.js").read_text()
+    js = desk_script()
     other = js[js.index("function otherVersion("):js.index("function drawUnreachable(")]
     restart = "launchctl kickstart -k gui/$UID/org.portfusion.desk"
     assert "source_stale" in other, "the version message does not ask whether the Mac is stale"
@@ -519,7 +519,7 @@ def test_the_hosted_page_says_restart_when_the_mac_runs_older_code(repo_root):
     assert restart in (repo_root / "docs" / "desk-app.md").read_text(), \
         "the page's restart command is not the one the guide gives"
     assert "portfusion desk --publish" in other, "a current Mac is no longer told to publish"
-    fresh = js[js.index("function drawFreshness("):js.index("function openPanel(")]
+    fresh = js[js.index("function drawFreshness("):js.index("function drawTabs(")]
     assert '"restart first"' in fresh and "f.source_stale ?" in fresh, \
         "the header can still say publish while the desk is stale"
 
@@ -528,7 +528,7 @@ def test_a_tunnel_that_is_off_reads_as_the_mac_not_answering(repo_root):
     """WITH THE FUNNEL TURNED OFF, NETLIFY ANSWERS 500 WITH AN EMPTY BODY, not a 502 or a 504, so
     an empty 500 counts as unreachable. The desk's own 500 always carries "Internal Server Error",
     so a crash on the Mac still reads as a crash."""
-    js = (SRC / "desk" / "static" / "app.js").read_text()
+    js = desk_script()
     body = js[js.index("async function get(path)"):js.index("async function readJson(")]
     assert "r.status === 500 && !text.trim()" in body, \
         "an empty 500 from Netlify is not read as the Mac being unreachable"
@@ -542,7 +542,7 @@ def test_the_hosted_page_checks_the_version_before_drawing(repo_root):
     The page is published when the owner chooses and the Mac moves at every merge, so an old
     screen over new data is the mixture `engine.source_stale()` names on the Mac: it draws
     nothing instead."""
-    js = (SRC / "desk" / "static" / "app.js").read_text()
+    js = desk_script()
     assert 'meta[name="desk-version"]' in js
     start = js[js.index("(async function start()"):]
     assert start.index("otherVersion(s)") < start.index("paintPanel(first)"), \
@@ -554,7 +554,7 @@ def test_the_hosted_page_checks_the_version_before_drawing(repo_root):
 def test_the_hosted_page_points_at_no_page_it_cannot_open(repo_root):
     """A POINTER TO A PAGE THE DOOR DOES NOT LIST, an instruction no hosted reader can follow, is
     left out, and Reconcile's reading line goes with it."""
-    js = (SRC / "desk" / "static" / "app.js").read_text()
+    js = desk_script()
     link = js[js.index("const panelLink ="):js.index("const reportLink =")]
     assert '!PANELS.has(panel) ? ""' in link, "a page the door does not list is still named"
     reading = js[js.index('label: "Reading"') - 80:js.index('label: "Reading"')]
@@ -602,16 +602,29 @@ def _ready():
 
 
 @needs("accounts")
-def test_a_principal_reads_no_holder_and_no_number_anywhere(client, principal):
+def test_a_principal_reads_no_holder_and_no_number_anywhere(client, session, principal,
+                                                             store_copy, monkeypatch):
     """EVERY ROUTE, EVERY PAGE, the report included: no register name, no word of a holder's
-    name and no account number in anything a principal is sent, notes and all."""
+    name and no account number in anything a principal is sent, notes and all. WHILE THE RECORD
+    WILL NOT LOAD, every reader, the owner too, is sent one fixed sentence in place of the
+    record's own words, which name the Mac's folders."""
     import re
-    words = _register_words()
-    for r in _every_read(client, principal, _ready()):
+    words, ready = _register_words(), _ready()
+    for r in _every_read(client, principal, ready):
         assert r.status_code == 200, f"{r.url} refused the principal: {r.text[:200]}"
         low = r.text.lower()
         left = [w for w in words if re.search(rf"(?<![a-z0-9]){re.escape(w)}(?![a-z0-9])", low)]
         assert not left, f"{r.url} names {left} to the principal"
+    with (store_copy / "buys.csv").open("a", encoding="utf-8") as f:
+        f.write("not,a,trade\n")
+    monkeypatch.setattr(panels, "all_panels", engine.book)     # as a fresh process imports them
+    for headers in (session, principal):
+        for r in _every_read(client, headers, ready):
+            if r.url.path == "/api/health":
+                continue                            # the desk's own, never read from the store
+            assert r.json() == {"error": "record unavailable", "detail": remote.UNAVAILABLE}, \
+                f"{r.url}: {r.status_code} {r.text[:200]}"
+            assert r.headers["cache-control"] == "no-store, private"
 
 
 def test_a_principal_reads_the_macs_figures_with_the_holders_renamed(client, principal):
@@ -627,15 +640,16 @@ def test_a_principal_reads_the_macs_figures_with_the_holders_renamed(client, pri
 
 @needs("accounts")
 def test_a_principal_asks_for_an_account_by_its_code(client, principal):
-    """The label and the code both narrow the ledger; a register name is a 400."""
+    """The label and the code both narrow the ledger; a register name is a 400, whose words
+    name no account either."""
     codes = engine.book().account_codes()
     first = codes.iloc[0]
     for sent in (first["label"], first["code"]):
         r = client.get("/api/trades", params={"account": sent}, headers=principal)
         assert r.status_code == 200
         assert {row["account"] for row in r.json()["rows"]} <= {first["label"]}
-    assert client.get("/api/holdings", params={"account": first["account"]},
-                      headers=principal).status_code == 400
+    r = client.get("/api/holdings", params={"account": first["account"]}, headers=principal)
+    assert r.status_code == 400 and first["account"].lower() not in r.text.lower(), r.text
 
 
 def test_the_state_says_the_readers_level(client, session, principal):
@@ -696,7 +710,12 @@ def test_a_level_is_changed_on_access_and_never_by_enrolling():
         auth.enrol_code("newcomer", "admin")
 
 
-def test_revoking_a_device_or_a_reader_ends_their_sessions(door):
+def test_revoking_a_device_or_a_reader_ends_their_sessions(door, monkeypatch):
+    """Revoking closes the sessions the device or the reader opened. A REVOKE THAT RACES A
+    SIGN-IN HOLDS: forced between the sign-in's read of the passkeys and its write-back, it waits
+    for `auth.LOCK`, then closes the session the sign-in opened."""
+    import threading
+    import webauthn
     phone, mac = SoftPasskey(), SoftPasskey()
     on_phone = _session(_enrol(door, phone, _code("rowe", "principal")))
     door.cookies.clear()
@@ -711,6 +730,21 @@ def test_revoking_a_device_or_a_reader_ends_their_sessions(door):
     assert door.get("/api/state", headers=on_phone).status_code == 401
     assert "rowe" not in {r["who"] for r in auth.readers()}
     assert _sign_in(door, mac).status_code == 403
+
+    _enrol(door, phone, _code("rowe", "principal"))
+    door.cookies.clear()
+    key, real = _b64u(phone.id), webauthn.verify_authentication_response
+    revoking = threading.Thread(target=auth.revoke_device, args=(key,))
+
+    def verified_while_revoking(**kw):
+        revoking.start()
+        revoking.join(0.2)
+        return real(**kw)
+    monkeypatch.setattr(webauthn, "verify_authentication_response", verified_while_revoking)
+    signed = _sign_in(door, phone)
+    revoking.join()
+    assert key not in auth._keys(), "a revoke that raced a sign-in was undone"
+    assert door.get("/api/state", headers=_session(signed)).status_code == 401
 
 
 def test_signing_everyone_out_closes_every_session(client, session, principal):

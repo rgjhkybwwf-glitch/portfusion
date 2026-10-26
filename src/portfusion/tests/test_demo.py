@@ -58,7 +58,7 @@ def test_the_demos_bench_record_is_what_the_bench_gives_its_note_today(tmp_path,
     limbs must be the record's own, and every key the bench gives an item must be on it. A bench
     that starts writing another shape fails here, and the generator follows."""
     from portfusion.desk.intake import bench, read_document
-    from portfusion.desk.doors import commit
+    from portfusion.desk.intake import filing
     archived = [json.loads(p.read_text()) for p in sorted((ROOT / DEMO / "_archive" / "bench").glob("*.json"))]
     assert len(archived) == 1, "the demo keeps one bench record"
     item = archived[0]
@@ -67,13 +67,13 @@ def test_the_demos_bench_record_is_what_the_bench_gives_its_note_today(tmp_path,
     shutil.copy(ROOT / DEMO / item["document_archived_to"], inbox / item["document"]["name"])
     monkeypatch.setattr(read_document, "INBOX", str(inbox))
     monkeypatch.setattr(bench, "BENCH_DIR", inbox / ".bench")
-    monkeypatch.setattr(commit, "BOOK", tmp_path)
+    monkeypatch.setattr(filing, "BOOK", tmp_path)
 
     fresh = bench.for_document(item["document"]["name"])
     for key in ("evidence_class", "evidence", "recognised", "origin", "title", "document"):
         assert item[key] == fresh[key], f"{key}: the record has {item[key]}, the bench {fresh[key]}"
     assert not set(fresh) - set(item), f"the record lacks {sorted(set(fresh) - set(item))}"
-    assert item["document_archived_to"].endswith(commit._archive_name(item, item["document"]["name"]))
+    assert item["document_archived_to"].endswith(filing.archive_name(item, item["document"]["name"]))
 
 
 def test_the_generator_loads_no_book(tmp_path, repo_root):

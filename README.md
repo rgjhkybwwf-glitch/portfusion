@@ -25,6 +25,7 @@ portfusion desk                                   # reads the book in the folder
 | `--push-on-commit` | a book whose every commit is pushed to its remote as it lands |
 
 On a Mac, `portfusion desk --install-agent` starts the desk at login for the book it is typed in.
+`portfusion --help` lists every command: the seven actions, and the rest.
 
 | A book's folder | Holds |
 |---|---|
@@ -64,7 +65,7 @@ desk afterwards: it does not notice an upgraded package ([`docs/desk-app.md`](do
 | `src/portfusion/` | Holds |
 |---|---|
 | `record/` | the schema, which types every column on load, and the record's rules |
-| `engine.py` | every derived figure, once |
+| `engine/` | every derived figure, once |
 | `desk/` | the browser, and its doors to the record |
 | `report/` | the quarterly report |
 | `house/` | what both renderers share: headings, precision, PortFusion's palette |

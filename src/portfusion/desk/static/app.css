@@ -187,7 +187,7 @@ main { flex: 999 1 35rem; min-width: 0; max-width: var(--container); margin: 0;
 /* THE DESIGN SYSTEM'S LABEL: condensed 600 at 11.5px, set in capitals with a tenth of an em between letters,
    for a section heading, a column head, a field label and a state's word.
    The words are still WRITTEN in sentence case
-   (`sentence()` in app.js), so the capitals are the style's and the source reads as written. */
+   (`sentence()` in kit.js), so the capitals are the style's and the source reads as written. */
 h2, .diff h3, th, .f > span, .tag {
   font-size: var(--text-label); font-weight: 600; font-stretch: 75%; letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -229,7 +229,7 @@ td.num { text-align: right; white-space: nowrap; }
    from "movement, which is not provenance", which is the whole rule: this is a THIRD channel,
    beside font-colour-as-origin and fill-as-state, and it must not borrow from either. So it
    colours the figure only — no fill, no weight, no size — and only on the three gain columns
-   app.js lists. Magnitude is not encoded at all; that is what sorting a column is for.
+   kit.js lists. Magnitude is not encoded at all; that is what sorting a column is for.
    Exactly zero wears neither. */
 td.num.up   { color: var(--up); }
 td.num.down { color: var(--down); }
@@ -259,8 +259,9 @@ td.indent { padding-left: var(--space-6); color: var(--muted); }
    the scan, so colour is never the only signal. */
 /* THE WORD IN SENTENCE CASE: "Ready", "Not built", "Owner", "Signed in". A
    state's word is read, so it is written as a word rather than set as a label in capitals; the
-   size and weight stay the label's. ONE RULE FOR EVERY TAG, whoever wrote the word — app.js or an
-   engine's answer: the first letter is raised here, so the dot sits outside the text's flow. */
+   size and weight stay the label's. ONE RULE FOR EVERY TAG, whoever wrote the word — the desk's
+   script or an engine's answer: the first letter is raised here, so the dot sits outside the
+   text's flow. */
 .tag {
   display: inline-block; position: relative; padding-left: calc(8px + var(--space-2));
   min-width: 9ch; margin-right: var(--space-3); color: var(--heading);
@@ -273,7 +274,7 @@ td.indent { padding-left: var(--space-6); color: var(--muted); }
   background: var(--key-note);
 }
 
-/* THE PAGE TEMPLATE — `page()` in app.js. The title is the page's one heading that is not a
+/* THE PAGE TEMPLATE — `page()` in kit.js. The title is the page's one heading that is not a
    section heading: the tab's own name at lead size, its scope line beside it, and every `h2`
    below it is a section of the work. A RULE UNDER THE HEAD ON EVERY PAGE,
    so the title and its scope read as the page's label and everything below it as the page. */
@@ -323,7 +324,7 @@ td.indent { padding-left: var(--space-6); color: var(--muted); }
    make a line hard to follow. Wider than the window, it scrolls in its box. */
 .page table { width: auto; }
 
-/* THE STEPS ON ONE LINE — `stepLine()` in app.js. Each step is its state, its name, then what
+/* THE STEPS ON ONE LINE — `stepLine()` in kit.js. Each step is its state, its name, then what
    can be pressed, and the steps run left to right in the order the work is done. A narrow
    window wraps a whole step to the next line, and splits one only when it is wider than the
    line itself. */
@@ -454,7 +455,7 @@ body.wide main { max-width: none; }
    to read, so prose keeps it (below) and a page of figures does not.
 
    THE HOOK IS WHAT WAS RENDERED, NOT A LIST OF PANEL NAMES, which would drift the first time a
-   panel was added: `data-wide`, which app.js's page() puts on every tab, or `.scroll`, the box
+   panel was added: `data-wide`, which kit.js's page() puts on every tab, or `.scroll`, the box
    the wide-table helper emits. A page with neither (an error, the sign-in) keeps the measure. */
 body.data main { max-width: none; }
 

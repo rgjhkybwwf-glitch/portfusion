@@ -26,18 +26,17 @@ WHAT IT WILL NOT DO
     FIRST and the replace does not happen if it fails. Same ordering as `marks.py`, and the same
     reason: the outgoing reading is a data point that cannot be recovered.
   · ADD A ROW. One row per account, replaced. A new account is a decision, not a reading.
-  · LEAVE A HALF-WRITTEN STORE. `commit.atomic()` holds every target's bytes and restores all of
+  · LEAVE A HALF-WRITTEN STORE. `envelope.atomic()` holds every target's bytes and restores all of
     them if anything raises.
 """
 from __future__ import annotations
 
 import csv
-import io
 import pathlib as _pathlib
 
 from portfusion.record import rules as D
 from portfusion.record import schema
-from portfusion.desk.doors import commit
+from portfusion.desk.doors import envelope
 
 TABLE = "account-readings"
 
@@ -87,16 +86,13 @@ def paths() -> list:
 
 
 def banked() -> dict:
-    """Is every outgoing reading on file? This door's precondition.
-
-    Asks `desk.doors.marks.banked()` rather than `history.accounts` directly, because that function
-    is already the one place the desk asks this question and a second caller would be a second
-    answer. It reports accounts on their own key: an unbanked observation must refuse THIS
-    write without refusing a price refresh, which is a different door with a different vendor.
+    """Is every outgoing reading on file? This door's precondition, asked of the account
+    history alone: an unbanked reading refuses THIS write, and a price or rate history, the marks
+    door's, neither refuses it nor is refused by it (`marks.banked()`).
     """
-    from portfusion.desk.doors import marks
-    state = marks.banked()
-    return {"ok": state["accounts_ok"], "unbanked": state["accounts_unbanked"]}
+    from portfusion.history import accounts as AH
+    unbanked = AH.check()
+    return {"ok": not unbanked, "unbanked": unbanked}
 
 
 def _rows_on_file() -> dict[str, list[str]]:
@@ -310,7 +306,7 @@ def _cash_rows(readings: list[dict]) -> list[dict]:
     return out
 
 
-@commit.held
+@envelope.held
 def write(readings: list[dict] | None = None) -> dict:
     """Bank the outgoing readings, then replace them. The one writing action on this door.
 
@@ -339,7 +335,7 @@ def write(readings: list[dict] | None = None) -> dict:
 
     # THE BANKING SHARES THE ENVELOPE (`paths()` holds the history), as on the marks door: a
     # refusal after the outgoing readings were banked takes the banking back with the rest.
-    with commit._record_follows_the_files(), commit.atomic(*paths()):
+    with envelope.record_follows_the_files(), envelope.atomic(*paths()):
         # STEP ONE, AND THE REPLACE DOES NOT HAPPEN IF IT FAILS.
         try:
             archived = len(AH.archive(verbose=False))
@@ -353,20 +349,8 @@ def write(readings: list[dict] | None = None) -> dict:
                 f"Refusing to replace a reading whose outgoing value is not on file.")
 
         before = len(schema.load(TABLE))
-        out = []
-        lines, eol = commit.lines_and_eol(path)     # written back in the file's own ending
-        for i, line in enumerate(lines):
-            if i == 0 or not line.strip():
-                out.append(line)
-                continue
-            key = next(csv.reader([line]))[schema.TABLES[TABLE].header.index(KEYED_BY)]
-            if key in new_rows:
-                buf = io.StringIO()
-                csv.writer(buf, lineterminator="").writerow(new_rows[key])
-                out.append(buf.getvalue())
-            else:
-                out.append(line)                    # byte-identical, never re-rendered
-        path.write_text(eol.join(out) + eol, encoding="utf-8", newline="")
+        key = schema.TABLES[TABLE].header.index(KEYED_BY)
+        envelope.rewrite(path, lambda cells: new_rows.get(cells[key], cells))
 
         # READ IT BACK THROUGH THE LOADER THE BUILD USES. A replace must not move the count.
         loaded = schema.load(TABLE)
@@ -379,9 +363,9 @@ def write(readings: list[dict] | None = None) -> dict:
         # own date, which is what retrieves it: account-statements.csv holds what it displaced.
         # A READING'S CASH, the same write: a cash reading of its own day, appended in its place.
         if cash:
-            commit.place({"cash-readings": [commit._rendered("cash-readings", c) for c in cash]})
+            envelope.place({"cash-readings": [envelope.rendered("cash-readings", c) for c in cash]})
         ref = " ".join(sorted({str(r["as_of"]) for r in readings}))
-        commit.journal(
+        envelope.journal(
             [("marks", "replace", TABLE, len(readings), ref,
               f"{len(readings)} account reading{'' if len(readings) == 1 else 's'} replaced")]
             + ([("marks", "append", "cash-readings", len(cash), ref,

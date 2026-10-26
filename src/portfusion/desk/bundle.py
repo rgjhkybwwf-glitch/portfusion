@@ -1,7 +1,7 @@
 """THE SHELL AS ONE SET OF FILES — everything a browser loads before its first /api call.
 
     from portfusion.desk import bundle
-    bundle.files()      # {"/": b"<!doctype html>…", "/static/app.js": b"…", "/tokens.css": …}
+    bundle.files()      # {"/": b"<!doctype html>…", "/static/core.js": b"…", "/tokens.css": …}
     bundle.version()    # "3f9c2a1b7d04" — the name of this exact set
 
 ONE SOURCE, TWO SERVERS. The Mac desk answers `/`, `/static/*`, `/tokens.css`, `/favicon.png`,
@@ -50,12 +50,18 @@ FONTS = brand.FONT_DIR
 APP_ICON_SIZES = {"apple-touch-icon.png": 180, "icon-192.png": 192, "icon-512.png": 512}
 assert set(APP_ICON_SIZES) == set(brand.APP_ICONS)
 
+#: THE DESK'S SCRIPT, in the order it loads: ordered classic scripts sharing one global scope, so
+#: a file's top-level code may use only what the files before it declare. app.js, the entry,
+#: loads last. `index()` writes the page's script tags from this, and nowhere else states it.
+SCRIPTS = ("core.js", "kit.js", "reading.js", "access.js", "bench.js", "sweep.js",
+           "price-refresh.js", "app.js")
+
 #: The files under desk/static/ the shell loads. index.html is not one: it is the page itself,
 #: filled in by `index()`, and its raw template is served nowhere.
-SHELL_STATIC = ("app.css", "app.js")
+SHELL_STATIC = ("app.css", *SCRIPTS)
 
 #: The URLs `index.html` links and stamps, each with the asset it stands for.
-_STAMPED = ("/static/app.css", "/static/app.js", "/tokens.css")
+_STAMPED = ("/static/app.css", *(f"/static/{n}" for n in SCRIPTS), "/tokens.css")
 
 
 def _fonts() -> list[str]:
@@ -148,6 +154,8 @@ def index(assets: dict[str, bytes] | None = None) -> bytes:
     """The page: the template, its assets stamped by content, the lockup, and the version."""
     assets = assets if assets is not None else {p: asset(p) for p in paths()}
     html = (STATIC / "index.html").read_text(encoding="utf-8")
+    html = html.replace("<!-- scripts -->", "\n".join(
+        f'<script src="/static/{n}"></script>' for n in SCRIPTS))
     for url in _STAMPED:
         html = html.replace(f'"{url}"', f'"{url}?v={_digest(assets[url])}"')
     html = html.replace("<!-- lockup -->", engine.lockup())

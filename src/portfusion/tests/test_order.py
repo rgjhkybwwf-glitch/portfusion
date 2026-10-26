@@ -44,7 +44,7 @@ def test_two_rows_holding_one_id_are_refused_rather_than_followed():
 def test_a_door_refuses_a_file_with_a_cell_spanning_lines(store_copy):
     """Placed line by line, such a cell would split into two broken rows; it is moved by hand."""
     import csv
-    from portfusion.desk.doors import commit
+    from portfusion.desk.doors import envelope
     from portfusion.record import schema
     header = schema.TABLES["income"].header
     with (store_copy / "income.csv").open("a", newline="", encoding="utf-8") as fh:
@@ -52,7 +52,7 @@ def test_a_door_refuses_a_file_with_a_cell_spanning_lines(store_copy):
             ["2099-01-01" if c == "date" else "a note\nin two lines" if c == "note" else ""
              for c in header])
     with pytest.raises(ValueError, match="spans lines"):
-        commit.placed({"income": []})
+        envelope.placed({"income": []})
 
 
 def test_a_run_of_moved_ids_is_said_as_one():

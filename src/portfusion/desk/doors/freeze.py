@@ -1,7 +1,7 @@
 """THE FREEZE — a quarter end written into the store from the engine, once.
 
-    python3 -m portfusion.desk.doors.freeze 2026-09-30             what would be written, and what is not ready
-    python3 -m portfusion.desk.doors.freeze 2026-09-30 --write     write it
+    portfusion freeze 2026-09-30             what would be written, and what is not ready
+    portfusion freeze 2026-09-30 --write     write it
 
 `Book.freeze_rows()` derives `quarter-snapshots.csv` and `quarter-nav.csv` from the price and FX
 histories, each line at its mark nearest the quarter end within `rules.CLOSE_CHECK_WINDOW_DAYS`
@@ -17,7 +17,7 @@ WHAT IT WILL NOT DO:
     order, or twice, would leave the returns reading from the wrong pair of ends.
   · FREEZE A DAY STILL TO COME, or with a line the close window does not reach —
     `Book.freeze_rows()["off_date"]` lists any, and the fix is a Price Refresh inside the window.
-  · LEAVE HALF A FREEZE. Every table and the journal are held by `commit.atomic()`.
+  · LEAVE HALF A FREEZE. Every table and the journal are held by `envelope.atomic()`.
 
 THE RESULTS GO IN LAST. Once the inputs are on file the engine computes the closed quarter, and
 `Book.quarter_results()` appends its six figures per account to `quarter-results.csv`: what the
@@ -30,13 +30,12 @@ with the dates, the accounts and the reason, and is a decision each time.
 """
 from __future__ import annotations
 
-import csv
 import datetime as _dt
 import sys
 
 from portfusion.record import rules as D
 from portfusion.record import schema
-from portfusion.desk.doors import commit
+from portfusion.desk.doors import envelope
 from portfusion.log import log
 
 TABLES = ("quarter-snapshots", "quarter-nav", "quarter-results")
@@ -70,7 +69,7 @@ def plan(as_of: str) -> dict:
     return {"as_of": as_of, "due": due, "ready": not why, "why": why, **rows}
 
 
-@commit.held
+@envelope.held
 def write(as_of: str) -> dict:
     """Append the quarter end's inputs, then its results, and journal all three. Raises
     `Refused`, writing nothing."""
@@ -81,7 +80,7 @@ def write(as_of: str) -> dict:
     at = schema.record_instant()
     paths = [schema.TABLES[t].path for t in TABLES] + [schema.TABLES["journal"].path]
     try:
-        with commit.atomic(*paths):
+        with envelope.atomic(*paths):
             for table, rows in by_table.items():
                 _append(table, rows)
             # THE QUARTER IS COMPUTED FROM WHAT WAS JUST FROZEN, so the record is reloaded first.
@@ -89,9 +88,9 @@ def write(as_of: str) -> dict:
             from portfusion.engine import Book
             by_table["quarter-results"] = [{**r, "note": ""} for r in Book().quarter_results(as_of)]
             _append("quarter-results", by_table["quarter-results"])
-            commit.journal([("freeze", "append", table, len(rows), as_of,
-                             f"{len(rows)} row(s) freezing {as_of}, from the engine")
-                            for table, rows in by_table.items()], at=at)
+            envelope.journal([("freeze", "append", table, len(rows), as_of,
+                               f"{len(rows)} row(s) freezing {as_of}, from the engine")
+                              for table, rows in by_table.items()], at=at)
     finally:
         D.reload_store()
     return {"as_of": as_of, "quarter_snapshots": len(p["quarter_snapshots"]),
@@ -99,7 +98,7 @@ def write(as_of: str) -> dict:
             "quarter_results": len(by_table["quarter-results"])}
 
 
-@commit.held
+@envelope.held
 def restate(changes: dict[str, list[str]], why: str, lines_only: bool = False) -> dict:
     """RESTATE frozen quarter ends: at each date in `changes`, its accounts struck again by the
     engine at the marks nearest it (`Book.freeze_rows()`), and every closed quarter a restated
@@ -178,7 +177,7 @@ def restate(changes: dict[str, list[str]], why: str, lines_only: bool = False) -
     paths = [schema.TABLES[t].path for t in TABLES] + [schema.TABLES["journal"].path]
     journal, results = [], []
     try:
-        with commit.atomic(*paths):
+        with envelope.atomic(*paths):
             for table, new in (("quarter-nav", new_nav), ("quarter-snapshots", new_snap)):
                 keys = {k for k, composed in struck.items() if table == "quarter-nav" or composed}
                 gone = _replace(table, keys, new)
@@ -205,7 +204,7 @@ def restate(changes: dict[str, list[str]], why: str, lines_only: bool = False) -
                                        sum(1 for r in moved if (q, r["account"] or "") in held),
                                        len(moved), f"{b.quarter_label(q, b.quarter_opens(q))}: {why}")
             _replace("quarter-results", keys, results)
-            commit.journal([j for j in journal if j[3]], at=at)
+            envelope.journal([j for j in journal if j[3]], at=at)
     finally:
         D.reload_store()
     return {"struck": sorted(struck), "quarter_nav": len(new_nav),
@@ -248,7 +247,7 @@ def _append_lines(rows: list[dict], struck: list[tuple]) -> dict:
     at = schema.record_instant()
     paths = [schema.TABLES["quarter-snapshots"].path, schema.TABLES["journal"].path]
     try:
-        with commit.atomic(*paths):
+        with envelope.atomic(*paths):
             _append("quarter-snapshots", rows)
             journal = []
             for as_of in sorted({d for d, _ in struck}):
@@ -257,7 +256,7 @@ def _append_lines(rows: list[dict], struck: list[tuple]) -> dict:
                 journal.append(("freeze", "append", "quarter-snapshots", n, f"composed {as_of}",
                                 f"{names}: {n} line row(s) composing {as_of}, from the engine; "
                                 f"its net asset value stands"))
-            commit.journal(journal, at=at)
+            envelope.journal(journal, at=at)
     finally:
         D.reload_store()
     return {"struck": struck, "quarter_nav": 0, "quarter_snapshots": len(rows),
@@ -296,18 +295,14 @@ def _moved(new: dict, was, hdr: list[str]) -> bool:
 def _replace(table: str, keys: set, rows: list[dict]) -> list[tuple]:
     """`rows` into one table in place of every row of these (as_of, account) keys: every other
     line keeps its bytes. Returns the keys of the rows taken out, one per row."""
-    path = schema.TABLES[table].path
-    original = path.read_bytes()
-    eol = commit._eol(original)
-    lines = original.decode("utf-8").split(eol.decode())
-    gone, out = [], []
-    for i, line in enumerate(lines):
-        cells = next(csv.reader([line])) if i and line else None
-        if cells and (cells[0], cells[1]) in keys:
+    gone = []
+
+    def kept(cells):
+        if (cells[0], cells[1]) in keys:
             gone.append((cells[0], cells[1]))
-            continue
-        out.append(line)
-    path.write_bytes(eol.join(line.encode("utf-8") for line in out))
+            return None
+        return cells
+    envelope.rewrite(schema.TABLES[table].path, kept)
     _append(table, rows)
     return gone
 
@@ -323,14 +318,17 @@ def _journalled(table: str, ref: str, gone: int, new: int, said: str) -> list[tu
 
 def _append(table: str, rows: list[dict]) -> None:
     """Rows into one table where their dates put them, read back. IN THE FILE'S OWN LINE
-    ENDING, through the Bench's helper: a text round trip would turn a CRLF file's lines into LF."""
+    ENDING, through `envelope.place()`: a text round trip would turn a CRLF file's lines into LF."""
     before = len(schema.load(table))
-    commit.place({table: [commit._rendered(table, r) for r in rows]})
+    envelope.place({table: [envelope.rendered(table, r) for r in rows]})
     if len(schema.load(table)) != before + len(rows):
         raise Refused(f"{table}.csv did not read back {len(rows)} new row(s)")
 
 
 def main(argv: list[str]) -> int:
+    if argv[:1] in (["-h"], ["--help"]):
+        log.info(__doc__)
+        return 0
     days = [a for a in argv if not a.startswith("--")]
     if len(days) != 1:
         log.info(__doc__)

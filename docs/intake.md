@@ -20,6 +20,8 @@ nothing new is filed, since it proves the record.
 
 **A PDF is read by a Claude session**, starting from `python3 -m portfusion.desk.intake.propose`,
 which prints everything the session needs and checks every quote it returns against the file.
+`python3 -m portfusion.desk.intake.read_document "<document>"` prints its text as the Bench reads
+it.
 
 ## What rests where
 

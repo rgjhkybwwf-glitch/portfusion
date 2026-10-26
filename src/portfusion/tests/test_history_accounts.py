@@ -125,7 +125,7 @@ def test_show_prints_a_reading_with_no_net_asset_value_part(monkeypatch, capsys)
 # THE BANKING FLOOR — archive() and check(), as the other two histories have
 #
 # They bank an outgoing account observation, as marks.py does a price and an FX rate, so
-# `marks.banked()` can ask of accounts.
+# `observations.banked()` can ask of accounts.
 # =====================================================================================
 
 @pytest.mark.audit

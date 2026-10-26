@@ -211,7 +211,7 @@ def test_the_close_procedure_names_the_freeze_and_its_window(monkeypatch):
     monkeypatch.setattr(Book, "quarter_to_close", staticmethod(lambda: pd.Timestamp("2026-09-24")))
     text = close_reminder(dt.date(2026, 9, 25))
     by = dt.date(2026, 9, 24) + dt.timedelta(days=D.CLOSE_CHECK_WINDOW_DAYS)
-    assert "python3 -m portfusion.desk.doors.freeze 2026-09-24 --write" in text
+    assert "portfusion freeze 2026-09-24 --write" in text
     assert '"closes of"' in text and f"{by:%-d %b %Y}" in text
     assert "portfusion report --check 2026-09-24" in text
     assert close_reminder(dt.date(2026, 9, 23)) is None, "a quarter not yet ended is not owed"
@@ -281,14 +281,27 @@ def test_the_findings_judge_every_judgeable_account_and_name_the_rest(book):
 
 def test_each_action_of_the_command_answers_help_and_runs_nothing():
     """`portfusion --help` and each action's `--help` answer and exit 0, and the audit's does not
-    start the audit: a stranger's first question of a command must not run it."""
+    start the audit: a stranger's first question of a command must not run it. EVERY COMMAND IS
+    IN `portfusion --help`: each action, and each module the package runs as `python3 -m`, but
+    the hooks, which git runs."""
     import subprocess
     import sys
-    for args in ([], ["desk"], ["record"], ["report"]):
+    from harness import SRC
+    from portfusion import __main__ as cli
+    said = {}
+    for args in ([], ["desk"], ["record"], ["report"], ["freeze"]):
         r = subprocess.run([sys.executable, "-m", "portfusion", *args, "--help"],
                            capture_output=True, text=True, timeout=60)
         assert r.returncode == 0, (args, r.stderr)
         assert "portfusion" in r.stdout and "the record is in good order" not in r.stdout, args
+        said[tuple(args)] = r.stdout
+    assert all(f"portfusion {a} " in said[()] for a in cli.ACTIONS), said[()]
+    runs = {f.relative_to(SRC).with_suffix("").as_posix() for f in SRC.rglob("*.py")
+            if f.relative_to(SRC).parts[0] not in ("tests", "hooks") and f != SRC / "__main__.py"
+            and '__name__ == "__main__"' in f.read_text(encoding="utf-8")}
+    listed = said[()].replace(".", "/")
+    missing = sorted(m for m in runs if m not in listed)
+    assert not missing, f"not in portfusion --help: {missing}"
 
 
 def test_book_names_the_folder_for_every_action(monkeypatch, repo_root):
@@ -296,10 +309,20 @@ def test_book_names_the_folder_for_every_action(monkeypatch, repo_root):
     action sees its arguments. It sets PORTFUSION_BOOK from where the command was typed, and a folder
     holding no store/ is refused before anything runs."""
     import os
+    import subprocess
+    import sys
+    import portfusion
     from portfusion import __main__ as cli
-    assert cli.book(["desk", "--book", "demo", "--port", "8769"]) == (["desk", "--port", "8769"], "demo")
-    assert cli.book(["--book=demo", "record"]) == (["record"], "demo")
-    assert cli.book(["report"]) == (["report"], None)
+    assert portfusion.book(["desk", "--book", "demo", "--port", "8769"]) == (["desk", "--port", "8769"], "demo")
+    assert portfusion.book(["--book=demo", "record"]) == (["record"], "demo")
+    assert portfusion.book(["report"]) == (["report"], None)
+    # AND EVERY `python3 -m` COMMAND, typed where no book is: the package takes it first.
+    unset = {k: v for k, v in os.environ.items() if k != "PORTFUSION_BOOK"}
+    for folder, code in (("demo", 0), ("nowhere", 2)):
+        r = subprocess.run([sys.executable, "-m", "portfusion.history.accounts", "--book", folder,
+                            "--check"], cwd=repo_root / "docs", env=unset, capture_output=True,
+                           text=True, timeout=60)
+        assert r.returncode == code, (folder, r.stderr)
     monkeypatch.setenv("PORTFUSION_BOOK", "unchanged")
     monkeypatch.chdir(repo_root)
     assert cli.main(["record", "--book", "nowhere"]) == 2

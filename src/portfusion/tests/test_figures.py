@@ -22,7 +22,7 @@ import pytest
 from portfusion.engine import Book
 from portfusion.report.page import render, summary_figures
 
-from harness import ROOT, SRC, needs_checkout, needs
+from harness import ROOT, SRC, needs_checkout, needs, desk_script
 PENNY = 0.01
 #: The loaded book's newest frozen quarter end, or None before it has frozen one.
 QUARTER = max((str(d)[:10] for d in Book().quarter_nav_total().index), default=None)
@@ -326,7 +326,7 @@ def test_every_desk_column_has_a_heading_for_its_tab(repo_root):
         except KeyError as e:
             unnamed.append(f"{mod.NAME}: {e}")
     assert not unnamed, f"name these in house/headings.py: {unnamed}"
-    js = (SRC / "desk" / "static" / "app.js").read_text(encoding="utf-8")
+    js = desk_script()
     assert not re.search(r"const HEADS\s*=\s*\{", js), "app.js has its own heading map again"
     literal = set(re.findall(r"<th[^>]*>([^<$]+)</th>", js))
     assert not literal, f"app.js types {sorted(literal)} as a table head; draw it with head()"
@@ -340,7 +340,7 @@ def test_app_js_draws_a_table_from_the_panels_own_columns(repo_root):
     """A COLUMN LIST TYPED IN app.js DRIFTS FROM THE PANEL'S. Every table() takes its columns
     from the payload."""
     import re
-    js = (SRC / "desk" / "static" / "app.js").read_text(encoding="utf-8")
+    js = desk_script()
     typed = re.findall(r"\btable\([^,()]+,\s*\[[^\]]*\]", js)
     assert not typed, f"app.js types a table's columns: {typed}; send the panel's *COLUMNS"
 
@@ -373,7 +373,7 @@ def test_every_percentage_is_printed_to_the_houses_places(repo_root):
            for n, line in enumerate(p.read_text(encoding="utf-8").splitlines(), 1)
            if re.search(r"\.\d+%\}|\.\d+f\}%", line) and "width:" not in line]
     assert not own, f"these print a percentage at their own places: {own}; use precision.pct()"
-    js = (SRC / "desk" / "static" / "app.js").read_text(encoding="utf-8")
+    js = desk_script()
     pct_js = re.search(r"const pct = [\s\S]*?;\n", js).group(0)
     assert not re.search(r"FractionDigits:\s*\d", pct_js), "app.js types a percentage's places"
     assert desk_app.panel("holdings")["precision"]["pct_dp"] == precision.PCT_DP
@@ -407,7 +407,7 @@ def test_a_table_with_a_local_price_marks_its_sterling(repo_root):
     from portfusion.desk import panels
     from portfusion.house.headings import headings
     from portfusion.house.precision import LOCAL_PRICE_FIELDS
-    js = (SRC / "desk" / "static" / "app.js").read_text(encoding="utf-8")
+    js = desk_script()
     money = set(re.findall(r'"(\w+)"', re.search(r"const MONEYCOL = \[(.*?)\];", js, re.S).group(1)))
     tables, unmarked, as_money = 0, [], []
     for mod in panels.all_panels():

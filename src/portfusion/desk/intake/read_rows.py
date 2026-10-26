@@ -41,7 +41,7 @@ import io
 import re
 
 from portfusion.record import rules as D
-from portfusion.desk.intake import read_document
+from portfusion.desk.intake import read_document, recorded
 
 
 def _cells(text: str, header: tuple) -> tuple[list, list]:
@@ -149,10 +149,9 @@ def read(name: str) -> dict:
     # chain could not resolve.
     out["reference"] = f"{inst:%-d %b %Y %H:%M}" if inst else ""
 
-    from portfusion.desk.intake import propose
     # A PAIR, and only the first half is the account. `account_from()` returns the name and the
     # line it was found on, so the derivation stays checkable.
-    found = propose.account_from(text)
+    found = recorded.account_from(text)
     out["account"] = found[0] if found else ""
 
     if key == "ii-transactions":
@@ -176,7 +175,7 @@ def read(name: str) -> dict:
                 values = {"account": out["account"], "as_of": (out["instant"] or "")[:10],
                           "cash": _number(cash), "evidence": key,
                           "reference": out["reference"]}
-                already = bench_matching("cash-readings", values)
+                already = recorded.matching_row("cash-readings", values)
                 line = f"Total cash: {cash}"
                 if already and already != "unreadable":
                     out["seen"].append({"line": line, "in_record": already,
@@ -228,7 +227,7 @@ def read(name: str) -> dict:
         #
         # REPORTED, NEVER SILENT. It goes in `seen` naming the row it matched, so the reading
         # answers the question a statement actually poses: which of these are new.
-        already = bench_matching(entry.table, values)
+        already = recorded.matching_row(entry.table, values)
         if already and already != "unreadable":
             out["seen"].append({"line": line, "in_record": already,
                                 "why": _on_file(entry.table, already)})
@@ -359,7 +358,7 @@ def _ii_ledger(text: str, out: dict) -> dict:
         if code.category == "Dividend":
             ticker = D.book_code(ln["symbol"], known)
             values["ticker"] = ticker if ticker in known else ""
-        already = bench_matching(code.table, values)
+        already = recorded.matching_row(code.table, values)
         if already and already != "unreadable":
             out["seen"].append({"line": line, "in_record": already,
                                 "why": _on_file(code.table, already)})
@@ -385,7 +384,7 @@ def _ii_cash(lines: list, out: dict, account: str) -> None:
         out["seen"].append({"line": line, "in_record": None,
                             "why": "no account identified, so no cash reading proposed"})
         return
-    others = bench_currencies(account) - {"GBP"}
+    others = recorded.cash_currencies(account) - {"GBP"}
     if others:
         out["seen"].append({"line": line, "in_record": None,
                             "why": f"{account} also holds {', '.join(sorted(others))} cash, so "
@@ -394,7 +393,7 @@ def _ii_cash(lines: list, out: dict, account: str) -> None:
         return
     values = {"account": account, "as_of": (out["instant"] or str(newest["when"]))[:10],
               "cash": balance, "evidence": "ii-transactions", "reference": out["reference"]}
-    already = bench_matching("cash-readings", values)
+    already = recorded.matching_row("cash-readings", values)
     if already and already != "unreadable":
         out["seen"].append({"line": line, "in_record": already,
                             "why": _on_file("cash-readings", already)})
@@ -423,16 +422,15 @@ def _ii_account(lines: list) -> str:
     settled in (its contract note's number names one), or else the one account that at least
     `LINES_TO_NAME_AN_ACCOUNT` of its lines match on file and no other matches. Anything less
     leaves it blank for a person."""
-    from portfusion.desk.intake import bench
     found = set()
     for ln in lines:
         code = D.ii_line(ln["desc"], ln["symbol"])
         if code is D.II_DEALING:
-            found |= bench.accounts_citing(D.ii_contract_number(ln["ref"]))
+            found |= recorded.accounts_citing(D.ii_contract_number(ln["ref"]))
     if found:
         return found.pop() if len(found) == 1 else ""
     matched = {}
-    for account in bench.accounts_of_broker(D.II_BROKER):
+    for account in recorded.accounts_of_broker(D.II_BROKER):
         for ln in lines:
             code = D.ii_line(ln["desc"], ln["symbol"])
             if code is None or code.table is None:
@@ -441,7 +439,7 @@ def _ii_account(lines: list) -> str:
             amount = credit if credit and credit != "n/a" else f"-{_number(ln['cells']['Debit'])}"
             values = {"date": ln["when"].isoformat(), "account": account, "amount": amount,
                       "category": code.category}
-            hit = bench_matching(code.table, values)
+            hit = recorded.matching_row(code.table, values)
             if hit and hit != "unreadable":
                 matched[account] = matched.get(account, 0) + 1
     if len(matched) == 1 and next(iter(matched.values())) >= LINES_TO_NAME_AN_ACCOUNT:
@@ -449,23 +447,6 @@ def _ii_account(lines: list) -> str:
     return ""
 
 
-def bench_currencies(account: str) -> set:
-    """The currencies this account has been paid in — `bench.cash_currencies()`, imported late."""
-    from portfusion.desk.intake import bench
-    return bench.cash_currencies(account)
-
-
-def bench_matching(table: str, values: dict):
-    """What the record already holds for this row, if anything. Imported late, as `bench` does.
-
-    A thin wrapper so the import stays out of module scope: `desk/intake/bench.py` reaches the record
-    and this module is read by tests that never need one.
-    """
-    from portfusion.desk.intake import bench
-    return bench.matching_row(table, values)
-
-
 def _in_record(reference: str) -> str:
     """Which store tables already carry this broker reference. "" means none do."""
-    from portfusion.desk.intake import bench
-    return ", ".join(bench.reference_tables(reference))
+    return ", ".join(recorded.reference_tables(reference))

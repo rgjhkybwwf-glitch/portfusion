@@ -18,7 +18,7 @@ from desk_support import (GOOD_CLASS, GOOD_DOCUMENT, GOOD_TRADE, GOOD_EVIDENCE, 
 # =====================================================================================
 from portfusion.desk.intake import bench as _bench                                    # noqa: E402
 from portfusion.desk.panels import bench as bench_panel
-from harness import SRC, needs, free_id
+from harness import SRC, needs, free_id, desk_script
 
 #: The ids a test's own sale takes: the book's next free ones, never typed (a book that has reached
 #: E-099 holds one).
@@ -281,7 +281,7 @@ def test_a_trade_whose_source_is_not_its_kinds_format_is_refused(item):
 
 def test_the_authority_box_is_shown_and_not_typed(repo_root):
     """The record keeps no typed authority, so the box is read-only and carries the kind's."""
-    js = (SRC / "desk" / "static" / "app.js").read_text()
+    js = desk_script()
     assert 'fixed ? " readonly" : ""' in js and 'const fixed = l.key === "authority"' in js
 
 
@@ -302,7 +302,7 @@ def test_the_bench_speaks_the_desks_words_not_the_stores(item, repo_root):
 
 
 def _renderer_free(repo_root):
-    return (SRC / "desk" / "static" / "app.js").read_text(encoding="utf-8")
+    return desk_script()
 
 
 def test_one_item_at_a_time_then_a_review_then_one_write_each(item, repo_root):
@@ -312,17 +312,19 @@ def test_one_item_at_a_time_then_a_review_then_one_write_each(item, repo_root):
     _bench.save(item)
     d = bench_panel.detail(item["id"])
     assert d["bench"] and {"id", "title", "ready"} <= set(d["bench"][0])
-    js = (SRC / "desk" / "static" / "app.js").read_text(encoding="utf-8")
+    js = desk_script()
     opener = js[js.index("async function openItem("):js.index("function benchFocus(")]
     assert "catch" in opener and "BENCH_GONE" in opener, "a gone item must say so"
     assert 'id="bench-list"' in js and "list.hidden = on" in js, "an item must take the page"
     nxt = js[js.index("function nextStep("):js.index("async function reviewItems(")]
     assert 'id="nextitem"' in nxt and 'id="reviewall"' in nxt and "d.approved" in nxt
-    review = js[js.index("async function reviewItems("):js.index("/* ---", js.index("async function reviewItems("))]
+    review = js[js.index("async function reviewItems("):js.index("Object.assign(RENDER_LATE",
+                                                                  js.index("async function reviewItems("))]
     assert 'data-write="${esc(it.id)}"' in review and "/commit" in review
     assert "write all" not in js.lower(), "one press per item: nothing writes them all"
     assert 'id="commit"' not in js, "an item is written from the review, not from its own screen"
-    sweep = js[js.index("function wireIgEvents("):js.index("function wireTradeLinks(")]
+    sweep = desk_script("sweep.js")
+    sweep = sweep[sweep.index("function wireIgEvents("):]
     assert 'await show("bench")' in sweep, "work it must redraw the list it adds to"
 
 
@@ -756,14 +758,14 @@ def test_a_refused_commit_leaves_no_thesis_behind(item, store_copy, tmp_path, mo
     must not leave a thesis for a trade that never landed — the book would then show a WHY WE
     ENTERED against a position it has no record of."""
     from portfusion.record import schema
-    from portfusion.desk.doors import commit as _commit
+    from portfusion.desk.doors import commit as _commit, envelope
     monkeypatch.setattr(_commit, "ARCHIVE", tmp_path / "archive")
     _ready(item, ticker="CRNT")
     _bench.save(item)
 
     before = schema.TABLES["reasoning"].path.read_bytes()
-    real = _commit._rendered
-    monkeypatch.setattr(_commit, "_rendered", lambda t, v: real(t, v)[:-1])
+    real = envelope.rendered
+    monkeypatch.setattr(envelope, "rendered", lambda t, v: real(t, v)[:-1])
     with pytest.raises(Exception):
         _commit.commit(item["id"])
     assert schema.TABLES["reasoning"].path.read_bytes() == before, \
@@ -836,7 +838,7 @@ def test_a_failure_on_the_SECOND_table_rolls_the_FIRST_one_back(item, store_copy
     Forced by making the income row render one cell short, which the loader rejects on the
     read-back. Both files must come out byte-identical."""
     from portfusion.record import schema
-    from portfusion.desk.doors import commit as _commit
+    from portfusion.desk.doors import commit as _commit, envelope
     item["evidence"] = dict(GOOD_EVIDENCE)
     item["why"] = {"why_entered": "Entered on the services margin story, which the hardware "
                                  "cycle masks.", "why_exited": ""}
@@ -844,8 +846,8 @@ def test_a_failure_on_the_SECOND_table_rolls_the_FIRST_one_back(item, store_copy
                     {"table": "income", "values": dict(GOOD_INCOME)}]
     _bench.save(item)
 
-    real = _commit._rendered
-    monkeypatch.setattr(_commit, "_rendered",
+    real = envelope.rendered
+    monkeypatch.setattr(envelope, "rendered",
                         lambda t, v: real(t, v)[:-1] if t == "income" else real(t, v))
 
     before = {t: schema.TABLES[t].path.read_bytes() for t in ("buys", "income")}
@@ -1079,7 +1081,7 @@ def test_the_screen_shows_the_whys_already_on_file(item):
     assert [r["date"] for r in existing[why["ticker"]]
             if r["why_exited"] == why["why_exited"]] == [str(why["date"])]
 
-    js = (SRC / "desk" / "static" / "app.js").read_text()
+    js = desk_script()
     assert "existing_why" in js and ">on file<" in js, \
         "the screen no longer shows the whys already on file"
 
@@ -1444,7 +1446,7 @@ def test_a_set_up_that_does_not_stand_with_its_trade_is_refused(swept, event, sa
 def test_the_set_up_press_reads_the_contracts_first_mark_or_refuses(swept, monkeypatch, priced):
     """The set-up press asks IG for the new contract's level: a priced one rides on the item as
     its first mark, and an unpriced one opens no item at all."""
-    from portfusion.desk.intake import bench as _b
+    from portfusion.desk.intake import bench as _b, sweep
     from portfusion.feeds import ig
     level = {"priced": priced, "level": 50.4 if priced else None, "currency": "USD",
              "as_of": "2026-08-12", "source": _FIRST_MARK["source"] if priced else "",
@@ -1452,7 +1454,7 @@ def test_the_set_up_press_reads_the_contracts_first_mark_or_refuses(swept, monke
     asked = []
     monkeypatch.setattr(ig, "contract_levels", lambda mapped=None: asked.append(mapped)
                         or {"rows": [dict(level, contract="NEWCO-JUN27")]})
-    got = bench_panel._set_up(_set_up())
+    got = sweep.set_up(_set_up())
     assert asked == [{"NEWCO-JUN27": (None, "DM.D.NEWCOUS.JUN.IP")}]
     if priced:
         item = _b.get(got["id"])
@@ -1570,7 +1572,7 @@ def test_a_row_scoped_action_is_not_a_panel_button():
 def test_the_panel_list_in_the_browser_skips_inline_actions(repo_root):
     """The filter has to be in app.js too — the desk renders the list client-side, and a
     correct flag nothing reads is not a fix."""
-    js = (SRC / "desk" / "static" / "app.js").read_text()
+    js = desk_script()
     assert "!a.inline" in js, "app.js still lists every action for the panel, inline or not"
 
 
@@ -1623,7 +1625,7 @@ def test_required_is_the_stores_own_answer_for_every_table():
 def test_an_empty_list_says_nothing_and_the_page_explains_itself_once(repo_root):
     """An empty list is not drawn. The page explains itself in one place, its fold, in a reader's
     words and in the order the work comes in."""
-    js = (SRC / "desk" / "static" / "app.js").read_text()
+    js = desk_script()
     rendered = [line for line in js.splitlines() if "<li" in line and "clear</span>" in line]
     assert not any("nothing on the bench" in line or "no documents waiting" in line
                    or "the workbench is clear" in line for line in rendered)
@@ -1652,14 +1654,14 @@ def test_the_sweep_can_ask_what_became_of_its_events():
 
     The events come from the snapshot; their state comes from here, fresh every render.
     """
-    from portfusion.desk.panels import bench
+    from portfusion.desk.intake import bench
     out = bench.sweep_status(["NOT-A-REAL-REFERENCE", ""])
     assert "" not in out, "a blank reference is not a question worth asking"
     assert out["NOT-A-REAL-REFERENCE"] == {"in_record": False, "tables": [], "item": None}
 
 
 def test_an_event_on_the_bench_is_reported_as_such(swept):
-    from portfusion.desk.panels import bench
+    from portfusion.desk.intake import bench
     item = swept()
     st = bench.sweep_status(["DIAAAATESTCLOSE"])["DIAAAATESTCLOSE"]
     assert st["item"]["id"] == item["id"]
@@ -1669,7 +1671,7 @@ def test_an_event_on_the_bench_is_reported_as_such(swept):
 
 def test_a_reference_already_in_the_record_is_found():
     """The same scan the duplicate gate runs — one implementation, two callers."""
-    from portfusion.desk.panels import bench
+    from portfusion.desk.intake import bench
     from portfusion.record import schema
     # any reference the store actually carries; the IG sweep writes one into income.source
     known = None
@@ -1690,7 +1692,7 @@ def test_a_negative_income_row_is_labelled_a_cost(repo_root):
     """income.csv holds both, and its own schema doc says so: "COSTS ARE NEGATIVE, income
     positive". A -1.41 funding charge headed simply "income" reads as the opposite of what it
     is. The sign is the record's rule, so the label follows it rather than a second list."""
-    js = (SRC / "desk" / "static" / "app.js").read_text()
+    js = desk_script()
     assert 'r.table === "income" && parseFloat(r.values.amount) < 0' in js
     assert "a cost — negative" in js
 
@@ -1706,7 +1708,7 @@ def test_the_header_is_re_read_on_every_panel_switch(repo_root):
     the record moves, and a hand edit, a git pull, a checkout or a revert leaves no handler to
     hang this on.
     """
-    js = (SRC / "desk" / "static" / "app.js").read_text()
+    js = desk_script()
     show = js[js.index("async function show(name)"):]
     show = show[:show.index("\n(async function start()")]
     assert '/api/state' in show, (
@@ -1777,32 +1779,32 @@ def test_the_archive_name_carries_the_instant_the_document_states(tmp_path, monk
     ONLY WHEN THE DOCUMENT AGREES WITH THE LIMB. A time spliced from a document onto a date the
     operator typed for a different day would invent a third thing.
     """
-    from portfusion.desk.doors import commit
+    from portfusion.desk.intake import filing
 
     inbox = tmp_path / "_inbox"
     inbox.mkdir()
     (inbox / "export.csv").write_bytes(
         'Portfolio Summary\nValuation as at,03-03-2025 14:10\n'
         'Account,Stock value,Total cash,Total value,Available to invest,\n'.encode("cp1252"))
-    monkeypatch.setattr(commit, "BOOK", tmp_path)
+    monkeypatch.setattr(filing, "BOOK", tmp_path)
 
     item = {"id": "B-T", "document": {"name": "export.csv"}, "rows": [],
             "evidence": {"dated": "2025-03-03", "authority": "HL Portfolio Summary totals "
                          "download", "reference": "3 Mar 2025 14:10"}}
-    assert commit._archive_name(item, "export.csv").startswith("03 Mar 2025 14.10 "), \
-        commit._archive_name(item, "export.csv")
+    assert filing.archive_name(item, "export.csv").startswith("03 Mar 2025 14.10 "), \
+        filing.archive_name(item, "export.csv")
 
     # A different day: the stamp is withheld rather than spliced.
     item["evidence"]["dated"] = "2026-09-07"
-    assert commit._archive_name(item, "export.csv").startswith("07 Sep 2026 HL"), \
-        commit._archive_name(item, "export.csv")
+    assert filing.archive_name(item, "export.csv").startswith("07 Sep 2026 HL"), \
+        filing.archive_name(item, "export.csv")
 
 
 def test_a_document_that_states_no_instant_still_gets_a_name():
     """The time is provenance the file happens to carry, not something the archive depends on.
     A document sitting unarchived is the worse outcome by a distance."""
-    from portfusion.desk.doors import commit
-    assert commit._document_stamp("does-not-exist.csv", __import__("datetime").date(2026, 9, 8)) == ""
+    from portfusion.desk.intake import filing
+    assert filing._document_stamp("does-not-exist.csv", __import__("datetime").date(2026, 9, 8)) == ""
 
 
 def test_a_recognised_document_prefills_only_what_it_states(tmp_path, monkeypatch):
@@ -1849,8 +1851,7 @@ def test_a_contract_note_fills_all_three_limbs_from_its_own_text(tmp_path, monke
     import shutil
     from portfusion.record import rules as D
     from portfusion.record import schema
-    from portfusion.desk.doors import commit
-    from portfusion.desk.intake import bench, read_document
+    from portfusion.desk.intake import bench, filing, read_document
 
     inbox = tmp_path / "_inbox"
     (inbox / ".bench").mkdir(parents=True)
@@ -1863,7 +1864,7 @@ def test_a_contract_note_fills_all_three_limbs_from_its_own_text(tmp_path, monke
     shutil.copy(filed, inbox / "note.pdf")
     monkeypatch.setattr(read_document, "INBOX", str(inbox))
     monkeypatch.setattr(bench, "BENCH_DIR", inbox / ".bench")
-    monkeypatch.setattr(commit, "BOOK", tmp_path)
+    monkeypatch.setattr(filing, "BOOK", tmp_path)
 
     item = bench.for_document("note.pdf")
     assert item["evidence_class"] == "ii-contract-note"
@@ -1871,9 +1872,9 @@ def test_a_contract_note_fills_all_three_limbs_from_its_own_text(tmp_path, monke
                                 "authority": D.EVIDENCE_BY_KEY["ii-contract-note"].authority}
     assert item["recognised"]["instant"] == f"{day} {time}"
     assert item["recognised"]["instant_from"] == "document"
-    assert commit._archive_name(item, "note.pdf").startswith(
+    assert filing.archive_name(item, "note.pdf").startswith(
         f"{day:%d %b %Y} {time.replace(':', '.')} ii contract note {ref}"), \
-        commit._archive_name(item, "note.pdf")
+        filing.archive_name(item, "note.pdf")
 
 
 def test_an_unrecognised_document_is_left_entirely_blank(tmp_path, monkeypatch):
@@ -1920,12 +1921,12 @@ def test_a_zero_row_document_keeps_its_account_in_the_archived_name():
     """`_covers()` reads the tickers or accounts off the ROWS, so a document that yields none would
     be filed under a name that does not say whose account it is. The reader derives the account from
     the client number the document prints; this is that derivation, one step later."""
-    from portfusion.desk.doors import commit
+    from portfusion.desk.intake import filing
     item = {"rows": [], "account": "Rowe HL ISA"}
-    assert commit._covers(item) == "Rowe HL ISA"
+    assert filing._covers(item) == "Rowe HL ISA"
     # A row's own account still wins — the fallback is a fallback.
     item = {"rows": [{"values": {"account": "Voss ii ISA"}}], "account": "Rowe HL ISA"}
-    assert commit._covers(item) == "Voss ii ISA"
+    assert filing._covers(item) == "Voss ii ISA"
 
 
 def test_a_withdrawn_document_leaves_the_workbench_and_is_not_destroyed(workbench):
@@ -2100,7 +2101,7 @@ def test_a_download_is_named_with_its_instant_once_and_still_resolves():
     """A download's reference IS the instant it was pulled, and the filed name leads with the
     date and time — so the time is written once, and the row citing the document must still
     find it under that name."""
-    from portfusion.desk.doors import commit as C
+    from portfusion.desk.intake import filing
     from portfusion.record import rules as D
     cases = [
         ("hl-valuation", "HL Account Summary download", "30 Sep 2026 22:35", "Rowe HL ISA",
@@ -2114,7 +2115,7 @@ def test_a_download_is_named_with_its_instant_once_and_still_resolves():
     for key, authority, reference, account, expected in cases:
         item = {"evidence_class": key, "account": account, "rows": [],
                 "evidence": {"dated": "2026-09-30", "authority": authority, "reference": reference}}
-        name = C._archive_name(item, "download.csv")
+        name = filing.archive_name(item, "download.csv")
         assert name == expected, name
         source = D.evidence_source(key, reference=reference, account=account)
         assert D.reference_resolves(source, [name]) is True, (source, name)
@@ -2294,8 +2295,7 @@ def test_a_contract_reopened_in_the_same_item_is_not_retired():
 
 def _drawn_js():
     import re
-    from desk_support import _static
-    return re.sub(r"/\*.*?\*/", "", _static("app.js"), flags=re.S)
+    return re.sub(r"/\*.*?\*/", "", desk_script(), flags=re.S)
 
 
 def test_a_row_the_owner_edited_is_no_longer_the_machines():

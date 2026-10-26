@@ -218,7 +218,7 @@ def test_a_journalled_hand_edit_closes_the_check(store_copy):
     line reporting a discrepancy forever. A check that fires on sanctioned work is a check
     people learn to skip.
     """
-    from portfusion.desk.doors import commit
+    from portfusion.desk.doors import envelope
 
     def _reasoning_off():
         return {r["table"]: r["unaccounted"]
@@ -228,7 +228,7 @@ def test_a_journalled_hand_edit_closes_the_check(store_copy):
     path = store_copy / "reasoning.csv"
     path.write_text(path.read_text() + "ZZZ,2026-01-02,typed straight into the file,\n",
                     encoding="utf-8")
-    commit.journal([("hand", "append", "reasoning", 1, "commit abc1234",
+    envelope.journal([("hand", "append", "reasoning", 1, "commit abc1234",
                      "corrected by hand, see the commit")])
 
     # THE TABLE THIS TEST TOUCHED, not the whole frame — same reason as the sibling above.
@@ -241,7 +241,7 @@ def test_a_replace_leaves_the_reconciliation_where_it_was(store_copy):
     and adds no rows, so a `replace` entry must move `expected` by nothing. Counted as an
     arrival, one fortnightly refresh would report twelve unaccounted rows in a table whose
     length never moved."""
-    from portfusion.desk.doors import commit
+    from portfusion.desk.doors import envelope
 
     def state():
         rows = _book().journal_reconciliation().to_dict("records")
@@ -251,7 +251,7 @@ def test_a_replace_leaves_the_reconciliation_where_it_was(store_copy):
     # THE DELTA, NOT THE ABSOLUTE. Refreshes on file carry replaced marks, so what THIS entry
     # does is measured either side of it.
     before, before_replaced = state()
-    commit.journal([("marks", "replace", "current-prices", 12, "2026-09-04",
+    envelope.journal([("marks", "replace", "current-prices", 12, "2026-09-04",
                      "12 marks replaced")])
     after, after_replaced = state()
     assert after == before, "a replace moved the reconciliation; it adds no rows"

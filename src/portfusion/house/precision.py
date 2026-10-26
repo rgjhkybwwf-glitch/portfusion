@@ -13,7 +13,7 @@ report and the Method page. Printing only — stored figures keep their own prec
 EVERY DATE A READER SEES reads "14 Oct 2026": the day without
 a leading nought, the month's three letters, the year; a moment adds the time, "14 Oct 2026,
 10:39". The desk, `portfusion record` and the report's tables print it, and the report's prose
-keeps the full month ("30 September 2026"). The desk is sent MONTHS with every panel, so app.js
+keeps the full month ("30 September 2026"). The desk is sent MONTHS with every panel, so core.js
 types no month of its own. A stored date stays ISO, which is also what a table sorts by: this is
 printing only.
 

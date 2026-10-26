@@ -108,6 +108,8 @@ def test_every_reaching_action_is_pinned():
         "refresh-fetch-all", "ig-events", "ig-setup-to-bench"}
     assert actions.get("ig-event-to-bench").reaches is None, \
         "carrying a swept event onto the bench opens no connection — it reaches nothing"
+    # AND EACH RUNS IN ONE MODULE, the desk's reads from the feeds: a panel reaches nothing itself.
+    assert {a.run.__module__ for a in actions.reaching_actions()} == {"portfusion.desk.intake.sweep"}
 
 
 def test_something_that_reaches_out_must_declare_a_gate():
@@ -156,8 +158,7 @@ def test_an_action_may_still_name_its_own_date():
 # =====================================================================================
 
 #: What a write is: `harness.write_call()`, the one list, a removal, a copy and a rename among
-#: them. `_append` is `desk/doors/commit.py`'s shared append, in the file's own line ending: a
-#: module that writes through it writes, and the freeze does exactly that.
+#: them. A module that writes through `desk/doors/envelope.py` writes.
 
 
 #: Every module in the package that writes any file at all, and what each one writes. A NAMED
@@ -173,8 +174,9 @@ def test_an_action_may_still_name_its_own_date():
 #:                    (.desk_readers.json), and the sign-in log it appends to
 #:                    (.desk_signins.jsonl, opened for appending).
 #:   bench.py         its own item note, in _inbox/.bench/ — staging, never the record
-#:   commit.py        APPENDS AN EVENT to store/, and holds the safe-write envelope the store
-#:                    doors share, `commit.atomic()`
+#:   commit.py        APPENDS AN EVENT to store/
+#:   envelope.py      WRITES BACK WHAT A DOOR HELD when its write fails (`envelope.atomic()`), and
+#:                    the journal, the placing and the rewriting the store doors share
 #:   dropoff.py       a dropped document into _inbox/
 #:   publish.py       the deploy repository's clone, the book's `deploy_repo` — the hosted
 #:                    desk's generated files. Outside this repository and never the record.
@@ -217,10 +219,10 @@ def test_an_action_may_still_name_its_own_date():
 #: desk/icon.py RETURNS BYTES and writes nothing — if it ever starts writing, this set is what
 #: says so.
 WRITERS = {"desk/agent.py", "desk/auth.py", "desk/intake/bench.py", "desk/doors/commit.py",
-           "desk/intake/dropoff.py", "desk/doors/freeze.py", "desk/doors/marks.py",
-           "desk/doors/observations.py", "desk/doors/research_notes.py", "desk/intake/withdraw.py",
-           "desk/publish.py", "feeds/ig.py", "feeds/tv.py", "history/_appendonly.py",
-           "init/__init__.py", "record/migrations.py", "record/schema.py"}
+           "desk/doors/envelope.py", "desk/intake/dropoff.py", "desk/doors/freeze.py",
+           "desk/doors/marks.py", "desk/doors/observations.py", "desk/doors/research_notes.py",
+           "desk/intake/withdraw.py", "desk/publish.py", "feeds/ig.py", "feeds/tv.py",
+           "history/_appendonly.py", "init/__init__.py", "record/migrations.py", "record/schema.py"}
 
 
 @functools.cache
@@ -242,8 +244,10 @@ def _writes():
 #: MARK is replaced by design and is safe only because its outgoing value is banked first. A
 #: single code path that could do either is a code path that can confuse them.
 STORE_DOORS_UNDER_DESK = {
-    # AN EVENT GOES WHERE ITS DATE PUTS IT (`commit.place()`), whichever door adds it.
+    # AN EVENT GOES WHERE ITS DATE PUTS IT (`envelope.place()`), whichever door adds it.
     "doors/commit.py": "adds an event where its date puts it",
+    # Its restore takes the paths a door held, which the scan cannot resolve: declared here.
+    "doors/envelope.py": "writes back what a door held",
     "doors/marks.py": "replaces a mark, or retires a contract nothing holds",
     # An account reading is a MARK — the marks rule names "live equity" in as many words — so it is
     # replaced, banked first, like a price.
@@ -251,7 +255,7 @@ STORE_DOORS_UNDER_DESK = {
     # A quarter end, derived by the engine and written to quarter-snapshots, -nav and -results.
     "doors/freeze.py": "adds a frozen quarter end, or restates one, superseding its rows",
     # A published research note's rows, one per code it covers, from the research repo's own
-    # frontmatter on the Bench's press, placed by `commit.placed()`.
+    # frontmatter on the Bench's press, placed by `envelope.placed()`.
     "doors/research_notes.py": "adds a published research note",
 }
 
@@ -268,9 +272,9 @@ def test_only_the_declared_doors_under_desk_write_the_record():
     A NAMED map rather than a count, so another door fails here until somebody writes down what
     it may write and why.
 
-    The safe-write envelope the doors share stays in commit.py for a reason worth keeping: a
-    write whose path arrives as a PARAMETER cannot be resolved by the scan below, so a restore
-    moved into a module of its own would go on writing store files and would stop being seen to.
+    A write whose path arrives as a PARAMETER cannot be resolved by the scan below, so the
+    envelope's restore is not seen to write the store: the envelope is declared a door, and a
+    call to its `place()` or `journal()` is a store write wherever it is made.
     """
     assert STORE_NAMES.search("schema.TABLES[t].path") and not STORE_NAMES.search("restore(x)")
     store_writers = {module.removeprefix("desk/") for module, target, _ in _writes()
@@ -307,7 +311,9 @@ def test_a_new_writer_is_a_decision():
     ("os.remove(path)", "remove"), ("shutil.copy(a, b)", "copy"), ("path.rename(target)", "rename"),
     ("path.touch()", "touch"), ("path.rmdir()", "rmdir"),
     ("os.open(path, os.O_WRONLY | os.O_CREAT, 0o600)", "open"),
+    ("envelope.place(rows)", "place"), ("envelope.journal(rows)", "journal"),
     ("'2026-10-21'.replace('-', '')", None), ("frame.rename(columns={'a': 'b'})", None),
+    ("book.journal(since=day)", None), ("rows.append(row)", None),
     ("open(path)", None), ("open(path, 'rb')", None), ("rows.remove(row)", None),
     ("frame.copy()", None), ("os.open(path, os.O_RDONLY)", None),
 ])

@@ -5,8 +5,7 @@ import pathlib
 import pytest
 from portfusion import engine as _engine
 from portfusion.desk import panels, engine
-from desk_support import _static
-from harness import SRC, needs
+from harness import SRC, needs, desk_script
 
 
 # =====================================================================================
@@ -88,7 +87,7 @@ def test_a_desk_launchd_does_not_name_relaunches_itself(monkeypatch, env):
 
 def test_the_page_sends_the_port_it_is_connected_to(repo_root):
     """The other half: a required argument nothing supplies is a button that always fails."""
-    js = (SRC / "desk" / "static" / "app.js").read_text()
+    js = desk_script()
     assert "restart-desk" in js
     assert "location.port" in js, "app.js does not tell the action which server to restart"
 
@@ -96,7 +95,7 @@ def test_the_page_sends_the_port_it_is_connected_to(repo_root):
 def test_the_restart_waits_for_the_new_process_rather_than_guessing(repo_root):
     """Reloading on a timer lands on either the dying server or a refused connection, and both
     look like a crash. /api/health carries `started`, so the page polls until it MOVES."""
-    js = (SRC / "desk" / "static" / "app.js").read_text()
+    js = desk_script()
     block = js[js.index("async function wireRestart()"):js.index("function drawFreshness")]
     assert "/api/health" in block
     assert "!== was" in block, "it must compare `started` against what it saw before"
@@ -132,7 +131,7 @@ def test_every_font_size_comes_from_the_scale(repo_root):
 def test_nothing_in_a_data_row_is_bold(repo_root):
     """Bold is for a headline figure and an item's label, never a cell."""
     import re
-    js = (SRC / "desk" / "static" / "app.js").read_text()
+    js = desk_script()
     assert not re.findall(r"<td[^>]*>\s*<strong", js), "a table cell is bold"
 
 
@@ -144,7 +143,7 @@ def test_every_detail_is_in_the_one_order(repo_root):
     parts in another order would read as though the order were its own."""
     import re
     from portfusion.desk import panels
-    js = (SRC / "desk" / "static" / "app.js").read_text()
+    js = desk_script()
     order = re.findall(r'"([a-z_]+)"', re.search(r"const DETAIL = \[(.*?)\];", js, re.S).group(1))
     assert len(order) == len(set(order)) >= 8, f"read DETAIL as {order} — has it moved?"
     named = {m.NAME: m.DETAIL_COLUMNS for m in panels.all_panels() if hasattr(m, "DETAIL_COLUMNS")}
@@ -165,7 +164,7 @@ def test_every_filter_row_has_the_same_shape(repo_root):
     No filter reads "all" on every page; a date is bounded to what is on file; and the grey boxes
     are only ever a filter row, never a form.
     """
-    js = (SRC / "desk" / "static" / "app.js").read_text()
+    js = desk_script()
     assert "const filterField" in js and "const filters" in js
     assert 'class="controls"' not in js, (
         'a panel draws a class="controls" filter row rather than filters()')
@@ -249,7 +248,7 @@ def test_every_sorting_table_names_itself_and_holds_its_own_sort(repo_root):
     """Held under the page and its columns, two tables would share one sort. A sorting table
     names itself and its sort is held under that name; one with no name would share, so it is
     refused."""
-    js = _static("app.js")
+    js = desk_script()
     assert "const sortKey = (name) =>" in js and "sortKey(name)" in js, \
         "a sort is not held under its table's name"
     calls = [_own(c) for c in _table_calls(js)]
@@ -263,7 +262,7 @@ def test_every_sorting_table_names_itself_and_holds_its_own_sort(repo_root):
 def test_a_table_whose_order_is_its_layout_keeps_it(repo_root):
     """A table naming the book first and then each account once keeps that order, as a detail's
     mark history keeps its own."""
-    kept = {c.split(",")[0].strip() for c in map(_own, _table_calls(_static("app.js")))
+    kept = {c.split(",")[0].strip() for c in map(_own, _table_calls(desk_script()))
             if "sort: false" in c}
     assert kept == {"x.marks", "quarters", "d.year", "d.income"}, kept
 
@@ -345,7 +344,8 @@ def test_the_scan_covers_this_projects_source_and_nothing_else():
              for p in engine._repo_modules()}
     assert names, "the scan found nothing at all"
 
-    for expected in ("engine.py", "record/rules.py", "desk/engine.py", "desk/panels/holdings.py"):
+    for expected in ("engine/book.py", "record/rules.py", "desk/engine.py",
+                     "desk/panels/holdings.py"):
         assert expected in names, f"{expected} is imported by the desk and is not scanned"
 
     for name in names:
@@ -361,15 +361,16 @@ def test_the_scan_covers_this_projects_source_and_nothing_else():
 def test_a_file_changed_since_import_reads_stale_and_is_named(source_baseline):
     """NAMED, NOT COUNTED. "1 file changed" sends you looking; "engine.py" tells you what moved.
     """
-    # THE ENGINE BY ITS OWN PATH: "ends with engine.py" also takes desk/engine.py, so which file
-    # is picked would hang on the order the modules come in.
+    # THE ENGINE BY ITS OWN PATH: a name alone may be another package's, and which file is picked
+    # would hang on the order the modules come in.
     target = next(p for p in engine._repo_modules()
-                  if pathlib.Path(p).parts[-2:] == ("portfusion", "engine.py"))
+                  if pathlib.Path(p).parts[-2:] == ("engine", "book.py"))
     source_baseline[target] = 0.0               # as if imported before the file was written
 
     f = engine.freshness()
     assert f["source_stale"] is True
-    assert "engine.py" in f["source_files"], f"the changed file is not named: {f['source_files']}"
+    assert "engine/book.py" in f["source_files"], \
+        f"the changed file is not named: {f['source_files']}"
     assert f["source_changed"], "nothing says WHEN the code moved"
     assert f["source_count"] >= 1
 
@@ -399,7 +400,7 @@ def test_a_clean_desk_says_nothing_about_its_source(source_baseline):
 def test_the_page_says_the_desk_is_behind_and_points_at_the_restart(repo_root):
     """The freshness line says when to press the restart: a fine store says nothing of a stale
     engine behind the page."""
-    js = _static("app.js")
+    js = desk_script()
     assert "source_stale" in js, "the header no longer reads the source-staleness signal"
     assert "restart it" in js, "the warning does not say what to do about it"
     assert "source_files" in js, "the warning does not name what changed"
@@ -410,7 +411,7 @@ def test_a_stale_desk_is_a_problem(source_baseline):
     current page, so figures go missing with nothing on screen admitting it."""
     # The engine by its own path, as above.
     target = next(p for p in engine._repo_modules()
-                  if pathlib.Path(p).parts[-2:] == ("portfusion", "engine.py"))
+                  if pathlib.Path(p).parts[-2:] == ("engine", "book.py"))
     source_baseline[target] = 0.0
 
     items = panels.get("dashboard").data()["attention"]
@@ -418,7 +419,7 @@ def test_a_stale_desk_is_a_problem(source_baseline):
     assert mine, f"a stale desk raises nothing in Needs attention: {[i['text'] for i in items]}"
     assert mine[0]["level"] == "problem", \
         f"a stale engine is reported as {mine[0]['level']!r} — it produces wrong figures"
-    assert "engine.py" in mine[0]["text"], "the item does not name what changed"
+    assert "engine/book.py" in mine[0]["text"], "the item does not name what changed"
 
 
 

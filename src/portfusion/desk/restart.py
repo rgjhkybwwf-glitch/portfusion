@@ -99,6 +99,15 @@ def launchd_job() -> str | None:
     return target if m and int(m.group(1)) == os.getpid() else None
 
 
+def _exit() -> None:
+    """os._exit, NOT sys.exit: uvicorn catches SystemExit and would keep serving. Dying abruptly
+    is right here, since a replacement is already waiting for the port, but never part-way through
+    a write: every door holds `schema.LOCK` from its first read to its last write."""
+    from portfusion.record import schema
+    with schema.LOCK:
+        os._exit(0)
+
+
 def restart(port: int = 8765) -> dict:
     """Hand this server's port to a fresh process. Returns before it goes.
 
@@ -133,10 +142,7 @@ def restart(port: int = 8765) -> dict:
     except Exception as e:                      # noqa: BLE001 — the button must report, not raise
         return {"ok": False, "error": f"{type(e).__name__}: {e}"}
 
-    # os._exit, NOT sys.exit: uvicorn catches SystemExit and would keep serving. This is the one
-    # place in the desk where dying abruptly is the correct behaviour — there is nothing to flush
-    # and a replacement is already waiting for the port.
-    threading.Timer(EXIT_DELAY, lambda: os._exit(0)).start()
+    threading.Timer(EXIT_DELAY, _exit).start()
     return {"ok": True, "pid": child.pid, "port": port,
             "detail": "a replacement is waiting for this process to exit"}
 

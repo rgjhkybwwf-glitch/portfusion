@@ -47,7 +47,7 @@ import re
 import sys
 from pathlib import Path
 
-from portfusion.desk.intake import bench, verify
+from portfusion.desk.intake import bench, recorded, verify
 from portfusion.desk.engine import _guarded
 from portfusion.log import log
 
@@ -245,8 +245,8 @@ def propose(item_id: str, reading: dict) -> dict:
 
     proposable = _proposable()
     # THE ACCOUNT, FROM THE NUMBER THE DOCUMENT PRINTS. Resolved once per document, by the
-    # record rather than by the reader — see `account_from()`.
-    account, account_line = account_from(text)
+    # record rather than by the reader — see `recorded.account_from()`.
+    account, account_line = recorded.account_from(text)
     rows, dropped = [], []
     # IDS ALREADY TAKEN ON THIS ITEM: those handed out within THIS reading, so two rows differ,
     # and those on the rows a re-read keeps — corrected by hand, they survive it below, and a
@@ -325,7 +325,7 @@ def propose(item_id: str, reading: dict) -> dict:
         # reading answers the question a statement actually poses — WHICH OF THESE ARE NEW. A
         # genuine second leg — two identical closes on one day, which this record contains — is
         # still enterable by hand, and the gate's acknowledgement covers it there.
-        seen = bench.matching_row(table, values)
+        seen = recorded.matching_row(table, values)
         if seen and seen != "unreadable":
             dropped.append(f"{table} {values.get('date', '')} — already in the record as "
                            f"{seen}, so it was not proposed again")
@@ -371,42 +371,6 @@ def propose(item_id: str, reading: dict) -> dict:
     return {"rows": len(rows), "cells": sum(len(r["values"]) for r in rows),
             "dropped": dropped, "not_found": item["proposed"]["not_found"],
             "directives": item["proposed"]["directives"]}
-
-
-def account_from(text: str) -> tuple[str | None, str]:
-    """The account this document belongs to, matched on the number it prints.
-
-    A DERIVATION, NOT A TRANSLATION. `store/accounts.csv` holds a `number` column — each
-    account's number at its broker — so mapping the number a contract note prints onto the
-    account it belongs to is the RECORD answering, not the reader guessing. That distinction is
-    why the reader is still told to refuse the account outright: it does not know the mapping,
-    and reasoning its way to one would be exactly the invention this bench exists to prevent.
-    This function knows, because the book wrote it down.
-
-    RETURNS NOTHING UNLESS EXACTLY ONE MATCHES. Two numbers in one document means a statement
-    covering more than one account, and picking either would be a coin toss. Matched on a whole
-    token, so a number that happens to be a substring of a larger figure is not a hit.
-    """
-    def _load():
-        from portfusion.record import schema
-        return [(r[0], str(r[3])) for r in schema.load("accounts") if str(r[3]).strip()]
-    try:
-        accounts = _guarded(_load)
-    except Exception:
-        return None, ""
-
-    hits = []
-    for name, number in accounts:
-        # DIGIT BOUNDARIES, NOT WORD BOUNDARIES. ii builds its payment references out of the
-        # account number — "PAYMENT Q1234567AB1CDE A SMITH" — so word boundaries would miss the
-        # account on a cash statement that names it on every line. What must still be rejected
-        # is the number sitting inside a LONGER NUMBER, which is the actual false positive:
-        # `21234567000` is not account 1234567.
-        m = re.search(rf"(?<!\d){re.escape(number)}(?!\d)", text)
-        if m:
-            line = next((candidate for candidate in text.splitlines() if number in candidate), number)
-            hits.append((name, " ".join(line.split())[:120]))
-    return hits[0] if len(hits) == 1 else (None, "")
 
 
 def resolve_ticker(value: str) -> str:

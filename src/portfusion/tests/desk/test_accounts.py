@@ -6,9 +6,9 @@ import pytest
 from portfusion import engine as _engine
 from portfusion.record import rules as _rules
 from portfusion.desk import actions, app, panels, engine
-from desk_support import _static
 from portfusion.desk.intake import bench as _bench
-from harness import SRC, append_rows, needs, write_rows
+from portfusion.desk.intake import recorded
+from harness import SRC, append_rows, needs, write_rows, desk_script
 
 
 # =====================================================================================
@@ -261,7 +261,7 @@ def test_the_gap_list_quotes_the_engines_rule_rather_than_composing_one(repo_roo
     proves nothing about what gets drawn.
     """
     import re
-    js = _static("app.js")
+    js = desk_script()
     # Comments are stripped before the ban, because the ban is on what RENDERS.
     drawn = re.sub(r"/\*.*?\*/", "", js, flags=re.S)
 
@@ -397,6 +397,7 @@ def test_the_bench_can_produce_a_cash_observation():
     names = [f["name"] for f in _bench.form_for("cash-readings")]
     assert names == ["account", "as_of", "cash", "evidence", "reference"]
     assert "cash-readings" in _bench.TABLES
+    assert tuple(recorded.SIGNATURE) == _bench.TABLES, "a Bench table the duplicate check cannot see"
 
 
 def test_the_evidence_class_is_a_closed_vocabulary_on_the_form():
@@ -425,9 +426,9 @@ def test_a_second_reading_for_one_account_on_one_date_is_a_duplicate():
     account, as_of = on_file[0][0], on_file[0][1].isoformat()
     held = {"account": account, "as_of": as_of, "cash": "999.99",
             "evidence": "ii-transactions", "reference": "x", "source": "y"}
-    assert _bench.matching_row("cash-readings", held) == account
+    assert recorded.matching_row("cash-readings", held) == account
     fresh = _good_cash(as_of=_after_the_newest_reading(_shares_register()[0][0]))
-    assert _bench.matching_row("cash-readings", fresh) is None, \
+    assert recorded.matching_row("cash-readings", fresh) is None, \
         "a reading on a NEW date is not a duplicate"
 
 
@@ -438,8 +439,8 @@ def test_a_two_column_signature_is_required_in_full():
 
     Adding `cash` to reach three would be the wrong fix — see the test above.
     """
-    assert len(_bench.SIGNATURE["cash-readings"]) == 2
-    assert _bench.matching_row("cash-readings",
+    assert len(recorded.SIGNATURE["cash-readings"]) == 2
+    assert recorded.matching_row("cash-readings",
                                {"account": _shares_register()[0][0], "cash": "1"}) is None, \
         "without a date it cannot identify anything, and must not guess"
 
@@ -558,7 +559,7 @@ def test_the_bay_says_what_it_can_replace_rather_than_what_is_due(repo_root):
     Dashboard does, and a line past the limit says so in its own row.
     """
     from portfusion import engine
-    js = _static("app.js")
+    js = desk_script()
     assert "price(s) due" not in js, "step 3 calls the replaceable lines due again"
     assert "limit ${d.age_limit} days" in js, "step 3 does not say what the threshold is"
 
@@ -676,9 +677,9 @@ def _filed(monkeypatch, names):
 def _write(readings):
     """The readings door, as the Bench's commit calls it: refused whole or written whole."""
     from portfusion.record import rules as D
-    from portfusion.desk.doors import commit, observations
+    from portfusion.desk.doors import envelope, observations
     try:
-        with commit.atomic(*observations.paths()):
+        with envelope.atomic(*observations.paths()):
             return {"ok": True, **observations.write(readings=readings)}
     except observations.Refused as e:
         D.reload_store()
@@ -692,7 +693,7 @@ def test_a_failed_reading_takes_back_the_banking_too(store_copy, monkeypatch):
     bank moves no account-statements.csv. The outgoing reading is unbanked here, so the bank has
     work, and the write fails at its journal line, after the bank."""
     from portfusion.history import accounts as AH
-    from portfusion.desk.doors import commit, observations
+    from portfusion.desk.doors import envelope, observations
     _share_filed(store_copy)
     live = {(m["as_of"], m["account"]) for m in AH.live_observations()}
     AH.save([r for r in AH.load() if (r["as_of"], r["account"]) not in live])
@@ -701,7 +702,7 @@ def test_a_failed_reading_takes_back_the_banking_too(store_copy, monkeypatch):
 
     def fails(*a, **k):
         raise RuntimeError("the journal could not be written")
-    monkeypatch.setattr(commit, "journal", fails)
+    monkeypatch.setattr(envelope, "journal", fails)
     # THE DOOR ITSELF, not `_write()`: that wraps it in an envelope of its own over
     # `observations.paths()`, which would restore the history whatever the door holds.
     with pytest.raises(RuntimeError):
@@ -727,12 +728,21 @@ def test_a_field_the_new_reading_does_not_carry_is_blank_not_the_old_value():
 
 
 @needs("accounts", "account-readings", "buys")
-def test_a_share_reading_is_written_and_banked_with_its_account(store_copy):
+def test_a_share_reading_is_written_and_banked_with_its_account(store_copy, monkeypatch):
     """One write files the reading and banks it for the report, and the banked row names the
     account, because two ii valuations filed on one day differ in nothing else. ITS CASH IS A CASH
-    READING of its own day, in the same write, and the journal says so."""
+    READING of its own day, in the same write, and the journal says so. THE DOOR ASKS ITS OWN
+    HISTORY ALONE: a price or rate history that cannot be read is the marks door's, and blocks no
+    reading."""
     from portfusion.record import schema
+    from portfusion.history import fx as FX
+    from portfusion.history import prices as PH
     account = _share_filed(store_copy)
+
+    def unreadable():
+        raise RuntimeError("a price or rate history that cannot be read")
+    monkeypatch.setattr(PH, "check", unreadable)
+    monkeypatch.setattr(FX, "check", unreadable)
 
     out = _write([_share()])
 
@@ -979,7 +989,7 @@ def holdings_on_the_bench(store_copy, tmp_path, monkeypatch):
     and the readings door all pointed at temp folders. The export is built from the loaded
     book's own units."""
     from portfusion.desk.doors import commit
-    from portfusion.desk.intake import bench, read_document
+    from portfusion.desk.intake import bench, filing, read_document
     inbox, statements = tmp_path / "_inbox", tmp_path / "statements"
     inbox.mkdir()
     statements.mkdir()
@@ -988,7 +998,7 @@ def holdings_on_the_bench(store_copy, tmp_path, monkeypatch):
         _hl_export(account, number, _book_units(account)), encoding="utf-8")
     monkeypatch.setattr(read_document, "INBOX", str(inbox))
     monkeypatch.setattr(bench, "BENCH_DIR", tmp_path / "bench")
-    monkeypatch.setattr(commit, "BOOK", tmp_path)
+    monkeypatch.setattr(filing, "BOOK", tmp_path)
     monkeypatch.setattr(_rules.schema, "STATEMENTS", statements)
     monkeypatch.setattr(commit, "ARCHIVE", tmp_path / "archive")
     # The history banks a reading once; forget any banked row at this export's key.

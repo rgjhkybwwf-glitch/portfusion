@@ -37,13 +37,13 @@ import time
 from portfusion import brand
 from portfusion.desk import auth, bundle
 from portfusion.log import log
-from portfusion.record import rules
+from portfusion.record import schema
 
 #: The clone of the deploy-only repository, the book's `deploy_repo` (a leading `~` is the home
 #: folder); None when the book names none. Outside this one, so nothing here can be published by
 #: accident and nothing there can reach this repository's history.
-DEPLOY: pathlib.Path | None = (pathlib.Path(rules.SETTINGS["deploy_repo"]).expanduser()
-                               if rules.SETTINGS.get("deploy_repo") else None)
+_DEPLOY = dict(schema.load("settings")).get("deploy_repo")
+DEPLOY: pathlib.Path | None = pathlib.Path(_DEPLOY).expanduser() if _DEPLOY else None
 
 #: Where Homebrew and the Tailscale app put the command line. A desk started by launchd has a short
 #: PATH, so the command is looked for here as well as on it.
@@ -161,7 +161,6 @@ def manifest(tree: dict[str, bytes], source: str, now: _dt.datetime | None = Non
 def record_values() -> set[str]:
     """Accounts, holders, account numbers, tickers and companies — read through the record's own
     door. None of them may appear in a file that is readable before the hosted sign-in."""
-    from portfusion.record import schema
 
     def column(table, name):
         position = schema.TABLES[table].header.index(name)
@@ -203,7 +202,6 @@ def leaks(tree: dict[str, bytes]) -> list[str]:
                   if re.search(rf"(?<![\w.-]){re.escape(v)}(?![\w-])",
                                code if len(v) <= SHORT_VALUE else text)]
     from portfusion import secret_scan
-    from portfusion.record import schema
     secrets, _, _ = secret_scan.credential_values([schema.BOOK])
     for path, body in sorted(tree.items()):
         found += [f"{where} {why}" for where, why in secret_scan.matches(path, body, secrets)]
@@ -233,7 +231,6 @@ def source(root: pathlib.Path | None = None) -> str:
     """The book's commit being published: its `main`, clean, and already on GitHub, so the figures
     the hosted desk serves are ones a pushed commit holds. Read from the book's own folder, never
     from where the app is installed."""
-    from portfusion.record import schema
     root = root or schema.BOOK
     _on_clean_main(root, "the book")
     head = _git(root, "rev-parse", "HEAD")
@@ -282,7 +279,6 @@ def tunnel_url(port: int, status: dict | None = None) -> str | None:
 def _outside_what_it_must_not_touch(deploy: pathlib.Path) -> None:
     """A publish deletes every file in the clone it did not write, so the clone is never the book,
     the app, the checkout or the home folder, never inside the first three, and never holds any."""
-    from portfusion.record import schema
 
     def within(a: pathlib.Path, b: pathlib.Path) -> bool:
         # samefile, not ==: a Mac's disk ignores case, so two spellings can name one folder.

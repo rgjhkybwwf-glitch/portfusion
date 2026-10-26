@@ -88,6 +88,34 @@ prints it.
   build has passed, so a refused reload leaves the record exactly as it was. A Book's pin holds
   for the record's functions too: a leg's kind and the accounts open on a day answer from the
   record the Book was built from. No figure, page or store moves.
+- **A price or rate history that cannot be read no longer blocks an account reading.** The
+  readings door asked the marks door whether its outgoing readings were banked, and the marks door
+  read all three histories to answer, so a broken price or FX history refused a reading it had no
+  part in. Each door now asks its own history: an account reading, from the Price Refresh or filed
+  with a holdings export, waits only on the account history. The desk's two panels that acted now
+  only shape: the Price Refresh's write is the marks door's `refresh()`, and the sweeps the desk
+  asks of the feeds are `desk/intake/sweep.py`'s. No figure, page or store moves.
+- **The quarter close is an action: `portfusion freeze <quarter end>`**, and `--write` writes it.
+  The audit's close procedure and the report gate's refusal name it. `--book` reaches every
+  command run as `python3 -m portfusion.<command>`: `python3 -m portfusion.record --book demo` was
+  refused as an unrecognised argument. `portfusion --help` lists all fifteen commands: the seven actions, and
+  the eight reached by `python3 -m` alone. `python3 -m portfusion.desk.doors.freeze` still works.
+- **The engine is a package.** `engine.py` is `engine/`, a file per topic: the store, the two
+  bases, the ledger and valuation, then `Book`, built from seven classes, each a group of its
+  methods, over the construction they share (`engine/core.py`). `portfusion.engine` offers every
+  name it did, `Book.HEADLINE` stays the one registry, and an import contract keeps the topics
+  from importing one another. pyright now checks the store, the bases, the ledger and valuation.
+  No figure, page or store moves.
+- **A hosted reader sees a fixed sentence, not a 500, when the record will not load.** The remote
+  door answered 500 at every level, or handed an owner the record's own words, which name the
+  Mac's folders; it now tells every reader "the record on the Mac will not load: see the Mac's
+  desk". A refusal's words are renamed for a level that reads no names, as its answers are. A
+  desk with a hosted door now starts when a cell will not load: the door reads its two settings
+  alone.
+- **A revoke that races a sign-in holds.** The sign-in wrote back the passkeys it had read, so a
+  device revoked part-way through came back, signed in. The passkeys, the readers and the sessions
+  in memory now change under one lock, and a session opens only while its passkey is on file. A
+  restart's exit waits for a write in progress to finish, as every door's write does.
 
 ## 0.3.2 — beta, 24 Oct 2026
 

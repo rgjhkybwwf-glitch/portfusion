@@ -1,8 +1,8 @@
-"""PRICE REFRESH — the sweep as a screen, and the one door every mark it fetches comes through.
+"""PRICE REFRESH — the sweep as a screen.
 
-`feeds/refresh.py:sweep()` fetches and prints; this panel is where the lines are reviewed and
-written. Its two rules — bank before replacing, and the levels with the equity — are structural
-here rather than remembered.
+`feeds/refresh.py:sweep()` fetches and prints; this panel is where the lines are reviewed. Its
+fetch is `desk/intake/sweep.py`'s and its write the marks door's `refresh()`, where its two rules
+— bank before replacing, and the levels with the equity — are structural rather than remembered.
 
     1  BANK     the outgoing marks, before anything replaces them
     2  FETCH    one sweep — `feeds/refresh.py:sweep()`, the same one the terminal prints
@@ -21,11 +21,10 @@ would be the third place that answers a question the record already answers.
 """
 from __future__ import annotations
 
-import contextlib
-import traceback
-
 from portfusion.desk import engine
 from portfusion.desk.actions import Action, register
+from portfusion.desk.doors import marks
+from portfusion.desk.intake import sweep
 from portfusion.desk.panels import _shape
 
 NAME = "price-refresh"
@@ -59,8 +58,6 @@ def data() -> dict:
 
 def query() -> dict:
     """The bay's state. Every figure is the engine's or the door's; nothing is decided here."""
-    from portfusion.desk.doors import marks
-
     # ONE BOOK FOR THE WHOLE BAY, the desk's, so the outgoing marks are the record the figures
     # below are drawn from, and a store that will not load answers "record unavailable".
     b = engine.book()
@@ -71,7 +68,7 @@ def query() -> dict:
         # THE THRESHOLD TRAVELS WITH THE ROWS, so the label can say how many are actually old
         # without the panel holding an opinion about what old is.
         "age_limit": can["age_limit"],
-        "banked": _banked(marks),
+        "banked": _banked(),
         # A CARRIED LINE IS LEFT OFF THE SCREEN, not listed: it is a
         # decision, not work, and offering it would invite undoing that decision by accident.
         # `marks.write()` refuses one by name either way.
@@ -107,7 +104,7 @@ def _frame(rows: list[dict]):
     return pd.DataFrame(rows) if rows else pd.DataFrame()
 
 
-def _banked(marks) -> dict:
+def _banked() -> dict:
     """Step 1's state, and it must not take the panel down with it.
 
     `marks.banked()` imports `history/`, which is a tool ALONGSIDE the build and can be absent
@@ -128,55 +125,6 @@ def _banked(marks) -> dict:
 # WRITES MARKS and reaches nothing. The marks rule's two fields, each doing its own job — see
 # desk/actions.py for why that is two fields and not a fourth value on one.
 
-def _fetch_all(on=None, lacking=False):
-    """THE SWEEP, as `feeds/refresh.py` takes it; with `on`, one past day's closes, which the
-    write then banks into the histories rather than over the live marks; with `lacking`, the
-    closes of the dated rates the record lacks (`Book.rate_gaps()`), one TradingView read per
-    currency, banked the same way under the newest of their days.
-
-    ONE GESTURE AND A REVIEW. Each vendor reports separately, so a failure names its vendor and
-    the rest still lands. The far contracts' past levels come off the filed IG statements, read
-    here because `feeds/` may not import the desk.
-    """
-    if lacking:
-        return _fetch_lacking()
-    try:
-        from portfusion.feeds import refresh
-        from portfusion.desk.intake import statement_closes
-    except Exception as e:                          # noqa: BLE001
-        return {"ok": False, "error": f"the sweep could not be imported: {e}"}
-    return {"ok": True, **_with_sources(refresh.sweep(on, filed=statement_closes.closes))}
-
-
-def _fetch_lacking() -> dict:
-    """The dated rates the record lacks, read from TradingView: the sweep's shape, with only its
-    `tv` part, `lacking` set, and `on` the newest session read — the day the write banks under."""
-    wanted: dict[str, list] = {}
-    for g in engine.book().rate_gaps():
-        wanted.setdefault(g["currency"], []).append(g["date"])
-    try:
-        from portfusion.feeds import tv
-        got = {"ok": True, **tv.rate_closes(wanted)}
-    except Exception as e:                          # noqa: BLE001 — the vendor, named
-        got = {"ok": False, "error": f"{type(e).__name__}: {e}"}
-    days = [r["as_of"] for r in got.get("rates", [])]
-    return {"ok": True, "lacking": True, "on": max(days) if days else None, "tv": got}
-
-
-def _with_sources(swept: dict) -> dict:
-    """Each IG account's row, given the provenance line its reading will be filed under: the
-    record's own words for the reading's evidence and reference (`rules.evidence_source()`),
-    so the review shows what the write records and nothing the record will not keep."""
-    D = engine.book().D
-    eq = swept.get("ig_equity") or {}
-    line = {r["account"]: D.evidence_source(r["evidence"], reference=r["reference"],
-                                            account=r["account"])
-            for r in eq.get("readings") or []}
-    for row in eq.get("rows") or []:
-        row["source"] = line.get(row["account"], "")
-    return swept
-
-
 register(Action(
     name="refresh-fetch-all", label="Fetch everything", panel=NAME,
     writes=None, reaches="network",
@@ -184,59 +132,8 @@ register(Action(
     summary=("One sweep: IG's contract levels and each account's equity, then TradingView's "
              "shares and rates, and the Live List checked against the book. It fills the form "
              "and writes nothing. A vendor that fails is named and the rest still lands."),
-    run=_fetch_all,
+    run=sweep.prices,
 ))
-
-
-def _write(prices=None, rates=None, readings=None, close_of=None):
-    """Bank the outgoing marks and IG readings, and replace them: ONE operation, or none of it.
-
-    THE LEVELS AND THE EQUITY ARE ONE OBSERVATION, so they land or fail together. The two doors
-    each hold only their own files, so this holds the union, and a refusal from either rolls both
-    back; `rules.reload_store()` runs on that path because the files go back and the record in memory
-    has to follow them.
-
-    `close_of` is a past day's closes: `marks.bank_closes()` files them into the histories and the
-    live marks are left as they are. A past day has no reading.
-
-    THE REFUSAL IS THE FEATURE. Either door refuses the whole operation, leaving every file
-    byte-identical, if any line lacks a source or a date, names a carried line, or names a row
-    that is not there.
-    """
-    from portfusion.record import rules
-    from portfusion.desk.doors import commit, marks, observations
-    prices, rates, readings = list(prices or []), list(rates or []), list(readings or [])
-    try:
-        if not (prices or rates or readings):
-            raise marks.Refused("nothing to write — no line was ticked.")
-        if close_of:
-            if readings:
-                raise marks.Refused("a past day's closes carry no account reading: equity is "
-                                    "read live, with the levels, or not at all")
-            return {"ok": True, **marks.bank_closes(close_of, prices=prices, rates=rates)}
-        contracts = set(engine.book().D.LEG_CONTRACT.values())
-        if readings and not any(p.get("mark_key") in contracts for p in prices):
-            raise marks.Refused("an IG account's equity is written with the contract levels "
-                                "read in the same pass, and none is among the ticked lines")
-        with (commit._record_follows_the_files(),
-              commit.atomic(*marks.paths(), *observations.paths())):
-            written = marks.write(prices=prices, rates=rates) if (prices or rates) else {}
-            read = observations.write(readings=readings) if readings else {}
-    except (marks.Refused, observations.Refused) as e:
-        with contextlib.suppress(Exception, SystemExit):
-            rules.reload_store()
-        return {"ok": False, "refused": str(e)}
-    except Exception as e:                          # noqa: BLE001 — reported, never swallowed
-        # A FAULT, NOT A REFUSAL, and the files are back just the same: `atomic()` restored them.
-        # The record in memory follows them, or it would go on serving marks the files no longer
-        # hold; and the page says what failed. The trace goes to the desk's log.
-        traceback.print_exc()
-        with contextlib.suppress(Exception, SystemExit):
-            rules.reload_store()
-        return {"ok": False, "refused": f"the write failed, and every file is as it was: "
-                                        f"{type(e).__name__}: {e}"}
-    return {"ok": True, **written, "readings": read.get("written", 0),
-            "accounts": read.get("accounts", [])}
 
 
 register(Action(
@@ -248,5 +145,5 @@ register(Action(
              "bank those. One operation: if any part of it is refused, every file is left exactly "
              "as it was. A feed may write a mark — a price, a rate, live "
              "equity — on the owner's tick, and never an event."),
-    run=_write,
+    run=marks.refresh,
 ))

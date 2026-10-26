@@ -5,7 +5,8 @@ import pytest
 from portfusion.desk import app
 from desk_support import GOOD_EVIDENCE, GOOD_TRADE, _ready
 from portfusion.desk.intake import bench as _bench
-from harness import SRC, needs
+from portfusion.desk.intake import filing, recorded
+from harness import SRC, needs, desk_script
 
 
 # =====================================================================================
@@ -208,7 +209,7 @@ def test_every_key_the_bench_panel_sends_is_actually_READ_by_the_shell():
     dynamically by name, so the same check there would fail on correct code.
     """
     from portfusion.desk.panels import bench as panel
-    js = (SRC / "desk" / "static" / "app.js").read_text()
+    js = desk_script()
     unread = [k for k in panel.data() if f".{k}" not in js]
     assert not unread, (
         f"the bench panel sends {unread}, which app.js never reads. An unread field cannot be "
@@ -225,7 +226,7 @@ def test_the_screen_states_the_rules_it_does_not_hold_them():
     assert a["extensions"] == list(dropoff.ACCEPTED)
     assert a["max_bytes"] == dropoff.MAX_BYTES
 
-    js = (SRC / "desk" / "static" / "app.js").read_text()
+    js = desk_script()
     for ext in dropoff.ACCEPTED:
         assert f'"{ext}"' not in js, \
             f"app.js names {ext} itself — the list belongs to dropoff.py and would drift here"
@@ -559,18 +560,18 @@ def test_a_duplicate_is_found_even_when_the_account_is_still_blank():
     size and money identify a sale perfectly well on their own, so the comparison uses the
     columns that are FILLED and requires at least three of them."""
     sale = _recorded_sale()
-    assert _bench.matching_row("sales", {
+    assert recorded.matching_row("sales", {
         "date": str(sale["date"]), "ticker": sale["ticker"], "qty": str(sale["qty"]),
         "proceeds": str(sale["proceeds"])}) == sale["sale_id"]
     # Fewer than three is not an identification, it is a coincidence waiting to happen.
-    assert _bench.matching_row("sales", {"date": str(sale["date"]),
+    assert recorded.matching_row("sales", {"date": str(sale["date"]),
                                          "ticker": sale["ticker"]}) is None
 
 
 def test_an_unreadable_row_is_reported_and_not_silently_skipped():
     """A row the parser cannot read is a row the duplicate check cannot see, and that must be said
     rather than swallowed."""
-    assert _bench.matching_row("sales", {
+    assert recorded.matching_row("sales", {
         "date": "2026-03-12", "account": "Voss ii ISA", "ticker": "PENR.L",
         "qty": "5000", "proceeds": "£965.12"}) == "unreadable"
 
@@ -739,13 +740,13 @@ def test_the_account_number_on_a_note_resolves_to_the_account(read_item, monkeyp
     pairs = [(r[h.index("number")], r[h.index("account")]) for r in schema.load("accounts")
              if str(r[h.index("number")]).strip()]
     assert len(pairs) >= 2, "the register holds fewer than two numbered accounts"
-    assert P.account_from(f"ACCOUNT NUMBER {pairs[0][0]}")[0] == pairs[0][1]
-    assert P.account_from(f"Account {pairs[1][0]}")[0] == pairs[1][1]
-    assert P.account_from("no number here")[0] is None
+    assert recorded.account_from(f"ACCOUNT NUMBER {pairs[0][0]}")[0] == pairs[0][1]
+    assert recorded.account_from(f"Account {pairs[1][0]}")[0] == pairs[1][1]
+    assert recorded.account_from("no number here")[0] is None
     # A statement covering two accounts: picking either would be a coin toss.
-    assert P.account_from(f"{pairs[0][0]} and {pairs[1][0]}")[0] is None
+    assert recorded.account_from(f"{pairs[0][0]} and {pairs[1][0]}")[0] is None
     # A whole token, so a number inside a bigger figure is not a hit.
-    assert P.account_from(f"ref 2{pairs[0][0]}000")[0] is None
+    assert recorded.account_from(f"ref 2{pairs[0][0]}000")[0] is None
 
     monkeypatch.setattr(_bench, "document_text",
                         lambda name: {"name": name,
@@ -766,11 +767,10 @@ def test_the_account_number_on_a_note_resolves_to_the_account(read_item, monkeyp
 def test_a_derived_account_still_passes_the_closed_vocabulary():
     """The whole point of deriving it rather than translating it: the value comes OUT of the
     record, so it is by construction an account the record allows."""
-    from portfusion.desk.intake import propose as P
     from portfusion.record import schema
     h = schema.TABLES["accounts"].header
     number = next(r[h.index("number")] for r in schema.load("accounts") if str(r[h.index("number")]).strip())
-    name, _ = P.account_from(f"ACCOUNT NUMBER {number}")
+    name, _ = recorded.account_from(f"ACCOUNT NUMBER {number}")
     assert name, "the register's first number resolved to no account"
     assert not _bench.validate_row("sales", {"account": name}) or all(
         "account" not in p for p in _bench.validate_row("sales", {"account": name}))
@@ -785,7 +785,7 @@ def test_prose_fields_are_declared_long_so_the_screen_can_size_them():
     assert spec["qty"]["long"] is False
     assert {f["name"] for f in _bench.form_for("income") if f["long"]} == {"note", "detail"}
 
-    js = (SRC / "desk" / "static" / "app.js").read_text()
+    js = desk_script()
     assert "spec.long" in js and "<textarea data-f=" in js, \
         "app.js no longer renders a long field as a textarea"
 
@@ -982,7 +982,7 @@ def test_a_committed_document_is_filed_under_the_folder_s_own_convention(item, s
     monkeypatch.setattr(schema, "STATEMENTS", tmp_path / "statements")
     inbox = schema.BOOK / "_inbox"
     held = sorted(inbox.iterdir()) if inbox.is_dir() else None
-    monkeypatch.setattr(_commit, "BOOK", tmp_path)
+    monkeypatch.setattr(filing, "BOOK", tmp_path)
     (tmp_path / "_inbox").mkdir(exist_ok=True)
     (tmp_path / "_inbox" / "Contract_Note_88213.pdf").write_bytes(b"%PDF-1.4")
 
@@ -1003,10 +1003,9 @@ def test_a_committed_document_is_filed_under_the_folder_s_own_convention(item, s
 def test_an_unparseable_date_keeps_the_original_name_rather_than_inventing_one(item):
     """A folder whose whole job is retrieval is the wrong place to be tidy at the cost of
     being wrong. No parseable date means the document keeps the name it arrived with."""
-    from portfusion.desk.doors import commit as _commit
     item["evidence"] = {"dated": "last Tuesday", "authority": "ii contract note",
                         "reference": "X1"}
-    assert _commit._archive_name(item, "whatever.pdf") == "whatever.pdf"
+    assert filing.archive_name(item, "whatever.pdf") == "whatever.pdf"
 
 
 # =====================================================================================
@@ -1069,7 +1068,7 @@ def test_the_withdraw_button_calls_the_route_that_exists():
     `test_no_file_names_a_tab_or_button_that_no_longer_exists` catches a RETIRED name; this
     catches the other direction — a button wired to a verb or a path the server does not serve.
     """
-    js = (SRC / "desk" / "static" / "app.js").read_text(encoding="utf-8")
+    js = desk_script()
     assert "/api/inbox/${name}" in js, "the withdraw button no longer calls /api/inbox/{name}"
     hit = js[js.index("/api/inbox/${name}"):][:400]
     assert "DELETE" in hit, "the withdraw button no longer uses the DELETE verb the route serves"
@@ -1107,12 +1106,12 @@ def test_opening_a_readable_csv_reads_it_here_and_never_asks_for_a_reading(tmp_p
     import sys
     sys.path.insert(0, str(SRC / "tests"))
     from test_read_rows import LEDGER
-    from portfusion.desk.intake import propose, read_document, read_rows
+    from portfusion.desk.intake import propose, read_document
     monkeypatch.setattr(_bench, "BENCH_DIR", tmp_path / "bench")
     monkeypatch.setattr(read_document, "INBOX", str(tmp_path))
-    monkeypatch.setattr(read_rows, "bench_matching", lambda table, values: None)
-    monkeypatch.setattr(read_rows, "bench_currencies", lambda account: {"GBP"})
-    monkeypatch.setattr(_bench, "accounts_citing", lambda ref: {"Voss ii Trading"})
+    monkeypatch.setattr(recorded, "matching_row", lambda table, values: None)
+    monkeypatch.setattr(recorded, "cash_currencies", lambda account: {"GBP"})
+    monkeypatch.setattr(recorded, "accounts_citing", lambda ref: {"Voss ii Trading"})
     monkeypatch.setattr(propose, "propose", lambda *a: pytest.fail("a reading was asked for"))
     (tmp_path / "ledger.csv").write_text(LEDGER, encoding="utf-8")
 
