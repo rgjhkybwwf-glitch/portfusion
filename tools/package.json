@@ -1,0 +1,9 @@
+{
+  "name": "portfusion-tools",
+  "private": true,
+  "description": "The maintainer's JavaScript tools: desk_smoke.mjs draws every desk page in jsdom.",
+  "type": "module",
+  "devDependencies": {
+    "jsdom": "30.1.3"
+  }
+}

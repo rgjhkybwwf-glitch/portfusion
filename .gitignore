@@ -89,6 +89,9 @@ src/portfusion/demo/_inbox/
 # (docs/environment.md).
 .venv
 
+# The JavaScript tools' packages (tools/package.json): `npm ci` rebuilds them from the lock.
+node_modules/
+
 # Claude Code's own files. A clone carries no machine-level ignore, so they are listed here:
 # otherwise the worktrees, whole checkouts of this repo, would go to the next `git add -A`.
 .claude/worktrees/
