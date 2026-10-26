@@ -178,8 +178,10 @@ def test_a_past_day_is_closes_only(monkeypatch):
 
 def test_the_sweep_prints_its_rates(capsys):
     """A RATE ROW HAS NO `key`, only its currency (both producers drop it): `_print` prints it by
-    the currency, and raises no KeyError."""
+    the currency, and raises no KeyError. TradingView's failure is printed in its own words."""
     R._print({"on": None, "ig_levels": {"ok": True, "rows": []},
-              "tv": {"ok": True, "prices": [], "failed": [], "rates": [
-                  {"currency": "USD", "rate": 1.3611, "struck": "close", "source": "test"}]}})
-    assert "USD" in capsys.readouterr().out
+              "tv": {"ok": True, "prices": [], "failed": [], "notice": "TradingView failed: x",
+                     "rates": [{"currency": "USD", "rate": 1.3611, "struck": "close",
+                                "source": "test"}]}})
+    out = capsys.readouterr().out
+    assert "USD" in out and "TradingView failed: x" in out

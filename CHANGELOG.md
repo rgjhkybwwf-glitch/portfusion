@@ -27,6 +27,13 @@ prints it.
 - **A blank gain on the report is a dash in no colour**, never "+nan" in red: a quarter that
   opens at nothing, a new book's first.
 - `python3 -m portfusion.history.fx --rate USD <day>` refuses a day that is not YYYY-MM-DD.
+- **A live price is the quote screen's or none.** When TradingView's quote screen refused,
+  could not be reached or left a line out, a line still trading took its newest one-minute bar.
+  Those bars can run fifteen minutes behind a quote that streams live, so the stand-in was a stale
+  price looking current. Such a line is now reported unpriced, the Price Refresh and
+  `feeds.refresh` say plainly that TradingView failed, and the next sweep asks again; a venue that
+  has shut still prices from its close. A delayed venue read in the minutes after its close with
+  no quote is unpriced too, where it took its still-forming day bar as the day's close.
 - **A quarter's `contribution` is a closed list.** `quarter-nav.csv`'s `contribution` is
   `positions at market`, `account equity` or `notional`, and the loader now refuses a book holding
   any other value, naming the row; before, the engine refused it when a figure was first asked for.

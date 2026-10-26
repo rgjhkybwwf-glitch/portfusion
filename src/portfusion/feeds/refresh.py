@@ -162,6 +162,8 @@ def _print(r: dict) -> None:
           "TradingView shares and rates, each at its own instant")
     if not tv["ok"]:
         log.info(f"  {tv['error']}")
+    if tv.get("notice"):
+        log.info(f"  ! {tv['notice']}")
     for row in tv.get("prices", []):
         log.info(f"  {row['mark_key']:<14}{row['price']:>12} {row['currency']}  {row['struck']:<5}  "
               f"{row['source']}")
