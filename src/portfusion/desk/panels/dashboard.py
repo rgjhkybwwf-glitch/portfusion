@@ -5,7 +5,7 @@ snapshot is live and answers *where are we now*. The views are largely the same.
 snapshot carries is the OPERATIONAL layer — what is stale, what is missing, what is owed —
 which the report must never carry.
 
-EVERY FIGURE HERE IS DERIVED AT RENDER TIME from `engine.py`. Nothing is typed, nothing is cached
+EVERY FIGURE HERE IS DERIVED AT RENDER TIME from `engine/`. Nothing is typed, nothing is cached
 beyond the store's own mtime, and there is no second calculation: the arithmetic all happens in
 the engine and this module only decides what to show and how to label it.
 """

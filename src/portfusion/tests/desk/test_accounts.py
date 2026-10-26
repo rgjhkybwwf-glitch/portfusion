@@ -290,30 +290,14 @@ def test_the_ig_actions_are_reads_that_leave_the_machine():
     # says why), then TradingView.
     for name in ("refresh-fetch-all", "ig-events"):
         a = actions.get(name)
-        assert a.writes is None and a.available
+        assert a.writes is None
         assert a.reaches == "network", f"{name} calls IG's API and does not say so"
         assert a.gate, f"{name} reaches out and names nothing the human must do first"
 
 
-def test_the_route_honours_a_date_the_registry_names(monkeypatch):
-    """The REGISTRY is the gate, not the route. This checks the route honours it.
-
-    The route does no permission thinking of its own and defers to the registry — so the test
-    names the date on the action itself.
-    """
-    from fastapi import HTTPException
-    tomorrow = _dt.date.today() + _dt.timedelta(days=1)
-    deferred = actions.Action(name="test-later", label="Apply marks", panel="accounts",
-                              run=lambda: None, writes="marks", gate="tick-each-line",
-                              enabled_from=tomorrow)
-    monkeypatch.setitem(actions._REGISTRY, "test-later", deferred)
-    with pytest.raises(HTTPException) as exc:
-        app.run_action("test-later", {})
-    assert exc.value.status_code == 409
-    assert tomorrow.isoformat() in exc.value.detail
-
-    # THE OTHER HALF. A writing action naming no date is not refused; with no blanket gate, the
-    # only thing standing here is test_every_writing_action_is_pinned.
+def test_the_route_runs_a_writing_action_the_registry_declares(monkeypatch):
+    """The REGISTRY is the gate, not the route: a declared writing action runs, with nothing
+    standing here but test_every_writing_action_is_pinned."""
     ran = []
     immediate = actions.Action(name="test-now", label="Apply marks", panel="accounts",
                                run=lambda: ran.append(1), writes="marks",
@@ -572,9 +556,10 @@ def test_the_bay_says_what_it_can_replace_rather_than_what_is_due(repo_root):
 
 def test_the_age_limit_lives_where_the_classification_does(build_sources, repo_root):
     """A limit kept in a renderer is one `book.marks_replaceable()` — which decides whether a
-    mark is old — cannot read, because engine.py imports the record and pandas and nothing else;
-    the engine would have no threshold and call everything due. The limits are the record's,
-    and neither renderer — the report nor the desk — holds a name of its own for either."""
+    mark is old — cannot read, because `engine/` imports the record, `house` and pandas and
+    nothing else; the engine would have no threshold and call everything due. The limits are the
+    record's, and neither renderer — the report nor the desk — holds a name of its own for
+    either."""
     import ast
     renderers = [*build_sources, *sorted((SRC / "desk").rglob("*.py"))]
     copies = [f"{f.relative_to(repo_root)}:{n.lineno}" for f in renderers
@@ -840,7 +825,7 @@ def test_a_share_reading_that_does_not_add_up_is_refused_and_writes_nothing(stor
 
     out = _write([_share(total=110501.00)])
 
-    assert out["ok"] is False and "not the total" in out["refused"], out
+    assert out["ok"] is False and "not the total £110,501.00" in out["refused"], out
     assert all(p.read_bytes() == b for p, b in before.items()), "a refused write moved a file"
 
 

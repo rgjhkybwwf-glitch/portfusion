@@ -404,7 +404,7 @@ def test_the_refresh_panel_shows_the_two_bases_apart():
                        "value_to"):
             assert block["totals"][figure] == totals[figure], (
                 f"{block['label']} {figure} is not the engine's — a panel that computes a "
-                f"figure is a second answer to something engine.py already decided")
+                f"figure is a second answer to something the engine already decided")
 
 
 @needs("buys")
@@ -753,7 +753,7 @@ def test_the_expansion_spans_the_whole_row_however_many_columns_there_are(repo_r
 #: never fail it; only new prose can.
 #:
 #: The step line's quiet notes (`<span class="muted small">`, `quiet()`) are counted too.
-DESK_CHROME_WORDS = 458
+DESK_CHROME_WORDS = 456
 
 
 def _chrome_words(repo_root):

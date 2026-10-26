@@ -55,8 +55,8 @@ def test_tokens_are_derived_from_the_palette_not_written_here():
 def test_there_is_exactly_one_palette_derivation():
     """ONE ROUTE TO THE COLOURS: two routes to one answer drift.
 
-    engine.py stays the one way the desk reads; theme.py holds the derivation; app.py serves what
-    engine hands it (the `one-palette` import contract).
+    desk/engine.py stays the one way the desk reads; theme.py holds the derivation; app.py serves
+    what engine hands it (the `one-palette` import contract).
     """
     from portfusion.desk import theme
     assert engine.palette() == theme.palette()
@@ -510,7 +510,7 @@ def test_a_record_that_will_not_load_is_unavailable_on_every_panel(tmp_path):
     status, said = codes.pop("/api/state")
     assert codes.pop("remote") == [], "the remote door did not read the book's settings"
     assert status == 503 and "buys.csv" in said, (status, said)
-    assert len(codes) == 13 and set(codes.values()) == {503}, codes
+    assert len(codes) == len(panels.all_panels()) and set(codes.values()) == {503}, codes
 
 
 def test_a_drop_with_no_download_time_is_not_refused_for_it(client, inbox):

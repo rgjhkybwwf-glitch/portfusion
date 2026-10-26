@@ -27,7 +27,7 @@ async function wireActions(panelName) {
     .filter((a) => a.panel === panelName && !a.inline);
   /* THE BUTTON AND WHAT IT REACHES, and no paragraph: what it does is in the page's fold. */
   $("#acts").innerHTML = acts.map((a) =>
-    `<p><button class="link" data-act="${esc(a.name)}"${a.available ? "" : " disabled"}>
+    `<p><button class="link" data-act="${esc(a.name)}">
        ${esc(a.label)}</button>` + badges(a.name) + `</p>`).join("");
 
   $("#acts").querySelectorAll("[data-act]").forEach((b) =>

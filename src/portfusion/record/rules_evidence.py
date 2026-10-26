@@ -98,6 +98,9 @@ class Evidence(NamedTuple):
     # says how much that is. A contract note is the strongest record of a trade and reconciles no
     # quarter.
     covers: tuple = ()
+    # HOW THE ARCHIVE FINDS A `document`: by the "date" in its source line, or by the "deal"'s
+    # number, which the row stores in `broker_ref`. Empty for a class that retrieves no document.
+    found_by: str = ""
 
 # THE ORDER: the two brokers that send documents first, each strongest to weakest, then IG, then
 # `not-on-file`. Reading down the list is reading down the source hierarchy.
@@ -117,10 +120,12 @@ EVIDENCE_CLASSES = (
     Evidence("ii-contract-note", "ii contract note", "ii contract note",
              "the contract note number, e.g. ABD789",
              "ii contract note {date}", True, "document",
-             ("We thank you for your instructions", "CONTRACT No.", "141282"), covers=()),
+             ("We thank you for your instructions", "CONTRACT No.", "141282"), covers=(),
+             found_by="deal"),
     Evidence("ii-statement", "ii statement", "ii statement",
              "the statement's date, e.g. 30 Jun 2026",
-             "ii statement {reference}", True, "document", covers=("positions", "cash")),
+             "ii statement {reference}", True, "document", covers=("positions", "cash"),
+             found_by="date"),
     # THE MARKS ON DEMAND — ii's holdings export, the ii analogue of `hl-valuation`: every holding
     # with quantity, local price and value, per-currency totals, and ii's FX rates.
     #
@@ -133,7 +138,7 @@ EVIDENCE_CLASSES = (
              "the instant it was pulled, e.g. 3 Mar 2025 14:05",
              "ii valuation {reference} ({account})", True, "document",
              ("Day Gain/Loss %,Market Value", "Book Cost,Gain/Loss"),
-             covers=("positions",)),
+             covers=("positions",), found_by="date"),
     # RETRIEVES BY `document`: the reference is the query that reproduces it, but the file is kept
     # and archived. THE CURRENCY IS PART OF THE REFERENCE — ii ledgers are pulled per currency,
     # and an account's GBP and EUR ledgers over one window are different documents. The account's
@@ -142,10 +147,12 @@ EVIDENCE_CLASSES = (
              "the currency and the query that reproduces it: the date range you asked for, "
              "e.g. GBP 1 Jan-3 Mar 2025",
              "ii transactions {reference} ({account})", False, "document",
-             ("Settlement Date,Symbol,Sedol", "Debit,Credit,Running Balance"), covers=("cash",)),
+             ("Settlement Date,Symbol,Sedol", "Debit,Credit,Running Balance"), covers=("cash",),
+             found_by="date"),
     Evidence("hl-statement", "HL statement", "HL statement",
              "the date the statement's quarter ends, e.g. 31 Jan 2025",
-             "HL statement {reference}", True, "document", covers=("positions", "cash")),
+             "HL statement {reference}", True, "document", covers=("positions", "cash"),
+             found_by="date"),
     # The valuation — HL's "Account Summary" download: total, cash, every holding with units,
     # price, value and cost, and HL's three FX rates. It exists because HL issues statements on
     # HL's own dates, never at a quarter end.
@@ -157,13 +164,15 @@ EVIDENCE_CLASSES = (
              "HL Account Summary download",
              "the instant it was pulled, e.g. 3 Mar 2025 14:05",
              "HL valuation {reference} ({account})", True, "document",
-             ("Code,Stock,Units held", "Amount available to invest"), covers=("positions", "cash")),
+             ("Code,Stock,Units held", "Amount available to invest"), covers=("positions", "cash"),
+             found_by="date"),
     # THE YEAR'S INCOME — HL's "Income transactions" download. One row per payment, with a
     # total, and it is the only HL class that states a period rather than an instant.
     Evidence("hl-income", "HL income transactions", "HL income transactions download",
              "the period, and the instant it was pulled, e.g. 2025 to 3 Mar 2025",
              "HL income transactions {reference} ({account})", False, "document",
-             ("Income transactions for my", "Date,Type,Description,Amount"), covers=()),
+             ("Income transactions for my", "Date,Type,Description,Amount"), covers=(),
+             found_by="date"),
     # THE DEALING AND CASH LIST — HL's "Portfolio Summary" download, a transaction list and not a
     # summary. AN HL ISA HAS TWO SUB-ACCOUNTS, Capital and Income, and this report is pulled per
     # sub-account with nothing in its shape to say which, so THE REFERENCE SAYS WHICH.
@@ -175,7 +184,8 @@ EVIDENCE_CLASSES = (
              "which sub-account and the instant it was pulled, "
              "e.g. Capital, 3 Mar 2025 14:05",
              "HL transactions {reference} ({account})", False, "document",
-             ("Portfolio Summary", "Trade date,Settle date,Reference"), covers=("cash",)),
+             ("Portfolio Summary", "Trade date,Settle date,Reference"), covers=("cash",),
+             found_by="date"),
     # THE ONE-LINE TOTALS — the same "Portfolio Summary" title again, over a different table.
     # It restates what the valuation already says and carries no holdings, so it is a
     # cross-check rather than a source. Kept apart from the valuation precisely BECAUSE the two
@@ -184,7 +194,8 @@ EVIDENCE_CLASSES = (
              "HL Portfolio Summary totals download",
              "the instant it was pulled, e.g. 3 Mar 2025 14:10",
              "HL account totals {reference} ({account})", False, "document",
-             ("Portfolio Summary", "Account,Stock value,Total cash"), covers=("positions", "cash")),
+             ("Portfolio Summary", "Account,Stock value,Total cash"), covers=("positions", "cash"),
+             found_by="date"),
     # THE MOVEMENTS OF ONE SECURITY — HL's "Security movements" download: every purchase of one
     # holding, each with HL's own reference. It states no date of its own, so its reference is
     # the security and the instant it was pulled; a trade's source names only the day
@@ -193,10 +204,10 @@ EVIDENCE_CLASSES = (
              "the security and the instant it was pulled, e.g. Quenlan Robotics Inc., 3 Mar 2025 14:05",
              "HL security movements {date}", False, "document",
              ("Security movements for:", "DATE, TYPE, REFERENCE, UNIT COST (p), QUANTITY"),
-             covers=()),
+             covers=(), found_by="date"),
     Evidence("ig-statement", "IG statement", "IG statement",
              "the statement's own date, e.g. 7 Mar 2025",
-             "IG statement {reference}", True, "document", covers=("equity",)),
+             "IG statement {reference}", True, "document", covers=("equity",), found_by="date"),
     # WHICH ENDPOINT ANSWERED IS PART OF THE AUTHORITY: /accounts, /history/activity and
     # /history/transactions are three different claims, so the template carries it. The
     # "IG REST" prefix is what classifies every row feeds/ig.py has composed.
@@ -346,11 +357,6 @@ def in_trade_source_format(line, key):
                               rf"\d{{4}}", str(line or "").strip()))
 
 
-#: THE CLASSES WHOSE REFERENCE IS THE DEAL'S OWN — one document per deal, named by its number. A
-#: row citing one stores the number in `broker_ref`, and the archive finds the document by it.
-REFERENCE_IS_THE_DEAL = {"ii-contract-note"}
-
-
 _MONTHS = "Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec"
 
 
@@ -390,15 +396,6 @@ def evidence_from_source(line):
     return None
 
 
-#: The classes whose reference IS A DATE (the statements, and the HL downloads, retrieved by
-#: account, report and the instant pulled) as against a NUMBER (the contract notes). Public
-#: because `desk/doors/commit.py:_covers()` asks the same question: a date does not identify an
-#: account, and a contract note number does. The date is found wherever in the reference it sits.
-REFERENCE_IS_A_DATE = {"ig-statement", "ii-statement", "hl-statement", "hl-movements",
-                        "hl-valuation", "hl-income", "hl-transactions", "hl-account-totals",
-                        "ii-valuation", "ii-transactions"}
-
-
 def archive_reference(line, stored_reference=""):
     """What should name this row's document in `_archive/statements/`, or None.
 
@@ -406,7 +403,7 @@ def archive_reference(line, stored_reference=""):
     adjustment, or a line no class composed — each of which answers limb 3 its own way or cannot.
 
     WHAT TO LOOK FOR COMES FROM THE CLASS: a statement by its DATE, read out of the line; a
-    contract note by the deal's NUMBER, which the row stores (`REFERENCE_IS_THE_DEAL`), both
+    contract note by the deal's NUMBER, which the row stores (`found_by`), both
     matched against `ARCHIVE_CONVENTION`. "" for a statement whose line carries no date, or a
     contract note whose row stores no number: it cites a document and says nothing that could
     find it, which is a gap and not "no document". Never a reference pattern the class does not
@@ -416,7 +413,7 @@ def archive_reference(line, stored_reference=""):
     if ev is None or ev.retrieval != "document":
         return None
     text = str(line)
-    if ev.key in REFERENCE_IS_A_DATE:
+    if ev.found_by == "date":
         m = _re.search(rf"\b(\d{{1,2}})\s+({_MONTHS})\s*(\d{{4}})?", text)
         # NO DATE IS A GAP, NOT "NO DOCUMENT": the line cites a statement and says nothing that
         # finds it.
@@ -480,7 +477,7 @@ def filed_as(line, archive_names, stored_reference="", account=""):
         return []                         # a document cited, and nothing that could find it
     ev = cast(Evidence, evidence_from_source(line))    # a document cited: a class composed it
     must = [ref]
-    if ev.key in REFERENCE_IS_A_DATE:
+    if ev.found_by == "date":
         who = _cited_account(ev, line) or str(account or "").strip()
         must += [ev.authority.lower()] + [a for a in [who] if a]
     return [name for name in archive_names if all(m.lower() in name.lower() for m in must)]

@@ -1,6 +1,6 @@
 """What more than one file in tests/desk/ uses: the helpers and the constants they share.
 
-The fixtures built on them, `item`, `workbench` and `inbox`, are in `tests/conftest.py`. A test
+The fixtures built on them, `item`, `workbench` and `inbox`, are in `tests/harness.py`. A test
 imports from here by name, never by star, because a helper whose name starts with an underscore
 is not exported by `import *`.
 """

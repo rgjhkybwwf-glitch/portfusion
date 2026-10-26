@@ -157,7 +157,7 @@ def report_page(quarter_end: str) -> tuple[str | None, list[str]]:
 def palette() -> dict:
     """The house style — DELEGATED to `desk/theme.py`, never re-derived here.
 
-    Two routes to one answer can disagree. `engine.py` stays the one way the desk reads; the
+    Two routes to one answer can disagree. This module stays the one way the desk reads; the
     derivation lives in `theme.py`.
     """
     from portfusion.desk import theme
@@ -281,8 +281,8 @@ def freshness() -> dict:
             "prices_as_at": day(prices_as_at) if prices_as_at else None,
             "source_stale": src["stale"],
             "source_changed": _stamp(src["changed_at"]),
-            # NAMED, NOT COUNTED. "3 files changed" sends you looking; "engine.py" tells you
-            # what moved. Capped so a rebase does not fill the header line, with the full
+            # NAMED, NOT COUNTED. "3 files changed" sends you looking; "engine/book.py"
+            # tells you what moved. Capped so a rebase does not fill the header line, with the full
             # count beside it so the cap is visible rather than silent.
             "source_files": src["files"][:4],
             "source_count": len(src["files"]),

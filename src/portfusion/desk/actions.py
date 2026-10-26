@@ -1,8 +1,7 @@
-"""THE ACTION REGISTRY — the one place that says what this thing can do.
-
-Every button on the desk is declared here. That is the point: "what can the desk write?" has
-exactly one answer and it is readable in one file, rather than being the sum of whatever the
-panels happen to call.
+"""THE ACTION REGISTRY: the buttons a panel declares, each with what it writes and what it
+reaches. A panel, and the shell's restart, registers its own on import; the Bench's commit and
+the other routes in `desk/app.py` are not actions. What may write a file at all is
+`test_boundaries.py`'s `WRITERS`.
 
 THE MARKS RULE IS ENCODED HERE AS STRUCTURE, NOT PROSE:
 
@@ -23,7 +22,6 @@ nothing and does reach the broker. The set of reaching actions is pinned the sam
 """
 from __future__ import annotations
 
-import datetime as _dt
 from dataclasses import dataclass
 from typing import Callable, Optional
 
@@ -48,13 +46,6 @@ WRITE_KINDS = (None, "marks", "events")
 # it may write marks and reach nothing.
 REACH_KINDS = (None, "network")
 
-# `None` means NO BLANKET DATE GATE — not "no gate". A single action may still name its own
-# `enabled_from`: it costs nothing, and an action may want to defer itself. The guard is
-# `test_every_writing_action_is_pinned`, which fails the suite the moment a new writing button
-# appears and keeps failing until someone declares it on purpose. That is a guard on WHAT WRITES
-# rather than on WHEN — a rule naming a property survives, a rule naming a moment expires.
-WRITES_ENABLED_FROM: Optional[_dt.date] = None
-
 
 @dataclass(frozen=True)
 class Action:
@@ -66,7 +57,6 @@ class Action:
     writes: Optional[str] = None                # None | "marks" | "events"
     reaches: Optional[str] = None               # None | "network" — leaves this machine
     gate: str = ""                              # what the human must do first
-    enabled_from: Optional[_dt.date] = None     # None = available now
     # INVOKED FROM A ROW, NOT FROM THE PANEL'S LIST. An action that only means anything against
     # ONE row — an event from a sweep — must not stand as a panel button with nothing to work.
     # The panel filters on this rather than on the action's name, so the next row-scoped action
@@ -96,22 +86,10 @@ class Action:
                 f"action {self.name!r} writes {self.writes!r} with no gate. A write with no "
                 f"stated human step is exactly what the marks rule did not settle.")
 
-    @property
-    def available(self) -> bool:
-        """False while a writing action is still behind a date it names.
-
-        With WRITES_ENABLED_FROM None, this answers for per-action `enabled_from` only.
-        """
-        due = self.enabled_from or (WRITES_ENABLED_FROM if self.writes else None)
-        return True if due is None else _dt.date.today() >= due
-
     def as_json(self) -> dict:
-        due = self.enabled_from or (WRITES_ENABLED_FROM if self.writes else None)
         return {"name": self.name, "label": self.label, "panel": self.panel,
                 "summary": self.summary, "writes": self.writes,
-                "reaches": self.reaches, "gate": self.gate,
-                "available": self.available, "inline": self.inline,
-                "enabled_from": due.isoformat() if due else None}
+                "reaches": self.reaches, "gate": self.gate, "inline": self.inline}
 
 
 _REGISTRY: dict[str, Action] = {}
@@ -161,5 +139,5 @@ def reaching_actions() -> list[Action]:
 
 
 def writing_actions() -> list[Action]:
-    """Every action that can change the record. The list a test pins."""
+    """Every action that declares a write. The list a test pins."""
     return [a for a in all_actions() if a.writes]

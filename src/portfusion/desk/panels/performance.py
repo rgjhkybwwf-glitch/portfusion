@@ -95,12 +95,9 @@ def _caveats(b) -> list[dict]:
     out = [{
         # ONE STATEMENT OF THE RETURN: the renderer adds none of its own.
         "scope": "The return",
-        "detail": ("Modified Dietz, day-weighted, on net asset value against capital deployed "
-                   "into positions, each flow weighted by the days after it: "
-                   "purchases less sale proceeds for shares, funds for spread bets. A deposit or "
-                   "withdrawal moves nothing, and the numerator takes dividends and funding "
-                   "interest only. Money-weighted, so no index sits beside it. Never divide one "
-                   "of these gains by market exposure, which includes spread-bet notional."),
+        "detail": ("Modified Dietz on net asset value against capital deployed, money-weighted; "
+                   "Method says what a flow is. Never divide one of these gains by market "
+                   "exposure."),
     }]
 
     # THE ENGINE'S FLAG, so an account wears this caveat only while a quarter of its actually

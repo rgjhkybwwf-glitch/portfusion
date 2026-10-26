@@ -469,11 +469,12 @@ def _derived(item: dict, table: str, account: str | None = None,
     if line:
         out["source"] = line
     # AN ii CONTRACT NOTE'S NUMBER IS THE DEAL'S: on a trade or sale it is the row's `broker_ref`,
-    # which is how the archive finds the note (`rules.REFERENCE_IS_THE_DEAL`).
+    # which is how the archive finds the note (its class's `found_by`).
     if table in ("buys", "sales") and reference and item.get("evidence_class"):
         def _deal():
             from portfusion.record import rules as D
-            return item["evidence_class"] in D.REFERENCE_IS_THE_DEAL
+            ev = D.EVIDENCE_BY_KEY.get(item["evidence_class"])
+            return ev is not None and ev.found_by == "deal"
         if _guarded(_deal):
             out["broker_ref"] = reference
     return out

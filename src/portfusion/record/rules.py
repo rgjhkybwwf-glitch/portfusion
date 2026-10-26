@@ -885,8 +885,9 @@ JOURNAL_FIELDS = tuple(f.name for f in schema.TABLES["journal"].fields)
 def store_rows() -> dict:
     """How many rows each table holds ON FILE, right now.
 
-    The journal's reconciliation needs it, and the engine may not fetch it — `engine.py` imports only
-    pandas and this module (`test_store_doors.py`) — so the count comes through the record.
+    The journal's reconciliation needs it, and the engine may not fetch it — `engine/` reads the
+    store through this module alone (`test_store_doors.py`) — so the count comes through the
+    record.
     A FUNCTION, because the desk is long-lived and writes rows while it runs; a count taken at
     import would blame a hand edit that never happened. The journal itself is excluded.
     """
