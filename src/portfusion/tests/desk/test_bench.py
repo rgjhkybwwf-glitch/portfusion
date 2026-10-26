@@ -881,11 +881,10 @@ def test_the_desks_reload_re_reads_every_table_in_the_store():
 
     from portfusion.record import schema
 
-    # IN A SUBPROCESS, BECAUSE reload_store() MUTATES THE MODULE IN PLACE. Re-executing rules
-    # rebinds every table to a NEW object, and a module that copied a value out at its own
-    # import goes on holding the old one — engine.py's `Book.SINCE_START` does. Reloading here could leave
-    # another file's tests reading two records at once, which is a test poisoning the suite
-    # rather than a defect in the code it is describing.
+    # IN A SUBPROCESS, BECAUSE reload_store() REBINDS THE MODULE'S NAMES to a new build, and a
+    # module that copied a value out at its own import goes on holding the old one. Reloading
+    # here could leave another file's tests reading two records at once, which is a test
+    # poisoning the suite rather than a defect in the code it is describing.
     probe = (
         "import json;"
         "from portfusion.record import schema, rules;"

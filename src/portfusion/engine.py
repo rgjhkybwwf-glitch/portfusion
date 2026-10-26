@@ -494,12 +494,11 @@ def value_legs(ledger: pd.DataFrame) -> pd.DataFrame:
 class _Pinned:
     """The record's names as they stood when a Book was built.
 
-    `rules.reload_store()` re-executes the module, which REBINDS every table to a new object
-    rather than changing the old one, so references taken here keep the version the Book's
-    frames came from. A reference, not a copy: nothing is duplicated.
-
-    What it holds that is a FUNCTION still reads the module when called. Two of those read the
-    store — `cash_latest()` and `store_rows()` — and the Book takes both when it is built.
+    `rules.reload_store()` REBINDS the module's names to a new build rather than changing the
+    old one, and a function or row class among them answers from the build it was made in, so
+    references taken here keep the record the Book's frames came from. A reference, not a copy:
+    nothing is duplicated. `store_rows()` reads the files, not the record, and the Book takes it
+    once, when it is built.
     """
 
     def __init__(self, module):

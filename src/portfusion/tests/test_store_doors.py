@@ -162,9 +162,22 @@ def test_each_declared_door_still_exists(door):
 # Proof is by SENTINEL, never by a copy and the record happening to agree.
 # =====================================================================================
 
+def _plant(path, col: int, value: str, eol: str = "\n") -> None:
+    """`value` into the first row's column `col`, AS CSV, not split on commas: a quoted cell may
+    hold one, a mark's source."""
+    import csv
+    import io
+    lines = path.read_bytes().decode("utf-8").splitlines()
+    cells = next(csv.reader([lines[1]]))
+    cells[col] = value
+    out = io.StringIO()
+    csv.writer(out, lineterminator="").writerow(cells)
+    lines[1] = out.getvalue()
+    path.write_bytes((eol.join(lines) + eol).encode("utf-8"))
+
+
 def _sentinel_store(tmp_path):
     """The LOADED record, copied, with one unmistakable row planted in each history."""
-    import csv
     import shutil
     from portfusion.record import schema
     target = tmp_path / "store"
@@ -182,17 +195,9 @@ def _sentinel_store(tmp_path):
                       ("account-statements.csv", 0), ("account-readings.csv", -1),
                       ("current-prices.csv", 4)):
         path = target / name
-        lines = path.read_bytes().decode("utf-8").splitlines()
-        if len(lines) < 2:
+        if len(path.read_bytes().splitlines()) < 2:
             continue                # an empty history has nothing to carry a sentinel
-        # AS CSV, not split on commas: a quoted cell may hold one, a mark's source.
-        import io
-        cells = next(csv.reader([lines[1]]))
-        cells[col] = "ZZ-SENTINEL"
-        out = io.StringIO()
-        csv.writer(out, lineterminator="").writerow(cells)
-        lines[1] = out.getvalue()
-        path.write_bytes(("\r\n".join(lines) + "\r\n").encode("utf-8"))
+        _plant(path, col, "ZZ-SENTINEL", eol="\r\n")
         planted[name] = "ZZ-SENTINEL"
     return target, planted
 
@@ -300,13 +305,14 @@ ASKED_WITHOUT_A_BOOK = {
     "quarter_to_close":       "which quarter the LIVE record has due; desk/doors/freeze.py asks the class",
 }
 
-#: The `rules` functions a method may call through `self.D`. A function held there still reads
-#: the MODULE when it runs, so only one that reads no table may be called late; one that reads
-#: the store — `cash_latest()`, `store_rows()` — is called once, in `_build()`. The four from
-#: `record/rules_evidence.py` are its, and that module holds no table at all. `schema`'s are held
-#: to this list as well: `filed_statements()` lists `_archive/statements/`, which is no table and
-#: which no Book pins, so a document filed after a Book was built is on file to it.
-#: `funding_nights()` reads a row's own detail with a regex and no table.
+#: The `rules` functions a method may call through `self.D`. A function the record builds
+#: answers from its own build, and one that reads the FILES — `store_rows()` — is called once,
+#: in `_build()`; what a method calls late is held to this list, so a new late call is a visible
+#: diff. The four from `record/rules_evidence.py` are its, and that module holds no table at
+#: all. `schema`'s are held to this list as well: `filed_statements()` lists
+#: `_archive/statements/`, which is no table and which no Book pins, so a document filed after a
+#: Book was built is on file to it. `funding_nights()` reads a row's own detail with a regex and
+#: no table.
 CALLABLE_THROUGH_THE_PIN = {"evidence_from_source", "reference_resolves", "document_not_on_file",
                             "states_cash", "filed_statements", "funding_nights"}
 
@@ -399,8 +405,14 @@ def test_the_import_reader_sees_a_module_imported_from_the_package(imports_of, t
     assert {"record.rules", "history.fx", "record.schema"} <= imports_of(src, dotted=True)
 
 
-def test_a_store_that_will_not_load_leaves_the_record_where_it_was(tmp_path):
-    """`store_at()` PUTS THE RECORD BACK EVEN WHEN THE STORE IT WAS GIVEN WILL NOT LOAD."""
+@needs("buys")
+def test_a_store_that_will_not_load_leaves_the_record_where_it_was(store_copy, tmp_path):
+    """A REFUSED RELOAD LEAVES THE RECORD EXACTLY AS IT WAS: `store_at()` puts it back when the
+    store it was given will not load, and a reload the record refuses rebinds no name — the
+    tables are built apart and taken only when the whole build has passed.
+
+    The planted fault is one the record finds LATE, after the ledger is read: a loader that bound
+    each table as it went would already hold the refused rows beside the old ones."""
     import shutil
     from portfusion.record import rules, schema
     was = schema.STORE
@@ -413,6 +425,13 @@ def test_a_store_that_will_not_load_leaves_the_record_where_it_was(tmp_path):
         with rules.store_at(bad):
             pass
     assert schema.STORE == was, "the record was left pointing at the store that would not load"
+
+    before = dict(vars(rules))
+    _plant(store_copy / "buys.csv", rules.Buy._fields.index("cur"), "JPY")   # a third currency
+    with pytest.raises(ValueError, match="neither sterling"):
+        rules.reload_store()
+    moved = sorted(name for name, value in before.items() if vars(rules)[name] is not value)
+    assert not moved, f"a refused reload left a mixture in memory; rebound: {moved}"
 
 
 def test_a_missing_history_is_refused_by_name(tmp_path):

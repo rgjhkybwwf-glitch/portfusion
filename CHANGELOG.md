@@ -81,6 +81,13 @@ prints it.
   the script; CI plants one at start-up to prove it is refused. jsdom is pinned in
   `tools/package-lock.json`, which the advisory check and Dependabot now read too. A dev tool
   only: a book installs none of it.
+- **The record is built, then taken.** `record/rules.py` read each table into the module as it
+  went, so a reload the record refused — a store caught mid-edit, a bad cell — left the refused
+  tables beside the old ones, a record no store ever held, until a reload passed. It now reads
+  and checks every table into names of its own and the module takes them only when the whole
+  build has passed, so a refused reload leaves the record exactly as it was. A Book's pin holds
+  for the record's functions too: a leg's kind and the accounts open on a day answer from the
+  record the Book was built from. No figure, page or store moves.
 
 ## 0.3.2 — beta, 24 Oct 2026
 

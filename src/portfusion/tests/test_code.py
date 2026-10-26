@@ -150,8 +150,8 @@ def test_the_record_refuses_with_a_raise_never_an_assert():
     assert not found, f"the record refuses with an assert: {found}"
 
 
-#: What is held by its module, never by name: `rules.reload_store()` re-executes the record's
-#: rules in place, and `set_store()` or a test filing elsewhere rebinds these paths of the
+#: What is held by its module, never by name: `rules.reload_store()` rebinds the record's names
+#: to a new build, and `set_store()` or a test filing elsewhere rebinds these paths of the
 #: schema, so a name taken from either keeps what it was when imported.
 HELD_BY_THE_MODULE = {"portfusion.record.rules": None,
                       "portfusion.record.schema": {"STORE", "STATEMENTS", "INBOX"}}
