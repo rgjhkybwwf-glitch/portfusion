@@ -710,7 +710,12 @@ def test_a_level_is_changed_on_access_and_never_by_enrolling():
         auth.enrol_code("newcomer", "admin")
 
 
-def test_revoking_a_device_or_a_reader_ends_their_sessions(door):
+def test_revoking_a_device_or_a_reader_ends_their_sessions(door, monkeypatch):
+    """Revoking closes the sessions the device or the reader opened. A REVOKE THAT RACES A
+    SIGN-IN HOLDS: forced between the sign-in's read of the passkeys and its write-back, it waits
+    for `auth.LOCK`, then closes the session the sign-in opened."""
+    import threading
+    import webauthn
     phone, mac = SoftPasskey(), SoftPasskey()
     on_phone = _session(_enrol(door, phone, _code("rowe", "principal")))
     door.cookies.clear()
@@ -725,6 +730,21 @@ def test_revoking_a_device_or_a_reader_ends_their_sessions(door):
     assert door.get("/api/state", headers=on_phone).status_code == 401
     assert "rowe" not in {r["who"] for r in auth.readers()}
     assert _sign_in(door, mac).status_code == 403
+
+    _enrol(door, phone, _code("rowe", "principal"))
+    door.cookies.clear()
+    key, real = _b64u(phone.id), webauthn.verify_authentication_response
+    revoking = threading.Thread(target=auth.revoke_device, args=(key,))
+
+    def verified_while_revoking(**kw):
+        revoking.start()
+        revoking.join(0.2)
+        return real(**kw)
+    monkeypatch.setattr(webauthn, "verify_authentication_response", verified_while_revoking)
+    signed = _sign_in(door, phone)
+    revoking.join()
+    assert key not in auth._keys(), "a revoke that raced a sign-in was undone"
+    assert door.get("/api/state", headers=_session(signed)).status_code == 401
 
 
 def test_signing_everyone_out_closes_every_session(client, session, principal):
