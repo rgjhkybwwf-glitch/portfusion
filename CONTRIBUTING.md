@@ -58,8 +58,8 @@ once, here, beside that test.
 
 | # | Rule | Held by |
 |---|---|---|
-| 14 | **No credential reaches git or a log.** No credential reaches git, in this repository or any book, and none is logged or printed. | `.githooks/pre-commit`, `test_hooks.py::test_a_planted_value_is_refused_by_NAME_and_never_quoted`, `test_hooks.py::test_history_finds_what_no_verify_let_through`, `test_tv.py::test_the_token_travels_in_a_header_and_is_never_printed_or_logged`, GitHub's push protection |
-| 15 | **Nothing of your book leaves the checkout.** Nothing of a book is named in what leaves the checkout. | `test_what_leaves.py::test_what_leaves_names_nothing_of_the_loaded_book`, run by `.githooks/pre-push` on the book `PORTFUSION_BOOK` names; CI runs on the demo and cannot |
+| 14 | **No credential reaches git or a log.** No credential reaches git, in this repository or any book, and none is logged or printed. | `.githooks/pre-commit` and `commit-msg`, `test_hooks.py::test_a_planted_value_is_refused_by_NAME_and_never_quoted`, `test_hooks.py::test_history_finds_what_no_verify_let_through`, `test_tv.py::test_the_token_travels_in_a_header_and_is_never_printed_or_logged`, GitHub's push protection |
+| 15 | **Nothing of your book leaves the checkout.** Nothing of a book is named in what leaves the checkout. | `test_what_leaves.py::test_what_leaves_names_nothing_of_the_loaded_book`, run by `.githooks/pre-push` on the book `PORTFUSION_BOOK` names, and a push that names none refused (`test_hooks.py::test_with_no_book_named_the_push_is_refused_and_says_how_to_name_one`); CI runs on the demo and cannot |
 
 ### Who may read and reach
 

@@ -28,7 +28,8 @@ THE GUARD IS THE APP'S, as the secret gate is: this checkout's `.githooks/pre-pu
 portfusion the book has installed.
 
 A PUSH OF THIS CHECKOUT ALSO NAMES NOTHING OF A BOOK: its hook runs `LEAKS` on the book
-`PORTFUSION_BOOK` names and refuses a push that names it. A book's own push does not.
+`PORTFUSION_BOOK` names and refuses a push that names it, or that names no book, so a push that
+checks nothing is a choice made by naming the demo. A book's own push does not.
 
 Held by tests/test_hooks.py.
 """
@@ -79,13 +80,14 @@ LEAKS = "src/portfusion/tests/test_what_leaves.py"
 
 
 def what_leaves(checkout) -> int:
-    """Run `LEAKS` from `checkout` on the named book: 0 when it passes or no book is named, 1
-    when what is pushed names the book."""
+    """Run `LEAKS` from `checkout` on the named book: 0 when it passes, 1 when what is pushed
+    names the book or no book is named."""
     book = os.environ.get("PORTFUSION_BOOK", "").strip()
     if not book:
-        log.info("pre-push: PORTFUSION_BOOK names no book, so nothing checked this push for a "
-                 "book's names.")
-        return 0
+        log.error("pre-push: REFUSED. PORTFUSION_BOOK names no book, so nothing would check this "
+                  "push for a book's names. Name yours, or `PORTFUSION_BOOK=demo` to push "
+                  "without the check.")
+        return 1
     # The checkout's own venv: the hook's python may have no pytest, and another checkout's
     # install is refused by the suite (docs/environment.md).
     venv = pathlib.Path(checkout) / ".venv" / "bin" / "python3"

@@ -3,21 +3,43 @@
 A book's folder holds the files that reach its brokers and readers (`credentials.json`, the feeds'
 sessions, the hosted desk's proxy secret). Two places must never carry what is in them: a commit,
 and the hosted desk's published shell. Both ask here, so there is one statement of what counts:
-`.githooks/pre-commit` refuses a commit by it, and `desk/publish.py` refuses a publish.
+`.githooks/pre-commit` and `commit-msg` refuse a commit by it, and `desk/publish.py` a publish.
 
 It names WHICH credential matched, never the value, because a refusal that quoted the key would
 leave it in the terminal's scrollback.
+
+A BYTE SEARCH FINDS a value as it is, in either case, URL-encoded, or in base64 that starts where
+the value starts. It cannot find one split across lines or files, in UTF-16, inside anything
+compressed (a zip, a PDF's packed streams), in base64 that starts elsewhere, or shorter than
+`MIN_LENGTH`; the key shapes are the guard for the formats a value is not read from.
 
 Imports nothing beyond the standard library, so a git hook can load it without the venv.
 """
 from __future__ import annotations
 
+import base64
 import json
 import pathlib
 import re
+import urllib.parse
 
-CREDENTIAL_FILES = ("credentials.json", ".ig_session.json", ".tv_session.json",
-                    ".desk_proxy_secret.json")
+#: EVERY FILE A BOOK KEEPS A SECRET IN, by the pattern that keeps it out of git, and the file whose
+#: values are scanned, or None where the file is ignored only. A new book's `.gitignore`
+#: (`init.GITIGNORE`) is written from it.
+SECRET_FILES = {
+    "credentials.*": "credentials.json",
+    "secrets.*": None,
+    "*.key": None,
+    ".env": ".env",
+    ".ig_session.json": ".ig_session.json",
+    ".tv_session.json": ".tv_session.json",
+    ".desk_passkeys.json": None,
+    ".desk_readers.json": None,
+    ".desk_signins.jsonl": None,
+    ".desk_proxy_secret.json": ".desk_proxy_secret.json",
+    ".desk_*.tmp": None,                    # desk/auth.py's, part-way through being replaced
+}
+CREDENTIAL_FILES = tuple(f for f in SECRET_FILES.values() if f)
 
 # The fields in those files that are NOT secret, and why each one is safe in git.
 EXEMPT_KEYS = {
@@ -52,9 +74,28 @@ def _leaves(node, keys=()):
         yield keys, node
 
 
+def _env(text: str):
+    """(key,), value for each `KEY=value` line of a `.env` file, a trailing ` # note` aside."""
+    for line in text.splitlines():
+        key, eq, value = line.strip().removeprefix("export ").partition("=")
+        if eq and not key.startswith("#"):
+            yield (key.strip(),), value.split(" #")[0].strip().strip("'\"")
+
+
+def _forms(value: str):
+    """The value, and each form it arrives in changed, by the name a refusal gives it."""
+    raw = value.encode()
+    yield "", raw
+    yield " (upper case)", value.upper().encode()
+    yield " (lower case)", value.lower().encode()
+    yield " (URL-encoded)", urllib.parse.quote(value, safe="").encode()
+    yield " (base64)", base64.b64encode(raw[:len(raw) // 3 * 3])
+    yield " (base64)", base64.urlsafe_b64encode(raw[:len(raw) // 3 * 3])
+
+
 def credential_values(folders) -> tuple[dict[bytes, str], bool, list[str]]:
     """({value: 'file key/path'}, whether any credential file was found, the names of any that
-    are not valid JSON) over the credential files in `folders`. The values stay in this mapping;
+    do not parse) over the credential files in `folders`. The values stay in this mapping;
     only the labels are ever printed."""
     values, found, unreadable = {}, False, []
     for root in folders:
@@ -64,14 +105,16 @@ def credential_values(folders) -> tuple[dict[bytes, str], bool, list[str]]:
                 continue
             found = True
             try:
-                data = json.loads(path.read_text(encoding="utf-8"))
+                text = path.read_text(encoding="utf-8")
+                leaves = list(_env(text) if name == ".env" else _leaves(json.loads(text)))
             except ValueError:
                 unreadable.append(name)
                 continue
-            for keys, value in _leaves(data):
+            for keys, value in leaves:
                 if keys and keys[-1] in EXEMPT_KEYS or len(value) < MIN_LENGTH:
                     continue
-                values.setdefault(value.encode(), f"{name} {'/'.join(keys)}")
+                for form, encoded in _forms(value):
+                    values.setdefault(encoded, f"{name} {'/'.join(keys)}{form}")
     return values, found, unreadable
 
 
