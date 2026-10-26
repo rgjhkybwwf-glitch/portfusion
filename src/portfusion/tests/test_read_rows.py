@@ -52,7 +52,7 @@ TRANSACTIONS = (
 
 
 @pytest.fixture
-def on_the_workbench(tmp_path, monkeypatch):
+def on_the_workbench(inbox, monkeypatch):
     """A document on a workbench, and an EMPTY record behind it.
 
     The suppression is stubbed out here on purpose. These tests are about reading a document,
@@ -60,15 +60,14 @@ def on_the_workbench(tmp_path, monkeypatch):
     entered for real, reporting one row instead of two. What the suppression does has its own test,
     with the matcher stubbed the other way.
     """
-    monkeypatch.setattr(read_document, "INBOX", str(tmp_path))
     monkeypatch.setattr(recorded, "matching_row", lambda table, values: None)
     def put(name, body):
-        (tmp_path / name).write_bytes(body.encode("cp1252"))
+        (inbox / name).write_bytes(body.encode("cp1252"))
         return name
     return put
 
 
-def test_a_line_already_in_the_record_is_reported_and_not_read_again(tmp_path, monkeypatch):
+def test_a_line_already_in_the_record_is_reported_and_not_read_again(inbox, monkeypatch):
     """HL'S EXPORTS OVERLAP BY DESIGN. The income list and the Income-side transaction list
     carry the same dividends, so without this the second document worked would offer every
     row the first one entered.
@@ -76,9 +75,8 @@ def test_a_line_already_in_the_record_is_reported_and_not_read_again(tmp_path, m
     AND IT ONLY WORKS IF THE DATES AGREE. The gate keys on (date, account, category, amount),
     so a dividend the book holds at a date HL does not use is offered again as new.
     """
-    monkeypatch.setattr(read_document, "INBOX", str(tmp_path))
     monkeypatch.setattr(recorded, "matching_row", lambda table, values: "an existing row")
-    (tmp_path / "income.csv").write_bytes(INCOME.encode("cp1252"))
+    (inbox / "income.csv").write_bytes(INCOME.encode("cp1252"))
 
     out = read_rows.read("income.csv")
     assert out["rows"] == [], "a row already in the record was read again"
@@ -183,10 +181,9 @@ LEDGER = (
 
 
 @pytest.fixture
-def ledger(tmp_path, monkeypatch):
+def ledger(inbox, monkeypatch):
     """The ledger on a workbench, with the record behind it stubbed: the account is decided by
     the contract note its dealing line settled, and the account keeps GBP cash only."""
-    monkeypatch.setattr(read_document, "INBOX", str(tmp_path))
     monkeypatch.setattr(recorded, "matching_row", lambda table, values: None)
     monkeypatch.setattr(read_rows, "_in_record", lambda ref: "sales" if ref == "ABC123" else "")
     monkeypatch.setattr(recorded, "accounts_citing",
@@ -194,7 +191,7 @@ def ledger(tmp_path, monkeypatch):
     monkeypatch.setattr(recorded, "cash_currencies", lambda account: {"GBP"})
     # The register holds KELS.L and QNLR and nothing for ZQX, whichever book is loaded.
     monkeypatch.setattr(read_rows.D, "SECURITIES", [("KELS.L",), ("QNLR",)])
-    (tmp_path / "ledger.csv").write_text(LEDGER, encoding="utf-8")
+    (inbox / "ledger.csv").write_text(LEDGER, encoding="utf-8")
     return "ledger.csv"
 
 
@@ -234,12 +231,11 @@ def test_an_account_with_other_currency_cash_gets_no_cash_row_from_one_ledger(le
     assert any("EUR" in s["why"] for s in out["seen"])
 
 
-def test_a_ledger_in_another_currency_is_left_for_a_person(tmp_path, monkeypatch):
+def test_a_ledger_in_another_currency_is_left_for_a_person(inbox, monkeypatch):
     """A EUR line needs the day's rate to become a row; a rate from the wrong day is the error
     `rules.FX_RATE_AGE_LIMIT_DAYS` describes. So nothing is proposed and every line says why."""
-    monkeypatch.setattr(read_document, "INBOX", str(tmp_path))
     monkeypatch.setattr(recorded, "matching_row", lambda table, values: None)
-    (tmp_path / "eur.csv").write_text(LEDGER.replace("£", "€"), encoding="utf-8")
+    (inbox / "eur.csv").write_text(LEDGER.replace("£", "€"), encoding="utf-8")
     out = read_rows.read("eur.csv")
     assert out["rows"] == [] and len(out["unrecognised"]) == 7
     assert all("EUR ledger" in u for u in out["unrecognised"])
@@ -255,7 +251,7 @@ def test_the_ii_ledger_rules_are_literal_prefixes():
     assert D.ii_contract_number("12345ABC123") == "ABC123"
 
 
-def test_a_documents_download_time_is_uk_time_wherever_the_mac_is(tmp_path, monkeypatch):
+def test_a_documents_download_time_is_uk_time_wherever_the_mac_is(inbox, monkeypatch):
     """A DOCUMENT THAT STATES NO INSTANT IS DATED BY ITS DOWNLOAD TIME, read as UK wall-clock time
     the way its own would be. A Mac in New York reads a 13:00 London download as 13:00, never
     08:00."""
@@ -263,12 +259,10 @@ def test_a_documents_download_time_is_uk_time_wherever_the_mac_is(tmp_path, monk
     import datetime as dt
     import os
     import time
-    from portfusion.desk.intake import read_document
-    doc = tmp_path / "export.csv"
+    doc = inbox / "export.csv"
     doc.write_text("x\n", encoding="utf-8")
     noon_utc = calendar.timegm((2026, 7, 1, 12, 0, 0))     # 13:00 in London, summer time
     os.utime(doc, (noon_utc, noon_utc))
-    monkeypatch.setattr(read_document, "INBOX", str(tmp_path))     # on the workbench, by name
     monkeypatch.setenv("TZ", "America/New_York")
     time.tzset()
     try:
@@ -304,7 +298,6 @@ def test_one_coincidence_does_not_name_a_ledgers_account(monkeypatch):
 def test_a_utf16_export_is_read_as_utf16(tmp_path):
     """A SPREADSHEET SAVED AS UTF-16 starts with its byte-order mark. cp1252 takes any byte, so the
     mark is read first, or each letter would carry a NUL."""
-    from portfusion.desk.intake import read_document
     doc = tmp_path / "export.csv"
     doc.write_bytes("Symbol,Qty\nWEND,100\n".encode("utf-16"))
     got = read_document.extract_file(doc)

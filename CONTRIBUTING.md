@@ -65,7 +65,7 @@ once, here, beside that test.
 
 | # | Rule | Held by |
 |---|---|---|
-| 16 | **The desk answers only this Mac and signed-in readers.** The local desk listens on 127.0.0.1 only; the hosted door fails shut without its secret, only reads, serves only its pinned routes, answers only a signed-in reader at their level, and withholds holders' names from a principal. | `test_routes.py::test_a_request_for_another_host_is_refused`, `test_remote.py::test_with_no_secret_on_the_mac_the_door_fails_shut`, `test_remote.py::test_every_remote_route_only_reads`, `test_remote.py::test_the_remote_door_serves_only_the_pinned_routes`, `test_remote.py::test_each_level_opens_what_was_agreed`, `test_remote.py::test_a_principal_reads_no_holder_and_no_number_anywhere`; the bind to 127.0.0.1 (being made to fire) |
+| 16 | **The desk answers only this Mac and signed-in readers.** The local desk listens on 127.0.0.1 only; the hosted door fails shut without its secret, only reads, serves only its pinned routes, answers only a signed-in reader at their level, and withholds holders' names from a principal. | `test_routes.py::test_a_request_for_another_host_is_refused`, `test_remote.py::test_with_no_secret_on_the_mac_the_door_fails_shut`, `test_remote.py::test_every_remote_route_only_reads`, `test_remote.py::test_the_remote_door_serves_only_the_pinned_routes`, `test_remote.py::test_each_level_opens_what_was_agreed`, `test_remote.py::test_a_principal_reads_no_holder_and_no_number_anywhere` |
 | 17 | **The feeds only read.** A feed makes only allowlisted reads, refused by name before a request is built; a feed writes no mark and no event. | `test_ig.py::test_guard_refuses_everything_that_is_not_a_read`, `test_tv.py::test_the_allowlist_is_checked_before_a_request_is_built`, `test_tv.py::test_a_feed_writes_nothing_but_its_own_sign_in` |
 
 ### Upgrades and releases
@@ -127,7 +127,7 @@ One line each; kept by review, and by the test named where there is one.
 - **Every line a command says goes through `portfusion.log`**
   (`test_code.py::test_nothing_outside_the_tests_prints`).
 - **Hold a module, never its names, where they move**: `rules.X`, not `from … import X`, and the
-  schema's `STORE`, `STATEMENTS` and `INBOX` likewise (`test_code.py::test_a_module_is_imported_one_way`).
+  schema's `STORE` and `BOOK` likewise (`test_code.py::test_a_module_is_imported_one_way`).
 - **A cached frame is returned as a copy.**
 - **The engine keeps its numbered sections in order**, each topic in one place and its window stated
   once (`test_code.py::test_book_py_keeps_each_topic_in_one_place`,

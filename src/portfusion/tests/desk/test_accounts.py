@@ -451,7 +451,6 @@ def test_a_cash_observation_commits_and_reads_back(item, store_copy, tmp_path, m
     """END TO END, against a COPY of the store — never the record itself."""
     from portfusion.record import schema
     from portfusion.desk.doors import commit as _commit
-    monkeypatch.setattr(_commit, "ARCHIVE", tmp_path / "archive")
     was = len(schema.load("cash-readings"))
     good = _good_cash()
     after = _after_the_newest_reading(good["account"])
@@ -479,7 +478,6 @@ def test_the_committed_reading_becomes_the_newest_cash(store_copy, item, tmp_pat
     without anybody editing record/rules.py."""
     from portfusion.record import schema
     from portfusion.desk.doors import commit as _commit
-    monkeypatch.setattr(_commit, "ARCHIVE", tmp_path / "archive")
 
     good = _good_cash()
     after = _after_the_newest_reading(good["account"])
@@ -655,8 +653,8 @@ def _share_filed(store_copy):
     from portfusion.record import schema
     account, number = _shares_register()[0]
     _ensure_prior_reading(store_copy, account)
-    schema.STATEMENTS.mkdir(parents=True, exist_ok=True)
-    (schema.STATEMENTS / _hl_name(account)).write_text(
+    schema.statements().mkdir(parents=True, exist_ok=True)
+    (schema.statements() / _hl_name(account)).write_text(
         _hl_export(account, number, _book_units(account)), encoding="utf-8")
     _clear_day(store_copy, account)
     return account
@@ -906,10 +904,10 @@ def _ii_filed(store_copy):
     matches ONE document even beside the archive's own 30 Sep exports; returns its account."""
     from portfusion.record import schema
     account = _ii_account()
-    schema.STATEMENTS.mkdir(parents=True, exist_ok=True)
+    schema.statements().mkdir(parents=True, exist_ok=True)
     # The archive convention zero-pads the day — archive_reference() does too, and an
     # unpadded name matches nothing.
-    (schema.STATEMENTS / f"01 Oct 2026 08.31 ii valuation download ({account}).csv").write_text(
+    (schema.statements() / f"01 Oct 2026 08.31 ii valuation download ({account}).csv").write_text(
         _ii_export(account), encoding="utf-8")
     _ensure_prior_reading(store_copy, account)
     return account
@@ -985,23 +983,17 @@ def test_a_reading_off_a_document_that_states_its_cash_still_needs_it(store_copy
 # =====================================================================================
 
 @pytest.fixture
-def holdings_on_the_bench(store_copy, tmp_path, monkeypatch):
-    """The INVENTED Account Summary on a workbench of its own, with the Bench, the archive
-    and the readings door all pointed at temp folders. The export is built from the loaded
-    book's own units."""
-    from portfusion.desk.doors import commit
-    from portfusion.desk.intake import bench, filing, read_document
-    inbox, statements = tmp_path / "_inbox", tmp_path / "statements"
+def holdings_on_the_bench(store_copy):
+    """The INVENTED Account Summary on the copy's workbench, with nothing yet filed in its
+    archive. The export is built from the loaded book's own units."""
+    import shutil
+    inbox, statements = _rules.schema.inbox(), _rules.schema.statements()
     inbox.mkdir()
+    shutil.rmtree(statements)
     statements.mkdir()
     account, number = _shares_register()[0]
     (inbox / "summary.csv").write_text(
         _hl_export(account, number, _book_units(account)), encoding="utf-8")
-    monkeypatch.setattr(read_document, "INBOX", str(inbox))
-    monkeypatch.setattr(bench, "BENCH_DIR", tmp_path / "bench")
-    monkeypatch.setattr(filing, "BOOK", tmp_path)
-    monkeypatch.setattr(_rules.schema, "STATEMENTS", statements)
-    monkeypatch.setattr(commit, "ARCHIVE", tmp_path / "archive")
     # The history banks a reading once; forget any banked row at this export's key.
     _clear_day(store_copy, account)
     _ensure_prior_reading(store_copy, account)

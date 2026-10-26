@@ -22,21 +22,20 @@ import sys
 from portfusion.record import schema
 from portfusion.log import log
 
-INBOX = str(schema.INBOX)
-
 
 def listing():
-    if not os.path.isdir(INBOX):
-        log.info(f"no {INBOX}/ — nothing to intake")
+    inbox = str(schema.inbox())
+    if not os.path.isdir(inbox):
+        log.info(f"no {inbox}/ — nothing to intake")
         return
-    files = sorted(f for f in os.listdir(INBOX)
+    files = sorted(f for f in os.listdir(inbox)
                    if not f.startswith("."))
     if not files:
         log.info("The workbench is clear. Nothing waiting.")
         return
-    log.info(f"{len(files)} document(s) waiting in {INBOX}/:\n")
+    log.info(f"{len(files)} document(s) waiting in {inbox}/:\n")
     for f in files:
-        size = os.path.getsize(os.path.join(INBOX, f))
+        size = os.path.getsize(os.path.join(inbox, f))
         log.info(f"  {f}   ({size:,} bytes)")
     log.info("\nRead one with:  python3 -m portfusion.desk.intake.read_document \"<filename>\"")
     log.info("Every one of these is UNFINISHED WORK until it is entered AND archived.")
@@ -83,7 +82,7 @@ def _located(name):
     read from the book's folder. The containment is the `/raw` route's: the name resolves inside
     `_inbox/` or it is not found.
     """
-    inbox = os.path.realpath(INBOX)
+    inbox = os.path.realpath(schema.inbox())
     path = os.path.realpath(os.path.join(inbox, name))
     if os.path.dirname(path) != inbox:
         raise FileNotFoundError(name)
@@ -168,10 +167,11 @@ def _extract(path):
 
 def waiting():
     """What is on the workbench, as data."""
-    if not os.path.isdir(INBOX):
+    inbox = str(schema.inbox())
+    if not os.path.isdir(inbox):
         return []
-    return [{"name": f, "bytes": os.path.getsize(os.path.join(INBOX, f))}
-            for f in sorted(os.listdir(INBOX))
+    return [{"name": f, "bytes": os.path.getsize(os.path.join(inbox, f))}
+            for f in sorted(os.listdir(inbox))
             if not f.startswith(".")]
 
 

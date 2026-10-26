@@ -168,7 +168,7 @@ def test_an_account_with_no_statement_is_a_gap_not_a_problem(book, monkeypatch):
 def test_the_evidence_line_survives_an_absent_archive(book, monkeypatch, tmp_path):
     """The findings promise never to fail over a provenance read; with no archive they say so.
     A check that cannot run is a problem, never good order: the audit's status counts them."""
-    monkeypatch.setattr(D.schema, "STATEMENTS", tmp_path / "absent")
+    monkeypatch.setattr(D.schema, "BOOK", tmp_path)
     note, problem = book._evidence_chain()
     assert "unverifiable" in note and problem is None
 

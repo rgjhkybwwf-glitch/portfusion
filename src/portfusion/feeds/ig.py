@@ -35,7 +35,6 @@ import urllib.parse
 
 from portfusion.record import schema as _schema   # the book folder, whose keys these are
 from portfusion.log import log
-CREDENTIALS_FILE = os.path.join(_schema.BOOK, "credentials.json")
 
 # IG's demo gateway has the same API surface: prove the login and the epic map there before
 # touching a live account.
@@ -119,11 +118,13 @@ CREDENTIALS_TEMPLATE = """{
 One block per IG account."""
 
 
-def load_credentials(path=CREDENTIALS_FILE):
-    """Read credentials.json, or explain exactly what to create.
+def load_credentials(path=None):
+    """Read credentials.json, the book's own unless `path` names another, or explain exactly what
+    to create.
 
     The only place a credential is read; it returns them rather than keeping them at module level.
     """
+    path = path or os.path.join(_schema.BOOK, "credentials.json")
     if not os.path.exists(path):
         raise CredentialsError(
             f"NO CREDENTIALS FILE — expected {path}\n\n"

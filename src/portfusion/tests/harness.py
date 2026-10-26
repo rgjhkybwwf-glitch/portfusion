@@ -550,25 +550,23 @@ def store_copy(tmp_path, monkeypatch):
     Copying from `schema.STORE`, never `ROOT / "store"`, is also what lets the suite check
     whatever book is loaded.
 
-    Restores the record, and both archive paths, however the test ends.
+    A TEST'S BOOK IS ITS `tmp_path`, here and in the bench fixtures below: each rebinds
+    `schema.BOOK` there, so they agree whichever a test takes. Restored however the test ends.
     """
     import shutil
     from portfusion.record import rules, schema
-    from portfusion.desk.doors import commit
-    book_dir = tmp_path / "book"
-    target = book_dir / "store"
-    target.mkdir(parents=True)
+    target = tmp_path / "store"
+    target.mkdir()
     for csv_file in schema.STORE.glob("*.csv"):
         shutil.copy2(csv_file, target / csv_file.name)
     for name in ("bench", "statements"):
         src = schema.BOOK / "_archive" / name
-        dst = book_dir / "_archive" / name
+        dst = tmp_path / "_archive" / name
         if src.is_dir():
             shutil.copytree(src, dst)
         else:
             dst.mkdir(parents=True)
-    monkeypatch.setattr(schema, "STATEMENTS", book_dir / "_archive" / "statements")
-    monkeypatch.setattr(commit, "ARCHIVE", book_dir / "_archive" / "bench")
+    monkeypatch.setattr(schema, "BOOK", tmp_path)
     with rules.store_at(target):
         yield target
 
@@ -579,17 +577,14 @@ def store_copy(tmp_path, monkeypatch):
 # is importable whenever a test in tests/desk/ is running, and no other test asks for these.
 
 @pytest.fixture
-def item(tmp_path, monkeypatch):
+def item(inbox):
     """A bench item in a temp directory, so the suite never touches the real workbench — of the
     document kind `GOOD_EVIDENCE` describes, with that document on a workbench of its own. The
     bench owes a kind before it approves, and a contract note is retrieved by its FILE; the
     commit door files it from this workbench, never the real `_inbox/`."""
     from desk_support import GOOD_CLASS, GOOD_DOCUMENT
-    from portfusion.desk.intake import bench as _bench, filing
-    monkeypatch.setattr(_bench, "BENCH_DIR", tmp_path / "bench")
-    monkeypatch.setattr(filing, "BOOK", tmp_path)
-    (tmp_path / "_inbox").mkdir(exist_ok=True)
-    (tmp_path / "_inbox" / GOOD_DOCUMENT).write_bytes(b"%PDF-1.4")
+    from portfusion.desk.intake import bench as _bench
+    (inbox / GOOD_DOCUMENT).write_bytes(b"%PDF-1.4")
     made = _bench.new_item(title="test item")
     made["evidence_class"] = GOOD_CLASS
     made["document"] = {"name": GOOD_DOCUMENT}
@@ -597,37 +592,31 @@ def item(tmp_path, monkeypatch):
 
 
 @pytest.fixture
-def workbench(tmp_path, monkeypatch):
+def workbench(inbox, tmp_path_factory, monkeypatch):
     """A workbench and a destination of our own, for the exit route.
 
     Never the real `_inbox/` and never the real `~/Downloads` — this module is the one under
     desk/ that can REMOVE a file, so a test of it that reached either would be the accident it
     exists to prevent. NOR THE REAL BENCH OR ARCHIVE: a withdrawal closes the bench item working
     its document and copies it to `_archive/bench/`, so a name the loaded book's bench also held
-    would have closed that book's item.
+    would have closed that book's item. The destination is outside the book, where a withdrawal
+    may go.
     """
-    from portfusion.desk.doors import commit
-    from portfusion.desk.intake import bench, dropoff, withdraw
-    box, out = tmp_path / "_inbox", tmp_path / "out"
-    box.mkdir()
-    out.mkdir()
-    monkeypatch.setattr(dropoff, "INBOX", box)
-    monkeypatch.setattr(withdraw, "INBOX", box)
+    from portfusion.desk.intake import withdraw
+    out = tmp_path_factory.mktemp("out")
     monkeypatch.setattr(withdraw, "DEFAULT_DESTINATION", out)
-    monkeypatch.setattr(bench, "BENCH_DIR", box / ".bench")
-    monkeypatch.setattr(commit, "ARCHIVE", tmp_path / "_archive" / "bench")
-    return box, out
+    return inbox, out
 
 
 @pytest.fixture
 def inbox(tmp_path, monkeypatch):
-    """A workbench of our own. NEVER the real _inbox/ — a test that landed a document in the
-    real one would fail test_inbox.py's "the workbench is clear" on the next run, and the
-    failure would look like an unfinished intake rather than a stray test."""
-    from portfusion.desk.intake import dropoff
-    target = tmp_path / "_inbox"
-    target.mkdir()
-    monkeypatch.setattr(dropoff, "INBOX", target)
+    """A workbench of our own, in a book of our own. NEVER the real _inbox/ — a test that landed
+    a document in the real one would fail test_inbox.py's "the workbench is clear" on the next
+    run, and the failure would look like an unfinished intake rather than a stray test."""
+    from portfusion.record import schema
+    monkeypatch.setattr(schema, "BOOK", tmp_path)
+    target = schema.inbox()
+    target.mkdir(exist_ok=True)
     return target
 
 

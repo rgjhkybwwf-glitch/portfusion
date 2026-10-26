@@ -20,6 +20,7 @@ from fastapi.responses import FileResponse, JSONResponse, Response
 from portfusion.desk import actions, bundle, panels, engine
 from portfusion.desk.intake import (bench as _bench, dropoff as _dropoff, propose as _propose,
                          withdraw as _withdraw)
+from portfusion.record import schema
 
 app = FastAPI(title="PortFusion — the desk", docs_url=None, redoc_url=None)
 
@@ -40,7 +41,8 @@ async def own_page_only(request: Request, call_next):
 
     THE ORIGIN, on anything but a read. A browser names the page a write comes from, and only
     the desk's own address may write. A request with no Origin did not come from a page — a
-    script on this Mac, which could open the files directly anyway.
+    process on this Mac, answered as the owner. That holds while the Mac has one user account,
+    whose processes could open the files directly anyway (SECURITY.md).
     """
     host = request.headers.get("host", "")
     if host.rsplit(":", 1)[0] not in LOOPBACK:
@@ -419,7 +421,7 @@ def document_raw(name: str):
     SERVED FROM `_inbox/` ONLY, by basename, with the same containment rule as `/static`: a
     name that does not resolve inside the workbench is a 404 rather than a traversal.
     """
-    inbox = _dropoff.INBOX.resolve()
+    inbox = schema.inbox().resolve()
     path = (inbox / pathlib.Path(name).name).resolve()
     if path.parent != inbox or not path.is_file():
         raise HTTPException(404, f"no document {name!r} on the workbench")

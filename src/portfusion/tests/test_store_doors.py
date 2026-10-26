@@ -373,15 +373,15 @@ def test_no_book_method_reads_the_process_record(repo_root):
 
 
 def test_the_archive_is_listed_in_one_place(project_files, repo_root):
-    """`schema.STATEMENTS` is where a document is filed and `schema.filed_statements()` is what is
-    there. A module composes the path here or not at all."""
+    """`schema.statements()` is where a document is filed and `schema.filed_statements()` is what
+    is there. A module composes the path here or not at all."""
     import re
     composed = re.compile(r"[\"']_archive[\"']\s*/\s*[\"']statements[\"']")
     from harness import app_name
     found = [app_name(p) for p in project_files(".py")
              if not p.is_relative_to(TESTS) and composed.search(p.read_text())]
     assert found == ["record/schema.py"], (
-        f"the archive's path is composed in {found}; use schema.STATEMENTS and "
+        f"the archive's path is composed in {found}; use schema.statements() and "
         f"schema.filed_statements()")
 
 
@@ -389,15 +389,15 @@ def test_a_hidden_file_or_a_folder_is_not_a_filed_document(monkeypatch, tmp_path
     """What `filed_statements()` counts: the documents, sorted, and not the `.DS_Store` Finder
     leaves behind or a folder somebody made. No archive at all is an empty list, not an error."""
     from portfusion.record import schema
+    monkeypatch.setattr(schema, "BOOK", tmp_path)
+    assert schema.filed_statements() == []
+    (folder := schema.statements()).mkdir(parents=True)
     for name in ("30 Sep 2026 IG statement (Voss IG Spread bet).pdf", ".DS_Store",
                  "02 Sep 2026 ii broker direct (Voss ii ISA).csv"):
-        (tmp_path / name).write_bytes(b"x")
-    (tmp_path / "loose").mkdir()
-    monkeypatch.setattr(schema, "STATEMENTS", tmp_path)
+        (folder / name).write_bytes(b"x")
+    (folder / "loose").mkdir()
     assert schema.filed_statements() == ["02 Sep 2026 ii broker direct (Voss ii ISA).csv",
                                          "30 Sep 2026 IG statement (Voss IG Spread bet).pdf"]
-    monkeypatch.setattr(schema, "STATEMENTS", tmp_path / "absent")
-    assert schema.filed_statements() == []
 
 
 def test_the_import_reader_sees_a_module_imported_from_the_package(imports_of, tmp_path):
@@ -423,7 +423,7 @@ def test_a_store_that_will_not_load_leaves_the_record_where_it_was(store_copy, t
     import shutil
     from portfusion.record import rules, schema
     was = schema.STORE
-    bad = tmp_path / "store"
+    bad = tmp_path / "refused" / "store"
     shutil.copytree(schema.STORE, bad)
     trades = bad / "buys.csv"
     lines = trades.read_text(encoding="utf-8").splitlines()

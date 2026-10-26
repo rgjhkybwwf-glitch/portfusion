@@ -138,6 +138,9 @@ prints it.
   `PORTFUSION_BOOK=demo` pushes without the leak test. **An existing book gets the new hook and
   ignore list only when its pin moves**: the audit then names `.githooks/commit-msg` and
   `.gitignore`, and both are copied from a new book (`portfusion init <folder>`).
+- **The desk always listens on 127.0.0.1.** `portfusion desk --host` is gone: no browser could use
+  it, and a script that forged the loopback name was answered as the owner, an owner-level enrol
+  code included. SECURITY.md states what the Mac's door assumes: one user account on the Mac.
 - **Every renderer prints a figure one way**, from `house/precision.py`: sterling to the penny
   on the desk and in the audit, to the pound on the report but for its two cash tables, a
   negative as -£5.82, a rate per £1 to four places. An exact half now rounds away from zero

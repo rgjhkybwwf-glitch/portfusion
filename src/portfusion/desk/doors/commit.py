@@ -33,9 +33,12 @@ from portfusion.desk.doors import envelope
 from portfusion.desk.intake import bench, filing
 from portfusion.record import order, schema
 
-#: Where a committed item's note goes. `_archive/` is tracked, and it is the audit trail
-#: behind the row: what evidence was held, what the reasoning was, and when it landed.
-ARCHIVE = schema.BOOK / "_archive" / "bench"
+
+def archive():
+    """Where a committed item's note goes. `_archive/` is tracked, and it is the audit trail
+    behind the row: what evidence was held, what the reasoning was, and when it landed."""
+    return schema.BOOK / "_archive" / "bench"
+
 
 #: States a committed item may already be in. Committing twice is refused, not ignored — an
 #: event happened once, and writing it again would be a duplicate the schema cannot see.
@@ -332,8 +335,9 @@ def commit(item_id: str) -> dict:
     if document:
         item["document_archived_to"] = filing.filed_as(document)
 
-    ARCHIVE.mkdir(parents=True, exist_ok=True)
-    (ARCHIVE / f"{item['id']}.json").write_text(json.dumps(item, indent=2), encoding="utf-8")
+    note = archive() / f"{item['id']}.json"
+    note.parent.mkdir(parents=True, exist_ok=True)
+    note.write_text(json.dumps(item, indent=2), encoding="utf-8")
     bench.discard(item["id"])
 
     return {"id": item["id"], "written": item["written_to"], "written_at": written_at,
@@ -344,7 +348,7 @@ def commit(item_id: str) -> dict:
             "reasoning": sorted(targets),
             "retired": retired,
             "marked": marked,
-            "archived_to": filing.filed_as(ARCHIVE / f"{item['id']}.json")}
+            "archived_to": filing.filed_as(note)}
 
 
 def _observations_paths() -> list:
@@ -391,11 +395,12 @@ def _archive_document(item: dict):
         raise Refused(f"{source.name} is not on the workbench, so it cannot be filed, and no row "
                       f"may cite a document that was never filed. Nothing was written.")
     name = source.name
-    schema.STATEMENTS.mkdir(parents=True, exist_ok=True)
-    target = schema.STATEMENTS / filing.archive_name(item, name)
+    folder = schema.statements()
+    folder.mkdir(parents=True, exist_ok=True)
+    target = folder / filing.archive_name(item, name)
     if target.exists():
         stem, suffix = target.stem, target.suffix
-        target = schema.STATEMENTS / f"{stem}-{item['id']}{suffix}"
+        target = folder / f"{stem}-{item['id']}{suffix}"
     if target.exists():
         raise Refused(f"{target.name} is filed already and is never replaced. Nothing was written.")
     shutil.move(str(source), str(target))

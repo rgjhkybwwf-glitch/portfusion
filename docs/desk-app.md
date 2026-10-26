@@ -10,7 +10,8 @@ portfusion desk --uninstall-agent       # stop it and remove it
 ```
 
 The desk answers on `127.0.0.1:8765` and has no sign-in, so it never listens beyond this machine;
-the hosted desk, below, is the one way in from outside.
+the hosted desk, below, is the one way in from outside. It assumes one user account on the Mac:
+any process that reaches the port is answered as the owner ([`SECURITY.md`](../SECURITY.md)).
 
 ## At login, and in the Dock
 
