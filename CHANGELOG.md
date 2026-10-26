@@ -100,6 +100,12 @@ prints it.
   command run as `python3 -m portfusion.<command>`: `python3 -m portfusion.record --book demo` was
   refused as an unrecognised argument. `portfusion --help` lists all fifteen commands: the seven actions, and
   the eight reached by `python3 -m` alone. `python3 -m portfusion.desk.doors.freeze` still works.
+- **A hosted reader sees a fixed sentence, not a 500, when the record will not load.** The remote
+  door answered 500 at every level, or handed an owner the record's own words, which name the
+  Mac's folders; it now tells every reader "the record on the Mac will not load: see the Mac's
+  desk". A refusal's words are renamed for a level that reads no names, as its answers are. A
+  desk with a hosted door now starts when a cell will not load: the door reads its two settings
+  alone.
 
 ## 0.3.2 — beta, 24 Oct 2026
 

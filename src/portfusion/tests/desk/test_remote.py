@@ -602,16 +602,29 @@ def _ready():
 
 
 @needs("accounts")
-def test_a_principal_reads_no_holder_and_no_number_anywhere(client, principal):
+def test_a_principal_reads_no_holder_and_no_number_anywhere(client, session, principal,
+                                                             store_copy, monkeypatch):
     """EVERY ROUTE, EVERY PAGE, the report included: no register name, no word of a holder's
-    name and no account number in anything a principal is sent, notes and all."""
+    name and no account number in anything a principal is sent, notes and all. WHILE THE RECORD
+    WILL NOT LOAD, every reader, the owner too, is sent one fixed sentence in place of the
+    record's own words, which name the Mac's folders."""
     import re
-    words = _register_words()
-    for r in _every_read(client, principal, _ready()):
+    words, ready = _register_words(), _ready()
+    for r in _every_read(client, principal, ready):
         assert r.status_code == 200, f"{r.url} refused the principal: {r.text[:200]}"
         low = r.text.lower()
         left = [w for w in words if re.search(rf"(?<![a-z0-9]){re.escape(w)}(?![a-z0-9])", low)]
         assert not left, f"{r.url} names {left} to the principal"
+    with (store_copy / "buys.csv").open("a", encoding="utf-8") as f:
+        f.write("not,a,trade\n")
+    monkeypatch.setattr(panels, "all_panels", engine.book)     # as a fresh process imports them
+    for headers in (session, principal):
+        for r in _every_read(client, headers, ready):
+            if r.url.path == "/api/health":
+                continue                            # the desk's own, never read from the store
+            assert r.json() == {"error": "record unavailable", "detail": remote.UNAVAILABLE}, \
+                f"{r.url}: {r.status_code} {r.text[:200]}"
+            assert r.headers["cache-control"] == "no-store, private"
 
 
 def test_a_principal_reads_the_macs_figures_with_the_holders_renamed(client, principal):
@@ -627,15 +640,16 @@ def test_a_principal_reads_the_macs_figures_with_the_holders_renamed(client, pri
 
 @needs("accounts")
 def test_a_principal_asks_for_an_account_by_its_code(client, principal):
-    """The label and the code both narrow the ledger; a register name is a 400."""
+    """The label and the code both narrow the ledger; a register name is a 400, whose words
+    name no account either."""
     codes = engine.book().account_codes()
     first = codes.iloc[0]
     for sent in (first["label"], first["code"]):
         r = client.get("/api/trades", params={"account": sent}, headers=principal)
         assert r.status_code == 200
         assert {row["account"] for row in r.json()["rows"]} <= {first["label"]}
-    assert client.get("/api/holdings", params={"account": first["account"]},
-                      headers=principal).status_code == 400
+    r = client.get("/api/holdings", params={"account": first["account"]}, headers=principal)
+    assert r.status_code == 400 and first["account"].lower() not in r.text.lower(), r.text
 
 
 def test_the_state_says_the_readers_level(client, session, principal):
