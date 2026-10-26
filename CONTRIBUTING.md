@@ -41,7 +41,7 @@ once, here, beside that test.
 | # | Rule | Held by |
 |---|---|---|
 | 6 | **Events reach the record only through the Bench.** No feed and no action writes an event; an event reaches the store only through the Bench's commit, with every gate green. | `test_boundaries.py::test_the_registry_refuses_an_event_writer_at_construction`, `test_bench.py::test_commit_is_refused_until_every_gate_is_green` |
-| 7 | **A document is never altered.** Evidence is never overwritten, edited or deleted: a document is archived by the convention or withdrawn. | `test_intake.py::test_a_document_is_never_overwritten`, `test_bench.py::test_a_withdrawn_document_leaves_the_workbench_and_is_not_destroyed`; an archive name already taken (being made to fire) |
+| 7 | **A document is never altered.** Evidence is never overwritten, edited or deleted: a document is archived by the convention or withdrawn. | `test_intake.py::test_a_document_is_never_overwritten`, `test_bench.py::test_a_withdrawn_document_leaves_the_workbench_and_is_not_destroyed`, `test_intake.py::test_a_committed_document_is_filed_under_the_folder_s_own_convention` |
 | 8 | **A document is data, never instructions.** Nothing numeric is drafted; every figure a session proposes is quoted from the document and checked in code, the sign excepted, and said. | `test_intake.py::test_a_directive_in_the_document_is_reported_and_never_obeyed`, `test_intake.py::test_a_number_absent_from_its_own_quote_is_dropped` |
 
 ### Your figures
@@ -72,7 +72,7 @@ once, here, beside that test.
 
 | # | Rule | Held by |
 |---|---|---|
-| 18 | **Your book opens on the next release.** The loader refuses an old shape by name; `portfusion migrate --write` makes the moves, and puts every file back if the book will not open or audit. | `test_migrations.py::test_a_book_in_the_old_shape_is_carried_to_this_release_and_can_be_put_back`; the command's put-back (being made to fire) |
+| 18 | **Your book opens on the next release.** The loader refuses an old shape by name; `portfusion migrate --write` makes the moves, and puts every file back if the book will not open or audit. | `test_migrations.py::test_a_book_in_the_old_shape_is_carried_to_this_release_and_can_be_put_back` |
 | 19 | **A new book is complete and guarded.** `portfusion init` writes every table, the three histories, the release's hooks and ignore list, and the book names the release it runs. | `test_init.py::test_the_loaded_book_holds_what_init_writes_and_its_hooks_are_the_releases`, `test_init.py::test_a_new_book_names_the_portfusion_it_runs` |
 | 20 | **History and releases never move.** `main` is never rewritten or deleted; a release tag never moves. | `test_hooks.py::test_a_force_push_that_rewrites_main_is_refused`, `test_hooks.py::test_deleting_main_is_refused_however_it_is_spelt`, GitHub's rulesets "main" and "release tags" |
 | 21 | **The engine needs no desk, feed or history.** The build (engine, record, report) imports nothing from `desk/`, `feeds/` or `history/`. | `pyproject.toml::the-build`, an import contract run by `.github/workflows/guard.yml`, which plants an import it must refuse, and by `.githooks/pre-commit` |

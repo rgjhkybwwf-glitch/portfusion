@@ -120,11 +120,7 @@ def withdraw(name: str, destination: str | None = None, why: str = "") -> dict:
     item = next((i for i in bench.all_items()
                  if (i.get("document") or {}).get("name") == document), None)
 
-    if returning:
-        source.unlink()
-    else:
-        shutil.move(str(source), str(target))
-
+    # THE NOTE IS ARCHIVED BEFORE THE DOCUMENT MOVES: a note that cannot be archived moves nothing.
     archived_to = None
     if item is not None:
         item["state"] = "withdrawn"
@@ -136,8 +132,14 @@ def withdraw(name: str, destination: str | None = None, why: str = "") -> dict:
         arch.mkdir(parents=True, exist_ok=True)
         path = arch / f"{item['id']}.json"
         path.write_text(json.dumps(item, indent=2), encoding="utf-8")
-        bench.discard(item["id"])
         archived_to = str(path)
+
+    if returning:
+        source.unlink()
+    else:
+        shutil.move(str(source), str(target))
+    if item is not None:
+        bench.discard(item["id"])
 
     return {"document": document, "moved_to": str(target), "returned": returning,
             "item": (item or {}).get("id"), "archived_to": archived_to, "why": why}

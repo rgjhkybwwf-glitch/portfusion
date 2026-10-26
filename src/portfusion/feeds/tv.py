@@ -249,17 +249,19 @@ class _Connection:
             if attempt == TRIES:
                 raise TVError(f"TradingView {method}, {TRIES} tries: {lost}")
             time.sleep(PAUSE_SECONDS * 2 ** (attempt - 1))
-        if notify or not raw.strip():
+        if notify:
             return None
         if "event-stream" in ctype:
             messages = [json.loads(line[5:]) for line in raw.splitlines()
                         if line.startswith("data:") and line[5:].strip()]
             reply = next((m for m in messages if m.get("id") == body["id"]), {})
         else:
-            reply = json.loads(raw)
+            reply = json.loads(raw) if raw.strip() else {}
         if "error" in reply:
             raise TVError(f"TradingView {method}: {reply['error'].get('message', reply['error'])}")
-        return reply.get("result", {})
+        if "result" not in reply:
+            raise TVError(f"TradingView {method}: no answer to request {body['id']}")
+        return reply["result"]
 
     def call(self, tool: str, **arguments) -> dict:
         """One tool call, allowlisted BEFORE the request is built. A reply that says no is raised —
@@ -292,6 +294,8 @@ class _Connection:
             raise TVError(f"{tool}: a reply this feed cannot read — {text[:200]!r}")
         if result.get("isError") or payload.get("success") is False:
             raise TVRefused(f"{tool}: {payload.get('error') or 'refused, no reason given'}")
+        if not payload:
+            raise TVError(f"{tool}: an empty reply")
         return payload
 
 
