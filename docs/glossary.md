@@ -285,7 +285,9 @@ starts to define one.
 | Capital employed (opening + deployed) | `capital` | gbp | **no — live only** |
 | YTD return (MWR) | `capital` | pct | **no — live only** |
 | Return since the day the record begins (MWR) | `capital` | pct | **no — live only** |
+| Return this quarter | `capital` | pct | **yes — the report only** |
 | Open positions | `count` | count | yes |
+| Accounts / positions | `count` | count | **yes — the report only** |
 | Closed round trips | `count` | count | **no — live only** |
 
 ### Vocabularies declared to the LOADER
