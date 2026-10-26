@@ -729,12 +729,21 @@ def test_a_field_the_new_reading_does_not_carry_is_blank_not_the_old_value():
 
 
 @needs("accounts", "account-readings", "buys")
-def test_a_share_reading_is_written_and_banked_with_its_account(store_copy):
+def test_a_share_reading_is_written_and_banked_with_its_account(store_copy, monkeypatch):
     """One write files the reading and banks it for the report, and the banked row names the
     account, because two ii valuations filed on one day differ in nothing else. ITS CASH IS A CASH
-    READING of its own day, in the same write, and the journal says so."""
+    READING of its own day, in the same write, and the journal says so. THE DOOR ASKS ITS OWN
+    HISTORY ALONE: a price or rate history that cannot be read is the marks door's, and blocks no
+    reading."""
     from portfusion.record import schema
+    from portfusion.history import fx as FX
+    from portfusion.history import prices as PH
     account = _share_filed(store_copy)
+
+    def unreadable():
+        raise RuntimeError("a price or rate history that cannot be read")
+    monkeypatch.setattr(PH, "check", unreadable)
+    monkeypatch.setattr(FX, "check", unreadable)
 
     out = _write([_share()])
 

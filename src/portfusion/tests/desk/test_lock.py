@@ -25,6 +25,7 @@ def _doors():
         "commit": lambda: commit.commit("no-such-item"),
         "marks.write": lambda: marks.write(),
         "marks.bank_closes": lambda: marks.bank_closes("2026-01-02", prices=[], rates=[]),
+        "marks.refresh": lambda: marks.refresh(),
         "observations.write": lambda: observations.write(),
         "freeze.write": lambda: freeze.write("1999-12-31"),
         "freeze.restate": lambda: freeze.restate({}, "nothing"),
@@ -93,7 +94,7 @@ def test_a_refusal_does_not_erase_a_write_that_landed_during_it(store_copy):
 def test_a_panel_reads_the_record_through_the_desks_one_book():
     """A PANEL READS THE RECORD THROUGH `engine.book()`, the Book built under the lock, never
     `record.rules` itself: a read beside it can serve rows the Book was not built from, or the
-    tables a reload refused. Reloading after a refused write is the one use a panel may make."""
+    tables a reload refused. A reload after a refused write is the door's, not the panel's."""
     import ast
     from harness import SRC
     reads = []
@@ -108,5 +109,5 @@ def test_a_panel_reads_the_record_through_the_desks_one_book():
                   if n.module == "portfusion.record.rules" for a in n.names]
         reads += [f"{f.name}:{n.lineno} {n.value.id}.{n.attr}" for n in ast.walk(tree)
                   if isinstance(n, ast.Attribute) and isinstance(n.value, ast.Name)
-                  and n.value.id in alias and n.attr != "reload_store"]
+                  and n.value.id in alias]
     assert not reads, f"a panel reads the record beside the desk's Book: {reads}"

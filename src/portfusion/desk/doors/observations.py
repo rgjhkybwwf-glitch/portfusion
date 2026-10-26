@@ -86,16 +86,13 @@ def paths() -> list:
 
 
 def banked() -> dict:
-    """Is every outgoing reading on file? This door's precondition.
-
-    Asks `desk.doors.marks.banked()` rather than `history.accounts` directly, because that function
-    is already the one place the desk asks this question and a second caller would be a second
-    answer. It reports accounts on their own key: an unbanked observation must refuse THIS
-    write without refusing a price refresh, which is a different door with a different vendor.
+    """Is every outgoing reading on file? This door's precondition, asked of the account
+    history alone: an unbanked reading refuses THIS write, and a price or rate history, the marks
+    door's, neither refuses it nor is refused by it (`marks.banked()`).
     """
-    from portfusion.desk.doors import marks
-    state = marks.banked()
-    return {"ok": state["accounts_ok"], "unbanked": state["accounts_unbanked"]}
+    from portfusion.history import accounts as AH
+    unbanked = AH.check()
+    return {"ok": not unbanked, "unbanked": unbanked}
 
 
 def _rows_on_file() -> dict[str, list[str]]:

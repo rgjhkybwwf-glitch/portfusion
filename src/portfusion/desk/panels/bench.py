@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from portfusion.desk import engine
 from portfusion.desk.doors import research_notes
-from portfusion.desk.intake import bench, dropoff, read_rows, recorded
+from portfusion.desk.intake import bench, dropoff, read_rows, sweep
 from portfusion.desk.actions import Action, register
 from portfusion.desk.engine import _guarded
 from portfusion.record import schema as _schema
@@ -138,8 +138,6 @@ def detail(item_id: str) -> dict:
 # difference that is really an unentered event. Reconcile neither re-runs a 30-day broker call
 # nor reports a sweep.
 # =================================================================================================
-from portfusion.desk.intake.broker import _ig                                               # noqa: E402
-
 register(Action(
     name="ig-events", label="Sweep IG events (30 days)", panel=NAME, writes=None,
     reaches="network",
@@ -147,7 +145,7 @@ register(Action(
           "merely opened — a 30-day call to the broker is not something to make by arriving."),
     summary=("Reads 30 days of IG buys, sales, costs and money in or out, and checks each "
              "against the record by its deal number. It writes nothing."),
-    run=lambda since=None: _ig(lambda ig, s: ig.ig_events(s, book=engine.book()), since),
+    run=sweep.ig_events,
 ))
 
 
@@ -161,6 +159,8 @@ register(Action(
 # `_inbox/.bench/`, gitignored, and nothing there is a figure until commit.py writes it. An
 # action may never declare writes="events"; Action refuses to be constructed. That is the marks rule
 # and this action is what it prescribed rather than an exception to it.
+#
+# THE EVENT ALONE: a mark rides on an item only as IG's own level, read by the set-up below.
 register(Action(
     name="ig-event-to-bench", label="Work this event", panel=NAME, writes=None,
     # INLINE: it belongs to one swept event and is rendered on that event's row. Without it the
@@ -169,7 +169,7 @@ register(Action(
     gate="The owner presses it on one event from a sweep they ran",
     summary=("Opens a bench item for one swept IG event, its evidence and row from the API and "
              "its why left to you. Pressing twice returns the same item."),
-    run=lambda event: _to_bench(event),
+    run=lambda event: bench.to_bench(event),
 ))
 
 
@@ -181,74 +181,5 @@ register(Action(
     reaches="network", inline=True,
     gate="The owner presses it on one swept bet",
     summary="Opens a first bet on the bench with its line, contract and live IG level.",
-    run=lambda event: _set_up(event),
+    run=sweep.set_up,
 ))
-
-
-def sweep_status(refs: list[str]) -> dict:
-    """For each deal reference: is it already in the record, or already on the bench?
-
-    THE SWEEP IS A SNAPSHOT AND THE WORLD MOVES UNDER IT. Its result is held client-side so that
-    returning to the Bench does not mean another 30-day call to the broker — but a snapshot alone
-    would go on offering "work it" for a row already carried across, or already committed.
-
-    So the snapshot supplies the EVENTS and this supplies their STATE, asked fresh every time
-    the sweep is drawn. Neither is guessed from the other.
-    """
-    from portfusion.desk.intake import bench
-    out = {}
-    for ref in refs or []:
-        ref = str(ref or "").strip()
-        if not ref:
-            continue
-
-        def _look(ref=ref):
-            tables = recorded.reference_tables(ref)
-            item = bench.item_for_event(ref)
-            return {
-                "in_record": bool(tables),
-                "tables": tables,
-                "item": None if item is None else {
-                    "id": item["id"], "state": item.get("state", "open"),
-                    "blocked": [g["label"] for g in bench.gates(item) if not g["ok"]],
-                },
-            }
-
-        try:
-            out[ref] = _guarded(_look)
-        except engine.RecordUnavailable as e:
-            out[ref] = {"error": str(e)}
-    return out
-
-
-def _set_up(event: dict) -> dict:
-    """Read the new contract's live level from IG, then carry the event and its set-up across."""
-    new = [r["values"] for r in event.get("with") or [] if r.get("table") == "contracts"]
-    if len(new) != 1 or not str(new[0].get("epic") or "").strip():
-        return {"ok": False, "error": "a set-up carries one new contract, with its epic"}
-    contract, epic = str(new[0]["contract"]).strip(), str(new[0]["epic"]).strip()
-    got = _ig(lambda ig: ig.contract_levels({contract: (None, epic)}))
-    if not got["ok"]:
-        return {"ok": False, "error": got["error"]}
-    level = got["result"]["rows"][0]
-    if not level["priced"]:
-        return {"ok": False, "error": f"IG gave no level for {epic}: {level['status']}"}
-    mark = {"mark_key": contract, "price": level["level"], "currency": level["currency"],
-            "as_of": level["as_of"], "source": level["source"], "struck": level["struck"],
-            "at": level["at"]}
-    return _to_bench(event, marks=[mark])
-
-
-def _to_bench(event: dict, marks: list[dict] | None = None) -> dict:
-    """Carry one swept event onto the bench. Returns the item, or a refusal."""
-    from portfusion.desk.intake import bench
-    try:
-        item = bench.for_event(event, marks=marks)
-    except ValueError as e:
-        return {"ok": False, "error": str(e)}
-    except engine.RecordUnavailable as e:
-        return {"ok": False, "error": f"record unavailable: {e}"}
-    return {"ok": True, "id": item["id"], "title": item["title"],
-            "blocked": [g["label"] for g in bench.gates(item) if not g["ok"]]}
-
-
