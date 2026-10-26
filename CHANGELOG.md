@@ -63,6 +63,10 @@ prints it.
   refused; the engine's case of the lock test waits on `book()`'s own lock; and **a skip a book
   lists that ran fails the run**. When a book's pin moves, delete any such line from its
   `checks/skips.txt`; the demo's one is gone.
+- **Every label the report prints is registered.** "Return this quarter" and "Accounts / positions"
+  join `Book.HEADLINE`, marked as the report's only (`report_only`), and the engine gives both, so
+  the report no longer counts the accounts itself. The registry's test reads the labels from the
+  drawn page, where it read the data and missed both. Nothing on the desk or the report moves.
 
 ## 0.3.2 — beta, 24 Oct 2026
 

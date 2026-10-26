@@ -635,6 +635,9 @@ class Book:
     # alike (test_figures.py): net asset value, exposure and the parts that make it, the costs and
     # the gains, the year's income and capital, the returns, then the counts.
     #
+    # `report_only` marks a quarter's own figure, which the report shows and the Dashboard, of the
+    # live book, does not; it is point_in_time.
+    #
     # SINCE_START carries the day the record begins, which is the book's setting, so each Book
     # names it from its own record and a renderer looking the figure up asks for it rather than
     # typing the date. Its entry here is keyed None and named as the registry is read.
@@ -659,7 +662,10 @@ class Book:
         "Capital employed (opening + deployed)": {"basis": "capital", "unit": "gbp", "point_in_time": False},
         "YTD return (MWR)":                      {"basis": "capital", "unit": "pct", "point_in_time": False},
         None:                                    {"basis": "capital", "unit": "pct", "point_in_time": False},
+        "Return this quarter":                   {"basis": "capital", "unit": "pct", "point_in_time": True, "report_only": True},
         "Open positions":                        {"basis": "count", "unit": "count", "point_in_time": True},
+        # The accounts open at the quarter end, which the report sets beside "Open positions".
+        "Accounts / positions":                  {"basis": "count", "unit": "count", "point_in_time": True, "report_only": True},
         "Closed round trips":                    {"basis": "count", "unit": "count", "point_in_time": False},
     }
 
@@ -721,15 +727,19 @@ class Book:
         sb = float(sum(v for a, v in rows.items() if self.is_spread_bet(a)))
         exposure = float(rows.sum())
         nav = float(self.quarter_nav_total()[as_of])
+        returns = self.quarter_returns().set_index("quarter_end")["return"]
         return {
             "Net asset value": nav,
             "Total market exposure": exposure,
             "— of which securities owned": exposure - sb,
             "— of which spread-bet notional": sb,
             "Exposure above net asset value": exposure - nav,
+            # NO RETURN for the record's first quarter end, which opens on nothing: never zero.
+            "Return this quarter": float(returns.get(as_of, float("nan"))),
             # THE FROZEN COMPOSITION'S LINES, as the exposure above is its accounts' frozen rows: a
             # ledger count at the marks takes in lines no frozen account holds.
             "Open positions": float(len(self.quarter_lines(as_of))),
+            "Accounts / positions": float(len(self.accounts_open(as_of))),
         }
 
     # ---- THE MARKS  —  where the live figures stand, and how old they are ------------

@@ -704,8 +704,10 @@ def test_a_multi_contract_spread_bet_is_valued_at_each_contracts_own_level(book)
 
 def test_every_figure_the_engine_publishes_is_in_the_registry(book):
     """headline() and HEADLINE must not drift apart. A figure the registry does not know
-    has no basis, no unit and no rule about whether a dated page may quote it."""
-    assert set(book.headline()) == set(Book.HEADLINE), \
+    has no basis, no unit and no rule about whether a dated page may quote it. The live headline
+    holds all but a quarter's own (`report_only`), which only a dated one has."""
+    live = {k for k, v in Book.HEADLINE.items() if not v.get("report_only")}
+    assert set(book.headline()) == live, \
         "headline() and the HEADLINE registry disagree about what the book publishes"
 
 
@@ -757,6 +759,7 @@ def test_every_registered_figure_declares_a_basis_and_a_unit():
         assert spec["basis"], f"{label} has no basis"
         assert spec["unit"] in {"gbp", "pct", "count"}, f"{label} has unit {spec['unit']!r}"
         assert isinstance(spec["point_in_time"], bool)
+        assert spec["point_in_time"] or not spec.get("report_only"), f"{label} is the report's"
 
 
 def test_the_live_headline_builds_the_year_once(monkeypatch):

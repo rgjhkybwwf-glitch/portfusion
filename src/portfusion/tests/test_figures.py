@@ -14,6 +14,8 @@ mislabel. That is the basis split stated as a mechanism rather than as a sentenc
 six documents.
 """
 import ast
+import html
+import re
 
 import pytest
 
@@ -46,16 +48,28 @@ def report_figures():
     return {f["label"]: f for f in summary_figures(QUARTER)}
 
 
+def _labels(page):
+    """The label under each figure the report prints (`class="k"`), read from the page itself."""
+    return {html.unescape(m) for m in re.findall(r'class="k">([^<]*)<', page)}
+
+
+@pytest.fixture(scope="module")
+def report_labels():
+    return _labels(render(QUARTER))
+
+
 # =====================================================================================
 # GUARD 1 · REGISTRY CLOSURE — no renderer may show a label the engine does not know
 # =====================================================================================
 
 @needs("buys")
-def test_every_rendered_label_is_in_the_registry(desk_figures, report_figures):
+def test_every_rendered_label_is_in_the_registry(desk_figures, report_labels):
     """A label nobody registered may not be shown. `basis_of()` refuses one when a renderer asks
-    for its basis; this names every one a renderer shows, whether it asked or not.
+    for its basis; this names every one a renderer shows, whether it asked or not. The report's
+    are read from the page it draws, so a label typed there is seen.
     """
-    rendered = set(desk_figures) | set(report_figures)
+    assert _labels('<div class="k">A &amp; B</div>') == {"A & B"}, "a planted label is read"
+    rendered = set(desk_figures) | report_labels
     # NO EXEMPTIONS. The guard is absolute.
     unknown = {label for label in rendered if label not in Book.HEADLINE}
     assert not unknown, (
@@ -66,16 +80,16 @@ def test_every_rendered_label_is_in_the_registry(desk_figures, report_figures):
 @needs("buys")
 def test_both_renderers_list_the_registry_in_its_order(desk_figures, report_figures):
     """ONE ORDER, THE REGISTRY'S. The Dashboard lists HEADLINE, and the report's Section 1 lists
-    the figures `headline(date)` gives, in the same order."""
-    assert list(desk_figures) == list(Book.HEADLINE)
+    the figures `headline(date)` gives, in the same order; a quarter's own is the report's."""
+    assert list(desk_figures) == [k for k, v in Book.HEADLINE.items() if not v.get("report_only")]
     assert list(report_figures) == [k for k, v in Book.HEADLINE.items() if v["point_in_time"]]
 
 
 @needs("buys")
-def test_the_registry_is_not_a_graveyard(desk_figures, report_figures):
+def test_the_registry_is_not_a_graveyard(desk_figures, report_labels):
     """The other direction. A registered label nothing renders is a figure that was retired
     without the registry being told, and the next renderer will resurrect it by accident."""
-    rendered = set(desk_figures) | set(report_figures)
+    rendered = set(desk_figures) | report_labels
     assert not (set(Book.HEADLINE) - rendered), \
         f"registered but rendered nowhere: {sorted(set(Book.HEADLINE) - rendered)}"
 
@@ -103,7 +117,8 @@ def test_the_report_renders_the_engines_figures(engine, report_figures):
     at_quarter = engine.headline(QUARTER)
     for label, fig in report_figures.items():
         assert label in at_quarter, f"report shows {label!r}, which headline({QUARTER}) does not"
-        assert abs(at_quarter[label] - fig["value"]) < PENNY, (
+        # A BLANK IS A BLANK: the record's first quarter end has no return, on either side.
+        assert fig["value"] == pytest.approx(at_quarter[label], abs=PENNY, nan_ok=True), (
             f"report {label!r}: engine {at_quarter[label]:,.2f} vs report {fig['value']:,.2f}")
 
 
