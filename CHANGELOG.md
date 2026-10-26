@@ -5,6 +5,14 @@ prints it.
 
 ## Unreleased
 
+- **`portfusion init` makes the book's venv.** It installs the portfusion that made it, so a
+  new book's first commit already has its secret gate's Python, and the README's start is one
+  install. `--no-venv` leaves it out; a venv that cannot be made is said, with the two commands.
+- **A book installs against the lock its release was proved on.** The book's `requirements.txt`
+  carries `-c` to that release's `requirements.lock`, as the README's install line does: a new
+  install no longer resolves to versions no suite has run.
+- **The checkout's hooks refuse a Python older than 3.13 with the fix**, where macOS's own
+  `python3` raised a traceback on every push.
 - **A credentials file other accounts can read is refused.** The IG feed asks for
   `chmod 600 credentials.json` before it reads a value from one. The feeds' sessions, the hosted
   desk's passkeys, readers and sign-in log are created readable by their owner alone from the

@@ -33,6 +33,8 @@ dependencies = [
     # THE GUARD SHIPS WITH THE APP: `portfusion check` runs the suite on whichever book is loaded.
     "pytest>=8.4",      # the guard
     "httpx2>=2.13",     # Starlette's TestClient requests the desk's routes with it in tests
+    "cbor2>=6.1.5",          # the guard's software passkey (tests/desk/test_remote.py) encodes
+    "cryptography>=50.0.2",  # and signs with these, which webauthn brings and does not promise
 ]
 
 [project.optional-dependencies]

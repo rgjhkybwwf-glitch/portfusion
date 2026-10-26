@@ -6,9 +6,17 @@ installed. The gate's docstring says what it refuses. Held by tests/test_hooks.p
 Committing this checkout, it then checks the import contracts and the types (`pyproject.toml`)
 with the checkout's own venv, as CI does; a venv without a tool is warned of, and CI still checks.
 """
+from __future__ import annotations
+
 import pathlib
 import subprocess
 import sys
+
+# A PYTHON TOO OLD TO IMPORT THE APP: a terminal without the venv, or a GUI git client, finds
+# macOS's own python3 first. Refused with the fix, not a traceback.
+if sys.version_info < (3, 13):
+    sys.exit(f"{pathlib.Path(__file__).name}: REFUSED. It needs Python 3.13 or newer, and found "
+             f"{sys.version.split()[0]}: activate the checkout's .venv (docs/environment.md).")
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))

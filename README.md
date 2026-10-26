@@ -9,12 +9,10 @@ in the browser, and a quarterly report. It records your own positions; it gives 
 PortFusion needs Python 3.13 or newer.
 
 ```bash
-python3 -m venv ~/.portfusion && ~/.portfusion/bin/python3 -m pip install "portfusion @ git+https://github.com/rgjhkybwwf-glitch/portfusion@v0.3.2"
+python3 -m venv ~/.portfusion && ~/.portfusion/bin/python3 -m pip install "portfusion @ git+https://github.com/rgjhkybwwf-glitch/portfusion@v0.3.2" -c https://raw.githubusercontent.com/rgjhkybwwf-glitch/portfusion/v0.3.2/requirements.lock
 ~/.portfusion/bin/portfusion desk --book demo     # the invented demo book, in a browser
-~/.portfusion/bin/portfusion init ~/my-book       # a new, empty book, with its git history
-cd ~/my-book
-python3 -m venv .venv && .venv/bin/python3 -m pip install -r requirements.txt
-source .venv/bin/activate
+~/.portfusion/bin/portfusion init ~/my-book       # a new, empty book: its venv and git history
+cd ~/my-book && source .venv/bin/activate
 portfusion desk                                   # reads the book in the folder it is typed in
 ```
 
@@ -35,7 +33,8 @@ On a Mac, `portfusion desk --install-agent` starts the desk at login for the boo
 | `brand/` | its name and look (optional) |
 | `checks/` | its own tests (optional) |
 | `.githooks/` | its guards |
-| `requirements.txt` | the PortFusion release it runs |
+| `requirements.txt` | the PortFusion release it runs, and the lock it installs against |
+| `.venv/` | that release, installed by `portfusion init` |
 
 ## Taking a new release
 

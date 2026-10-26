@@ -6,15 +6,8 @@
 # and the hook does not, so adding a pattern here forbids committing it, not just forgetting it.
 # ==============================================================================
 
-# NO SPREADSHEET IS A SOURCE FILE. The record is the CSVs in store/, and a spreadsheet beside
-# them would be a second copy of it in an opaque binary. The other two lines are the lock
-# files LibreOffice and Excel leave beside an open copy.
-*.xlsx
-*.xlsx#
-~$*.xlsx
-
 # Python build cache, and the pytest cache beside it. Both regenerate on every
-# run and carry no record. .pytest_cache/ added 26 Aug 2026, with the test suite.
+# run and carry no record.
 __pycache__/
 *.pyc
 .pytest_cache/
@@ -60,23 +53,12 @@ credentials.*
 # credential: whoever holds it can reach the door as if through the hosted page.
 .desk_proxy_secret.json
 
-# The intake workbench. Documents land in _inbox/ and LEAVE it: worked into store/, then
-# moved to _archive/statements/, which IS tracked because it is the audit trail behind every
-# figure. Contents are ignored here so a document is never committed under two paths, and so
-# a half-worked intake cannot be mistaken for a record. The folder itself is tracked, via its
-# .gitkeep — the workbench is part of the method, what sits on it is not.
-# `.bench/` inside it, the desk's staging for an intake still being worked, is ignored with it.
-#
-# A document resting here is UNFINISHED WORK, and test_inbox.py says so.
-_inbox/*
-!_inbox/.gitkeep
-# Its old guide, gone to docs/intake.md, is in past commits, which the history scan reads.
-!_inbox/CLAUDE.md
-# The demo book's workbench (PORTFUSION_BOOK=demo, record/schema.py), ignored as this one is. The
-# other files a book keeps beside its store are ignored by the patterns above, wherever it is.
+# The demo book's workbench (PORTFUSION_BOOK=demo, record/schema.py), ignored as a book's is
+# (`init.GITIGNORE`). The other files a book keeps beside its store are ignored by the patterns
+# above, wherever it is.
 src/portfusion/demo/_inbox/
 
-# The project virtual environment, added 1 Sep 2026 with the desk. Every byte of it is
+# The project virtual environment. Every byte of it is
 # reconstructible from pyproject.toml and requirements.lock — which is the test for whether something
 # belongs in git at all.
 #

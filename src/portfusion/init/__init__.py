@@ -114,27 +114,67 @@ exit 0
 """
 
 
+def _installed() -> dict:
+    """How the portfusion running now was installed: pip's `direct_url.json`, or {}. Asked of each
+    record of it on the path, since a checkout's `src/` may hold a build's own beside the venv's."""
+    from importlib import metadata
+    return next((json.loads(text) for dist in metadata.distributions(name="portfusion")
+                 if (text := dist.read_text("direct_url.json"))), {})
+
+
 def pin() -> str:
     """The requirement line for the portfusion running now, as `pip install -r` takes it: the
     commit it was installed from, the folder or file, or else the release by its number."""
     from importlib import metadata
-    dist = metadata.distribution("portfusion")
-    found = json.loads(dist.read_text("direct_url.json") or "{}")
+    found = _installed()
     if "vcs_info" in found:
         return f"portfusion @ git+{found['url']}@{found['vcs_info']['commit_id']}"
     if "url" in found:
         return f"portfusion @ {found['url']}"
-    return f"portfusion=={dist.version}"
+    return f"portfusion=={metadata.version('portfusion')}"
 
 
-#: The book's `requirements.txt`: which portfusion it runs, moved on purpose and never by itself.
+def constraint() -> str:
+    """The `-c` line holding the book's install to the set that release's suite was proved on: its
+    `requirements.lock` at the commit it came from on GitHub, or in the folder it came from. ""
+    where there is none to name: a wheel, or a release by its number."""
+    found = _installed()
+    url = found.get("url", "").removesuffix(".git")
+    if "vcs_info" in found and url.startswith("https://github.com/"):
+        repo = url.removeprefix("https://github.com/")
+        return (f"-c https://raw.githubusercontent.com/{repo}/"
+                f"{found['vcs_info']['commit_id']}/requirements.lock")
+    if not url.startswith("file://"):
+        return ""
+    from urllib.request import url2pathname
+    lock = pathlib.Path(url2pathname(url.removeprefix("file://"))) / "requirements.lock"
+    return f"-c {lock}" if lock.is_file() else ""
+
+
+#: The book's `requirements.txt`: which portfusion it runs, moved on purpose and never by itself,
+#: and the lock it is installed against.
 PIN = """\
-# THE PORTFUSION THIS BOOK RUNS, written by `portfusion init`. Its venv installs it with
+# THE PORTFUSION THIS BOOK RUNS, written by `portfusion init`, which also makes the book's venv:
 #   python3 -m venv .venv && .venv/bin/python3 -m pip install -r requirements.txt
-# A new release is taken by changing this line, then as PortFusion's README says (Taking a new
+# A new release is taken by changing these lines, then as PortFusion's README says (Taking a new
 # release): reinstall it, `portfusion migrate`, and the guard.
 {pin}
-"""
+{constraint}"""
+
+
+def make_venv(folder: pathlib.Path) -> str:
+    """The book's `.venv`, made by the Python running this and installed from its
+    `requirements.txt`, so the secret gate finds its portfusion at once. Returns what was done, in
+    a line; "" when it was not, and `portfusion init` then prints the two commands.
+
+    Side effects: makes `folder/.venv` and installs into it, which reaches the package index."""
+    venv = folder / ".venv"
+    for step in ([sys.executable, "-m", "venv", str(venv)],
+                 [str(venv / "bin" / "python3"), "-m", "pip", "install", "-q",
+                  "-r", "requirements.txt"]):
+        if subprocess.run(step, cwd=folder, capture_output=True, text=True).returncode:
+            return ""
+    return "its venv, .venv, with the portfusion requirements.txt names"
 
 
 def start_history(folder: pathlib.Path) -> str:
@@ -146,8 +186,8 @@ def start_history(folder: pathlib.Path) -> str:
     Side effects: runs `git init` and `git commit` in `folder`, and points its hooks at the
     book's `.githooks/`, so the secret gate (`HOOK`, `MSG_HOOK`) and the guard on main
     (`PUSH_HOOK`) are on from that first commit."""
-    # THE GATE GUARDS THE FIRST COMMIT TOO, run by the Python running this: the book has no venv
-    # yet, and this one has portfusion in it.
+    # THE GATE GUARDS THE FIRST COMMIT TOO: by the book's venv, or else the Python running this,
+    # which has portfusion in it.
     env = {**os.environ, "PATH": os.pathsep.join([str(pathlib.Path(sys.executable).parent),
                                                   os.environ.get("PATH", "")])}
 
@@ -243,5 +283,7 @@ def create(folder, practice: bool = False, begins: int | str | None = None,
         hook = folder / ".githooks" / name
         hook.write_text(text, encoding="utf-8")
         hook.chmod(0o755)
-    (folder / "requirements.txt").write_text(PIN.format(pin=pin()), encoding="utf-8")
+    line = constraint()
+    (folder / "requirements.txt").write_text(
+        PIN.format(pin=pin(), constraint=f"{line}\n" if line else ""), encoding="utf-8")
     return folder
