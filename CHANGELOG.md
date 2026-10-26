@@ -88,6 +88,13 @@ prints it.
   build has passed, so a refused reload leaves the record exactly as it was. A Book's pin holds
   for the record's functions too: a leg's kind and the accounts open on a day answer from the
   record the Book was built from. No figure, page or store moves.
+- **A price or rate history that cannot be read no longer blocks an account reading.** The
+  readings door asked the marks door whether its outgoing readings were banked, and the marks door
+  read all three histories to answer, so a broken price or FX history refused a reading it had no
+  part in. Each door now asks its own history: an account reading, from the Price Refresh or filed
+  with a holdings export, waits only on the account history. The desk's two panels that acted now
+  only shape: the Price Refresh's write is the marks door's `refresh()`, and the sweeps the desk
+  asks of the feeds are `desk/intake/sweep.py`'s. No figure, page or store moves.
 - **The engine is a package.** `engine.py` is `engine/`, a file per topic: the store, the two
   bases, the ledger and valuation, then `Book`, built from seven classes, each a group of its
   methods, over the construction they share (`engine/core.py`). `portfusion.engine` offers every

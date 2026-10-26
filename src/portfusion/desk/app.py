@@ -469,10 +469,8 @@ def sweep_status(body: dict = Body(default={})):
     another call to the broker. This is the half that must NOT be cached: what has happened to
     those events since.
     """
-    # The status lives on the Bench panel, with the sweep it belongs to.
-    from portfusion.desk.panels import bench as panel
     try:
-        return panel.sweep_status(body.get("refs") or [])
+        return _bench.sweep_status(body.get("refs") or [])
     except engine.RecordUnavailable as e:
         return JSONResponse(status_code=503,
                             content={"error": "record unavailable", "detail": str(e)})
