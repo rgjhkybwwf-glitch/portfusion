@@ -1,7 +1,7 @@
 """`portfusion desk` — start the desk.
 
-Localhost only, by default and on purpose. These are the book's real figures and the Mac's own
-door has no sign-in; binding it to anything else would put them on the network.
+Localhost only, always (`HOST`). These are the book's real figures and the Mac's own door has no
+sign-in; binding it to anything else would put them on the network.
 
 `--remote-port` opens the second door in the same process: `desk/remote.py`, signed in and read
 only, which the tunnel forwards to the hosted desk. It too binds 127.0.0.1; the tunnel is the
@@ -17,13 +17,14 @@ import webbrowser
 
 from portfusion.log import log
 
+#: Where both doors listen: this Mac only. There is no flag to change it.
+HOST = "127.0.0.1"
+
 
 def main(argv=None):
     from portfusion.desk import auth
     ap = argparse.ArgumentParser(prog="portfusion desk", description="the desk")
     ap.add_argument("--port", type=int, default=8765)
-    ap.add_argument("--host", default="127.0.0.1",
-                    help="localhost by default; changing it exposes the book's figures")
     ap.add_argument("--no-open", action="store_true", help="do not open a browser")
     ap.add_argument("--enrol", metavar="NAME",
                     help="print a one-time code for enrolling a passkey on the hosted desk, "
@@ -67,7 +68,7 @@ def main(argv=None):
                  "Or rebuild it:  python3 -m venv .venv && "
                  ".venv/bin/python3 -m pip install -e '.[dev]' -c requirements.lock\n")
 
-    url = f"http://{args.host}:{args.port}/"
+    url = f"http://{HOST}:{args.port}/"
     log.info(f"\n  the desk — {url}")
     log.info("  reading the store directly. Ctrl-C to stop.\n")
     if not args.no_open:
@@ -77,7 +78,7 @@ def main(argv=None):
     # serves the code it imported at startup, so a panel fixed on disk goes on failing in the
     # browser. `--reload` is the answer while the desk is being worked on.
     if args.remote_port is None:
-        uvicorn.run("portfusion.desk.app:app", host=args.host, port=args.port, log_level="warning",
+        uvicorn.run("portfusion.desk.app:app", host=HOST, port=args.port, log_level="warning",
                     reload=args.reload, reload_dirs=[str(pathlib.Path(__file__).parent)] if args.reload else None)
         return
     if args.reload:
@@ -87,11 +88,11 @@ def main(argv=None):
         log.warning(f"  the remote door stays shut: the book's settings name no "
                     f"{', '.join(remote.unconfigured())} (store/settings.csv)\n")
     remote.PORT = args.remote_port
-    log.info(f"  the remote door — http://127.0.0.1:{args.remote_port}/, for the tunnel\n")
+    log.info(f"  the remote door — http://{HOST}:{args.remote_port}/, for the tunnel\n")
     asyncio.run(_serve([
-        uvicorn.Server(uvicorn.Config("portfusion.desk.app:app", host=args.host, port=args.port,
+        uvicorn.Server(uvicorn.Config("portfusion.desk.app:app", host=HOST, port=args.port,
                                       log_level="warning")),
-        uvicorn.Server(uvicorn.Config("portfusion.desk.remote:door", host="127.0.0.1",
+        uvicorn.Server(uvicorn.Config("portfusion.desk.remote:door", host=HOST,
                                       port=args.remote_port, log_level="warning")),
     ]))
 
