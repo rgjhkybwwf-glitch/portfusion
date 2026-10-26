@@ -1,7 +1,9 @@
 """INTAKE — a document onto the workbench, read, proposed from, and withdrawn."""
 from __future__ import annotations
 
+import json
 import pytest
+from portfusion.record import rules as _rules
 from portfusion.desk import app
 from desk_support import GOOD_EVIDENCE, GOOD_TRADE, _ready
 from portfusion.desk.intake import bench as _bench
@@ -972,8 +974,7 @@ def test_a_committed_document_is_filed_under_the_folder_s_own_convention(item, s
     name is derived from them rather than typed.
 
     THIS EXERCISES THE UNSTAMPED BRANCH. A document that states its own instant is filed with
-    it, and that half is test_bench.py's
-    `test_the_archive_name_carries_the_instant_the_document_states`."""
+    it, and that half is `test_the_archive_name_carries_the_instant_the_document_states`."""
     from portfusion.desk.doors import commit as _commit
     from portfusion.record import schema
     (schema.inbox() / "Contract_Note_88213.pdf").write_bytes(b"%PDF-1.4")
@@ -1013,16 +1014,278 @@ def test_an_unparseable_date_keeps_the_original_name_rather_than_inventing_one(i
     assert filing.archive_name(item, "whatever.pdf") == "whatever.pdf"
 
 
+def test_the_archive_name_carries_the_instant_the_document_states(tmp_path, monkeypatch):
+    """THREE HL EXPORTS ARRIVE THE SAME DAY UNDER THE SAME TITLE, and two of them can differ
+    for no reason but being pulled minutes apart — HL values shares at a bid delayed
+    fifteen minutes, and New York may be open. Without the time the archive disambiguates
+    them with a bench item id, which tells a later reader nothing about which instant the
+    figures were struck at.
+
+    ONLY WHEN THE DOCUMENT AGREES WITH THE LIMB. A time spliced from a document onto a date the
+    operator typed for a different day would invent a third thing.
+    """
+    from portfusion.desk.intake import filing
+
+    inbox = tmp_path / "_inbox"
+    inbox.mkdir()
+    (inbox / "export.csv").write_bytes(
+        'Portfolio Summary\nValuation as at,03-03-2025 14:10\n'
+        'Account,Stock value,Total cash,Total value,Available to invest,\n'.encode("cp1252"))
+    monkeypatch.setattr(_rules.schema, "BOOK", tmp_path)
+
+    item = {"id": "B-T", "document": {"name": "export.csv"}, "rows": [],
+            "evidence": {"dated": "2025-03-03", "authority": "HL Portfolio Summary totals "
+                         "download", "reference": "3 Mar 2025 14:10"}}
+    assert filing.archive_name(item, "export.csv").startswith("03 Mar 2025 14.10 "), \
+        filing.archive_name(item, "export.csv")
+
+    # A different day: the stamp is withheld rather than spliced.
+    item["evidence"]["dated"] = "2026-09-07"
+    assert filing.archive_name(item, "export.csv").startswith("07 Sep 2026 HL"), \
+        filing.archive_name(item, "export.csv")
+
+
+def test_a_document_that_states_no_instant_still_gets_a_name():
+    """The time is provenance the file happens to carry, not something the archive depends on.
+    A document sitting unarchived is the worse outcome by a distance."""
+    from portfusion.desk.intake import filing
+    assert filing._document_stamp("does-not-exist.csv", __import__("datetime").date(2026, 9, 8)) == ""
+
+
+def test_a_zero_row_document_keeps_its_account_in_the_archived_name():
+    """`_covers()` reads the tickers or accounts off the ROWS, so a document that yields none would
+    be filed under a name that does not say whose account it is. The reader derives the account from
+    the client number the document prints; this is that derivation, one step later."""
+    from portfusion.desk.intake import filing
+    item = {"rows": [], "account": "Rowe HL ISA"}
+    assert filing._covers(item) == "Rowe HL ISA"
+    # A row's own account still wins — the fallback is a fallback.
+    item = {"rows": [{"values": {"account": "Voss ii ISA"}}], "account": "Rowe HL ISA"}
+    assert filing._covers(item) == "Voss ii ISA"
+
+
+def test_a_download_is_named_with_its_instant_once_and_still_resolves():
+    """A download's reference IS the instant it was pulled, and the filed name leads with the
+    date and time — so the time is written once, and the row citing the document must still
+    find it under that name."""
+    from portfusion.desk.intake import filing
+    from portfusion.record import rules as D
+    cases = [
+        ("hl-valuation", "HL Account Summary download", "30 Sep 2026 22:35", "Rowe HL ISA",
+         "30 Sep 2026 22.35 HL Account Summary download (Rowe HL ISA).csv"),
+        ("hl-transactions", "HL Portfolio Summary download", "Capital sub-account, 30 Sep 2026 22:38",
+         "Rowe HL ISA",
+         "30 Sep 2026 22.38 HL Portfolio Summary download Capital sub-account (Rowe HL ISA).csv"),
+        ("ii-valuation", "ii valuation download", "30 Sep 2026 22:41", "Voss ii Trading",
+         "30 Sep 2026 22.41 ii valuation download (Voss ii Trading).csv"),
+    ]
+    for key, authority, reference, account, expected in cases:
+        item = {"evidence_class": key, "account": account, "rows": [],
+                "evidence": {"dated": "2026-09-30", "authority": authority, "reference": reference}}
+        name = filing.archive_name(item, "download.csv")
+        assert name == expected, name
+        source = D.evidence_source(key, reference=reference, account=account)
+        assert D.reference_resolves(source, [name]) is True, (source, name)
+
+
+# --- a document recognised -----------------------------------------------------------
+
+def test_a_recognised_document_prefills_only_what_it_states(tmp_path, monkeypatch):
+    """DERIVATION, NOT A PROPOSAL. Every value filled here is read out of the document's own text —
+    `propose._derived()` works this way: fill a blank from something checkable, never overwrite, and
+    say where it came from.
+
+    ONE MATCH ONLY. Two is ambiguous, and a class decides which columns mean what, so guessing
+    between them is worse than leaving both blank — a pre-filled wrong answer is the one nobody
+    re-reads.
+    """
+    from portfusion.record import rules as D
+    from portfusion.desk.intake import bench
+
+    inbox = tmp_path / "_inbox"
+    (inbox / ".bench").mkdir(parents=True)
+    (inbox / "export.csv").write_bytes(
+        'Portfolio Summary\nValuation as at,03-03-2025 14:10\n'
+        'Account,Stock value,Total cash,Total value,Available to invest,\n'.encode("cp1252"))
+    monkeypatch.setattr(_rules.schema, "BOOK", tmp_path)
+
+    item = bench.for_document("export.csv")
+    assert item["evidence_class"] == "hl-account-totals", item["evidence_class"]
+    assert item["evidence"]["authority"] == D.EVIDENCE_BY_KEY["hl-account-totals"].authority
+    assert item["evidence"]["dated"] == "2025-03-03", item["evidence"]
+    # The two limbs the document cannot answer stay empty — a supplied value is a claim.
+    assert item["evidence"]["reference"] == "", "a reference was invented"
+    assert item["recognised"]["instant"] == "2025-03-03 14:10"
+
+
+@needs("accounts", "buys")
+def test_a_contract_note_fills_all_three_limbs_from_its_own_text(tmp_path, monkeypatch):
+    """A CONTRACT NOTE STATES ALL THREE: who issued it, when the trade was dealt, and its
+    number. A copy of a filed note opened on the bench fills each from the document. The date
+    is the dealing date, never the day the file was downloaded. The archive name then carries
+    the dealing time, which `rules.ARCHIVE_CONVENTION` asks of any document that states its
+    own instant.
+
+    THE LOADED BOOK'S NEWEST NOTE FILED WITH ITS TIME, and what to expect is read from that
+    name, so the test runs on any book with one on file."""
+    import datetime as dt
+    import re
+    import shutil
+    from portfusion.record import rules as D
+    from portfusion.record import schema
+    from portfusion.desk.intake import bench, filing
+
+    inbox = tmp_path / "_inbox"
+    (inbox / ".bench").mkdir(parents=True)
+    named = [(m, p) for p in schema.statements().glob("*.pdf") if (m := re.match(
+        r"(\d{2} \w{3} \d{4}) (\d{2})\.(\d{2}) ii contract note ([A-Z0-9]{5,})", p.name))]
+    assert named, "the loaded book files no contract note under its dealing time"
+    m, filed = max(named, key=lambda n: (dt.datetime.strptime(n[0].group(1), "%d %b %Y"), n[1].name))
+    day = dt.datetime.strptime(m.group(1), "%d %b %Y").date()
+    ref, time = m.group(4), f"{m.group(2)}:{m.group(3)}"
+    shutil.copy(filed, inbox / "note.pdf")
+    monkeypatch.setattr(_rules.schema, "BOOK", tmp_path)
+
+    item = bench.for_document("note.pdf")
+    assert item["evidence_class"] == "ii-contract-note"
+    assert item["evidence"] == {"dated": day.isoformat(), "reference": ref,
+                                "authority": D.EVIDENCE_BY_KEY["ii-contract-note"].authority}
+    assert item["recognised"]["instant"] == f"{day} {time}"
+    assert item["recognised"]["instant_from"] == "document"
+    assert filing.archive_name(item, "note.pdf").startswith(
+        f"{day:%d %b %Y} {time.replace(':', '.')} ii contract note {ref}"), \
+        filing.archive_name(item, "note.pdf")
+
+
+def test_an_unrecognised_document_is_left_entirely_blank(tmp_path, monkeypatch):
+    """Most classes carry no fingerprint, because no sample has been seen. Filling nothing is
+    the honest answer and the item is still workable by hand."""
+    from portfusion.desk.intake import bench
+
+    inbox = tmp_path / "_inbox"
+    (inbox / ".bench").mkdir(parents=True)
+    (inbox / "mystery.csv").write_text("something,else\n1,2\n", encoding="utf-8")
+    monkeypatch.setattr(_rules.schema, "BOOK", tmp_path)
+
+    item = bench.for_document("mystery.csv")
+    assert item["evidence_class"] == ""
+    assert item["evidence"]["authority"] == ""
+    assert item["recognised"]["classes"] == []
+
+
+def test_a_document_read_in_full_that_yields_nothing_can_still_be_closed():
+    """NONE PROPOSED AND NONE LEFT ARE NOT THE SAME STATE.
+
+    A document whose every dealing line is already in the record is not unfinished work — it is
+    the PROOF that the dealing side reconciles, which is the question it was pulled to answer, so
+    it has to be archivable.
+    """
+    from portfusion.desk.intake import bench
+    read = {"evidence": {"dated": "2025-03-03", "authority": "HL Portfolio Summary download",
+                         "reference": "Capital, 3 Mar 2025 14:08"},
+            "rows": [], "acknowledged": [],
+            "examined": [{"line": "B000000011 Kappel", "why": "already in the record as T-999",
+                          "in_record": "buys"}]}
+    gate = next(g for g in bench.gates(read) if g["name"] == "rows")
+    assert gate["ok"], gate
+    assert "none of them new" in gate["detail"]
+
+    unread = dict(read, examined=[])
+    gate = next(g for g in bench.gates(unread) if g["name"] == "rows")
+    assert not gate["ok"], "an item that has read nothing is still not approvable"
+    assert gate["detail"] == "no rows proposed yet"
+
+
 # =====================================================================================
 # THE EXIT ROUTE
 #
-# The destructive path in `desk/intake/withdraw.py` has its own tests; these prove a REFUSAL reaches
-# the screen as one. A refusal that arrives as a 500 with a traceback is one an operator
-# retries.
+# `desk/intake/withdraw.py`, the destructive path, then the route over it, which must bring a
+# REFUSAL to the screen as one. A refusal that arrives as a 500 with a traceback is one an
+# operator retries.
 #
 # THE ROUTE IS CALLED DIRECTLY here, for the thin layer app.py adds — the status code it
 # chooses, and that it adds nothing else. test_routes.py requests it over HTTP as well.
 # =====================================================================================
+
+def test_a_withdrawn_document_leaves_the_workbench_and_is_not_destroyed(workbench, monkeypatch):
+    """The exit, and the whole of its claim: the document is somewhere afterwards. The note of
+    the item working it is archived first, so a note that cannot be archived moves nothing."""
+    from portfusion.desk.doors import commit
+    from portfusion.desk.intake import bench, withdraw
+    box, out = workbench
+    (box / "note.csv").write_bytes(b"a,b\n1,2\n")
+    working = bench.new_item(document={"name": "note.csv"})
+    archive = commit.archive
+
+    monkeypatch.setattr(commit, "archive", lambda: box / "note.csv")
+    with pytest.raises(OSError):
+        withdraw.withdraw("note.csv", why="not needed")
+    assert (box / "note.csv").exists() and not (out / "note.csv").exists(), "it moved unarchived"
+    assert [i["id"] for i in bench.all_items()] == [working["id"]], "its note left the bench"
+
+    monkeypatch.setattr(commit, "archive", archive)
+    monkeypatch.setenv("HOME", str(out.resolve().parent))
+    r = withdraw.withdraw("note.csv", why="not needed")
+
+    assert not (box / "note.csv").exists(), "it did not leave the workbench"
+    assert (out / "note.csv").read_bytes() == b"a,b\n1,2\n", "the bytes did not survive"
+    assert r["returned"] is False, "nothing was already at the destination"
+    assert not bench.all_items(), "its note is still on the bench"
+    note = json.loads((archive() / f"{working['id']}.json").read_text())
+    assert note["state"] == "withdrawn"
+    assert note["withdrawn_to"] == f"~/{out.name}/note.csv", "the note names this Mac's home"
+
+
+def test_withdrawing_refuses_a_destination_inside_the_repository(workbench):
+    """A withdrawn document is not evidence, so it must not come to rest where evidence does.
+
+    `_archive/statements/` is the case that matters: a file resting there is citable by a row,
+    and a row citing a document that was never entered is the defect the archive exists to
+    make impossible.
+
+    BOTH HALVES OF THE RULE: the loaded book's own evidence folder, wherever the book sits, and
+    a folder inside the checkout, which every copy of the code has.
+    """
+    from portfusion.record import schema
+    from portfusion.desk.intake import withdraw, dropoff
+    box, _ = workbench
+    (box / "note.csv").write_bytes(b"x")
+    schema.statements().mkdir(parents=True)
+    for inside in (schema.statements(), SRC / "tests"):
+        with pytest.raises(dropoff.Refused) as e:
+            withdraw.withdraw("note.csv", destination=str(inside))
+        assert "inside the repository" in str(e.value), inside
+        assert (box / "note.csv").exists(), "a refused withdrawal moved something"
+
+
+def test_withdrawing_removes_the_workbench_copy_ONLY_when_the_bytes_match(workbench):
+    """The one path in desk/ that deletes a file, and the only thing standing in front of it.
+
+    `dropoff.accept()` COPIES bytes onto the workbench, so the original is usually still in the
+    folder it was downloaded to and the destination already holds the name. Removing the
+    workbench copy is then provably not a deletion — the bytes are demonstrably still there.
+
+    A different file wearing the same name is the dangerous case, and it is refused exactly as
+    an overwrite is. If this test ever fails, the failure is a document destroyed.
+    """
+    from portfusion.desk.intake import withdraw, dropoff
+    box, out = workbench
+
+    (box / "same.csv").write_bytes(b"identical")
+    (out / "same.csv").write_bytes(b"identical")
+    r = withdraw.withdraw("same.csv")
+    assert r["returned"] is True
+    assert not (box / "same.csv").exists()
+    assert (out / "same.csv").read_bytes() == b"identical", "the surviving copy was touched"
+
+    (box / "diff.csv").write_bytes(b"one")
+    (out / "diff.csv").write_bytes(b"another")
+    with pytest.raises(dropoff.Refused) as e:
+        withdraw.withdraw("diff.csv")
+    assert "NOT the same file" in str(e.value)
+    assert (box / "diff.csv").read_bytes() == b"one", "the workbench copy was destroyed"
+    assert (out / "diff.csv").read_bytes() == b"another", "the destination was overwritten"
+
 
 def test_the_withdraw_route_returns_what_the_module_did(workbench):
     """app.py routes and nothing else. It may not reshape the answer."""

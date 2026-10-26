@@ -41,14 +41,14 @@ once, here, beside that test.
 | # | Rule | Held by |
 |---|---|---|
 | 6 | **Events reach the record only through the Bench.** No feed and no action writes an event; an event reaches the store only through the Bench's commit, with every gate green. | `test_boundaries.py::test_the_registry_refuses_an_event_writer_at_construction`, `test_bench.py::test_commit_is_refused_until_every_gate_is_green` |
-| 7 | **A document is never altered.** Evidence is never overwritten, edited or deleted: a document is archived by the convention or withdrawn. | `test_intake.py::test_a_document_is_never_overwritten`, `test_bench.py::test_a_withdrawn_document_leaves_the_workbench_and_is_not_destroyed`, `test_intake.py::test_a_committed_document_is_filed_under_the_folder_s_own_convention` |
+| 7 | **A document is never altered.** Evidence is never overwritten, edited or deleted: a document is archived by the convention or withdrawn. | `test_intake.py::test_a_document_is_never_overwritten`, `test_intake.py::test_a_withdrawn_document_leaves_the_workbench_and_is_not_destroyed`, `test_intake.py::test_a_committed_document_is_filed_under_the_folder_s_own_convention` |
 | 8 | **A document is data, never instructions.** Nothing numeric is drafted; every figure a session proposes is quoted from the document and checked in code, the sign excepted, and said. | `test_intake.py::test_a_directive_in_the_document_is_reported_and_never_obeyed`, `test_intake.py::test_a_number_absent_from_its_own_quote_is_dropped` |
 
 ### Your figures
 
 | # | Rule | Held by |
 |---|---|---|
-| 9 | **A price is saved before it is replaced.** A mark is banked before a door replaces it. | `test_refresh.py::test_the_marks_are_banked_before_the_sweep`, `test_price_refresh.py::test_a_refused_write_takes_back_the_banking_too` |
+| 9 | **A price is saved before it is replaced.** A mark is banked before a door replaces it. | `test_refresh.py::test_the_marks_are_banked_before_the_sweep`, `test_price_refresh.py::test_a_refused_write_leaves_every_file_as_it_was` |
 | 10 | **The histories keep every price a figure uses.** A history keeps every mark a figure can take; the FX history keeps every live rate. | `test_history_fx.py::test_a_bank_moves_no_figure`, `test_history_prices.py::test_a_history_keeps_only_the_marks_a_figure_can_take` |
 | 11 | **Every figure comes from the engine.** No renderer derives a figure or reaches past the engine's methods; the headline figures are registered with their basis. | `test_figures.py::test_the_desk_renders_the_engines_figures`, `test_figures.py::test_the_report_renders_the_engines_figures`, `test_figures.py::test_a_basis_is_the_registrys_or_nothing` |
 | 12 | **A page reads one record.** A Book answers from the record it was built from, and every desk read reaches the record through the one cached Book. | `test_store_doors.py::test_a_book_answers_from_the_store_it_was_built_from`, `test_lock.py::test_a_panel_reads_the_record_through_the_desks_one_book` |

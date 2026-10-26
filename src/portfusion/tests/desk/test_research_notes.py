@@ -125,6 +125,74 @@ def test_the_codes_held_are_those_open_at_the_baseline_or_dealt_in_since():
     assert "ZZZR" in held and set(at_baseline["ticker"]) <= set(held)
 
 
+# THE READER, `desk/intake/research.py`: the repo is the source of truth for a ref, so the Bench
+# reads it and offers what it finds.
+
+@pytest.fixture
+def fake_repo(tmp_path, monkeypatch):
+    from portfusion.desk.intake import research
+    folder = tmp_path / research.INSIGHTS
+    folder.mkdir(parents=True)
+    (folder / "widget-co-2026-05.mdx").write_text(
+        '---\ntitle: "Widget Co: a test note"\nref: NOTE-0099\nkind: Initiation\n'
+        'ticker: "LSE: WDGT"\ndate: 2026-05-04\ncompanyTicker: WDGT\n'
+        'company: "Widget Co plc"\nposition: long\n'
+        'stat:\n  label: "nested, and not wanted"\n  value: "£1.00"\n---\nbody\n')
+    (folder / "_example.mdx").write_text(
+        '---\ntitle: "Template"\nref: NOTE-XXXX\ndate: 2026-01-01\ncompanyTicker: EXMPL\n---\n')
+    monkeypatch.setattr(research, "REPO", tmp_path)
+    monkeypatch.setattr(research, "INSIGHTS_URL", "https://example.test/insights")
+    return research
+
+
+def test_a_book_that_names_no_research_repo_offers_no_notes(fake_repo, monkeypatch):
+    monkeypatch.setattr(fake_repo, "REPO", None)
+    assert not fake_repo.available() and fake_repo.notes() == []
+
+
+def test_a_book_that_names_no_insights_page_gives_a_note_no_url(fake_repo, monkeypatch):
+    monkeypatch.setattr(fake_repo, "INSIGHTS_URL", "")
+    assert [n["url"] for n in fake_repo.notes()] == [""]
+
+
+def test_a_note_is_read_from_its_frontmatter(fake_repo):
+    notes = fake_repo.notes()
+    assert len(notes) == 1, "the _example template must not be offered as a real note"
+    n = notes[0]
+    assert (n["ref"], n["ticker"], n["date"]) == ("NOTE-0099", "WDGT", "2026-05-04")
+    assert n["url"] == "https://example.test/insights/widget-co-2026-05/"
+
+
+def test_the_nested_stat_block_is_not_parsed_as_fields(fake_repo):
+    """The reader is deliberately not a YAML parser — pulling in a dependency to read six
+    keys would put a third-party package in the path of the record. Indented lines are
+    skipped, so `stat:`'s children must not leak in as note fields."""
+    n = fake_repo.notes()[0]
+    assert "label" not in n and "value" not in n
+    assert n["title"] == "Widget Co: a test note", "quotes are stripped"
+
+
+def test_the_ticker_suffix_is_stripped_when_matching(fake_repo):
+    """The book's codes carry a mode — ORLA and ORLA SB are one company, and the note is
+    about the company."""
+    assert [n["ref"] for n in fake_repo.for_ticker("WDGT SB")] == ["NOTE-0099"]
+    assert [n["ref"] for n in fake_repo.for_ticker("WDGT")] == ["NOTE-0099"]
+
+
+def test_the_book_works_with_no_research_repo_at_all(tmp_path, monkeypatch):
+    """THE RESEARCH REPO IS ANOTHER PROJECT, so its absence must be silent: the Bench shows no
+    research notes waiting, and nothing raises."""
+    from portfusion.desk.doors import research_notes
+    from portfusion.desk.intake import research
+    from portfusion.desk.panels import bench
+    monkeypatch.setattr(research, "REPO", tmp_path / "nowhere")
+    assert research.available() is False
+    assert research.notes() == []
+    assert research.for_ticker("ORLA") == []
+    assert research_notes.owed() == []
+    assert bench.data()["notes"] == []
+
+
 def _the_books_repo():
     """The research reader on the loaded book's own repo, or None when the book names none."""
     from portfusion.desk.intake import research

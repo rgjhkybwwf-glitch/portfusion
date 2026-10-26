@@ -112,6 +112,53 @@ def test_money_rounds_half_up_the_same_way_on_every_panel():
     assert holdings.query(by="ticker")["notional"] == snap["— of which spread-bet notional"]
 
 
+def test_the_panels_share_one_shaping_helper():
+    """ONE SHAPING MODULE, desk/panels/_shape.py.
+
+    Copies drift: a fix reaches one and not the others, and one name returns two types.
+
+    A count of copies would go stale. This asserts the property instead: no panel defines a
+    shaping helper of its own, because there is one and it is importable. The helpers are what
+    `_shape.py` defines, read from it, so a new one is held by existing and a copy is caught
+    under its own name or a private one; a panel's `_rows` that calls `_shape.rows` builds on it.
+    """
+    import ast
+    shape = SRC / "desk" / "panels" / "_shape.py"
+    owned = {n.name for n in ast.parse(shape.read_text()).body if isinstance(n, ast.FunctionDef)}
+
+    def own(src):
+        return sorted({n.name for n in ast.walk(ast.parse(src)) if isinstance(n, ast.FunctionDef)
+                       and n.name.lstrip("_") in owned
+                       and f"_shape.{n.name.lstrip('_')}(" not in ast.unparse(n)})
+    assert own("def plain(v):\n    return v\ndef _iso(v):\n    return v\n") == ["_iso", "plain"]
+    offenders = {path.name: own(path.read_text()) for path in sorted(shape.parent.glob("*.py"))
+                 if path != shape and own(path.read_text())}
+    assert not offenders, (
+        f"these panels define their own shaping helpers: {offenders}. "
+        f"desk/panels/_shape.py has {sorted(owned)} — import them.")
+
+
+def test_the_shared_shaping_survives_a_column_named_for_a_keyword():
+    """A column named `return`, pinned by behaviour rather than by reading the source. itertuples()
+    renames `return`; to_dict("records") does not."""
+    import pandas as pd
+    frame = pd.DataFrame({"quarter_end": [pd.Timestamp("2026-06-30")], "return": [0.0721]})
+    row = _shape.rows(frame, ["quarter_end", "return"], dates=("quarter_end",))[0]
+    assert row["return"] == pytest.approx(0.0721), \
+        "the return column came back None — the namedtuple rename is back"
+    assert row["quarter_end"] == "2026-06-30"
+
+
+def test_the_shared_shaping_is_tolerant_where_a_panel_needs_it():
+    """A column the frame does not carry, and a NaN date, are both ordinary here — a panel
+    rendering a subset of a wider frame should not raise."""
+    import pandas as pd
+    frame = pd.DataFrame({"a": [1.0, float("nan")], "date": [pd.NaT, pd.Timestamp("2026-01-02")]})
+    out = _shape.rows(frame, ["a", "date", "absent"], dates=("date",))
+    assert out[0] == {"a": 1.0, "date": None, "absent": None}
+    assert out[1] == {"a": None, "date": "2026-01-02", "absent": None}
+
+
 def test_the_one_asserted_reconciliation_holds_on_the_desk_too():
     """total market exposure - net asset value = leverage. The build asserts it; so does this,
     because a renderer showing a leverage that does not reconcile is showing a figure from one

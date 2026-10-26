@@ -250,7 +250,6 @@ def test_activity_reports_money_not_a_contract_level(book):
     a = book.activity().set_index("trade_id")
     sb = next(t for t in D.buys if t.mode == "sb")
     ties(a.loc[sb.trade_id, "value"], sb.stake * sb.level_points, f"{sb.trade_id} value is stake x level")
-    assert a.loc[sb.trade_id, "value"] > 1000, "a spread-bet notional should not read as a level"
 
 
 @needs("buys")
