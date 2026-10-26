@@ -5,6 +5,9 @@ prints it.
 
 ## Unreleased
 
+- **The demo holds a row of every kind the suite is built from.** A contract with two open legs,
+  a deposit and a funding charge each on its IG statement, and the ISA's quarter-end ii statement
+  on file, so every test the demo once skipped now runs on it, and in CI.
 - **`portfusion init` makes the book's venv.** It installs the portfusion that made it, so a
   new book's first commit already has its secret gate's Python, and the README's start is one
   install. `--no-venv` leaves it out; a venv that cannot be made is said, with the two commands.
