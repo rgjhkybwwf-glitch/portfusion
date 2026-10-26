@@ -3,7 +3,11 @@
 Each release, newest first. The version is `portfusion/__init__.py`'s, and `portfusion --version`
 prints it.
 
-## Unreleased
+## 0.4.0 — beta, 26 Oct 2026
+
+The review's release: every part in its own place, the 22 stability rules all held by tests,
+the desk bound to this Mac and its secrets private, one number format, and the store's first
+migration. Read **Upgrading a book** before moving a book's pin.
 
 ### Upgrading a book
 
