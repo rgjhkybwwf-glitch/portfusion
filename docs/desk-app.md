@@ -5,6 +5,7 @@ How the desk is started on the Mac, kept current, and served to readers beyond i
 ```bash
 portfusion desk                         # start it, in the book's folder
 portfusion desk --reload                # while working ON the desk
+portfusion desk --port 8769             # another port; --no-open keeps the browser shut
 portfusion desk --install-agent         # on a Mac: the desk at login, for this book
 portfusion desk --uninstall-agent       # stop it and remove it
 ```
@@ -63,5 +64,5 @@ Until both hold the same value, every request is refused, and the Access page sa
 |---|---|
 | Publish | `portfusion desk --publish`, from the book's `main`, clean and pushed, with the deploy clone on a clean `main`; restart the Mac's desk first if its code changed |
 | Manage readers | [`access-levels.md`](access-levels.md) |
-| See whether it is up | the desk's header shows its state: *live*, *tunnel off*, *not published*, *behind*, or *restart first*; nothing while the remote door is shut |
+| See whether it is up | the desk's header says *hosted:* then *live*, *tunnel off*, *not published*, *behind, publish* or *restart first*; nothing while the remote door is shut |
 | Turn it off | `tailscale funnel --https=443 off` |

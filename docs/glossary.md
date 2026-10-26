@@ -39,7 +39,7 @@ file and the code disagree, the code is right.
 |---|---|
 | Capital crossing the book's boundary | **capital movement** — `capital-movements.csv`, `Book.capital_movements()` |
 | A broker's document | the broker's own name for it |
-| The up and down colour on the desk | **movement colour** — `house/palette.py`, `MOVEMENTCOL` in `kit.js` |
+| The up and down colour on the desk | **movement colour** — `MOVEMENT_FIELDS` in `house/palette.py` |
 | Ordinary prose | *price movement*, wherever no named figure is at stake |
 
 | Sense | Spelling |
@@ -229,7 +229,7 @@ positions. `roll_up()` and `MEASURE_BASIS` keep them apart.
 | What retrieves a document | `rules.RETRIEVAL_KINDS` |
 | How a document is recognised | `rules.Evidence.fingerprint` |
 | How an archived document is named | `rules.ARCHIVE_CONVENTION` |
-| Which desk columns wear movement colour | `MOVEMENTCOL` in `kit.js` |
+| Which desk columns wear movement colour | `palette.MOVEMENT_FIELDS` |
 | Currency, region, sector, ticker | open: a new one is not refused, and the Bench offers those in use |
 
 ---

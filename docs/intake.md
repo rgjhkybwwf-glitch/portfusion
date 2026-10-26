@@ -23,6 +23,20 @@ which prints everything the session needs and checks every quote it returns agai
 `python3 -m portfusion.desk.intake.read_document "<document>"` prints its text as the Bench reads
 it.
 
+**The Bench's gates all clear before a row is approved.** An income row whose sign is not its
+category's usual one (a dividend out, a fee in) holds the item until the sign is confirmed.
+
+Where the code lives:
+
+| Module | Does |
+|---|---|
+| `desk/intake/dropoff.py` | the one door into `_inbox/` |
+| `desk/intake/bench.py` | the item, its gates and its approval |
+| `desk/intake/recorded.py` | asks what the record already holds: a row, a reference, an account |
+| `desk/intake/filing.py` | names a document and the date it is filed under |
+| `desk/intake/withdraw.py` | the one door out of `_inbox/` for a document not used |
+| `desk/intake/sweep.py` | every read the desk asks of the feeds; it writes nothing |
+
 ## What rests where
 
 | Folder | Holds |

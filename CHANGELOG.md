@@ -5,211 +5,198 @@ prints it.
 
 ## Unreleased
 
-- **The suite mirrors the app's packages**: `tests/engine/`, `record/`, `history/`, `feeds/`,
-  `report/` and `desk/`. A book's `checks/skips.txt` is matched by file name and test, never
-  folder, so a list written before the move still holds.
-- **The demo holds a row of every kind the suite is built from.** A contract with two open legs,
-  a deposit and a funding charge each on its IG statement, and the ISA's quarter-end ii statement
-  on file, so every test the demo once skipped now runs on it, and in CI.
-- **A refused write no longer tells the desk the store changed.** A write refused after part of it
-  had landed put the bytes back with a new mtime, so the desk's freshness line reported a change.
-  The rollback now puts back each file's times with its bytes.
-- **`portfusion init` makes the book's venv.** It installs the portfusion that made it, so a
-  new book's first commit already has its secret gate's Python, and the README's start is one
-  install. `--no-venv` leaves it out; a venv that cannot be made is said, with the two commands.
-- **A book installs against the lock its release was proved on.** The book's `requirements.txt`
-  carries `-c` to that release's `requirements.lock`, as the README's install line does: a new
-  install no longer resolves to versions no suite has run.
-- **The checkout's hooks refuse a Python older than 3.13 with the fix**, where macOS's own
-  `python3` raised a traceback on every push.
-- **A credentials file other accounts can read is refused.** The IG feed asks for
-  `chmod 600 credentials.json` before it reads a value from one. The feeds' sessions, the hosted
-  desk's passkeys, readers and sign-in log are created readable by their owner alone from the
-  first byte, not made so afterwards; `--ig-logout` deletes the session file.
-- **The Bench asks about a sign its category does not usually carry**: a fee paid in, a dividend
-  or cash interest paid out. The quote check cannot see a sign, so the owner confirms each one.
-- **The TradingView sign-in waits for its own answer.** A request to its local port without the
-  sign-in's `state` is answered 400 and the wait goes on; before, any page could end it.
-- **The sign-in log keeps 90 days.** A withdrawn document's archived note names its destination
-  from `~`, not the Mac's user folder, and a publish refuses a shell naming any word of a holder's
-  name.
-- **A blank gain on the report is a dash in no colour**, never "+nan" in red: a quarter that
-  opens at nothing, a new book's first.
-- `python3 -m portfusion.history.fx --rate USD <day>` refuses a day that is not YYYY-MM-DD.
-- **A live price is the quote screen's or none.** When TradingView's quote screen refused,
-  could not be reached or left a line out, a line still trading took its newest one-minute bar.
-  Those bars can run fifteen minutes behind a quote that streams live, so the stand-in was a stale
-  price looking current. Such a line is now reported unpriced, the Price Refresh and
-  `feeds.refresh` say plainly that TradingView failed, and the next sweep asks again; a venue that
-  has shut still prices from its close. A delayed venue read in the minutes after its close with
-  no quote is unpriced too, where it took its still-forming day bar as the day's close.
-- **A quarter's `contribution` is a closed list.** `quarter-nav.csv`'s `contribution` is
-  `positions at market`, `account equity` or `notional`, and the loader now refuses a book holding
-  any other value, naming the row; before, the engine refused it when a figure was first asked for.
-  The freeze writes only these three.
-- **The FX history keeps every rate.** A bank dropped the live rates read between the days the
-  book is valued on, but What Changed sets a share line against the rate of the day before its
-  mark, which may be one of them: a refresh could move a line's FX effect. 0.2.1's "No figure
-  moves" held for the price history only. The file now grows by a row per currency for each day
-  a refresh reads; a rate a bank already dropped stays in git, not in the file.
-- **Every desk read is the desk's one Book.** The Price Refresh's "Was" column is read from it,
-  so the first load after a hand edit, a pull or a checkout no longer shows the marks the store
-  held before. A quarter's report is drawn from it under the record's lock, so a record that
-  refuses to reload refuses the report too, rather than serving the tables it refused. The
-  Bench's reasons and the IG event sweep read the same Book.
-- **A failed write puts the files back, however it fails.** The write envelope, and the reload of
-  the record after it, caught every exception but `SystemExit`, which the record raises when a
-  store goes incomplete; a write that ended that way left its files half-written. The Price
-  Refresh's write reloads the record after its envelope too, as each door's does.
-- **The record's seven load checks hold under `python -O`.** They were `assert`s, which `-O`
-  strips: a settings key named twice, a spread-bet leg with no contract or on another line, an id
-  used twice, a price in a third currency, an income category in neither half, an account code
-  repeated or malformed. Each is now refused with a `ValueError`.
-- **Publish keeps to its own clone.** It refuses a `deploy_repo` that is, holds or lies inside the
-  book, the app or the checkout, or is or holds the home folder, and a clone that tracks files
-  but has no version manifest: a publish deletes what it did not write.
-- **The audit tells the truth.** `portfusion record` typed in a checkout reported the checkout's
-  backup under the book's name; it now reads the book's own git. An evidence chain or journal that
-  could not be checked read as good order; each is now a problem, as the conversions' was. The
-  three opening dates in settings (`record_begins`, `reasoning_owed_from`, `first_report`) are
-  refused on load unless each is a date, and the first is read once; `engine.BASELINE` and
-  `BASELINE_ASOF` are gone, a Book's `baseline` answers.
-- **Each Book names its own "Return since" date.** The label was fixed when the app started, so a
-  desk running when `record_begins` changed showed the old date until restarted, and a Book of
-  another store showed the loaded book's. A Book now reads it from its own record, as the registry
-  of headline figures does.
-- **The PDF reader is pypdf 6.21.2**, locked and floored: 6.16.2 had 19 advisories, each a crafted
-  PDF that could hang the desk. The guard on GitHub now asks OSV about every locked pin
-  (`tools/advisories.py`) and fails on any advisory.
-- **The floors are versions the suite runs on**: pytest 8.4 (8.0–8.3 cannot load the harness),
-  fastapi 0.133 (an older one brings a Starlette whose test client needs `httpx`), pandas 2.2.3
-  (2.2.0–2.2.2 do not install on Python 3.13).
-- **The guard on GitHub checks the desk's script parses** (`node --check`). A syntax error in
-  `app.js` blanks the desk, and every test that reads the file passed over one.
-- **A checkout names the demo.** CONTRIBUTING's setup, CLAUDE.md and the testing guide start with
-  `export PORTFUSION_BOOK=demo`, so their commands work first time in a checkout, which holds no
-  book. Run without one, the suite says so in one line rather than a page of `INTERNALERROR`.
-- **The stability rules are in CONTRIBUTING**: 22 rules under six headings, each beside the test
-  or hook that holds it, and eight parts not yet held marked "being made to fire". The conventions
-  follow, one line each; "run the guard unpiped" is a tip in docs/testing.md.
-- **The import contracts are checked by a tool**, import-linter (`lint-imports`), in CI and in a
-  checkout's pre-commit: seven contracts in `pyproject.toml` say which part of the app may import
-  which. The build's independence of the desk, the feeds and the histories (rule 21) is now held
-  for the record too, where a planted import passed every test; CI plants one to prove it is
-  refused. Ten hand-written import tests and two fixtures retire, and three tests lose their
-  import half. A dev tool only: a book installs none of it.
-- **Six guards that passed on the code they forbid now fail on it**, each beside a planted case:
-  no credential is logged, in either feed, as well as printed; a panel's copy of a shaping helper
-  is found by the names `_shape.py` defines; a negative quantity with a value is read from `qty`
-  (it read `stake`); a name taken from the record's rules, or a path the schema rebinds, is
-  refused; the engine's case of the lock test waits on `book()`'s own lock; and **a skip a book
-  lists that ran fails the run**. When a book's pin moves, delete any such line from its
-  `checks/skips.txt`; the demo's one is gone.
-- **Every label the report prints is registered.** "Return this quarter" and "Accounts / positions"
-  join `Book.HEADLINE`, marked as the report's only (`report_only`), and the engine gives both, so
-  the report no longer counts the accounts itself. The registry's test reads the labels from the
-  drawn page, where it read the data and missed both. Nothing on the desk or the report moves.
-- **One census of every writer in the package.** The scan that names each module allowed to
-  write now walks the whole package, not `desk/` alone, and counts a removal, a copy and a rename
-  as writes. Six writers outside `desk/` are named: the two feeds' sign-in files, the histories'
-  bank, `init`, the migrations and the schema's unused `dump()`. The store's doors are counted
-  by what each opens, so the Bench's commit, research notes, `init`, the stamp and the demo
-  generator are listed. Eight hand scans share one helper; four tests that only repeated the
-  census are gone. `Naming.rename()` is `Naming.apply()`, so a path's `rename()` counts.
-- **The guard on GitHub draws every desk page.** `tools/desk_smoke.py` asks the demo desk for its
-  page, script and panels with no server; `tools/desk_smoke.mjs` loads them into jsdom and opens
-  each tab, failing on any error, rejected promise, error box or unanswered fetch, at start-up and
-  on each page. A misspelt name crashes a page yet passes `node --check` and every test that reads
-  the script; CI plants one at start-up to prove it is refused. jsdom is pinned in
-  `tools/package-lock.json`, which the advisory check and Dependabot now read too. A dev tool
-  only: a book installs none of it.
-- **The record is built, then taken.** `record/rules.py` read each table into the module as it
-  went, so a reload the record refused — a store caught mid-edit, a bad cell — left the refused
-  tables beside the old ones, a record no store ever held, until a reload passed. It now reads
-  and checks every table into names of its own and the module takes them only when the whole
-  build has passed, so a refused reload leaves the record exactly as it was. A Book's pin holds
-  for the record's functions too: a leg's kind and the accounts open on a day answer from the
-  record the Book was built from. No figure, page or store moves.
-- **A price or rate history that cannot be read no longer blocks an account reading.** The
-  readings door asked the marks door whether its outgoing readings were banked, and the marks door
-  read all three histories to answer, so a broken price or FX history refused a reading it had no
-  part in. Each door now asks its own history: an account reading, from the Price Refresh or filed
-  with a holdings export, waits only on the account history. The desk's two panels that acted now
-  only shape: the Price Refresh's write is the marks door's `refresh()`, and the sweeps the desk
-  asks of the feeds are `desk/intake/sweep.py`'s. No figure, page or store moves.
-- **The quarter close is an action: `portfusion freeze <quarter end>`**, and `--write` writes it.
-  The audit's close procedure and the report gate's refusal name it. `--book` reaches every
-  command run as `python3 -m portfusion.<command>`: `python3 -m portfusion.record --book demo` was
-  refused as an unrecognised argument. `portfusion --help` lists all fifteen commands: the seven actions, and
-  the eight reached by `python3 -m` alone. `python3 -m portfusion.desk.doors.freeze` still works.
-- **The engine is a package.** `engine.py` is `engine/`, a file per topic: the store, the two
-  bases, the ledger and valuation, then `Book`, built from seven classes, each a group of its
-  methods, over the construction they share (`engine/core.py`). `portfusion.engine` offers every
-  name it did, `Book.HEADLINE` stays the one registry, and an import contract keeps the topics
-  from importing one another. pyright now checks the store, the bases, the ledger and valuation.
-  No figure, page or store moves.
-- **A hosted reader sees a fixed sentence, not a 500, when the record will not load.** The remote
-  door answered 500 at every level, or handed an owner the record's own words, which name the
-  Mac's folders; it now tells every reader "the record on the Mac will not load: see the Mac's
-  desk". A refusal's words are renamed for a level that reads no names, as its answers are. A
-  desk with a hosted door now starts when a cell will not load: the door reads its two settings
+### Upgrading a book
+
+Nothing here changes a figure. Do these when the book's pin moves.
+
+- **Run `portfusion migrate --write`.** It drops the `tv_list_live`, `tv_list_exit` and
+  `tv_list_entry` settings and journals the removal. Until it runs, the loader refuses a book that
+  names the first. It also lists any line in the book's `checks/` that reads one: move those by
+  hand.
+- **Delete from `checks/skips.txt` any skip that ran.** A listed skip that runs now fails the run.
+  Skips are matched by file name and test, never folder, so a list written before the suite
+  mirrored the packages still holds.
+- **Copy the new hook and ignore list from a new book** (`portfusion init <folder>`). An existing
+  book gets the `commit-msg` secret gate and the longer `.gitignore` only this way; the audit names
+  `.githooks/commit-msg` and `.gitignore`.
+- **Check `quarter-nav.csv`.** `contribution` must be `positions at market`, `account equity` or
+  `notional`; the loader refuses any other value and names the row.
+- **Check `credentials.json` is `chmod 600`.** The IG feed refuses a file other accounts can read.
+- **Reinstall against `requirements.lock`.** A new book's `requirements.txt` carries `-c` to the
+  release's lock; pypdf is 6.21.2.
+- **A script that passed `portfusion desk --host` must drop it.**
+
+### New
+
+- **`portfusion freeze <quarter end>`** writes the quarter close; `--write` writes it. The audit's
+  close procedure and the report gate's refusal name it. `python3 -m portfusion.desk.doors.freeze`
+  still works.
+- **`--book` reaches every command** run as `python3 -m portfusion.<command>`;
+  `python3 -m portfusion.record --book demo` was refused as an unrecognised argument.
+  `portfusion --help` lists all fifteen: the seven actions, and the eight reached by `python3 -m`
   alone.
-- **A revoke that races a sign-in holds.** The sign-in wrote back the passkeys it had read, so a
-  device revoked part-way through came back, signed in. The passkeys, the readers and the sessions
-  in memory now change under one lock, and a session opens only while its passkey is on file. A
-  restart's exit waits for a write in progress to finish, as every door's write does.
-- **A document is never filed over another.** A commit files a document under its convention's
-  name, or that name with the item's id when the first is taken; when both are, the commit is now
-  refused and nothing is written, where the document on file was replaced. A TradingView reply
-  that answers nothing now fails only its own line, where it stopped the whole sweep.
-  `python3 -m portfusion.history.fx --rate` without a currency and a date says how it is used,
-  where it crashed.
-- **A desk request that fails says so.** A Bench button whose answer was not the desk's JSON
-  (opening a new item, saving, reading, writing, withdrawing) left an empty box, or no item; each
-  now shows the server's words. An action the desk refused (a write not yet enabled, say) no
-  longer reads as done. The page last asked for is the one drawn: a slow page no longer draws
-  over a quicker one opened after it. The page open in the rail is marked as the current page
-  for a screen reader, each result box is read out as it fills, and a read-only figure shows its
-  focus ring. Trades' filters redraw the page, as Holdings' and Round Trips' do.
-- **The secret gate reads the commit message, and more of each value.** A key in a commit message
-  was committed: a new `commit-msg` hook refuses it, in this repository and in a new book. A
-  value is found in either case, URL-encoded and in base64 as well as as it is; `.env` values are
-  read; a link made a file holding a key is checked. One list, `secret_scan.SECRET_FILES`, names
-  every file a book keeps a secret in, and a new book's `.gitignore` is written from it, now with
-  the desk's `.desk_*.tmp` files. A push from a checkout that names no book is refused:
-  `PORTFUSION_BOOK=demo` pushes without the leak test. **An existing book gets the new hook and
-  ignore list only when its pin moves**: the audit then names `.githooks/commit-msg` and
-  `.gitignore`, and both are copied from a new book (`portfusion init <folder>`).
+- **`portfusion init` makes the book's venv**, installing the portfusion that made it, so a new
+  book's first commit already has its secret gate's Python. `--no-venv` leaves it out; a venv that
+  cannot be made is said, with the two commands.
+- **A `commit-msg` hook refuses a key in a commit message**, in this repository and in a new book.
+- **The IG sweep's look-back is chosen beside its button**: 30 days, 90 days, or since the
+  account began. It never reaches before an account's record began (the later of `record_begins`
+  and the account's own); an earlier `since` is clamped, each account its own, and the sweep says
+  so. `--ig-events` takes a date, a number of days or `begins`. An event the record already holds
+  is counted, not listed.
+- **The Bench asks about an unusual sign**: a fee paid in, a dividend or cash interest paid out.
+  The quote check cannot see a sign, so the owner confirms each.
+- **The demo holds a row of every kind the suite is built from**: a contract with two open legs,
+  a deposit and a funding charge on its IG statement, and the ISA's quarter-end ii statement. Every
+  test the demo once skipped now runs on it, and in CI.
+- **Guards on GitHub.** The desk's script is parsed (`node --check`); `tools/desk_smoke.py` and
+  `tools/desk_smoke.mjs` draw every desk page in jsdom and fail on any error, rejected promise,
+  error box or unanswered fetch, with a planted fault proving it; `tools/advisories.py` asks OSV
+  about every locked pin and fails on any advisory. jsdom is pinned in
+  `tools/package-lock.json`, which the advisory check and Dependabot read. Dev tools only: a book
+  installs none of them.
+- **The import contracts are checked by import-linter** (`lint-imports`), in CI and in a
+  checkout's pre-commit: eight contracts in `pyproject.toml` say which part of the app may import
+  which. The build's independence of the desk, the feeds and the histories (rule 21) now holds for
+  the record too; CI plants an import to prove it is refused.
+- **The stability rules are in CONTRIBUTING**: 22 rules under six headings, each beside the test
+  or hook that holds it.
+
+### Changed
+
+- **The suite mirrors the app's packages**: `tests/engine/`, `record/`, `history/`, `feeds/`,
+  `report/` and `desk/`.
+- **One census of every writer in the package**, not `desk/` alone, counting a removal, a copy
+  and a rename as writes. Six writers outside `desk/` are named: the two feeds' sign-in files, the
+  histories' bank, `init`, the migrations and the schema's unused `dump()`. The store's doors are
+  counted by what each opens. `Naming.rename()` is `Naming.apply()`.
+- **The engine is a package**, `engine/`, a file per topic, with `Book` built from seven classes
+  over the construction they share (`engine/core.py`). `portfusion.engine` offers every name it
+  did, `Book.HEADLINE` stays the one registry, and an import contract keeps the topics apart.
+  pyright checks the store, the bases, the ledger and valuation.
+- **A broker's knowledge has one home**, `record/rules_brokers.py`: each export's column map
+  (`COLUMN_MAPS`, `HOLDINGS_COLUMNS`, `LEDGER_MAPS`) and IG's ledger words. The readers in
+  `desk/intake/read_rows.py` and the IG sweep name no broker.
+- **The record is built, then taken.** `record/rules.py` reads and checks every table into names
+  of its own and the module takes them only when the whole build has passed, so a refused reload
+  leaves the record exactly as it was. A Book's pin holds for the record's functions too.
+- **Each door asks its own history.** A broken price or FX history no longer refuses an account
+  reading, which waits only on the account history. The desk's Price Refresh write is the marks
+  door's `refresh()`; the desk's sweeps are `desk/intake/sweep.py`'s.
+- **Every desk read is the desk's one Book.** The Price Refresh's "Was" column, the Bench's
+  reasons and the IG event sweep read it, so the first load after a hand edit, a pull or a
+  checkout no longer shows the old marks. A quarter's report is drawn from it under the record's
+  lock, so a record that refuses to reload refuses the report too.
+- **Each Book names its own "Return since" date**, from its own record, so a desk running when
+  `record_begins` changed, or a Book of another store, no longer shows the wrong one.
+- **Every label the report prints is registered.** "Return this quarter" and "Accounts /
+  positions" join `Book.HEADLINE`, marked `report_only`, and the engine gives both. The registry's
+  test reads the labels from the drawn page.
+- **Every renderer prints a figure one way**, from `house/precision.py`: sterling to the penny on
+  the desk and in the audit, to the pound on the report but for its two cash tables, a negative as
+  -£5.82, a rate per £1 to four places. An exact half rounds away from zero everywhere; the report
+  rounded to even, so a quarter's return income of 12.50 printed +12 and now prints +13. The
+  engine's own words carry the £ and print dates as dates ("band £40.70", "since 1 Sep 2026"). The
+  Price Refresh prints its outgoing price, level and rate in place ("2.3500 GBP", "10,480 pts",
+  "1.3300"), and Reconcile's table sorts by its headings.
+- **A blank gain on the report is a dash in no colour**, never "+nan" in red: a new book's first
+  quarter opens at nothing.
+- **The FX history keeps every rate.** A bank dropped the rates read between the days the book is
+  valued on, but What Changed sets a share line against the rate of the day before its mark, so a
+  refresh could move a line's FX effect. The file now grows by a row per currency for each day a
+  refresh reads. 0.2.1's "No figure moves" held for the price history only.
+- **A live price is the quote screen's or none.** When TradingView's quote screen refused, could
+  not be reached or left a line out, a line still trading took its newest one-minute bar, up to
+  fifteen minutes stale. Such a line is now reported unpriced, the Price Refresh and
+  `feeds.refresh` say plainly that TradingView failed, and the next sweep asks again. A venue that
+  has shut still prices from its close; a delayed venue read just after its close with no quote is
+  unpriced, not its still-forming day bar.
+- **The TradingView flag-list check leaves the app**, with `--tv-watchlist`, the sweep's fourth
+  part, the Price Refresh's flag-list note and the two watchlist reads on the allowlist; every
+  tool that edits stays refused. The store moves: see Upgrading.
+- **The PDF reader is pypdf 6.21.2**, locked and floored: 6.16.2 had 19 advisories, each a crafted
+  PDF that could hang the desk.
+- **The floors are versions the suite runs on**: pytest 8.4, fastapi 0.133 (older brings a
+  Starlette whose test client needs `httpx`), pandas 2.2.3 (2.2.0 to 2.2.2 do not install on
+  Python 3.13).
+- **A book installs against the lock its release was proved on**: its `requirements.txt` carries
+  `-c` to that release's `requirements.lock`, so a new install cannot resolve to versions no suite
+  has run.
+- **A checkout names the demo.** CONTRIBUTING's setup, CLAUDE.md and the testing guide start with
+  `export PORTFUSION_BOOK=demo`. Run without one, the suite says so in one line, not a page of
+  `INTERNALERROR`.
+- **A `quarter-nav.csv` `contribution` is a closed list**, refused on load with the row named; the
+  engine used to refuse it only when a figure was first asked for. The freeze writes only the three.
+- **The sign-in log keeps 90 days.** A withdrawn document's archived note names its destination
+  from `~`, not the Mac's user folder.
+
+### Fixed
+
+- **A refused write no longer tells the desk the store changed.** The rollback puts back each
+  file's times with its bytes, so the freshness line does not report a change.
+- **A failed write puts the files back, however it fails.** The write envelope and the reload
+  after it missed `SystemExit`, which the record raises when a store goes incomplete, leaving files
+  half-written. The Price Refresh's write reloads the record after its envelope, as each door's does.
+- **The record's seven load checks hold under `python -O`.** They were `assert`s: a settings key
+  named twice, a spread-bet leg with no contract or on another line, an id used twice, a price in
+  a third currency, an income category in neither half, an account code repeated or malformed.
+  Each is refused with a `ValueError`.
+- **The audit tells the truth.** `portfusion record` in a checkout reported the checkout's backup
+  under the book's name; it reads the book's own git. An evidence chain or journal that could not
+  be checked read as good order; each is now a problem. The three opening dates in settings
+  (`record_begins`, `reasoning_owed_from`, `first_report`) are refused on load unless each is a
+  date. `engine.BASELINE` and `BASELINE_ASOF` are gone; a Book's `baseline` answers.
+- **A document is never filed over another.** When the convention's name and the name with the
+  item's id are both taken, the commit is refused and nothing is written.
+- **A TradingView reply that answers nothing fails only its own line**, not the whole sweep.
+- **A desk request that fails says so.** A Bench button whose answer was not the desk's JSON now
+  shows the server's words, not an empty box. A refused action no longer reads as done. A slow
+  page no longer draws over a quicker one opened after it. The open page is marked current for a
+  screen reader, each result box is read out as it fills, a read-only figure shows its focus ring,
+  and Trades' filters redraw the page.
+- **A revoke that races a sign-in holds.** The passkeys, readers and sessions in memory change
+  under one lock, and a session opens only while its passkey is on file. A restart's exit waits
+  for a write in progress.
+- **A hosted reader sees a fixed sentence, not a 500, when the record will not load**: "the record
+  on the Mac will not load: see the Mac's desk". A refusal's words are renamed for a level that
+  reads no names. A desk with a hosted door starts when a cell will not load.
+- **The TradingView sign-in waits for its own answer**: a request to its local port without the
+  sign-in's `state` is answered 400 and the wait goes on.
+- **The checkout's hooks refuse a Python older than 3.13 with the fix**, not a traceback.
+- **`python3 -m portfusion.history.fx --rate`** refuses a day that is not YYYY-MM-DD, and without a
+  currency and a date says how it is used.
+
+### Security
+
 - **The desk always listens on 127.0.0.1.** `portfusion desk --host` is gone: no browser could use
   it, and a script that forged the loopback name was answered as the owner, an owner-level enrol
   code included. SECURITY.md states what the Mac's door assumes: one user account on the Mac.
-- **Every renderer prints a figure one way**, from `house/precision.py`: sterling to the penny
-  on the desk and in the audit, to the pound on the report but for its two cash tables, a
-  negative as -£5.82, a rate per £1 to four places. An exact half now rounds away from zero
-  everywhere, as the desk always did; the report rounded it to even, so a quarter's return income
-  of 12.50 printed +12 and now prints +13. The engine's own words (the Dashboard's notes,
-  Reconcile's rule, the audit) carry the £ and print their dates as dates: "band £40.70",
-  "since 1 Sep 2026". The Price Refresh's outgoing price, level and rate are printed at their
-  places ("2.3500 GBP", "10,480 pts", "1.3300"), and Reconcile's table sorts by its headings.
 - **The Mac's desk is sent with the hosted desk's page policy.** Its shell had no
-  `Content-Security-Policy`, so any page could frame it, and nosniff and no-referrer reached the
-  hosted copy only. One `bundle.SHELL_HEADERS` now gives every file of the shell the same
-  headers on both doors; the published `_headers` is written from it, byte for byte as before.
-- **A broker's knowledge has one home**, `record/rules_brokers.py`: each kind of export's map
-  (`COLUMN_MAPS`, `HOLDINGS_COLUMNS`, `LEDGER_MAPS`) carries its columns, labels and line reader,
-  and IG's ledger words sit beside them, so the readers in `desk/intake/read_rows.py` and the IG
-  sweep name no broker. No figure, page, reading or store moves.
-- **The TradingView flag-list check leaves the app**, with `--tv-watchlist`, the sweep's fourth
-  part, the Price Refresh's flag-list note and the two watchlist reads on the allowlist; every
-  tool that edits stays refused. **The store moves: `portfusion migrate --write` drops the
-  `tv_list_live`, `tv_list_exit` and `tv_list_entry` settings** and journals the removal; until
-  it runs, the loader refuses the book naming the first, and it lists a `checks/` line that reads
-  one.
-- **The IG sweep's look-back is chosen beside its button**: 30 days, as before, 90 days, or since
-  the account began. It never reaches before an account's record began, the later of the book's
-  `record_begins` and the account's own: an earlier `since` is clamped to it, each account its
-  own, and the sweep says so. `--ig-events` takes a date, a number of days or `begins`. An event
-  the record already holds is counted on the sweep rather than listed.
+  `Content-Security-Policy`, so any page could frame it. One `bundle.SHELL_HEADERS` gives every
+  file of the shell the same headers on both doors; the published `_headers` is written from it.
+- **The secret gate reads more.** A value is found in either case, URL-encoded and in base64;
+  `.env` values are read; a link made a file holding a key is checked. `secret_scan.SECRET_FILES`
+  names every file a book keeps a secret in, and a new book's `.gitignore` is written from it, now
+  with the desk's `.desk_*.tmp` files. A push from a checkout that names no book is refused
+  (`PORTFUSION_BOOK=demo` pushes without the leak test).
+- **A credentials file other accounts can read is refused.** The feeds' sessions, the hosted
+  desk's passkeys, readers and sign-in log are created readable by their owner alone from the
+  first byte; `--ig-logout` deletes the session file.
+- **Publish keeps to its own clone.** It refuses a `deploy_repo` that is, holds or lies inside the
+  book, the app or the checkout, or is or holds the home folder, and a clone that tracks files but
+  has no version manifest: a publish deletes what it did not write. A publish also refuses a shell
+  naming any word of a holder's name.
+- **Six guards that passed on the code they forbid now fail on it**, each beside a planted case:
+  no credential is logged by either feed; a panel's copy of a shaping helper is found by the names
+  `_shape.py` defines; a negative quantity with a value is read from `qty`, not `stake`; a name
+  taken from the record's rules, or a path the schema rebinds, is refused; the engine's case of
+  the lock test waits on `book()`'s own lock; and a skip a book lists that ran fails the run.
+
+### Removed
+
+- `portfusion desk --host`; the TradingView flag-list check and `--tv-watchlist`;
+  `engine.BASELINE` and `BASELINE_ASOF`; ten hand-written import tests and two fixtures, replaced
+  by import-linter.
 
 ## 0.3.2 — beta, 24 Oct 2026
 

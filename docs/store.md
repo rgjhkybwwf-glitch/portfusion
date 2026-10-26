@@ -32,7 +32,7 @@ One idea, one column name, in every table.
 |---|---|
 | `account` | one of the register's, `accounts.csv`, and the loader refuses any other; on `quarter-results.csv` a blank is the book |
 | `record_begins` | on `accounts.csv`: the day an account opened after the book did; blank for one held from the opening. The loader refuses a quarter-end row before it |
-| `held_as` · `category` · `funding` | closed lists in `record/schema.py`, printed in [the glossary](glossary.md)'s §9. A line's `held_as` sits once, on its ticker's `securities.csv` row |
+| `held_as` · `category` · `funding` · `contribution` | closed lists in `record/schema.py`, printed in [the glossary](glossary.md)'s §9. A line's `held_as` sits once, on its ticker's `securities.csv` row |
 | `ticker` on income | the line a dividend was paid on; blank on interest, fees and funding |
 | `symbol` · `quote_unit` | a listing as its market names it: the market's ISO code and its ticker (`XLON:BRYC`, `XNYS:VELD`), and the unit it quotes in (`GBX` is pence). The price feed translates the symbol into its own form |
 | `points_per_unit` · `shares_per_unit` | on a spread-bet line: how many points make one unit of its listing's price (100 where IG quotes in cents or pence), and how many shares one unit of the listing stands for (blank is one; a depositary receipt's ratio). With the stake they make a bet's share-equivalents |

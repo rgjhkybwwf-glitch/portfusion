@@ -56,6 +56,17 @@ the door; rule 3 is judgement.
 Every share and the exchange rates. Sign in once in your own browser; the session file rotates,
 so it is never copied.
 
+A line comes back as one of three things:
+
+| Venue | Gives |
+|---|---|
+| trading | the quote screen's live read, struck at the instant it describes |
+| shut | the latest session's close, from the daily bars |
+| quote screen refused or unreachable | *unpriced*, with the reason, and a plain "TradingView failed" notice |
+
+A day bar for a session in progress and a minute bar are never a live read: either can run behind
+the quote. The next sweep asks again.
+
 ```bash
 python3 -m portfusion.feeds.tv --tv-sign-in       # once
 python3 -m portfusion.feeds.tv --tv-search NAME   # find a symbol; never guess one
@@ -81,5 +92,6 @@ python3 -m portfusion.feeds.ig --ig-events          # buys, sales, costs, capita
 - **A reading moves the book.** It writes the equity and re-marks the contracts, because the two
   compare only when struck together. **Its funds are not spendable cash**, and are never added to
   the equity.
+- **The events' look-back** is chosen on the Bench ([reconciling.md](reconciling.md)).
 - **A far contract's past close is its statement's level.** IG prints no evening bars for it, so
   file that day's statement on the Bench first.
