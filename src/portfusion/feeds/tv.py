@@ -336,7 +336,7 @@ def tv_symbol(symbol: str) -> str:
 
 #: `unit` is what TradingView says the line is quoted in — checked against the reply, so the pence
 #: trap is caught by the vendor's own word rather than a divisor typed here. The map itself is
-#: securities.csv's `symbol` and `quote_unit`; `tests/test_tv.py` holds it against the prices.
+#: securities.csv's `symbol` and `quote_unit`; `tests/feeds/test_tv.py` holds it against the prices.
 def symbols(D=None) -> dict:
     """book code -> {"symbol", "unit"}, for every security the book prices from TradingView: the
     ones securities.csv gives a unit, each symbol in TradingView's form."""

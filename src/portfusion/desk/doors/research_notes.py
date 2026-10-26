@@ -14,7 +14,7 @@ never held is owed nothing until it is held.
 
 THE REF, ITS DATE AND ITS ADDRESS ARE THE RESEARCH REPO'S, read by `desk/intake/research.py`, and
 never typed. A row on file is never rewritten here: a note withdrawn or redated is the research
-repo's question, and `tests/test_record.py`'s ties name it.
+repo's question, and `tests/record/test_record.py`'s ties name it.
 
 THE BOOK DOES NOT NEED THE RESEARCH REPO. Without it `owed()` is empty and the Bench shows nothing.
 """

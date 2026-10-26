@@ -306,7 +306,7 @@ def _build() -> dict:
         RESEARCH_NOTES.setdefault(_r[0], []).append((_r[1], _r[2].isoformat(), _r[3]))
 
     # AN OPEN SHARE WITH NO PRICE STOPS THE BUILD: `engine.value_legs()` raises on the missing mark.
-    # There is no hand-kept fallback. tests/test_record.py::test_every_open_share_has_a_price_route
+    # There is no hand-kept fallback. tests/record/test_record.py::test_every_open_share_has_a_price_route
     # names every offender at once, without a build.
 
 
@@ -674,7 +674,7 @@ def _build() -> dict:
 
     # THE QUARTER TOTALS ARE THE ENGINE'S, AND ONLY THE ENGINE'S: Book.NAV_BASES, EXPOSURE_BASES and
     # _classified(), which refuses an unclassified basis outright — a total with no stated basis is
-    # a defect waiting for its data. The baseline is asserted in tests/test_quarter_nav.py,
+    # a defect waiting for its data. The baseline is asserted in tests/engine/test_quarter_nav.py,
     # test_engine_ties.py and test_history_accounts.py.
 
 
