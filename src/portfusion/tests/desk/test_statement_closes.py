@@ -149,14 +149,14 @@ def test_statements_that_cannot_be_read_cost_the_bar_closes_nothing(monkeypatch)
 
 
 def test_the_desk_hands_the_sweep_its_statement_reader(monkeypatch):
-    """`feeds/` may not import the desk, so the Price Refresh passes the reader in."""
+    """`feeds/` may not import the desk, so the desk's sweep passes the reader in."""
     from portfusion.feeds import refresh
     from portfusion.desk.intake import statement_closes
-    from portfusion.desk.panels import price_refresh as P
+    from portfusion.desk.intake import sweep
     seen = {}
     monkeypatch.setattr(refresh, "sweep", lambda on=None, filed=None: seen.update(
         on=on, filed=filed) or {"on": on})
-    assert P._fetch_all(on="2026-09-30") == {"ok": True, "on": "2026-09-30"}
+    assert sweep.prices(on="2026-09-30") == {"ok": True, "on": "2026-09-30"}
     assert seen == {"on": "2026-09-30", "filed": statement_closes.closes}
 
 

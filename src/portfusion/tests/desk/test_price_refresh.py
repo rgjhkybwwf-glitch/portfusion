@@ -214,7 +214,6 @@ def test_a_fault_mid_write_puts_back_the_files_and_the_record_in_memory(store_co
     and it goes on once the files and the record are back."""
     from portfusion.record import rules as D, schema
     from portfusion.desk.doors import marks
-    from portfusion.desk.panels import price_refresh
     path = schema.TABLES["current-prices"].path
     before = path.read_bytes()
     was = {r[0]: r[1] for r in D.CURRENT_PRICES}[TICK]
@@ -226,7 +225,7 @@ def test_a_fault_mid_write_puts_back_the_files_and_the_record_in_memory(store_co
     monkeypatch.setattr(marks, "write", write_then_fail)
 
     def write():
-        return price_refresh._write(prices=[{
+        return marks.refresh(prices=[{
             "mark_key": TICK, "price": was + 1, "currency": TICK_CUR, "as_of": "2026-09-04",
             "struck": "close", "source": f"TradingView 1D {TICK}, session 2026-09-04 close — test"}])
 
@@ -794,13 +793,13 @@ def test_the_bay_asks_for_a_past_day_and_the_write_banks_it(repo_root, monkeypat
     """The fetch passes the day to the sweep; the write routes to the banking door; the screen
     carries the day from one to the other."""
     from portfusion.feeds import refresh
-    from portfusion.desk.panels import price_refresh as R
+    from portfusion.desk.intake import sweep
     monkeypatch.setattr(refresh, "sweep", lambda on=None, filed=None: {"on": on})
-    assert R._fetch_all(on=_DAY)["on"] == _DAY
+    assert sweep.prices(on=_DAY)["on"] == _DAY
 
     from portfusion.desk.doors import marks
     monkeypatch.setattr(marks, "bank_closes", lambda day, prices=None, rates=None: {"day": day})
-    assert R._write(prices=[_close()], close_of=_DAY) == {"ok": True, "day": _DAY}
+    assert marks.refresh(prices=[_close()], close_of=_DAY) == {"ok": True, "day": _DAY}
 
     js = _static("app.js")
     assert 'id="rb-on"' in js and "payload.close_of = closeOf" in js
@@ -841,7 +840,7 @@ def _account_number(account):
 
 def _mapped_contract(among=None):
     """A still-quoted contract the book maps a leg to AND marks, with its epic — the only kind
-    of level a reading may ride in on (`price_refresh._write` gates on `D.LEG_CONTRACT.values()`).
+    of level a reading may ride in on (`marks.refresh` gates on `D.LEG_CONTRACT.values()`).
     With `among`, one of those mark keys: a book with two IG accounts holds each contract in one."""
     from portfusion.record import schema
     epic_of = {r[0]: str(r[1] or "").strip() for r in schema.load("contracts")}
@@ -877,10 +876,10 @@ def test_a_reading_writes_its_levels_beside_its_equity(store_copy):
 
     AN IG READING KEEPS EACH OF ITS FIVE FIGURES ONCE, IN ITS OWN COLUMN."""
     from portfusion.record import schema
-    from portfusion.desk.panels import price_refresh as R
+    from portfusion.desk.doors import marks
     contract, _ = _mapped_contract()
 
-    out = R._write(prices=[_level()], readings=[_reading()])
+    out = marks.refresh(prices=[_level()], readings=[_reading()])
 
     assert out["ok"] is True, out.get("refused")
     assert (out["prices"], out["readings"]) == (1, 1)
@@ -933,12 +932,11 @@ def test_a_refused_reading_rolls_back_the_levels_too(store_copy):
     door SUCCEEDS and the observations door refuses; anything short of a rollback across both
     leaves the book re-struck against a stale baseline."""
     from portfusion.desk.doors import marks, observations
-    from portfusion.desk.panels import price_refresh as R
 
     files = {p: p.read_bytes()
              for p in (*marks.paths(), *observations.paths()) if p.is_file()}
 
-    out = R._write(prices=[_level()], readings=[_reading(evidence="")])
+    out = marks.refresh(prices=[_level()], readings=[_reading(evidence="")])
 
     assert out["ok"] is False, "a reading with no evidence class was accepted"
     after = {p: p.read_bytes() for p in files}
@@ -957,9 +955,8 @@ def test_what_the_write_refuses_leaves_every_file_as_it_was(store_copy, prices, 
     """A reading with no level from its pass, a notional figure no endpoint returns, a reading on
     a past day's closes, and an empty press."""
     from portfusion.desk.doors import marks, observations
-    from portfusion.desk.panels import price_refresh as R
     files = {p: p.read_bytes() for p in (*marks.paths(), *observations.paths()) if p.is_file()}
-    out = R._write(prices=prices, readings=[reading] if reading else None, close_of=close_of)
+    out = marks.refresh(prices=prices, readings=[reading] if reading else None, close_of=close_of)
     assert out["ok"] is False and says in out["refused"], out
     assert all(p.read_bytes() == b for p, b in files.items()), "a refused write moved a file"
 
@@ -989,14 +986,14 @@ def test_an_ig_accounts_source_is_the_line_its_reading_is_filed_under(repo_root,
     """THE REVIEW SHOWS WHAT THE WRITE RECORDS. Each account's row carries the record's own
     provenance line for its reading, and the bay fills the row with it."""
     from portfusion.feeds import refresh
-    from portfusion.desk.panels import price_refresh as R
+    from portfusion.desk.intake import sweep
     from portfusion.record import rules as D
     account = SPREAD_BET_ACCOUNT
     reading = _reading(account)
     monkeypatch.setattr(refresh, "sweep", lambda on=None, filed=None: {
         "ig_equity": {"ok": True, "readings": [reading],
                       "rows": [{"account": account, "equity": reading["equity"]}]}})
-    row = R._fetch_all()["ig_equity"]["rows"][0]
+    row = sweep.prices()["ig_equity"]["rows"][0]
     assert row["source"] == D.evidence_source(reading["evidence"],
                                               reference=reading["reference"], account=account)
     assert reading["reference"] in row["source"]
@@ -1189,6 +1186,7 @@ def test_the_bay_offers_the_rates_the_record_lacks_and_banks_them(repo_root, mon
     as rates for the past-day door to bank, never as live rates."""
     import re
     from portfusion.engine import Book
+    from portfusion.desk.intake import sweep
     from portfusion.desk.panels import price_refresh
     q = price_refresh.query()
     assert q["lacking"] == Book().rate_gaps()
@@ -1201,7 +1199,7 @@ def test_the_bay_offers_the_rates_the_record_lacks_and_banks_them(repo_root, mon
                           for c, ds in wanted.items() for d in ds], "failed": []}
     from portfusion.feeds import tv
     monkeypatch.setattr(tv, "rate_closes", fake)
-    got = price_refresh._fetch_all(lacking=True)
+    got = sweep.prices(lacking=True)
     assert got["lacking"] and got["tv"]["ok"]
     assert sorted((c, d) for c, ds in asked.items() for d in ds) == \
         sorted((g["currency"], g["date"]) for g in q["lacking"])

@@ -1444,7 +1444,7 @@ def test_a_set_up_that_does_not_stand_with_its_trade_is_refused(swept, event, sa
 def test_the_set_up_press_reads_the_contracts_first_mark_or_refuses(swept, monkeypatch, priced):
     """The set-up press asks IG for the new contract's level: a priced one rides on the item as
     its first mark, and an unpriced one opens no item at all."""
-    from portfusion.desk.intake import bench as _b
+    from portfusion.desk.intake import bench as _b, sweep
     from portfusion.feeds import ig
     level = {"priced": priced, "level": 50.4 if priced else None, "currency": "USD",
              "as_of": "2026-08-12", "source": _FIRST_MARK["source"] if priced else "",
@@ -1452,7 +1452,7 @@ def test_the_set_up_press_reads_the_contracts_first_mark_or_refuses(swept, monke
     asked = []
     monkeypatch.setattr(ig, "contract_levels", lambda mapped=None: asked.append(mapped)
                         or {"rows": [dict(level, contract="NEWCO-JUN27")]})
-    got = bench_panel._set_up(_set_up())
+    got = sweep.set_up(_set_up())
     assert asked == [{"NEWCO-JUN27": (None, "DM.D.NEWCOUS.JUN.IP")}]
     if priced:
         item = _b.get(got["id"])
@@ -1652,14 +1652,14 @@ def test_the_sweep_can_ask_what_became_of_its_events():
 
     The events come from the snapshot; their state comes from here, fresh every render.
     """
-    from portfusion.desk.panels import bench
+    from portfusion.desk.intake import bench
     out = bench.sweep_status(["NOT-A-REAL-REFERENCE", ""])
     assert "" not in out, "a blank reference is not a question worth asking"
     assert out["NOT-A-REAL-REFERENCE"] == {"in_record": False, "tables": [], "item": None}
 
 
 def test_an_event_on_the_bench_is_reported_as_such(swept):
-    from portfusion.desk.panels import bench
+    from portfusion.desk.intake import bench
     item = swept()
     st = bench.sweep_status(["DIAAAATESTCLOSE"])["DIAAAATESTCLOSE"]
     assert st["item"]["id"] == item["id"]
@@ -1669,7 +1669,7 @@ def test_an_event_on_the_bench_is_reported_as_such(swept):
 
 def test_a_reference_already_in_the_record_is_found():
     """The same scan the duplicate gate runs — one implementation, two callers."""
-    from portfusion.desk.panels import bench
+    from portfusion.desk.intake import bench
     from portfusion.record import schema
     # any reference the store actually carries; the IG sweep writes one into income.source
     known = None

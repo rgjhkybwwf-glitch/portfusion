@@ -539,6 +539,41 @@ def item_for_event(ref: str) -> dict | None:
     return None
 
 
+def sweep_status(refs: list[str]) -> dict:
+    """For each deal reference: is it already in the record, or already on the bench?
+
+    THE SWEEP IS A SNAPSHOT AND THE WORLD MOVES UNDER IT. Its result is held client-side so that
+    returning to the Bench does not mean another 30-day call to the broker — but a snapshot alone
+    would go on offering "work it" for a row already carried across, or already committed.
+
+    So the snapshot supplies the EVENTS and this supplies their STATE, asked fresh every time
+    the sweep is drawn. Neither is guessed from the other.
+    """
+    out = {}
+    for ref in refs or []:
+        ref = str(ref or "").strip()
+        if not ref:
+            continue
+
+        def _look(ref=ref):
+            tables = recorded.reference_tables(ref)
+            item = item_for_event(ref)
+            return {
+                "in_record": bool(tables),
+                "tables": tables,
+                "item": None if item is None else {
+                    "id": item["id"], "state": item.get("state", "open"),
+                    "blocked": [g["label"] for g in gates(item) if not g["ok"]],
+                },
+            }
+
+        try:
+            out[ref] = _guarded(_look)
+        except RecordUnavailable as e:
+            out[ref] = {"error": str(e)}
+    return out
+
+
 def already_in_the_record(item: dict) -> list[str]:
     """Findings that this evidence, or this event, is already in the book.
 
@@ -1009,6 +1044,18 @@ def for_event(event: dict, origin: str = "ig-events", marks: list[dict] | None =
     if marks:
         item["marks"] = [dict(m) for m in marks]
     return save(item)
+
+
+def to_bench(event: dict, marks: list[dict] | None = None) -> dict:
+    """Carry one swept event onto the bench (`for_event()`). Returns the item, or a refusal."""
+    try:
+        item = for_event(event, marks=marks)
+    except ValueError as e:
+        return {"ok": False, "error": str(e)}
+    except RecordUnavailable as e:
+        return {"ok": False, "error": f"record unavailable: {e}"}
+    return {"ok": True, "id": item["id"], "title": item["title"],
+            "blocked": [g["label"] for g in gates(item) if not g["ok"]]}
 
 
 class Stale(Exception):

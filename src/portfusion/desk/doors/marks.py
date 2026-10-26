@@ -30,13 +30,16 @@ WHAT IT WILL NOT DO:
 """
 from __future__ import annotations
 
+import contextlib
 import datetime as _dt
 import pathlib as _pathlib
 import re
+import traceback
 
 from portfusion.record import rules as D
 from portfusion.record import schema
-from portfusion.desk.doors import envelope
+from portfusion.desk import engine
+from portfusion.desk.doors import envelope, observations
 
 #: The two tables a refresh replaces, and which column identifies a row in each: a line's price
 #: by its ticker, a currency's rate by the currency. Every row of both is live.
@@ -90,20 +93,14 @@ def banked() -> dict:
     THE DESK MAY IMPORT `history/`, and only the BUILD may not — a report build that can fail
     because a CSV moved is a worse book, which is why that rule exists and why it does not reach
     here. Imported inside the function so the desk still starts if the histories are unavailable.
+
+    THE ACCOUNTS ARE NOT ASKED HERE: an unbanked account observation is no reason to refuse a
+    price refresh, and the door that replaces one asks its own history (`observations.banked()`).
     """
-    from portfusion.history import accounts as AH
     from portfusion.history import fx as FX
     from portfusion.history import prices as PH
-    prices, rates, accounts = PH.check(), FX.check(), AH.check()
-    # ACCOUNTS ARE REPORTED BUT NOT FOLDED INTO `ok`. `ok` is the PRICE REFRESH's
-    # precondition — may these prices and rates be replaced — and an unbanked account
-    # observation is no reason to refuse a price refresh. They are separate doors and one
-    # vendor's problem is not the other's, which is the rule the bay already keeps between IG
-    # and TradingView. The door that REPLACES an observation gates on `accounts_ok`.
-    return {"prices_unbanked": prices, "rates_unbanked": rates,
-            "accounts_unbanked": accounts,
-            "ok": not (prices or rates),
-            "accounts_ok": not accounts}
+    prices, rates = PH.check(), FX.check()
+    return {"prices_unbanked": prices, "rates_unbanked": rates, "ok": not (prices or rates)}
 
 
 def _require(row: dict, fields: tuple, what: str) -> None:
@@ -289,6 +286,57 @@ def write(prices: list[dict] | None = None, rates: list[dict] | None = None) -> 
     return {"prices": len(prices), "rates": len(rates),
             "banked_before": archived, "banked_after": banked_after,
             "tables": sorted(by_table)}
+
+
+@envelope.held
+def refresh(prices=None, rates=None, readings=None, close_of=None) -> dict:
+    """THE PRICE REFRESH'S WRITE: bank the outgoing marks and IG readings, and replace them —
+    ONE operation, or none of it — answered as its button is, `{"ok": …}`, never raised.
+
+    THE LEVELS AND THE EQUITY ARE ONE OBSERVATION, so they land or fail together. The two doors
+    each hold only their own files, so this holds the union, and a refusal from either rolls both
+    back; `rules.reload_store()` runs on that path because the files go back and the record in memory
+    has to follow them.
+
+    `close_of` is a past day's closes: `bank_closes()` files them into the histories and the
+    live marks are left as they are. A past day has no reading.
+
+    THE REFUSAL IS THE FEATURE. Either door refuses the whole operation, leaving every file
+    byte-identical, if any line lacks a source or a date, names a carried line, or names a row
+    that is not there.
+    """
+    prices, rates, readings = list(prices or []), list(rates or []), list(readings or [])
+    try:
+        if not (prices or rates or readings):
+            raise Refused("nothing to write — no line was ticked.")
+        if close_of:
+            if readings:
+                raise Refused("a past day's closes carry no account reading: equity is "
+                              "read live, with the levels, or not at all")
+            return {"ok": True, **bank_closes(close_of, prices=prices, rates=rates)}
+        contracts = set(engine.book().D.LEG_CONTRACT.values())
+        if readings and not any(p.get("mark_key") in contracts for p in prices):
+            raise Refused("an IG account's equity is written with the contract levels "
+                          "read in the same pass, and none is among the ticked lines")
+        with (envelope.record_follows_the_files(),
+              envelope.atomic(*paths(), *observations.paths())):
+            written = write(prices=prices, rates=rates) if (prices or rates) else {}
+            read = observations.write(readings=readings) if readings else {}
+    except (Refused, observations.Refused) as e:
+        with contextlib.suppress(Exception, SystemExit):
+            D.reload_store()
+        return {"ok": False, "refused": str(e)}
+    except Exception as e:                          # noqa: BLE001 — reported, never swallowed
+        # A FAULT, NOT A REFUSAL, and the files are back just the same: `atomic()` restored them.
+        # The record in memory follows them, or it would go on serving marks the files no longer
+        # hold; and the page says what failed. The trace goes to the desk's log.
+        traceback.print_exc()
+        with contextlib.suppress(Exception, SystemExit):
+            D.reload_store()
+        return {"ok": False, "refused": f"the write failed, and every file is as it was: "
+                                        f"{type(e).__name__}: {e}"}
+    return {"ok": True, **written, "readings": read.get("written", 0),
+            "accounts": read.get("accounts", [])}
 
 
 def first_paths() -> list:

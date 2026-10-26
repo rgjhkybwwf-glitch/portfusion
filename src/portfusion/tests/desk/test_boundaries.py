@@ -108,6 +108,8 @@ def test_every_reaching_action_is_pinned():
         "refresh-fetch-all", "ig-events", "ig-setup-to-bench"}
     assert actions.get("ig-event-to-bench").reaches is None, \
         "carrying a swept event onto the bench opens no connection — it reaches nothing"
+    # AND EACH RUNS IN ONE MODULE, the desk's reads from the feeds: a panel reaches nothing itself.
+    assert {a.run.__module__ for a in actions.reaching_actions()} == {"portfusion.desk.intake.sweep"}
 
 
 def test_something_that_reaches_out_must_declare_a_gate():
