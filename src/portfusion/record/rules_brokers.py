@@ -1,12 +1,14 @@
 """rules_brokers.py — THE BROKERS' OWN CODES, and the ticker they mean.
 
 A vocabulary and the functions that read it, holding no state and touching no table — the same
-reason `rules_evidence.py` stands apart. HL_CODES and COLUMN_MAPS are how one broker's export is
-read. `rules` imports both once and re-exports them.
+reason `rules_evidence.py` stands apart. Each broker's codes and words, and the maps saying how
+each kind of export is read, keyed by evidence class: every column, label and line reader is its
+map's, so `desk/intake/read_rows.py` names no broker. `rules` re-exports every name.
 """
 from __future__ import annotations
 
 import re as _re
+from collections.abc import Callable
 from typing import NamedTuple
 
 
@@ -85,6 +87,21 @@ HL_CODE_PREFIXES = (
 )
 
 
+def hl_code(reference: str) -> BrokerCode | None:
+    """What an HL transaction line is, from its Reference cell. None means unrecognised.
+
+    Unrecognised is a real answer, never guessed at: deciding by pattern is how a fee becomes a
+    dividend. Side effects: none.
+    """
+    ref = " ".join(str(reference or "").split())
+    if ref in HL_CODES:
+        return HL_CODES[ref]
+    for pattern, code in HL_CODE_PREFIXES:
+        if pattern.match(ref):
+            return code
+    return None
+
+
 #: How a recognised document's own columns become a row, keyed by evidence class.
 #:
 #: ONLY WHERE THE DOCUMENT IS UNAMBIGUOUS. `hl-transactions` buys and sells carry their security
@@ -92,21 +109,25 @@ HL_CODE_PREFIXES = (
 #: the guess this map exists to avoid; those lines are REPORTED with their deal reference, which
 #: is what the record stores anyway.
 #:
-#: `code` names the column that says what the line is (`hl_code()`). `date` is parsed with
-#: `date_format`: a broker writes DD/MM/YYYY, and reading it backwards moves a July row to January.
+#: `code` names the column that says what the line is, and `line` is its own broker's reader of it
+#: (`hl_code()`). `date` is parsed with `date_format`: a broker writes DD/MM/YYYY, and reading it
+#: backwards moves a July row to January.
 class ColumnMap(NamedTuple):
     header: tuple         # the column header row, as the document writes it
     code: str             # which column carries the transaction code
     date: str             # which column is the row's date
     date_format: str      # how that column writes a date
     fields: dict          # store column -> document column, for the cells lifted verbatim
+    line: Callable[[str], BrokerCode | None]   # what a code means; None is unrecognised
+    codes: str            # where `line`'s codes are written, named for a code it does not know
 
 
 COLUMN_MAPS = {
     "hl-income": ColumnMap(
         header=("Date", "Type", "Description", "Amount"),
         code="Type", date="Date", date_format="%d/%m/%Y",
-        fields={"detail": "Description", "amount": "Amount"}),
+        fields={"detail": "Description", "amount": "Amount"},
+        line=hl_code, codes="rules.HL_CODES"),
     # SETTLE DATE, NOT TRADE DATE, for income. HL dates a dividend twice on this export, and its
     # income export carries only the settle date, every time. The duplicate gate keys on the date,
     # so taking the trade date here would let one dividend enter twice. A dealing line would take
@@ -115,13 +136,10 @@ COLUMN_MAPS = {
         header=("Trade date", "Settle date", "Reference", "Description",
                 "Unit cost (p)", "Quantity", "Value"),
         code="Reference", date="Settle date", date_format="%d/%m/%Y",
-        fields={"detail": "Description", "amount": "Value"}),
+        fields={"detail": "Description", "amount": "Value"},
+        line=hl_code, codes="rules.HL_CODES"),
 }
 
-
-#: THE COLUMNS OF AN ii LEDGER ("broker direct" transactions download), as ii writes them.
-II_LEDGER_HEADER = ("Date", "Settlement Date", "Symbol", "Sedol", "Quantity", "Price",
-                    "Description", "Reference", "Debit", "Credit", "Running Balance")
 
 #: WHAT AN ii LEDGER LINE IS. ii prints no transaction code, so a line is known by how its
 #: Description BEGINS — literal, off ii's own ledgers, case aside, never a pattern guessed at. A
@@ -162,23 +180,76 @@ def ii_contract_number(reference: str) -> str:
     return ref[-6:] if len(ref) > 6 else ref
 
 
+#: A CASH LEDGER, read line by line: no transaction code, so `line` knows a line by its
+#: description and symbol. A line `line` gives no table is a dealing line, reported against the
+#: contract note `contract` reads out of its reference; a ledger printing no client number is
+#: matched to one of `broker`'s accounts.
+class LedgerMap(NamedTuple):
+    header: tuple         # the column header row, as the document writes it
+    date: str             # which column is the line's date
+    date_format: str      # how that column writes a date
+    description: str      # the column saying what the line is
+    symbol: str           # the column naming its security, or "n/a"
+    reference: str        # the column carrying a dealing line's reference
+    debit: str            # money out
+    credit: str           # money in
+    balance: str          # the running balance after the line
+    currencies: dict      # a money cell's leading symbol -> its currency
+    line: Callable[[str, str], BrokerCode | None]   # what a line is; None is unrecognised
+    contract: Callable[[str], str]                  # the contract note number in a reference
+    broker: str           # whose ledger it is, as `accounts.csv` names the broker
+
+
+LEDGER_MAPS = {
+    # THE COLUMNS OF AN ii LEDGER ("broker direct" transactions download), as ii writes them.
+    "ii-transactions": LedgerMap(
+        header=("Date", "Settlement Date", "Symbol", "Sedol", "Quantity", "Price",
+                "Description", "Reference", "Debit", "Credit", "Running Balance"),
+        date="Settlement Date", date_format="%d/%m/%Y", description="Description",
+        symbol="Symbol", reference="Reference", debit="Debit", credit="Credit",
+        balance="Running Balance", currencies={"£": "GBP", "€": "EUR", "$": "USD"},
+        line=ii_line, contract=ii_contract_number, broker=II_BROKER),
+}
+
+
 #: WHERE A HOLDINGS EXPORT SAYS HOW MANY UNITS, per evidence class: the column naming the security
 #: and the column holding its units: a share account is checked on units. A
 #: row with no security is a totals line. Each broker writes its own codes, which `book_code()`
 #: matches to the book's.
-HOLDINGS_COLUMNS = {"hl-valuation": ("Code", "Units held"), "ii-valuation": ("Symbol", "Qty")}
+#:
+#: THE READING'S FIGURES ARE THE DOCUMENT'S OWN: its header block's labelled stock, cash and total,
+#: or, where it labels none, its holdings' `value` summed for the stock. A labelled cash is also
+#: filed as the account's cash reading.
+class HoldingsMap(NamedTuple):
+    code: str             # the column naming the security
+    units: str            # the column holding its units
+    stock: str = ""       # the header block's label for the holdings' value
+    cash: str = ""        # ... for the account's cash
+    total: str = ""       # ... for the two together
+    value: str = ""       # where it labels none, the column of each holding's value
 
 
-def hl_code(reference: str) -> BrokerCode | None:
-    """What an HL transaction line is, from its Reference cell. None means unrecognised.
+HOLDINGS_COLUMNS = {
+    "hl-valuation": HoldingsMap("Code", "Units held", stock="Stock value:", cash="Total cash:",
+                                total="Total value:"),
+    "ii-valuation": HoldingsMap("Symbol", "Qty", value="Market Value £"),
+}
 
-    Unrecognised is a real answer, never guessed at: deciding by pattern is how a fee becomes a
-    dividend. Side effects: none.
-    """
-    ref = " ".join(str(reference or "").split())
-    if ref in HL_CODES:
-        return HL_CODES[ref]
-    for pattern, code in HL_CODE_PREFIXES:
-        if pattern.match(ref):
-            return code
-    return None
+
+#: WHAT AN IG LEDGER LINE IS (/history/transactions), by its `transactionType`. A `DEPO` or `WITH`
+#: is money crossing the account's boundary, but IG files its funding charges under `WITH` too:
+#: one is known by the words IG prints on it ("Long Interest for US/Can shares 10/08/26"). Any
+#: other type becomes no row.
+IG_CAPITAL_TYPES = ("DEPO", "WITH")
+IG_FUNDING_WORDS = ("interest", "funding")
+IG_FUNDING = BrokerCode("income", "Funding interest", "a funding cost, charged to the account")
+IG_CAPITAL = BrokerCode("capital-movements", "", "money paid into or out of the account")
+
+
+def ig_line(transaction_type: str, instrument_name) -> BrokerCode | None:
+    """What one IG ledger line is, by its type and then its words. None means no row."""
+    if transaction_type == "WITH" and any(w in str(instrument_name or "").lower()
+                                          for w in IG_FUNDING_WORDS):
+        return IG_FUNDING
+    return IG_CAPITAL if transaction_type in IG_CAPITAL_TYPES else None
+
