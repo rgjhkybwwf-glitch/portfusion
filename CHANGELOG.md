@@ -167,6 +167,11 @@ prints it.
   `tv_list_live`, `tv_list_exit` and `tv_list_entry` settings** and journals the removal; until
   it runs, the loader refuses the book naming the first, and it lists a `checks/` line that reads
   one.
+- **The IG sweep's look-back is chosen beside its button**: 30 days, as before, 90 days, or since
+  the account began. It never reaches before an account's record began, the later of the book's
+  `record_begins` and the account's own: an earlier `since` is clamped to it, each account its
+  own, and the sweep says so. `--ig-events` takes a date, a number of days or `begins`. An event
+  the record already holds is counted on the sweep rather than listed.
 
 ## 0.3.2 — beta, 24 Oct 2026
 
