@@ -34,6 +34,7 @@ from __future__ import annotations
 import csv
 import pathlib as _pathlib
 
+from portfusion.house.precision import money
 from portfusion.record import rules as D
 from portfusion.record import schema
 from portfusion.desk.doors import envelope
@@ -174,11 +175,12 @@ def _check_spread_bet(account: str, reading: dict) -> None:
     except (TypeError, ValueError):
         raise Refused(f"{account}: {', '.join(SB_REQUIRED)} must be numbers.")
     if abs(funds + pl - equity) >= 0.005:
-        raise Refused(f"{account}: funds {funds:,.2f} plus running P/L {pl:,.2f} is "
-                      f"{funds + pl:,.2f}, not the equity {equity:,.2f}. One of the three is not IG's.")
+        raise Refused(f"{account}: funds {money(funds)} plus running P/L {money(pl)} is "
+                      f"{money(funds + pl)}, not the equity {money(equity)}. One of the three is "
+                      f"not IG's.")
     if available is not None and abs(equity - deposit - available) >= 0.005:
-        raise Refused(f"{account}: equity {equity:,.2f} less deposit {deposit:,.2f} is "
-                      f"{equity - deposit:,.2f}, not the available {available:,.2f}.")
+        raise Refused(f"{account}: equity {money(equity)} less deposit {money(deposit)} is "
+                      f"{money(equity - deposit)}, not the available {money(available)}.")
 
 
 def _check_share(account: str, reading: dict, ev, filed=None, document=None) -> None:
@@ -223,8 +225,8 @@ def _check_share(account: str, reading: dict, ev, filed=None, document=None) -> 
         raise Refused(f"{account}: {', '.join(figures)} must be numbers.")
     if rest and abs(stock + rest[0] - rest[1]) >= 0.005:
         cash, total = rest
-        raise Refused(f"{account}: stock {stock:,.2f} plus cash {cash:,.2f} is "
-                      f"{stock + cash:,.2f}, not the total {total:,.2f}. One of the three was "
+        raise Refused(f"{account}: stock {money(stock)} plus cash {money(cash)} is "
+                      f"{money(stock + cash)}, not the total {money(total)}. One of the three was "
                       f"not read off the document.")
     source = D.evidence_source(ev.key, reference=str(reading["reference"]), account=account)
     names = D.filed_as(source, schema.filed_statements() if filed is None else filed) or []
@@ -297,8 +299,8 @@ def _cash_rows(readings: list[dict]) -> list[dict]:
         if was is not None and abs(was - cash) < 0.005:
             continue
         if was is not None:
-            raise Refused(f"{account} already has a cash reading of {was:,.2f} for {day}; this "
-                          f"reading's document says {cash:,.2f}. One of them is wrong, and this "
+            raise Refused(f"{account} already has a cash reading of {money(was)} for {day}; this "
+                          f"reading's document says {money(cash)}. One of them is wrong, and this "
                           f"door does not choose.")
         out.append({"account": account, "as_of": day, "cash": cash,
                     "evidence": r["evidence"], "reference": r["reference"]})

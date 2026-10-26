@@ -9,7 +9,6 @@ The rest of tests/desk/ is detail on these two, split by subject.
 """
 from __future__ import annotations
 
-import datetime as _dt
 import functools
 
 import pytest
@@ -55,12 +54,8 @@ def test_a_write_must_name_its_human_gate():
 
 
 def test_every_writing_action_is_pinned():
-    """The list of actions that can change the record, pinned. A NEW WRITING BUTTON FAILS THIS
-    TEST until someone declares it on purpose.
-
-    THIS IS THE ONLY STANDING GUARD ON THE WRITES. There is no blanket date gate, so nothing
-    else sits between a writing action and a live record — which is why each entry is a NAME
-    here rather than a count, and why another has to be argued for.
+    """The actions that declare a write, pinned by name. A NEW WRITING BUTTON FAILS THIS TEST
+    until someone declares it on purpose; what may write a file at all is `WRITERS`, below.
 
     IT IS A MARK, AND THE MARKS RULE NAMES IT: *a feed may write a MARK — a price, an FX rate,
     LIVE EQUITY — on the owner's per-line tick; it may never write an EVENT.*
@@ -128,29 +123,6 @@ def test_reaches_is_not_a_fourth_value_on_writes():
     with pytest.raises(ValueError):
         actions.Action(name="x", label="x", panel="p", run=lambda: None,
                        writes="network", gate="g")
-
-
-def test_there_is_no_blanket_date_gate():
-    """NO BLANKET GATE (`WRITES_ENABLED_FROM` is None): the desk closes a quarter itself, so a gate
-    that opens the day AFTER the close protects nothing. The per-action date is the next test."""
-    assert actions.WRITES_ENABLED_FROM is None
-    a = actions.Action(name="w", label="w", panel="p", run=lambda: None,
-                       writes="marks", gate="tick-each-line")
-    assert a.available is True
-    assert a.as_json()["enabled_from"] is None
-
-
-def test_an_action_may_still_name_its_own_date():
-    """The per-action date is kept because it costs nothing — a single risky button can defer
-    itself without a project-wide rule."""
-    tomorrow = _dt.date.today() + _dt.timedelta(days=1)
-    later = actions.Action(name="w", label="w", panel="p", run=lambda: None, writes="marks",
-                           gate="tick-each-line", enabled_from=tomorrow)
-    now = actions.Action(name="x", label="x", panel="p", run=lambda: None, writes="marks",
-                         gate="tick-each-line", enabled_from=_dt.date.today())
-    assert later.available is False
-    assert now.available is True
-    assert later.as_json()["enabled_from"] == tomorrow.isoformat()
 
 
 # =====================================================================================

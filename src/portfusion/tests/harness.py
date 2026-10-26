@@ -571,10 +571,9 @@ def store_copy(tmp_path, monkeypatch):
         yield target
 
 
-# THE DESK TESTS' BENCH AND WORKBENCH. Here rather than in tests/desk/, because a second
-# conftest.py would be a second module named `conftest`, and the tests that import `ROOT` or
-# `SRC` from this one would get that one. Each reads its constants from desk_support.py, which
-# is importable whenever a test in tests/desk/ is running, and no other test asks for these.
+# THE DESK TESTS' BENCH AND WORKBENCH, with the other fixtures. Each reads its constants from
+# desk_support.py, which is importable whenever a test in tests/desk/ is running, and no other
+# test asks for these.
 
 @pytest.fixture
 def item(inbox):

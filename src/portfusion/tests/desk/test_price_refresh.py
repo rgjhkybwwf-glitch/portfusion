@@ -327,8 +327,8 @@ def test_a_typed_figure_sits_on_the_line_of_a_fetched_one(repo_root):
 
 def test_the_engine_still_imports_nothing_new_for_the_refresh_set():
     """marks_replaceable() needs today's date and takes it from pandas rather than importing datetime —
-    `engine.py` imports only the record and pandas, and that is asserted elsewhere. Named
-    here too because it is the constraint that shaped the function."""
+    `engine/` imports only the record, `house` and pandas, and that is asserted elsewhere.
+    Named here too because it is the constraint that shaped the function."""
     from portfusion import engine
     assert "datetime" not in {n.split(".")[0] for n in dir(engine) if not n.startswith("_")}
     assert engine.Book().marks_replaceable()["today"] == _dt.date.today().isoformat()

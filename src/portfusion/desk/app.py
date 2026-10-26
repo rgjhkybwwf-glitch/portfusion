@@ -1,12 +1,8 @@
-"""The FastAPI application: routes, and nothing else.
-
-THIS FILE IS THE SWAP POINT. It is the only module that knows the desk is served over HTTP —
-`engine.py`, `actions.py` and `panels/` would be unchanged if this became stdlib http.server,
-or grew a login. A framework writes the plumbing once; the layout churns, so the churn must
-not live here.
+"""The local desk's FastAPI application: routes, and nothing else. `desk/remote.py` is the
+hosted door's, with its sign-in; `actions.py` and `panels/` know neither.
 
 IT COMPUTES NOTHING. Every figure comes from a panel, every panel from `desk.engine`, and
-`desk.engine` from `engine.py`.
+`desk.engine` from `engine/`.
 """
 from __future__ import annotations
 
@@ -434,21 +430,12 @@ def document_raw(name: str):
 
 @app.post("/api/action/{name}")
 def run_action(name: str, body: dict = Body(default={})):
-    """Run a declared action.
-
-    THE REGISTRY IS THE GATE, not this route. An action that writes is refused here until its
-    `enabled_from` date, and an action that writes EVENTS cannot exist — `Action` refuses to be
-    constructed. So this function does no permission thinking of its own; if it did, that would
-    be a second place where the answer lives.
-    """
+    """Run a declared action. THE REGISTRY IS THE GATE, not this route: an action that writes
+    EVENTS cannot exist, as `Action` refuses to be constructed."""
     try:
         action = actions.get(name)
     except KeyError:
         raise HTTPException(404, f"no action named {name!r}")
-    if not action.available:
-        raise HTTPException(
-            409, f"{action.label!r} writes {action.writes!r} and is not enabled until "
-                 f"{action.as_json()['enabled_from']}")
     return {"action": name, "ran": True, "result": action.run(**(body or {}))}
 
 

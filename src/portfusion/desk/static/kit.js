@@ -1,7 +1,7 @@
 /* ---------------------------------------------------------------------------------------
    The panels that read; none computes. Every figure below is rendered
    exactly as the engine handed it over — a percentage worked out here would be a second
-   calculation of something engine.py already answers, one remove further out.
+   calculation of something the engine already answers, one remove further out.
 
    THEY USE THE STYLE LAYER AND INVENT NOTHING. The house classes are `num` on a cell, `.items`
    for a list, `.muted` for prose: use the style layer, never set it at a call site.

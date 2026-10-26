@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import datetime as _dt
 
+from portfusion.engine import accounts
 from portfusion.record import rules as D
 
 
@@ -28,11 +29,11 @@ def completeness(quarter_end: str) -> list[str]:
     if opening is None:
         return [f"{quarter_end} is not a quarter end"]
     for day, what in ((quarter_end, "NAV row"), (opening, "opening NAV row")):
-        accounts = set(D.accounts_open(day))
+        held = set(D.accounts_open(day))
         nav = {q.account for q in D.QUARTER_NAV if q.as_of == day}
-        if nav != accounts:
+        if nav != held:
             missing.append(f"quarter-nav: no {what} at {day} for "
-                           f"{', '.join(sorted(accounts - nav))}")
+                           f"{', '.join(sorted(held - nav))}")
     if quarter_end not in D.QSNAP_FROZEN:
         missing.append(f"quarter-snapshots: no frozen composition at {quarter_end}. A quarter end "
                        f"is frozen by the freeze door: portfusion freeze {quarter_end}")
@@ -40,10 +41,9 @@ def completeness(quarter_end: str) -> list[str]:
 
 
 def _opening(quarter_end: str) -> str | None:
-    """The day `quarter_end`'s quarter opens from, as `Book.quarter_opens()` says; None for a date
-    that is not a quarter end. The record's own opening has nothing before it to open from."""
-    year = int(quarter_end[:4])
-    before = {"03-31": f"{year - 1}-12-31", "06-30": f"{year}-03-31", "09-30": f"{year}-06-30",
-              "12-31": f"{year}-09-30"}.get(quarter_end[5:])
-    opening = (D.RECORD_BEGINS - _dt.timedelta(days=1)).isoformat()
-    return max(before, opening) if before and quarter_end > opening else before
+    """The day `quarter_end`'s quarter opens from (`engine.accounts.quarter_opens()`); None for a
+    date that is not a quarter end."""
+    if quarter_end[5:] not in ("03-31", "06-30", "09-30", "12-31"):
+        return None
+    return accounts.quarter_opens(quarter_end,
+                                  (D.RECORD_BEGINS - _dt.timedelta(days=1)).isoformat())

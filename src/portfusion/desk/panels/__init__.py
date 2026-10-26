@@ -1,8 +1,7 @@
-"""THE PANEL REGISTRY — a panel joins by existing.
-
-One module per screen, and they do not depend on each other.
-Adding a panel is adding a file; reordering is changing one number. Nothing here has a list of
-panels in it, because a list is a second place to update.
+"""THE PANEL REGISTRY: one module per screen, discovered, and they do not depend on each other.
+A new panel is its module here, its `DRAW` in the desk's scripts, its title in
+`test_the_tabs_run_in_the_order_of_the_work` and any heading of its own in `house/headings.py`;
+reordering is changing one number.
 
 Each panel module declares:
 
@@ -23,7 +22,7 @@ numbers are made and who reads them are not work on the book.
 A PANEL HAS ONE NAME: its file, its URL and its title agree (`test_a_panel_has_one_name`).
 
 `data()` MUST NOT COMPUTE A FIGURE. It reaches the engine through `desk.engine` and shapes what
-comes back. A panel that does arithmetic is a second calculation of something `engine.py` already
+comes back. A panel that does arithmetic is a second calculation of something `engine/` already
 answers.
 """
 from __future__ import annotations
@@ -48,9 +47,8 @@ def all_panels() -> list:
         missing = [a for a in ("NAME", "TITLE", "ORDER", "data") if not hasattr(mod, a)]
         if missing:
             raise AttributeError(
-                f"{mod.__name__} is in desk/panels/ but does not declare {missing}. "
-                f"A panel joins the desk by existing, so an incomplete one must fail loudly "
-                f"rather than be skipped silently.")
+                f"{mod.__name__} is in desk/panels/ but does not declare {missing}: "
+                f"an incomplete panel fails loudly rather than being skipped.")
         found.append(mod)
     names = [m.NAME for m in found]
     if len(set(names)) != len(names):

@@ -7,6 +7,6 @@ page is not kept; a closed quarter's results are, in `quarter-results.csv`, and 
 if the engine stops giving them.
 
 gate.py refuses a half-arrived quarter, page.py renders the page and style.py styles it. None of
-them computes a figure: every one is engine.py's, held to the desk's by
+them computes a figure: every one is the engine's, held to the desk's by
 tests/test_figures.py.
 """

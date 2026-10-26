@@ -360,8 +360,8 @@ def test_the_scan_covers_this_projects_source_and_nothing_else():
 
 
 def test_a_file_changed_since_import_reads_stale_and_is_named(source_baseline):
-    """NAMED, NOT COUNTED. "1 file changed" sends you looking; "engine.py" tells you what moved.
-    """
+    """NAMED, NOT COUNTED. "1 file changed" sends you looking; "engine/book.py" tells you what
+    moved."""
     # THE ENGINE BY ITS OWN PATH: a name alone may be another package's, and which file is picked
     # would hang on the order the modules come in.
     target = next(p for p in engine._repo_modules()

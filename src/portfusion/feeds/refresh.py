@@ -21,9 +21,10 @@ does not quote through the evening, the level on that day's filed statement. The
 statement, because the reader lives in the desk and this module may not import it
 (the import contracts in `pyproject.toml`). A past day has no equity: a reading is an instant.
 
-IT PRINTS AND NEVER WRITES THE RECORD. The desk's Price Refresh is the door: it banks the outgoing
-marks, writes the ticked lines and banks those, in one operation. Nothing printed here is for
-pasting into `store/`.
+IT WRITES THE HISTORIES ONLY: the command banks the marks on file to the price and FX histories,
+and never writes `store/`. The desk's Price Refresh is the door: it banks the outgoing marks,
+writes the ticked lines and banks those, in one operation. Nothing printed here is for pasting
+into `store/`.
 """
 
 import datetime as _dt

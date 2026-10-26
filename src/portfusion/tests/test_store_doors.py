@@ -316,9 +316,9 @@ ASKED_WITHOUT_A_BOOK = {
 #: all. `schema`'s are held to this list as well: `filed_statements()` lists
 #: `_archive/statements/`, which is no table and which no Book pins, so a document filed after a
 #: Book was built is on file to it. `funding_nights()` reads a row's own detail with a regex and
-#: no table.
+#: no table. `accounts_open()` is built by `_build()` and reads that build's register.
 CALLABLE_THROUGH_THE_PIN = {"evidence_from_source", "reference_resolves", "document_not_on_file",
-                            "states_cash", "filed_statements", "funding_nights"}
+                            "states_cash", "filed_statements", "funding_nights", "accounts_open"}
 
 
 def test_the_evidence_rules_cannot_reach_a_table(repo_root):

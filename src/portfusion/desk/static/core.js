@@ -131,8 +131,7 @@ function openPanel(name) {
 
 /* EACH PAGE, BY PANEL NAME: `DRAW[name](d)` returns its HTML from the panel's answer, and
    `WIRE[name](d, again)`, where a page has one, wires what was drawn; `again` is a redraw of a
-   filter's answer. A panel the shell cannot draw still LISTS — it shows its raw payload rather
-   than vanishing, so a half-built panel is visible while it is built. */
+   filter's answer. A panel with no `DRAW` shows its raw payload. */
 const DRAW = {}, WIRE = {};
 
 /* THE PAGE LAST ASKED FOR IS THE ONE PAINTED. Each ask, a tab or a filter, takes the next
