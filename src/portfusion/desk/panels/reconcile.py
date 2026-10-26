@@ -32,6 +32,11 @@ ORDER = 28
 #: answer, `Book.quarter_evidence()`, asked for the newest reading rather than a quarter's.
 COLUMNS = ("account", "book", "broker", "difference", "verdict", "last_check", "document")
 
+#: EVERY VERDICT HAS A TAG, the colour its row's tag wears. One that fell through to `note` would
+#: wear the colour of a row inside its band, for a row that has not been judged at all.
+VERDICT_TAG = {"units-agree": "ok", "within-band": "note", "differs": "problem",
+               "no-statement": "gap", "no-holdings": "gap", "struck-apart": "gap"}
+
 
 def data() -> dict:
     b = engine.book()
@@ -54,6 +59,7 @@ def data() -> dict:
             "funds": _num(r.funds), "running_pl": _num(r.running_pl), "equity": _num(r.equity),
             "deposit": _num(r.deposit), "available": _num(r.available),
             "verdict": v["verdict"],
+            "tag": VERDICT_TAG[v["verdict"]],
             "checkable": v["checkable"],
             # WHY this row is judged the way it is, in the row rather than in a footnote. A
             # reader should not have to know which accounts are spread bets to read the table.
@@ -67,6 +73,7 @@ def data() -> dict:
         })
     return {
         "rows": rows,
+        "columns": list(COLUMNS),
         "disagreements": [r for r in rows if r["verdict"] == "differs"],
         "gaps": [r for r in rows if not r["checkable"]],
     }

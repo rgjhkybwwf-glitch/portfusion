@@ -100,6 +100,8 @@ def query(ticker: str | None = None, account: str | None = None,
                             dates=("closed", "opened")),
         "columns": list(COLUMNS),
         "detail": list(DETAIL_COLUMNS),
+        # THE HALVES A ROW MAY OWE: a row owing either wears the "owed" tag.
+        "owed": list(OWED),
         # THE FIGURES ON SCREEN ARE THE SELECTION'S. `whole` sits beside them when one is on.
         "totals": {k: _shape.plain(v) for k, v in selected.items()},
         "whole": {k: _shape.plain(v) for k, v in whole.items()},

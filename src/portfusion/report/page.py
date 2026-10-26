@@ -11,12 +11,20 @@ import html
 from portfusion import about, brand
 from portfusion.engine import Book
 from portfusion.house.headings import heading
-from portfusion.house.precision import day, local_price, pct, points
+from portfusion.house.precision import (MONEY_DP, REPORT_MONEY_DP, day, local_price, money, pct,
+                                        points)
 from portfusion.record import rules as D
 from portfusion.report.style import CSS
 
-def _money(x):
-    return f"{x:,.0f}"
+def _money(x, signed: bool = False, places: int = REPORT_MONEY_DP):
+    """Sterling as the report prints it: to the pound, but in the two cash tables (MONEY_DP), and
+    no £ in a cell, whose heading names it."""
+    return money(x, places, signed, symbol=False)
+
+
+def _change(x):
+    """A change, signed both ways: +3,025, -1,200, +0."""
+    return _money(x, signed=True)
 
 
 def _rows(items):
@@ -180,10 +188,10 @@ def _performance(b, qr, quarter_end) -> str:
     def perf_row(r, cls=""):
         return (f'<tr{cls}><td style="white-space:nowrap">{esc(str(r["quarter"]))}</td>'
                 f'<td class="n">{_money(r["opening_nav"])}</td>'
-                f'<td class="n">{r["capital_deployed"]:+,.0f}</td>'
-                f'<td class="n">{r["return_income"]:+,.0f}</td>'
+                f'<td class="n">{_change(r["capital_deployed"])}</td>'
+                f'<td class="n">{_change(r["return_income"])}</td>'
                 f'<td class="n">{_money(r["closing_nav"])}</td>'
-                f'<td class="n {_sign(r["gain"])}">{r["gain"]:+,.0f}</td>'
+                f'<td class="n {_sign(r["gain"])}">{_change(r["gain"])}</td>'
                 f'<td class="n">{_pct(r["return"])}</td></tr>')
     perf = (_rows(perf_row(r) for r in qr.to_dict("records") if r["quarter_end"] <= quarter_end)
             + perf_row(b.year_to_quarter(quarter_end), ' class="total"'))
@@ -219,7 +227,7 @@ def _holdings(lines, total, exposure) -> str:
         f'<td class="dim">{esc(str(r.sector)) if r.sector == r.sector else ""}</td>'
         f'<td class="dim">{r.currency}</td><td class="n">{pct(r.weight)}</td>'
         f'<td class="n">{_money(r.cost)}</td><td class="n">{_money(r.value)}</td>'
-        f'<td class="n {_sign(r.unrealised)}">{r.unrealised:+,.0f}</td></tr>'
+        f'<td class="n {_sign(r.unrealised)}">{_change(r.unrealised)}</td></tr>'
         for r in lines.itertuples())
     return f"""  <div class="scroll"><table>
     {_head("Holdings", "ticker", "company", "held_as", "sector", "currency",
@@ -227,7 +235,7 @@ def _holdings(lines, total, exposure) -> str:
     <tbody>{hold}
       <tr class="total"><td>Total</td><td></td><td></td><td></td><td></td><td class="n">{pct(1)}</td>
         <td class="n">{_money(total["cost"])}</td><td class="n">{_money(total["value"])}</td>
-        <td class="n">{total["unrealised"]:+,.0f}</td></tr></tbody></table></div>
+        <td class="n">{_change(total["unrealised"])}</td></tr></tbody></table></div>
   <p {_NOTE}>Spread bets at notional.{"" if round(total["gap"]) == 0 else
     f" These lines total &pound;{_money(total['value'])}; Section 1&rsquo;s exposure is &pound;{_money(exposure)}."}</p>"""
 
@@ -244,8 +252,8 @@ def _movers(b, quarter_end) -> str:
     def contrib_rows(frame):
         return _rows(
             f'<tr><td>{esc(str(r.ticker))}</td><td>{esc(str(r.company))}</td><td class="dim">{r.held_as}</td>'
-            f'<td class="n">{"" if not r.realised else f"{r.realised:+,.0f}"}</td>'
-            f'<td class="n {_sign(r.contribution)}">{r.contribution:+,.0f}</td></tr>'
+            f'<td class="n">{"" if not r.realised else f"{_change(r.realised)}"}</td>'
+            f'<td class="n {_sign(r.contribution)}">{_change(r.contribution)}</td></tr>'
             for r in frame.itertuples()) or '<tr><td colspan="5" class="dim">None.</td></tr>'
 
     # FIXED WIDTHS, so the two tables and the sum beneath them read as one column set.
@@ -259,10 +267,10 @@ def _movers(b, quarter_end) -> str:
   <h3 style="font-size:.95rem;margin:18px 0 0">Largest detractors</h3>
   <div class="scroll"><table>{head}<tbody>{contrib_rows(losses)}</tbody></table></div>
   <div class="scroll"><table><tbody>
-    <tr><td>Every line together</td><td class="n">{attrib["lines"]:+,.0f}</td></tr>
-    <tr><td>Position income</td><td class="n">{attrib["position_income"]:+,.0f}</td></tr>
-    <tr><td>Not attributed to a line</td><td class="n">{attrib["unattributed"]:+,.0f}</td></tr>
-    <tr class="total"><td>The quarter&rsquo;s gain</td><td class="n">{attrib["gain"]:+,.0f}</td></tr>
+    <tr><td>Every line together</td><td class="n">{_change(attrib["lines"])}</td></tr>
+    <tr><td>Position income</td><td class="n">{_change(attrib["position_income"])}</td></tr>
+    <tr><td>Not attributed to a line</td><td class="n">{_change(attrib["unattributed"])}</td></tr>
+    <tr class="total"><td>The quarter&rsquo;s gain</td><td class="n">{_change(attrib["gain"])}</td></tr>
   </tbody></table></div>
   <p {_NOTE}>{heading("Holdings", "quarter_gain")}:
     change in unrealised gain, plus realised.</p>"""
@@ -292,7 +300,7 @@ def _activity(b, quarter_end, names) -> str:
         f'<td class="n">{points(r.level_points) if _bet(r) else local_price(r.traded_price, r.currency)}</td>'
         f'<td class="n">{_money(r.value)}</td><td class="dim">{day(r.date)}</td>'
         f'<td class="n{"" if r.realised != r.realised else " " + _sign(r.realised)}">'
-        f'{"" if r.realised != r.realised else f"{r.realised:+,.0f}"}</td></tr>'
+        f'{"" if r.realised != r.realised else f"{_change(r.realised)}"}</td></tr>'
         for r in act.itertuples()) or '<tr><td colspan="9" class="dim">No trades this quarter.</td></tr>'
     return f"""  <div class="scroll"><table>
     {_head("Trades", "ticker", "direction", "account", "currency",
@@ -305,7 +313,7 @@ def _cash_and_income(b, start, quarter_end, names) -> str:
     """Capital in and out, then income and costs, both over the quarter's window."""
     moved = _rows(
         f'<tr><td class="dim">{day(r.date)}</td><td>{esc(names[r.account])}</td>'
-        f'<td class="n {_sign(r.amount)}">{r.amount:+,.2f}</td></tr>'
+        f'<td class="n {_sign(r.amount)}">{_money(r.amount, True, MONEY_DP)}</td></tr>'
         for r in b.capital_movements(start=start, end=quarter_end).itertuples()) \
         or '<tr><td colspan="3" class="dim">No capital moved this quarter.</td></tr>'
     cats = list(D.POSITION_INCOME) + list(D.ACCOUNT_INCOME)
@@ -313,8 +321,8 @@ def _cash_and_income(b, start, quarter_end, names) -> str:
     income = _rows(
         f'<tr{" class=\"total\"" if i == len(inc) - 1 else ""}>'
         f'<td>{esc(names.get(r["account"], r["account"]))}</td>'
-        + "".join(f'<td class="n">{r[c]:,.2f}</td>' for c in cats)
-        + f'<td class="n">{r["total"]:,.2f}</td></tr>'
+        + "".join(f'<td class="n">{_money(r[c], places=MONEY_DP)}</td>' for c in cats)
+        + f'<td class="n">{_money(r["total"], places=MONEY_DP)}</td></tr>'
         for i, r in enumerate(inc))
     return f"""  <h3 style="font-size:.95rem;margin:18px 0 0">Capital in and out</h3>
   <div class="scroll"><table>
@@ -334,7 +342,7 @@ def _by_account(b, navs, this_q, nav_total, quarter_end, names) -> str:
     accounts = _rows(
         f'<tr><td>{esc(names[r.account])}</td>'
         f'<td class="n">{_money(per.loc[r.account, "opening_nav"])}</td>'
-        f'<td class="n">{per.loc[r.account, "capital_deployed"]:+,.0f}</td>'
+        f'<td class="n">{_change(per.loc[r.account, "capital_deployed"])}</td>'
         f'<td class="n">{_money(r.amount)}</td>'
         f'<td class="n">{_pct(per.loc[r.account, "return"])}'
         f'{" &dagger;" if r.account in opened else ""}</td>'
@@ -346,7 +354,7 @@ def _by_account(b, navs, this_q, nav_total, quarter_end, names) -> str:
         "opening_nav", "capital_deployed", "closing_nav", "return")), "contribution")}
     <tbody>{accounts}
       <tr class="total"><td>Total</td><td class="n">{_money(this_q["opening_nav"])}</td>
-        <td class="n">{this_q["capital_deployed"]:+,.0f}</td><td class="n">{_money(nav_total)}</td>
+        <td class="n">{_change(this_q["capital_deployed"])}</td><td class="n">{_money(nav_total)}</td>
         <td class="n">{_pct(this_q["return"])}</td><td></td></tr></tbody></table></div>
   {opened_note}"""
 

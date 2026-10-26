@@ -138,6 +138,14 @@ prints it.
   `PORTFUSION_BOOK=demo` pushes without the leak test. **An existing book gets the new hook and
   ignore list only when its pin moves**: the audit then names `.githooks/commit-msg` and
   `.gitignore`, and both are copied from a new book (`portfusion init <folder>`).
+- **Every renderer prints a figure one way**, from `house/precision.py`: sterling to the penny
+  on the desk and in the audit, to the pound on the report but for its two cash tables, a
+  negative as -£5.82, a rate per £1 to four places. An exact half now rounds away from zero
+  everywhere, as the desk always did; the report rounded it to even, so a quarter's return income
+  of 12.50 printed +12 and now prints +13. The engine's own words (the Dashboard's notes,
+  Reconcile's rule, the audit) carry the £ and print their dates as dates: "band £40.70",
+  "since 1 Sep 2026". The Price Refresh's outgoing price, level and rate are printed at their
+  places ("2.3500 GBP", "10,480 pts", "1.3300"), and Reconcile's table sorts by its headings.
 
 ## 0.3.2 — beta, 24 Oct 2026
 

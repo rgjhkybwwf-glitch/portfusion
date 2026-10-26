@@ -153,7 +153,6 @@ const RECONCILE_WHY = [
               + "ties exactly when the reading is struck with the marks."],
 ];
 const owes = (x, flags) => flags.some((f) => x[f]);
-const TRIP_OWED = ["why_entered_owed", "why_exited_owed"];
 
 /* A HOLDING'S DETAIL. Grouped by issuer, a row is every instrument the company is held through,
    and each carries its own thesis, so each is named; the mark history is a ticker row's. */
@@ -285,7 +284,7 @@ Object.assign(DRAW, {
       work: table(d.rows, d.columns, "<th></th>",
                   (r) => `<td class="nowrap">${r.company
                     ? `<button class="link" data-trades="${esc(r.company)}">trades</button>` : ""}${
-                    detailLink(detailList(r, d.detail))}${owes(r, TRIP_OWED)
+                    detailLink(detailList(r, d.detail))}${owes(r, d.owed)
                     ? ` <span class="tag gap">owed</span>` : ""}</td>`,
                   { name: "round trips", afterRow: (r, span) => detailRow(detailList(r, d.detail), span),
                     /* A SPREAD BET IN ITS OWN TERMS, as Trades reads one: its stake per point
@@ -456,10 +455,6 @@ Object.assign(DRAW, {
      is decided here — the verdict arrives already made, from the same function the audit and
      the Dashboard ask. */
   reconcile(d) {
-    /* EVERY VERDICT HAS A TAG. One that fell through to the default `note` would wear the colour
-       of a row inside its band, for a row that has not been judged at all. */
-    const verdictTag = { "units-agree": "ok", "within-band": "note", differs: "problem",
-                         "no-statement": "gap", "no-holdings": "gap", "struck-apart": "gap" };
     /* THE TAG READS IN WORDS: the engine's code is "units-agree", the reader's is "units agree". */
     const verdictWords = (v) => v.replace(/-/g, " ");
     /* AN IG READING'S FIVE FIGURES, under the broker's figure, in IG's own words: the reading
@@ -467,16 +462,16 @@ Object.assign(DRAW, {
     const fig = (v) => v == null ? "—" : money(v);
     const igFigures = (r) => r.funds == null ? "" : `<br><span class="muted small">funds ${fig(r.funds)}
         · running P/L ${fig(r.running_pl)} · deposit ${fig(r.deposit)} · available ${fig(r.available)}</span>`;
-    const rows = d.rows.map((r) => `<tr class="${r.verdict}">
-        <td>${esc(r.account)}<br><span class="muted small">${esc(r.rule)}</span></td>
-        <td class="num">${money(r.book)}</td>
-        <td class="num">${money(r.broker)}${igFigures(r)}</td>
-        <td class="num">${r.difference === null ? "—" : money(r.difference)}</td>
-        <td><span class="tag ${esc(verdictTag[r.verdict] || "note")}">${
-          esc(verdictWords(r.verdict))}</span></td>
-        <td>${esc(r.last_check)}</td>
-        <td>${r.document ? esc(r.document) : "—"}</td>
-      </tr>`).join("");
+    /* EACH ROW'S VERDICT AND ITS TAG ARE THE PANEL'S; the account carries its rule, the broker's
+       figure IG's own figures. */
+    const cells = {
+      account: (r) => `<td>${esc(r.account)}<br><span class="muted small">${esc(r.rule)}</span></td>`,
+      book: (r) => `<td class="num">${money(r.book)}</td>`,
+      broker: (r) => `<td class="num">${money(r.broker)}${igFigures(r)}</td>`,
+      difference: (r) => `<td class="num">${money(r.difference)}</td>`,
+      verdict: (r) => `<td><span class="tag ${esc(r.tag)}">${esc(verdictWords(r.verdict))}</span></td>`,
+      document: (r) => `<td>${r.document ? esc(r.document) : "—"}</td>`,
+    };
 
     /* REPORT ONLY WHAT DISAGREES: a reporting rule rather than a data one — the panel hands over
        every row, and the lead is what needs attention. A clean book leads with a clean line, not
@@ -506,10 +501,7 @@ Object.assign(DRAW, {
       work: `
         <h2>What disagrees</h2>${lead}${gaps}
         <h2>Every account</h2>
-        <div class="scroll"><table><thead><tr><th>${head("account")}</th><th class="num">${head("book")}</th>
-          <th class="num">${head("broker")}</th><th class="num">${head("difference")}</th>
-          <th>${head("verdict")}</th><th>${head("last_check")}</th>
-          <th>${head("document")}</th></tr></thead><tbody>${rows}</tbody></table></div>`,
+        ${table(d.rows, d.columns, "", () => "", { name: "accounts", cells, rowClass: (r) => r.verdict })}`,
       why: RECONCILE_WHY,
     });
   },

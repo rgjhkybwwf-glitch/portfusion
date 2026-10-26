@@ -13,7 +13,7 @@ The Mac's desk only: it is not in `remote.REMOTE_PANELS`.
 from __future__ import annotations
 
 from portfusion.desk import engine
-from portfusion.house.precision import pct
+from portfusion.house.precision import day, pct
 
 NAME = "method"
 TITLE = "Method"
@@ -26,7 +26,7 @@ APART = True
 def data() -> dict:
     b = engine.book()
     D = b.D
-    since = f"{b.baseline:%-d %b %Y}"
+    since = day(b.baseline)
     return {"sections": [
         {"heading": "How the numbers are made", "rows": [
             {"topic": "What a spread bet is", "text": (
@@ -152,7 +152,7 @@ def data() -> dict:
                 f"The seven fields, then the eighth: the thesis, written the same day. It shows "
                 f"under 'why' on Holdings while the position is open and on Round Trips once it "
                 f"closes, beside the research note if one stands behind it, with the reason for "
-                f"closing. Each half is owed from {D.REVIEW_FROM:%-d %b %Y} — the thesis if the "
+                f"closing. Each half is owed from {day(D.REVIEW_FROM)} — the thesis if the "
                 f"position opened on or after it, the exit reason if it closed on or after it — "
                 f"and is marked owed while blank. One dated before then is blank on purpose, "
                 f"and is not owed.")},

@@ -7,6 +7,7 @@ import pandas as pd
 from portfusion.record import rules as D
 from portfusion.engine.store import record_begins
 from portfusion.engine.core import Core
+from portfusion.house import precision as P
 
 
 class Quarters(Core):
@@ -159,7 +160,7 @@ class Quarters(Core):
         d = pd.Timestamp(date)
         name = f"Q{(d.month - 1) // 3 + 1} {d.year}"
         if opens is not None and pd.Timestamp(opens) > d - pd.offsets.QuarterEnd(1):
-            name += f", from {pd.Timestamp(opens):%-d %b}"
+            name += f", from {P.day_month(opens)}"
         return name
 
     @staticmethod
@@ -437,9 +438,9 @@ class Quarters(Core):
         navs = self.quarter_nav_total()
         year = int(quarter_end[:4])
         start = self.year_opens(year)
-        label = f"{year} to {pd.Timestamp(quarter_end):%-d %b}"
+        label = f"{year} to {P.day_month(quarter_end)}"
         if start != f"{year - 1}-12-31":
-            label += f", from {pd.Timestamp(start):%-d %b}"
+            label += f", from {P.day_month(start)}"
         return {"quarter": label,
                 **self._dietz(start, quarter_end, navs[start], navs[quarter_end])}
 

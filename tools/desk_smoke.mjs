@@ -1,7 +1,8 @@
 // THE DESK DRAWN, IN NODE: the page and its scripts from `desk_smoke.py`'s answers loaded into
 // jsdom, every fetch answered from them, then each panel's tab clicked in turn. Fails on any error,
-// rejected promise, error box or unanswered fetch, at start-up and on each panel. It checks that a
-// page draws, not that its figures are right, and clicks nothing inside a page.
+// rejected promise, error box or unanswered fetch, at start-up and on each panel, and on a figure
+// the page's fixed() rounds otherwise than house. It checks that a page draws, not that its
+// figures are right, and clicks nothing inside a page.
 //
 //     npm ci --prefix tools                     # once: jsdom
 //     python3 tools/desk_smoke.py answers.json && node tools/desk_smoke.mjs answers.json
@@ -52,6 +53,13 @@ for (const body of scripts) {
 await settle();
 errorBox("start");
 if (problems.length) problems.push("  ^ at start-up");
+
+// ONE ROUNDING: the page's fixed() gives house's answer for each figure desk_smoke.py asked it.
+for (const [n, dp, shift, want] of answers["/"].rounding) {
+  const got = w.eval(`fixed(${n}, ${dp}, { group: true, shift: ${shift} })`);
+  const signed = (n < 0 ? "-" : "") + got;
+  if (signed !== want) problems.push(`rounding: fixed(${n}, ${dp}) is ${signed}, house says ${want}`);
+}
 
 const panels = JSON.parse(answers["/api/state"].body).panels.map((p) => p.name);
 const drawn = [];

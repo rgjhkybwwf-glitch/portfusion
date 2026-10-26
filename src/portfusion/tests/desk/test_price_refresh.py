@@ -1066,11 +1066,15 @@ def test_the_step_bar_says_the_marks_age_and_draws_the_bank_only_when_it_cannot_
 
 def test_the_tick_column_is_headed_and_its_boxes_carry_no_word(repo_root):
     """The tick column is headed once, in house/headings.py's words, and each box keeps its word
-    only for a screen reader."""
+    only for a screen reader. The form's heads are GRID_COLUMNS, in its order: the rows are drawn
+    by hand, so nothing else holds them to the panel's list."""
     import re
     from portfusion.desk.panels import price_refresh
     assert "take" in price_refresh.GRID_COLUMNS
     js = desk_script()
+    form = js[js.index('<div class="scroll" id="rb-form">'):js.index('${group("Prices"')]
+    assert re.findall(r'head\("(\w+)"\)', form) == list(price_refresh.GRID_COLUMNS), \
+        "the Price Refresh's heads are not GRID_COLUMNS in order"
     assert '<th>${head("take")}</th>' in js, "the tick column has no heading"
     assert not re.search(r"data-tick disabled> take", js), "a box still prints the word"
     # ONE BOX PER ROW TEMPLATE: a price, a rate, a rate the record lacks, an IG account.

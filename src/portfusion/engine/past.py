@@ -8,6 +8,7 @@ from portfusion.engine.bases import BasisError, MissingMark
 from portfusion.engine.ledger import _buy_cost
 from portfusion.engine.valuation import rate_now
 from portfusion.engine.core import Core
+from portfusion.house import precision as P
 
 
 class PastDates(Core):
@@ -351,7 +352,7 @@ class PastDates(Core):
         if d < pd.Timestamp(self.baseline_asof):
             raise ValueError(
                 f"as_of({date!r}) is before the book's baseline of {self.baseline.date()}, which "
-                f"opens on {self.baseline_asof}'s close. The record begins at {self.baseline:%-d %b %Y}; "
+                f"opens on {self.baseline_asof}'s close. The record begins at {P.day(self.baseline)}; "
                 f"positions opened earlier are carried for their cost basis only.")
 
         L = self.ledger

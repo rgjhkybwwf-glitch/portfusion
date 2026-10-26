@@ -558,14 +558,13 @@ def test_movement_colour_is_used_and_scoped(repo_root):
     assert "var(--up)" in css and "var(--down)" in css, \
         "app.css does not consume the movement tokens — they are generated and unused again"
 
-    import re
-    m = re.search(r"const MOVEMENTCOL = \[(.*?)\]", js, re.S)
-    assert m, "app.js no longer declares MOVEMENTCOL"
-    cols = set(re.findall(r'"([^"]+)"', m.group(1)))
+    from portfusion.house.palette import MOVEMENT_FIELDS
+    assert "PRECISION.movement_fields.includes(c)" in js, "the desk no longer colours house's list"
+    cols = set(MOVEMENT_FIELDS)
     assert cols == {"gain", "unrealised", "unrealised_pct", "realised_pct", "return",
                     "change", "price_effect", "fx_effect", "price_move_pct",
                     "realised", "life_gain", "life_pct"}, \
-        f"MOVEMENTCOL is {sorted(cols)}"
+        f"MOVEMENT_FIELDS is {sorted(cols)}"
 
     for excluded, why in (("difference", "a reconciliation gap is not a loss"),
                           ("weight", "a share of exposure is never negative"),

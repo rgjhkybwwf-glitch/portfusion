@@ -6,6 +6,7 @@ import pandas as pd
 
 from portfusion.engine.store import utc_of
 from portfusion.engine.core import Core
+from portfusion.house import precision as P
 
 
 class Findings(Core):
@@ -123,16 +124,18 @@ class Findings(Core):
             if v["verdict"] == "units-agree":
                 continue
             if difference is None or not v["ties"]:
-                shown = "an unknown amount" if difference is None else f"{difference:,.2f}"
+                shown = "an unknown amount" if difference is None else P.money(difference)
                 problems.append(f"reconciliation failed — {r['account']}: book and broker differ "
-                                f"by {shown}" + (f", past the {v['band']:,.2f} live band"
+                                f"by {shown}" + (f", past the {P.money(v['band'])} live band"
                                                  if v["live"] else ""))
             elif v["live"]:
-                # A difference that rounds to nothing is 0.00, never -0.00 or +0.00.
-                agree = f"{difference:+,.2f}" if round(difference, 2) else "0.00"
+                # A difference that rounds to nothing is £0.00, never -£0.00 or +£0.00.
+                agree = P.money(difference, signed=True)
+                if agree[1:] == P.money(0):
+                    agree = P.money(0)
                 notes.append(f"{r['account']}: book and broker agree to {agree} "
-                             f"({abs(difference) / abs(statement) * 100:.2f}%) on a LIVE read, "
-                             f"band {v['band']:,.2f}")
+                             f"({P.pct(abs(difference) / abs(statement))}) on a LIVE read, "
+                             f"band {P.money(v['band'])}")
         notes.append(f"{checked} account(s) reconcile to statement")
         if ungrounded:
             gaps.append("NO STATEMENT to reconcile against: " + ", ".join(ungrounded))
@@ -144,14 +147,14 @@ class Findings(Core):
         p = self.price_ageing(today)
         newest, oldest = pd.Timestamp(p["newest"]), pd.Timestamp(p["oldest"])
         age, spread = p["age_days"], p["spread_days"]
-        prices = ([f"newest {newest:%-d %b %Y}, oldest {oldest:%-d %b %Y}",
+        prices = ([f"newest {P.day(newest)}, oldest {P.day(oldest)}",
                    f"{age} days (oldest of {p['marks']} marks) · spread {spread}d"]
                   if p["marks"] else ["no marks yet", "nothing to age"])
         if age > self.D.PRICE_AGE_LIMIT:
             problems.append(f"prices are {age} days old — past the {self.D.PRICE_AGE_LIMIT}-day "
                             f"limit, refresh before relying on them")
         if spread > self.D.PRICE_SPREAD_LIMIT:
-            problems.append(f"price marks span {spread} days ({oldest.date()} to {newest.date()}) "
+            problems.append(f"price marks span {spread} days ({P.day(oldest)} to {P.day(newest)}) "
                             f"— past the {self.D.PRICE_SPREAD_LIMIT}-day spread limit. A ticker "
                             f"was probably missed in the last sweep; the newest mark being fresh "
                             f"hides it")
@@ -163,10 +166,10 @@ class Findings(Core):
         # ---- JUDGEMENTS OWED ------------------------------------------------------------
         owed = self.theses_owed()
         notes.append(f"reasoning: {len(owed)} owed (from "
-                     f"{self.D.REVIEW_FROM:%-d %b %Y}, on entry and on exit)")
+                     f"{P.day(self.D.REVIEW_FROM)}, on entry and on exit)")
         gaps.extend(f"reasoning owed — {o['ticker']}"
                     + (f" in {o['account']}" if o["account"] else "")
-                    + f": {o['half']}, since {o['since']}" for o in owed)
+                    + f": {o['half']}, since {P.day(o['since'])}" for o in owed)
 
         # ---- FUNDING: every night a daily funded leg was held has its row -----------------
         unfunded = self.funding_gaps()
@@ -178,7 +181,7 @@ class Findings(Core):
         # ---- DATED RATES: every date a figure converts at has that day's close ----------
         owed = self.rate_gaps(today)
         notes.append(f"dated rates: {len(owed)} owed a TradingView close")
-        gaps.extend(f"rate owed — {g['currency']} {g['date']} ({g['why']}): no TradingView "
+        gaps.extend(f"rate owed — {g['currency']} {P.day(g['date'])} ({g['why']}): no TradingView "
                     f"close on file for it" for g in owed)
 
         # ---- A DIVIDEND'S LINE: what lets a company's life count it ---------------------
@@ -318,7 +321,7 @@ class Findings(Core):
             off = self.journal_unaccounted()
             wrote = self.journal(since=opened)
             if off.empty:
-                return (f"journal: every row accounted for since {pd.Timestamp(opened):%-d %b %Y} · "
+                return (f"journal: every row accounted for since {P.day(pd.Timestamp(opened))} · "
                         f"{len(wrote)} write(s) recorded"), None
             parts = "; ".join(f"{r['table']} {r['unaccounted']:+d}"
                               for r in off.to_dict("records"))

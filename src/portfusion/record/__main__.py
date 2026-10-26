@@ -23,6 +23,7 @@ def close_reminder(today: _dt.date | None = None) -> str | None:
     being remembered. The book knows the date and whether the quarter is frozen, so it says so.
     """
     from portfusion.engine import Book
+    from portfusion.house import precision as P
     from portfusion.record import rules as D
     today = today or _dt.date.today()
     end = Book.quarter_to_close().date()            # the same quarter the Dashboard names
@@ -30,12 +31,12 @@ def close_reminder(today: _dt.date | None = None) -> str | None:
         return None
     w = _dt.timedelta(days=D.CLOSE_CHECK_WINDOW_DAYS)
     return f"""{RULE}
-  QUARTER-END: {end:%-d %b %Y} has not been frozen yet.
+  QUARTER-END: {P.day(end)} has not been frozen yet.
 {RULE}
-  Each line is valued at its mark nearest {end:%-d %b}, taken from
-  {end - w:%-d %b} to {end + w:%-d %b %Y}.
+  Each line is valued at its mark nearest {P.day_month(end)}, taken from
+  {P.day_month(end - w)} to {P.day(end + w)}.
 
-  1. EVENTS. The freeze takes the quantities held on {end:%-d %b}, once, so every
+  1. EVENTS. The freeze takes the quantities held on {P.day_month(end)}, once, so every
      event to that day goes in first: each contract note through the drop-off, then
      "Sweep IG events" on the Bench.
   2. PRICES. Any Price Refresh in that window. For that day's closes instead:
@@ -53,11 +54,11 @@ def close_reminder(today: _dt.date | None = None) -> str | None:
 def _figure(value, unit: str) -> str:
     if value is None or value != value:
         return "blank"                              # the year's opening is not frozen yet
+    from portfusion.house import precision as P
     if unit == "gbp":
-        return f"£{value:,.2f}"
+        return P.money(value)
     if unit == "pct":
-        from portfusion.house.precision import pct
-        return pct(value)
+        return P.pct(value)
     return f"{value:,.0f}"
 
 
