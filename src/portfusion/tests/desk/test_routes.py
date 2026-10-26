@@ -253,8 +253,8 @@ def test_a_withdrawal_the_door_refuses_reaches_the_browser_as_a_409(client):
 ])
 def test_a_drop_the_door_refuses_is_a_400_and_lands_nothing(client, name, body, says):
     # THE WORKBENCH THE DOOR WRITES TO, the loaded book's, which need not exist yet.
-    from portfusion.desk.intake import dropoff
-    inbox = dropoff.INBOX
+    from portfusion.record import schema
+    inbox = schema.inbox()
 
     def held():
         return sorted(p.name for p in inbox.iterdir()) if inbox.is_dir() else None
@@ -446,12 +446,11 @@ def test_a_name_off_the_workbench_reads_nothing_from_the_books_folder(client, tm
     """A BARE NAME IS NEVER TRIED AGAINST THE FOLDER THE DESK RUNS IN, the book's, which holds its
     credentials. A name means a document on the workbench, or nothing; and the bench will not
     open an item on a path at all."""
-    from portfusion.desk.intake import bench, read_document
+    from portfusion.record import schema
     book, inbox = tmp_path / "book", tmp_path / "book" / "_inbox"
     inbox.mkdir(parents=True)
     (book / "credentials.json").write_text('{"secret": "do-not-serve"}', encoding="utf-8")
-    monkeypatch.setattr(read_document, "INBOX", str(inbox))
-    monkeypatch.setattr(bench, "BENCH_DIR", inbox / ".bench")
+    monkeypatch.setattr(schema, "BOOK", book)
     monkeypatch.chdir(book)
     for name in ("credentials.json", "..", "../credentials.json"):
         got = client.get(f"/api/document/{name}")

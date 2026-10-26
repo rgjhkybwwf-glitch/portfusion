@@ -39,7 +39,6 @@ def test_a_committed_item_lands_in_the_store_and_is_archived(item, store_copy, t
     left the bench for _archive/bench/ in one operation."""
     from portfusion.record import schema
     from portfusion.desk.doors import commit as _commit
-    monkeypatch.setattr(_commit, "ARCHIVE", tmp_path / "archive")
     was = len(schema.load("buys"))
 
     result = _commit.commit(_bench.save(_ready(item))["id"])
@@ -49,8 +48,8 @@ def test_a_committed_item_lands_in_the_store_and_is_archived(item, store_copy, t
     assert len(rows) == was + 1
     assert rows[-1][0] == GOOD_TRADE["trade_id"], "the committed row is not the last row of the table"
 
-    assert not list((_bench.BENCH_DIR).glob("*.json")), "the item is still on the bench"
-    archived = json.loads((tmp_path / "archive" / f"{item['id']}.json").read_text())
+    assert not list(_bench.bench_dir().glob("*.json")), "the item is still on the bench"
+    archived = json.loads((tmp_path / "_archive" / "bench" / f"{item['id']}.json").read_text())
     assert archived["state"] == "archived"
     assert archived["written_at"]
 
@@ -64,7 +63,6 @@ def test_the_why_lands_in_the_reasoning_table(item, store_copy, tmp_path, monkey
     import csv
     from portfusion.record import schema
     from portfusion.desk.doors import commit as _commit
-    monkeypatch.setattr(_commit, "ARCHIVE", tmp_path / "archive")
     _ready(item)
     _bench.save(item)
     out = _commit.commit(item["id"])
@@ -91,7 +89,6 @@ def test_a_second_why_is_added_beside_the_first(item, store_copy, tmp_path, monk
     import csv
     from portfusion.record import schema
     from portfusion.desk.doors import commit as _commit
-    monkeypatch.setattr(_commit, "ARCHIVE", tmp_path / "archive")
 
     _ready(item)
     _bench.save(item)
@@ -134,7 +131,6 @@ def test_a_sale_the_book_cannot_load_is_refused_and_nothing_moves(item, store_co
     and every file, the record in memory and the bench item stay as they were."""
     from portfusion.record import rules, schema
     from portfusion.desk.doors import commit as _commit
-    monkeypatch.setattr(_commit, "ARCHIVE", tmp_path / "archive")
     item["evidence"] = dict(GOOD_EVIDENCE, reference="TESTREF3")
     item["why"] = {"why_entered": "", "why_exited": "Booked to release cash."}
     # A TICKER THE ACCOUNT DOES NOT HOLD, so the parcel has nothing to release.
@@ -169,7 +165,6 @@ def test_an_ig_close_naming_its_leg_is_written_and_the_leg_stops_being_held(
     from portfusion import engine
     from portfusion.record import rules
     from portfusion.desk.doors import commit as _commit
-    monkeypatch.setattr(_commit, "ARCHIVE", tmp_path / "archive")
     item["evidence"] = dict(GOOD_EVIDENCE, reference="TESTREF4")
     item["evidence_class"] = "ig-api"
     item["why"] = {"why_entered": "", "why_exited": "Trimmed to manage margin."}
@@ -196,7 +191,6 @@ def test_a_close_filed_under_another_holdings_realisation_is_refused(
     stand."""
     from portfusion.record import rules, schema
     from portfusion.desk.doors import commit as _commit
-    monkeypatch.setattr(_commit, "ARCHIVE", tmp_path / "archive")
     leg = _open_sb_leg_with_parcel()
     other = next(e.realisation_id for e in rules.sales
                  if (e.acct, e.ticker) != (leg["account"], leg["ticker"]))
@@ -228,8 +222,6 @@ def test_a_realisation_in_another_form_is_refused(item, store_copy, tmp_path, mo
     """A REALISATION ID OUTSIDE `rules.REALISATION_FORM` (one ending "=2") is refused by the bench
     before writing, and by the record on load."""
     from portfusion.record import rules, schema
-    from portfusion.desk.doors import commit as _commit
-    monkeypatch.setattr(_commit, "ARCHIVE", tmp_path / "archive")
     leg = _open_sb_leg_with_parcel()
     typo = leg["realisation_id"] + "=2"
     assert not rules.REALISATION_FORM.fullmatch(typo)
@@ -367,7 +359,6 @@ def test_a_retirement_the_marks_door_refuses_is_the_commits_refusal(
     page is told why with a 409; the files are as they were."""
     from portfusion.record import schema
     from portfusion.desk.doors import commit as _commit, marks
-    monkeypatch.setattr(_commit, "ARCHIVE", tmp_path / "archive")
     _, legs = next(iter(sorted(_open_legs_by_contract().items())))
     _closing(item, legs, "TESTREF8")
     before = schema.TABLES["sales"].path.read_bytes()
@@ -389,7 +380,6 @@ def test_a_sale_closing_a_contracts_last_leg_retires_it_in_the_same_write(
     from portfusion.record import schema
     from portfusion.desk.doors import commit as _commit
     from portfusion.history import prices as PH
-    monkeypatch.setattr(_commit, "ARCHIVE", tmp_path / "archive")
     contract, legs = next(iter(sorted(_open_legs_by_contract().items())))
     _closing(item, legs, "TESTREF7")
     assert bench_panel.detail(item["id"])["retires"] == [contract]
@@ -413,7 +403,6 @@ def test_a_retirement_writes_crlf_tables_back_in_crlf(item, store_copy, tmp_path
     """The retirement writes current-prices.csv and contracts.csv back in the ending it found."""
     from portfusion.desk.doors import commit as _commit
     from desk_support import all_crlf, to_crlf
-    monkeypatch.setattr(_commit, "ARCHIVE", tmp_path / "archive")
     contract, legs = next(iter(sorted(_open_legs_by_contract().items())))
     _closing(item, legs, "TESTREF7")
     to_crlf("current-prices", "contracts")
@@ -427,7 +416,6 @@ def test_a_sale_leaving_another_leg_open_retires_nothing(item, store_copy, tmp_p
     """The other half: a contract still holding a leg keeps its price and its epic."""
     from portfusion.record import schema
     from portfusion.desk.doors import commit as _commit
-    monkeypatch.setattr(_commit, "ARCHIVE", tmp_path / "archive")
     shared = [(c, legs) for c, legs in sorted(_open_legs_by_contract().items()) if len(legs) > 1]
     if not shared:
         pytest.skip("no IG contract in this book holds two open legs")
@@ -489,7 +477,6 @@ def test_a_sale_emptying_a_share_in_every_account_retires_its_price_in_the_same_
     from portfusion.record import schema
     from portfusion.desk.doors import commit as _commit
     from portfusion.history import prices as PH
-    monkeypatch.setattr(_commit, "ARCHIVE", tmp_path / "archive")
     ticker, held = next(iter(sorted(_sterling_shares_held().items())))
     _selling(item, ticker, held, "TESTREF9")
     assert bench_panel.detail(item["id"])["retires"] == [ticker]
@@ -513,7 +500,6 @@ def test_a_share_still_held_in_another_account_keeps_its_price(
     another still holds the line."""
     from portfusion.record import schema
     from portfusion.desk.doors import commit as _commit
-    monkeypatch.setattr(_commit, "ARCHIVE", tmp_path / "archive")
     shared = [(t, h) for t, h in sorted(_sterling_shares_held().items()) if len(h) > 1]
     if not shared:
         pytest.skip("no sterling share in this book is held in two accounts")
@@ -636,7 +622,6 @@ def _sell_shares(item, tmp_path, monkeypatch, ref, acct, ticker, qty, proceeds):
     from portfusion import engine
     from portfusion.record import schema
     from portfusion.desk.doors import commit as _commit
-    monkeypatch.setattr(_commit, "ARCHIVE", tmp_path / "archive")
     item["evidence"] = dict(GOOD_EVIDENCE, reference=ref)
     item["why"] = {"why_entered": "", "why_exited": "Sold to fund a new position."}
     item["rows"] = [{"table": "sales", "values": dict(
@@ -759,7 +744,6 @@ def test_a_refused_commit_leaves_no_thesis_behind(item, store_copy, tmp_path, mo
     ENTERED against a position it has no record of."""
     from portfusion.record import schema
     from portfusion.desk.doors import commit as _commit, envelope
-    monkeypatch.setattr(_commit, "ARCHIVE", tmp_path / "archive")
     _ready(item, ticker="CRNT")
     _bench.save(item)
 
@@ -814,7 +798,6 @@ def test_committing_twice_is_refused(item, store_copy, tmp_path, monkeypatch):
     """An event happened once. The second write would be a duplicate the schema cannot see,
     because nothing in it says a trade id may not repeat across a re-run."""
     from portfusion.desk.doors import commit as _commit
-    monkeypatch.setattr(_commit, "ARCHIVE", tmp_path / "archive")
     _commit.commit(_bench.save(_ready(item))["id"])
     with pytest.raises(KeyError):
         _commit.commit(item["id"])        # gone from the bench entirely
@@ -1366,7 +1349,7 @@ _IG_CLOSE = {
 def swept(tmp_path, monkeypatch):
     """A carried event, on a bench of its own: never the loaded book's `_inbox/.bench/`."""
     from portfusion.desk.intake import bench as _b
-    monkeypatch.setattr(_b, "BENCH_DIR", tmp_path / "bench")
+    monkeypatch.setattr(_rules.schema, "BOOK", tmp_path)
     made = []
 
     def _carry(event=None, marks=None):
@@ -1415,7 +1398,6 @@ def test_a_set_up_writes_its_line_company_contract_and_trade_together(swept, sto
     the line it sets up reads as the bet's own."""
     from portfusion.record import schema
     from portfusion.desk.doors import commit as _commit
-    monkeypatch.setattr(_commit, "ARCHIVE", tmp_path / "archive")
     item = swept(_set_up(), marks=[_FIRST_MARK])
     item["why"] = {"why_entered": "A first position on the thesis in the note.", "why_exited": ""}
     _bench.save(item)
@@ -1792,7 +1774,7 @@ def test_the_archive_name_carries_the_instant_the_document_states(tmp_path, monk
     (inbox / "export.csv").write_bytes(
         'Portfolio Summary\nValuation as at,03-03-2025 14:10\n'
         'Account,Stock value,Total cash,Total value,Available to invest,\n'.encode("cp1252"))
-    monkeypatch.setattr(filing, "BOOK", tmp_path)
+    monkeypatch.setattr(_rules.schema, "BOOK", tmp_path)
 
     item = {"id": "B-T", "document": {"name": "export.csv"}, "rows": [],
             "evidence": {"dated": "2025-03-03", "authority": "HL Portfolio Summary totals "
@@ -1823,15 +1805,14 @@ def test_a_recognised_document_prefills_only_what_it_states(tmp_path, monkeypatc
     re-reads.
     """
     from portfusion.record import rules as D
-    from portfusion.desk.intake import bench, read_document
+    from portfusion.desk.intake import bench
 
     inbox = tmp_path / "_inbox"
     (inbox / ".bench").mkdir(parents=True)
     (inbox / "export.csv").write_bytes(
         'Portfolio Summary\nValuation as at,03-03-2025 14:10\n'
         'Account,Stock value,Total cash,Total value,Available to invest,\n'.encode("cp1252"))
-    monkeypatch.setattr(read_document, "INBOX", str(inbox))
-    monkeypatch.setattr(bench, "BENCH_DIR", inbox / ".bench")
+    monkeypatch.setattr(_rules.schema, "BOOK", tmp_path)
 
     item = bench.for_document("export.csv")
     assert item["evidence_class"] == "hl-account-totals", item["evidence_class"]
@@ -1857,20 +1838,18 @@ def test_a_contract_note_fills_all_three_limbs_from_its_own_text(tmp_path, monke
     import shutil
     from portfusion.record import rules as D
     from portfusion.record import schema
-    from portfusion.desk.intake import bench, filing, read_document
+    from portfusion.desk.intake import bench, filing
 
     inbox = tmp_path / "_inbox"
     (inbox / ".bench").mkdir(parents=True)
-    named = [(m, p) for p in schema.STATEMENTS.glob("*.pdf") if (m := re.match(
+    named = [(m, p) for p in schema.statements().glob("*.pdf") if (m := re.match(
         r"(\d{2} \w{3} \d{4}) (\d{2})\.(\d{2}) ii contract note ([A-Z0-9]{5,})", p.name))]
     assert named, "the loaded book files no contract note under its dealing time"
     m, filed = max(named, key=lambda n: (dt.datetime.strptime(n[0].group(1), "%d %b %Y"), n[1].name))
     day = dt.datetime.strptime(m.group(1), "%d %b %Y").date()
     ref, time = m.group(4), f"{m.group(2)}:{m.group(3)}"
     shutil.copy(filed, inbox / "note.pdf")
-    monkeypatch.setattr(read_document, "INBOX", str(inbox))
-    monkeypatch.setattr(bench, "BENCH_DIR", inbox / ".bench")
-    monkeypatch.setattr(filing, "BOOK", tmp_path)
+    monkeypatch.setattr(_rules.schema, "BOOK", tmp_path)
 
     item = bench.for_document("note.pdf")
     assert item["evidence_class"] == "ii-contract-note"
@@ -1886,13 +1865,12 @@ def test_a_contract_note_fills_all_three_limbs_from_its_own_text(tmp_path, monke
 def test_an_unrecognised_document_is_left_entirely_blank(tmp_path, monkeypatch):
     """Most classes carry no fingerprint, because no sample has been seen. Filling nothing is
     the honest answer and the item is still workable by hand."""
-    from portfusion.desk.intake import bench, read_document
+    from portfusion.desk.intake import bench
 
     inbox = tmp_path / "_inbox"
     (inbox / ".bench").mkdir(parents=True)
     (inbox / "mystery.csv").write_text("something,else\n1,2\n", encoding="utf-8")
-    monkeypatch.setattr(read_document, "INBOX", str(inbox))
-    monkeypatch.setattr(bench, "BENCH_DIR", inbox / ".bench")
+    monkeypatch.setattr(_rules.schema, "BOOK", tmp_path)
 
     item = bench.for_document("mystery.csv")
     assert item["evidence_class"] == ""
@@ -1943,22 +1921,22 @@ def test_a_withdrawn_document_leaves_the_workbench_and_is_not_destroyed(workbenc
     box, out = workbench
     (box / "note.csv").write_bytes(b"a,b\n1,2\n")
     working = bench.new_item(document={"name": "note.csv"})
-    archive = commit.ARCHIVE
+    archive = commit.archive
 
-    monkeypatch.setattr(commit, "ARCHIVE", box / "note.csv")
+    monkeypatch.setattr(commit, "archive", lambda: box / "note.csv")
     with pytest.raises(OSError):
         withdraw.withdraw("note.csv", why="not needed")
     assert (box / "note.csv").exists() and not (out / "note.csv").exists(), "it moved unarchived"
     assert [i["id"] for i in bench.all_items()] == [working["id"]], "its note left the bench"
 
-    monkeypatch.setattr(commit, "ARCHIVE", archive)
+    monkeypatch.setattr(commit, "archive", archive)
     r = withdraw.withdraw("note.csv", why="not needed")
 
     assert not (box / "note.csv").exists(), "it did not leave the workbench"
     assert (out / "note.csv").read_bytes() == b"a,b\n1,2\n", "the bytes did not survive"
     assert r["returned"] is False, "nothing was already at the destination"
     assert not bench.all_items(), "its note is still on the bench"
-    assert json.loads((archive / f"{working['id']}.json").read_text())["state"] == "withdrawn"
+    assert json.loads((archive() / f"{working['id']}.json").read_text())["state"] == "withdrawn"
 
 
 def test_withdrawing_refuses_a_destination_inside_the_repository(workbench):
@@ -1975,7 +1953,8 @@ def test_withdrawing_refuses_a_destination_inside_the_repository(workbench):
     from portfusion.desk.intake import withdraw, dropoff
     box, _ = workbench
     (box / "note.csv").write_bytes(b"x")
-    for inside in (schema.STATEMENTS, SRC / "tests"):
+    schema.statements().mkdir(parents=True)
+    for inside in (schema.statements(), SRC / "tests"):
         with pytest.raises(dropoff.Refused) as e:
             withdraw.withdraw("note.csv", destination=str(inside))
         assert "inside the repository" in str(e.value), inside
@@ -2056,7 +2035,6 @@ def test_a_document_gone_before_it_is_filed_writes_nothing(item, store_copy, tmp
     every row and the journal are taken back out and the item stays on the bench."""
     from portfusion.record import schema
     from portfusion.desk.doors import commit as _commit
-    monkeypatch.setattr(_commit, "ARCHIVE", tmp_path / "archive")
     _bench.save(_ready(item))
     held = {t: schema.TABLES[t].path.read_bytes() for t in ("buys", "reasoning", "journal")}
     # The gates as they read with the document still there, so only the door stands in the way.
@@ -2071,7 +2049,7 @@ def test_a_document_gone_before_it_is_filed_writes_nothing(item, store_copy, tmp
         assert schema.TABLES[table].path.read_bytes() == before, f"{table}.csv kept a row"
     assert _bench.get(item["id"])["state"] not in _commit.TERMINAL, \
         "the item left the bench without its rows"
-    assert not (tmp_path / "archive").exists() or not list((tmp_path / "archive").iterdir())
+    assert not (_commit.archive() / f"{item['id']}.json").exists(), "the item was archived"
 
 
 def test_an_api_read_owes_no_file(item):
@@ -2236,7 +2214,6 @@ def test_a_written_consolidation_moves_the_holding_alone_and_reads_as_an_adjustm
     from portfusion.desk.doors import commit as _commit
     from portfusion.desk.intake import propose
     from portfusion.record import rules as D
-    monkeypatch.setattr(_commit, "ARCHIVE", tmp_path / "archive")
     deployed = engine.Book().capital_deployed()
     held = _adjusted(item, 2, 1)
     acct, ticker = item["rows"][0]["values"]["account"], item["rows"][0]["values"]["ticker"]
@@ -2264,7 +2241,6 @@ def test_a_backdated_row_renumbers_what_follows_and_the_review_says_so_first(
     from portfusion.desk.intake import propose
     from portfusion.desk.panels import bench as panel
     from portfusion.record import rules as D, schema
-    monkeypatch.setattr(_commit, "ARCHIVE", tmp_path / "archive")
     _adjusted(item, 2, 1)
     day = item["rows"][0]["values"]["date"]
     after = [t.trade_id for t in D.buys if str(t.date) > day]
@@ -2286,7 +2262,7 @@ def test_a_backdated_row_renumbers_what_follows_and_the_review_says_so_first(
     assert replaced.get("buys") == len(after), replaced
     if any(leg in up for leg in leg_of.values()):
         assert replaced.get("sales"), "a sale's closes moved and the journal does not say so"
-    archived = json.loads((tmp_path / "archive" / f"{item['id']}.json").read_text())
+    archived = json.loads((tmp_path / "_archive" / "bench" / f"{item['id']}.json").read_text())
     assert archived["rows"][0]["values"]["trade_id"] == written
 
 

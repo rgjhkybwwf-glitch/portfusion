@@ -43,12 +43,13 @@ def _filed(monkeypatch, tmp_path, *statements, printed=f"{_ON:%d %B %Y}"):
     from portfusion.desk.intake import read_document, statement_closes as S
     from portfusion.record import schema
     texts = {}
+    monkeypatch.setattr(schema, "BOOK", tmp_path)
+    schema.statements().mkdir(parents=True, exist_ok=True)
     for account, *positions in statements:
         name = f"{_ON:%d %b %Y} IG statement ({account}).pdf"
-        (tmp_path / name).write_bytes(b"%PDF-1.4")
+        (schema.statements() / name).write_bytes(b"%PDF-1.4")
         texts[name] = (f"Page 1\n{printed}\nFINANCIAL CURRENT OPEN POSITIONS\n"
                        + "\n".join(positions) + "\n")
-    monkeypatch.setattr(schema, "STATEMENTS", tmp_path)
     monkeypatch.setattr(read_document, "extract_file", lambda path: {
         "text": texts[pathlib.Path(path).name], "scanned": False,
         "name": pathlib.Path(path).name})

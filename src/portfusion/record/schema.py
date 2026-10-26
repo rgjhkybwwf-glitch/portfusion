@@ -97,24 +97,31 @@ def set_store(path) -> None:
     STORE = pathlib.Path(path)
 
 
-#: Where the broker document behind a row is filed; `rules.ARCHIVE_CONVENTION` says how it is
-#: named. A test that files somewhere else rebinds this, and every reader and writer follows.
-STATEMENTS = BOOK / "_archive" / "statements"
+# THE BOOK'S FOLDERS ARE READ FROM `BOOK` WHEN ASKED, so a test that moves the book rebinds
+# `BOOK` alone and every reader and writer follows.
 
-#: The intake workbench: a broker document lands here and leaves for `STATEMENTS` once its
-#: rows are in the record (`docs/intake.md`).
-INBOX = BOOK / "_inbox"
+def statements() -> pathlib.Path:
+    """Where the broker document behind a row is filed; `rules.ARCHIVE_CONVENTION` says how it
+    is named."""
+    return BOOK / "_archive" / "statements"
+
+
+def inbox() -> pathlib.Path:
+    """The intake workbench: a broker document lands here and leaves for `statements()` once its
+    rows are in the record (`docs/intake.md`)."""
+    return BOOK / "_inbox"
 
 
 def filed_statements() -> list[str]:
-    """The documents in `STATEMENTS`, by name and sorted — THE ONE LISTING of the archive.
+    """The documents in `statements()`, by name and sorted — THE ONE LISTING of the archive.
 
     A hidden file is not a document, and Finder writes `.DS_Store` into any folder it opens.
     Empty where the folder is absent.
     """
-    if not STATEMENTS.is_dir():
+    folder = statements()
+    if not folder.is_dir():
         return []
-    return sorted(p.name for p in STATEMENTS.iterdir()
+    return sorted(p.name for p in folder.iterdir()
                   if p.is_file() and not p.name.startswith("."))
 # The module is schema.py, not store.py: `store.py` beside `store/` would read as a mistake, and
 # become one the moment anyone added an __init__.py.

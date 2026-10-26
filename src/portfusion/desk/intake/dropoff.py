@@ -27,8 +27,6 @@ import os
 
 from portfusion.record import schema
 
-INBOX = schema.INBOX
-
 #: WHAT MAY LAND, and the list is not arbitrary: it is what `desk/intake/
 #: read_document.py` can actually extract. A file the bench cannot read is a file whose figures
 #: would have to be typed from a recollection of it, which is the transcription error the bench
@@ -127,13 +125,14 @@ def accept(raw_name: str, data: bytes, modified_ms=None) -> dict:
         raise Refused(f"{name!r} is {len(data):,} bytes; the workbench takes up to "
                       f"{MAX_BYTES:,}. A broker document is a page or two of text")
 
-    INBOX.mkdir(parents=True, exist_ok=True)
-    path = INBOX / name
+    inbox = schema.inbox()
+    inbox.mkdir(parents=True, exist_ok=True)
+    path = inbox / name
 
     # BELT AND BRACES OVER safe_name(). That function is the guard; this asserts its result
     # rather than trusting it, because the cost of being wrong is a write outside the one
     # directory this module is allowed to touch.
-    if path.resolve().parent != INBOX.resolve():
+    if path.resolve().parent != inbox.resolve():
         raise Refused(f"{name!r} does not resolve inside _inbox/")
 
     # NEVER OVERWRITE. `docs/intake.md`: "Never delete a document from here. It leaves by

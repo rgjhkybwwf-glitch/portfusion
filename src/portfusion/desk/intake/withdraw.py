@@ -35,7 +35,6 @@ from pathlib import Path
 from portfusion.record import schema
 from portfusion.desk.intake.dropoff import Refused, safe_name
 
-INBOX = schema.INBOX
 
 #: Where a withdrawn document goes when the operator names nowhere. "Back where it came from"
 #: for a file that reached the workbench from a browser download, which is how every ii and HL
@@ -44,9 +43,9 @@ DEFAULT_DESTINATION = Path.home() / "Downloads"
 
 
 def _archive_dir():
-    """`_archive/bench/`, imported rather than restated — commit.py owns the constant."""
-    from portfusion.desk.doors.commit import ARCHIVE
-    return ARCHIVE
+    """`_archive/bench/`, asked rather than restated — commit.py owns it."""
+    from portfusion.desk.doors import commit
+    return commit.archive()
 
 
 def destination_for(raw: str | None) -> Path:
@@ -91,8 +90,9 @@ def withdraw(name: str, destination: str | None = None, why: str = "") -> dict:
     from portfusion.desk.intake import bench
 
     document = safe_name(name)
-    source = INBOX / document
-    if source.resolve().parent != INBOX.resolve():
+    inbox = schema.inbox()
+    source = inbox / document
+    if source.resolve().parent != inbox.resolve():
         raise Refused(f"{document!r} does not resolve inside _inbox/")
     if not source.is_file():
         raise Refused(f"{document!r} is not on the workbench")

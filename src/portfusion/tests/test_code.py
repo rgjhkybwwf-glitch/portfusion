@@ -147,10 +147,10 @@ def test_the_record_refuses_with_a_raise_never_an_assert():
 
 
 #: What is held by its module, never by name: `rules.reload_store()` rebinds the record's names
-#: to a new build, and `set_store()` or a test filing elsewhere rebinds these paths of the
-#: schema, so a name taken from either keeps what it was when imported.
+#: to a new build, and `set_store()` or a test's own book rebinds these paths of the schema, so
+#: a name taken from either keeps what it was when imported.
 HELD_BY_THE_MODULE = {"portfusion.record.rules": None,
-                      "portfusion.record.schema": {"STORE", "STATEMENTS", "INBOX"}}
+                      "portfusion.record.schema": {"STORE", "BOOK"}}
 
 
 def _one_way(tree):

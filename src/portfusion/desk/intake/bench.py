@@ -34,11 +34,15 @@ from portfusion.desk.engine import RecordUnavailable, _guarded
 from portfusion.desk.intake import filing, recorded
 from portfusion.record import schema
 
-# Beside the workbench it belongs to, and gitignored with it — a half-worked intake is not a
-# record. The dot keeps it clear of `test_inbox.py`'s "the workbench is clear" check, which is
-# about DOCUMENTS resting unfinished; an item mid-work is legitimate transient state. The state
-# that IS dangerous — written but not archived — is asserted separately.
-BENCH_DIR = schema.INBOX / ".bench"
+
+def bench_dir():
+    """Where the items in work are kept: beside the workbench they belong to, and gitignored
+    with it — a half-worked intake is not a record. The dot keeps it clear of `test_inbox.py`'s
+    "the workbench is clear" check, which is about DOCUMENTS resting unfinished; an item mid-work
+    is legitimate transient state. The state that IS dangerous — written but not archived — is
+    asserted separately."""
+    return schema.inbox() / ".bench"
+
 
 # `withdrawn` is the other terminal state. A document that produced no rows ends here rather
 # than at `archived`, which would claim it was filed as evidence. `desk/intake/withdraw.py` is the only
@@ -809,7 +813,7 @@ def _reading_gate(item: dict) -> dict:
     try:
         # The document is still on the workbench, where `read_document` reads it.
         observations.preflight(reading, filing.archive_name(item, name),
-                               os.path.join(_reader().INBOX, name))
+                               os.path.join(schema.inbox(), name))
     except observations.Refused as e:
         return {"name": "the account's reading", "ok": False, "detail": str(e)}
     except FileNotFoundError:
@@ -864,11 +868,11 @@ def approved(item: dict) -> bool:
 def _path(item_id: str):
     if not re.fullmatch(r"[A-Za-z0-9-]+", item_id):
         raise ValueError(f"bad item id: {item_id!r}")
-    return BENCH_DIR / f"{item_id}.json"
+    return bench_dir() / f"{item_id}.json"
 
 
 def new_item(origin: str = "manual", title: str = "", document: dict | None = None) -> dict:
-    BENCH_DIR.mkdir(parents=True, exist_ok=True)
+    bench_dir().mkdir(parents=True, exist_ok=True)
     item = {
         "id": f"B-{_dt.date.today():%Y%m%d}-{uuid.uuid4().hex[:6]}",
         "created": _dt.datetime.now().isoformat(timespec="seconds"),
@@ -901,7 +905,7 @@ def for_document(name: str, origin: str = "document") -> dict:
     # A DOCUMENT IS ONE ON THE WORKBENCH, by its bare name. The name arrives from the browser,
     # and an item's document is what the reader opens: a path would be read wherever it points.
     if not name or os.path.basename(name) != name \
-            or not os.path.isfile(os.path.join(_reader().INBOX, name)):
+            or not os.path.isfile(os.path.join(schema.inbox(), name)):
         raise FileNotFoundError(f"no document {name!r} on the workbench")
     for existing in all_items():
         doc = existing.get("document") or {}
@@ -1069,7 +1073,7 @@ def save(item: dict, drawn: int | None = None) -> dict:
     `Stale`. The page sends the whole item, so a page drawn before another save would write its
     old rows back over it. Every saver comes through here, so every save moves the revision. An
     item from before revisions reads as revision 0."""
-    BENCH_DIR.mkdir(parents=True, exist_ok=True)
+    bench_dir().mkdir(parents=True, exist_ok=True)
     path = _path(item["id"])
     current = (json.loads(path.read_text(encoding="utf-8")).get("revision", 0) if path.is_file()
                else item.get("revision", 0))
@@ -1094,9 +1098,9 @@ def get(item_id: str) -> dict:
 
 
 def all_items() -> list[dict]:
-    if not BENCH_DIR.is_dir():
+    if not bench_dir().is_dir():
         return []
-    items = [json.loads(p.read_text(encoding="utf-8")) for p in sorted(BENCH_DIR.glob("*.json"))]
+    items = [json.loads(p.read_text(encoding="utf-8")) for p in sorted(bench_dir().glob("*.json"))]
     return sorted(items, key=lambda i: i["created"], reverse=True)
 
 

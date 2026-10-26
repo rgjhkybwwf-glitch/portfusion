@@ -13,9 +13,6 @@ import re
 
 from portfusion.record import schema
 
-#: The book whose workbench, `_inbox/`, holds the documents waiting to be filed.
-BOOK = schema.BOOK
-
 _DATE_FORMATS = ("%Y-%m-%d", "%d %b %Y", "%d %B %Y", "%d/%m/%Y", "%d-%m-%Y", "%d %b %y")
 
 
@@ -61,7 +58,7 @@ def _document_stamp(original: str, when) -> str:
     cannot be read is still filed, and the time is provenance, not something filing needs."""
     from portfusion.record import rules as D
     from portfusion.desk.intake import read_document
-    src = BOOK / "_inbox" / original
+    src = schema.inbox() / original
     if not src.is_file():
         return ""
     try:
@@ -123,13 +120,12 @@ def document_on_the_bench(item: dict) -> pathlib.Path | None:
     """Where the item's document waits to be filed — on the workbench, `_inbox/` — or None if
     it names none. The gate asks here and the filing reads here, so the two cannot disagree."""
     name = (item.get("document") or {}).get("name")
-    return BOOK / "_inbox" / name if name else None
+    return schema.inbox() / name if name else None
 
 
 def filed_as(path) -> str:
-    """A path as an item names it: relative to the book when inside it — the tests point the
-    archive elsewhere, where an unconditional relative_to() would raise."""
+    """A path as an item names it: relative to the book when inside it, whole when not."""
     try:
-        return str(path.relative_to(BOOK))
+        return str(path.relative_to(schema.BOOK))
     except ValueError:
         return str(path)
