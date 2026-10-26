@@ -77,7 +77,8 @@ def _backwards(m, book):
         path.write_text(json.dumps(item, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
-def test_a_book_in_the_old_shape_is_carried_to_this_release_and_can_be_put_back(tmp_path, monkeypatch):
+def test_a_book_in_the_old_shape_is_carried_to_this_release_and_can_be_put_back(
+        tmp_path, monkeypatch, capsys):
     monkeypatch.setattr(M, "MIGRATIONS", (RENAME,))
     book = _demo_copy(tmp_path)
     _backwards(RENAME, book)
@@ -106,6 +107,23 @@ def test_a_book_in_the_old_shape_is_carried_to_this_release_and_can_be_put_back(
 
     M.put_back(before)
     assert _files(book) == old, "put_back() did not return the book to its old shape"
+
+    # THE COMMAND: a moved book that will not open or audit is put back, byte for byte; one that
+    # does stays moved; the demo is the generator's to move.
+    from portfusion import check
+    from portfusion.migrate.__main__ import main
+    monkeypatch.setattr(schema, "BOOK", book)
+    monkeypatch.setattr(check, "migrated", lambda b: 1)
+    assert main(["--write"]) == 1
+    assert _files(book) == old, "the command did not put the book back"
+    monkeypatch.setattr(check, "migrated", lambda b: 0)
+    capsys.readouterr()
+    assert main(["--write"]) == 0 and "Moved:" in capsys.readouterr().out
+    assert not (book / "store" / "purchases.csv").exists(), "the command did not move the book"
+    _backwards(RENAME, book)
+    monkeypatch.setattr(schema, "DEMO", book)
+    assert main(["--write"]) == 2
+    assert (book / "store" / "purchases.csv").exists(), "the demo was moved"
 
 
 def test_a_book_two_moves_behind_is_carried_through_both_before_it_is_opened(tmp_path, monkeypatch):

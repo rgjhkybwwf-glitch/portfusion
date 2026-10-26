@@ -705,11 +705,11 @@ def _build() -> dict:
                 _reading_wrong.append(f"{_r.acct}: a spread-bet reading is IG's five figures; "
                                       f"positions are a share reading's")
             if (None not in (_r.funds, _r.running_pl, _r.equity)
-                    and abs(_r.funds + _r.running_pl - _r.equity) > 0.005):  # pyright: ignore[reportOperatorIssue]
+                    and abs(_r.funds + _r.running_pl - _r.equity) >= 0.005):  # pyright: ignore[reportOperatorIssue]
                 _reading_wrong.append(f"{_r.acct}: funds {_r.funds} + running P/L {_r.running_pl} is not "
                                       f"the equity {_r.equity}")
             if (None not in (_r.equity, _r.deposit, _r.available)
-                    and abs(_r.equity - _r.deposit - _r.available) > 0.005):  # pyright: ignore[reportOperatorIssue]
+                    and abs(_r.equity - _r.deposit - _r.available) >= 0.005):  # pyright: ignore[reportOperatorIssue]
                 _reading_wrong.append(f"{_r.acct}: equity {_r.equity} − deposit {_r.deposit} is not the "
                                       f"available {_r.available}")
         elif any(v is not None for v in (_r.funds, _r.running_pl, _r.equity, _r.deposit,

@@ -184,18 +184,26 @@ def test_a_restruck_mark_reads_as_unbanked(monkeypatch):
 
 
 @needs("price-history")
-def test_a_save_that_fails_leaves_the_history_as_it_was(store_copy):
+def test_a_save_that_fails_leaves_the_history_as_it_was(store_copy, monkeypatch):
     """A SAVE THAT RAISES MUST NOT TRUNCATE. A row the writer refuses — a cell under a column the
-    history does not have — leaves price-history.csv as it was."""
+    history does not have — or a swap that fails leaves price-history.csv as it was, and no
+    working file beside it."""
+    import os
     path = store_copy / PH.CSV_NAME
     before = path.read_bytes()
     rows = PH.load()
     bad = dict(rows[0], date="1900-01-01", stray="a cell no column holds")
     with pytest.raises(ValueError):
         PH.save(rows + [bad])
-    assert path.read_bytes() == before, "a refused save changed the history on disk"
+
+    def full(src, dst):
+        raise OSError("the disk is full")
+    monkeypatch.setattr(os, "replace", full)
+    with pytest.raises(OSError, match="full"):
+        PH.save(rows)
+    assert path.read_bytes() == before, "a failed save changed the history on disk"
     assert not [p for p in store_copy.iterdir() if p.name.startswith(".")], \
-        "a refused save left its working file in the store"
+        "a failed save left its working file in the store"
 
 
 @needs("price-history")

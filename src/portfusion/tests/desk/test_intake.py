@@ -989,11 +989,27 @@ def test_a_committed_document_is_filed_under_the_folder_s_own_convention(item, s
     _ready(item)
     item["document"] = {"name": "Contract_Note_88213.pdf"}
     _bench.save(item)
+    name = f"01 Sep 2026 ii contract note TESTREF1 ({GOOD_TRADE['ticker']})"
+    # BOTH NAMES TAKEN, the convention's and the one with the item's id: refused, nothing moved.
+    (tmp_path / "statements").mkdir()
+    taken = [tmp_path / "statements" / f"{name}{tail}.pdf" for tail in ("", f"-{item['id']}")]
+    for i, path in enumerate(taken):
+        path.write_bytes(b"another document %d" % i)
+    item["acknowledged"] = _bench.already_in_the_record(item)     # the owner's: worked twice
+    _bench.save(item)
+    buys = (store_copy / "buys.csv").read_bytes()
+    with pytest.raises(_commit.Refused, match="is filed already"):
+        _commit.commit(item["id"])
+    assert [p.read_bytes() for p in taken] == [b"another document 0", b"another document 1"]
+    assert (tmp_path / "_inbox" / "Contract_Note_88213.pdf").exists(), "the document moved"
+    assert (store_copy / "buys.csv").read_bytes() == buys, "a refused commit wrote its row"
+    for path in taken:
+        path.unlink()
+
     _commit.commit(item["id"])
 
     filed = sorted(p.name for p in (tmp_path / "statements").iterdir())
-    assert filed == [f"01 Sep 2026 ii contract note TESTREF1 ({GOOD_TRADE['ticker']}).pdf"], \
-        filed
+    assert filed == [f"{name}.pdf"], filed
     assert not (tmp_path / "_inbox" / "Contract_Note_88213.pdf").exists(), "the document stayed"
     # WHAT IT HELD, not that it exists: a book need not have one, and the demo has none.
     assert (sorted(inbox.iterdir()) if inbox.is_dir() else None) == held, \
