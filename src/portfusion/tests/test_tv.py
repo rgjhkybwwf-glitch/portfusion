@@ -26,9 +26,9 @@ def _t(stamp: str) -> int:
 class FakeConnection:
     """Answers tool calls from canned replies, through the real allowlist."""
 
-    def __init__(self, quotes=None, bars=None, refuse_quotes=None, minutes=None, hits=None):
+    def __init__(self, quotes=None, bars=None, refuse_quotes=None, hits=None):
         self.quotes, self.bars, self.refuse = quotes or {}, bars or {}, refuse_quotes
-        self.minutes, self.hits = minutes or {}, hits or []
+        self.hits = hits or []
         self.calls = []
 
     def call(self, tool, **args):
@@ -39,11 +39,8 @@ class FakeConnection:
                 raise tv.TVRefused(f"{tool}: {self.refuse}")
             return {"success": True, "data": {s: self.quotes[s] for s in args["symbols"]
                                               if s in self.quotes}}
-        if tool == "mcp-tv-get-ohlcv" and args["interval"] == "1m":
-            if args["symbol"] not in self.minutes:
-                raise tv.TVRefused(f"{tool}: no minute bars for {args['symbol']}")
-            return {"success": True, "bars": self.minutes[args["symbol"]][-args["count"]:]}
         if tool == "mcp-tv-get-ohlcv":
+            assert args["interval"] == "1D", f"a {args['interval']} bar is no price this feed takes"
             if args["symbol"] not in self.bars:
                 raise tv.TVRefused(f"{tool}: unknown symbol {args['symbol']}")
             return {"success": True, "bars": self.bars[args["symbol"]]}
@@ -225,7 +222,7 @@ def test_a_bar_refused_before_tradingview_has_its_data_is_asked_again(monkeypatc
     conn = _bare_connection()
     queue, pauses = _replies(monkeypatch, conn, _NOT_YET, _NOT_YET,
                              {"structuredContent": {"success": True, "bars": []}})
-    assert conn.call("mcp-tv-get-ohlcv", symbol="NASDAQ:GRVL", interval="1m", count=1) == \
+    assert conn.call("mcp-tv-get-ohlcv", symbol="NASDAQ:GRVL", interval="1D", count=1) == \
         {"success": True, "bars": []}
     assert not queue and pauses == [1.0, 2.0]
 
@@ -234,7 +231,7 @@ def test_still_not_connected_after_every_try_says_so(monkeypatch):
     conn = _bare_connection()
     _replies(monkeypatch, conn, *[_NOT_YET] * tv.TRIES)
     with pytest.raises(tv.TVRefused, match=f"bad handshake, {tv.TRIES} tries$"):
-        conn.call("mcp-tv-get-ohlcv", symbol="NASDAQ:GRVL", interval="1m", count=1)
+        conn.call("mcp-tv-get-ohlcv", symbol="NASDAQ:GRVL", interval="1D", count=1)
 
 
 def test_any_other_refusal_is_an_answer_and_is_not_asked_again(monkeypatch):
@@ -325,7 +322,7 @@ def _conn(**over):
                   SYM[PENCE]: [("2026-09-28", 48.0), ("2026-09-29", 49.7)],
                   SYM[THIRD]: [("2026-09-28", 30.1), ("2026-09-29", 30.4)]})
     return FakeConnection(quotes=over.get("quotes", quotes), bars=bars,
-                          refuse_quotes=over.get("refuse"), minutes=over.get("minutes"))
+                          refuse_quotes=over.get("refuse"))
 
 
 def _sweep(conn, now):
@@ -374,11 +371,14 @@ def test_a_venue_that_shut_today_prices_at_todays_close():
 @HOLDS_LINES
 def test_when_the_quote_screen_refuses_the_trading_lines_are_unpriced_and_named():
     """Shut lines still price from completed bars; a trading line has no honest price without the
-    quote, so it is reported — never filled from a bar."""
+    quote, so it is reported — never filled from a bar. A minute bar can run on a delayed feed
+    while the quote streams live, so one standing in would be a stale price looking current: the
+    fake fails any bar but a day's."""
     r = _sweep(_conn(refuse="tradingview api: …/scan: 429: "), NOW_1400_UK)
     assert [p["mark_key"] for p in r["prices"]] == [US]
     assert {f["key"] for f in r["failed"]} == {PENCE, THIRD}
-    assert all("429" in f["why"] for f in r["failed"])
+    assert all("429" in f["why"] and "the quote screen gave no price" in f["why"]
+               for f in r["failed"])
     assert r["quote_screen"].startswith("refused")
 
 
@@ -491,65 +491,14 @@ def test_no_two_requests_in_flight_share_an_id(monkeypatch):
     assert len(seen) == 400 and len(set(seen)) == 400
 
 
-def _minute(stamp, last):
-    return {"t": _t(stamp), "o": last, "h": last, "l": last, "c": last, "v": 100}
-
-
-@HOLDS_LINES
-def test_when_the_quote_screen_refuses_a_trading_line_takes_its_last_minute_bar():
-    """When the quote screen refuses, a trading line takes its last minute bar. The price is that
-    minute's last trade, struck live at the minute's end — fifteen minutes behind the read for a
-    delayed venue — and a line between sessions still prices from its session."""
-    minutes = {SYM[PENCE]: [_minute("2026-09-29T12:44:00", 50.05), _minute("2026-09-29T12:45:00", 50.1)],
-               SYM[THIRD]: [_minute("2026-09-29T12:44:00", 30.6)]}
-    r = _sweep(_conn(refuse="tradingview api: …/uk/scan: 429: ", minutes=minutes), NOW_1400_UK)
-    assert not r["failed"]
-    by = {p["mark_key"]: p for p in r["prices"]}
-    assert (by[PENCE]["struck"], by[PENCE]["at"], by[PENCE]["price"]) == \
-        ("live", "2026-09-29T12:46:00Z", 0.501)
-    assert by[PENCE]["source"] == (f"TradingView 1m bar {SYM[PENCE]} 50.1 GBX / 100, "
-                                   "last trade in the minute to 2026-09-29T12:46:00Z")
-    assert (by[THIRD]["struck"], by[THIRD]["at"]) == ("live", "2026-09-29T12:45:00Z")
-    assert by[US]["struck"] == "close"
-    assert r["quote_screen"].startswith("refused")
-
-
-@HOLDS_LINES
-def test_a_minute_bar_from_before_the_session_opened_is_not_todays_price():
-    """A share's newest minute from an earlier session is that session's last trade, and dated
-    today it would be a stale price wearing a fresh date. Unpriced, with both routes' reasons."""
-    minutes = {SYM[PENCE]: [_minute("2026-09-28T15:29:00", 48.0)],
-               SYM[THIRD]: [_minute("2026-09-29T12:44:00", 30.6)]}
-    r = _sweep(_conn(refuse="screener 429", minutes=minutes), NOW_1400_UK)
-    (f,) = r["failed"]
-    assert f["key"] == PENCE
-    assert "screener 429" in f["why"] and "before this session opened" in f["why"]
-
-
-def test_a_minute_still_running_is_struck_when_read_and_never_called_a_close():
-    """The rates' minute bars are current: the newest may be a minute still running. Its instant
-    is the read, not the minute's end; and its source must not say "close", which a reader
-    takes for a session's close."""
-    now = dt.datetime(2026, 9, 29, 13, 0, 20, tzinfo=UTC)
-    conn = FakeConnection(bars={"FX_IDC:GBPUSD": [{"t": _t("2026-09-28T22:00:00"), "c": 1.3239}]},
-                          minutes={"FX_IDC:GBPUSD": [_minute("2026-09-29T13:00:00", 1.3221)]},
-                          refuse_quotes="screener 429")
-    (rate,) = tv.sweep(tickers=[], currencies=["USD"], now=now, conn=conn)["rates"]
-    assert (rate["rate"], rate["struck"], rate["at"], rate["as_of"]) == \
-        (1.3221, "live", "2026-09-29T13:00:20Z", "2026-09-29")
-    assert "close" not in rate["source"].lower()
-
-
 @HOLDS_LINES
 def test_the_pence_trap_is_caught_by_the_vendors_own_unit():
-    """PENR in GBX is divided by 100; an PENR quote in GBP would be a hundredfold error, refused —
-    and not papered over by the minute bars, which a wrong unit in the map would make wrong too."""
+    """PENR in GBX is divided by 100; an PENR quote in GBP would be a hundredfold error, refused."""
     ok = _sweep(_conn(), NOW_1400_UK)
     assert next(p for p in ok["prices"] if p["mark_key"] == PENCE)["price"] == 0.5
     quotes = dict(_conn().quotes, **{SYM[PENCE]: {"close": 0.5, "currency": "GBP",
                                                   "update_mode": "streaming"}})
-    bad = _sweep(_conn(quotes=quotes, minutes={SYM[PENCE]: [_minute("2026-09-29T12:45:00", 50.1)]}),
-                 NOW_1400_UK)
+    bad = _sweep(_conn(quotes=quotes), NOW_1400_UK)
     assert "expected 'GBX'" in next(f["why"] for f in bad["failed"] if f["key"] == PENCE)
 
 
