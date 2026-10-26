@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import datetime as _dt
 import re as _re
-from typing import NamedTuple
+from typing import NamedTuple, cast
 
 
 # ==============================================================================================
@@ -478,7 +478,7 @@ def filed_as(line, archive_names, stored_reference="", account=""):
         return None
     if not ref:
         return []                         # a document cited, and nothing that could find it
-    ev = evidence_from_source(line)
+    ev = cast(Evidence, evidence_from_source(line))    # a document cited: a class composed it
     must = [ref]
     if ev.key in REFERENCE_IS_A_DATE:
         who = _cited_account(ev, line) or str(account or "").strip()

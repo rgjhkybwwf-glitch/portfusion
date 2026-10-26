@@ -39,6 +39,8 @@ dependencies = [
 dev = [
     "ruff>=0.17",               # the linter: python3 -m ruff check
     "import-linter>=2.15",      # the import contracts below: lint-imports
+    "pyright>=1.1.414",         # the type checker below: pyright
+    "pandas-stubs>=3.0.5",      # pandas' types, for pyright
 ]
 
 [project.scripts]
@@ -74,6 +76,15 @@ select = ["F", "E4", "E7", "E9", "W"]
 # It checks that the book's store is whole BEFORE importing the rest of the record, so a missing
 # table says what is wrong rather than failing three frames deep.
 "src/portfusion/record/rules.py" = ["E402"]
+
+# THE TYPE CHECKER: pyright, standard mode, on the packages it holds to no error, checked in CI's
+# guard and in this checkout's `.githooks/pre-commit`. A dev tool: a book installs none of it.
+# STILL TO WIDEN TO, as stage 3 splits each: engine.py, desk/, feeds/.
+[tool.pyright]
+include = ["src/portfusion/record", "src/portfusion/report", "src/portfusion/house",
+           "src/portfusion/history"]
+typeCheckingMode = "standard"
+pythonVersion = "3.13"
 
 # THE IMPORT CONTRACTS: which part of the app may import which, checked by `lint-imports` in CI's
 # guard (beside a planted import it must refuse) and in this checkout's `.githooks/pre-commit`.

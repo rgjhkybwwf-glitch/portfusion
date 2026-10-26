@@ -19,6 +19,7 @@ import io
 import os
 import tempfile
 from collections import defaultdict
+from collections.abc import Iterable, Sequence
 
 from portfusion.record import rules as D
 from portfusion.record import schema
@@ -45,7 +46,7 @@ class AppendOnlyCSV:
     account's history is its value series, and What Changed may take a rate of any day.
     """
 
-    def __init__(self, name: str, fields: tuple, numeric: tuple, sort_key,
+    def __init__(self, name: str, fields: list[str], numeric: tuple, sort_key,
                  identity: tuple | None = None, nullable: bool = False,
                  figure: str | tuple | None = None, places: dict | None = None,
                  series: tuple | None = None) -> None:
@@ -145,9 +146,9 @@ class AppendOnlyCSV:
 
     def key(self, row: dict) -> tuple:
         """One row's identity tuple."""
-        return tuple(row[c] for c in self.identity)
+        return tuple(row[c] for c in self.identity)  # pyright: ignore[reportOptionalIterable]
 
-    def known(self, rows: list[dict]) -> set:
+    def known(self, rows: Iterable[dict]) -> set:
         """The identities already banked. Side effects: none."""
         return {self.key(r) for r in rows}
 
@@ -174,7 +175,7 @@ class AppendOnlyCSV:
         """Do the row on file and this mark say the same of their day? Compared on every figure
         BOTH state: an account's row on file can carry what no reading does — a statement's
         notional — and that is not a second reading of the day."""
-        return all(was[c] == mark[c] for c in self.figure
+        return all(was[c] == mark[c] for c in self.figure  # pyright: ignore[reportOptionalIterable]
                    if was[c] is not None and mark[c] is not None)
 
     @staticmethod
@@ -231,7 +232,7 @@ class AppendOnlyCSV:
     # own and the one before it, which What Changed sets it against; and the two newest. Git keeps
     # the rest.
 
-    def kept(self, rows: list[dict], live: list[dict] = ()) -> list[dict]:
+    def kept(self, rows: list[dict], live: Sequence[dict] = ()) -> list[dict]:
         """`rows` less the live reads no figure can take. Side effects: none."""
         if self.series is None or not rows:
             return rows

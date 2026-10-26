@@ -15,7 +15,7 @@ import collections as _collections
 import contextlib as _contextlib
 import datetime as _dt
 import re as _re
-from typing import NamedTuple
+from typing import TYPE_CHECKING, Any, NamedTuple
 
 from portfusion.record import schema         # THE SCHEMA — column types, and it validates on load
 from portfusion.record import order as _order
@@ -361,7 +361,7 @@ def _build() -> dict:
         def size(self) -> int | float:
             """HOW MUCH THE LEG IS, in its own unit: shares, or £ per point for a spread bet. The
             store keeps the two apart (`qty`, `stake`); the ledger rolls up on this."""
-            return self.qty if self.qty is not None else self.stake
+            return self.qty if self.qty is not None else self.stake  # pyright: ignore[reportReturnType]
 
     buys = [Buy(*_r) for _r in schema.load("buys")]
 
@@ -409,7 +409,7 @@ def _build() -> dict:
         @property
         def size(self) -> int | float:
             """How much the sale is, in its own unit: shares, or £ per point (`Buy.size`)."""
-            return self.qty if self.qty is not None else self.stake
+            return self.qty if self.qty is not None else self.stake  # pyright: ignore[reportReturnType]
 
     sales = [Sale(*_r) for _r in schema.load("sales")]
 
@@ -705,11 +705,11 @@ def _build() -> dict:
                 _reading_wrong.append(f"{_r.acct}: a spread-bet reading is IG's five figures; "
                                       f"positions are a share reading's")
             if (None not in (_r.funds, _r.running_pl, _r.equity)
-                    and abs(_r.funds + _r.running_pl - _r.equity) > 0.005):
+                    and abs(_r.funds + _r.running_pl - _r.equity) > 0.005):  # pyright: ignore[reportOperatorIssue]
                 _reading_wrong.append(f"{_r.acct}: funds {_r.funds} + running P/L {_r.running_pl} is not "
                                       f"the equity {_r.equity}")
             if (None not in (_r.equity, _r.deposit, _r.available)
-                    and abs(_r.equity - _r.deposit - _r.available) > 0.005):
+                    and abs(_r.equity - _r.deposit - _r.available) > 0.005):  # pyright: ignore[reportOperatorIssue]
                 _reading_wrong.append(f"{_r.acct}: equity {_r.equity} − deposit {_r.deposit} is not the "
                                       f"available {_r.available}")
         elif any(v is not None for v in (_r.funds, _r.running_pl, _r.equity, _r.deposit,
@@ -972,3 +972,6 @@ def reload_store() -> None:
 # THE RECORD, AT IMPORT, with no lock to take: nothing holds this module until its import ends,
 # and a thread that holds the lock may be the one importing it.
 globals().update(_build())
+
+if TYPE_CHECKING:
+    def __getattr__(name: str) -> Any: ...      # the names `_build()` binds, to a type checker

@@ -64,7 +64,7 @@ def summary_figures(quarter_end: str, b: Book | None = None) -> list[dict]:
     b = b if b is not None else Book()
     figures = b.headline(quarter_end)
     return [{"label": label, "value": value,
-             "basis": b.basis_of(label), "unit": b.HEADLINE[label]["unit"]}
+             "basis": b.basis_of(label), "unit": b.HEADLINE[label]["unit"]}  # pyright: ignore[reportIndexIssue]
             for label, value in figures.items()]
 
 

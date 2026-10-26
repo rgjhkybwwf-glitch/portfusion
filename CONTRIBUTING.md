@@ -116,7 +116,8 @@ One line each; kept by review, and by the test named where there is one.
 
 ### The code
 
-- **The linter and the import contracts find nothing**: `python3 -m ruff check`, `lint-imports`.
+- **The linter, the import contracts and the type checker find nothing**: `python3 -m ruff check`,
+  `lint-imports`, `pyright`.
 - **No formatter**: the aligned columns are the style; the linter holds the rest.
 - **A comment or docstring states the rule as it is**, not its history, and a function it names
   exists (`test_code.py::test_comments_state_the_rule_not_its_history`,

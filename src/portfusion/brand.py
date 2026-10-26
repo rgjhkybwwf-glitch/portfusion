@@ -33,6 +33,7 @@ from __future__ import annotations
 import pathlib
 import re
 import tomllib
+from typing import cast
 
 from portfusion.house import mark, palette as P
 from portfusion.record.schema import BOOK
@@ -98,7 +99,8 @@ DARK = _scheme(P.DARK, _B.get("dark", {}))
 
 #: The typeface, and the folder its file is in.
 FONT = {**P.FONT, **_B["font"]} if "font" in _B else P.FONT
-FONT_DIR = DIR if "font" in _B else pathlib.Path(P.__file__).resolve().parent / "fonts"
+FONT_DIR = (cast(pathlib.Path, DIR) if "font" in _B
+            else pathlib.Path(P.__file__).resolve().parent / "fonts")
 FACES = ({"sans": f'"{FONT["family"]}", ui-sans-serif, system-ui, sans-serif'}
          if "font" in _B else P.FACES)
 

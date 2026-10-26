@@ -1,8 +1,9 @@
-# THE GUARD, ON GITHUB. One job, seven checks, each the command run on the Mac: the secret scan
-# over every commit, the linter, the import contracts, the locks' known advisories, a parse of the
-# desk's script, every desk page drawn in Node, and the clean-room test, which is the suite on the
-# demo and on a new book from the tracked files, and `portfusion check` from the wheel built from
-# them. A pull request is merged on GitHub once this is green (CONTRIBUTING.md).
+# THE GUARD, ON GITHUB. One job, eight checks, each the command run on the Mac: the secret scan
+# over every commit, the linter, the import contracts, the type checker, the locks' known
+# advisories, a parse of the desk's script, every desk page drawn in Node, and the clean-room test,
+# which is the suite on the demo and on a new book from the tracked files, and `portfusion check`
+# from the wheel built from them. A pull request is merged on GitHub once this is green
+# (CONTRIBUTING.md).
 #
 # WHEN IT RUNS: on a pull request and on a push to main, not on every branch push: a run on
 # every branch push would spend a free plan's minutes quickly.
@@ -52,6 +53,14 @@ jobs:
             echo "::error::the-build kept with record/rules.py importing a feed"; exit 1
           fi
           git checkout -- src/portfusion/record/rules.py
+      - name: The type checker, and a planted error it refuses
+        run: |
+          pyright
+          echo 'planted: int = ""' >> src/portfusion/history/files.py
+          if pyright > /dev/null; then
+            echo "::error::pyright passed history/files.py with a planted type error"; exit 1
+          fi
+          git checkout -- src/portfusion/history/files.py
       - name: The locks' known advisories
         run: python3 tools/advisories.py
       - name: The desk's script parses
