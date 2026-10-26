@@ -11,6 +11,7 @@ import contextlib
 import csv
 import functools
 import io
+import os
 import pathlib
 import re
 
@@ -22,9 +23,9 @@ def atomic(*paths: pathlib.Path):
     """Hold these files' bytes, and restore EVERY one of them if the block raises. Every store
     door writes inside it.
 
-    A file that did not exist when held is REMOVED on rollback. A file whose bytes did not
-    change is NOT rewritten: restoring identical bytes still moves the mtime, and the desk's
-    freshness line would then report a store change that never happened.
+    A file that did not exist when held is REMOVED on rollback. A file put back gets its held
+    times back too, and one whose bytes did not change is not rewritten: the desk's freshness line
+    reads the store's newest mtime, and would report a store change that never happened.
 
     THE BYTES ARE HELD UNDER `schema.LOCK`, for the whole block. A restore puts back what was read
     on entry, so a second write landing in between would have been erased by the first one's
@@ -34,15 +35,18 @@ def atomic(*paths: pathlib.Path):
     incomplete and which `except Exception` lets past.
     """
     with schema.LOCK:
-        held = [(p, p.read_bytes() if p.is_file() else None) for p in paths]
+        held = [(p, p.read_bytes(), p.stat()) if p.is_file() else (p, None, None) for p in paths]
         try:
             yield
         except BaseException:
-            for path, original in held:
+            for path, original, was in held:
                 if original is None:
                     path.unlink(missing_ok=True)
-                elif not path.is_file() or path.read_bytes() != original:
+                    continue
+                if not path.is_file() or path.read_bytes() != original:
                     path.write_bytes(original)
+                if path.stat().st_mtime_ns != was.st_mtime_ns:
+                    os.utime(path, ns=(was.st_atime_ns, was.st_mtime_ns))
             raise
 
 

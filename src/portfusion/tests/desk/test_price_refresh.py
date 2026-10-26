@@ -191,26 +191,30 @@ def test_a_refused_write_leaves_every_file_as_it_was(store_copy, prices, rates):
     assert not moved, f"a refused write left these files changed: {moved}"
 
 
-def test_a_refused_write_does_not_even_move_the_mtime(store_copy):
+@pytest.mark.parametrize("rates", [None, [{"currency": "XXX", "as_of": "2026-09-07", "rate": 1.0,
+                                            "source": "names no row", "struck": "live"}]],
+                         ids=["refused before a write", "refused after the price landed"])
+def test_a_refused_write_does_not_even_move_the_mtime(store_copy, rates):
     """Restoring identical bytes changes the MTIME, and `engine.freshness()` reads the store's
     newest mtime — so a refused write would make the desk's header announce "store changed" when
     nothing had. Byte-comparing the files, which is what every other test here does, passes on that
-    happily.
+    happily. Refused before anything is written, and refused after the price has landed, when the
+    rollback rewrites the table.
 
     A guard that reports a change it caused is worse than no guard.
     """
-    from portfusion.record import schema
     from portfusion.desk.doors import marks
 
-    path = schema.TABLES["current-prices"].path
-    before = path.stat().st_mtime_ns
+    price = {"mark_key": TICK if rates else "NOT-A-ROW", "price": 1.0,
+             "currency": TICK_CUR if rates else RATE_CUR, "as_of": "2026-09-07",
+             "source": "a refused write", "struck": "close"}
+    before = {p: p.stat().st_mtime_ns for p in marks.paths() if p.is_file()}
 
     with pytest.raises(marks.Refused):
-        marks.write(prices=[{"mark_key": "NOT-A-ROW", "price": 1.0, "currency": RATE_CUR,
-                             "as_of": "2026-09-07", "source": "names a row that is not there", "struck": "close"}])
+        marks.write(prices=[price], rates=rates)
 
-    assert path.stat().st_mtime_ns == before, \
-        "a refused write touched the file, so the desk will report the store as changed"
+    moved = [p.name for p, ns in before.items() if p.stat().st_mtime_ns != ns]
+    assert not moved, f"a refused write touched {moved}: the desk will report the store as changed"
 
 
 @pytest.mark.parametrize("fault", [RuntimeError, SystemExit])

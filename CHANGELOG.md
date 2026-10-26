@@ -11,6 +11,9 @@ prints it.
 - **The demo holds a row of every kind the suite is built from.** A contract with two open legs,
   a deposit and a funding charge each on its IG statement, and the ISA's quarter-end ii statement
   on file, so every test the demo once skipped now runs on it, and in CI.
+- **A refused write no longer tells the desk the store changed.** A write refused after part of it
+  had landed put the bytes back with a new mtime, so the desk's freshness line reported a change.
+  The rollback now puts back each file's times with its bytes.
 - **`portfusion init` makes the book's venv.** It installs the portfusion that made it, so a
   new book's first commit already has its secret gate's Python, and the README's start is one
   install. `--no-venv` leaves it out; a venv that cannot be made is said, with the two commands.
