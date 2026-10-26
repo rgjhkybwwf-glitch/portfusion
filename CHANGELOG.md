@@ -153,6 +153,10 @@ prints it.
   `Content-Security-Policy`, so any page could frame it, and nosniff and no-referrer reached the
   hosted copy only. One `bundle.SHELL_HEADERS` now gives every file of the shell the same
   headers on both doors; the published `_headers` is written from it, byte for byte as before.
+- **A broker's knowledge has one home**, `record/rules_brokers.py`: each kind of export's map
+  (`COLUMN_MAPS`, `HOLDINGS_COLUMNS`, `LEDGER_MAPS`) carries its columns, labels and line reader,
+  and IG's ledger words sit beside them, so the readers in `desk/intake/read_rows.py` and the IG
+  sweep name no broker. No figure, page, reading or store moves.
 
 ## 0.3.2 — beta, 24 Oct 2026
 

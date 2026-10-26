@@ -790,10 +790,6 @@ PAGE = 500
 #: ends cannot spin the allowance away.
 MAX_PAGES = 50
 
-#: A `WITH` line that is a FUNDING COST, by the words IG prints on it ("Long Interest for US/Can
-#: shares 10/08/26"). Every other `WITH` is money leaving the account, proposed as capital.
-FUNDING_WORDS = ("interest", "funding")
-
 
 def _every_page(s, path, version, key):
     """Every row of one history endpoint across its pages, or a refusal: NEVER THE FIRST PAGE
@@ -969,11 +965,9 @@ def ig_events(since=None, book=None):
         for r in sorted(transactions, key=lambda x: x["dateUtc"]):
             amt = float(r["profitAndLoss"].replace("£", "").replace(",", ""))
             day = r["dateUtc"][:10]
-            # A `WITH` IS MONEY OUT, and only some of it is a cost: IG files its funding charges
-            # and a withdrawal under the one type.
-            funding = r["transactionType"] == "WITH" and any(
-                w in str(r.get("instrumentName") or "").lower() for w in FUNDING_WORDS)
-            if funding:
+            # A `WITH` IS MONEY OUT, and only some of it is a cost (`rules.ig_line()`).
+            code = D.ig_line(r["transactionType"], r.get("instrumentName"))
+            if code is not None and code.table == "income":
                 seen_api_cash.add((acct, day, round(amt, 2)))
                 if (day, round(amt, 2)) in known_cash:
                     matched.append(f"{r['instrumentName']} · £{amt:,.2f} · {day} · in the book")
@@ -981,13 +975,13 @@ def ig_events(since=None, book=None):
                 rows_i.append(_event(
                     "income", r["reference"], "cost", acct,
                     f"{r['instrumentName']} · £{amt:,.2f}", {
-                        "date": day, "account": acct, "category": "Funding interest",
+                        "date": day, "account": acct, "category": code.category,
                         "detail": r["instrumentName"], "amount": amt,
                         "source": D.evidence_source("ig-api", r["reference"],
                                                    endpoint="/history/transactions"),
                         "note": "", "currency": "", "local_amount": "", "rate": "",
                         "ticker": ""}))
-            elif r["transactionType"] in ("DEPO", "WITH"):
+            elif code is not None and code.table == "capital-movements":
                 if (day, round(amt, 2)) in known_moves:
                     matched.append(f"{r['instrumentName']} · £{amt:,.2f} · {day} · in the book")
                     continue

@@ -85,10 +85,11 @@ def test_a_line_already_in_the_record_is_reported_and_not_read_again(inbox, monk
     assert all("already in the record" in s["why"] for s in out["seen"])
 
 
-def test_every_value_comes_from_a_named_cell(on_the_workbench):
+def test_every_value_comes_from_a_named_cell(on_the_workbench, monkeypatch):
     """The whole argument for this module. Each cell is lifted from a column the map names, so
     it is right by construction — there is no quote to match back to the page because the row
-    IS the page."""
+    IS the page. The map names it, never the reader, so a broker is added in `rules_brokers.py`
+    alone."""
     out = read_rows.read(on_the_workbench("income.csv", INCOME))
     assert out["class"] == "hl-income"
     assert out["account"] == SHARE_ACCOUNT, "the client number did not resolve to an account"
@@ -104,6 +105,26 @@ def test_every_value_comes_from_a_named_cell(on_the_workbench):
 
     interest = next(r for r in out["rows"] if r["values"]["category"] == "Cash interest")
     assert interest["values"]["date"] == "2025-02-09"
+
+    # NO COLUMN, LABEL OR CLASS IS WRITTEN IN THE READER: each is its map's.
+    import ast
+    import inspect
+    from portfusion.record import rules as D
+    named = {e.key for e in D.EVIDENCE_CLASSES}
+    named |= {c for m in (*D.COLUMN_MAPS.values(), *D.LEDGER_MAPS.values()) for c in m.header}
+    named |= {v for m in D.HOLDINGS_COLUMNS.values() for v in m if v}
+    tree = ast.parse(inspect.getsource(read_rows))
+    docs = {id(n.value) for n in ast.walk(tree) if isinstance(n, ast.Expr)}
+    literals = [n.value for n in ast.walk(tree) if isinstance(n, ast.Constant)
+                and isinstance(n.value, str) and id(n) not in docs]
+    assert not sorted({n for n in named for s in literals if n in s}), "the reader names these"
+
+    # A MAP READS ITS LINES WITH ITS OWN BROKER'S READER, never HL's.
+    monkeypatch.setitem(D.COLUMN_MAPS, "hl-income", D.COLUMN_MAPS["hl-income"]._replace(
+        line=lambda code: None, codes="a stub's codes"))
+    out = read_rows.read("income.csv")
+    assert out["rows"] == [] and len(out["unrecognised"]) == 2
+    assert all(u.endswith("not in a stub's codes") for u in out["unrecognised"]), out
 
 
 def test_the_total_line_is_not_a_row(on_the_workbench):
@@ -278,8 +299,11 @@ def test_one_coincidence_does_not_name_a_ledgers_account(monkeypatch):
     agreeing, or a dealing line, and anything less is left blank for a person."""
     import datetime as dt
     from portfusion.record import rules as D
-    monkeypatch.setattr(recorded, "accounts_of_broker", lambda broker: ["Account A", "Account B"])
-    monkeypatch.setattr(D, "ii_line", lambda desc, symbol: D.BrokerCode("income", "Cash interest", ""))
+    monkeypatch.setattr(recorded, "accounts_of_broker",
+                        lambda broker: ["Account A", "Account B"] if broker == "A broker" else [])
+    # THE MAP'S OWN BROKER AND LINE READER, which the ledger's reader asks.
+    m = D.LEDGER_MAPS["ii-transactions"]._replace(
+        broker="A broker", line=lambda desc, symbol: D.BrokerCode("income", "Cash interest", ""))
 
     def line(day):
         return {"desc": "interest", "symbol": "", "ref": "", "when": dt.date(2026, 9, day),
@@ -288,11 +312,19 @@ def test_one_coincidence_does_not_name_a_ledgers_account(monkeypatch):
     monkeypatch.setattr(recorded, "matching_row",
                         lambda table, v: "row" if (v["account"], v["date"]) in on_file else None)
     on_file |= {("Account A", "2026-09-01")}
-    assert read_rows._ii_account([line(1), line(2)]) == "", "one match named the account"
+    assert read_rows._ledger_account([line(1), line(2)], m) == "", "one match named the account"
     on_file |= {("Account A", "2026-09-02")}
-    assert read_rows._ii_account([line(1), line(2)]) == "Account A"
+    assert read_rows._ledger_account([line(1), line(2)], m) == "Account A"
     on_file |= {("Account B", "2026-09-02")}
-    assert read_rows._ii_account([line(1), line(2)]) == "", "two accounts matched, one was named"
+    assert read_rows._ledger_account([line(1), line(2)], m) == "", \
+        "two accounts matched, one was named"
+    # A LINE THE MAP CALLS DEALING names the account its contract note, by the map's own
+    # reading of the reference, settled in.
+    monkeypatch.setattr(recorded, "accounts_citing",
+                        lambda ref: {"Account B"} if ref == "NOTE1" else set())
+    dealing = m._replace(line=lambda desc, symbol: D.BrokerCode(None, "", ""),
+                         contract=lambda ref: "NOTE1")
+    assert read_rows._ledger_account([line(1)], dealing) == "Account B"
 
 
 def test_a_utf16_export_is_read_as_utf16(tmp_path):

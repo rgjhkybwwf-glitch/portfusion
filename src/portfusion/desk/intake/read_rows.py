@@ -2,8 +2,9 @@
 ROWS FROM A RECOGNISED DOCUMENT — read from its own named cells, never interpreted.
 
 `read_document.py` gets a document's TEXT. This gets its ROWS, and only for a document the
-record recognises: `rules.identify()` names the class, `rules.COLUMN_MAPS` says which column is
-which, and `rules.hl_code()` says what each line is.
+record recognises: `rules.identify()` names the class, and its map in `rules.COLUMN_MAPS`,
+`rules.HOLDINGS_COLUMNS` or `rules.LEDGER_MAPS` says which column is which and what each line is.
+Nothing here names a broker.
 
 WHY THIS EXISTS BESIDE `propose.py` RATHER THAN INSTEAD OF IT. A Claude session reads anything
 and has to be checked: every proposed cell carries a verbatim quote, and `verify.py` matches that
@@ -95,13 +96,13 @@ def holdings(text: str, key: str) -> dict[str, float]:
 
     Side effects: none.
     """
-    cols = D.HOLDINGS_COLUMNS.get(key)
-    if cols is None:
+    m = D.HOLDINGS_COLUMNS.get(key)
+    if m is None:
         return {}
-    body, header = _cells(text.lstrip("\ufeff"), cols)
+    body, header = _cells(text.lstrip("\ufeff"), (m.code, m.units))
     out: dict[str, float] = {}
     for row in body:
-        code, units = _value(row, header, cols[0]), _number(_value(row, header, cols[1]))
+        code, units = _value(row, header, m.code), _number(_value(row, header, m.units))
         if not code or not units:
             continue                     # a totals line, a blank, or the notes under the table
         try:
@@ -114,10 +115,7 @@ def holdings(text: str, key: str) -> dict[str, float]:
 
 
 #: THE CLASSES READ HERE, and so never given to a reader. Derived from the maps that read them.
-LOCAL = frozenset(D.COLUMN_MAPS) | frozenset(D.HOLDINGS_COLUMNS) | {"ii-transactions"}
-
-#: A currency as ii writes it in a money cell.
-_II_SYMBOLS = {"£": "GBP", "€": "EUR", "$": "USD"}
+LOCAL = frozenset(D.COLUMN_MAPS) | frozenset(D.HOLDINGS_COLUMNS) | frozenset(D.LEDGER_MAPS)
 
 
 def read(name: str) -> dict:
@@ -154,37 +152,36 @@ def read(name: str) -> dict:
     found = recorded.account_from(text)
     out["account"] = found[0] if found else ""
 
-    if key == "ii-transactions":
-        return _ii_ledger(text, out)
-    if key in D.HOLDINGS_COLUMNS:
-        _holdings_reading(text, key, out)
-        if key == "ii-valuation":
-            return out
+    if key in D.LEDGER_MAPS:
+        return _ledger(text, key, out)
+    held = D.HOLDINGS_COLUMNS.get(key)
+    if held is not None:
+        _holdings_reading(text, key, held, out)
+        # NOT EVERY DOCUMENT IS A LIST OF LINES. A valuation is a header block of labelled
+        # totals with a holdings table under it, and the one row the record takes from it is the
+        # cash, where it labels one: the account's own figure at the instant stated, which is
+        # half of what a share account reconciles on.
+        cash = _labelled(text, held.cash) if held.cash else ""
+        if cash and out["account"]:
+            # The row's columns and no more: cash-readings carries its provenance
+            # as evidence + reference, and a stray "source" key is refused at commit.
+            values = {"account": out["account"], "as_of": (out["instant"] or "")[:10],
+                      "cash": _number(cash), "evidence": key,
+                      "reference": out["reference"]}
+            already = recorded.matching_row("cash-readings", values)
+            line = f"{held.cash} {cash}"
+            if already and already != "unreadable":
+                out["seen"].append({"line": line, "in_record": already,
+                                    "why": _on_file("cash-readings", already)})
+            else:
+                out["rows"].append({
+                    "table": "cash-readings", "values": values,
+                    "sources": {k: line for k in values},
+                    "machine": True, "derived": [], "drafted": []})
+        return out
 
     cmap = D.COLUMN_MAPS.get(key)
     if cmap is None:
-        # NOT EVERY DOCUMENT IS A LIST OF LINES. A valuation is a header block of labelled
-        # totals with a holdings table under it, and the one row the record takes from it is the
-        # cash: `Total cash:` is the account's own figure at the instant stated, which is half
-        # of what a share account reconciles on.
-        if key == "hl-valuation":
-            cash = _labelled(text, "Total cash:")
-            if cash and out["account"]:
-                # The row's columns and no more: cash-readings carries its provenance
-                # as evidence + reference, and a stray "source" key is refused at commit.
-                values = {"account": out["account"], "as_of": (out["instant"] or "")[:10],
-                          "cash": _number(cash), "evidence": key,
-                          "reference": out["reference"]}
-                already = recorded.matching_row("cash-readings", values)
-                line = f"Total cash: {cash}"
-                if already and already != "unreadable":
-                    out["seen"].append({"line": line, "in_record": already,
-                                        "why": _on_file("cash-readings", already)})
-                else:
-                    out["rows"].append({
-                        "table": "cash-readings", "values": values,
-                        "sources": {k: line for k in values},
-                        "machine": True, "derived": [], "drafted": []})
         return out
 
     body, header = _cells(text, cmap.header)
@@ -200,10 +197,10 @@ def read(name: str) -> dict:
                                        f"{cmap.date_format}")
             continue
 
-        entry = D.hl_code(code)
+        entry = cmap.line(code)
         line = f"{when} {code} {_value(row, header, cmap.fields.get('detail', ''))}".strip()
         if entry is None:
-            out["unrecognised"].append(f"{line} — this code is not in rules.HL_CODES")
+            out["unrecognised"].append(f"{line} — this code is not in {cmap.codes}")
             continue
         if entry.table is None:
             out["seen"].append({"line": line, "why": entry.why, "in_record": None})
@@ -244,14 +241,14 @@ def read(name: str) -> dict:
     return out
 
 
-def _holdings_reading(text: str, key: str, out: dict) -> None:
+def _holdings_reading(text: str, key: str, m, out: dict) -> None:
     """A holdings export's UNITS against the book, and the account reading it files.
 
     THE ACCOUNT IS THE ONE WHOSE UNITS AGREE when the export names none: ii's names nothing,
     and arithmetic is what identifies it (`docs/reconciling.md`). Two or none leaves it blank.
 
-    THE READING'S FIGURES ARE THE DOCUMENT'S OWN, and only those — HL's Stock value, Total cash
-    and Total value. ii's states only each holding's £ value, so its stock is their sum and its
+    THE READING'S FIGURES ARE THE DOCUMENT'S OWN, and only those (`rules.HOLDINGS_COLUMNS`). An
+    export that labels none states only each holding's £ value, so its stock is their sum and its
     cash and total are blank (`observations.SHARE_CASH` says why) — blank, not absent, so filing
     it clears the cash the account's previous reading carried.
     Nothing is typed: filing the export writes its reading.
@@ -275,47 +272,48 @@ def _holdings_reading(text: str, key: str, out: dict) -> None:
                      "tag": "agrees" if u["agrees"] else "differs",
                      "why": f"the book holds {u['book']:,.0f}"} for u in out["units"]]
 
-    if key == "hl-valuation":
+    if m.stock:
         stock, cash, total = (_number(_labelled(text, label)) for label in
-                              ("Stock value:", "Total cash:", "Total value:"))
+                              (m.stock, m.cash, m.total))
     else:
-        body, header = _cells(text.lstrip("\ufeff"), D.HOLDINGS_COLUMNS[key])
-        values = [_number(_value(r, header, "Market Value £")) for r in body
-                  if _value(r, header, D.HOLDINGS_COLUMNS[key][0])]
+        body, header = _cells(text.lstrip("\ufeff"), (m.code, m.units))
+        values = [_number(_value(r, header, m.value)) for r in body if _value(r, header, m.code)]
         stock, cash, total = f"{sum(float(v) for v in values if v):.2f}", "", ""
     out["reading"] = {"account": account, "positions": stock, "cash": cash, "total": total,
                       "at": D.utc_instant(out["instant"]) if out["instant"] else ""}
 
 
-def _ii_ledger(text: str, out: dict) -> dict:
-    """An ii ledger: its interest, dividends, fees and payments as rows, its dealing lines
+def _ledger(text: str, key: str, out: dict) -> dict:
+    """A cash ledger: its interest, dividends, fees and payments as rows, its dealing lines
     reported against their contract notes, and its closing balance as the account's cash when
-    that balance is the whole of it. `rules.ii_line()` says what each line is.
+    that balance is the whole of it. Its map in `rules.LEDGER_MAPS` says which column is which
+    and what each line is.
 
     ONE CURRENCY, GBP. A EUR or USD line needs the day's rate to become a row, and a rate from
     the wrong day is the error `rules.FX_RATE_AGE_LIMIT_DAYS` describes; such a ledger's lines are left unread, for
     a person.
     """
-    body, header = _cells(text.lstrip("\ufeff"), D.II_LEDGER_HEADER)
+    m = D.LEDGER_MAPS[key]
+    body, header = _cells(text.lstrip("\ufeff"), m.header)
     lines = []
     for row in body:
-        raw, desc = _value(row, header, "Settlement Date"), _value(row, header, "Description")
+        raw, desc = _value(row, header, m.date), _value(row, header, m.description)
         if not raw or not desc:
             continue
         try:
-            when = _dt.datetime.strptime(raw, "%d/%m/%Y").date()
+            when = _dt.datetime.strptime(raw, m.date_format).date()
         except ValueError:
             out["unrecognised"].append(f"{raw} {desc} — the date does not read as DD/MM/YYYY")
             continue
-        cells = {c: _value(row, header, c) for c in ("Debit", "Credit", "Running Balance")}
+        cells = {c: _value(row, header, c) for c in (m.debit, m.credit, m.balance)}
         lines.append({"when": when, "desc": " ".join(desc.split()), "cells": cells,
-                      "symbol": _value(row, header, "Symbol"),
-                      "ref": _value(row, header, "Reference")})
+                      "symbol": _value(row, header, m.symbol),
+                      "ref": _value(row, header, m.reference)})
     if not lines:
         return out
 
-    currencies = {_II_SYMBOLS[v[0]] for ln in lines for v in ln["cells"].values()
-                  if v and v[0] in _II_SYMBOLS}
+    currencies = {m.currencies[v[0]] for ln in lines for v in ln["cells"].values()
+                  if v and v[0] in m.currencies}
     ccy = currencies.pop() if len(currencies) == 1 else ""
     first, last = min(ln["when"] for ln in lines), max(ln["when"] for ln in lines)
     span = (f"{first:%-d %b}-{last:%-d %b %Y}" if first.year == last.year
@@ -327,19 +325,19 @@ def _ii_ledger(text: str, out: dict) -> dict:
         out["unrecognised"] += [f"{ln['when']} {ln['desc']} — {why}" for ln in lines]
         return out
 
-    out["account"] = out["account"] or _ii_account(lines)
+    out["account"] = out["account"] or _ledger_account(lines, m)
     account = out["account"]
-    source = D.evidence_source("ii-transactions", reference=out["reference"], account=account)
+    source = D.evidence_source(key, reference=out["reference"], account=account)
     known = [r[0] for r in D.SECURITIES]
 
     for ln in sorted(lines, key=lambda x: x["when"]):
         line = f"{ln['when']} {ln['desc']}"
-        code = D.ii_line(ln["desc"], ln["symbol"])
+        code = m.line(ln["desc"], ln["symbol"])
         if code is None:
             out["unrecognised"].append(f"{line} — not a line this reader knows")
             continue
         if code.table is None:
-            number = D.ii_contract_number(ln["ref"])
+            number = m.contract(ln["ref"])
             found = _in_record(number)
             out["seen"].append({"line": f"{line} (contract note {number})", "why": code.why,
                                 "in_record": found})
@@ -347,7 +345,7 @@ def _ii_ledger(text: str, out: dict) -> dict:
                 out["unrecognised"].append(f"{line} — its contract note {number} is not in the "
                                            f"record; work the contract note")
             continue
-        credit, debit = _number(ln["cells"]["Credit"]), _number(ln["cells"]["Debit"])
+        credit, debit = _number(ln["cells"][m.credit]), _number(ln["cells"][m.debit])
         amount = credit if credit and credit != "n/a" else f"-{debit}"
         values = {"date": ln["when"].isoformat(), "account": account, "amount": amount,
                   "source": source, "detail": ln["desc"]}
@@ -368,17 +366,17 @@ def _ii_ledger(text: str, out: dict) -> dict:
                             "sources": {k: line for k in values if values[k] != ""},
                             "machine": True, "derived": [], "drafted": []})
 
-    _ii_cash(lines, out, account)
+    _ledger_cash(lines, out, account, key, m)
     return out
 
 
-def _ii_cash(lines: list, out: dict, account: str) -> None:
+def _ledger_cash(lines: list, out: dict, account: str, key: str, m) -> None:
     """The newest line's running balance as the account's cash — only when the account keeps
     its cash in GBP alone, because a GBP ledger's balance is then the whole of it. An account
     that has been paid in another currency holds cash there too, and its cash is that ledger
     and this one together."""
     newest = max(lines, key=lambda x: x["when"])
-    balance = _number(newest["cells"]["Running Balance"])
+    balance = _number(newest["cells"][m.balance])
     line = f"{newest['when']} running balance £{balance}"
     if not account:
         out["seen"].append({"line": line, "in_record": None,
@@ -392,7 +390,7 @@ def _ii_cash(lines: list, out: dict, account: str) -> None:
                                    f"proposed from one"})
         return
     values = {"account": account, "as_of": (out["instant"] or str(newest["when"]))[:10],
-              "cash": balance, "evidence": "ii-transactions", "reference": out["reference"]}
+              "cash": balance, "evidence": key, "reference": out["reference"]}
     already = recorded.matching_row("cash-readings", values)
     if already and already != "unreadable":
         out["seen"].append({"line": line, "in_record": already,
@@ -417,26 +415,26 @@ def _on_file(table: str, already: str) -> str:
 LINES_TO_NAME_AN_ACCOUNT = 2
 
 
-def _ii_account(lines: list) -> str:
-    """Which ii account a ledger is, when it prints no client number: the account a dealing line
-    settled in (its contract note's number names one), or else the one account that at least
-    `LINES_TO_NAME_AN_ACCOUNT` of its lines match on file and no other matches. Anything less
-    leaves it blank for a person."""
+def _ledger_account(lines: list, m) -> str:
+    """Which of the broker's accounts a ledger is, when it prints no client number: the account a
+    dealing line settled in (its contract note's number names one), or else the one account that
+    at least `LINES_TO_NAME_AN_ACCOUNT` of its lines match on file and no other matches. Anything
+    less leaves it blank for a person."""
     found = set()
     for ln in lines:
-        code = D.ii_line(ln["desc"], ln["symbol"])
-        if code is D.II_DEALING:
-            found |= recorded.accounts_citing(D.ii_contract_number(ln["ref"]))
+        code = m.line(ln["desc"], ln["symbol"])
+        if code is not None and code.table is None:
+            found |= recorded.accounts_citing(m.contract(ln["ref"]))
     if found:
         return found.pop() if len(found) == 1 else ""
     matched = {}
-    for account in recorded.accounts_of_broker(D.II_BROKER):
+    for account in recorded.accounts_of_broker(m.broker):
         for ln in lines:
-            code = D.ii_line(ln["desc"], ln["symbol"])
+            code = m.line(ln["desc"], ln["symbol"])
             if code is None or code.table is None:
                 continue
-            credit = _number(ln["cells"]["Credit"])
-            amount = credit if credit and credit != "n/a" else f"-{_number(ln['cells']['Debit'])}"
+            credit = _number(ln["cells"][m.credit])
+            amount = credit if credit and credit != "n/a" else f"-{_number(ln['cells'][m.debit])}"
             values = {"date": ln["when"].isoformat(), "account": account, "amount": amount,
                       "category": code.category}
             hit = recorded.matching_row(code.table, values)
