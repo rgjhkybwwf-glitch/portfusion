@@ -116,6 +116,13 @@ prints it.
   device revoked part-way through came back, signed in. The passkeys, the readers and the sessions
   in memory now change under one lock, and a session opens only while its passkey is on file. A
   restart's exit waits for a write in progress to finish, as every door's write does.
+- **A desk request that fails says so.** A Bench button whose answer was not the desk's JSON
+  (opening a new item, saving, reading, writing, withdrawing) left an empty box, or no item; each
+  now shows the server's words. An action the desk refused (a write not yet enabled, say) no
+  longer reads as done. The page last asked for is the one drawn: a slow page no longer draws
+  over a quicker one opened after it. The page open in the rail is marked as the current page
+  for a screen reader, each result box is read out as it fills, and a read-only figure shows its
+  focus ring. Trades' filters redraw the page, as Holdings' and Round Trips' do.
 
 ## 0.3.2 — beta, 24 Oct 2026
 

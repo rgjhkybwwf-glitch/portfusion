@@ -127,8 +127,8 @@ table, .fresh, .steps, pre { font-variant-numeric: tabular-nums; }
   margin-top: -6px; border-radius: var(--radius-round); background: var(--accent);
 }
 .tabs button:hover { color: var(--heading); }
-.tabs button[aria-selected="true"] { color: var(--heading); font-weight: 700; }
-.tabs button[aria-selected="true"]::before {
+.tabs button[aria-current="page"] { color: var(--heading); font-weight: 700; }
+.tabs button[aria-current="page"]::before {
   left: 0; width: 14px; height: 14px; margin-top: -7px;
   background: var(--spark); border: 2px solid var(--heading);
 }
@@ -561,7 +561,6 @@ td.wide-cell input { width: 100%; }
 /* A FETCHED FIGURE IS READ, NOT TYPED, so it sits in its cell as text; a rate the sweep left
    unpriced loses `readonly` and looks like an input again. */
 td input[readonly] { border-color: transparent; background: transparent; padding-left: 0; }
-td input[readonly]:focus { outline: none; border-color: transparent; box-shadow: none; }
 /* A FIGURE IN AN INPUT READS DOWN ITS COLUMN like one in a cell: right-set under its `th.num`,
    and a read-only one flush to the edge the heading sits on. */
 td.num input { text-align: right; }

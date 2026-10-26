@@ -178,6 +178,53 @@ const filters = (fields, clearId) => `
   <div class="grid filters">${fields.filter(Boolean).join("")}</div>
   ${clearId ? `<p class="filter-clear"><button class="link" id="${clearId}">clear filters</button></p>` : ""}`;
 
+/* THE FILTERS, WIRED ONE WAY. Each box re-asks the SERVER — the narrowing is the engine's, and
+   re-filtering an already-fetched array in the browser would be a second answer to a question
+   the engine answers. `ask(v)` is the route for the boxes' values, and its answer is drawn over
+   the page's own data, its values as `chosen`; `clear(v)` is the route with none; `resets` names
+   the box a change empties first.
+   THE FILTERS HELD FOR THIS PAGE are asked for again on arrival — only then, and only when they
+   differ from what was drawn, so the redraw that answers them cannot ask again. A VIEW MAY DRAW
+   FEWER BOXES (Round Trips by company life has no account or ticker), so only the boxes on the
+   page are read. */
+function wireFilters(name, d, again, { ids, button, ask, clear, resets = {} }) {
+  const boxes = ids.map((id) => $(`#${id}`)).filter(Boolean);
+  const values = () => Object.fromEntries(ids.map((id) => [id, $(`#${id}`)?.value ?? ""]));
+  const reload = async (path) => {
+    const asked = ++ASKED;
+    let q;
+    try { q = await get(path); } catch (e) {
+      if (asked === ASKED) drawFailure(e);
+      return;
+    }
+    if (asked !== ASKED) return;
+    const data = { ...d, ...q, chosen: HELD_FILTERS[name] || {} };
+    $("#main").innerHTML = DRAW[name](data);
+    WIRE[name](data, true);
+  };
+  const go = () => {
+    HELD_FILTERS[name] = Object.fromEntries(boxes.map((el) => [el.id, el.value]));
+    reload(ask(values()));
+  };
+  /* `change` and not `input`: a date input fires on every keystroke while a year is being
+     typed, and each one would be a request for a range nobody meant. */
+  boxes.forEach((el) => el.addEventListener("change", () => {
+    const reset = resets[el.id] && $(`#${resets[el.id]}`);
+    if (reset) reset.value = "";
+    go();
+  }));
+  $(`#${button}`)?.addEventListener("click", () => {
+    const v = values();
+    delete HELD_FILTERS[name];
+    reload(clear(v));
+  });
+  const held = HELD_FILTERS[name];
+  if (again || !held || !boxes.length) return;
+  if (boxes.every((el) => el.value === (held[el.id] ?? ""))) return;
+  boxes.forEach((el) => { el.value = held[el.id] ?? ""; });
+  go();
+}
+
 /* TWO THINGS A COLUMN OF FIGURES CANNOT DO ON ITS OWN, both in `opts` so the other call sites
    are untouched.
 
