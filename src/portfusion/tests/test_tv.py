@@ -612,6 +612,56 @@ def test_a_feed_writes_nothing_but_its_own_sign_in(feed, sign_in, tmp_path):
     assert not elsewhere, f"feeds/{feed}.py writes beyond {sign_in}: {elsewhere}"
 
 
+def test_a_callback_from_another_page_does_not_end_the_sign_in(tmp_path, monkeypatch):
+    """The sign-in waits on a local port, which any page can reach: a request without this
+    sign-in's `state` is answered 400 and the wait goes on to the real one."""
+    import socket
+    import urllib.error
+    import urllib.parse
+    import urllib.request
+    with socket.socket() as s:
+        s.bind(("127.0.0.1", 0))
+        port = s.getsockname()[1]
+    monkeypatch.setattr(tv, "REDIRECT_PORT", port)
+    monkeypatch.setattr(tv, "SESSION_FILE", str(tmp_path / "session.json"))
+    monkeypatch.setattr(tv, "_post", lambda url, body, form=False: {"client_id": "c"}
+                        if url.endswith("/register") else {"access_token": "a", "expires_in": 900})
+    answered = []
+
+    def browser(url):
+        state = urllib.parse.parse_qs(urllib.parse.urlparse(url).query)["state"][0]
+
+        def visit():
+            for query in ("error=x&state=not-ours", "error=x&state=%C3%A9",
+                          f"code=k&state={state}"):
+                try:
+                    answered.append(urllib.request.urlopen(
+                        f"http://127.0.0.1:{port}/callback?{query}", timeout=5).status)
+                except urllib.error.HTTPError as e:
+                    answered.append(e.code)
+        threading.Thread(target=visit, daemon=True).start()
+
+    session = tv.sign_in(open_browser=browser)
+    assert answered == [400, 400, 200] and session["access_token"] == "a"
+
+
+@pytest.mark.parametrize("feed, sign_in, save", [("tv", "SESSION_FILE", "_save_session"),
+                                                 ("ig", "SESSION_CACHE", "_save_session_cache")])
+def test_a_sign_in_is_written_private_from_the_start(feed, sign_in, save, tmp_path, monkeypatch):
+    """0600, and before a byte is written, not after a chmod: a token another account can read
+    is a credential another account holds. An older file readable by others is made so too."""
+    import importlib
+    import os
+    module = importlib.import_module(f"portfusion.feeds.{feed}")
+    path = tmp_path / "sign-in.json"
+    path.write_text("{}")
+    path.chmod(0o644)
+    monkeypatch.setattr(module, sign_in, str(path))
+    monkeypatch.setattr(os, "chmod", lambda *a, **k: None)     # nothing made private afterwards
+    getattr(module, save)({"X": {"token": "t"}})
+    assert oct(path.stat().st_mode & 0o777) == "0o600"
+
+
 #: What each feed holds that is a credential, by the name it holds it under.
 _SECRETS = {"tv": ("token", "refresh_token", "access_token", "verifier", "_access_token"),
             "ig": ("token", "cst", "api_key", "password", "identifier", "_cred")}

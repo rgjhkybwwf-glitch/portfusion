@@ -1055,6 +1055,21 @@ def test_a_duplicate_is_acknowledged_and_not_silently_overridden(item):
     assert not next(g for g in _bench.gates(item)
                     if g["name"] == "not already in the record")["ok"]
 
+    # A SIGN THE QUOTE CHECK CANNOT SEE (`verify._digits`) is asked about the same way: a fee
+    # paid in, or a dividend paid out, is confirmed per finding.
+    def signs():
+        return next(g for g in _bench.gates(item) if g["name"] == "signs as the category's")
+    item["rows"] = [{"table": "income", "values": {"category": "Fee", "amount": "12.00"}}]
+    assert not signs()["ok"] and "a Fee of 12.00" in signs()["detail"]
+    item["acknowledged"] += signs()["findings"]
+    assert signs()["ok"]
+    item["rows"].append({"table": "income", "values": {"category": "Dividend", "amount": "-3.50"}})
+    assert not signs()["ok"] and "a Dividend of -3.50" in signs()["detail"]
+    item["rows"] = [{"table": "income", "values": {"category": c, "amount": a}}
+                    for c, a in (("Fee", "-12.00"), ("Dividend", "3.50"),
+                                 ("Funding interest", "-1.00"), ("Funding interest", "1.00"))]
+    assert signs()["ok"] and not signs()["findings"]
+
 
 @needs("accounts", "buys")
 def test_the_screen_shows_the_whys_already_on_file(item):
@@ -1084,7 +1099,7 @@ def test_an_item_is_not_approvable_until_every_gate_is_green(item):
     # rather than asserted about a row afterwards.
     assert {g["name"] for g in _bench.gates(item)} == {
         "statement-grade", "the reference retrieves it", "rows", "every line read",
-        "not already in the record", "why_entered", "why_exited"}
+        "not already in the record", "signs as the category's", "why_entered", "why_exited"}
     assert _bench.approved(_ready(item))
 
 
@@ -1420,7 +1435,8 @@ def test_a_set_up_writes_its_line_company_contract_and_trade_together(swept, sto
     (dict(_set_up(), values=dict(_set_up()["values"], ticker="")), "a new line needs its trade"),
     (_set_up(ticker="OTHER SB"), "a new contract needs its trade, on its line"),
     (dict(_set_up(), **{"with": _set_up()["with"][:1] + _set_up()["with"][2:]}),
-     "has no company row"),
+     "NEWCO SB: Newco Inc. has no company row"),
+    (dict(_set_up(), **{"with": _set_up()["with"][1:]}), "NEWCO-JUN27: NEWCO SB is not a line"),
     (_set_up(), "a new contract needs its first mark"),
 ])
 def test_a_set_up_that_does_not_stand_with_its_trade_is_refused(swept, event, says):
@@ -1991,13 +2007,16 @@ def test_a_withdrawn_document_leaves_the_workbench_and_is_not_destroyed(workbenc
     assert [i["id"] for i in bench.all_items()] == [working["id"]], "its note left the bench"
 
     monkeypatch.setattr(commit, "archive", archive)
+    monkeypatch.setenv("HOME", str(out.resolve().parent))
     r = withdraw.withdraw("note.csv", why="not needed")
 
     assert not (box / "note.csv").exists(), "it did not leave the workbench"
     assert (out / "note.csv").read_bytes() == b"a,b\n1,2\n", "the bytes did not survive"
     assert r["returned"] is False, "nothing was already at the destination"
     assert not bench.all_items(), "its note is still on the bench"
-    assert json.loads((archive() / f"{working['id']}.json").read_text())["state"] == "withdrawn"
+    note = json.loads((archive() / f"{working['id']}.json").read_text())
+    assert note["state"] == "withdrawn"
+    assert note["withdrawn_to"] == f"~/{out.name}/note.csv", "the note names this Mac's home"
 
 
 def test_withdrawing_refuses_a_destination_inside_the_repository(workbench):

@@ -133,6 +133,9 @@ def load_credentials(path=None):
             "    git check-ignore -v credentials.json\n"
             ").\n\nThe shape:\n\n" + CREDENTIALS_TEMPLATE + "\n\n"
             "Set env to \"demo\" until the epic map is proved, then switch to \"live\".")
+    if os.stat(path).st_mode & 0o077:
+        raise CredentialsError(f"{path} can be read by other accounts on this Mac. Make it yours "
+                               f"alone, then ask again:\n    chmod 600 {path}")
     with open(path) as fh:
         raw = json.load(fh)
 
@@ -195,17 +198,21 @@ def _load_session_cache():
 
 
 def _save_session_cache(cache):
-    with open(SESSION_CACHE, "w") as fh:
+    """Created 0600, and an older file made so before a byte of the new cache is written."""
+    fd = os.open(SESSION_CACHE, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    os.fchmod(fd, 0o600)
+    with os.fdopen(fd, "w") as fh:
         json.dump(cache, fh, indent=2)
-    os.chmod(SESSION_CACHE, 0o600)
 
 
 def clear_session_cache(label=None):
-    cache = _load_session_cache()
+    """One account's session out of the cache, or, with no `label`, the cache file gone."""
     if label is None:
-        cache = {}
-    else:
-        cache.pop(label, None)
+        if os.path.exists(SESSION_CACHE):
+            os.remove(SESSION_CACHE)
+        return
+    cache = _load_session_cache()
+    cache.pop(label, None)
     _save_session_cache(cache)
 
 

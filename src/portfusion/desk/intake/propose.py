@@ -48,7 +48,7 @@ import sys
 from pathlib import Path
 
 from portfusion.desk.intake import bench, recorded, verify
-from portfusion.desk.engine import _guarded
+from portfusion.desk.engine import RecordUnavailable, _guarded
 from portfusion.log import log
 
 #: Who made a reading. The screen says "read <when> by" this.
@@ -390,7 +390,7 @@ def resolve_ticker(value: str) -> str:
         return list(bench.vocabulary().get("ticker") or [])
     try:
         held = _guarded(_load)
-    except Exception:
+    except RecordUnavailable:
         return value
 
     from portfusion.record import rules as D
@@ -434,7 +434,7 @@ def _derived(item: dict, table: str, account: str | None = None,
             return book().parcel(account, ticker)
         try:
             parcel = _guarded(_parcel)
-        except Exception:
+        except RecordUnavailable:
             parcel = None
         if parcel:
             out["realisation_id"] = parcel
@@ -463,7 +463,7 @@ def _derived(item: dict, table: str, account: str | None = None,
                                      account or "")
         try:
             line = _guarded(_compose)
-        except Exception:
+        except RecordUnavailable:
             line = ""
 
     if line:

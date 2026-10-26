@@ -79,14 +79,17 @@ def _located(name):
     browser sends is ever read as a path.
 
     A NAME IS NOT TRIED AGAINST THE FOLDER THE PROCESS RUNS IN, so `credentials.json` is never
-    read from the book's folder. The containment is the `/raw` route's: the name resolves inside
-    `_inbox/` or it is not found.
+    read from the book's folder. It is found in the workbench's own listing, a file and not a
+    link, so no path is built from what a browser sent.
     """
-    inbox = os.path.realpath(schema.inbox())
-    path = os.path.realpath(os.path.join(inbox, name))
-    if os.path.dirname(path) != inbox:
+    try:
+        found = [e.path for e in os.scandir(schema.inbox())
+                 if e.name == name and e.is_file(follow_symlinks=False)]
+    except OSError:
+        found = []
+    if not found:
         raise FileNotFoundError(name)
-    return path
+    return found[0]
 
 
 def modified(name):
