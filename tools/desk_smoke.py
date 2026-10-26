@@ -14,10 +14,10 @@ import sys
 
 os.environ["PORTFUSION_BOOK"] = "demo"      # the file leaves the book behind: never a real one's
 
-from fastapi.testclient import TestClient  # noqa: E402
+from fastapi.testclient import TestClient
 
-from portfusion.desk import app  # noqa: E402
-from portfusion.log import log  # noqa: E402
+from portfusion.desk import app
+from portfusion.log import log
 
 
 #: Halves, a binary float below its own digits, a large and a tiny figure, and a percentage.

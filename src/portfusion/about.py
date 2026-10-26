@@ -23,7 +23,7 @@ def _commit(root: str) -> str | None:
         changed = subprocess.run(["git", "status", "--porcelain"], cwd=root,
                                  capture_output=True, text=True, timeout=5).stdout.strip()
         return head + (" +uncommitted" if changed else "")
-    except Exception:
+    except (OSError, subprocess.SubprocessError):
         return None
 
 
@@ -34,7 +34,7 @@ def _installed_commit() -> str | None:
     from importlib import metadata
     try:
         found = json.loads(metadata.distribution("portfusion").read_text("direct_url.json") or "{}")
-    except Exception:
+    except (metadata.PackageNotFoundError, ValueError):
         return None
     commit = found.get("vcs_info", {}).get("commit_id")
     return commit[:7] if commit else None
@@ -85,7 +85,7 @@ def stamp(root: str | None = None, store: str | os.PathLike | None = None) -> st
                     digest.update(name.encode())
                     digest.update(fh.read())
         facts = digest.hexdigest()[:8]
-    except Exception:
+    except OSError:
         facts = "unknown"
 
     return f"built {built} · {code} · store {facts}"
@@ -181,5 +181,5 @@ def backup_state() -> str:
         behind = git("rev-list", "--count", f"{there}..{head}")
         return (f"backup: BEHIND by {behind or '?'} commit(s) — origin has {there[:7]}, "
                 f"HEAD is {head[:7]}. `git push origin {branch}`" + hooks)
-    except Exception as e:                                    # never fail the check over a backup
+    except Exception as e:      # noqa: BLE001 — never fail the check over a backup
         return f"backup: unknown ({type(e).__name__})"

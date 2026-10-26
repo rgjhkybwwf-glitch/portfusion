@@ -524,7 +524,7 @@ def test_the_hosted_page_says_restart_when_the_mac_runs_older_code(repo_root):
         "the header can still say publish while the desk is stale"
 
 
-def test_a_tunnel_that_is_off_reads_as_the_mac_not_answering(repo_root):
+def test_a_tunnel_that_is_off_reads_as_the_mac_not_answering():
     """WITH THE FUNNEL TURNED OFF, NETLIFY ANSWERS 500 WITH AN EMPTY BODY, not a 502 or a 504, so
     an empty 500 counts as unreachable. The desk's own 500 always carries "Internal Server Error",
     so a crash on the Mac still reads as a crash."""
@@ -535,7 +535,7 @@ def test_a_tunnel_that_is_off_reads_as_the_mac_not_answering(repo_root):
     assert "[502, 504].includes(r.status)" in body, "the proxy's own 502 and 504 are no longer read"
 
 
-def test_the_hosted_page_checks_the_version_before_drawing(repo_root):
+def test_the_hosted_page_checks_the_version_before_drawing():
     """The page reads its own version from the meta tag `desk/bundle.py` fills, and compares it
     with the door's before the first panel is painted and on every switch.
 
@@ -551,7 +551,7 @@ def test_the_hosted_page_checks_the_version_before_drawing(repo_root):
     assert "otherVersion(s)" in show, "a switch does not re-check the version"
 
 
-def test_the_hosted_page_points_at_no_page_it_cannot_open(repo_root):
+def test_the_hosted_page_points_at_no_page_it_cannot_open():
     """A POINTER TO A PAGE THE DOOR DOES NOT LIST, an instruction no hosted reader can follow, is
     left out, and Reconcile's reading line goes with it."""
     js = desk_script()

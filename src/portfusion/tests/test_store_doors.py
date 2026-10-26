@@ -12,7 +12,7 @@ import pathlib
 
 import pytest
 
-from harness import (NO_CHECKOUT, ROOT, SRC, STORE_NAMES, TESTS, book_classes, engine_files,
+from harness import (ROOT, SRC, STORE_NAMES, TESTS, book_classes, engine_files,
                      file_calls, needs)
 
 #: EVERY MODULE THAT OPENS A FILE OF THE STORE, to read it or to write it, and each one is a door
@@ -144,17 +144,6 @@ def test_the_engine_imports_nothing_but_the_record_and_pandas(imports_of):
         # `from portfusion.record.schema import TABLES`.
         taken = {m for m in imports_of(path, dotted=True) if m.startswith("record.")}
         assert taken <= {"record.rules"}, f"engine/{path.name} takes {sorted(taken)} from record/"
-
-
-@pytest.mark.parametrize("door", sorted(STORE_FILE_DOORS))
-def test_each_declared_door_still_exists(door):
-    """A door listed here that no longer opens anything is stale documentation. The set
-    equality above catches it, but this names WHICH one so the failure reads plainly."""
-    if door.startswith("tools/") and ROOT is None:
-        pytest.skip(NO_CHECKOUT)                    # the maintainer's tools sit beside the app
-    path = ROOT / door if door.startswith("tools/") else SRC / door
-    assert path.exists(), f"{door} is on the list but the file is gone"
-    assert _store_calls(path), f"{door} opens no file of the store now — remove it from the list"
 
 
 # =====================================================================================
@@ -321,7 +310,7 @@ CALLABLE_THROUGH_THE_PIN = {"evidence_from_source", "reference_resolves", "docum
                             "states_cash", "filed_statements", "funding_nights", "accounts_open"}
 
 
-def test_the_evidence_rules_cannot_reach_a_table(repo_root):
+def test_the_evidence_rules_cannot_reach_a_table():
     """What CALLABLE_THROUGH_THE_PIN takes from `record/rules_evidence.py` is safe to call late
     only while that module imports nothing that could hold the store."""
     import ast
@@ -335,7 +324,7 @@ def test_the_evidence_rules_cannot_reach_a_table(repo_root):
         f"its functions out of CALLABLE_THROUGH_THE_PIN")
 
 
-def test_no_book_method_reads_the_process_record(repo_root):
+def test_no_book_method_reads_the_process_record():
     """THE SOURCE HALF of the test above, which can only probe the methods it calls.
 
     Inside `Book` and the classes it is built from, nothing but construction reads `rules`
@@ -372,7 +361,7 @@ def test_no_book_method_reads_the_process_record(repo_root):
         "a Book method reaches past the record it was built from:\n  " + "\n  ".join(offenders))
 
 
-def test_the_archive_is_listed_in_one_place(project_files, repo_root):
+def test_the_archive_is_listed_in_one_place(project_files):
     """`schema.statements()` is where a document is filed and `schema.filed_statements()` is what
     is there. A module composes the path here or not at all."""
     import re

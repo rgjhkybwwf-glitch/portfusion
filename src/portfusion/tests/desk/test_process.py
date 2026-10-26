@@ -85,14 +85,14 @@ def test_a_desk_launchd_does_not_name_relaunches_itself(monkeypatch, env):
     assert "portfusion.desk" in argv[2] and "kickstart" not in argv[2]
 
 
-def test_the_page_sends_the_port_it_is_connected_to(repo_root):
+def test_the_page_sends_the_port_it_is_connected_to():
     """The other half: a required argument nothing supplies is a button that always fails."""
     js = desk_script()
     assert "restart-desk" in js
     assert "location.port" in js, "app.js does not tell the action which server to restart"
 
 
-def test_the_restart_waits_for_the_new_process_rather_than_guessing(repo_root):
+def test_the_restart_waits_for_the_new_process_rather_than_guessing():
     """Reloading on a timer lands on either the dying server or a refused connection, and both
     look like a crash. /api/health carries `started`, so the page polls until it MOVES."""
     js = desk_script()
@@ -102,7 +102,7 @@ def test_the_restart_waits_for_the_new_process_rather_than_guessing(repo_root):
     assert "location.reload" in block
 
 
-def test_every_font_size_comes_from_the_scale(repo_root):
+def test_every_font_size_comes_from_the_scale():
     """EVERY SIZE IS A STEP OF THE SCALE, and every step is used: one nothing renders is a size
     the design does not have.
 
@@ -128,14 +128,14 @@ def test_every_font_size_comes_from_the_scale(repo_root):
         f"declared but never used: {sorted(declared - used)}")
 
 
-def test_nothing_in_a_data_row_is_bold(repo_root):
+def test_nothing_in_a_data_row_is_bold():
     """Bold is for a headline figure and an item's label, never a cell."""
     import re
     js = desk_script()
     assert not re.findall(r"<td[^>]*>\s*<strong", js), "a table cell is bold"
 
 
-def test_every_detail_is_in_the_one_order(repo_root):
+def test_every_detail_is_in_the_one_order():
     """ONE TOGGLE ACROSS THE BOOK, and inside the fold the sub-headings always in one order.
 
     app.js's DETAIL is the order; a panel names which parts its rows' detail draws, in
@@ -155,7 +155,7 @@ def test_every_detail_is_in_the_one_order(repo_root):
         "a row opens by a second kind of link")
 
 
-def test_every_filter_row_has_the_same_shape(repo_root):
+def test_every_filter_row_has_the_same_shape():
     """ONE FORM, ORDER AND LAYOUT across holdings, round trips and trades, in the grey filter boxes.
 
     ONE ORDER, applying only the fields a panel has: account · company · ticker · dates, then the
@@ -245,7 +245,7 @@ def _own(call):
     return call
 
 
-def test_every_sorting_table_names_itself_and_holds_its_own_sort(repo_root):
+def test_every_sorting_table_names_itself_and_holds_its_own_sort():
     """Held under the page and its columns, two tables would share one sort. A sorting table
     names itself and its sort is held under that name; one with no name would share, so it is
     refused."""
@@ -260,7 +260,7 @@ def test_every_sorting_table_names_itself_and_holds_its_own_sort(repo_root):
     assert len(names) == len(set(names)), f"two tables share a name: {sorted(names)}"
 
 
-def test_a_table_whose_order_is_its_layout_keeps_it(repo_root):
+def test_a_table_whose_order_is_its_layout_keeps_it():
     """A table naming the book first and then each account once keeps that order, as a detail's
     mark history keeps its own."""
     kept = {c.split(",")[0].strip() for c in map(_own, _table_calls(desk_script()))
@@ -398,7 +398,7 @@ def test_a_clean_desk_says_nothing_about_its_source(source_baseline):
     assert f["source_files"] == [] and f["source_changed"] is None
 
 
-def test_the_page_says_the_desk_is_behind_and_points_at_the_restart(repo_root):
+def test_the_page_says_the_desk_is_behind_and_points_at_the_restart():
     """The freshness line says when to press the restart: a fine store says nothing of a stale
     engine behind the page."""
     js = desk_script()

@@ -7,7 +7,7 @@ ends that; the cost is that CSV has no types, which is what this module supplies
 NO THIRD-PARTY IMPORTS. The record loads on the standard library alone, and test_schema.py holds
 this module to that.
 
-THE TYPE PROBLEM. Every cell is a string, and the record holds `str`, `int`, `float`, `bool`,
+THE TYPE PROBLEM. Every cell is a string, and the record holds `str`, `int`, `float`,
 `datetime.date` and `None`. Three round-trip badly if guessed:
 
   * `None` and `""` are DIFFERENT and both occur. The schema decides: `null=True` reads a blank as
@@ -143,7 +143,7 @@ class Field(NamedTuple):
     refuses a cell written otherwise, and `cell()` writes every figure so.
     """
     name: str
-    kind: str                    # str | int | float | number | bool | date
+    kind: str                    # str | int | float | number | date
     null: bool = False
     enum: tuple = ()
     required: bool = False
@@ -740,9 +740,6 @@ TABLES: dict[str, Table] = {t.name: t for t in _RECORD + (JOURNAL,)}
 # READING AND WRITING
 # =====================================================================================
 
-_TRUE = {"true", "yes", "1"}
-_FALSE = {"false", "no", "0"}
-
 
 def _parse(field: Field, raw: str, table: str, row_no: int):
     """One cell, string in, typed out. Raises rather than guessing."""
@@ -786,13 +783,6 @@ def _parse(field: Field, raw: str, table: str, row_no: int):
             return float(text) if any(c in text for c in ".eE") else int(text)
         if field.kind == "date":
             return _dt.date.fromisoformat(text)
-        if field.kind == "bool":
-            low = text.strip().lower()
-            if low in _TRUE:
-                return True
-            if low in _FALSE:
-                return False
-            raise ValueError(f"{text!r} is not a boolean")
     except ValueError as exc:
         raise ValueError(f"{where}: {exc}") from None
     raise KeyError(f"{where}: unknown field kind {field.kind!r}")
@@ -835,28 +825,6 @@ def cell(field: Field, value) -> str:
         except ValueError as e:
             raise ValueError(f"{field.name}: {e}") from None
     return str(value)
-
-
-def _render(field: Field, value) -> str:
-    """One cell, typed in, string out. The exact inverse of _parse."""
-    if value is None:
-        if not field.null:
-            raise ValueError(
-                f"{field.name!r} is None but the column is not nullable — writing it "
-                f"would read back as {'the empty string' if field.kind == 'str' else 'an error'}")
-        return ""
-    if field.kind == "date":
-        return value.isoformat()
-    if field.kind == "bool":
-        return "true" if value else "false"
-    if field.kind == "int":
-        if isinstance(value, float) and not value.is_integer():
-            raise ValueError(f"{field.name!r} holds {value!r}, which is not a whole number")
-        return str(int(value))
-    if field.kind == "number":
-        # repr, so an int writes "1" and a float writes "1.0" and the distinction survives.
-        return repr(value)
-    return cell(field, value)
 
 
 # WHICH COLUMNS POINT AT ANOTHER TABLE'S ROW. An account name mistyped with a lowercase L would
@@ -912,19 +880,13 @@ def check_references() -> None:
               "every per-account figure while every total still adds up.")
 
 
-def _resolve(ref) -> Table:
-    """A registered name, or a Table passed directly — which lets dump() emit a table's CSV before
-    the table is registered, since registering it makes the record require the file."""
-    return ref if isinstance(ref, Table) else TABLES[ref]
-
-
 def load(ref) -> list[tuple]:
     """Every row of one table, typed, in file order.
 
     Returns plain tuples. The caller decides what NamedTuple to wrap them in — the store
     knows the shape of the data, not what the rest of the book calls it.
     """
-    table = _resolve(ref)
+    table = TABLES[ref]
     name = table.name
     with table.path.open(newline="", encoding="utf-8") as fh:
         reader = csv.reader(fh)
@@ -942,19 +904,3 @@ def load(ref) -> list[tuple]:
             rows.append(tuple(_parse(f, v, name, row_no)
                               for f, v in zip(table.fields, raw)))
     return rows
-
-
-def dump(ref, rows) -> None:
-    """Write one table from the record. Not part of normal operation: the CSV is the source and
-    nothing regenerates it. Kept for emitting a new table and verifying it before it is
-    registered."""
-    table = _resolve(ref)
-    name = table.name
-    with table.path.open("w", newline="", encoding="utf-8") as fh:
-        writer = csv.writer(fh, lineterminator="\n")
-        writer.writerow(table.header)
-        for row in rows:
-            if len(row) != len(table.fields):
-                raise ValueError(f"{name}: row has {len(row)} values, "
-                                 f"schema has {len(table.fields)} fields")
-            writer.writerow([_render(f, v) for f, v in zip(table.fields, row)])

@@ -20,8 +20,8 @@ THE VERSION names the whole set: a hash over every file except the shell page, w
 in `<meta name="desk-version">`. Not "build", which in this repo is the report's. The hosted page compares it with the Mac's before it draws anything,
 so old screen code never renders new data — the mixture `engine.source_stale()` guards against.
 
-IT COMPUTES NOTHING OF THE BOOK'S. The colours come from `engine.tokens_css()`, the lockup from
-`engine.lockup()`, the name and the footer's words from `portfusion.brand`, the icons from the
+IT COMPUTES NOTHING OF THE BOOK'S. The colours come from `theme.tokens_css()`, the lockup, the
+name and the footer's words from `portfusion.brand`, the icons from the
 book's `brand/` folder or, where it has none, from `desk.icon`; this only gathers them, and
 states the manifest that names them. It writes nothing.
 
@@ -41,7 +41,7 @@ import pathlib
 import re
 
 from portfusion import about, brand
-from portfusion.desk import engine
+from portfusion.desk import theme
 
 STATIC = pathlib.Path(__file__).resolve().parent / "static"
 FONTS = brand.FONT_DIR
@@ -77,7 +77,7 @@ _STAMPED = ("/static/app.css", *(f"/static/{n}" for n in SCRIPTS), "/tokens.css"
 def _fonts() -> list[str]:
     """The typefaces /tokens.css declares, as their URLs. Derived from the stylesheet, so a face
     declared by house/palette.py's FONT joins the shell by being declared."""
-    return sorted(set(re.findall(r"url\('(/fonts/[^']+)'\)", engine.tokens_css())))
+    return sorted(set(re.findall(r"url\('(/fonts/[^']+)'\)", theme.tokens_css())))
 
 
 def paths() -> list[str]:
@@ -115,7 +115,7 @@ def manifest() -> str:
     the mark sits well inside the 40% circle a launcher keeps, so one file serves both.
     """
     name = title()
-    colours = engine.palette()
+    colours = theme.palette()
     sized = [(n, m[1]) for n in brand.APP_ICONS if (m := re.fullmatch(r"icon-(\d+)\.png", n))]
     icons = [{"src": f"/{n}", "sizes": f"{px}x{px}", "type": "image/png", "purpose": purpose}
              for purpose in ("any", "maskable") for n, px in sized]
@@ -131,7 +131,7 @@ def asset(path: str) -> bytes:
     """One asset's bytes. KeyError for anything that is not part of the shell, which is the
     containment rule: a name is looked up, never resolved against a directory."""
     if path == "/tokens.css":
-        return engine.tokens_css().encode()
+        return theme.tokens_css().encode()
     if path == "/favicon.png" or path in _app_icons():
         if brand.ICONS:
             return (brand.ICONS / path[1:]).read_bytes()
@@ -168,7 +168,7 @@ def index(assets: dict[str, bytes] | None = None) -> bytes:
         f'<script src="/static/{n}"></script>' for n in SCRIPTS))
     for url in _STAMPED:
         html = html.replace(f'"{url}"', f'"{url}?v={_digest(assets[url])}"')
-    html = html.replace("<!-- lockup -->", engine.lockup())
+    html = html.replace("<!-- lockup -->", brand.lockup())
     html = html.replace("<!-- title -->", _html.escape(title()))
     # WHOSE IT IS AND WHICH RELEASE, in the footer, on the Mac and the hosted desk alike.
     html = html.replace("<!-- footer -->", _html.escape(footer()))

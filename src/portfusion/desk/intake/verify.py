@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import datetime as _dt
 import re
+from decimal import Decimal
 
 #: The kinds whose value must also be found in its own quote.
 NUMERIC_KINDS = ("int", "float", "number")
@@ -143,7 +144,6 @@ def in_pounds(value: str) -> str:
 
     Side effects: none.
     """
-    from decimal import Decimal
     return format((Decimal(re.sub(r"[,\s£$€]", "", value)) / 100).normalize(), "f")
 
 

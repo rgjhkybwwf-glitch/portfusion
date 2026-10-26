@@ -51,7 +51,6 @@ _FILE = AppendOnlyCSV(CSV_NAME, FIELDS, numeric=tuple(NUMERIC), sort_key=lambda 
 
 load = _FILE.load
 save = _FILE.save
-known = _FILE.known
 
 def live_observations() -> list[dict]:
     """The record's CURRENT account observations, in this history's row shape.
@@ -132,18 +131,6 @@ def nav_component(row: dict) -> float | None:
         return row["equity"]
     # POSITIONS ONLY: cash is never in NAV (module docstring).
     return row["positions_value"]
-
-
-def at(date: str, rows: list[dict] | None = None) -> dict:
-    """Every account's latest statement on or before `date`."""
-    rows = load() if rows is None else rows
-    latest = {}
-    for r in rows:
-        if r["as_of"] <= date:
-            cur = latest.get(r["account"])
-            if cur is None or r["as_of"] > cur["as_of"]:
-                latest[r["account"]] = r
-    return latest
 
 
 def show(account: str | None = None) -> None:

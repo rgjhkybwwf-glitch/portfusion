@@ -53,7 +53,6 @@ _FILE = AppendOnlyCSV(CSV_NAME, FIELDS, numeric=("rate",), sort_key=lambda r: (r
 
 load = _FILE.load
 save = _FILE.save
-known = _FILE.known
 
 def _iso(day: str) -> str | None:
     """`day` as an ISO date, or None when it is not one: a rate with no date cannot be banked."""

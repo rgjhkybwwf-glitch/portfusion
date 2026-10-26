@@ -49,7 +49,6 @@ _FILE = AppendOnlyCSV(CSV_NAME, FIELDS, numeric=("price",), sort_key=lambda r: (
 
 load = _FILE.load
 save = _FILE.save
-known = _FILE.known
 
 def current_marks() -> list[dict]:
     """The live CURRENT_PRICES set, in this file's shape. `struck` is the column the feed wrote

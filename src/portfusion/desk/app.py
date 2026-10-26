@@ -401,7 +401,7 @@ def document(name: str):
         return _bench.document_text(name)
     except FileNotFoundError:
         raise HTTPException(404, f"no document {name!r} on the workbench")
-    except Exception as e:
+    except Exception as e:      # noqa: BLE001 — a reader's failure, whatever kind, is the document's
         raise HTTPException(400, str(e))
 
 

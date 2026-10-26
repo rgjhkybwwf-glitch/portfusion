@@ -154,22 +154,6 @@ def report_page(quarter_end: str) -> tuple[str | None, list[str]]:
         return _guarded(_run)
 
 
-def palette() -> dict:
-    """The house style — DELEGATED to `desk/theme.py`, never re-derived here.
-
-    Two routes to one answer can disagree. This module stays the one way the desk reads; the
-    derivation lives in `theme.py`.
-    """
-    from portfusion.desk import theme
-    return theme.palette()
-
-
-def tokens_css() -> str:
-    """The palette as CSS custom properties. Same delegation, same reason."""
-    from portfusion.desk import theme
-    return theme.tokens_css()
-
-
 def precision() -> dict:
     """The places the page prints, house/precision.py's: sent with every panel, beside its heads,
     so core.js types none of its own — sterling's, a percentage's, a rate's and a local price's
@@ -183,12 +167,6 @@ def precision() -> dict:
             "money_fields": list(P.MONEY_FIELDS), "pct_fields": list(P.PCT_FIELDS),
             "movement_fields": list(palette.MOVEMENT_FIELDS),
             "months": list(P.MONTHS)}
-
-
-def lockup() -> str:
-    """The book's lockup for the desk's header, `portfusion.brand`'s."""
-    from portfusion import brand
-    return brand.lockup()
 
 
 # --- is this desk running the code that is on disk? ----------------------------------------

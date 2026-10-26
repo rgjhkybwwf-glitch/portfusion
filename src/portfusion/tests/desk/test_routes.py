@@ -48,22 +48,12 @@ def test_tokens_are_derived_from_the_palette_not_written_here():
     """A colour changed in house/palette.py must reach the desk: hardcoded in each consumer, one
     colour breaks in each, some silently."""
     css = app.tokens().body.decode()
-    for key, value in engine.palette().items():
+    from portfusion.desk import theme
+    for key, value in theme.palette().items():
         assert value in css, f"{key} did not reach tokens.css"
 
 
-def test_there_is_exactly_one_palette_derivation():
-    """ONE ROUTE TO THE COLOURS: two routes to one answer drift.
-
-    desk/engine.py stays the one way the desk reads; theme.py holds the derivation; app.py serves
-    what engine hands it (the `one-palette` import contract).
-    """
-    from portfusion.desk import theme
-    assert engine.palette() == theme.palette()
-    assert engine.tokens_css() == theme.tokens_css()
-
-
-def test_every_token_the_desk_is_handed_is_worn(repo_root):
+def test_every_token_the_desk_is_handed_is_worn():
     """A TOKEN NOBODY CONSUMES is a palette entry pretending to be a treatment. The icon wears its
     own through `desk.icon.ROLES`, and the served shell wears the mark's two in the book's lockup,
     so both count as a use."""
@@ -77,7 +67,7 @@ def test_every_token_the_desk_is_handed_is_worn(repo_root):
     assert not unworn, f"tokens.css declares {unworn} and nothing on the desk wears them"
 
 
-def test_every_token_the_desk_wears_is_handed_to_it(repo_root):
+def test_every_token_the_desk_wears_is_handed_to_it():
     """THE OTHER DIRECTION: a var() naming a token nobody declares draws in the property's default,
     with nothing on screen saying so. Every var(--x) in app.css is a token /tokens.css declares or
     one app.css sets itself."""
@@ -348,7 +338,7 @@ def test_a_palette_change_reaches_the_icon(monkeypatch):
     assert icon.png(64) != before, "the palette changed and the icon drew the same bytes"
 
 
-def test_the_page_declares_the_icon_the_dock_will_use(repo_root):
+def test_the_page_declares_the_icon_the_dock_will_use():
     """THE OTHER END OF THE FAVICON ROUTE.
 
     Safari's "Add to Dock" takes the icon from `apple-touch-icon` on the page. Without it the
@@ -428,7 +418,7 @@ def test_the_dock_icons_are_the_full_mark_square_and_opaque():
     assert client.get("/icon-64.png").status_code == 404, "a size nobody named was served"
 
 
-def test_the_manifest_makes_the_desk_an_app_under_the_tabs_name(repo_root):
+def test_the_manifest_makes_the_desk_an_app_under_the_tabs_name():
     """WHAT CHROME, ANDROID AND SAFARI READ. `bundle.manifest()` says what each field is and
     why; this holds them: the name to the `<title>`, every icon to a file the shell serves at the
     size it names, the colours to the palette, and the response to a manifest's type."""

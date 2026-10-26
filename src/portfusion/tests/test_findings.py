@@ -136,7 +136,7 @@ def test_the_dashboard_and_the_audit_read_one_price_age(book):
 @needs("buys", "current-prices")
 def test_a_reconciliation_past_its_band_is_a_problem(book, monkeypatch):
     rec = book.reconciliation()
-    ig = rec[rec["comparable"] == True].index[0]                       # noqa: E712
+    ig = rec[rec["comparable"] == True].index[0]   # noqa: E712 — a column, compared elementwise
     rec.loc[ig, "difference"] = rec.loc[ig, "statement"]                # 100% apart
     monkeypatch.setattr(book, "reconciliation", lambda: rec)
     assert any(p.startswith("reconciliation failed") for p in book.findings()["problems"])
@@ -146,7 +146,7 @@ def test_a_reconciliation_past_its_band_is_a_problem(book, monkeypatch):
 def test_a_difference_that_rounds_to_nothing_carries_no_sign(book, monkeypatch):
     """Less than a penny reads "agree to £0.00": its sign does not outlive the rounding."""
     rec = book.reconciliation()
-    ig = rec[rec["comparable"] == True].index[0]                       # noqa: E712
+    ig = rec[rec["comparable"] == True].index[0]   # noqa: E712 — a column, compared elementwise
     agree = f"{rec.loc[ig, 'account']}: book and broker agree to "
     monkeypatch.setattr(book, "reconciliation", lambda: rec)
     for residue in (-1e-12, 0.0, 1e-12):
@@ -219,7 +219,7 @@ def test_the_close_procedure_names_the_freeze_and_its_window(monkeypatch):
 
 # ---- the price limits ------------------------------------------------------------------------
 
-def test_the_two_price_limits_are_the_agreed_values(repo_root):
+def test_the_two_price_limits_are_the_agreed_values():
     """Tuned to a weekly-or-wider refresh cadence. Changing either is a decision, not a tweak —
     this is the reminder."""
     from portfusion.record import rules as B

@@ -32,6 +32,7 @@ import uuid
 
 from portfusion.desk.engine import RecordUnavailable, _guarded
 from portfusion.desk.intake import filing, recorded
+from portfusion.house.headings import COMMON
 from portfusion.record import schema
 
 
@@ -798,7 +799,6 @@ def gates(item: dict) -> list[dict]:
         })
     # EACH GATE'S LABEL, what the screen calls it: a why by the words every page heads it with,
     # the rest by their own names. `name` stays the key the code and the tests use.
-    from portfusion.house.headings import COMMON
     for g in out:
         g["label"] = COMMON.get(g["name"], g["name"])
     return out
@@ -1219,7 +1219,7 @@ def waiting_documents() -> list[dict]:
     """What is sitting on the intake workbench, unfinished — and what each one says it is."""
     try:
         docs = _reader().waiting()
-    except Exception as e:                       # an unreadable _inbox/ must not blank the panel
+    except Exception as e:      # noqa: BLE001 — an unreadable _inbox/ must not blank the panel
         return [{"name": f"could not read _inbox/: {e}", "bytes": 0, "error": True}]
     for d in docs:
         if str(d.get("name", "")).lower().endswith(_CHEAP_TO_READ):

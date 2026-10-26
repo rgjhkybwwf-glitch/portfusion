@@ -314,7 +314,7 @@ def test_one_heading_names_one_field():
     assert not shared, f"one heading over several fields: {shared}"
 
 
-def test_every_desk_column_has_a_heading_for_its_tab(repo_root):
+def test_every_desk_column_has_a_heading_for_its_tab():
     """Every field a panel shows is named for its tab, and app.js draws a head from nothing else:
     no map of its own, and no typed head."""
     import re
@@ -336,7 +336,7 @@ def test_every_desk_column_has_a_heading_for_its_tab(repo_root):
     assert not asked - registered(), f"app.js heads {sorted(asked - registered())}, named nowhere"
 
 
-def test_app_js_draws_a_table_from_the_panels_own_columns(repo_root):
+def test_app_js_draws_a_table_from_the_panels_own_columns():
     """A COLUMN LIST TYPED IN app.js DRIFTS FROM THE PANEL'S. Every table() takes its columns
     from the payload."""
     import re
@@ -411,7 +411,7 @@ def test_no_renderer_heads_a_column_with_a_retired_word():
     assert not words & RETIRED_HEADINGS, sorted(words & RETIRED_HEADINGS)
 
 
-def test_a_table_with_a_local_price_marks_its_sterling(repo_root):
+def test_a_table_with_a_local_price_marks_its_sterling():
     """A LOCAL PRICE IS IN ITS LINE'S OWN CURRENCY, which the Ccy column beside it names:
     house/precision.py's LOCAL_PRICE_FIELDS say which fields are one. On a table that shows one,
     every sterling column (house/precision.py's MONEY_FIELDS) is headed "… (GBP)" —

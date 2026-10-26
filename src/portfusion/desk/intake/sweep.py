@@ -26,7 +26,7 @@ def prices(on=None, lacking=False):
     try:
         from portfusion.feeds import refresh
         from portfusion.desk.intake import statement_closes
-    except Exception as e:                          # noqa: BLE001
+    except Exception as e:      # noqa: BLE001 — an import runs the module, which can raise anything
         return {"ok": False, "error": f"the sweep could not be imported: {e}"}
     return {"ok": True, **_with_sources(refresh.sweep(on, filed=statement_closes.closes))}
 
@@ -69,14 +69,11 @@ def _ig(fn, *a):
     """
     try:
         from portfusion.feeds import ig
-    except Exception as e:
+    except Exception as e:      # noqa: BLE001 — an import runs the module, which can raise anything
         return {"ok": False, "error": f"feeds/ig.py could not be imported: {e}"}
     try:
         return {"ok": True, "result": fn(ig, *a)}
-    except FileNotFoundError as e:
-        return {"ok": False, "error": f"no credentials: {e}",
-                "hint": "credentials.json is gitignored and is not present until you create it."}
-    except Exception as e:
+    except Exception as e:      # noqa: BLE001 — the vendor's failure, named, is the panel's answer
         return {"ok": False, "error": f"{type(e).__name__}: {e}"}
 
 

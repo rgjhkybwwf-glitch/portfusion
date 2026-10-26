@@ -254,8 +254,8 @@ def test_every_stored_deal_reference_is_findable_in_an_archived_statement(D):
         try:
             pages = pypdf.PdfReader(str(path)).pages
             blob += re.sub(r"\s+", "", "".join(p.extract_text() or "" for p in pages))
-        except Exception:
-            continue                       # an unreadable document is test_inbox's problem
+        except Exception:           # noqa: BLE001 — an unreadable document is test_inbox's problem
+            continue
     if not blob:
         pytest.skip("no readable PDF in the archive")
 

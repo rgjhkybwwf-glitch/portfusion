@@ -109,7 +109,7 @@ async function post(url, data, method = "POST") {
 }
 
 /* AN ACTION, ANSWERED ONE WAY. The route answers `{result}`; an action that refuses says
-   `{ok: false}` with its words in `error` or `refused`, and perhaps a `hint`. `result` is what it
+   `{ok: false}` with its words in `error` or `refused`. `result` is what it
    did, `error` what to show, and `refused` says the action itself said no. */
 async function runAction(name, data = {}) {
   const { ok, body, error } = await post(`/api/action/${name}`, data);
@@ -117,7 +117,7 @@ async function runAction(name, data = {}) {
   const res = body.result || {};
   if (res.ok === false) {
     return { refused: true,
-             error: (res.error || res.refused || "refused") + (res.hint ? `\n\n${res.hint}` : "") };
+             error: res.error || res.refused || "refused" };
   }
   return { result: res.result ?? res };
 }

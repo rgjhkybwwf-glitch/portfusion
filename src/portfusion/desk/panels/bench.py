@@ -105,7 +105,7 @@ def _existing_why(item: dict) -> dict:
 
     try:
         why = engine.book().D.REASONING
-    except Exception:
+    except engine.RecordUnavailable:
         return {}
     return {t: [{"date": r.date.isoformat(), "why_entered": r.why_entered,
                  "why_exited": r.why_exited} for r in why[t]]

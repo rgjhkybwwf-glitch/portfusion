@@ -50,6 +50,7 @@ from pathlib import Path
 from portfusion.desk.intake import bench, recorded, verify
 from portfusion.desk.engine import RecordUnavailable, _guarded
 from portfusion.log import log
+from portfusion.record import schema
 
 #: Who made a reading. The screen says "read <when> by" this.
 READER = "a Claude session"
@@ -84,7 +85,6 @@ def _proposable() -> dict:
     DERIVED FROM `schema.TABLES`, so a new column becomes proposable by existing — the same
     reason `bench.form_for()` generates the form rather than listing it.
     """
-    from portfusion.record import schema
     out = {}
     for table in bench.TABLES:
         out[table] = {f.name: f.kind for f in schema.TABLES[table].fields
@@ -103,7 +103,6 @@ def _columns() -> str:
     # movement; it belongs in `income`, which is where this book keeps costs that attach to no
     # transaction. Knowing the columns does not tell you which table an event belongs to, and
     # the schema already says — so it is quoted rather than restated.
-    from portfusion.record import schema
     lines = ["The tables, what each is for, and the only columns each takes. Use the exact "
              "spelling; a column that belongs to another table is discarded."]
     for table, fields in sorted(_proposable().items()):

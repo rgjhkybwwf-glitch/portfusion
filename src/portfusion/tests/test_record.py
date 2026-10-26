@@ -658,7 +658,7 @@ def _flat(text):
     return " ".join(re.sub(r"[*`]", "", str(text)).split())
 
 
-def test_no_file_writes_out_a_rule_the_record_states_once(repo_root, project_files):
+def test_no_file_writes_out_a_rule_the_record_states_once(project_files):
     """THE SOURCE HIERARCHY, THE ARCHIVE CONVENTION AND STATEMENT GRADE are each stated once, in
     `record/rules.py`, and the Method page renders them. A file may NAME one and point at it;
     writing it out is a second copy, and the second copy is the one that goes stale.
@@ -933,11 +933,11 @@ def test_a_class_nothing_retrieves_is_never_marked_official(D):
 # THE DERIVED GLOSSARY
 # =====================================================================================
 
-def _glossary():
-    """tools/glossary.py, loaded from its file: a tool beside the app, not a module of it."""
+def _glossary(root):
+    """tools/glossary.py, loaded from its file in the checkout at `root`: a tool beside the app,
+    not a module of it."""
     import importlib.util
-    from harness import ROOT
-    spec = importlib.util.spec_from_file_location("glossary", ROOT / "tools" / "glossary.py")
+    spec = importlib.util.spec_from_file_location("glossary", root / "tools" / "glossary.py")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
@@ -957,7 +957,7 @@ def test_the_generated_half_of_the_glossary_matches_the_constants(repo_root):
     THE MARKERS ARE PART OF THE CONTRACT. A glossary that has lost them is one where the
     generated block has been pasted in by hand, and that is the drift arriving by another route.
     """
-    glossary = _glossary()
+    glossary = _glossary(repo_root)
     text = (repo_root / "docs" / "glossary.md").read_text(encoding="utf-8")
     assert glossary.BEGIN in text and glossary.END in text, (
         "docs/glossary.md has lost its generated-block markers. §9 is emitted by glossary.py; "
@@ -989,7 +989,7 @@ def test_the_generated_glossary_indexes_rather_than_redefines(repo_root):
     moment somebody emitted a definition into it. SPREAD_BET has no such guard, and the glossary
     may not define it either.
     """
-    glossary = _glossary()
+    glossary = _glossary(repo_root)
     from portfusion.record import rules as D
     block = glossary.generate()
     for name, value in (("SPREAD_BET", D.SPREAD_BET),

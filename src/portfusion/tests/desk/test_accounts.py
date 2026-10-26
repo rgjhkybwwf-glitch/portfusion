@@ -252,7 +252,7 @@ def test_the_desk_draws_only_the_columns_that_were_agreed():
         "A column is content a reader is shown — find which moved before editing this census.")
 
 
-def test_the_gap_list_quotes_the_engines_rule_rather_than_composing_one(repo_root):
+def test_the_gap_list_quotes_the_engines_rule_rather_than_composing_one():
     """THE GAP LIST DRAWS EACH ROW'S OWN `rule`, never one sentence over every unjudgeable row:
     "no broker figure at all" is true of `no-statement` and false of the others. A struck-apart
     row has a tag of its own.
@@ -479,7 +479,7 @@ def test_the_committed_reading_becomes_the_newest_cash(store_copy, item, tmp_pat
     assert newest[good["account"]][1].isoformat() == after
 
 
-def test_the_panels_share_one_shaping_helper(repo_root):
+def test_the_panels_share_one_shaping_helper():
     """ONE SHAPING MODULE, desk/panels/_shape.py.
 
     Copies drift: a fix reaches one and not the others, and one name returns two types.
@@ -534,7 +534,7 @@ def test_the_shared_shaping_is_tolerant_where_a_panel_needs_it():
 
 
 @needs("accounts", "account-readings", "buys")
-def test_the_bay_says_what_it_can_replace_rather_than_what_is_due(repo_root):
+def test_the_bay_says_what_it_can_replace_rather_than_what_is_due():
     """THE BAY LISTS WHAT IT CAN REPLACE, and nothing calls those lines "due".
 
     The LIST is the whole set, never filtered by age: docs/prices.md's rule is that the book is

@@ -27,6 +27,7 @@ from __future__ import annotations
 
 from portfusion.desk import engine
 from portfusion.desk.panels import _shape
+from portfusion.engine import uk_instant
 
 NAME = "what-changed"
 TITLE = "What Changed"
@@ -136,7 +137,6 @@ def _block(b, frame, held_as: str, label: str, columns: tuple) -> dict:
 def _uk_at(at: str) -> str:
     """One instant as UK wall-clock time (`engine.uk_instant`): the journal keeps UTC, and a
     reader reads the clock they keep."""
-    from portfusion.engine import uk_instant
     return uk_instant(at)
 
 

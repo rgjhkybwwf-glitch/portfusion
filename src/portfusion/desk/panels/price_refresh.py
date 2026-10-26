@@ -21,6 +21,8 @@ would be the third place that answers a question the record already answers.
 """
 from __future__ import annotations
 
+import pandas as pd
+
 from portfusion.desk import engine
 from portfusion.desk.actions import Action, register
 from portfusion.desk.doors import marks
@@ -96,7 +98,6 @@ GRID_COLUMNS = ("mark_key", "was", "was_at", "new", "new_at", "source", "origin"
 def _frame(rows: list[dict]):
     """A list of dicts as something `_shape.rows` can take. The engine already shaped these; the
     mark's key is named for what it is here."""
-    import pandas as pd
     return pd.DataFrame(rows) if rows else pd.DataFrame()
 
 
