@@ -31,6 +31,7 @@ the audit, never in a book's `checks/`.
 | `portfusion record` | whether the record is in good order: the findings, then the audit tests | anything about the code |
 | `tools/clean_room.py` | the tracked files install fresh and pass on the demo and on a new, empty book, and the wheel built from them passes `portfusion check` | that nothing of a book is named in what leaves |
 | `lint-imports` | each part of the app imports only what `pyproject.toml`'s contracts allow, the build no desk, feed or history | an import made by name at run time (`importlib`) |
+| `pyright` | the packages `pyproject.toml` lists type-check | anything of the packages it does not yet list, or the names `rules._build()` binds |
 | `tools/advisories.py` | no package `requirements.lock` or `tools/package-lock.json` pins has an advisory OSV knows of | that the floors' older versions have none |
 | `node --check src/portfusion/desk/static/app.js` | the desk's script parses: a syntax error there blanks every page | that it runs |
 | `tools/desk_smoke.py`, then `tools/desk_smoke.mjs` | every desk page draws on the demo, at start-up and from its tab: no error, rejected promise, error box or unanswered fetch | that a figure is right, or that anything inside a page works when clicked |

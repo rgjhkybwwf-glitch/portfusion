@@ -57,7 +57,7 @@ def release(root: str | None = None) -> str:
     return f"PortFusion {__version__}" + (f" · {commit}" if commit else "")
 
 
-def stamp(root: str | None = None, store: str | None = None) -> str:
+def stamp(root: str | None = None, store: str | os.PathLike | None = None) -> str:
     """WHICH CODE AND WHICH DATA MADE THIS ARTEFACT, in one line.
 
     Two identifiers, because each moves on its own: the RELEASE pins the code — with its commit

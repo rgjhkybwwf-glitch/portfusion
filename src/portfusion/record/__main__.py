@@ -74,7 +74,7 @@ def findings() -> int:
     head = b.headline()
     w = max(len(k) for k in head)
     for label, value in head.items():
-        log.info(f"  {label:<{w}}  {_figure(value, Book.HEADLINE[label]['unit'])}")
+        log.info(f"  {label:<{w}}  {_figure(value, Book.HEADLINE[label]['unit'])}")  # pyright: ignore[reportIndexIssue]
     log.info(f"  {'Prices':<{w}}  {f['prices'][0]}")
     log.info(f"  {'Price age':<{w}}  {f['prices'][1]}")
     log.info("-" * 66)

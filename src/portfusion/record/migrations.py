@@ -135,10 +135,10 @@ def _item(m: Migration, path: pathlib.Path, held_as: dict) -> Change | None:
     new_lines = {r["values"].get("ticker"): r["values"].get("held_as")
                  for r in item.get("rows") or [] if r.get("table") == "securities"}
     for r in item.get("rows") or []:
-        table = r["table"] = m.tables.get(r.get("table"), r.get("table"))
-        cols = dict(m.columns.get(table, {}))
+        table = r["table"] = m.tables.get(r.get("table"), r.get("table"))  # pyright: ignore[reportCallIssue, reportArgumentType]
+        cols = dict(m.columns.get(table, {}))  # pyright: ignore[reportCallIssue, reportArgumentType]
         values = r.get("values") or {}
-        old, into, by = m.splits.get(table) or (None, {}, None)
+        old, into, by = m.splits.get(table) or (None, {}, None)  # pyright: ignore[reportArgumentType]
         if old in values:
             kind = held_as.get(values.get(by)) or new_lines.get(values.get(by))
             if kind not in into:
