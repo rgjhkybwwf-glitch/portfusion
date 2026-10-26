@@ -37,15 +37,17 @@ def test_the_bundle_is_built_the_same_twice(files):
 
 
 def test_the_bundle_is_the_shell_and_nothing_else(files):
-    """THE ALLOWLIST. The page, its two files from desk/static/, the generated stylesheet and
-    tab icon, the three app icons copied from the website, the manifest that names them, and
-    the typefaces the stylesheet declares. A new kind of file joins by being named in
+    """THE ALLOWLIST. The page, its stylesheet and scripts from desk/static/, the generated
+    stylesheet and tab icon, the three app icons copied from the website, the manifest that names
+    them, and the typefaces the stylesheet declares. A new kind of file joins by being named in
     `bundle.paths()` — and must then pass the scan below."""
     fonts = {p for p in files if p.startswith("/fonts/")}
     assert fonts and all(re.fullmatch(r"/fonts/[a-z0-9-]+\.woff2", p) for p in fonts)
-    assert set(files) - fonts == {"/", "/static/app.css", "/static/app.js", "/tokens.css",
-                                  "/favicon.png", "/apple-touch-icon.png", "/icon-192.png",
-                                  "/icon-512.png", "/manifest.webmanifest"}
+    scripts = {f"/static/{n}" for n in ("core.js", "kit.js", "reading.js", "access.js", "bench.js",
+                                        "sweep.js", "price-refresh.js", "app.js")}
+    assert set(files) - fonts == {"/", "/static/app.css", *scripts, "/tokens.css", "/favicon.png",
+                                  "/apple-touch-icon.png", "/icon-192.png", "/icon-512.png",
+                                  "/manifest.webmanifest"}
 
 
 def test_a_path_outside_the_shell_is_not_served():
@@ -81,10 +83,13 @@ def test_the_bundle_carries_nothing_from_the_record(files):
 
 def test_every_stamp_is_the_content_of_the_file_it_links(files):
     """A CHANGED FILE GETS A CHANGED URL. The stamp is the start of the file's own hash, so a
-    browser holding an older app.js is handed a URL it has never fetched."""
+    browser holding an older app.js is handed a URL it has never fetched. The scripts are linked
+    in SCRIPTS' order, which is the order they load in."""
     import hashlib
     page = files["/"].decode()
-    for url in ("/static/app.css", "/static/app.js", "/tokens.css"):
+    scripts = [f"/static/{n}" for n in bundle.SCRIPTS]
+    assert re.findall(r'<script src="([^"?]+)', page) == scripts
+    for url in ("/static/app.css", *scripts, "/tokens.css"):
         stamp = hashlib.sha256(files[url]).hexdigest()[:12]
         assert f'"{url}?v={stamp}"' in page, f"{url} is not linked by its content"
 

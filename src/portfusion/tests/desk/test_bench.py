@@ -18,7 +18,7 @@ from desk_support import (GOOD_CLASS, GOOD_DOCUMENT, GOOD_TRADE, GOOD_EVIDENCE, 
 # =====================================================================================
 from portfusion.desk.intake import bench as _bench                                    # noqa: E402
 from portfusion.desk.panels import bench as bench_panel
-from harness import SRC, needs, free_id
+from harness import SRC, needs, free_id, desk_script
 
 #: The ids a test's own sale takes: the book's next free ones, never typed (a book that has reached
 #: E-099 holds one).
@@ -281,7 +281,7 @@ def test_a_trade_whose_source_is_not_its_kinds_format_is_refused(item):
 
 def test_the_authority_box_is_shown_and_not_typed(repo_root):
     """The record keeps no typed authority, so the box is read-only and carries the kind's."""
-    js = (SRC / "desk" / "static" / "app.js").read_text()
+    js = desk_script()
     assert 'fixed ? " readonly" : ""' in js and 'const fixed = l.key === "authority"' in js
 
 
@@ -302,7 +302,7 @@ def test_the_bench_speaks_the_desks_words_not_the_stores(item, repo_root):
 
 
 def _renderer_free(repo_root):
-    return (SRC / "desk" / "static" / "app.js").read_text(encoding="utf-8")
+    return desk_script()
 
 
 def test_one_item_at_a_time_then_a_review_then_one_write_each(item, repo_root):
@@ -312,17 +312,19 @@ def test_one_item_at_a_time_then_a_review_then_one_write_each(item, repo_root):
     _bench.save(item)
     d = bench_panel.detail(item["id"])
     assert d["bench"] and {"id", "title", "ready"} <= set(d["bench"][0])
-    js = (SRC / "desk" / "static" / "app.js").read_text(encoding="utf-8")
+    js = desk_script()
     opener = js[js.index("async function openItem("):js.index("function benchFocus(")]
     assert "catch" in opener and "BENCH_GONE" in opener, "a gone item must say so"
     assert 'id="bench-list"' in js and "list.hidden = on" in js, "an item must take the page"
     nxt = js[js.index("function nextStep("):js.index("async function reviewItems(")]
     assert 'id="nextitem"' in nxt and 'id="reviewall"' in nxt and "d.approved" in nxt
-    review = js[js.index("async function reviewItems("):js.index("/* ---", js.index("async function reviewItems("))]
+    review = js[js.index("async function reviewItems("):js.index("Object.assign(RENDER_LATE",
+                                                                  js.index("async function reviewItems("))]
     assert 'data-write="${esc(it.id)}"' in review and "/commit" in review
     assert "write all" not in js.lower(), "one press per item: nothing writes them all"
     assert 'id="commit"' not in js, "an item is written from the review, not from its own screen"
-    sweep = js[js.index("function wireIgEvents("):js.index("function wireTradeLinks(")]
+    sweep = desk_script("sweep.js")
+    sweep = sweep[sweep.index("function wireIgEvents("):]
     assert 'await show("bench")' in sweep, "work it must redraw the list it adds to"
 
 
@@ -1079,7 +1081,7 @@ def test_the_screen_shows_the_whys_already_on_file(item):
     assert [r["date"] for r in existing[why["ticker"]]
             if r["why_exited"] == why["why_exited"]] == [str(why["date"])]
 
-    js = (SRC / "desk" / "static" / "app.js").read_text()
+    js = desk_script()
     assert "existing_why" in js and ">on file<" in js, \
         "the screen no longer shows the whys already on file"
 
@@ -1570,7 +1572,7 @@ def test_a_row_scoped_action_is_not_a_panel_button():
 def test_the_panel_list_in_the_browser_skips_inline_actions(repo_root):
     """The filter has to be in app.js too — the desk renders the list client-side, and a
     correct flag nothing reads is not a fix."""
-    js = (SRC / "desk" / "static" / "app.js").read_text()
+    js = desk_script()
     assert "!a.inline" in js, "app.js still lists every action for the panel, inline or not"
 
 
@@ -1623,7 +1625,7 @@ def test_required_is_the_stores_own_answer_for_every_table():
 def test_an_empty_list_says_nothing_and_the_page_explains_itself_once(repo_root):
     """An empty list is not drawn. The page explains itself in one place, its fold, in a reader's
     words and in the order the work comes in."""
-    js = (SRC / "desk" / "static" / "app.js").read_text()
+    js = desk_script()
     rendered = [line for line in js.splitlines() if "<li" in line and "clear</span>" in line]
     assert not any("nothing on the bench" in line or "no documents waiting" in line
                    or "the workbench is clear" in line for line in rendered)
@@ -1690,7 +1692,7 @@ def test_a_negative_income_row_is_labelled_a_cost(repo_root):
     """income.csv holds both, and its own schema doc says so: "COSTS ARE NEGATIVE, income
     positive". A -1.41 funding charge headed simply "income" reads as the opposite of what it
     is. The sign is the record's rule, so the label follows it rather than a second list."""
-    js = (SRC / "desk" / "static" / "app.js").read_text()
+    js = desk_script()
     assert 'r.table === "income" && parseFloat(r.values.amount) < 0' in js
     assert "a cost — negative" in js
 
@@ -1706,7 +1708,7 @@ def test_the_header_is_re_read_on_every_panel_switch(repo_root):
     the record moves, and a hand edit, a git pull, a checkout or a revert leaves no handler to
     hang this on.
     """
-    js = (SRC / "desk" / "static" / "app.js").read_text()
+    js = desk_script()
     show = js[js.index("async function show(name)"):]
     show = show[:show.index("\n(async function start()")]
     assert '/api/state' in show, (
@@ -2293,8 +2295,7 @@ def test_a_contract_reopened_in_the_same_item_is_not_retired():
 
 def _drawn_js():
     import re
-    from desk_support import _static
-    return re.sub(r"/\*.*?\*/", "", _static("app.js"), flags=re.S)
+    return re.sub(r"/\*.*?\*/", "", desk_script(), flags=re.S)
 
 
 def test_a_row_the_owner_edited_is_no_longer_the_machines():

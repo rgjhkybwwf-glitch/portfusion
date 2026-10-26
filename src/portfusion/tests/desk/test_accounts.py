@@ -6,10 +6,9 @@ import pytest
 from portfusion import engine as _engine
 from portfusion.record import rules as _rules
 from portfusion.desk import actions, app, panels, engine
-from desk_support import _static
 from portfusion.desk.intake import bench as _bench
 from portfusion.desk.intake import recorded
-from harness import SRC, append_rows, needs, write_rows
+from harness import SRC, append_rows, needs, write_rows, desk_script
 
 
 # =====================================================================================
@@ -262,7 +261,7 @@ def test_the_gap_list_quotes_the_engines_rule_rather_than_composing_one(repo_roo
     proves nothing about what gets drawn.
     """
     import re
-    js = _static("app.js")
+    js = desk_script()
     # Comments are stripped before the ban, because the ban is on what RENDERS.
     drawn = re.sub(r"/\*.*?\*/", "", js, flags=re.S)
 
@@ -560,7 +559,7 @@ def test_the_bay_says_what_it_can_replace_rather_than_what_is_due(repo_root):
     Dashboard does, and a line past the limit says so in its own row.
     """
     from portfusion import engine
-    js = _static("app.js")
+    js = desk_script()
     assert "price(s) due" not in js, "step 3 calls the replaceable lines due again"
     assert "limit ${d.age_limit} days" in js, "step 3 does not say what the threshold is"
 

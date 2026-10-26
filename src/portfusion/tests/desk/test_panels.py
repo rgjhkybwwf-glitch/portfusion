@@ -6,7 +6,7 @@ from portfusion import engine as _engine
 from portfusion.desk import app, panels, engine
 from portfusion.desk.panels import _shape
 from desk_support import SHARES_ACCOUNT, SPREAD_BET_ACCOUNT, _static
-from harness import SRC, needs
+from harness import SRC, needs, desk_script
 
 
 def _blank(v):
@@ -206,7 +206,7 @@ def test_price_precision_is_the_houses_not_reinvented(repo_root):
         assert got["local_price_dp"] == P.LOCAL_PRICE_DP, name
         assert got["local_price_default"] == P.DEFAULT_LOCAL_PRICE_DP, name
         assert got["local_price_fields"] == list(P.LOCAL_PRICE_FIELDS), name
-    js = _static("app.js")
+    js = desk_script()
     lp = re.search(r"const localPrice = [\s\S]*?;\n", js).group(0)
     assert not re.search(r"toFixed\(\d|\?\?\s*\d", lp), f"app.js types a local price's places: {lp}"
 
@@ -436,7 +436,7 @@ def test_the_refresh_panel_says_which_clock_each_block_is_on():
     assert "record time" in d["record"]["caveat"].lower(), \
         "the journal block no longer names its clock"
 
-    js = _static("app.js")
+    js = desk_script()
     for heading in ("Market time", "Record time"):
         assert heading in js, f"the panel draws no {heading!r} heading"
 
@@ -553,7 +553,7 @@ def test_movement_colour_is_used_and_scoped(repo_root):
                   `difference`: money, often negative, carrying no judgement. Colouring it
                   would turn every purchase green and every sale red.
     """
-    css, js = _static("app.css"), _static("app.js")
+    css, js = _static("app.css"), desk_script()
 
     assert "var(--up)" in css and "var(--down)" in css, \
         "app.css does not consume the movement tokens — they are generated and unused again"
@@ -634,14 +634,14 @@ def test_no_panel_leaves_a_handler_on_the_frame(repo_root):
     """#main OUTLIVES EVERY PANEL, so a handler a panel adds to it on each draw stays behind and
     multiplies. A panel's handlers go on its own elements; a delegated one on #main is wired once,
     behind a guard, from a `main` it has looked up."""
-    js = _static("app.js")
+    js = desk_script()
     assert '$("#main").addEventListener' not in js
 
 
 def test_no_call_site_puts_anything_in_a_style_attribute(repo_root):
     """Every width, colour and spacing lives in app.css, so a call site sets none of them."""
     import re
-    used = re.findall(r'style="([^"]*)"', _static("app.js"))
+    used = re.findall(r'style="([^"]*)"', desk_script())
     assert not used, f"app.js sets style={used}; the style layer is app.css"
 
 
@@ -731,7 +731,7 @@ def test_the_expansion_spans_the_whole_row_however_many_columns_there_are(repo_r
     A hardcoded number goes stale the first time a column joins — silently, by leaving the
     last cell of every expansion hanging outside the table.
     """
-    js = _static("app.js")
+    js = desk_script()
     assert "cols.length + inserts.length" in js, \
         "the expansion's colspan is no longer derived from the rendered columns"
 
@@ -764,7 +764,7 @@ def _chrome_words(repo_root):
     from portfusion.desk import actions
     from portfusion.desk import panels as _panels
 
-    js = _static("app.js")
+    js = desk_script()
     js = re.sub(r"/\*.*?\*/", "", js, flags=re.S)                    # source comments are not chrome
     js = re.sub(r"const RECONCILE_WHY = \[.*?\n\];", "", js, flags=re.S)   # lives in the fold
     js = re.sub(r'<details class="why-fold".*?</details>', "", js, flags=re.S)
@@ -823,7 +823,7 @@ def test_the_dashboards_status_line_draws_what_it_is_sent(repo_root):
     """THE AGE LEADS THE PRICES STEP, and the year-to-date step names the 31 December the year
     opens at. A payload field the renderer drops is a figure shown nowhere. `year` is the one not
     drawn: `opens` names it."""
-    js = _renderer(_static("app.js"), "dashboard")
+    js = _renderer(desk_script(), "dashboard")
     data = panels.get("dashboard").data()
     assert set(data["prices"]) == {"newest", "oldest", "spread_days", "marks", "age_days"}
     assert set(data["ytd"]) == {"year", "opens", "frozen"}
@@ -838,7 +838,7 @@ def test_the_dashboard_lists_the_checks_the_audit_prints(repo_root):
     data = panels.get("dashboard").data()
     assert data["checks"] == _engine.Book().findings()["notes"]
     assert any(c.startswith("evidence:") for c in data["checks"])
-    assert "d.checks" in _renderer(_static("app.js"), "dashboard")
+    assert "d.checks" in _renderer(desk_script(), "dashboard")
 
 
 def test_the_footer_says_whose_it_is_and_which_release(repo_root):
@@ -861,7 +861,7 @@ def test_the_footer_says_whose_it_is_and_which_release(repo_root):
 def test_every_page_is_drawn_through_the_template(repo_root):
     """`page()` draws the bands in one order, so a fix lands on every page; a page that skips it
     drifts."""
-    js = _static("app.js")
+    js = desk_script()
     skipped = [p.NAME for p in panels.all_panels() if "page({" not in _renderer(js, p.NAME)]
     assert not skipped, (
         f"these pages are not drawn through page(): {skipped}. A new band belongs in the "
@@ -877,7 +877,7 @@ def test_the_template_has_no_note_box_and_no_pill(repo_root):
     WRITTEN in sentence case, which this checks — a heading typed in capitals would hide three
     spellings."""
     import re
-    js, css = _static("app.js"), _static("app.css")
+    js, css = desk_script(), _static("app.css")
     assert 'class="caveat"' not in js and ".caveat" not in css, "a note box is back"
     assert 'class="basis"' not in js and ".basis" not in css, "a basis pill is back"
     typed = [h for h in re.findall(r"<(?:h2|th)[^>]*>([^<$]{4,})</", js) if h.isupper()]
@@ -899,7 +899,7 @@ def test_every_wide_table_scrolls_in_its_own_box(repo_root):
     """A wide table scrolls in its own box, so the page never does. The two narrow kinds, a page's
     figures and Holdings' bars, are two or three columns and fit a phone as they are."""
     import re
-    js = _static("app.js")
+    js = desk_script()
     narrow = ('<table class="figures">', '<table class="alloc">')
     boxed = lambda at: re.search(r'<div class="scroll"[^>]*>\s*$', js[max(0, at - 80):at])  # noqa: E731
     loose = [js[m.start():m.start() + 60].split("\n")[0] for m in re.finditer(r"<table", js)
@@ -929,7 +929,7 @@ def test_the_dashboards_glance_stacks_on_a_phone(repo_root):
 def test_every_filter_row_can_be_cleared(repo_root):
     """The filters band is one shape on every page, and "clear filters" is part of it."""
     import re
-    js = _static("app.js")
+    js = desk_script()
     rows = re.findall(r"filters: \{([^\[]*)fields:", js)
     assert rows and all("clear:" in r for r in rows), \
         "a page's filters band has no clear link"
@@ -1020,7 +1020,7 @@ def test_the_desk_says_notional_too(repo_root):
     LABELS, NOT PROSE: the phrase survives where it DEFINES the term — "notional is the size of
     an economic interest" is the sentence that teaches it — and not where it replaces it.
     """
-    js = (SRC / "desk" / "static" / "app.js").read_text()
+    js = desk_script()
     offenders = []
     for line in js.splitlines():
         low = line.lower()

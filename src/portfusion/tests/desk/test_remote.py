@@ -15,7 +15,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from portfusion.desk import actions, app as local, auth, engine, naming, panels, remote
-from harness import SRC, needs
+from harness import needs, desk_script
 
 TUNNEL = "https://mac.example.ts.net"
 
@@ -511,7 +511,7 @@ def test_the_hosted_page_says_restart_when_the_mac_runs_older_code(repo_root):
     from the code it has loaded, so a restart is the fix. A stale Mac says restart: on the hosted
     page, with the command the guide gives, and in the Mac's header, which does not say publish
     until the desk has restarted."""
-    js = (SRC / "desk" / "static" / "app.js").read_text()
+    js = desk_script()
     other = js[js.index("function otherVersion("):js.index("function drawUnreachable(")]
     restart = "launchctl kickstart -k gui/$UID/org.portfusion.desk"
     assert "source_stale" in other, "the version message does not ask whether the Mac is stale"
@@ -519,7 +519,7 @@ def test_the_hosted_page_says_restart_when_the_mac_runs_older_code(repo_root):
     assert restart in (repo_root / "docs" / "desk-app.md").read_text(), \
         "the page's restart command is not the one the guide gives"
     assert "portfusion desk --publish" in other, "a current Mac is no longer told to publish"
-    fresh = js[js.index("function drawFreshness("):js.index("function openPanel(")]
+    fresh = js[js.index("function drawFreshness("):js.index("function drawTabs(")]
     assert '"restart first"' in fresh and "f.source_stale ?" in fresh, \
         "the header can still say publish while the desk is stale"
 
@@ -528,7 +528,7 @@ def test_a_tunnel_that_is_off_reads_as_the_mac_not_answering(repo_root):
     """WITH THE FUNNEL TURNED OFF, NETLIFY ANSWERS 500 WITH AN EMPTY BODY, not a 502 or a 504, so
     an empty 500 counts as unreachable. The desk's own 500 always carries "Internal Server Error",
     so a crash on the Mac still reads as a crash."""
-    js = (SRC / "desk" / "static" / "app.js").read_text()
+    js = desk_script()
     body = js[js.index("async function get(path)"):js.index("async function readJson(")]
     assert "r.status === 500 && !text.trim()" in body, \
         "an empty 500 from Netlify is not read as the Mac being unreachable"
@@ -542,7 +542,7 @@ def test_the_hosted_page_checks_the_version_before_drawing(repo_root):
     The page is published when the owner chooses and the Mac moves at every merge, so an old
     screen over new data is the mixture `engine.source_stale()` names on the Mac: it draws
     nothing instead."""
-    js = (SRC / "desk" / "static" / "app.js").read_text()
+    js = desk_script()
     assert 'meta[name="desk-version"]' in js
     start = js[js.index("(async function start()"):]
     assert start.index("otherVersion(s)") < start.index("paintPanel(first)"), \
@@ -554,7 +554,7 @@ def test_the_hosted_page_checks_the_version_before_drawing(repo_root):
 def test_the_hosted_page_points_at_no_page_it_cannot_open(repo_root):
     """A POINTER TO A PAGE THE DOOR DOES NOT LIST, an instruction no hosted reader can follow, is
     left out, and Reconcile's reading line goes with it."""
-    js = (SRC / "desk" / "static" / "app.js").read_text()
+    js = desk_script()
     link = js[js.index("const panelLink ="):js.index("const reportLink =")]
     assert '!PANELS.has(panel) ? ""' in link, "a page the door does not list is still named"
     reading = js[js.index('label: "Reading"') - 80:js.index('label: "Reading"')]
