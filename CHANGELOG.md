@@ -5,6 +5,20 @@ prints it.
 
 ## Unreleased
 
+- **A credentials file other accounts can read is refused.** The IG feed asks for
+  `chmod 600 credentials.json` before it reads a value from one. The feeds' sessions, the hosted
+  desk's passkeys, readers and sign-in log are created readable by their owner alone from the
+  first byte, not made so afterwards; `--ig-logout` deletes the session file.
+- **The Bench asks about a sign its category does not usually carry**: a fee paid in, a dividend
+  or cash interest paid out. The quote check cannot see a sign, so the owner confirms each one.
+- **The TradingView sign-in waits for its own answer.** A request to its local port without the
+  sign-in's `state` is answered 400 and the wait goes on; before, any page could end it.
+- **The sign-in log keeps 90 days.** A withdrawn document's archived note names its destination
+  from `~`, not the Mac's user folder, and a publish refuses a shell naming any word of a holder's
+  name.
+- **A blank gain on the report is a dash in no colour**, never "+nan" in red: a quarter that
+  opens at nothing, a new book's first.
+- `python3 -m portfusion.history.fx --rate USD <day>` refuses a day that is not YYYY-MM-DD.
 - **A quarter's `contribution` is a closed list.** `quarter-nav.csv`'s `contribution` is
   `positions at market`, `account equity` or `notional`, and the loader now refuses a book holding
   any other value, naming the row; before, the engine refused it when a figure was first asked for.

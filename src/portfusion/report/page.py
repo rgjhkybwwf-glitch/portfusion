@@ -82,7 +82,8 @@ def _pct(x) -> str:
 
 
 def _sign(x) -> str:
-    return "pos" if x >= 0 else "neg"
+    """A change's colour: none for a blank, which `_change()` prints as a dash."""
+    return "dim" if x is None or x != x else "pos" if x >= 0 else "neg"
 
 
 esc = html.escape

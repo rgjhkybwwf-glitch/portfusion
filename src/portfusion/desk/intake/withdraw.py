@@ -124,7 +124,10 @@ def withdraw(name: str, destination: str | None = None, why: str = "") -> dict:
     archived_to = None
     if item is not None:
         item["state"] = "withdrawn"
-        item["withdrawn_to"] = str(target)
+        # `~`-RELATIVE: the note is archived in the book's git, which carries no Mac's user name.
+        home = Path.home().resolve()
+        item["withdrawn_to"] = (f"~/{target.relative_to(home)}" if home in target.parents
+                                else str(target))
         item["withdrawn_why"] = why
         item["withdrawn_how"] = ("returned — an identical copy was already there, so the "
                                  "workbench copy was removed" if returning else "moved")

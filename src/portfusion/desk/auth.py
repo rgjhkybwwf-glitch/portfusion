@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import functools
 import json
+import os
 import pathlib
 import secrets
 import threading
@@ -147,6 +148,9 @@ READERS = BOOK / ".desk_readers.json"
 SIGNINS = BOOK / ".desk_signins.jsonl"
 #: Past this many lines the oldest half goes, so a flood of refusals cannot fill the disk.
 SIGNINS_MAX_LINES = 20_000
+#: A line older than this goes: the log holds other people's addresses, and the Access page reads
+#: only its last month.
+SIGNINS_KEEP_DAYS = 90
 
 #: THE SECRET NETLIFY SIGNS WITH, beside the passkeys and out of git (`.gitignore`, and
 #: `.githooks/pre-commit` refuses its value in any file). `{"secret": "..."}`. Here rather than in
@@ -219,12 +223,18 @@ def _read(path: pathlib.Path) -> dict:
     return json.loads(path.read_text()) if path.exists() else {}
 
 
-def _save(path: pathlib.Path, data: dict) -> None:
-    """Written whole, to a temporary file first, so a crash cannot leave half a list."""
+def _replace(path: pathlib.Path, text: str) -> None:
+    """Written whole, to a temporary file created 0600 first, so a crash cannot leave half a list
+    and no moment holds it readable by another account."""
     tmp = path.with_suffix(".tmp")
-    tmp.write_text(json.dumps(data, indent=2, sort_keys=True))
-    tmp.chmod(0o600)
+    tmp.unlink(missing_ok=True)                 # a crash's leftover
+    with os.fdopen(os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600), "w") as f:
+        f.write(text)
     tmp.replace(path)
+
+
+def _save(path: pathlib.Path, data: dict) -> None:
+    _replace(path, json.dumps(data, indent=2, sort_keys=True))
 
 
 def _keys() -> dict[str, dict]:
@@ -351,24 +361,35 @@ RESULTS = ("signed in", "enrolled", "refused", "limited")
 @_held
 def log(result: str, address: str = "", who: str | None = None, device: str | None = None,
         detail: str = "", now: float | None = None) -> None:
-    """Append one line. Never raises: a log that cannot be written must not stop a sign-in, and
-    nothing here is the record."""
+    """Append one line, and age out the lines past SIGNINS_KEEP_DAYS once the first of them is.
+    Never raises: a log that cannot be written must not stop a sign-in, and nothing here is the
+    record."""
     assert result in RESULTS, result
     line = {"at": int(time.time() if now is None else now), "result": result,
             "address": address, "who": who, "device": device, "detail": detail}
+    since = line["at"] - SIGNINS_KEEP_DAYS * 86400
     try:
-        with SIGNINS.open("a") as f:
+        with os.fdopen(os.open(SIGNINS, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600), "a") as f:
             f.write(json.dumps(line) + "\n")
-        SIGNINS.chmod(0o600)
-        if SIGNINS.stat().st_size > SIGNINS_MAX_LINES * 120:
+        SIGNINS.chmod(0o600)                    # a log an older release made at the umask
+        with SIGNINS.open() as f:
+            stale = _at(f.readline()) < since
+        if stale or SIGNINS.stat().st_size > SIGNINS_MAX_LINES * 120:
             lines = SIGNINS.read_text().splitlines()
-            if len(lines) > SIGNINS_MAX_LINES:
-                tmp = SIGNINS.with_suffix(".tmp")
-                tmp.write_text("\n".join(lines[len(lines) // 2:]) + "\n")
-                tmp.chmod(0o600)
-                tmp.replace(SIGNINS)
+            kept = [raw for raw in lines if _at(raw) >= since]
+            kept = kept[len(kept) // 2:] if len(kept) > SIGNINS_MAX_LINES else kept
+            if kept != lines:
+                _replace(SIGNINS, "\n".join(kept) + "\n")
     except OSError:
         pass
+
+
+def _at(raw: str) -> float:
+    """A log line's instant; 0, the oldest, for one that does not parse."""
+    try:
+        return float(json.loads(raw).get("at", 0))
+    except (ValueError, AttributeError, TypeError):
+        return 0
 
 
 def signins(days: int = 30, now: float | None = None) -> list[dict]:

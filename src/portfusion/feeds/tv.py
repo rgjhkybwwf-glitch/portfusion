@@ -133,9 +133,11 @@ def _post(url: str, body: dict, form: bool = False) -> dict:
 
 
 def _save_session(session: dict) -> None:
-    with open(SESSION_FILE, "w") as fh:
+    """Created 0600, and an older file made so before a byte of the new session is written."""
+    fd = os.open(SESSION_FILE, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    os.fchmod(fd, 0o600)
+    with os.fdopen(fd, "w") as fh:
         json.dump(session, fh)
-    os.chmod(SESSION_FILE, 0o600)
 
 
 def sign_in(open_browser=webbrowser.open) -> dict:
@@ -158,13 +160,19 @@ def sign_in(open_browser=webbrowser.open) -> dict:
     got = {}
 
     class _Callback(http.server.BaseHTTPRequestHandler):
+        # A REQUEST NOT CARRYING THIS SIGN-IN'S `state` IS NOT ITS ANSWER: any page can send one,
+        # and taking it would end the sign-in in progress. It is refused and the wait goes on.
         def do_GET(self):
-            got.update({k: v[0] for k, v in
-                        urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).items()})
-            self.send_response(200)
+            asked = {k: v[0] for k, v in
+                     urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).items()}
+            ours = secrets.compare_digest(asked.get("state", "").encode(), state.encode())
+            if ours:
+                got.update(asked)
+            self.send_response(200 if ours else 400)
             self.send_header("Content-Type", "text/html")
             self.end_headers()
-            self.wfile.write(b"<p>Signed in to TradingView. You can close this tab.</p>")
+            self.wfile.write(b"<p>Signed in to TradingView. You can close this tab.</p>" if ours
+                             else b"<p>Not this sign-in.</p>")
 
         def log_message(self, *args):
             pass
@@ -177,7 +185,7 @@ def sign_in(open_browser=webbrowser.open) -> dict:
     while not ({"code", "error"} & set(got)) and time.time() < deadline:
         server.handle_request()
     server.server_close()
-    if got.get("state") != state or "code" not in got:
+    if "code" not in got:
         raise TVError(f"sign-in did not complete: {got.get('error') or 'no code came back'}")
     tokens = _post(f"{AUTH_BASE}/token", {
         "grant_type": "authorization_code", "code": got["code"], "redirect_uri": redirect,

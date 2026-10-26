@@ -36,6 +36,7 @@ import time
 
 from portfusion import brand
 from portfusion.desk import auth, bundle
+from portfusion.engine import Book
 from portfusion.log import log
 from portfusion.record import schema
 
@@ -156,14 +157,17 @@ def manifest(tree: dict[str, bytes], source: str, now: _dt.datetime | None = Non
 # =================================================================================================
 
 def record_values() -> set[str]:
-    """Accounts, holders, account numbers, tickers and companies — read through the record's own
-    door. None of them may appear in a file that is readable before the hosted sign-in."""
+    """Accounts, holders and each word of their names but a title, account numbers, tickers and
+    companies — read through the record's own door. None of them may appear in a file that is
+    readable before the hosted sign-in, as `naming` withholds each from a principal."""
 
     def column(table, name):
         position = schema.TABLES[table].header.index(name)
         return {str(row[position]).strip() for row in schema.load(table) if row[position]}
 
-    return (column("accounts", "account") | column("accounts", "holder")
+    holders = column("accounts", "holder")
+    return (column("accounts", "account") | holders
+            | {w for h in holders for w in h.split() if w not in Book.HOLDER_TITLES}
             | column("accounts", "number") | column("securities", "ticker")
             | column("securities", "company") | column("buys", "ticker"))
 

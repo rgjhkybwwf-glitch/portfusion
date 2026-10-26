@@ -216,7 +216,8 @@ def test_a_bank_moves_no_figure(store_copy):
     ("prices", ["--archive"], 0), ("prices", ["--check"], 0), ("prices", ["--show"], 0),
     ("prices", [], 2),
     ("fx", ["--archive"], 0), ("fx", ["--check"], 0), ("fx", ["--show", "USD"], 0),
-    ("fx", ["--rate", "USD", "2026-06-30"], 0), ("fx", ["--rate", "USD"], 2), ("fx", [], 2),
+    ("fx", ["--rate", "USD", "2026-06-30"], 0), ("fx", ["--rate", "USD"], 2),
+    ("fx", ["--rate", "USD", "notadate"], 2), ("fx", [], 2),
     ("accounts", ["--archive"], 0), ("accounts", ["--check"], 0), ("accounts", ["--show"], 0),
     ("accounts", [], 2)])
 def test_each_history_command_answers_or_says_how_it_is_used(store_copy, capsys, history, argv,

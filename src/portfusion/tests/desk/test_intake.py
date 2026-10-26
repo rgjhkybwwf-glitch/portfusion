@@ -77,9 +77,11 @@ def test_a_name_is_read_from_the_workbench_and_a_path_only_from_code(inbox, tmp_
     outside = tmp_path / "elsewhere" / "kept.csv"
     outside.parent.mkdir()
     outside.write_text("Date,Amount\n01/01/2026,1.00\n", encoding="utf-8")
-    with pytest.raises(FileNotFoundError):
-        read_document.extract(str(outside))
-    assert read_document.modified(str(outside)) is None
+    (inbox / "kept.csv").symlink_to(outside)
+    for name in (str(outside), "kept.csv", f"../{inbox.name}/kept.csv"):
+        with pytest.raises(FileNotFoundError):
+            read_document.extract(name)
+        assert read_document.modified(name) is None
     assert "01/01/2026" in read_document.extract_file(outside)["text"]
 
 
