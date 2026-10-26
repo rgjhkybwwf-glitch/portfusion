@@ -12,7 +12,7 @@ import ast
 import pathlib
 import re
 
-from harness import ROOT, SRC, TESTS, needs_checkout
+from harness import ROOT, SRC, TESTS, book_classes, engine_files, needs_checkout
 
 
 def _tree(path) -> ast.Module:
@@ -21,10 +21,6 @@ def _tree(path) -> ast.Module:
 
 def _is_test(path) -> bool:
     return pathlib.Path(path).is_relative_to(TESTS)
-
-
-def _book_class() -> ast.ClassDef:
-    return next(n for n in _tree(SRC / "engine.py").body if isinstance(n, ast.ClassDef) and n.name == "Book")
 
 
 # =====================================================================================
@@ -43,7 +39,7 @@ def test_every_public_engine_method_has_a_reader(project_files):
     A READER is any code outside the tests, the engine included, and the audit: a test marked
     `audit` is what `portfusion record` runs, so a method only it reads is still read.
     """
-    public = {n.name for n in _book_class().body
+    public = {n.name for c in book_classes() for n in c.body
               if isinstance(n, ast.FunctionDef) and not n.name.startswith("_")}
     read = set()
     for path in project_files(".py"):
@@ -65,16 +61,16 @@ def test_the_engine_states_its_window_once():
     """ONE STATEMENT OF THE ENGINE'S PERIOD, `_window()`. A second copy of the filter is how one
     drifts. `activity()` and `round_trips()` keep their own start, the desk's From date, and their
     docstrings say why."""
-    tree = _tree(SRC / "engine.py")
-    after_start = [n for n in ast.walk(tree) if isinstance(n, ast.Compare)
-                   and isinstance(n.ops[0], ast.Gt)
+    after_start = [(path, n) for path in engine_files() for n in ast.walk(_tree(path))
+                   if isinstance(n, ast.Compare) and isinstance(n.ops[0], ast.Gt)
                    and ast.unparse(n.comparators[0]) == "pd.Timestamp(start)"]
     assert len(after_start) == 1, (
-        f"engine.py writes the window's opening {len(after_start)} times, at lines "
-        f"{[n.lineno for n in after_start]}. Bound the frame with `_window()`.")
-    window = next(n for n in ast.walk(_book_class()) if isinstance(n, ast.FunctionDef)
+        f"the engine writes the window's opening {len(after_start)} times, at "
+        f"{[f'{p.name}:{n.lineno}' for p, n in after_start]}. Bound the frame with `_window()`.")
+    path, opening = after_start[0]
+    window = next(n for n in ast.walk(_tree(path)) if isinstance(n, ast.FunctionDef)
                   and n.name == "_window")
-    assert window.lineno <= after_start[0].lineno <= window.end_lineno
+    assert window.lineno <= opening.lineno <= window.end_lineno
 
 
 # =====================================================================================
@@ -216,11 +212,11 @@ def _prose(path):
 
 
 def test_the_engines_comments_type_no_figure():
-    """A comment in `engine.py` types no figure of the book: a second copy that ages where nothing
+    """A comment in the engine types no figure of the book: a second copy that ages where nothing
     checks it. Name the figure, never its value."""
     typed = re.compile(r"£[1-9][\d,]*(\.\d+)?|\b\d{1,3}(,\d{3})+\.\d{2}\b")
-    found = [n for n, text in _prose(SRC / "engine.py") if typed.search(text)]
-    assert not found, f"engine.py types a figure into a comment at lines {found}"
+    found = [f"{p.name}:{n}" for p in engine_files() for n, text in _prose(p) if typed.search(text)]
+    assert not found, f"the engine types a figure into a comment at {found}"
 
 
 def test_comments_state_the_rule_not_its_history(project_files):
@@ -245,7 +241,8 @@ BOOK_TOPICS = ("headline", "mark", "holding", "allocation", "round trip", "activ
 
 
 def _book_layout(src: str):
-    """engine.py's numbered sections, every boxed heading at the top level, and Book's sub-sections."""
+    """An engine file's numbered sections, every boxed heading at the top level, and Book's
+    sub-sections."""
     lines = src.splitlines()
     numbered = [int(m.group(1)) for line in lines for m in [re.match(r"^# (\d) · ", line)] if m]
     bar = re.compile(r"^# ={20,}$")
@@ -257,20 +254,26 @@ def _book_layout(src: str):
 
 def test_book_py_keeps_each_topic_in_one_place():
     """EVERY TOPIC IN ONE PLACE, so a reader finds a figure's code where its topic is. The
-    numbered sections run in order and each holds code; every one of `Book`'s sub-sections has a
-    heading, and no topic heads two."""
-    src = (SRC / "engine.py").read_text(encoding="utf-8")
-    numbered, boxed, subsections = _book_layout(src)
-    assert numbered == list(range(1, len(numbered) + 1)), numbered
-    code = [n.lineno for n in _tree(SRC / "engine.py").body
-            if isinstance(n, (ast.FunctionDef, ast.ClassDef, ast.Assign))]
-    ends = boxed[1:] + [len(src.splitlines()) + 1]
-    empty = [src.splitlines()[i - 1] for i, end in zip(boxed, ends) if not any(i < c < end for c in code)]
-    assert not empty, f"a heading in engine.py has no code under it: {empty}"
+    numbered sections run in order, each once across the engine's files, and each holds code;
+    every one of `Book`'s sub-sections has a heading, and no topic heads two."""
+    numbered, subsections, empty = [], [], []
+    for path in engine_files():
+        src = path.read_text(encoding="utf-8")
+        mine, boxed, subs = _book_layout(src)
+        assert mine == sorted(mine), f"{path.name} runs its numbered sections out of order: {mine}"
+        numbered, subsections = numbered + mine, subsections + subs
+        code = [n.lineno for n in _tree(path).body
+                if isinstance(n, (ast.FunctionDef, ast.ClassDef, ast.Assign))]
+        ends = boxed[1:] + [len(src.splitlines()) + 1]
+        empty += [f"{path.name}: {src.splitlines()[i - 1]}" for i, end in zip(boxed, ends)
+                  if not any(i < c < end for c in code)]
+        assert not re.search(r"^    # -{60,}$", src, re.M), \
+            f"a sub-section of {path.name} is headed in the boxed style"
+    assert sorted(numbered) == list(range(1, len(numbered) + 1)), numbered
+    assert not empty, f"a heading in the engine has no code under it: {empty}"
     twice = {t: [s for s in subsections if t in s.lower()] for t in BOOK_TOPICS}
     twice = {t: s for t, s in twice.items() if len(s) > 1}
     assert not twice, f"a topic heads more than one of Book's sub-sections: {twice}"
-    assert not re.search(r"^    # -{60,}$", src, re.M), "a sub-section is headed in the boxed style"
 
 
 # =====================================================================================

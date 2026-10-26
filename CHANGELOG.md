@@ -88,6 +88,12 @@ prints it.
   build has passed, so a refused reload leaves the record exactly as it was. A Book's pin holds
   for the record's functions too: a leg's kind and the accounts open on a day answer from the
   record the Book was built from. No figure, page or store moves.
+- **The engine is a package.** `engine.py` is `engine/`, a file per topic: the store, the two
+  bases, the ledger and valuation, then `Book`, built from seven classes, each a group of its
+  methods, over the construction they share (`engine/core.py`). `portfusion.engine` offers every
+  name it did, `Book.HEADLINE` stays the one registry, and an import contract keeps the topics
+  from importing one another. pyright now checks the store, the bases, the ledger and valuation.
+  No figure, page or store moves.
 
 ## 0.3.2 — beta, 24 Oct 2026
 

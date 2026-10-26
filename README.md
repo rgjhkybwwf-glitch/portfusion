@@ -64,7 +64,7 @@ desk afterwards: it does not notice an upgraded package ([`docs/desk-app.md`](do
 | `src/portfusion/` | Holds |
 |---|---|
 | `record/` | the schema, which types every column on load, and the record's rules |
-| `engine.py` | every derived figure, once |
+| `engine/` | every derived figure, once |
 | `desk/` | the browser, and its doors to the record |
 | `report/` | the quarterly report |
 | `house/` | what both renderers share: headings, precision, PortFusion's palette |

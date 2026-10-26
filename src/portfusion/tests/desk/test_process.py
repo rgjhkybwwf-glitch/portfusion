@@ -345,7 +345,8 @@ def test_the_scan_covers_this_projects_source_and_nothing_else():
              for p in engine._repo_modules()}
     assert names, "the scan found nothing at all"
 
-    for expected in ("engine.py", "record/rules.py", "desk/engine.py", "desk/panels/holdings.py"):
+    for expected in ("engine/book.py", "record/rules.py", "desk/engine.py",
+                     "desk/panels/holdings.py"):
         assert expected in names, f"{expected} is imported by the desk and is not scanned"
 
     for name in names:
@@ -361,15 +362,16 @@ def test_the_scan_covers_this_projects_source_and_nothing_else():
 def test_a_file_changed_since_import_reads_stale_and_is_named(source_baseline):
     """NAMED, NOT COUNTED. "1 file changed" sends you looking; "engine.py" tells you what moved.
     """
-    # THE ENGINE BY ITS OWN PATH: "ends with engine.py" also takes desk/engine.py, so which file
-    # is picked would hang on the order the modules come in.
+    # THE ENGINE BY ITS OWN PATH: a name alone may be another package's, and which file is picked
+    # would hang on the order the modules come in.
     target = next(p for p in engine._repo_modules()
-                  if pathlib.Path(p).parts[-2:] == ("portfusion", "engine.py"))
+                  if pathlib.Path(p).parts[-2:] == ("engine", "book.py"))
     source_baseline[target] = 0.0               # as if imported before the file was written
 
     f = engine.freshness()
     assert f["source_stale"] is True
-    assert "engine.py" in f["source_files"], f"the changed file is not named: {f['source_files']}"
+    assert "engine/book.py" in f["source_files"], \
+        f"the changed file is not named: {f['source_files']}"
     assert f["source_changed"], "nothing says WHEN the code moved"
     assert f["source_count"] >= 1
 
@@ -410,7 +412,7 @@ def test_a_stale_desk_is_a_problem(source_baseline):
     current page, so figures go missing with nothing on screen admitting it."""
     # The engine by its own path, as above.
     target = next(p for p in engine._repo_modules()
-                  if pathlib.Path(p).parts[-2:] == ("portfusion", "engine.py"))
+                  if pathlib.Path(p).parts[-2:] == ("engine", "book.py"))
     source_baseline[target] = 0.0
 
     items = panels.get("dashboard").data()["attention"]
@@ -418,7 +420,7 @@ def test_a_stale_desk_is_a_problem(source_baseline):
     assert mine, f"a stale desk raises nothing in Needs attention: {[i['text'] for i in items]}"
     assert mine[0]["level"] == "problem", \
         f"a stale engine is reported as {mine[0]['level']!r} — it produces wrong figures"
-    assert "engine.py" in mine[0]["text"], "the item does not name what changed"
+    assert "engine/book.py" in mine[0]["text"], "the item does not name what changed"
 
 
 

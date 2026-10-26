@@ -23,7 +23,7 @@ Every command reads the book `PORTFUSION_BOOK` names, or the one in the folder i
 |---|---|
 | [`docs/store.md`](docs/store.md) | which table a fact goes in, and what each column may hold |
 | `record/rules.py` | the record's rules; the desk's Method page renders them |
-| `engine.py` | every derived figure, once; `Book.HEADLINE` registers the headline ones |
+| `engine/` | every derived figure, once; `Book.HEADLINE`, in `engine/book.py`, registers the headline ones |
 | [`docs/testing.md`](docs/testing.md) | what each layer of the guard proves, and what to do when a test fails |
 | [`docs/`](docs) | the component guides; [`docs/glossary.md`](docs/glossary.md) is the agreed nomenclature |
 
