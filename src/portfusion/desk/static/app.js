@@ -5,11 +5,11 @@
 
    IT FORMATS, IT DOES NOT CALCULATE. Every number arrives from the engine already derived; the
    only thing the desk's script decides is how many decimal places it wears. A percentage
-   computed here would be a second calculation of something engine.py already answers. */
+   computed here would be a second calculation of something the engine already answers. */
 
 /* RESTART — the button for "it does not show".
 
-   A running desk serves what it IMPORTED at startup, so a change to engine.py or a panel is
+   A running desk serves what it IMPORTED at startup, so a change to the engine or a panel is
    invisible until the process is replaced and a browser refresh cannot fix it. The Dock icon
    replaces a stale server, but only one IT started; a desk run from a terminal never meets that
    check, and that is how it is run while being worked on.

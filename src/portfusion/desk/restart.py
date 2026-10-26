@@ -3,7 +3,7 @@
     from portfusion.desk import restart
     restart.restart()          # replace this server with one that has read the source again
 
-WHY IT EXISTS. A running desk serves what it IMPORTED at startup: change engine.py and the
+WHY IT EXISTS. A running desk serves what it IMPORTED at startup: change the engine and the
 browser shows yesterday's figures with nothing wrong in the code. Nothing else replaces a stale
 server — the LaunchAgent that starts the desk does not check what code it is running
 (docs/desk-app.md) — so the check is a button inside the page, because the page is what you are
@@ -157,7 +157,7 @@ register(Action(
     writes=None,
     gate="The owner clicks it — nothing restarts on a timer, on a file change, or after a commit",
     summary=("Replace this server with one that has read the source again. A running desk "
-             "serves what it imported at startup, so a change to engine.py or a panel is "
+             "serves what it imported at startup, so a change to the code is "
              "invisible until it restarts — a browser refresh cannot fix that. It writes "
              "nothing: the store and _inbox/ are untouched."),
     # NO DEFAULT PORT. The page sends the one it is connected to; a default of 8765 would let

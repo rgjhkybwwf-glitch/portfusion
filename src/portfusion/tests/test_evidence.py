@@ -188,7 +188,7 @@ def test_every_row_names_its_document_in_its_class_format(D, table, audit):
             prefix = ev.source.split("{")[0].strip()
             fits = re.fullmatch(rf"{re.escape(prefix)}( /\S+)? \d{{2}} [A-Z][a-z]{{2}} \d{{4}}",
                                 row["source"])
-            if ev.key in D.REFERENCE_IS_THE_DEAL and not (row["broker_ref"] or "").strip():
+            if ev.found_by == "deal" and not (row["broker_ref"] or "").strip():
                 unnumbered.append(rid)
         else:
             fits = D.template_pattern(ev).fullmatch(row["source"])
@@ -236,12 +236,8 @@ def test_every_stored_deal_reference_is_findable_in_an_archived_statement(D):
 
     A dealId is treated as self-retrieving — `rules.SOURCE_HIERARCHY_NOTE` puts an
     authenticated API read on the top rung when the row stores the reference that retrieves it.
-    That is a RULE, and a rule can be wrong, so this looks: every stored dealId must appear
-    verbatim in a statement in `_archive/statements/`.
-
-    It reads every PDF in the archive and costs about a third of a second, which is worth
-    paying for the only check in the suite that opens the evidence rather than reasoning
-    about it.
+    That is a RULE, and a rule can be wrong, so this looks: every stored dealId but one an API
+    read retrieves must appear verbatim in a statement in `_archive/statements/`.
 
     Whitespace is stripped before matching because IG's PDFs come out of extraction with a
     space between almost every character.
@@ -409,12 +405,14 @@ def test_the_document_instant_is_read_from_the_document():
 def test_every_fingerprinted_class_is_a_retrievable_document():
     """A fingerprint says "this file IS that class", so the class had better be one a file can
     be. Recognising a screenshot or a query by its text would be recognising something that has
-    no file to recognise."""
+    no file to recognise. A class is a document exactly when it says how the archive finds one."""
     from portfusion.record import rules as D
     for e in D.EVIDENCE_CLASSES:
         if e.fingerprint:
             assert e.retrieval == "document", \
                 f"{e.key} carries a fingerprint but retrieves by {e.retrieval!r}"
+        assert (e.retrieval == "document") == (e.found_by in ("date", "deal")), \
+            f"{e.key} retrieves by {e.retrieval!r} and is found by {e.found_by!r}"
 
 
 def test_the_classes_closed_to_new_entries_are_a_named_set():
@@ -453,8 +451,8 @@ def test_no_reading_entered_from_now_on_rests_on_a_closed_class(D):
 
 
 
-@pytest.mark.parametrize("key", sorted(__import__("portfusion.record.rules", fromlist=["x"])
-                                       .REFERENCE_IS_A_DATE))
+@pytest.mark.parametrize("key", sorted(e.key for e in __import__(
+    "portfusion.record.rules", fromlist=["x"]).EVIDENCE_CLASSES if e.found_by == "date"))
 def test_a_dated_statement_cited_with_no_date_is_a_gap_not_no_document(key):
     """A STATEMENT IS FOUND BY ITS DATE, so a line that cites one with none, such as "Q2 25",
     names a document and says nothing that finds it."""

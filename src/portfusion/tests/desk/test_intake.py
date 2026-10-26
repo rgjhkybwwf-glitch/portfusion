@@ -161,17 +161,18 @@ def test_every_accepted_extension_is_one_the_intake_extractor_can_READ(inbox, tm
 def test_the_drop_off_has_no_way_to_make_a_document_LEAVE(repo_root):
     """ITS WHOLE CLAIM, ON THE SYNTAX TREE. `docs/intake.md` says a document leaves the
     workbench by being archived or by going back where it came from. A new route IN must not
-    quietly become a route OUT, so the module's one write is `write_bytes`, with no removal,
-    move, copy or rename at all.
+    quietly become a route OUT, so the module's one write is an exclusive create, `open("xb")`,
+    which never overwrites, with no removal, move, copy or rename at all.
 
     Checked on the syntax tree (`harness.file_calls`): prose is not behaviour. That it never
     reaches the record's rules or the engine is the `the-drop-off` import contract.
     """
     from harness import file_calls
-    calls = {call for _, call, _ in file_calls(SRC / "desk" / "intake" / "dropoff.py")}
-    assert calls == {"write_bytes"}, (
-        f"dropoff.py writes by {sorted(calls)}. It is a way IN to _inbox/ and must never become "
-        f"a way out: a document leaves by being archived.")
+    calls = [(call, target.split()[:2])
+             for _, call, target in file_calls(SRC / "desk" / "intake" / "dropoff.py")]
+    assert calls == [("open", ["path", "'xb'"])], (
+        f"dropoff.py writes by {calls}. It is a way IN to _inbox/ and must never become a way "
+        f"out or overwrite: a document leaves by being archived.")
 
 
 def test_the_route_hands_a_refusal_back_as_a_400(inbox):
@@ -1022,7 +1023,7 @@ def test_an_unparseable_date_keeps_the_original_name_rather_than_inventing_one(i
 # =====================================================================================
 
 def test_the_withdraw_route_returns_what_the_module_did(workbench):
-    """app.py is the SWAP POINT and nothing else. It may not reshape the answer."""
+    """app.py routes and nothing else. It may not reshape the answer."""
     from portfusion.desk import app as _app
     from portfusion.desk.intake import withdraw
     box, out = workbench
@@ -1036,8 +1037,8 @@ def test_the_withdraw_route_returns_what_the_module_did(workbench):
     assert got["returned"] is False
     assert not (box / "note.csv").exists(), "the route did not reach the module"
     assert (out / "note.csv").read_bytes() == b"a,b\n1,2\n"
-    # TWO WITHDRAWALS, ONE THROUGH EACH DOOR. app.py is the SWAP POINT and nothing else, so
-    # the shape that comes back through it must be the shape the module produced.
+    # TWO WITHDRAWALS, ONE THROUGH EACH DOOR: the shape that comes back through app.py must be
+    # the shape the module produced.
     assert set(got) == set(direct), "the route added or dropped a key on the way back"
 
 

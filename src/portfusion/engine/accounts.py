@@ -8,6 +8,14 @@ from portfusion.engine.bases import roll_up
 from portfusion.engine.core import Core
 
 
+def quarter_opens(quarter_end: str, opens: str) -> str:
+    """The day a quarter's figures measure from: the previous quarter end, but in the quarter of a
+    record that opens at `opens`, that day (`quarter_label()` names such a quarter by it). The
+    opening itself has nothing recorded before it, so its own is the quarter end before."""
+    before = (pd.Timestamp(quarter_end) - pd.offsets.QuarterEnd(1)).date().isoformat()
+    return max(before, opens) if quarter_end > opens else before
+
+
 class Accounts(Core):
 
     # ---- THE REGISTER  —  who holds what, named as filed -----------------------------
@@ -21,9 +29,8 @@ class Accounts(Core):
         return list(self.D.ACCOUNT_ORDER)
 
     def accounts_open(self, date) -> list[str]:
-        """The accounts whose record had begun by `date`, in register order: those a quarter end
-        on that day holds a row for (`rules.accounts_open()`, read from this book's record)."""
-        return [a for a in self.D.ACCOUNT_ORDER if self.D.ACCOUNT_BEGINS.get(a, "") <= str(date)[:10]]
+        """`rules.accounts_open()`, read from this book's record."""
+        return self.D.accounts_open(date)
 
     #: Words in a holder's name that do not name them, kept when a holder is taken out.
     HOLDER_TITLES = frozenset({"Mr", "Mrs", "Ms", "Miss", "Mx", "Dr"})
@@ -99,11 +106,8 @@ class Accounts(Core):
         return max(f"{year - 1}-12-31", self.baseline_asof)
 
     def quarter_opens(self, quarter_end: str) -> str:
-        """The day a quarter's figures measure from: the previous quarter end, but in the quarter the
-        record began, its opening (`quarter_label()` names such a quarter by it). The opening itself
-        has nothing recorded before it, so its own is the quarter end before."""
-        before = (pd.Timestamp(quarter_end) - pd.offsets.QuarterEnd(1)).date().isoformat()
-        return max(before, self.baseline_asof) if quarter_end > self.baseline_asof else before
+        """The module's `quarter_opens()` for this book's opening."""
+        return quarter_opens(quarter_end, self.baseline_asof)
 
     def ytd_window(self) -> dict:
         """What the live year-to-date figures measure, for a page to state: `year`, the day they

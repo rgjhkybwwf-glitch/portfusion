@@ -47,7 +47,7 @@ def _covers(item: dict) -> str:
     # the same dates are identical files, and the account is the whole identification.
     from portfusion.record import rules as D
     ev = D.EVIDENCE_BY_KEY.get(item.get("evidence_class") or "")
-    account_first = ev is not None and ev.key in D.REFERENCE_IS_A_DATE
+    account_first = ev is not None and ev.found_by == "date"
     first, second = (accounts, tickers) if account_first else (tickers, accounts)
     parts = first or second or ([item["account"]] if item.get("account") else [])
     return ", ".join(parts)

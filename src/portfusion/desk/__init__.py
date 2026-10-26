@@ -1,6 +1,6 @@
 """desk/ — the book in a browser.
 
-`store/` holds the facts, `engine.py` is the engine, and this package renders it to a browser, as
+`store/` holds the facts, `engine/` is the engine, and this package renders it to a browser, as
 `report/` renders a quarter to a page. Both are renderers of the same view data; neither defines it.
 
 NOTHING IN THE BOOK IMPORTS THIS — the import contracts in `pyproject.toml` hold it. Delete this

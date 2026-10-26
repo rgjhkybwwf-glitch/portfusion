@@ -1,6 +1,6 @@
 """THE PAGE — the quarterly report's nine sections, every figure the engine's.
 
-Nothing is computed here. Where the page needs something engine.py does not offer, the fix is an
+Nothing is computed here. Where the page needs something `engine/` does not offer, the fix is an
 engine method.
 """
 from __future__ import annotations

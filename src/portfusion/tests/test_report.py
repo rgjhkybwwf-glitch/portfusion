@@ -543,7 +543,7 @@ def test_another_accounts_statement_does_not_put_this_one_on_file():
     for account in at.index:
         src = str(at.loc[account, "source"])
         ev, ref = D.evidence_from_source(src), D.archive_reference(src)
-        if ev is not None and ev.key in D.REFERENCE_IS_A_DATE and ref:
+        if ev is not None and ev.found_by == "date" and ref:
             others.append(f"{ref} {ev.authority} (an account not in this book).pdf")
     if not others:
         pytest.skip(f"no reading at {q} cites a dated statement")

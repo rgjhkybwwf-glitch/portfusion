@@ -138,19 +138,15 @@ def accept(raw_name: str, data: bytes, modified_ms=None) -> dict:
     # NEVER OVERWRITE. `docs/intake.md`: "Never delete a document from here. It leaves by
     # being archived, or it goes back where it came from. Deleting it destroys the evidence
     # the row points at." An overwrite is a deletion with the name left behind, and it is the
-    # quieter of the two — the listing would be unchanged.
-    #
-    # There is a moment between this check and the write. It is not closed with an exclusive
-    # open, deliberately: `tests/desk/test_boundaries.py` finds the writing modules by walking
-    # the syntax tree for write_bytes/write_text/move/copy2/unlink, so a write hidden behind
-    # `open(..., "xb")` would slip past the guard that pins the set. On a single-user localhost
-    # desk, being visible to that guard is worth more than the race.
-    if path.exists():
+    # quieter of the two — the listing would be unchanged. The exclusive open leaves no moment
+    # between the check and the write.
+    try:
+        with path.open("xb") as f:
+            f.write(data)
+    except FileExistsError:
         raise Refused(f"{name!r} is already on the workbench. Nothing here overwrites a "
                       f"document — a document leaves _inbox/ by being archived. Rename the "
-                      f"new one, or finish the intake that left the old one")
-
-    path.write_bytes(data)
+                      f"new one, or finish the intake that left the old one") from None
     # THE FILE KEEPS THE TIME IT WAS DOWNLOADED, as it would dragged in through Finder.
     when = _download_time(modified_ms)
     if when is not None:
