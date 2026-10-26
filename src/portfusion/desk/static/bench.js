@@ -59,12 +59,19 @@ async function landFiles(files) {
      on it now, which is what "drop it on the bench" is expected to mean. Dropping three is a
      decision to file three, and a screen cannot open three items at once. */
   if (landed.length === 1 && !refused.length) {
-    const it = await fetch("/api/bench", { method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ origin: "document", title: landed[0],
-                             document: { name: landed[0] } }) }).then((r) => r.json());
-    openItem(it.id);
+    const { body: it, error } = await post("/api/bench", { origin: "document", title: landed[0],
+                                                           document: { name: landed[0] } });
+    if (error) notOpened(error);
+    else openItem(it.id);
   }
+}
+
+/* AN ITEM THAT COULD NOT BE OPENED SAYS WHY, in the drop-off's box under the list. */
+function notOpened(error) {
+  const out = $("#dropout");
+  if (!out) return;
+  out.hidden = false;
+  out.textContent = `not opened — ${error}`;
 }
 
 /* The zone itself. `dragenter`/`dragover` must both preventDefault or the drop never fires —
@@ -129,11 +136,9 @@ async function saveNow(patch) {
   /* A SAVE SAYS WHICH REVISION IT WAS MADE FROM. The page sends the whole item, so one left open
      would write its old rows over a newer save. The server refuses a save from an older
      revision; the item is drawn again as it now is, and the change is made again on that. */
-  const r = await fetch(`/api/bench/${OPEN_ID}`, {
-    method: "PUT", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ...patch, revision: DRAWN }),
-  });
-  if (r.status === 409) {
+  const { body: d, status, error } = await post(`/api/bench/${OPEN_ID}`,
+                                                { ...patch, revision: DRAWN }, "PUT");
+  if (status === 409) {
     const d = await get(`/api/bench/${OPEN_ID}`);
     keepingTheField(() => drawItem(d));
     $("#item").insertAdjacentHTML("afterbegin",
@@ -141,13 +146,11 @@ async function saveNow(patch) {
     return d;
   }
   /* A SAVE REFUSED FOR ANY OTHER REASON SAYS SO. */
-  if (!r.ok) {
-    const said = await r.json().catch(() => ({}));
+  if (error) {
     $("#item").insertAdjacentHTML("afterbegin",
-      `<ul class="items"><li class="gap"><span class="tag">not saved</span>${esc(said.detail || r.statusText)}</li></ul>`);
+      `<ul class="items"><li class="gap"><span class="tag">not saved</span>${esc(error)}</li></ul>`);
     return null;
   }
-  const d = await r.json();
   keepingTheField(() => drawItem(d));
   return d;
 }
@@ -438,14 +441,15 @@ function drawItem(d) {
     const why = prompt("Why is this not needed? Recorded on the archived item.");
     if (why === null) return;
     const name = encodeURIComponent(it.document.name);
-    const r = await fetch(`/api/inbox/${name}?why=${encodeURIComponent(why)}`,
-                          { method: "DELETE" });
-    if (!r.ok) { alert((await r.json()).detail || "refused"); return; }
+    const { error } = await post(`/api/inbox/${name}?why=${encodeURIComponent(why)}`, undefined,
+                                 "DELETE");
+    if (error) { alert(error); return; }
     OPEN_ID = null;
     await show("bench");
   });
   $("#discard").addEventListener("click", async () => {
-    await fetch(`/api/bench/${OPEN_ID}`, { method: "DELETE" });
+    const { error } = await post(`/api/bench/${OPEN_ID}`, undefined, "DELETE");
+    if (error) { alert(error); return; }
     OPEN_ID = null;
     await show("bench");
   });
@@ -456,9 +460,9 @@ function drawItem(d) {
   const rh = $("#readhere");
   if (rh) rh.addEventListener("click", async () => {
     rh.disabled = true;
-    const r = await fetch(`/api/bench/${OPEN_ID}/read`, { method: "POST" });
-    if (r.ok) drawItem(await r.json());
-    else $("#docbody").innerHTML = `<pre class="error">${esc((await r.json()).detail || r.statusText)}</pre>`;
+    const { body, error } = await post(`/api/bench/${OPEN_ID}/read`);
+    if (!error) drawItem(body);
+    else $("#docbody").innerHTML = `<pre class="error">${esc(error)}</pre>`;
   });
 
   $("#back").addEventListener("click", () => { OPEN_ID = null; show("bench"); });
@@ -590,21 +594,21 @@ async function reviewItems() {
   $("#item").querySelectorAll("[data-write]").forEach((b) => b.addEventListener("click", async () => {
     if (!confirm("Write this to the record?\n\nIt cannot be undone from the desk.")) return;
     b.disabled = true;
-    const r = await fetch(`/api/bench/${b.dataset.write}/commit`, { method: "POST" });
+    const { error } = await post(`/api/bench/${b.dataset.write}/commit`);
     const out = $(`[data-out="${b.dataset.write}"]`);
     out.hidden = false;
-    if (r.ok) {
+    if (!error) {
       out.textContent = "written";
       setTimeout(() => show("bench"), 1200);
     } else {
-      out.textContent = "not written\n\n" + ((await r.json()).detail || "");
+      out.textContent = "not written\n\n" + error;
       b.disabled = false;
     }
   }));
 }
 
-Object.assign(RENDER_LATE, {
-  async bench(d) {
+Object.assign(DRAW, {
+  bench(d) {
     /* BACK TO THE LIST IS BACK TO ONE COLUMN. `wide` is the item's two-column layout and
        nothing on the list needs it; left on, it stretched the list across the window. */
     PREVIEW_OPEN = false;
@@ -654,7 +658,7 @@ Object.assign(RENDER_LATE, {
 
     /* EVERY ROUTE IN STARTS HERE: a dropped document, `+ new item` and a swept IG event. */
     const ready = d.items.filter((i) => i.ready).length;
-    $("#main").innerHTML = page({
+    return page({
       scope: "an event, from evidence to an approved row",
       status: [
         { label: "Items", body: `${quiet(`${d.items.length} on the bench`)}
@@ -669,7 +673,7 @@ Object.assign(RENDER_LATE, {
         ${items ? `<h2>On the bench</h2><ul class="items">${items}</ul>` : ""}
         ${docs ? `<h2>Documents waiting</h2><ul class="items">${docs}</ul>` : ""}
         ${notes ? `<h2>Research notes waiting</h2><ul class="items">${notes}</ul>
-          <pre class="error" id="noteout" hidden></pre>` : ""}
+          <pre class="error" id="noteout" aria-live="polite" hidden></pre>` : ""}
         <div class="drop" id="drop">
           <strong>Drop a contract note or statement here</strong>
           <span class="muted">It waits under Documents and opens on the Bench.
@@ -677,16 +681,20 @@ Object.assign(RENDER_LATE, {
           <span class="muted"><button class="link" id="pickbtn">or choose a file</button></span>
           <input type="file" id="pick" multiple hidden>
         </div>
-        <pre class="error" id="dropout" hidden></pre>
+        <pre class="error" id="dropout" aria-live="polite" hidden></pre>
         <h2>Ask the broker</h2>
         <div id="acts"></div>
         <div id="actview" hidden></div>
-        <pre id="actout" class="paste" hidden></pre>
+        <pre id="actout" class="paste" aria-live="polite" hidden></pre>
         </div>
         <section id="item"></section>`,
       why: d.why,
     });
+  },
+});
 
+Object.assign(WIRE, {
+  async bench(d) {
     BENCH_GONE = null;
     wireDrop();
     await wireActions("bench");
@@ -694,9 +702,8 @@ Object.assign(RENDER_LATE, {
     if (rv) rv.addEventListener("click", () => reviewItems());
 
     $("#newitem").addEventListener("click", async () => {
-      const it = await fetch("/api/bench", { method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: "untitled" }) }).then((r) => r.json());
+      const { body: it, error } = await post("/api/bench", { title: "untitled" });
+      if (error) { notOpened(error); return; }
       /* Re-render the panel so the list stops saying "nothing on the bench" while an item is
          open beneath it, then re-open what was just created. */
       OPEN_ID = it.id;
@@ -706,10 +713,9 @@ Object.assign(RENDER_LATE, {
       b.addEventListener("click", () => openItem(b.dataset.open)));
     $("#main").querySelectorAll("[data-doc]").forEach((b) =>
       b.addEventListener("click", async () => {
-        const it = await fetch("/api/bench", { method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ origin: "document", title: b.dataset.doc,
-                                 document: { name: b.dataset.doc } }) }).then((r) => r.json());
+        const { body: it, error } = await post("/api/bench", { origin: "document",
+          title: b.dataset.doc, document: { name: b.dataset.doc } });
+        if (error) { notOpened(error); return; }
         OPEN_ID = it.id;
         await show("bench");
       }));
@@ -718,12 +724,11 @@ Object.assign(RENDER_LATE, {
     $("#main").querySelectorAll("[data-note]").forEach((b) =>
       b.addEventListener("click", async () => {
         b.disabled = true;
-        const { ok, body, raw } = await readJson(await fetch(
-          `/api/bench/notes/${encodeURIComponent(b.dataset.note)}`, { method: "POST" }));
-        if (ok) { await show("bench"); return; }
+        const { error } = await post(`/api/bench/notes/${encodeURIComponent(b.dataset.note)}`);
+        if (!error) { await show("bench"); return; }
         const out = $("#noteout");
         out.hidden = false;
-        out.textContent = raw || (body && body.detail) || "refused";
+        out.textContent = error;
         b.disabled = false;
       }));
 

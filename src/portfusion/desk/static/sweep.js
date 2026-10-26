@@ -36,23 +36,14 @@ async function wireActions(panelName) {
       view.hidden = true; view.innerHTML = "";
       out.hidden = false; out.textContent = "asking the broker…";
       try {
-        const r = await fetch(`/api/action/${b.dataset.act}`, {
-          method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
-        const { ok, body, raw } = await readJson(r);
-        if (raw) { out.textContent = raw; return; }
-        if (!ok) { out.textContent = body.detail || JSON.stringify(body, null, 2); return; }
+        const { result, error } = await runAction(b.dataset.act);
+        if (error) { out.textContent = error; return; }
 
         /* THE ANSWER IS FIGURES, NOT JSON. A renderer per action, and JSON only where there is
            none, so a NEW action still shows its result rather than nothing while its view is
            written. */
-        const payload = body.result || {};
-        if (payload.ok === false) {
-          out.textContent = payload.error + (payload.hint ? `\n\n${payload.hint}` : "");
-          return;
-        }
         const draw = ACTION_VIEW[b.dataset.act];
-        if (!draw) { out.textContent = JSON.stringify(payload.result ?? payload, null, 2); return; }
-        const result = payload.result ?? payload;
+        if (!draw) { out.textContent = JSON.stringify(result, null, 2); return; }
         if (b.dataset.act === "ig-events") showSweep(result);
         else {
           out.hidden = true;
@@ -155,13 +146,10 @@ async function showSweep(result) {
     .flatMap((k) => (result[k] || []).map((r) => r.ref)).filter(Boolean);
   SWEEP_STATUS = {};
   if (refs.length) {
-    try {
-      const r = await fetch("/api/sweep-status", {
-        method: "POST", headers: { "content-type": "application/json" },
-        body: JSON.stringify({ refs }) });
-      const { body } = await readJson(r);
-      SWEEP_STATUS = body || {};
-    } catch (e) { console.error(e); }   /* a status we could not fetch shows as unknown, not as new */
+    const { ok, body, error } = await post("/api/sweep-status", { refs });
+    /* A STATUS WE COULD NOT FETCH shows as unknown, not as new. */
+    if (ok) SWEEP_STATUS = body || {};
+    else console.error(error);
   }
   view.innerHTML = ACTION_VIEW["ig-events"](result);
 }
@@ -262,15 +250,14 @@ async function toBench(b, ev, action = "ig-event-to-bench") {
   b.disabled = true;
   b.textContent = "opening…";
   try {
-    const r = await fetch(`/api/action/${action}`, {
-      method: "POST", headers: { "content-type": "application/json" },
-      body: JSON.stringify({ event: ev }) });
-    const { body: d, raw } = await readJson(r);
-    if (raw) { b.textContent = "failed — see the log"; console.error(raw); return; }
     /* The action's own answer, not this function's opinion of it: for_event() refuses a row
        whose shape does not match its table, and that refusal must reach the screen. */
-    const res = d.result || d;
-    if (res.ok === false) { b.textContent = `refused — ${res.error || "see the log"}`; return; }
+    const { result: res, error, refused } = await runAction(action, { event: ev });
+    if (error) {
+      b.textContent = `${refused ? "refused" : "failed"} — ${error.split("\n")[0]}`;
+      console.error(error);
+      return;
+    }
     b.textContent = res.blocked && res.blocked.length
       ? `on the bench — ${res.blocked.join(", ")} still owed`
       : "on the bench";

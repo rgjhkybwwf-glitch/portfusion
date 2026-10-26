@@ -53,10 +53,6 @@ STEPS = (
 )
 
 def data() -> dict:
-    return query()
-
-
-def query() -> dict:
     """The bay's state. Every figure is the engine's or the door's; nothing is decided here."""
     # ONE BOOK FOR THE WHOLE BAY, the desk's, so the outgoing marks are the record the figures
     # below are drawn from, and a store that will not load answers "record unavailable".

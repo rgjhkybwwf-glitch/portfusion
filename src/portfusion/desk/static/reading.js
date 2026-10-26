@@ -1,7 +1,7 @@
 /* THE PAGES THAT READ: What Changed, the Dashboard, Holdings, Round Trips, Method, Accounts,
    Reports, Performance, Trades and Reconcile. */
 
-const RENDER = {
+Object.assign(DRAW, {
   /* WHAT CHANGED — two bases, one under the other, never added. The panel hands over totals
      already computed per basis, because Book.change_totals() refuses to span them; this draws
      them, each block with its own columns.
@@ -137,7 +137,7 @@ const RENDER = {
         <section><h2>Needs attention</h2><ul class="items">${items}</ul></section></div>`,
     });
   },
-};
+});
 
 /* THE STEPS, EXPLAINED ONCE AND BELOW THE TABLE. `Reading` keeps its links on screen because
    those are the work; the reasons live here, Events' among them. */
@@ -215,7 +215,7 @@ const allocation = (d) => !d.allocation ? "" : `<h2>Where the exposure sits</h2>
         <td class="num">${pct(s.share)}</td></tr>`).join("")}</tbody></table>`).join("")}
   </div>`;
 
-Object.assign(RENDER, {
+Object.assign(DRAW, {
   holdings(d) {
     /* OWNED AND NOTIONAL, APART AND NEVER ADDED. Both come from the engine. */
     return page({
@@ -406,39 +406,38 @@ Object.assign(RENDER, {
   },
 });
 
-Object.assign(RENDER_LATE, {
+Object.assign(DRAW, {
   /* TRADES — every buy and sale on file, interrogable.
      Dates and account go to book.activity(); ticker and direction narrow the result. Nothing
      is computed here. */
-  async trades(d) {
-    const price = localPrice;
+  trades(d) {
+    const price = localPrice, v = d.chosen || {};
     const opts = (list, sel) => `<option value="">all</option>` +
-      list.map((v) => `<option${v === sel ? " selected" : ""}>${esc(v)}</option>`).join("");
+      list.map((x) => `<option${x === sel ? " selected" : ""}>${esc(x)}</option>`).join("");
+    const date = (id) => `<input id="${id}" type="date" min="${esc(d.span.first || "")}"
+               max="${esc(d.span.last || "")}" value="${esc(v[id] || "")}">`;
+    /* THE TICKER BOX IS THE CHOSEN COMPANY'S, so it cannot name a line the Company box has ruled
+       out; a company chosen starts its ticker afresh. */
+    const co = v["q-company"] || "";
+    const count = `${d.total} trade${d.total === 1 ? "" : "s"}` +
+      (d.span.first ? ` · ${day(d.span.first)} to ${day(d.span.last)}` : "");
 
-    $("#main").innerHTML = page({
+    return page({
       scope: "every buy and sale on file",
-      status: [{ label: "Trades", body: `<span id="q-count" class="muted small"></span>` }],
+      status: [{ label: "Trades", body: `<span id="q-count" class="muted small">${esc(count)}</span>` }],
       filters: { clear: "q-clear", fields: [
-        filterField("account", `<select id="q-account">${opts(d.accounts)}</select>`),
-        filterField("company", `<select id="q-company">${opts(d.companies || [], PENDING_COMPANY)}</select>`),
-        filterField("ticker", `<select id="q-ticker">${opts(d.tickers)}</select>`),
-        filterField("from", `<input id="q-start" type="date" min="${esc(d.span.first || "")}"
-               max="${esc(d.span.last || "")}">`),
-        filterField("to", `<input id="q-end" type="date" min="${esc(d.span.first || "")}"
-               max="${esc(d.span.last || "")}">`),
-        filterField("direction", `<select id="q-direction">${opts(d.directions)}</select>`),
+        filterField("account", `<select id="q-account">${opts(d.accounts, v["q-account"])}</select>`),
+        filterField("company", `<select id="q-company">${opts(d.companies || [], co)}</select>`),
+        filterField("ticker", `<select id="q-ticker">${
+          opts(co ? d.company_tickers[co] || [] : d.tickers, v["q-ticker"])}</select>`),
+        filterField("from", date("q-start")),
+        filterField("to", date("q-end")),
+        filterField("direction", `<select id="q-direction">${opts(d.directions, v["q-direction"])}</select>`),
       ] },
-      work: `<div id="q-rows"></div>`,
-    });
-
-    const draw = (res) => {
-      $("#q-count").textContent =
-        `${res.total} trade${res.total === 1 ? "" : "s"}` +
-        (res.span.first ? ` · ${day(res.span.first)} to ${day(res.span.last)}` : "");
       /* A TABLE IN HOLDINGS' ORDER: the deal as struck on the line, and
          everything else the record holds on the trade in its detail. A spread bet reads in its
          own terms, a stake per point at a level in points, with no currency of its own. */
-      $("#q-rows").innerHTML = res.rows.length ? table(res.rows, d.columns, "<th></th>",
+      work: `<div id="q-rows">${d.rows.length ? table(d.rows, d.columns, "<th></th>",
         (r) => `<td class="nowrap">${detailLink(detailList(r, d.detail))}</td>`,
         { name: "trades", afterRow: (r, span) => detailRow(detailList(r, d.detail), span),
           cells: {
@@ -447,47 +446,8 @@ Object.assign(RENDER_LATE, {
             traded_price: (r) => r.level_points == null
               ? `<td class="num">${price(r.traded_price, r.currency)}</td>`
               : pointsCell(r.level_points) } })
-        : `<p class="muted">nothing matches those filters.</p>`;
-    };
-
-    const run = async () => {
-      HELD_FILTERS.trades = Object.fromEntries(FILTERS.map((id) => [id, $(`#${id}`).value]));
-      const p = new URLSearchParams({
-        start: $("#q-start").value, end: $("#q-end").value,
-        account: $("#q-account").value, ticker: $("#q-ticker").value,
-        direction: $("#q-direction").value, company: $("#q-company").value });
-      draw(await get(`/api/trades?${p}`));
-    };
-    const FILTERS = ["q-account", "q-company", "q-ticker", "q-start", "q-end", "q-direction"];
-    /* THE TICKER BOX IS THE CHOSEN COMPANY'S, so it cannot name a line the Company box has ruled
-       out; a company chosen starts its ticker afresh. Bound before `run`, so the query reads the
-       ticker it leaves. */
-    const tickers = (sel = "") => {
-      const co = $("#q-company").value;
-      $("#q-ticker").innerHTML = opts(co ? d.company_tickers[co] || [] : d.tickers, sel);
-    };
-    $("#q-company").addEventListener("change", () => tickers());
-    FILTERS.forEach((id) => $(`#${id}`).addEventListener("change", run));
-    $("#q-clear").addEventListener("click", () => {
-      FILTERS.forEach((id) => ($(`#${id}`).value = ""));
-      tickers();
-      run();
+        : `<p class="muted">nothing matches those filters.</p>`}</div>`,
     });
-    /* ARRIVED FROM A "trades" LINK. The select is already showing the company, so run the query
-       rather than drawing the unfiltered ledger underneath a filter that says otherwise. The
-       link's company is taken once; from then on it is held as any filter here is. */
-    const held = HELD_FILTERS.trades;
-    if (PENDING_COMPANY) {
-      PENDING_COMPANY = null;
-      tickers();
-      run();
-    } else if (held && Object.values(held).some((v) => v)) {
-      FILTERS.forEach((id) => ($(`#${id}`).value = held[id] ?? ""));
-      tickers(held["q-ticker"] ?? "");
-      run();
-    } else {
-      draw({ rows: d.rows, total: d.total, span: d.span });
-    }
   },
 
   /* RECONCILE — what the book says beside what the broker says.
@@ -495,7 +455,7 @@ Object.assign(RENDER_LATE, {
      door; an IG account's equity is read in one pass with its marks and held to a band. Neither
      is decided here — the verdict arrives already made, from the same function the audit and
      the Dashboard ask. */
-  async reconcile(d) {
+  reconcile(d) {
     /* EVERY VERDICT HAS A TAG. One that fell through to the default `note` would wear the colour
        of a row inside its band, for a row that has not been judged at all. */
     const verdictTag = { "units-agree": "ok", "within-band": "note", differs: "problem",
@@ -537,7 +497,7 @@ Object.assign(RENDER_LATE, {
         table says why.</li></ul>`
       : "";
 
-    $("#main").innerHTML = page({
+    return page({
       scope: "the book against each broker, account by account",
       /* Where each reading is taken, so drawn only where those pages open: on the Mac. */
       status: PANELS.has("bench") ? [{ label: "Reading",
@@ -552,5 +512,48 @@ Object.assign(RENDER_LATE, {
           <th>${head("document")}</th></tr></thead><tbody>${rows}</tbody></table></div>`,
       why: RECONCILE_WHY,
     });
+  },
+});
+
+/* THE READING PAGES' FILTERS, through the one mechanism, wireFilters(). */
+Object.assign(WIRE, {
+  holdings(d, again) {
+    wireFilters("holdings", d, again, { ids: ["h-by", "h-acct"], button: "h-clear",
+      ask: (v) => `/api/holdings?by=${encodeURIComponent(v["h-by"])}`
+        + `&account=${encodeURIComponent(v["h-acct"])}`,
+      clear: () => "/api/holdings" });
+  },
+
+  "round-trips"(d, again) {
+    const view = (v) => `/api/round-trips?view=${encodeURIComponent(v["rt-view"] || "holding")}`;
+    /* A COMPANY CHOSEN STARTS ITS TICKER AFRESH, and the page comes back with that company's
+       codes in the Ticker box. */
+    wireFilters("round-trips", d, again, {
+      ids: ["rt-view", "rt-acct", "rt-company", "rt-ticker", "rt-from", "rt-to"], button: "rt-clear",
+      resets: { "rt-company": "rt-ticker" },
+      ask: (v) => view(v) + `&ticker=${encodeURIComponent(v["rt-ticker"])}`
+        + `&company=${encodeURIComponent(v["rt-company"])}`
+        + `&account=${encodeURIComponent(v["rt-acct"])}`
+        + `&start=${encodeURIComponent(v["rt-from"])}`
+        + `&end=${encodeURIComponent(v["rt-to"])}`,
+      clear: view });
+  },
+
+  /* Dates and account go to book.activity(); ticker and direction narrow the result. Its answer
+     is the rows, drawn over the page's own data. */
+  trades(d, again) {
+    /* ARRIVED FROM A "trades" LINK: the link's company is taken once, as the filter held, and
+       asked for below; from then on it is held as any filter here is. */
+    if (PENDING_COMPANY && !again) {
+      HELD_FILTERS.trades = { "q-company": PENDING_COMPANY };
+      PENDING_COMPANY = null;
+    }
+    wireFilters("trades", d, again, {
+      ids: ["q-account", "q-company", "q-ticker", "q-start", "q-end", "q-direction"], button: "q-clear",
+      resets: { "q-company": "q-ticker" },
+      ask: (v) => `/api/trades?${new URLSearchParams({ start: v["q-start"], end: v["q-end"],
+        account: v["q-account"], ticker: v["q-ticker"], direction: v["q-direction"],
+        company: v["q-company"] })}`,
+      clear: () => "/api/trades" });
   },
 });
