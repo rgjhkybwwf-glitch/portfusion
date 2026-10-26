@@ -827,6 +827,33 @@ def _every_page(s, path, version, key):
                             f"window (--since).")
 
 
+#: THE LOOK-BACK WHEN NONE IS CHOSEN, in days.
+LOOKBACK_DAYS = 30
+#: The `since` that asks each account from the first day it may: `floor()`.
+BEGINS = "begins"
+
+
+def floor(D, account: str) -> str:
+    """The first day a sweep may ask about for `account`: the later of the day the book's record
+    began and the account's own (`rules.ACCOUNT_BEGINS`). Activity before it is not reconstructed
+    backwards."""
+    return max(D.RECORD_BEGINS.isoformat(), D.ACCOUNT_BEGINS.get(account, ""))
+
+
+def _asked(since, today: _dt.date) -> str | None:
+    """The day `since` asks from: an ISO date, a whole number of days back, or None for
+    `LOOKBACK_DAYS`; `BEGINS` asks from each account's floor, and answers None."""
+    if since == BEGINS:
+        return None
+    if since is None or str(since).isdigit():
+        return (today - _dt.timedelta(days=int(since or LOOKBACK_DAYS))).isoformat()
+    try:
+        return _dt.date.fromisoformat(str(since)).isoformat()
+    except ValueError:
+        raise ValueError(f"since is a date, a number of days or {BEGINS!r}, "
+                         f"not {since!r}") from None
+
+
 def ig_events(since=None, book=None):
     """Every IG event in a window, matched against the book, with paste-ready rows for whatever is
     missing. PRINTS, NEVER WRITES.
@@ -840,8 +867,8 @@ def ig_events(since=None, book=None):
       * Invent a ticker. An epic no contract carries is offered for set-up, never guessed.
       * Write the WHY. Every generated row carries a marker where the judgement belongs.
 
-    THE WINDOW DEFAULTS TO 30 DAYS. Activity from before the record begins is not reconstructed
-    backwards; use --since only when you mean to.
+    THE WINDOW IS `since` TO TODAY (`_asked()`), and NEVER BEFORE AN ACCOUNT'S `floor()`: a
+    `since` before it is clamped to it, each account its own, and `clamped` says so.
 
     `book` is the caller's Book (the desk passes its own), so every event is matched against the
     record it pinned, and every close takes its parcel; without one, the record is read here and
@@ -852,7 +879,7 @@ def ig_events(since=None, book=None):
     D = _record() if book is None else book.D
     creds = load_credentials()
     today = _dt.date.today()
-    frm = since or (today - _dt.timedelta(days=30)).isoformat()
+    asked = _asked(since, today)
     to = today.isoformat()
     tick_of = _epic_to_ticker(D)
 
@@ -885,10 +912,16 @@ def ig_events(since=None, book=None):
     contract_of = {epic: c for c, (_holder, epic) in epics(D).items()}
 
     matched, rows_t, rows_e, rows_i, rows_m, skipped, setups = [], [], [], [], [], [], []
-    seen_api_cash, swept = set(), set()
+    seen_api_cash, windows, clamped = set(), {}, []
     for label in sorted(creds):
         acct = account_names(D).get(label, label)
-        swept.add(acct)
+        start = floor(D, acct)
+        if start > to:
+            clamped.append(f"{acct}: not read, its record begins on {start}")
+            continue
+        frm = windows[acct] = max(asked or start, start)
+        if asked and asked < start:
+            clamped.append(f"{acct}: from {start}, the day its record begins, not {asked}")
         with IGSession(creds[label], label) as s:
             activities = _every_page(
                 s, f"/history/activity?from={frm}T00:00:00&to={to}T23:59:59"
@@ -1000,15 +1033,16 @@ def ig_events(since=None, book=None):
     # not be there. A sweep that reports only what is MISSING would let a pasted set of real charges
     # sit beside the figure they replace.
     #
-    # ONLY THE ACCOUNTS SWEPT, and each against its own ledger: an account with no credentials
-    # here was read by nothing, so its rows are not missing from IG — they were never asked about.
+    # ONLY THE ACCOUNTS SWEPT, each against its own ledger and window: an account with no
+    # credentials here was read by nothing, so its rows are not missing from IG — they were never
+    # asked about.
     orphans = [{"date": c.date, "amount": c.amount, "detail": c.detail, "account": c.account}
                for c in D.ci_rows
-               if c.account in swept and D.ACCOUNT_KIND.get(c.account) == "spread bet"
-               and frm <= c.date <= to
+               if c.account in windows and D.ACCOUNT_KIND.get(c.account) == "spread bet"
+               and windows[c.account] <= c.date <= to
                and (c.account, c.date, round(c.amount, 2)) not in seen_api_cash]
 
-    return {"frm": frm, "to": to, "matched": matched,
+    return {"windows": windows, "clamped": clamped, "to": to, "matched": matched,
             "opens": rows_t, "closes": rows_e, "costs": rows_i, "capital": rows_m,
             "orphans": orphans, "skipped": skipped, "setups": setups}
 
@@ -1017,7 +1051,10 @@ def cmd_events(since=None):
     """Print the sweep. COMPUTES NOTHING — every row comes from `ig_events()`."""
     r = ig_events(since)
     matched, skipped, orphans = r["matched"], r["skipped"], r["orphans"]
-    log.info(f"\n# IG EVENT SWEEP — {r['frm']} to {r['to']}, every configured account")
+    log.info(f"\n# IG EVENT SWEEP — to {r['to']}, every configured account, from "
+             + ", ".join(f"{d} ({a})" for a, d in r["windows"].items()))
+    for c in r["clamped"]:
+        log.info(f"#   {c}")
     log.info("# Matched against the book by DEAL REFERENCE. Paste what you accept; nothing is written.")
 
     def block(title, rows, target):
@@ -1091,7 +1128,9 @@ IG price sweep — read-only. Fetches spread-bet CONTRACT levels from IG's REST 
     python3 -m portfusion.feeds.ig --ig-search "Zephyr" "Morane" ...    find epics (do this first)
     python3 -m portfusion.feeds.ig --ig-verify            compare live levels against the record
     python3 -m portfusion.feeds.ig --ig-events            trades, closes, costs and cash vs the book
-    python3 -m portfusion.feeds.ig --ig-events 2026-08-01     ...over a window you choose
+    python3 -m portfusion.feeds.ig --ig-events 2026-08-01     ...from a day, a number of days back
+                                                          (90), or `begins`: never before an
+                                                          account's record began
     python3 -m portfusion.feeds.ig --ig-logout            end the cached session and delete the cache
 
 The sweep, `python3 -m portfusion.feeds.refresh [--on D]`, prints levels, equity and past closes.

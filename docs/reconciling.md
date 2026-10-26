@@ -63,8 +63,9 @@ ticked marks*. Equity and contract levels are read in one pass and written toget
 what lets the pair compare at all. A level struck later the same day ends the pass: the reading
 reads `struck-apart` until it is read again. A reading moves the book ([prices.md](prices.md)).
 
-**Events come from *Sweep IG events* on the Bench**, 30 days back, so sweep inside that.
-`python3 -m portfusion.feeds.ig --ig-events YYYY-MM-DD` reports a longer window.
+**Events come from *Sweep IG events* on the Bench**, over the look-back chosen beside it: 30 days,
+90, or since the account began, never before its record did. `python3 -m portfusion.feeds.ig
+--ig-events` takes the same, as a date, a number of days or `begins`.
 
 ## HL
 

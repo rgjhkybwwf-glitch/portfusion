@@ -1,6 +1,6 @@
 """THE DESK'S ANSWERS, for `desk_smoke.mjs`: the demo desk asked, in this process and with no
-server, for the page, its scripts, `/api/state` and every panel, and house's rounding of a few
-figures, written as one JSON file. Fails on
+server, for the page, its scripts, `/api/state` and every panel, house's rounding of a few
+figures, and the IG sweep's own answer to an invented ledger, written as one JSON file. Fails on
 any answer that is not a 200.
 
     npm ci --prefix tools                     # once: jsdom
@@ -26,6 +26,36 @@ ROUNDING = [(12.5, 0, 0), (-12.5, 0, 0), (0.125, 2, 0), (2.675, 2, 0), (1.005, 2
             (0.0045, 2, 2), (1.3158, 4, 0), (10480, 2, 0)]
 
 
+def _sweep() -> dict:
+    """`feeds/ig.ig_events()`'s answer to four invented deposits on every IG login the demo names,
+    through the real allowlist, and their status with the first three already in the record."""
+    from portfusion.feeds import ig
+    day = ig._dt.date.today().isoformat()
+    ledger = {"transactions": [{"dateUtc": f"{day}T00:00:00", "reference": f"TX-{n}",
+                                "transactionType": "DEPO", "profitAndLoss": "£10.00",
+                                "instrumentName": "Card deposit"} for n in range(4)]}
+
+    class Session:
+        def __init__(self, cred, label):
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+        def _request(self, method, path, version):
+            ig._assert_readonly(method, path)
+            return ({"activities": []} if path.startswith("/history/activity") else ledger), {}
+    ig.load_credentials = lambda *a, **k: {label: {} for label in ig.account_names()}
+    ig.IGSession = Session
+    result = ig.ig_events()
+    refs = [r["ref"] for k in ("opens", "closes", "costs", "capital", "setups") for r in result[k]]
+    return {"result": result, "status": {ref: {"in_record": n < 3, "tables": [], "item": None}
+                                         for n, ref in enumerate(refs)}}
+
+
 def main(out: str) -> int:
     client = TestClient(app.app, base_url="http://127.0.0.1:8765")
     answers = {}
@@ -45,6 +75,7 @@ def main(out: str) -> int:
     from portfusion.house.precision import fixed
     answers["/"]["rounding"] = [[n, dp, shift, fixed(n, dp, ",", shift)]
                                 for n, dp, shift in ROUNDING]
+    answers["/"]["sweep"] = _sweep()
     with open(out, "w", encoding="utf-8") as f:
         json.dump(answers, f)
     bad = [f"{u} ({a['status']})" for u, a in answers.items() if a["status"] != 200]

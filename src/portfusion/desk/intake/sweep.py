@@ -81,7 +81,8 @@ def _ig(fn, *a):
 
 
 def ig_events(since=None):
-    """IG's events since `since` (30 days by default), each checked against the book."""
+    """IG's events over the look-back the Bench chose (`feeds/ig.ig_events()`'s `since`), each
+    checked against the book."""
     return _ig(lambda ig, s: ig.ig_events(s, book=engine.book()), since)
 
 
