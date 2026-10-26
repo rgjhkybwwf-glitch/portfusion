@@ -11,6 +11,7 @@ from portfusion.engine.reconciliation import Reconciliation
 from portfusion.engine.quarters import Quarters
 from portfusion.engine.past import PastDates
 from portfusion.engine.findings import Findings
+from portfusion.house import precision as P
 
 
 # =====================================================================================
@@ -32,7 +33,7 @@ class _OfTheRecord:
 
 def _since_start(d) -> str:
     """The since-start return's label, which carries the day the record begins."""
-    return f"Return since {d.RECORD_BEGINS:%-d %b %Y} (MWR)"
+    return f"Return since {P.day(d.RECORD_BEGINS)} (MWR)"
 
 
 def _registry(d) -> dict[str, dict]:

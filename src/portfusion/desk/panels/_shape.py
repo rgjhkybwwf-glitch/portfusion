@@ -17,11 +17,11 @@ decided by the engine before it arrives.
 """
 from __future__ import annotations
 
-import datetime as _dt
 import math
-from decimal import ROUND_HALF_UP, Decimal
 
 import pandas as pd
+
+from portfusion.house import precision as P
 
 
 def plain(v):
@@ -35,8 +35,8 @@ def plain(v):
 
 
 def money(v) -> float | None:
-    """A figure to the penny, ONE WAY FOR EVERY PANEL: half-up on the figure as written, as a
-    person rounds. None for a missing or NaN figure.
+    """A figure to the penny, ONE WAY FOR EVERY PANEL: house/precision.py's one rounding, an exact
+    half away from zero on the figure as written. None for a missing or NaN figure.
 
     Python's round() and numpy's disagree on a half-penny, so two pages could show a half-penny
     figure a penny apart.
@@ -47,7 +47,7 @@ def money(v) -> float | None:
         return None
     if math.isnan(f):
         return None
-    return float(Decimal(repr(f)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP))
+    return float(P.fixed(f, P.MONEY_DP, ""))
 
 
 def iso(v) -> str | None:
@@ -131,4 +131,4 @@ def reading(document, day) -> str:
     """What a figure was read from, as the desk and the report name it: the document, then its
     day — "IG account read, 12 Oct 2026". Reconcile's last broker check and Accounts' cash."""
     return (f"{document or 'not a classified document'}, "
-            f"{_dt.date.fromisoformat(str(day)[:10]):%-d %b %Y}")
+            f"{P.day(day)}")

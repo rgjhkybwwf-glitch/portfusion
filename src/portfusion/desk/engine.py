@@ -172,12 +172,16 @@ def tokens_css() -> str:
 
 def precision() -> dict:
     """The places the page prints, house/precision.py's: sent with every panel, beside its heads,
-    so core.js types none of its own — a percentage's, and a local price's per currency, with
-    which fields are local prices."""
-    from portfusion.house import precision as P
-    return {"pct_dp": P.PCT_DP, "local_price_dp": dict(P.LOCAL_PRICE_DP),
+    so core.js types none of its own — sterling's, a percentage's, a rate's and a local price's
+    per currency, with which fields are money, percentages, local prices and movement (the last
+    house/palette.py's)."""
+    from portfusion.house import palette, precision as P
+    return {"money_dp": P.MONEY_DP, "pct_dp": P.PCT_DP, "rate_dp": P.RATE_DP,
+            "local_price_dp": dict(P.LOCAL_PRICE_DP),
             "local_price_default": P.DEFAULT_LOCAL_PRICE_DP,
             "local_price_fields": list(P.LOCAL_PRICE_FIELDS),
+            "money_fields": list(P.MONEY_FIELDS), "pct_fields": list(P.PCT_FIELDS),
+            "movement_fields": list(palette.MOVEMENT_FIELDS),
             "months": list(P.MONTHS)}
 
 

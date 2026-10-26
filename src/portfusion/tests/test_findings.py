@@ -144,7 +144,7 @@ def test_a_reconciliation_past_its_band_is_a_problem(book, monkeypatch):
 
 @needs("buys", "current-prices")
 def test_a_difference_that_rounds_to_nothing_carries_no_sign(book, monkeypatch):
-    """Less than a penny reads "agree to 0.00": its sign does not outlive the rounding."""
+    """Less than a penny reads "agree to £0.00": its sign does not outlive the rounding."""
     rec = book.reconciliation()
     ig = rec[rec["comparable"] == True].index[0]                       # noqa: E712
     agree = f"{rec.loc[ig, 'account']}: book and broker agree to "
@@ -152,7 +152,7 @@ def test_a_difference_that_rounds_to_nothing_carries_no_sign(book, monkeypatch):
     for residue in (-1e-12, 0.0, 1e-12):
         rec.loc[ig, "difference"] = residue
         line = next(n for n in book.findings()["notes"] if n.startswith(agree))
-        assert line.startswith(agree + "0.00 ("), line
+        assert line.startswith(agree + "£0.00 ("), line
 
 
 @needs("buys", "current-prices")

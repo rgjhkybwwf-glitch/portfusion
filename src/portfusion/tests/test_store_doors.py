@@ -134,10 +134,10 @@ def test_the_store_loads_no_frame_nothing_reads(project_files):
 
 
 def test_the_engine_imports_nothing_but_the_record_and_pandas(imports_of):
-    """The engine's own rule: it imports the record and pandas, and nothing else. A file of the
-    engine may import another (`engine`)."""
+    """The engine's own rule: it imports the record, pandas and house's places, and nothing
+    else. A file of the engine may import another (`engine`)."""
     for path in engine_files():
-        assert imports_of(path) <= {"__future__", "pandas", "record", "engine"}, path.name
+        assert imports_of(path) <= {"__future__", "pandas", "record", "engine", "house"}, path.name
         # `record` is a package, so the name above admits all of it. The rule is the RECORD'S
         # RULES alone, so what the engine takes from the package is checked by its DOTTED name,
         # every form alike: `from portfusion.record import schema`, and

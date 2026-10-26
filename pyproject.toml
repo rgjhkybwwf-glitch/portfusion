@@ -129,11 +129,11 @@ forbidden_modules = ["portfusion.desk", "portfusion.feeds", "portfusion.history"
 
 [[tool.importlinter.contracts]]
 id = "the-engine"
-name = "the engine takes nothing of the app but the record's rules"
+name = "the engine takes nothing of the app but the record's rules and house"
 type = "forbidden"
 source_modules = ["portfusion.engine"]
 forbidden_modules = ["portfusion.record.schema", "portfusion.report", "portfusion.about",
-                     "portfusion.brand", "portfusion.house", "portfusion.check", "portfusion.log"]
+                     "portfusion.brand", "portfusion.check", "portfusion.log"]
 allow_indirect_imports = true
 
 # Book's topics reach one another through `self`, never by import, so the engine has no cycle.

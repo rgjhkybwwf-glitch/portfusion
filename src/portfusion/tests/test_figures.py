@@ -22,7 +22,7 @@ import pytest
 from portfusion.engine import Book
 from portfusion.report.page import render, summary_figures
 
-from harness import ROOT, SRC, needs_checkout, needs, desk_script
+from harness import ROOT, SRC, needs_checkout, needs, desk_script, engine_files
 PENNY = 0.01
 #: The loaded book's newest frozen quarter end, or None before it has frozen one.
 QUARTER = max((str(d)[:10] for d in Book().quarter_nav_total().index), default=None)
@@ -360,23 +360,36 @@ def test_the_desks_allocation_is_headed_as_the_reports():
     assert report and desk == report, f"the desk heads its allocation {desk}; the report {report}"
 
 
-def test_every_percentage_is_printed_to_the_houses_places(repo_root):
-    """ONE PRECISION FOR EVERY PERCENTAGE THE PROJECT PRINTS: house/precision.py's PCT_DP. A
-    Python renderer prints a percentage with precision.pct(); app.js's pct() takes the places
-    each panel answer carries and types none of its own. A CSS width is not a printed figure."""
+def test_every_figure_is_printed_to_the_houses_places(repo_root):
+    """ONE PRECISION FOR EVERY FIGURE THE PROJECT PRINTS: house/precision.py's. A Python renderer
+    and the engine's own words print a percentage with precision.pct(), sterling with money() and
+    a date with day() or day_month(); core.js takes the places each panel answer carries and
+    types none of its own. A CSS width is not a printed figure; a door's refusal and a reference
+    read off a document are not renderers."""
     import re
     from portfusion.desk import app as desk_app
     from portfusion.house import precision
+    renderers = [*(SRC / "desk" / "panels").glob("*.py"), *(SRC / "report").glob("*.py"),
+                 SRC / "record" / "__main__.py", *engine_files()]
     files = [*(SRC / "desk").rglob("*.py"), *(SRC / "report").glob("*.py"),
-             SRC / "record" / "__main__.py"]
-    own = [f"{p.relative_to(repo_root)}:{n}" for p in files
-           for n, line in enumerate(p.read_text(encoding="utf-8").splitlines(), 1)
-           if re.search(r"\.\d+%\}|\.\d+f\}%", line) and "width:" not in line]
+             SRC / "record" / "__main__.py", *engine_files()]
+    def typed(paths, pattern):
+        return [f"{p.relative_to(repo_root)}:{n}" for p in paths
+                for n, line in enumerate(p.read_text(encoding="utf-8").splitlines(), 1)
+                if re.search(pattern, line) and "width:" not in line]
+    own = typed(files, r"\.\d+%\}|\.\d+f\}%")
     assert not own, f"these print a percentage at their own places: {own}; use precision.pct()"
+    own = typed(renderers, r":\+?,?\.[1-9]f\}|:\+,\.0f\}")
+    assert not own, f"these print sterling at their own places: {own}; use precision.money()"
+    own = typed(renderers, r"%-d %b")
+    assert not own, f"these print a date in their own form: {own}; use precision.day()"
     js = desk_script()
     pct_js = re.search(r"const pct = [\s\S]*?;\n", js).group(0)
-    assert not re.search(r"FractionDigits:\s*\d", pct_js), "app.js types a percentage's places"
-    assert desk_app.panel("holdings")["precision"]["pct_dp"] == precision.PCT_DP
+    assert not re.search(r"FractionDigits:\s*\d", pct_js), "core.js types a percentage's places"
+    assert "toLocaleString(\"en-GB\", {" not in js, "core.js rounds a figure outside fixed()"
+    sent = desk_app.panel("holdings")["precision"]
+    assert (sent["pct_dp"], sent["money_dp"], sent["rate_dp"]) == \
+        (precision.PCT_DP, precision.MONEY_DP, precision.RATE_DP)
 
 
 @needs("buys")
@@ -401,14 +414,12 @@ def test_no_renderer_heads_a_column_with_a_retired_word():
 def test_a_table_with_a_local_price_marks_its_sterling(repo_root):
     """A LOCAL PRICE IS IN ITS LINE'S OWN CURRENCY, which the Ccy column beside it names:
     house/precision.py's LOCAL_PRICE_FIELDS say which fields are one. On a table that shows one,
-    every sterling column (the ones app.js draws as money, MONEYCOL) is headed "… (GBP)" —
+    every sterling column (house/precision.py's MONEY_FIELDS) is headed "… (GBP)" —
     glossary §5's suffix rule — and no local price is drawn as money."""
-    import re
     from portfusion.desk import panels
     from portfusion.house.headings import headings
-    from portfusion.house.precision import LOCAL_PRICE_FIELDS
-    js = desk_script()
-    money = set(re.findall(r'"(\w+)"', re.search(r"const MONEYCOL = \[(.*?)\];", js, re.S).group(1)))
+    from portfusion.house.precision import LOCAL_PRICE_FIELDS, MONEY_FIELDS
+    money = set(MONEY_FIELDS)
     tables, unmarked, as_money = 0, [], []
     for mod in panels.all_panels():
         for const in [n for n in dir(mod) if n.endswith("COLUMNS")]:

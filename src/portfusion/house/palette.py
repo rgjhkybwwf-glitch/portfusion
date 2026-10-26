@@ -38,6 +38,15 @@ TOKENS = {
     "bar-bear": "C2451E", "bar-mixed": "E8B500", "bar-held": "A3A7BA",
 }
 
+#: MOVEMENT, WHICH IS NOT PROVENANCE, worn on these fields: the up and down below. A JUDGEMENT,
+#: NOT A TYPE: each is a gain, whose sign says whether the book is better or worse off. Money that
+#: is no result stays plain: a Reconcile difference (a gap is not a loss), a weight (never
+#: negative), cost, value, capital deployed, and `transacted` (a purchase is not a gain). The
+#: Dashboard's headline gains stay plain too: a summary is read, a column is scanned.
+MOVEMENT_FIELDS = ("gain", "unrealised", "unrealised_pct", "realised_pct", "return", "change",
+                   "price_effect", "fx_effect", "price_move_pct", "realised", "life_gain",
+                   "life_pct")
+
 #: The dark theme: only the tokens that change. The field and the footer do not.
 TOKENS_DARK = {
     "surface": "0E0F16", "surface-panel": "171926", "tint": "1E2140",

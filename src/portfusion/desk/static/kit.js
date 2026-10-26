@@ -20,49 +20,15 @@ let HEADS = {};
    The words stay the list's. */
 const head = (c) => esc(sentence(HEADS[c] || c.replace(/_/g, " "))).replace(/\//g, "/<wbr>");
 
-const MONEYCOL = ["cost", "value", "gain", "unrealised", "proceeds",
-                  "opening_nav", "closing_nav", "capital_deployed", "return_income",
-                  "change", "price_effect", "fx_effect", "transacted", "value_to",
-                  "exposure", "nav", "capital_employed", "capital_growth",
-                  "income", "amount", "cash", "realised", "dividends", "funding_interest",
-                  "total", "life_gain"];
-const PCTCOL = ["unrealised_pct", "realised_pct", "weight", "return", "price_move_pct", "ytd", "life_pct"];
-
-/* MOVEMENT, WHICH IS NOT PROVENANCE — house/palette.py's own words, over the two constants these
-   colours come from. The word matters: "direction" is already a COLUMN on Trades holding
-   Buy · Sell · Adjustment, and one word for two things is what this project spends its time
-   undoing.
-
-   WHAT IS IN THIS LIST IS A JUDGEMENT, NOT A TYPE CHECK. Every one of these is a GAIN — a figure
-   whose sign says whether the book is better or worse off. Plenty of other numeric columns are
-   deliberately absent:
-
-     difference   Reconcile. Book minus broker on a RECONCILIATION row. A gap is not a loss, and
-                  red on an account that ties within its band would assert something untrue.
-     weight       a share of exposure. Never negative, so a colour would only ever say "green".
-     cost value capital_deployed return_income
-                  money, but not a result.
-
-   The Dashboard's headline gains stay plain on purpose. Colouring those needs a flag on
-   Book.HEADLINE, because a renderer must not decide what a figure MEANS by reading its label.
-   Colour's job here is scanning a column, and the Dashboard is a summary list rather than a
-   table you scan. */
-const MOVEMENTCOL = ["gain", "unrealised", "unrealised_pct", "realised_pct", "return",
-                     "change", "price_effect", "fx_effect", "price_move_pct",
-                     "realised", "life_gain", "life_pct"];
-
-/* THE FOUR FOR What Changed, AND THE ONE HELD BACK. `change`, `price_effect`,
-   `fx_effect` and `price_move_pct` are results: their sign says whether the book is better or
-   worse off, which is the test above. `transacted` is NOT and must never join them — buying
-   £5,000.00 of shares is not a gain and selling £2,500.00 of them is not a loss. It is the
-   same exclusion as `difference` on Reconcile: a figure can be money, and negative, and still
-   carry no judgement about how the book did. Colouring it would turn every purchase green and
-   every sale red, which is the most confident way to be wrong about a column. */
+/* WHICH FIELDS ARE MONEY, PERCENTAGES AND MOVEMENT is house's (precision's MONEY_FIELDS and
+   PCT_FIELDS, palette's MOVEMENT_FIELDS, with why each is in it), sent in PRECISION. */
+const isMoney = (c) => PRECISION.money_fields.includes(c);
+const isPct = (c) => PRECISION.pct_fields.includes(c);
 
 /* Above zero, below zero, or neither. EXACTLY ZERO GETS NO COLOUR: a flat quarter is not a gain
    and must not read as one. */
 const movement = (c, v) =>
-  !MOVEMENTCOL.includes(c) || typeof v !== "number" || v === 0 ? ""
+  !PRECISION.movement_fields.includes(c) || typeof v !== "number" || v === 0 ? ""
     : v > 0 ? " up" : " down";
 
 /* Why it works that way, BELOW the work it describes: explanation above a table
@@ -140,8 +106,8 @@ const ISODATE = ISOMOMENT;
 const cell = (c, v) => {
   if (v == null) return `<td>—</td>`;
   const m = movement(c, v);
-  if (MONEYCOL.includes(c)) return `<td class="num${m}">${money(v)}</td>`;
-  if (PCTCOL.includes(c)) return `<td class="num${m}">${pct(v)}</td>`;
+  if (isMoney(c)) return `<td class="num${m}">${money(v)}</td>`;
+  if (isPct(c)) return `<td class="num${m}">${pct(v)}</td>`;
   if (typeof v === "number") return `<td class="num">${v.toLocaleString("en-GB")}</td>`;
   if (typeof v === "boolean") return `<td>${v ? "yes" : ""}</td>`;
   if (c === "note" || c === "detail") {
@@ -156,7 +122,7 @@ const cell = (c, v) => {
    figures takes `th.num` too. Decided per COLUMN, not per cell, because a heading cannot be
    right for some of its rows. */
 const isNumCol = (c, rows) => {
-  if (MONEYCOL.includes(c) || PCTCOL.includes(c)) return true;
+  if (isMoney(c) || isPct(c)) return true;
   const first = rows.find((r) => r[c] != null);
   return first ? typeof first[c] === "number" : false;
 };
@@ -249,7 +215,8 @@ function wireFilters(name, d, again, { ids, button, ask, clear, resets = {} }) {
    and table, as the filters are, so a filter redraw keeps it. It orders what the engine sent;
    nothing is worked out. A table whose order IS its layout opts out (`sort: false`): the tables
    that name the book first and then each account once (Performance's quarters and its year,
-   Accounts' Income and costs), and a detail's mark history.
+   Accounts' Income and costs), and a detail's mark history. The Price Refresh's form is not a
+   table() at all: its rows are grouped by kind, each group under its own take-all.
 
    A SORTING TABLE NAMES ITSELF (`name`), and its sort is held under the page and that name.
    Keyed by COLUMNS, two tables alike would share one sort. */
@@ -325,7 +292,7 @@ const heldCell = (r) => r.stake != null
 /* A LEVEL IN POINTS, as IG states it: a bet's entry, traded, exit or current level. A row that
    carries a stake per point is a bet, and every price on it is a level, not a local price. */
 const points = (v) => v == null ? "—"
-  : Number(v).toLocaleString("en-GB", { maximumFractionDigits: 2 }) + " pts";
+  : (Number(v) < 0 ? "-" : "") + fixed(Number(v), 2, { group: true }).replace(/\.?0+$/, "") + " pts";
 const pointsCell = (v) => `<td class="num">${points(v)}</td>`;
 
 /* THE DETAIL UNDER A ROW: ONE LINK ACROSS THE DESK, AND ONE ORDER INSIDE IT.
