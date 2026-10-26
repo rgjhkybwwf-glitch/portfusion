@@ -1,8 +1,8 @@
 """tools/clean_room.py: the judgement it makes on a run, and the workflow that runs it.
 
-The clean-room test itself takes a minute and a venv, so it is not run from here; what is held
-here is whether a run's output reads as green, which is where a wrong answer would hide, and that
-every action the workflow runs it with is pinned.
+The clean-room test itself takes minutes and venvs, so it is not run from here; what is held here
+is whether a run's output reads as green, which is where a wrong answer would hide, that a failing
+stage ends the run, and that every action the workflow runs it with is pinned.
 """
 import importlib.util
 import re
@@ -28,9 +28,17 @@ def test_a_clean_run_is_green(clean_room):
     assert clean_room.verdict(0, "1141 passed, 24 skipped\n") == []
 
 
-def test_a_failure_is_red(clean_room):
+def test_a_failure_is_red(clean_room, monkeypatch):
     said = "ERROR tests/test_new.py::test_something - boom\n1 failed, 1140 passed\n"
     assert clean_room.verdict(1, said) == ["FAILED: tests/test_new.py::test_something"]
+    # A FAILING STAGE ENDS THE RUN: the copy's red is said without the new book's and the wheel's
+    # minutes after it, so CI is red when it is known.
+    stages = []
+    monkeypatch.setattr(clean_room, "copy_tracked", lambda into: 0)
+    monkeypatch.setattr(clean_room, "install", lambda *a: "python3")
+    monkeypatch.setattr(clean_room, "run_suite", lambda *a, **k: stages.append(a) or (1, said))
+    monkeypatch.setattr(clean_room, "build", lambda into: stages.append("the wheel"))
+    assert clean_room.main([]) == 1 and len(stages) == 1, stages
 
 
 def test_a_run_that_did_not_complete_is_red_whatever_it_listed(clean_room):

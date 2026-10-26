@@ -686,7 +686,8 @@ def test_no_file_writes_out_a_rule_the_record_states_once(repo_root, project_fil
             offenders.append(f"{rel}: the source hierarchy, not rules.SOURCE_HIERARCHY")
         offenders += [f"{rel}:{n}: the archive convention, not rules.ARCHIVE_CONVENTION"
                       for n, line in enumerate(text.splitlines(), 1) if re.search(r"DD\s+Mon\s+YYYY", line)]
-        hit = next((r for r in grade_runs if r in " ".join(words(text))), None)
+        flat = " ".join(words(text))
+        hit = next((r for r in grade_runs if r in flat), None)
         if hit:
             offenders.append(f"{rel}: statement grade ({hit!r}), not rules.STATEMENT_GRADE")
     assert not offenders, "these write a rule out instead of pointing at it:\n  " + "\n  ".join(offenders)
