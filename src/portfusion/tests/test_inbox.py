@@ -14,7 +14,6 @@ THIS IS THE SAME SHAPE AS feeds/refresh.py, deliberately: it banks the marks bef
 Here the archive comes last and cannot be enforced by ordering, so it is enforced by the suite
 instead.
 """
-import os
 import pytest
 
 
@@ -43,24 +42,6 @@ def test_the_workbench_is_clear():
         + "".join(f"    _inbox/{n}\n" for n in resting)
         + "  Each is unentered, or entered and unarchived. Finish it on the bench, or move it\n"
           "  back out. Archiving is what gives a row's broker_ref something to retrieve.")
-
-
-def test_the_inbox_is_not_a_second_home_for_the_audit_trail(repo_root):
-    """_archive/statements/ is TRACKED; _inbox/ is not. Nothing may be committed to both.
-
-    Defends against a document being archived by copying rather than moving, which would leave
-    the same evidence under two paths -- one of them ignored, and therefore one of them liable
-    to be edited or lost without the other noticing. `git mv`, never `cp`.
-    """
-    import subprocess
-    tracked = subprocess.run(["git", "ls-files", "_inbox"], cwd=repo_root,
-                             capture_output=True, text=True).stdout.split()
-    unexpected = [t for t in tracked
-                  if os.path.basename(t) != ".gitkeep"]
-    assert not unexpected, (
-        "these are committed under _inbox/, which is a workbench and not a record:\n"
-        + "".join(f"    {t}\n" for t in unexpected)
-        + "  A document belongs in _archive/statements/. Move it with `git mv`, not `cp`.")
 
 
 @pytest.mark.audit

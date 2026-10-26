@@ -1,6 +1,7 @@
 # THE EXACT SET THE SUITE WAS PROVED ON, installed as constraints beside pyproject.toml's floors:
 #   .venv/bin/python3 -m pip install -e '.[dev]' -c requirements.lock
-# Moved on purpose, by an upgrade the guard then runs on; never edited by hand.
+# Moved on purpose, by an upgrade the guard then runs on; never edited by hand. How:
+#   docs/environment.md, Moving the lock
 annotated-doc==0.0.5
 annotated-types==0.8.0
 anyio==4.14.2

@@ -10,6 +10,7 @@ import pytest
 
 from portfusion.init import Refused, create, settings
 from portfusion.record import schema
+from harness import SRC
 
 
 def test_an_empty_book_holds_every_table_with_its_header_and_no_rows(tmp_path):
@@ -216,8 +217,8 @@ def test_init_runs_where_there_is_no_book(tmp_path):
     there: `init` alone must not, by either route to it."""
     env = {k: v for k, v in os.environ.items() if k != schema.ENV}
     for n, route in enumerate((["-m", "portfusion", "init"], ["-m", "portfusion.init"])):
-        run = subprocess.run([sys.executable, *route, f"book{n}"], cwd=tmp_path, env=env,
-                             capture_output=True, text=True)
+        run = subprocess.run([sys.executable, *route, f"book{n}", "--no-venv"], cwd=tmp_path,
+                             env=env, capture_output=True, text=True)
         assert run.returncode == 0 and (tmp_path / f"book{n}" / "store").is_dir(), run.stderr
     # `--begins` TAKES A DAY as well as a year, and the book's record begins on it.
     run = subprocess.run([sys.executable, "-m", "portfusion", "init", "dated", "--no-git",
@@ -404,14 +405,40 @@ def test_the_loaded_book_holds_what_init_writes_and_its_hooks_are_the_releases(t
     assert not differ, f"not what this release writes; take its copy from a new book: {differ}"
 
 
-def test_a_new_book_names_the_portfusion_it_runs(tmp_path):
-    """The book is a folder, not a fork: it names the release it runs, and its venv installs
-    that and nothing else (`README.md`, the book's folder)."""
-    from portfusion.init import pin
+def test_a_new_book_names_the_portfusion_it_runs(tmp_path, monkeypatch):
+    """The book is a folder, not a fork: it names the release it runs, against the lock its suite
+    was proved on, and `portfusion init` makes the venv that installs that and nothing else
+    (`README.md`, the book's folder). The install is stubbed: a test reaches no package index."""
+    from portfusion import init
+    from portfusion.init import __main__ as command
     book = create(tmp_path / "book")
-    lines = (book / "requirements.txt").read_text().splitlines()
-    assert lines[-1] == pin() and lines[-1].startswith("portfusion")
-    assert all(ln.startswith("#") for ln in lines[:-1])
+    lines = [ln for ln in (book / "requirements.txt").read_text().splitlines()
+             if not ln.startswith("#")]
+    assert lines == [init.pin(), init.constraint()][:2 if init.constraint() else 1]
+    assert lines[0].startswith("portfusion")
+    # FROM A CHECKOUT, its own lock: the one the editable install was proved on.
+    lock = SRC.parent.parent / "requirements.lock"
+    assert not lock.is_file() or init.constraint() == f"-c {lock}"
+    # FROM A RELEASE ON GITHUB, the lock at the commit it was installed from.
+    monkeypatch.setattr(init, "_installed", lambda: {
+        "url": "https://github.com/an-owner/a-repo.git", "vcs_info": {"commit_id": "0123abc"}})
+    assert init.constraint() == ("-c https://raw.githubusercontent.com/an-owner/a-repo/0123abc/"
+                                 "requirements.lock")
+    monkeypatch.undo()
+
+    ran = []
+    monkeypatch.setattr(init.subprocess, "run", lambda step, **k: ran.append((step, k["cwd"]))
+                        or subprocess.CompletedProcess(step, 0))
+    assert command.main([str(tmp_path / "venv-book"), "--no-git"]) == 0
+    folder = tmp_path / "venv-book"
+    assert ran == [([sys.executable, "-m", "venv", str(folder / ".venv")], folder),
+                   ([str(folder / ".venv/bin/python3"), "-m", "pip", "install", "-q",
+                     "-r", "requirements.txt"], folder)]
+    # A VENV THAT CANNOT BE MADE leaves the book written, and says so in the exit.
+    monkeypatch.setattr(init.subprocess, "run",
+                        lambda step, **k: subprocess.CompletedProcess(step, 1))
+    assert command.main([str(tmp_path / "offline"), "--no-git"]) == 1
+    assert (tmp_path / "offline" / "store").is_dir()
 
 
 def test_a_new_books_journal_opens_with_it(tmp_path):

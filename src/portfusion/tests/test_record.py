@@ -779,6 +779,8 @@ def test_the_code_repeats_itself_no_more_than_it_did(repo_root, project_files):
 #: at must be there, or be a path git ignores, which names a local thing deliberately.
 NAMED_ON_PURPOSE = {
     ".git/": "git's own folder, which it never lists",
+    "_inbox/": "a book's workbench, which no checkout holds",
+    "_inbox/.bench/": "the Bench's staging inside a book's workbench",
     "bin/activate": "inside the venv, which git never lists",
     "brand/": "a book's own folder, which no checkout holds",
     "requirements.txt": "a book's own pin; the app's needs are pyproject.toml's",

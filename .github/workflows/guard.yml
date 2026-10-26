@@ -3,7 +3,7 @@
 # advisories, a parse of the desk's script, every desk page drawn in Node, and the clean-room test,
 # which is the suite on the demo and on a new book from the tracked files, and `portfusion check`
 # from the wheel built from them. A pull request is merged on GitHub once this is green
-# (CONTRIBUTING.md).
+# (CONTRIBUTING.md). `newest`, beside it, is not required (docs/environment.md, Moving the lock).
 #
 # WHEN IT RUNS: on a pull request and on a push to main, not on every branch push: a run on
 # every branch push would spend a free plan's minutes quickly.
@@ -78,3 +78,20 @@ jobs:
           git checkout -- src/portfusion/desk/static/app.js
       - name: The clean-room test
         run: python3 tools/clean_room.py
+
+  # THE NEWEST VERSIONS THE FLOORS ALLOW, installed without the lock: the set a book's next
+  # install could meet. Not a required check: a red here is a lock to move on purpose.
+  newest:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1    # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
+        with:
+          python-version: "3.13"
+      - name: Install, without the lock
+        run: python3 -m pip install -q -e '.[dev]'
+      - name: The suite, on the demo
+        run: PORTFUSION_BOOK=demo python3 -m pytest -q
