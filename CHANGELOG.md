@@ -56,6 +56,13 @@ prints it.
   for the record too, where a planted import passed every test; CI plants one to prove it is
   refused. Ten hand-written import tests and two fixtures retire, and three tests lose their
   import half. A dev tool only: a book installs none of it.
+- **Six guards that passed on the code they forbid now fail on it**, each beside a planted case:
+  no credential is logged, in either feed, as well as printed; a panel's copy of a shaping helper
+  is found by the names `_shape.py` defines; a negative quantity with a value is read from `qty`
+  (it read `stake`); a name taken from the record's rules, or a path the schema rebinds, is
+  refused; the engine's case of the lock test waits on `book()`'s own lock; and **a skip a book
+  lists that ran fails the run**. When a book's pin moves, delete any such line from its
+  `checks/skips.txt`; the demo's one is gone.
 
 ## 0.3.2 — beta, 24 Oct 2026
 

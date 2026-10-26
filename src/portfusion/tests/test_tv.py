@@ -671,15 +671,33 @@ def test_it_writes_nothing_but_its_own_sign_in():
                 f"feeds/tv.py opens {ast.dump(node.args[0])} for writing at line {node.lineno}"
 
 
-def test_the_token_travels_in_a_header_and_is_never_printed():
+#: What each feed holds that is a credential, by the name it holds it under.
+_SECRETS = {"tv": ("token", "refresh_token", "access_token", "verifier", "_access_token"),
+            "ig": ("token", "cst", "api_key", "password", "identifier", "_cred")}
+
+
+def _credentials_said(src, secrets):
+    """(line, name) for each `print` or `log.*` call in `src` that reaches one of `secrets`, as a
+    name, an attribute or a key."""
+    found = []
+    for node in ast.walk(ast.parse(src)):
+        if isinstance(node, ast.Call) and (
+                getattr(node.func, "id", None) == "print"
+                or getattr(getattr(node.func, "value", None), "id", None) == "log"):
+            said = ast.dump(node)
+            found += [(node.lineno, s) for s in secrets if f"'{s}'" in said]
+    return found
+
+
+def test_the_token_travels_in_a_header_and_is_never_printed_or_logged():
+    """A CREDENTIAL IS NEVER SAID: no `print` and no `log.*` call in either feed reaches one. The
+    feeds speak through `portfusion.log`, so a guard that read `print` alone held nothing."""
+    assert _credentials_said('log.info(f"renewed {self.token}")', _SECRETS["tv"]), "planted, found"
     src = (SRC / "feeds" / "tv.py").read_text()
     assert src.count('f"Bearer {self.token}"') == 1
-    for node in ast.walk(ast.parse(src)):
-        if isinstance(node, ast.Call) and getattr(node.func, "id", None) == "print":
-            printed = ast.dump(node)
-            for banned in ("token", "refresh_token", "access_token", "verifier", "_access_token"):
-                assert f"'{banned}'" not in printed and f"id='{banned}'" not in printed, \
-                    f"a print at line {node.lineno} reaches {banned}"
+    for feed, secrets in _SECRETS.items():
+        said = _credentials_said((SRC / "feeds" / f"{feed}.py").read_text(), secrets)
+        assert not said, f"feeds/{feed}.py says a credential: {said}"
 
 
 # =====================================================================================

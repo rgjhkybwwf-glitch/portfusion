@@ -12,7 +12,7 @@ import threading
 import pytest
 
 #: Long enough for an unblocked call to have finished; a blocked one is still waiting after it.
-_WAIT = 0.5
+_WAIT = 0.1
 
 
 def _doors():
@@ -31,17 +31,22 @@ def _doors():
         "research_notes.write": lambda: research_notes.write("no-such-note"),
         "atomic": lambda: commit.atomic().__enter__(),
         "reload_store": rules.reload_store,
-        "engine.book": lambda: (engine._cache.update(key=None), engine.book()),
+        # THE KEY IS THE STORE'S, so `book()` has nothing to rebuild: what it waits for is its own
+        # lock, not the lock of the reload a rebuild would make.
+        "engine.book": lambda: (engine._cache.update(key=engine.store_mtime()), engine.book()),
         "engine.report_page": lambda: engine.report_page("1999-12-31"),
     }
 
 
 @pytest.mark.parametrize("door", sorted(_doors()))
-def test_every_door_waits_for_the_lock(door, store_copy):
+def test_every_door_waits_for_the_lock(door, store_copy, monkeypatch):
     """WHILE ANOTHER REQUEST HOLDS THE RECORD, A DOOR WAITS. Each is started on its own thread
     while this one holds `schema.LOCK`; it must still be running when the wait is up, and finish
     once the lock is let go."""
+    from portfusion.desk import engine
     from portfusion.record import schema
+    for key in ("key", "book"):                     # put back after: a case re-keys the cache
+        monkeypatch.setitem(engine._cache, key, engine._cache[key])
     call = _doors()[door]
     done = threading.Event()
 

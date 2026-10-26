@@ -150,15 +150,37 @@ def test_the_record_refuses_with_a_raise_never_an_assert():
     assert not found, f"the record refuses with an assert: {found}"
 
 
+#: What is held by its module, never by name: `rules.reload_store()` re-executes the record's
+#: rules in place, and `set_store()` or a test filing elsewhere rebinds these paths of the
+#: schema, so a name taken from either keeps what it was when imported.
+HELD_BY_THE_MODULE = {"portfusion.record.rules": None,
+                      "portfusion.record.schema": {"STORE", "STATEMENTS", "INBOX"}}
+
+
+def _one_way(tree):
+    """(line, why) for each import in `tree` that holds a module two ways, or a name that moves."""
+    froms = [n for n in ast.walk(tree) if isinstance(n, ast.ImportFrom) and n.module]
+    starred = {n.module for n in froms if any(a.name == "*" for a in n.names)}
+    found = [(n.lineno, f"{n.module} by star and by name") for n in froms
+             if n.module in starred and not any(a.name == "*" for a in n.names)]
+    for n in froms:
+        if n.module in HELD_BY_THE_MODULE:
+            moving = HELD_BY_THE_MODULE[n.module]
+            found += [(n.lineno, f"{a.name} from {n.module}") for a in n.names
+                      if moving is None or a.name in moving]
+    return found
+
+
 def test_a_module_is_imported_one_way(project_files):
-    """A module imported whole is not also imported by name in the same file."""
-    twice = []
-    for path in project_files(".py"):
-        froms = [n for n in ast.walk(_tree(path)) if isinstance(n, ast.ImportFrom) and n.module]
-        starred = {n.module for n in froms if any(a.name == "*" for a in n.names)}
-        twice += [f"{path.relative_to(ROOT)}:{n.lineno} {n.module}" for n in froms
-                  if n.module in starred and not any(a.name == "*" for a in n.names)]
-    assert not twice, "imported by star and again by name:\n  " + "\n  ".join(twice)
+    """A module imported whole is not also imported by name in the same file, and the record's
+    rules, and the paths the schema rebinds, are held by the module (`HELD_BY_THE_MODULE`)."""
+    planted = ("from portfusion.record.rules import buys\n"
+               "from portfusion.record.schema import STORE\n")
+    assert [why for _, why in _one_way(ast.parse(planted))] == [
+        "buys from portfusion.record.rules", "STORE from portfusion.record.schema"]
+    twice = [f"{path.relative_to(ROOT)}:{line} {why}" for path in project_files(".py")
+             for line, why in _one_way(_tree(path))]
+    assert not twice, "a module held two ways, or a name that moves:\n  " + "\n  ".join(twice)
 
 
 #: Lines of comment and docstring prose, in the project's Python, JS and CSS, that carry a dated
