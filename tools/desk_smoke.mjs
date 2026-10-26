@@ -15,10 +15,10 @@ const vc = new VirtualConsole();
 vc.on("jsdomError", (e) => problems.push(`jsdom: ${e.message}`));
 vc.on("error", (...a) => problems.push(`console.error: ${a.join(" ")}`));
 
-const src = answers["/"].script, script = answers[src].body;
-const page = answers["/"].body.replace(`<script src="${src}"></script>`, "");
-const dom = new JSDOM(page, { url: `${ORIGIN}/`, runScripts: "outside-only",
-                                               pretendToBeVisual: true, virtualConsole: vc });
+// "outside-only": the page's own <script> tag never runs, so the script runs once, by eval below.
+const script = answers[answers["/"].script].body;
+const dom = new JSDOM(answers["/"].body, { url: `${ORIGIN}/`, runScripts: "outside-only",
+                                           pretendToBeVisual: true, virtualConsole: vc });
 const w = dom.window, doc = w.document;
 w.scrollTo = () => {};                       // jsdom lays nothing out, so has nothing to scroll
 w.fetch = async (url, opts = {}) => {

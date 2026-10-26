@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import json
 import os
-import re
 import sys
 
 os.environ["PORTFUSION_BOOK"] = "demo"      # the file leaves the book behind: never a real one's
@@ -29,7 +28,7 @@ def main(out: str) -> int:
         answers[url] = {"status": r.status_code, "body": r.text}
         return r.text
 
-    script = re.search(r'<script src="([^"]+)"></script>', ask("/"))[1]
+    script = ask("/").split('<script src="', 1)[1].split('"', 1)[0]
     answers["/"]["script"] = script
     ask(script)
     for p in json.loads(ask("/api/state"))["panels"]:
