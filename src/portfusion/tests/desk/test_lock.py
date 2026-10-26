@@ -19,7 +19,7 @@ def _doors():
     """Every way into the store a request can take, each called so that it is refused (or, for
     the engine, merely built): what is tested is that it WAITS, not what it then does."""
     from portfusion.desk import engine
-    from portfusion.desk.doors import commit, freeze, marks, observations, research_notes
+    from portfusion.desk.doors import commit, envelope, freeze, marks, observations, research_notes
     from portfusion.record import rules
     return {
         "commit": lambda: commit.commit("no-such-item"),
@@ -29,7 +29,7 @@ def _doors():
         "freeze.write": lambda: freeze.write("1999-12-31"),
         "freeze.restate": lambda: freeze.restate({}, "nothing"),
         "research_notes.write": lambda: research_notes.write("no-such-note"),
-        "atomic": lambda: commit.atomic().__enter__(),
+        "atomic": lambda: envelope.atomic().__enter__(),
         "reload_store": rules.reload_store,
         # THE KEY IS THE STORE'S, so `book()` has nothing to rebuild: what it waits for is its own
         # lock, not the lock of the reload a rebuild would make.
@@ -70,18 +70,18 @@ def test_a_refusal_does_not_erase_a_write_that_landed_during_it(store_copy):
     """A RESTORE PUTS BACK WHAT WAS READ ON ENTRY. Two envelopes over one file, the second
     written while the first is still open: when the first is refused, its restore must not take
     the second's line with it. With the lock, the second waits for the first and lands after."""
-    from portfusion.desk.doors import commit
+    from portfusion.desk.doors import envelope
     from portfusion.record import schema
     path = schema.TABLES["journal"].path
     line = "2026-10-21T12:00:00,test,append,journal,0,,the second request's write"
 
     def second():
-        with commit.atomic(path):
+        with envelope.atomic(path):
             path.write_bytes(path.read_bytes() + line.encode() + b"\n")
 
     t = threading.Thread(target=second, daemon=True)
     with pytest.raises(RuntimeError):
-        with commit.atomic(path):
+        with envelope.atomic(path):
             t.start()
             t.join(_WAIT)
             raise RuntimeError("the first request is refused")

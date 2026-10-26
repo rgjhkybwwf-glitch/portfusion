@@ -31,6 +31,7 @@ import re
 import uuid
 
 from portfusion.desk.engine import RecordUnavailable, _guarded
+from portfusion.desk.intake import filing, recorded
 from portfusion.record import schema
 
 # Beside the workbench it belongs to, and gitignored with it — a half-worked intake is not a
@@ -300,7 +301,6 @@ def _blank_refused(field, table: str) -> bool:
     reject". Refusing something the store ACCEPTS is the same defect pointing the other way, and
     it is the one a person actually meets.
     """
-    from portfusion.record import schema
     try:
         schema._parse(field, "", table, 0)
         return False
@@ -315,7 +315,6 @@ def form_for(table: str) -> list[dict]:
     written out by hand would be a third statement of the store's shape, after the schema and
     the CSV header.
     """
-    from portfusion.record import schema
     if table not in TABLES + REGISTER:
         raise KeyError(f"{table!r} is not a table the bench produces: {TABLES + REGISTER}")
     vocab = vocabulary()
@@ -364,7 +363,6 @@ def validate_row(table: str, values: dict) -> list[str]:
     duplication this project keeps paying for. `tests/desk/test_bench.py` asserts it still exists
     under that name.
     """
-    from portfusion.record import schema
     problems = []
     fields = {f.name: f for f in schema.TABLES[table].fields}
     for name, f in fields.items():
@@ -525,141 +523,6 @@ def _id_clash(table: str, field: str, value: str) -> list[str]:
 # =================================================================================================
 # IS THIS ALREADY IN THE BOOK?
 # =================================================================================================
-#: The columns that identify an EVENT, per table. Not the whole row — a note and an id differ
-#: between two records of one thing, and the id is allocated fresh every time, so a comparison
-#: including them would never match the duplicate it is looking for.
-SIGNATURE = {
-    "buys": ("date", "account", "ticker", "qty", "stake", "cost", "level_points"),
-    "sales": ("date", "account", "ticker", "qty", "stake", "proceeds"),
-    "income": ("date", "account", "category", "amount"),
-    "capital-movements": ("date", "account", "amount"),
-    # ACCOUNT AND DATE, WITHOUT THE AMOUNT — and that asymmetry is deliberate. For an event the
-    # amount is part of what identifies it: two £50 dividends on one day from one account are
-    # two dividends. For a BALANCE they are not: one account has ONE cash balance on a given
-    # date, so a second row for that pair is a re-reading, not a second fact. Including `cash`
-    # would let a mistyped figure in as a "different" observation, which is the exact case this
-    # gate exists to catch.
-    "cash-readings": ("account", "as_of"),
-}
-
-
-def matching_row(table: str, values: dict):
-    """The id of an existing row this one duplicates, `"unreadable"` if it cannot be checked,
-    or None. Shared by the gate and by the reading, so both ask exactly one question.
-    """
-    cols = SIGNATURE.get(table)
-    if not cols:
-        return None
-
-    def _load():
-        from portfusion.record import schema
-        fields = {f.name: f for f in schema.TABLES[table].fields}
-        order = [f.name for f in schema.TABLES[table].fields]
-
-        # MATCH ON WHAT THE ROW ACTUALLY HAS. A row whose account is still blank — because the
-        # document named a number and not a name — would otherwise compare "" against
-        # the account's name and miss a duplicate it plainly is. Date, holding, size and money
-        # identify a sale perfectly well without the account, so the comparison uses the
-        # columns that are filled and requires at least THREE of them: fewer than that is not
-        # an identification, it is a coincidence waiting to happen.
-        #
-        # UNLESS THE SIGNATURE IS SHORTER THAN THREE. `cash-readings` is identified by
-        # (account, as_of) and by nothing else, so a flat minimum of three would silently disable
-        # the gate for it. The rule is "all of the columns that identify this thing": for a
-        # five-column event signature three filled is enough to be sure, and for a two-column one
-        # two IS all of them. Adding `cash` to reach three would be the wrong fix — a mistyped
-        # figure would then read as a different observation and walk straight past.
-        need = min(3, len(cols))
-        present = [c for c in cols if str(values.get(c, "") or "").strip()]
-        if len(present) < need:
-            return None
-        try:
-            want = tuple(schema._parse(fields[c], schema.cell(fields[c], values.get(c, "")),
-                                       table, 0) for c in present)
-        except (ValueError, KeyError):
-            return "unreadable"
-        for existing in schema.load(table):
-            if tuple(existing[order.index(c)] for c in present) == want:
-                return existing[0]
-        return None
-
-    try:
-        return _guarded(_load)
-    except RecordUnavailable:
-        return None
-
-
-def reference_tables(reference: str) -> list[str]:
-    """Which store tables already carry this reference anywhere in a row. Empty means new.
-
-    Shared so the SWEEP can ask the question the duplicate gate asks. A sweep is a snapshot
-    taken before anything was committed, and without this an event already carried across would
-    still be offered as "work it". One implementation, two callers.
-    """
-    from portfusion.record import schema
-    ref = str(reference or "").strip().lower()
-    if len(ref) < 4:
-        return []
-    out = []
-    for table in TABLES:
-        for row in schema.load(table):
-            if any(ref in str(c).lower() for c in row if c):
-                out.append(table)
-                break
-    return out
-
-
-def accounts_citing(reference: str) -> set:
-    """The accounts of the trades and exits that carry this reference — which account a ledger's
-    dealing line settled in. Empty when none do."""
-    from portfusion.record import schema
-    ref = str(reference or "").strip().lower()
-    if len(ref) < 4:
-        return set()
-
-    def _load():
-        out = set()
-        for table in ("buys", "sales"):
-            acct_col = schema.TABLES[table].header.index("account")
-            out |= {row[acct_col] for row in schema.load(table)
-                    if any(ref in str(c).lower() for c in row if c)}
-        return out
-    try:
-        return _guarded(_load)
-    except RecordUnavailable:
-        return set()
-
-
-def accounts_of_broker(broker: str) -> list[str]:
-    """The accounts `store/accounts.csv` holds at this broker, in the order it lists them. The
-    broker's name is matched without regard to case."""
-    from portfusion.record import schema
-
-    def _load():
-        header = schema.TABLES["accounts"].header
-        return [r[header.index("account")] for r in schema.load("accounts")
-                if str(r[header.index("broker_firm")]).strip().lower() == broker.strip().lower()]
-    try:
-        return _guarded(_load)
-    except RecordUnavailable:
-        return []
-
-
-def cash_currencies(account: str) -> set:
-    """Every currency this account has been paid income in, GBP always among them. An account
-    paid in EUR holds EUR cash, so one GBP ledger's balance is not the whole of its cash."""
-    from portfusion.record import schema
-
-    def _load():
-        header = schema.TABLES["income"].header
-        a, c = header.index("account"), header.index("currency")
-        return {"GBP"} | {r[c] for r in schema.load("income") if r[a] == account and r[c]}
-    try:
-        return _guarded(_load)
-    except RecordUnavailable:
-        return {"GBP"}
-
-
 def item_for_event(ref: str) -> dict | None:
     """The open bench item carrying this deal reference, if there is one.
 
@@ -696,11 +559,10 @@ def already_in_the_record(item: dict) -> list[str]:
     reference = str((item.get("evidence") or {}).get("reference", "") or "").strip()
 
     def _load():
-        from portfusion.record import schema
         found = []
 
         if len(reference) >= 4:
-            for table in reference_tables(reference):
+            for table in recorded.reference_tables(reference):
                 found.append(f"{reference} already appears in {table}.csv — this "
                              f"document's evidence is in the book already")
             archived = _filed_already(item, reference, schema.filed_statements())
@@ -710,10 +572,10 @@ def already_in_the_record(item: dict) -> list[str]:
 
         for i, row in enumerate(item.get("rows") or [], 1):
             table = row.get("table")
-            cols = SIGNATURE.get(table)
+            cols = recorded.SIGNATURE.get(table)
             if not cols:
                 continue
-            match = matching_row(table, row.get("values") or {})
+            match = recorded.matching_row(table, row.get("values") or {})
             if match == "unreadable":
                 # NOT SKIPPED SILENTLY. A row the parser cannot read is a row the duplicate check
                 # cannot see: a proceeds cell carrying a "£" makes float() raise, and a check that
@@ -808,9 +670,8 @@ def gates(item: dict) -> list[dict]:
     # A NAME IS NOT A FILE: a document taken off the workbench after its item was opened stops
     # the rows committing.
     from portfusion.record import rules as _D
-    from portfusion.desk.doors import commit as _commit
     ev = _D.EVIDENCE_BY_KEY.get(item.get("evidence_class") or "")
-    on_bench = _commit.document_on_the_bench(item)
+    on_bench = filing.document_on_the_bench(item)
     if ev is None:
         ok, detail = True, "no class chosen yet — the statement-grade gate above says so"
     elif ev.retrieval == "none":
@@ -887,13 +748,12 @@ def reading_of(item: dict) -> dict:
     """The account reading a holdings item files: the figures read off the export, dated and
     referenced by its evidence limbs as they stand now.
 
-    THE DATE IS READ AS THE FILING READS IT (`commit._archive_date()`), however it was typed,
+    THE DATE IS READ AS THE FILING READS IT (`filing.archive_date()`), however it was typed,
     and is blank when it will not read."""
-    from portfusion.desk.doors import commit
     r = item.get("reading") or {}
     ev = item.get("evidence") or {}
     dated = str(ev.get("dated") or "").strip()
-    when = commit._archive_date(dated)
+    when = filing.archive_date(dated)
     return {"account": r.get("account") or item.get("account") or "",
             "as_of": when.isoformat() if when else "", "at": r.get("at") or "",
             "positions": r.get("positions"),
@@ -903,7 +763,7 @@ def reading_of(item: dict) -> dict:
 
 
 def _reading_gate(item: dict) -> dict:
-    from portfusion.desk.doors import commit, observations
+    from portfusion.desk.doors import observations
     reading = reading_of(item)
     name = (item.get("document") or {}).get("name") or ""
     dated = str((item.get("evidence") or {}).get("dated") or "").strip()
@@ -913,7 +773,7 @@ def _reading_gate(item: dict) -> dict:
                           f"2026-09-30 or 30 Sep 2026"}
     try:
         # The document is still on the workbench, where `read_document` reads it.
-        observations.preflight(reading, commit._archive_name(item, name),
+        observations.preflight(reading, filing.archive_name(item, name),
                                os.path.join(_reader().INBOX, name))
     except observations.Refused as e:
         return {"name": "the account's reading", "ok": False, "detail": str(e)}
@@ -1114,7 +974,6 @@ def for_event(event: dict, origin: str = "ig-events", marks: list[dict] | None =
     # this store does not have, or a row that does not fill exactly that table's columns, is
     # refused here rather than staged and discovered at commit.
     def _shape(row, tables):
-        from portfusion.record import schema
         table = row.get("table")
         if table not in tables:
             raise ValueError(f"{table!r} is not a table in this store")
@@ -1124,8 +983,7 @@ def for_event(event: dict, origin: str = "ig-events", marks: list[dict] | None =
             raise ValueError(f"an {table} row must fill exactly {want}, and this one has {got}")
         return True
 
-    from portfusion.record import schema as _schema
-    _guarded(lambda: _shape(event, _schema.TABLES))
+    _guarded(lambda: _shape(event, schema.TABLES))
     # A SET-UP carries the new line, company and contract its trade stands on (`REGISTER`).
     setup = list(event.get("with") or [])
     for row in setup:
@@ -1210,7 +1068,6 @@ def paste_block(item: dict) -> list[dict]:
     `desk/doors/commit.py` writes them; this shows each line before it lands, and can be pasted by
     hand if a commit is refused.
     """
-    from portfusion.record import schema
     out = []
     for row in item.get("rows") or []:
         table = row["table"]

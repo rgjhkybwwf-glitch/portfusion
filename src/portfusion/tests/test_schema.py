@@ -210,8 +210,8 @@ def test_money_is_written_to_the_penny_and_a_quote_to_at_most_six_places():
     [line] = bench.paste_block({"rows": [{"table": "capital-movements",
                                           "values": {"amount": "12.345", "account": "x"}}]})
     assert "12.345" in line["line"], "a figure the gate refuses vanished from its own line"
-    from portfusion.desk.doors import commit
-    assert commit._rendered("capital-movements", {"amount": "250"})[2] == "250.00"
+    from portfusion.desk.doors import envelope
+    assert envelope.rendered("capital-movements", {"amount": "250"})[2] == "250.00"
 
 
 @pytest.mark.parametrize("field, text", [

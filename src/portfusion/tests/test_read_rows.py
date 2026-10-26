@@ -12,7 +12,7 @@ figure in them is invented. If a column header changes, these fail and the colum
 import pytest
 
 from portfusion.record import schema
-from portfusion.desk.intake import read_document, read_rows
+from portfusion.desk.intake import read_document, read_rows, recorded
 
 from harness import an_account, holds
 
@@ -61,7 +61,7 @@ def on_the_workbench(tmp_path, monkeypatch):
     with the matcher stubbed the other way.
     """
     monkeypatch.setattr(read_document, "INBOX", str(tmp_path))
-    monkeypatch.setattr(read_rows, "bench_matching", lambda table, values: None)
+    monkeypatch.setattr(recorded, "matching_row", lambda table, values: None)
     def put(name, body):
         (tmp_path / name).write_bytes(body.encode("cp1252"))
         return name
@@ -77,7 +77,7 @@ def test_a_line_already_in_the_record_is_reported_and_not_read_again(tmp_path, m
     so a dividend the book holds at a date HL does not use is offered again as new.
     """
     monkeypatch.setattr(read_document, "INBOX", str(tmp_path))
-    monkeypatch.setattr(read_rows, "bench_matching", lambda table, values: "an existing row")
+    monkeypatch.setattr(recorded, "matching_row", lambda table, values: "an existing row")
     (tmp_path / "income.csv").write_bytes(INCOME.encode("cp1252"))
 
     out = read_rows.read("income.csv")
@@ -186,13 +186,12 @@ LEDGER = (
 def ledger(tmp_path, monkeypatch):
     """The ledger on a workbench, with the record behind it stubbed: the account is decided by
     the contract note its dealing line settled, and the account keeps GBP cash only."""
-    from portfusion.desk.intake import bench
     monkeypatch.setattr(read_document, "INBOX", str(tmp_path))
-    monkeypatch.setattr(read_rows, "bench_matching", lambda table, values: None)
+    monkeypatch.setattr(recorded, "matching_row", lambda table, values: None)
     monkeypatch.setattr(read_rows, "_in_record", lambda ref: "sales" if ref == "ABC123" else "")
-    monkeypatch.setattr(bench, "accounts_citing",
+    monkeypatch.setattr(recorded, "accounts_citing",
                         lambda ref: {"Voss ii Trading"} if ref == "ABC123" else set())
-    monkeypatch.setattr(read_rows, "bench_currencies", lambda account: {"GBP"})
+    monkeypatch.setattr(recorded, "cash_currencies", lambda account: {"GBP"})
     # The register holds KELS.L and QNLR and nothing for ZQX, whichever book is loaded.
     monkeypatch.setattr(read_rows.D, "SECURITIES", [("KELS.L",), ("QNLR",)])
     (tmp_path / "ledger.csv").write_text(LEDGER, encoding="utf-8")
@@ -229,7 +228,7 @@ def test_a_gbp_only_accounts_closing_balance_is_its_cash(ledger):
 
 def test_an_account_with_other_currency_cash_gets_no_cash_row_from_one_ledger(ledger, monkeypatch):
     """An account paid interest in EUR holds EUR cash: a GBP ledger's balance is half of it."""
-    monkeypatch.setattr(read_rows, "bench_currencies", lambda account: {"GBP", "EUR"})
+    monkeypatch.setattr(recorded, "cash_currencies", lambda account: {"GBP", "EUR"})
     out = read_rows.read(ledger)
     assert not [r for r in out["rows"] if r["table"] == "cash-readings"]
     assert any("EUR" in s["why"] for s in out["seen"])
@@ -239,7 +238,7 @@ def test_a_ledger_in_another_currency_is_left_for_a_person(tmp_path, monkeypatch
     """A EUR line needs the day's rate to become a row; a rate from the wrong day is the error
     `rules.FX_RATE_AGE_LIMIT_DAYS` describes. So nothing is proposed and every line says why."""
     monkeypatch.setattr(read_document, "INBOX", str(tmp_path))
-    monkeypatch.setattr(read_rows, "bench_matching", lambda table, values: None)
+    monkeypatch.setattr(recorded, "matching_row", lambda table, values: None)
     (tmp_path / "eur.csv").write_text(LEDGER.replace("£", "€"), encoding="utf-8")
     out = read_rows.read("eur.csv")
     assert out["rows"] == [] and len(out["unrecognised"]) == 7
@@ -284,16 +283,15 @@ def test_one_coincidence_does_not_name_a_ledgers_account(monkeypatch):
     rows on file. One match may be a coincidence of pennies on a day, so it takes two lines
     agreeing, or a dealing line, and anything less is left blank for a person."""
     import datetime as dt
-    from portfusion.desk.intake import bench
     from portfusion.record import rules as D
-    monkeypatch.setattr(bench, "accounts_of_broker", lambda broker: ["Account A", "Account B"])
+    monkeypatch.setattr(recorded, "accounts_of_broker", lambda broker: ["Account A", "Account B"])
     monkeypatch.setattr(D, "ii_line", lambda desc, symbol: D.BrokerCode("income", "Cash interest", ""))
 
     def line(day):
         return {"desc": "interest", "symbol": "", "ref": "", "when": dt.date(2026, 9, day),
                 "cells": {"Credit": "1.00", "Debit": "n/a"}}
     on_file = set()
-    monkeypatch.setattr(read_rows, "bench_matching",
+    monkeypatch.setattr(recorded, "matching_row",
                         lambda table, v: "row" if (v["account"], v["date"]) in on_file else None)
     on_file |= {("Account A", "2026-09-01")}
     assert read_rows._ii_account([line(1), line(2)]) == "", "one match named the account"

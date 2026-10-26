@@ -31,28 +31,27 @@ from harness import NO_CHECKOUT, ROOT, SRC, STORE_NAMES, TESTS, file_calls, need
 #: The engine reads the same three files with pandas, and that is deliberate rather than
 #: unfinished: it wants FRAMES for analysis where history/ wants ROWS for appending, and the
 #: travel rules keep the build and the feeds apart on purpose.
-#:   desk/doors/marks.py        a READ in service of a REPLACE. Replacing one mark means reading the
-#:                        file LINE BY LINE and passing every line it is not replacing through
-#:                        as the bytes it read. Going through a csv writer instead would requote
-#:                        unrelated rows — bytes changing without meaning changing, which makes
-#:                        a diff nobody can read, and this store is CSV so that a diff can be
-#:                        read.
-#:   desk/doors/observations.py the same read in service of the same replace, for a different
-#:                        table. It reads account-readings.csv line by line because a
-#:                        reading replaces the MONEY columns of a row and must leave the rest
-#:                        exactly as it found them: `positions` there is NOTIONAL, which no
-#:                        allowlisted IG endpoint returns, so re-rendering the row would mean
-#:                        composing a value for a column the reading has no opinion about. A
-#:                        supplied value is a claim.
-#:   record/migrations.py a release's renames, read and written line by line as marks.py's are,
-#:                        on a book the loader cannot open yet (`portfusion migrate`).
-#:   desk/doors/freeze.py the same read in service of a RESTATEMENT, which takes out the rows
-#:                        it replaces, so every line it is not taking out passes through as the
-#:                        bytes it read.
-#:   desk/doors/commit.py an event placed where its date puts it (`place()`, `placed()`), and the
-#:                        envelope that puts every file back when a write fails (`atomic()`).
+#:   desk/doors/envelope.py a table REWRITTEN ROW BY ROW (`rewrite()`): every line it is not
+#:                        replacing or taking out passes through as the bytes it read. Going
+#:                        through a csv writer instead would requote unrelated rows — bytes
+#:                        changing without meaning changing, which makes a diff nobody can read,
+#:                        and this store is CSV so that a diff can be read. And an event placed
+#:                        where its date puts it (`place()`, `placed()`), the journal, and the
+#:                        bytes put back when a write fails (`atomic()`).
+#:   desk/doors/marks.py, desk/doors/freeze.py
+#:                        a mark replaced or retired, and a quarter end restated, through the
+#:                        envelope's `rewrite()`.
+#:   desk/doors/observations.py the same, for account-readings.csv, whose rows it also reads as
+#:                        raw cells because a reading replaces the MONEY columns of a row and
+#:                        must leave the rest exactly as it found them: `positions` there is
+#:                        NOTIONAL, which no allowlisted IG endpoint returns, so re-rendering the
+#:                        row would mean composing a value for a column the reading has no
+#:                        opinion about. A supplied value is a claim.
+#:   record/migrations.py a release's renames, read and written line by line, on a book the
+#:                        loader cannot open yet (`portfusion migrate`).
+#:   desk/doors/commit.py an event, placed through the envelope.
 #:   desk/doors/research_notes.py
-#:                        a published research note's rows, placed by `commit.placed()`.
+#:                        a published research note's rows, placed by `envelope.placed()`.
 #:   init/__init__.py     a new book's tables and histories, each headed as the demo's are.
 #:   about.py             every table's bytes, read for the record's fingerprint in a page's stamp.
 #:   tools/make_demo.py   the demo's store, written whole (`test_demo.py` holds it to the demo).
@@ -61,7 +60,8 @@ from harness import NO_CHECKOUT, ROOT, SRC, STORE_NAMES, TESTS, file_calls, need
 STORE_FILE_DOORS = {
     "record/schema.py", "engine.py", "record/migrations.py",
     "desk/doors/marks.py", "desk/doors/observations.py", "desk/doors/freeze.py",
-    "history/_appendonly.py", "desk/doors/commit.py", "desk/doors/research_notes.py",
+    "history/_appendonly.py", "desk/doors/commit.py", "desk/doors/envelope.py",
+    "desk/doors/research_notes.py",
     "init/__init__.py", "about.py", "tools/make_demo.py",
 }
 

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from portfusion.desk import engine
 from portfusion.desk.doors import research_notes
-from portfusion.desk.intake import bench, dropoff, read_rows
+from portfusion.desk.intake import bench, dropoff, read_rows, recorded
 from portfusion.desk.actions import Action, register
 from portfusion.desk.engine import _guarded
 from portfusion.record import schema as _schema
@@ -203,7 +203,7 @@ def sweep_status(refs: list[str]) -> dict:
             continue
 
         def _look(ref=ref):
-            tables = bench.reference_tables(ref)
+            tables = recorded.reference_tables(ref)
             item = bench.item_for_event(ref)
             return {
                 "in_record": bool(tables),

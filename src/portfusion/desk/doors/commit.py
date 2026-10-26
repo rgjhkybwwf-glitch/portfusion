@@ -25,146 +25,21 @@ commit message saying why; `git revert` is the undo, which is why the store is t
 """
 from __future__ import annotations
 
-import contextlib
-import csv
 from collections import Counter
-import datetime as _dt
-import functools
-import io
 import json
-import pathlib
-import re
 import shutil
 
-from portfusion.desk.intake import bench
+from portfusion.desk.doors import envelope
+from portfusion.desk.intake import bench, filing
 from portfusion.record import order, schema
-
-#: The book this door writes to (`schema.BOOK`): its inbox, its archive.
-BOOK = schema.BOOK
 
 #: Where a committed item's note goes. `_archive/` is tracked, and it is the audit trail
 #: behind the row: what evidence was held, what the reasoning was, and when it landed.
-ARCHIVE = BOOK / "_archive" / "bench"
+ARCHIVE = schema.BOOK / "_archive" / "bench"
 
 #: States a committed item may already be in. Committing twice is refused, not ignored — an
 #: event happened once, and writing it again would be a duplicate the schema cannot see.
 TERMINAL = ("written", "archived")
-
-
-@contextlib.contextmanager
-def atomic(*paths: pathlib.Path):
-    """Hold these files' bytes, and restore EVERY one of them if the block raises.
-
-    Both store doors use it: `commit()` to place a row, `marks.py` to replace one.
-
-    IT LIVES HERE, NOT IN A MODULE OF ITS OWN, FOR THE GUARD'S SAKE. The scan in
-    `tests/desk/test_boundaries.py` finds store writes by resolving each write's target back to
-    its assignment, and a path passed in as a parameter cannot be resolved. Moved elsewhere,
-    this would still write store files and no longer be seen to.
-
-    A file that did not exist when held is REMOVED on rollback. A file whose bytes did not
-    change is NOT rewritten: restoring identical bytes still moves the mtime, and the desk's
-    freshness line would then report a store change that never happened.
-
-    THE BYTES ARE HELD UNDER `schema.LOCK`, for the whole block. A restore puts back what was read
-    on entry, so a second write landing in between would have been erased by the first one's
-    refusal.
-
-    WHATEVER ENDS THE BLOCK, `SystemExit` included, which the record raises when a store goes
-    incomplete and which `except Exception` lets past.
-    """
-    with schema.LOCK:
-        held = [(p, p.read_bytes() if p.is_file() else None) for p in paths]
-        try:
-            yield
-        except BaseException:
-            for path, original in held:
-                if original is None:
-                    path.unlink(missing_ok=True)
-                elif not path.is_file() or path.read_bytes() != original:
-                    path.write_bytes(original)
-            raise
-
-
-def held(door):
-    """A door's entry point, run under `schema.LOCK` from its first read to its last write.
-
-    `atomic()` alone holds the files, not the reads that decided what to write: a check that an
-    item is not already committed, or that the outgoing marks are banked, would otherwise be
-    answered before another request's write and acted on after it.
-    """
-    @functools.wraps(door)
-    def under_the_lock(*args, **kwargs):
-        with schema.LOCK:
-            return door(*args, **kwargs)
-    return under_the_lock
-
-
-def journal(rows: list[tuple], at: str | None = None) -> int:
-    """Append these writes to `store/journal.csv`. Returns how many rows were added.
-
-    Each `rows` entry is `(route, op, table, count, ref, detail)`: who wrote, what it did to the
-    row count, which table, how much moved, what retrieves it, and what happened in a sentence.
-    The caller states `route` and `op`, because only the caller knows them.
-
-    It lives here for the reason `atomic()` does. It is not wrapped in its own `atomic()`:
-    every caller is already inside one that holds this file, and a second envelope would
-    disagree with the first about which bytes were the original.
-    """
-    from portfusion.record import schema
-    at = at or schema.record_instant()
-    path = schema.TABLES["journal"].path
-    lines = [_csv_line([at, route, op, table, str(count), ref or "", detail or ""])
-             for route, op, table, count, ref, detail in rows]
-    _append(path, path.read_bytes() if path.is_file() else b"", lines)
-    schema.load("journal")        # it must still load, like everything else written here
-    return len(lines)
-
-
-def _eol(original: bytes) -> bytes:
-    """The line ending most of a file's lines already use. The store is LF; a write that changed a
-    file's ending would show as every line changed."""
-    crlf = original.count(b"\r\n")
-    return b"\r\n" if crlf > original.count(b"\n") - crlf else b"\n"
-
-
-def lines_and_eol(path: pathlib.Path) -> tuple[list[str], str]:
-    """A file's lines and its own line ending, for a door that rewrites the file whole and must
-    write it back in the ending it found: `write_text(eol.join(lines) + eol, newline="")`."""
-    original = path.read_bytes()
-    return original.decode("utf-8").splitlines(), _eol(original).decode()
-
-
-def _append(path: pathlib.Path, original: bytes, lines: list[str]) -> None:
-    """Write `lines` after `original`, in the file's own line ending. BYTES, not text: text mode
-    reads CRLF as LF, and the next write would rewrite every line of the file."""
-    eol = _eol(original)
-    head = original if not original or original.endswith(b"\n") else original + eol
-    path.write_bytes(head + b"".join(line.encode("utf-8") + eol for line in lines))
-
-
-def paths_placing(tables) -> list[pathlib.Path]:
-    """What `place()` may write for these tables: them, and both of the buys and sales when
-    either is among them, since a new buy renumbers what follows it in both."""
-    names = set(tables)
-    if names & set(order.NUMBERED):
-        names |= set(order.NUMBERED)
-    return [schema.TABLES[t].path for t in sorted(names)]
-
-
-def place(new: dict[str, list[list[str]]]) -> tuple[dict, dict]:
-    """Write each table's `new` rows (rendered cells) into their places, renumbering as
-    `record/order.py` says. A table with no date order takes them at its end. Returns the ids
-    that moved, `{table: [(was, now)]}` (a new row's `was` is the id it was proposed with), and
-    how many rows already on file each table had rewritten, `{table: n}`.
-
-    Inside the caller's `atomic()`, which holds `paths_placing()`. An untouched line keeps its
-    bytes, and the file its own line ending."""
-    files, moves, rewritten = placed(new)
-    for path, data in files.items():
-        if data != path.read_bytes():
-            path.write_bytes(data)
-    return moves, rewritten
 
 
 def renumbering(rows: list[dict]) -> list[str]:
@@ -173,10 +48,11 @@ def renumbering(rows: list[dict]) -> list[str]:
     new = {}
     for row in rows:
         if row.get("table") in order.NUMBERED and (row.get("values") or {}).get("date"):
-            new.setdefault(row["table"], []).append(_rendered(row["table"], row.get("values") or {}))
+            new.setdefault(row["table"], []).append(
+                envelope.rendered(row["table"], row.get("values") or {}))
     if not new:
         return []
-    return order.said(_renumbered_only(new, placed(new)[1]))
+    return order.said(_renumbered_only(new, envelope.placed(new)[1]))
 
 
 def _renumbered_only(new: dict, moves: dict) -> dict:
@@ -186,44 +62,6 @@ def _renumbered_only(new: dict, moves: dict) -> dict:
                 for t, cells in new.items() if t in order.NUMBERED for c in cells}
     return {t: kept for t, pairs in moves.items()
             if (kept := [p for p in pairs if p[0] not in proposed])}
-
-
-def placed(new: dict[str, list[list[str]]]):
-    """`place()`'s answer, nothing written: `({path: bytes}, moves, rewritten)`, each file as it
-    would be. A door that writes for itself writes these bytes. Raises ValueError on a file with
-    a cell that spans lines, which is moved by hand."""
-    from portfusion.record import rules
-    accounts = list(rules.ACCOUNT_ORDER) + [c[0] for c in new.get("accounts", [])]
-    files = {}
-    for path in paths_placing(new):
-        table = path.stem
-        original = path.read_bytes()
-        text = original.decode("utf-8")
-        lines = text.splitlines()
-        kept = [ln for ln in lines[1:] if ln.strip()]
-        rows = list(csv.reader(io.StringIO(text)))[1:]
-        rows = [r for r in rows if r]
-        if len(rows) != len(kept):
-            raise ValueError(f"{path.name} holds a cell that spans lines: move it by hand")
-        line_of = {id(r): line for r, line in zip(rows, kept)}
-        header = schema.TABLES[table].header
-        rows = (order.placed(table, header, rows, new.get(table, []), accounts)
-                if table in order.DATED else rows + new.get(table, []))
-        files[table] = [path, original, lines[0] if lines else "", rows, line_of]
-    moves: dict[str, list] = {}
-    if set(order.NUMBERED) <= set(files):
-        files["buys"][3], files["sales"][3], moves = order.renumbered(
-            (schema.TABLES["buys"].header, files["buys"][3]),
-            (schema.TABLES["sales"].header, files["sales"][3]))
-    out, rewritten = {}, {}
-    for table, (path, original, head, rows, line_of) in files.items():
-        eol = _eol(original).decode()
-        out[path] = (eol.join([head] + [line_of.get(id(r)) or _csv_line(r) for r in rows])
-                     + eol).encode("utf-8")
-        # EVERY ROW NOT ITS OLD LINE, less the new ones: rows on file a renumbering rewrote.
-        if n := sum(1 for r in rows if id(r) not in line_of) - len(new.get(table, [])):
-            rewritten[table] = n
-    return out, {t: m for t, m in moves.items() if m}, rewritten
 
 
 class Refused(Exception):
@@ -236,7 +74,7 @@ def _the_book_loads() -> None:
     THE SCHEMA JUDGES A CELL; ONLY THE ENGINE KNOWS WHETHER A ROW JOINS THE REST. A sale in no
     realisation, a leg nothing closes, a share with no price: each passes `schema` and stops
     `Book()` — and with it every panel but the bench. Called inside `atomic()`, so a refusal puts
-    every file back; `_record_follows_the_files()` then puts the record in memory back too.
+    every file back; `envelope.record_follows_the_files()` then puts the record in memory back too.
     """
     from portfusion import engine
     from portfusion.record import rules
@@ -246,56 +84,6 @@ def _the_book_loads() -> None:
     except (Exception, SystemExit) as e:
         raise Refused(f"the book would not load with this written, so nothing was — "
                       f"{type(e).__name__}: {e}") from e
-
-
-@contextlib.contextmanager
-def _record_follows_the_files():
-    """Outside `atomic()`: once it has restored the files after a refusal or a fault, reload the
-    record in memory from them, since a reload inside the envelope left it reading the rows just
-    taken back out. Every door that reloads inside its envelope wears this.
-
-    A reload that fails here means the store did not load BEFORE this write either — the desk
-    reports that on its own, and the refusal is still the answer to this write: the record's own
-    exit, an incomplete store, is suppressed with the rest.
-    """
-    try:
-        yield
-    except BaseException:                       # as `atomic()`: an exit too
-        from portfusion.record import rules
-        with contextlib.suppress(Exception, SystemExit):
-            rules.reload_store()
-        raise
-
-
-def _shown(path) -> str:
-    """A path relative to the project when it is inside it — the tests point ARCHIVE
-    elsewhere, where an unconditional relative_to() would raise."""
-    try:
-        return str(path.relative_to(BOOK))
-    except ValueError:
-        return str(path)
-
-
-def _rendered(table: str, values: dict) -> list[str]:
-    """One row as cells, in schema field order, each as `schema.cell()` writes it: a figure to its
-    places. Blank for a null, which is what the loader reads back as None — a missing number is a
-    GAP and never zero.
-
-    A KEY THE TABLE HAS NO COLUMN FOR IS REFUSED, never dropped. Dropped, a column renamed in the
-    schema but not in a writer is written blank with nothing said. Raises ValueError."""
-    from portfusion.record import schema
-    stray = set(values) - {f.name for f in schema.TABLES[table].fields}
-    if stray:
-        raise ValueError(f"{table} has no column {sorted(stray)}: a writer is using a name the "
-                         f"schema does not")
-    return [schema.cell(f, values.get(f.name)) for f in schema.TABLES[table].fields]
-
-
-def _csv_line(cells: list[str]) -> str:
-    """Quoted the way `csv` itself would, so a note containing a comma cannot split a row."""
-    buf = io.StringIO()
-    csv.writer(buf, lineterminator="").writerow(cells)
-    return buf.getvalue()
 
 
 def _title(item: dict) -> str:
@@ -334,8 +122,8 @@ def _write_reasoning(targets: dict) -> list[str]:
     is a row of its own beside the first, so the thesis a position was opened on is still there when it is added
     to or trimmed, and the desk shows both.
     """
-    place({"reasoning": [_rendered("reasoning", {"ticker": ticker, **values})
-                         for ticker, values in sorted(targets.items())]})
+    envelope.place({"reasoning": [envelope.rendered("reasoning", {"ticker": ticker, **values})
+                                  for ticker, values in sorted(targets.items())]})
     return sorted(targets)
 
 
@@ -347,7 +135,6 @@ def retired_by(rows: list[dict]) -> list[str]:
         per ticker, so a ticker still held anywhere keeps it
     These rows' own buys count, so a line reopened in the same item stays. Read from the files,
     so it answers before a write (the Bench's review) and inside one (`commit()`) alike."""
-    from portfusion.record import schema
     sales = [r.get("values") or {} for r in rows if r.get("table") == "sales"]
     buys = [r.get("values") or {} for r in rows if r.get("table") == "buys"]
     th, eh = schema.TABLES["buys"].header, schema.TABLES["sales"].header
@@ -387,15 +174,13 @@ def retired_by(rows: list[dict]) -> list[str]:
     return sorted(out)
 
 
-@held
+@envelope.held
 def commit(item_id: str) -> dict:
     """Write one approved bench item's rows into the store, then archive it.
 
     Returns a summary. Raises `Refused` — leaving every file untouched — if the item is
     already committed, has no rows, or fails any gate.
     """
-    from portfusion.record import schema
-
     item = bench.get(item_id)
 
     if item.get("state") in TERMINAL:
@@ -417,7 +202,7 @@ def commit(item_id: str) -> dict:
 
     by_table: dict[str, list[list[str]]] = {}
     for row in rows:
-        by_table.setdefault(row["table"], []).append(_rendered(row["table"], row["values"]))
+        by_table.setdefault(row["table"], []).append(envelope.rendered(row["table"], row["values"]))
 
     # Hold every target's bytes before touching any: a two-table item failing on the second
     # table must not leave the first written.
@@ -444,16 +229,16 @@ def commit(item_id: str) -> dict:
     # A NEW CONTRACT'S FIRST MARK, read from IG when its set-up was pressed (`bench.for_event`).
     marking = list(item.get("marks") or [])
     held = list(dict.fromkeys([path for path, _, _ in before.values()]
-                              + paths_placing(by_table)
+                              + envelope.paths_placing(by_table)
                               + ([reasoning_path] if targets else [])
                               + (_observations_paths() if reading else [])
                               + (marks.retire_paths() if retiring else [])
                               + (marks.first_paths() if marking else [])
                               + [schema.TABLES["journal"].path]))
-    with _record_follows_the_files(), atomic(*held):
-        # EACH ROW IN ITS PLACE (`place()`).
+    with envelope.record_follows_the_files(), envelope.atomic(*held):
+        # EACH ROW IN ITS PLACE (`envelope.place()`).
         try:
-            moved, rewritten = place(by_table)
+            moved, rewritten = envelope.place(by_table)
         except ValueError as e:
             raise Refused(f"nothing was written — {e}") from e
         final = {was: now for pairs in moved.values() for was, now in pairs}
@@ -496,7 +281,7 @@ def commit(item_id: str) -> dict:
                    + ([("bench", "append", "reasoning", len(reasoned), item["id"],
                         "why for " + ", ".join(reasoned))] if reasoned else []))
         if entries:
-            journal(entries, at=written_at)
+            envelope.journal(entries, at=written_at)
         # THE MARKS DOOR'S REFUSAL IS THIS COMMIT'S, so the route answers it with a 409.
         try:
             retired = marks.retire(retiring, "bench", item["id"], written_at) if retiring else []
@@ -545,7 +330,7 @@ def commit(item_id: str) -> dict:
     # Archive at once: nothing may rest in `written` (the module docstring says why).
     item["state"] = "archived"
     if document:
-        item["document_archived_to"] = _shown(document)
+        item["document_archived_to"] = filing.filed_as(document)
 
     ARCHIVE.mkdir(parents=True, exist_ok=True)
     (ARCHIVE / f"{item['id']}.json").write_text(json.dumps(item, indent=2), encoding="utf-8")
@@ -559,113 +344,7 @@ def commit(item_id: str) -> dict:
             "reasoning": sorted(targets),
             "retired": retired,
             "marked": marked,
-            "archived_to": _shown(ARCHIVE / f"{item['id']}.json")}
-
-
-#: How `_archive/statements/` names a document is `rules.ARCHIVE_CONVENTION`, whose parts are
-#: the three evidence limbs — so the name is derived from the evidence, never typed, and a
-#: document filed by the desk reads like one filed by hand.
-_DATE_FORMATS = ("%Y-%m-%d", "%d %b %Y", "%d %B %Y", "%d/%m/%Y", "%d-%m-%Y", "%d %b %y")
-
-
-def _archive_date(raw: str):
-    """The document's date, however it was typed; None if it will not parse, and then the
-    document keeps its original filename. Never guessed: this folder's job is retrieval."""
-    text = str(raw or "").strip()
-    for fmt in _DATE_FORMATS:
-        try:
-            return _dt.datetime.strptime(text, fmt).date()
-        except ValueError:
-            continue
-    return None
-
-
-def _covers(item: dict) -> str:
-    """What the document covers, from the rows: tickers and accounts. Factual, never
-    editorial — a hand-filed "(PENR trim 3)" knows which trim it was; nothing here can."""
-    rows = item.get("rows") or []
-    tickers, accounts = [], []
-    for row in rows:
-        v = row.get("values") or {}
-        for key in ("ticker",):
-            if v.get(key) and v[key] not in tickers:
-                tickers.append(str(v[key]))
-        if v.get("account") and v["account"] not in accounts:
-            accounts.append(str(v["account"]))
-    # A document that yields no rows still covers an account, and says whose.
-    #
-    # ACCOUNT FIRST WHEN THE REFERENCE IS ONLY A DATE. A contract note number is unique across
-    # every account, so tickers can lead. A date range is not: two accounts' GBP ledgers over
-    # the same dates are identical files, and the account is the whole identification.
-    from portfusion.record import rules as D
-    ev = D.EVIDENCE_BY_KEY.get(item.get("evidence_class") or "")
-    account_first = ev is not None and ev.key in D.REFERENCE_IS_A_DATE
-    first, second = (accounts, tickers) if account_first else (tickers, accounts)
-    parts = first or second or ([item["account"]] if item.get("account") else [])
-    return ", ".join(parts)
-
-
-def _document_stamp(original: str, when) -> str:
-    """`HH.MM` from the document's own "as at" line, or "". Never raises: a document that
-    cannot be read is still filed, and the time is provenance, not something filing needs."""
-    from portfusion.record import rules as D
-    from portfusion.desk.intake import read_document
-    src = BOOK / "_inbox" / original
-    if not src.is_file():
-        return ""
-    try:
-        inst = D.document_instant(read_document.extract_file(src).get("text") or "")
-    except Exception:                     # noqa: BLE001 — a name is worth more than a stamp
-        return ""
-    return f"{inst:%H.%M}" if inst and inst.date() == when else ""
-
-
-def _instant_in(reference: str, when) -> tuple[str, str]:
-    """(`HH.MM`, the reference without it) where the reference states an instant on `when`'s
-    day, else ("", the reference unchanged).
-
-    THE INSTANT IS NAMED ONCE. A download is referenced by the instant it was pulled, and the
-    name already leads with the date and the time, so repeating them in the reference would
-    write both twice. A period that ENDS on that day keeps its date, because there the date is
-    the period's, not the pull's.
-    """
-    m = re.search(rf"\b0?{when.day} {when:%b} {when.year}[ ,]+([01]\d|2[0-3])[:.\-]([0-5]\d)\b",
-                  reference)
-    if not m:
-        return "", reference
-    before, after = reference[:m.start()], reference[m.end():]
-    if re.search(r"(\bto|-)\s*$", before):
-        before += f"{when.day} {when:%b} {when.year}"
-    return f"{m.group(1)}.{m.group(2)}", " ".join(f"{before}{after}".strip(" ,;-").split())
-
-
-def _archive_name(item: dict, original: str) -> str:
-    """The filename this document should be filed under. Falls back to what it arrived as."""
-    evidence = item.get("evidence") or {}
-    when = _archive_date(evidence.get("dated"))
-    authority = " ".join(str(evidence.get("authority") or "").split())
-    if not when or not authority:
-        return original
-
-    # THE DOCUMENT'S OWN TIME, when it states one: a valuation moves within the day, and
-    # several exports can share a date and a title. Only when it falls on the `dated` limb's
-    # day — a time from one document spliced onto another's date would invent a third instant.
-    stamp = _document_stamp(original, when)
-    suffix = pathlib.Path(original).suffix
-    reference = " ".join(str(evidence.get("reference") or "").split())
-    typed, rest = _instant_in(reference, when)
-    if typed and (not stamp or typed == stamp):     # the same instant: name it once
-        stamp, reference = typed, rest
-    bits = [f"{when:%d %b %Y}"] + ([stamp] if stamp else []) + [authority]
-    if reference and reference.lower() not in authority.lower():
-        bits.append(reference)
-    name = " ".join(b for b in bits if b)
-    covers = _covers(item)
-    if covers:
-        name += f" ({covers})"
-    # A filename, so nothing that would make it one path segment too many.
-    name = re.sub(r"[/\\:]", "-", name).strip()
-    return f"{name}{suffix}"
+            "archived_to": filing.filed_as(ARCHIVE / f"{item['id']}.json")}
 
 
 def _observations_paths() -> list:
@@ -692,14 +371,7 @@ def _file_with_reading(item: dict, reading: dict):
 def _unfile(item: dict, document) -> None:
     """Put a document `_archive_document()` filed back on the workbench, if it filed one."""
     if document:
-        shutil.move(str(document), str(BOOK / "_inbox" / item["document"]["name"]))
-
-
-def document_on_the_bench(item: dict) -> pathlib.Path | None:
-    """Where the item's document waits to be filed — on the workbench, `_inbox/` — or None if
-    it names none. The gate asks here and the filing reads here, so the two cannot disagree."""
-    name = (item.get("document") or {}).get("name")
-    return BOOK / "_inbox" / name if name else None
+        shutil.move(str(document), str(filing.document_on_the_bench(item)))
 
 
 def _archive_document(item: dict):
@@ -712,7 +384,7 @@ def _archive_document(item: dict):
     envelope, so the refusal takes every row back out: rows citing a document that was never
     filed are what the door exists to stop.
     """
-    source = document_on_the_bench(item)
+    source = filing.document_on_the_bench(item)
     if source is None:
         return None
     if not source.is_file():
@@ -720,7 +392,7 @@ def _archive_document(item: dict):
                       f"may cite a document that was never filed. Nothing was written.")
     name = source.name
     schema.STATEMENTS.mkdir(parents=True, exist_ok=True)
-    target = schema.STATEMENTS / _archive_name(item, name)
+    target = schema.STATEMENTS / filing.archive_name(item, name)
     if target.exists():
         stem, suffix = target.stem, target.suffix
         target = schema.STATEMENTS / f"{stem}-{item['id']}{suffix}"
