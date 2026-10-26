@@ -1,5 +1,5 @@
-"""THE RECORD'S ONE LOCK — `schema.LOCK`, shared by every door, the record's reload and the desk's
-engine.
+"""THE RECORD'S ONE LOCK — `schema.LOCK`, shared by every door, the record's reload, the desk's
+engine and the restart's exit.
 
 The desk serves its routes on a pool of threads: without the lock a door's check and its write are
 two steps another request can fall between, a refusal's restore puts back bytes another write has
@@ -18,7 +18,7 @@ _WAIT = 0.1
 def _doors():
     """Every way into the store a request can take, each called so that it is refused (or, for
     the engine, merely built): what is tested is that it WAITS, not what it then does."""
-    from portfusion.desk import engine
+    from portfusion.desk import engine, restart
     from portfusion.desk.doors import commit, envelope, freeze, marks, observations, research_notes
     from portfusion.record import rules
     return {
@@ -36,6 +36,8 @@ def _doors():
         # lock, not the lock of the reload a rebuild would make.
         "engine.book": lambda: (engine._cache.update(key=engine.store_mtime()), engine.book()),
         "engine.report_page": lambda: engine.report_page("1999-12-31"),
+        # NOT A DOOR, but the restart's exit must wait as one does, or it ends a write half-done.
+        "restart._exit": restart._exit,
     }
 
 
@@ -44,10 +46,12 @@ def test_every_door_waits_for_the_lock(door, store_copy, monkeypatch):
     """WHILE ANOTHER REQUEST HOLDS THE RECORD, A DOOR WAITS. Each is started on its own thread
     while this one holds `schema.LOCK`; it must still be running when the wait is up, and finish
     once the lock is let go."""
+    import os
     from portfusion.desk import engine
     from portfusion.record import schema
     for key in ("key", "book"):                     # put back after: a case re-keys the cache
         monkeypatch.setitem(engine._cache, key, engine._cache[key])
+    monkeypatch.setattr(os, "_exit", lambda code: None)     # the restart's exit ends no suite
     call = _doors()[door]
     done = threading.Event()
 

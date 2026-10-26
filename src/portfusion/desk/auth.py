@@ -22,9 +22,11 @@ levels, and the sign-in log. None of them is the record.
 """
 from __future__ import annotations
 
+import functools
 import json
 import pathlib
 import secrets
+import threading
 import time
 from dataclasses import dataclass
 
@@ -46,6 +48,20 @@ LIFETIME = 7 * 24 * 3600
 #: firm's own reader; a principal is a holder of the book, who reads it with the holders taken out.
 LEVELS = ("owner", "principal")
 
+#: ONE LOCK ROUND THE PASSKEYS, THE READERS AND THE TABLES IN MEMORY. The doors answer on a pool
+#: of threads, so each function that reads a file and writes it back, or reads or changes a table,
+#: holds it whole: a revoke cannot fall between a sign-in's read and its write-back, and a session
+#: is opened only while its passkey is still on file.
+LOCK = threading.RLock()
+
+
+def _held(fn):
+    @functools.wraps(fn)
+    def under_the_lock(*args, **kwargs):
+        with LOCK:
+            return fn(*args, **kwargs)
+    return under_the_lock
+
 
 @dataclass
 class _Session:
@@ -58,6 +74,7 @@ class _Session:
 _SESSIONS: dict[str, _Session] = {}
 
 
+@_held
 def open_session(who: str, key: str = "", now: float | None = None) -> str:
     """A new session for `who`, opened by passkey `key`, returned as the token the cookie
     carries."""
@@ -67,6 +84,7 @@ def open_session(who: str, key: str = "", now: float | None = None) -> str:
     return token
 
 
+@_held
 def signed_in(token: str | None, now: float | None = None) -> str | None:
     """Who holds this token, or None. An idle or expired session is closed on the way."""
     now = time.time() if now is None else now
@@ -80,10 +98,12 @@ def signed_in(token: str | None, now: float | None = None) -> str | None:
     return s.who
 
 
+@_held
 def close(token: str | None) -> None:
     _SESSIONS.pop(token or "", None)
 
 
+@_held
 def _close_where(match) -> int:
     gone = [t for t, s in _SESSIONS.items() if match(s)]
     for t in gone:
@@ -237,6 +257,7 @@ def level(who: str | None) -> str | None:
     return _read(READERS).get(who or "", {}).get("level")
 
 
+@_held
 def set_level(who: str, new: str, now: float | None = None) -> dict:
     """Give a reader a level, from the next request on. A reader is someone with a passkey."""
     who, new = _name(who), _level(new)
@@ -249,6 +270,7 @@ def set_level(who: str, new: str, now: float | None = None) -> dict:
     return {"who": who, "level": new}
 
 
+@_held
 def revoke_device(key: str) -> dict:
     """Forget one passkey, and close every session it opened."""
     keys = _keys()
@@ -260,6 +282,7 @@ def revoke_device(key: str) -> dict:
             "signed_out": _close_where(lambda s: s.key == key)}
 
 
+@_held
 def revoke_reader(who: str) -> dict:
     """Forget a reader: every passkey they hold and their level, and close their sessions."""
     who = _name(who)
@@ -276,6 +299,7 @@ def revoke_reader(who: str) -> dict:
     return {"who": who, "devices": len(mine), "signed_out": _close_where(lambda s: s.who == who)}
 
 
+@_held
 def readers(now: float | None = None) -> list[dict]:
     """Every reader, owner first: their level (None until one is set), their devices, when they
     last signed in, and whether a session of theirs is open now. Nothing secret: no public key
@@ -324,6 +348,7 @@ def device_name(user_agent: str | None) -> str:
 RESULTS = ("signed in", "enrolled", "refused", "limited")
 
 
+@_held
 def log(result: str, address: str = "", who: str | None = None, device: str | None = None,
         detail: str = "", now: float | None = None) -> None:
     """Append one line. Never raises: a log that cannot be written must not stop a sign-in, and
@@ -366,6 +391,7 @@ def signins(days: int = 30, now: float | None = None) -> list[dict]:
 # THE CEREMONIES
 # =================================================================================================
 
+@_held
 def enrol_code(who: str, new_level: str | None = None, now: float | None = None) -> dict:
     """A one-time code that lets one device enrol a passkey for `who`. Replaces any earlier code.
 
@@ -388,6 +414,7 @@ def enrol_code(who: str, new_level: str | None = None, now: float | None = None)
             "minutes": CODE_LIFETIME // 60}
 
 
+@_held
 def _pending(kind: str, who: str | None, now: float, address: str = "",
              new_level: str | None = None) -> bytes:
     from webauthn.helpers import generate_challenge
@@ -428,6 +455,7 @@ def _answered(credential: dict, kind: str, now: float) -> tuple[bytes, dict]:
     return challenge, p
 
 
+@_held
 def enrol_options(code: str, rp_id: str, now: float | None = None, address: str = "") -> str:
     """Spend the code, and hand the browser what it needs to make a passkey."""
     from webauthn import generate_registration_options, options_to_json
@@ -461,10 +489,11 @@ def enrol_options(code: str, rp_id: str, now: float | None = None, address: str 
     return options_to_json(options)
 
 
+@_held
 def enrol_verify(credential: dict, rp_id: str, origin: str, now: float | None = None,
                  device: str = "") -> tuple[str, str]:
-    """Keep the new passkey, give a new reader the level their code carried, and say whose
-    passkey it is and which: (who, key)."""
+    """Keep the new passkey, give a new reader the level their code carried, and open their
+    session: (who, the session's token)."""
     from webauthn import verify_registration_response
     from webauthn.helpers import bytes_to_base64url
     from webauthn.helpers.exceptions import WebAuthnException
@@ -486,7 +515,7 @@ def enrol_verify(credential: dict, rp_id: str, origin: str, now: float | None = 
         readers = _read(READERS)
         readers[p["who"]] = {"level": p["level"], "since": int(now)}
         _save(READERS, readers)
-    return p["who"], key
+    return p["who"], open_session(p["who"], key, now)
 
 
 def sign_in_options(rp_id: str, now: float | None = None, address: str = "") -> str:
@@ -499,10 +528,11 @@ def sign_in_options(rp_id: str, now: float | None = None, address: str = "") -> 
         user_verification=UserVerificationRequirement.REQUIRED))
 
 
+@_held
 def sign_in_verify(credential: dict, rp_id: str, origin: str,
                    now: float | None = None) -> tuple[str, str]:
-    """Who signed in, and with which passkey — (who, key) — once their passkey has signed the
-    challenge AND they hold a level. A reader with none is refused here, before any session."""
+    """Who signed in, and their session's token — (who, token) — once their passkey has signed
+    the challenge AND they hold a level. A reader with none is refused here, before any session."""
     from webauthn import verify_authentication_response
     from webauthn.helpers import base64url_to_bytes
     from webauthn.helpers.exceptions import WebAuthnException
@@ -524,4 +554,4 @@ def sign_in_verify(credential: dict, rp_id: str, origin: str,
         raise Refused(f"{key['who']} has no level yet; the owner sets one on the Mac's Access page")
     key["sign_count"], key["last_used"] = v.new_sign_count, int(now)
     _save_keys(keys)
-    return key["who"], name
+    return key["who"], open_session(key["who"], name, now)

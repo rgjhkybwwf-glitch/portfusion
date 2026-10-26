@@ -112,6 +112,10 @@ prints it.
   desk". A refusal's words are renamed for a level that reads no names, as its answers are. A
   desk with a hosted door now starts when a cell will not load: the door reads its two settings
   alone.
+- **A revoke that races a sign-in holds.** The sign-in wrote back the passkeys it had read, so a
+  device revoked part-way through came back, signed in. The passkeys, the readers and the sessions
+  in memory now change under one lock, and a session opens only while its passkey is on file. A
+  restart's exit waits for a write in progress to finish, as every door's write does.
 - **A document is never filed over another.** A commit files a document under its convention's
   name, or that name with the item's id when the first is taken; when both are, the commit is now
   refused and nothing is written, where the document on file was replaced. A TradingView reply
