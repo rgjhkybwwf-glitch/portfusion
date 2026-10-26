@@ -20,13 +20,15 @@ def files():
 
 def test_the_hosted_bundle_is_the_bytes_the_mac_desk_serves(files):
     """ONE SOURCE, TWO SERVERS. Every file the publish step writes out is requested from the Mac
-    desk over HTTP and must come back byte for byte. A route that served something of its own
-    would be a second shell, and the two desks would drift apart unseen."""
+    desk over HTTP and must come back byte for byte, with the headers the hosted desk sends it
+    (`bundle.SHELL_HEADERS`). A route that served something of its own would be a second shell,
+    and the two desks would drift apart unseen."""
     client = TestClient(app.app, base_url="http://127.0.0.1:8765")
     for path, body in files.items():
         r = client.get(path)
         assert r.status_code == 200, f"{path} is in the bundle and the desk does not serve it"
         assert r.content == body, f"{path}: the desk serves different bytes from the bundle"
+        assert {k: r.headers.get(k) for k in bundle.SHELL_HEADERS} == bundle.SHELL_HEADERS, path
 
 
 def test_the_bundle_is_built_the_same_twice(files):
