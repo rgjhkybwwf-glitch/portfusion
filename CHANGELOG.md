@@ -100,6 +100,12 @@ prints it.
   command run as `python3 -m portfusion.<command>`: `python3 -m portfusion.record --book demo` was
   refused as an unrecognised argument. `portfusion --help` lists all fifteen commands: the seven actions, and
   the eight reached by `python3 -m` alone. `python3 -m portfusion.desk.doors.freeze` still works.
+- **The engine is a package.** `engine.py` is `engine/`, a file per topic: the store, the two
+  bases, the ledger and valuation, then `Book`, built from seven classes, each a group of its
+  methods, over the construction they share (`engine/core.py`). `portfusion.engine` offers every
+  name it did, `Book.HEADLINE` stays the one registry, and an import contract keeps the topics
+  from importing one another. pyright now checks the store, the bases, the ledger and valuation.
+  No figure, page or store moves.
 - **A hosted reader sees a fixed sentence, not a 500, when the record will not load.** The remote
   door answered 500 at every level, or handed an owner the record's own words, which name the
   Mac's folders; it now tells every reader "the record on the Mac will not load: see the Mac's

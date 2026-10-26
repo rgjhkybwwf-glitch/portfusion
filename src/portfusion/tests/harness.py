@@ -58,6 +58,30 @@ def app_name(path) -> str:
             else path.relative_to(ROOT)).as_posix()
 
 
+def engine_files() -> list[Path]:
+    """The engine's source files: the package `engine/`, one file per topic."""
+    return sorted((SRC / "engine").glob("*.py"))
+
+
+def book_classes() -> list:
+    """`Book` and every class it is built from, as the engine's files define them: `ClassDef`s."""
+    import ast
+    defs = [n for p in engine_files() for n in ast.parse(p.read_text(encoding="utf-8")).body
+            if isinstance(n, ast.ClassDef)]
+    classes = {n.name: n for n in defs}
+    assert len(classes) == len(defs), "two of the engine's files define a class of one name"
+    found, todo = [], ["Book"]
+    while todo:
+        c = classes[todo.pop(0)]
+        if c not in found:
+            found.append(c)
+            bases = [ast.unparse(b) for b in c.bases]
+            assert set(bases) <= set(classes), \
+                f"{c.name} is built from {bases}, not all of them the engine's"
+            todo += bases
+    return found
+
+
 def an_account(kind: str) -> str | None:
     """The loaded book's first account of `kind` ("shares", "spread bet"), in the register's
     order. A test that ASKS THE BOOK about an account takes it from here: a name typed in would

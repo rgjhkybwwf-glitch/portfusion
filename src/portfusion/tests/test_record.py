@@ -748,6 +748,7 @@ NAMED_ON_PURPOSE = {
     "bin/activate": "inside the venv, which git never lists",
     "brand/": "a book's own folder, which no checkout holds",
     "requirements.txt": "a book's own pin; the app's needs are pyproject.toml's",
+    "trades.csv": "buys.csv's name before 0.2.1's migration, which the CHANGELOG names",
 }
 
 

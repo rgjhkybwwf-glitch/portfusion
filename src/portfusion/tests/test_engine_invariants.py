@@ -808,7 +808,7 @@ def _walk(monkeypatch, events):
              "cost": money if way != "Sell" else None, "level_points": None,
              "proceeds": money if way == "Sell" else None, "mode": "cost"}
             for i, day, way, qty, money, _ in events]
-    monkeypatch.setattr(engine.D, "REALISATION_BY_EXIT",
+    monkeypatch.setattr(D, "REALISATION_BY_EXIT",
                         {i: rid for i, _, way, _, _, rid in events if way == "Sell"})
     return engine.share_pools(pd.DataFrame(rows))
 
