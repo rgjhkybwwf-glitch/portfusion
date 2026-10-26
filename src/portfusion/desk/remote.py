@@ -377,11 +377,11 @@ def _refused(request: Request, e: Exception) -> JSONResponse:
     return JSONResponse(status_code=403, content={"error": "refused", "detail": str(e)})
 
 
-def _signed_in_as(request: Request, who: str, key: str, result: str) -> JSONResponse:
+def _signed_in_as(request: Request, who: str, token: str, result: str) -> JSONResponse:
     device = auth.device_name(request.headers.get("user-agent"))
     auth.log(result, address(request), who=who, device=device)
     response = JSONResponse({"who": who, "level": auth.level(who)})
-    response.headers["set-cookie"] = auth.cookie(auth.open_session(who, key))
+    response.headers["set-cookie"] = auth.cookie(token)
     return response
 
 
@@ -397,10 +397,10 @@ def sign_in_options(request: Request):
 @door.post("/auth/verify")
 def sign_in(request: Request, credential: dict = Body(...)):
     try:
-        who, key = auth.sign_in_verify(credential, RP_ID, ORIGIN)
+        who, token = auth.sign_in_verify(credential, RP_ID, ORIGIN)
     except auth.Refused as e:
         return _refused(request, e)
-    return _signed_in_as(request, who, key, "signed in")
+    return _signed_in_as(request, who, token, "signed in")
 
 
 @door.post("/auth/enrol/options")
@@ -416,11 +416,11 @@ def enrol_options(request: Request, body: dict = Body(...)):
 @door.post("/auth/enrol/verify")
 def enrol(request: Request, credential: dict = Body(...)):
     try:
-        who, key = auth.enrol_verify(credential, RP_ID, ORIGIN, device=auth.device_name(
+        who, token = auth.enrol_verify(credential, RP_ID, ORIGIN, device=auth.device_name(
             request.headers.get("user-agent")))
     except auth.Refused as e:
         return _refused(request, e)
-    return _signed_in_as(request, who, key, "enrolled")
+    return _signed_in_as(request, who, token, "enrolled")
 
 
 @door.post("/auth/sign-out")
