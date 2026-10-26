@@ -21,24 +21,18 @@ import shutil
 import subprocess
 import sys
 
+from portfusion import secret_scan
+
 #: The folders a book keeps beside its store, each made empty.
 FOLDERS = ("_archive/statements", "_archive/bench", "_inbox")
 
-#: WHAT A BOOK'S OWN REPOSITORY MUST NEVER HOLD: the files that reach its brokers and readers, and
-#: the documents still being worked on. Written as the book's .gitignore.
+#: WHAT A BOOK'S OWN REPOSITORY MUST NEVER HOLD: the files that reach its brokers and readers
+#: (`secret_scan.SECRET_FILES`), and the documents still being worked on. Written as the book's
+#: .gitignore.
 GITIGNORE = """\
 # The files that reach the brokers and the readers, and the shapes a key arrives in from
 # anywhere else: never in git.
-credentials.*
-secrets.*
-*.key
-.env
-.ig_session.json
-.tv_session.json
-.desk_passkeys.json
-.desk_readers.json
-.desk_signins.jsonl
-.desk_proxy_secret.json
+""" + "".join(f"{pattern}\n" for pattern in secret_scan.SECRET_FILES) + """\
 # A document resting in the inbox is unfinished work.
 _inbox/*
 # The book's own venv, which runs the portfusion `requirements.txt` names, and what Python and
@@ -49,10 +43,11 @@ __pycache__/
 .DS_Store
 """
 
-#: THE BOOK'S SECRET GATE, as `.githooks/pre-commit`. The gate is the app's
-#: (`portfusion/hooks/pre_commit.py`); this finds the portfusion the book runs and asks it, and
-#: where none can be found the commit is REFUSED: a gate that cannot run has checked nothing.
-HOOK = """\
+#: THE BOOK'S SECRET GATE, as `.githooks/pre-commit` on the files and `.githooks/commit-msg` on the
+#: message. The gate is the app's (`portfusion/hooks/pre_commit.py`); each finds the portfusion
+#: the book runs and asks it, and where none can be found the commit is REFUSED: a gate that
+#: cannot run has checked nothing.
+_GATE = """\
 #!/bin/sh
 # THIS BOOK'S SECRET GATE, written by `portfusion init`: a commit that would put a credential into
 # git is refused. The gate is PortFusion's own; this asks the portfusion the book runs.
@@ -60,13 +55,15 @@ top=$(git rev-parse --show-toplevel)
 main=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")
 for py in "$top/.venv/bin/python3" "$main/.venv/bin/python3" python3; do
     if "$py" -c "import portfusion.hooks.pre_commit" 2>/dev/null; then
-        exec "$py" -m portfusion.hooks.pre_commit "$@"
+        exec "$py" -m portfusion.hooks.pre_commit {args}"$@"
     fi
 done
-echo "pre-commit: REFUSED. The secret gate could not run: no portfusion in the book's .venv or on PATH." >&2
+echo "{hook}: REFUSED. The secret gate could not run: no portfusion in the book's .venv or on PATH." >&2
 echo "  Install it (pip install -r requirements.txt) or activate the venv that has it, and commit again." >&2
 exit 1
 """
+HOOK = _GATE.format(hook="pre-commit", args="")
+MSG_HOOK = _GATE.format(hook="commit-msg", args="--message ")
 
 
 #: THE BOOK'S GUARD ON MAIN, as `.githooks/pre-push`: a push that deletes `main` or rewrites it is
@@ -147,8 +144,8 @@ def start_history(folder: pathlib.Path) -> str:
     written whether or not git is there.
 
     Side effects: runs `git init` and `git commit` in `folder`, and points its hooks at the
-    book's `.githooks/`, so the secret gate (`HOOK`) and the guard on main (`PUSH_HOOK`) are on
-    from that first commit."""
+    book's `.githooks/`, so the secret gate (`HOOK`, `MSG_HOOK`) and the guard on main
+    (`PUSH_HOOK`) are on from that first commit."""
     # THE GATE GUARDS THE FIRST COMMIT TOO, run by the Python running this: the book has no venv
     # yet, and this one has portfusion in it.
     env = {**os.environ, "PATH": os.pathsep.join([str(pathlib.Path(sys.executable).parent),
@@ -239,7 +236,7 @@ def create(folder, practice: bool = False, begins: int | str | None = None,
         (folder / name).mkdir(parents=True, exist_ok=True)
     (folder / ".gitignore").write_text(GITIGNORE, encoding="utf-8")
     (folder / ".githooks").mkdir(exist_ok=True)
-    hooks = [("pre-commit", HOOK), ("pre-push", PUSH_HOOK)]
+    hooks = [("pre-commit", HOOK), ("commit-msg", MSG_HOOK), ("pre-push", PUSH_HOOK)]
     if push_on_commit:
         hooks.append(("post-commit", BACKUP_HOOK))
     for name, text in hooks:

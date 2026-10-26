@@ -10,14 +10,18 @@ Three checks, over what is STAGED rather than the working tree:
    list is asked of `git check-ignore --no-index`, so it is `.gitignore`'s and nothing here
    restates it.
 2. A value from the credential files, searched for in every staged file's bytes, PDFs
-   included.
+   included, and in a file that was a link until this commit.
 3. A key-shaped string: the formats a secret could arrive in that are not in those files.
+
+The message does not exist yet when the files are checked, so git hands it over to a hook of its
+own: `commit-msg` runs `--message <file>`, the second and third checks over the message.
 
 What counts as a credential, and which fields are exempt, is `portfusion/secret_scan.py`, which the
 hosted desk's publish asks too. THE GATE IS THE APP'S, so every repository it guards asks the one
 copy: this checkout's `.githooks/pre-commit` runs it from `src/`, and a book's, which
 `portfusion init` writes (`init.HOOK`), runs it from the portfusion the book has installed.
-`git commit --no-verify` bypasses it; that is git's own escape hatch and deliberately the only one.
+`git commit --no-verify` bypasses both; that is git's own escape hatch and deliberately the only
+one.
 
 `--history` runs the same checks over every file and commit message ever committed, on any
 branch or tag. That is the scan to run before the history goes anywhere new.
@@ -51,16 +55,17 @@ def credential_values():
     any file was found."""
     values, found, unreadable = secret_scan.credential_values(checkouts())
     for name in unreadable:
-        log.warning(f"pre-commit: {name} is not valid JSON, so its values were not checked")
+        log.warning(f"pre-commit: {name} does not parse, so its values were not checked")
     return values, found
 
 
 def staged():
-    """[(path, blob)] for every file this commit adds or changes. Each raw entry is
+    """[(path, blob)] for every file this commit adds, changes or changes the type of (a link
+    made a file). Each raw entry is
     `:<old mode> <new mode> <old blob> <new blob> <status>` then the path; a submodule (mode
     160000) is a commit, not a file, and is skipped."""
     out = git("diff", "--cached", "--raw", "-z", "--no-abbrev", "--no-renames",
-              "--diff-filter=AM")
+              "--diff-filter=AMT")
     fields = out.split(b"\0")
     return [(fields[i + 1].decode(), fields[i].split()[3].decode())
             for i in range(0, len(fields) - 1, 2)
@@ -109,14 +114,32 @@ def messages(values):
         yield from matches(f"commit {sha[:7].decode()} message", body, values)
 
 
+#: The line `git commit -v` puts between the message and the diff, after git's comment string:
+#: the diff below it is what the files' check has read.
+SCISSORS = b" ------------------------ >8 ------------------------"
+
+
+def comment() -> bytes:
+    """What git starts a comment line with: `core.commentChar`, or `#`, its default and what
+    `auto` most often picks."""
+    said = subprocess.run(["git", "config", "--get", "core.commentChar"],
+                          capture_output=True).stdout.strip()
+    return said if said and said != b"auto" else b"#"
+
+
 def main(argv):
     history = "--history" in argv
+    message = argv[1] if argv[:1] == ["--message"] and len(argv) > 1 else None
     values, found = credential_values()
-    files = ever_committed() if history else staged()
-    problems = sorted(set(findings(files, values)))
+    if message is not None:
+        body = pathlib.Path(message).read_bytes().split(comment() + SCISSORS)[0]
+        problems, files = sorted(set(matches("the commit message", body, values))), []
+    else:
+        files = ever_committed() if history else staged()
+        problems = sorted(set(findings(files, values)))
     if history:
         problems += sorted(set(messages(values)))
-    if not found:
+    if not found and message is None:
         log.warning("pre-commit: no credential files here, so only the ignore list and the key "
                     "shapes were checked")
     if not problems:
@@ -125,16 +148,19 @@ def main(argv):
                      f"message, against {len(values)} credential values and {len(KEY_SHAPES)} "
                      f"key shapes.")
         return 0
-    log.error("pre-commit: REFUSED. This would put a credential into git.\n" if not history
+    hook = "commit-msg" if message is not None else "pre-commit"
+    log.error(f"{hook}: REFUSED. This would put a credential into git.\n" if not history
               else "history: NOT CLEAN.\n")
     width = max(len(w) for w, _ in problems)
     for where, why in problems:
         log.error(f"  {where:{width}}  {why}")
-    if not history:
+    if message is not None:
+        log.error("\nWrite the message again without it, and commit again.")
+    elif not history:
         log.error("\nUnstage it with `git restore --staged <file>` and commit again. A key that "
                   "was ever pushed is not recalled by deleting it: change it at the broker.")
     return 1
 
 
-if __name__ == "__main__":                      # python3 -m portfusion.hooks.pre_commit
+if __name__ == "__main__":      # python3 -m portfusion.hooks.pre_commit [--history | --message F]
     sys.exit(main(sys.argv[1:]))

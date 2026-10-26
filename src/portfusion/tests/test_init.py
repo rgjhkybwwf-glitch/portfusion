@@ -299,26 +299,32 @@ def test_a_new_book_never_tracks_its_venv_or_what_python_leaves(tmp_path):
     assert untracked == "", untracked
 
 
-def test_a_new_book_never_tracks_a_key_file(tmp_path):
-    """A KEY KEPT BESIDE THE BOOK stays out of git: the .gitignore names the shapes a key arrives
-    in, and the gate refuses whatever it ignores."""
-    book = _started(tmp_path)
-    for leftover in (".env", "broker.key", "secrets.json"):
-        (book / leftover).write_text("")
-    untracked = subprocess.run(["git", "status", "--porcelain"], cwd=book, capture_output=True,
-                               text=True).stdout
-    assert untracked == "", untracked
+@pytest.mark.parametrize("where", ["a new book", "this checkout"])
+def test_no_secret_file_is_tracked_by_a_new_book_or_this_checkout(where, tmp_path, request):
+    """A KEY KEPT BESIDE THE BOOK stays out of git: every file `secret_scan.SECRET_FILES` names is
+    on the .gitignore `init` writes, and on this checkout's, and the gate refuses whatever it
+    ignores."""
+    from portfusion import secret_scan
+    folder = _started(tmp_path) if where == "a new book" else request.getfixturevalue("repo_root")
+    names = [pattern.replace("*", "x") for pattern in secret_scan.SECRET_FILES]
+    ignored = subprocess.run(["git", "check-ignore", "--no-index", "--stdin"], cwd=folder,
+                             input="\n".join(names), capture_output=True, text=True).stdout
+    assert sorted(ignored.split()) == sorted(names), f"{where} tracks a secret file"
 
 
 def test_a_new_books_secret_gate_refuses_a_credential(tmp_path):
-    """A NEW BOOK HOLDS ITS OWNER'S CREDENTIALS TOO, so it has a gate: the app's, on from the
-    first commit, run by the portfusion the book has installed."""
+    """A NEW BOOK HOLDS ITS OWNER'S CREDENTIALS TOO, so it has a gate, on its files and its
+    messages: the app's, on from the first commit, run by the portfusion the book has installed."""
     book = _started(tmp_path)
     assert "pre-commit" in subprocess.run(["git", "ls-files", ".githooks"], cwd=book,
                                           capture_output=True, text=True).stdout
     result = _commit(book, [str(pathlib.Path(sys.executable).parent), "/usr/bin", "/bin"])
     assert result.returncode != 0 and "REFUSED" in result.stderr, result.stderr
     assert "A_BROKER/api_key" in result.stderr
+    subprocess.run(["git", "restore", "--staged", "notes.md"], cwd=book, check=True)
+    said = subprocess.run(["git", "commit", "--allow-empty", "-qm", (book / "notes.md").read_text()],
+                          cwd=book, env=_git_env(), capture_output=True, text=True)
+    assert said.returncode != 0 and "commit-msg: REFUSED" in said.stderr, said.stderr
 
 
 def test_a_new_book_refuses_a_push_that_takes_anything_from_main(tmp_path):
