@@ -53,6 +53,13 @@ async def own_page_only(request: Request, call_next):
     return await call_next(request)
 
 
+@app.exception_handler(engine.RecordUnavailable)
+def unavailable(request: Request, e: engine.RecordUnavailable) -> JSONResponse:
+    """A RECORD THAT WILL NOT LOAD, on any route, is a 503 carrying the record's own words, which
+    the shell shows: they name the exact file, and paraphrasing them would lose that."""
+    return JSONResponse(status_code=503, content={"error": "record unavailable", "detail": str(e)})
+
+
 @app.get("/")
 def index():
     """The shell, built by `desk/bundle.py` — the same bytes the hosted desk is published from.
@@ -183,14 +190,9 @@ def state():
 
     A RECORD THAT WILL NOT LOAD is a 503 carrying its own message, which the shell shows: some
     panels read the record on import, so the list itself cannot be drawn."""
-    try:
-        listed = panels.all_panels()
-    except engine.RecordUnavailable as e:
-        return JSONResponse(status_code=503,
-                            content={"error": "record unavailable", "detail": str(e)})
     return {
         "panels": [{"name": m.NAME, "title": m.TITLE, "order": m.ORDER,
-                    "apart": getattr(m, "APART", False)} for m in listed],
+                    "apart": getattr(m, "APART", False)} for m in panels.all_panels()],
         "actions": [a.as_json() for a in actions.all_actions()],
         "freshness": engine.freshness(),
     }
@@ -213,11 +215,7 @@ def report(quarter_end: str):
     import re
     if not re.match(REPORT_DATE, quarter_end):
         raise HTTPException(400, f"{quarter_end!r} is not the end of a quarter")
-    try:
-        html, gaps = engine.report_page(quarter_end)
-    except engine.RecordUnavailable as e:
-        return JSONResponse(status_code=503,
-                            content={"error": "record unavailable", "detail": str(e)})
+    html, gaps = engine.report_page(quarter_end)
     if gaps:
         return JSONResponse(status_code=409, content={"error": "not ready",
                                                       "detail": " · ".join(gaps)})
@@ -228,17 +226,11 @@ def report(quarter_end: str):
 @app.get("/api/panel/{name}")
 def panel(name: str):
     try:
-        try:
-            mod = panels.get(name)
-        except KeyError:
-            raise HTTPException(404, f"no panel named {name!r}")
-        return {"name": mod.NAME, "title": mod.TITLE, "heads": panels.heads(mod),
-                "precision": engine.precision(), "data": mod.data()}
-    except engine.RecordUnavailable as e:
-        # The record refused to load. Hand its own message through verbatim — it names the
-        # exact file that was missing, and paraphrasing it would throw away the useful half.
-        return JSONResponse(status_code=503,
-                            content={"error": "record unavailable", "detail": str(e)})
+        mod = panels.get(name)
+    except KeyError:
+        raise HTTPException(404, f"no panel named {name!r}")
+    return {"name": mod.NAME, "title": mod.TITLE, "heads": panels.heads(mod),
+            "precision": engine.precision(), "data": mod.data()}
 
 
 # =================================================================================================
@@ -454,11 +446,7 @@ def run_action(name: str, body: dict = Body(default={})):
         raise HTTPException(
             409, f"{action.label!r} writes {action.writes!r} and is not enabled until "
                  f"{action.as_json()['enabled_from']}")
-    try:
-        return {"action": name, "ran": True, "result": action.run(**(body or {}))}
-    except engine.RecordUnavailable as e:
-        return JSONResponse(status_code=503,
-                            content={"error": "record unavailable", "detail": str(e)})
+    return {"action": name, "ran": True, "result": action.run(**(body or {}))}
 
 
 @app.post("/api/sweep-status")
@@ -469,11 +457,7 @@ def sweep_status(body: dict = Body(default={})):
     another call to the broker. This is the half that must NOT be cached: what has happened to
     those events since.
     """
-    try:
-        return _bench.sweep_status(body.get("refs") or [])
-    except engine.RecordUnavailable as e:
-        return JSONResponse(status_code=503,
-                            content={"error": "record unavailable", "detail": str(e)})
+    return _bench.sweep_status(body.get("refs") or [])
 
 
 @app.get("/api/holdings")
@@ -484,9 +468,6 @@ def holdings(by: str = "", account: str = ""):
         return panel.query(account=account or None, by=by or panel.GROUPINGS[0])
     except ValueError as e:
         raise HTTPException(400, str(e))
-    except engine.RecordUnavailable as e:
-        return JSONResponse(status_code=503,
-                            content={"error": "record unavailable", "detail": str(e)})
 
 
 @app.get("/api/round-trips")
@@ -501,9 +482,6 @@ def round_trips(ticker: str = "", account: str = "", start: str = "", end: str =
                            view=view)
     except ValueError as e:
         raise HTTPException(400, str(e))
-    except engine.RecordUnavailable as e:
-        return JSONResponse(status_code=503,
-                            content={"error": "record unavailable", "detail": str(e)})
 
 
 @app.get("/api/trades")
@@ -515,8 +493,4 @@ def trades(start: str = "", end: str = "", account: str = "",
     so one click gives the shares AND the spread bet rather than half the history.
     """
     from portfusion.desk.panels import trades as panel
-    try:
-        return panel.query(start, end, account, ticker, direction, company or None)
-    except engine.RecordUnavailable as e:
-        return JSONResponse(status_code=503,
-                            content={"error": "record unavailable", "detail": str(e)})
+    return panel.query(start, end, account, ticker, direction, company or None)

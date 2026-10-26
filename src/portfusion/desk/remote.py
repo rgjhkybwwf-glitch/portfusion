@@ -45,15 +45,26 @@ from fastapi import Body, FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse, Response
 
 from portfusion.desk import app as local, auth, bundle, engine, naming
-from portfusion.record import rules
+from portfusion.record import schema
 
+
+def _settings() -> dict:
+    """The book's settings, read alone, so a record that will not load leaves the door's own
+    readable; none when they cannot be read, and the door stays shut."""
+    try:
+        return dict(schema.load("settings"))
+    except (OSError, ValueError):
+        return {}
+
+
+_SETTINGS = _settings()
 #: Where the hosted desk lives, the book's `hosted_origin`: the only page whose writes this door
 #: accepts.
-ORIGIN: str | None = rules.SETTINGS.get("hosted_origin") or None
+ORIGIN: str | None = _SETTINGS.get("hosted_origin") or None
 #: Whose passkeys these are, the book's `passkey_domain`: the book's domain rather than the desk's
 #: host, so one enrolment holds wherever under it the desk is served; `ORIGIN` is still checked
 #: exactly.
-RP_ID: str | None = rules.SETTINGS.get("passkey_domain") or None
+RP_ID: str | None = _SETTINGS.get("passkey_domain") or None
 
 
 def unconfigured() -> list[str]:
@@ -220,6 +231,29 @@ async def signed_in_from_the_hosted_page(request: Request, call_next):
         response = await call_next(request)
     response.headers.update(PRIVATE)
     return response
+
+
+#: What every remote reader is told when the record on the Mac will not load. The record's own
+#: words name the Mac's folders, so they stay on the Mac's desk.
+UNAVAILABLE = "the record on the Mac will not load: see the Mac's desk"
+
+
+@door.exception_handler(engine.RecordUnavailable)
+def unavailable(request: Request, e: Exception) -> JSONResponse:
+    return JSONResponse(status_code=503,
+                        content={"error": "record unavailable", "detail": UNAVAILABLE})
+
+
+@door.exception_handler(HTTPException)
+def renamed_refusal(request: Request, e: HTTPException) -> Response:
+    """A refusal's words are read as an answer is: renamed for a level that reads no names."""
+    answer = JSONResponse({"detail": e.detail}, status_code=e.status_code, headers=e.headers)
+    if getattr(request.state, "opens", None) is None:          # signing in: no level yet
+        return answer
+    try:
+        return _as_read(request, answer)
+    except engine.RecordUnavailable as unloaded:
+        return unavailable(request, unloaded)
 
 
 def _as_read(request: Request, answer):

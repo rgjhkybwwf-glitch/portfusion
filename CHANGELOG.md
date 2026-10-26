@@ -106,6 +106,12 @@ prints it.
   name it did, `Book.HEADLINE` stays the one registry, and an import contract keeps the topics
   from importing one another. pyright now checks the store, the bases, the ledger and valuation.
   No figure, page or store moves.
+- **A hosted reader sees a fixed sentence, not a 500, when the record will not load.** The remote
+  door answered 500 at every level, or handed an owner the record's own words, which name the
+  Mac's folders; it now tells every reader "the record on the Mac will not load: see the Mac's
+  desk". A refusal's words are renamed for a level that reads no names, as its answers are. A
+  desk with a hosted door now starts when a cell will not load: the door reads its two settings
+  alone.
 
 ## 0.3.2 — beta, 24 Oct 2026
 

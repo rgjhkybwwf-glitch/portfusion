@@ -462,8 +462,9 @@ def test_a_name_off_the_workbench_reads_nothing_from_the_books_folder(client, tm
 
 def test_a_record_that_will_not_load_is_unavailable_on_every_panel(tmp_path):
     """ONE CELL NO LOADER ACCEPTS: the shell and every panel say "record unavailable" (503), the
-    shell with the record's own words naming the file. Served from a child process, on a copy of
-    the demo with one cell no loader accepts, so this process's record is untouched."""
+    shell with the record's own words naming the file, and the remote door still opens with the
+    book's settings. Served from a child process, on a copy of the demo with one cell no loader
+    accepts, so this process's record is untouched."""
     import json
     import shutil
     import subprocess
@@ -480,19 +481,21 @@ def test_a_record_that_will_not_load_is_unavailable_on_every_panel(tmp_path):
     probe = (
         "import json\n"
         "from fastapi.testclient import TestClient\n"
-        "from portfusion.desk import app, panels\n"
+        "from portfusion.desk import app, panels, remote\n"
         f"c = TestClient(app.app, base_url={DESK!r})\n"
         "names = [p.stem.replace('_', '-') for p in __import__('pathlib').Path(panels.__file__)"
         ".parent.glob('[a-z]*.py')]\n"
         "state = c.get('/api/state')\n"
         "out = {n: c.get(f'/api/panel/{n}').status_code for n in names}\n"
         "out['/api/state'] = [state.status_code, state.json().get('detail', '')]\n"
+        "out['remote'] = remote.unconfigured()\n"
         "print(json.dumps(out))\n")
     run = subprocess.run([sys.executable, "-c", probe], capture_output=True, text=True,
                          env={**__import__("os").environ, "PORTFUSION_BOOK": str(book)})
     assert run.returncode == 0, run.stderr[-1500:]
     codes = json.loads(run.stdout.strip().splitlines()[-1])
     status, said = codes.pop("/api/state")
+    assert codes.pop("remote") == [], "the remote door did not read the book's settings"
     assert status == 503 and "buys.csv" in said, (status, said)
     assert len(codes) == 13 and set(codes.values()) == {503}, codes
 
