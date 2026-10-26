@@ -138,6 +138,9 @@ prints it.
   `PORTFUSION_BOOK=demo` pushes without the leak test. **An existing book gets the new hook and
   ignore list only when its pin moves**: the audit then names `.githooks/commit-msg` and
   `.gitignore`, and both are copied from a new book (`portfusion init <folder>`).
+- **The desk always listens on 127.0.0.1.** `portfusion desk --host` is gone: no browser could use
+  it, and a script that forged the loopback name was answered as the owner, an owner-level enrol
+  code included. SECURITY.md states what the Mac's door assumes: one user account on the Mac.
 
 ## 0.3.2 — beta, 24 Oct 2026
 

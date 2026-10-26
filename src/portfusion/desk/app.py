@@ -40,7 +40,8 @@ async def own_page_only(request: Request, call_next):
 
     THE ORIGIN, on anything but a read. A browser names the page a write comes from, and only
     the desk's own address may write. A request with no Origin did not come from a page — a
-    script on this Mac, which could open the files directly anyway.
+    process on this Mac, answered as the owner. That holds while the Mac has one user account,
+    whose processes could open the files directly anyway (SECURITY.md).
     """
     host = request.headers.get("host", "")
     if host.rsplit(":", 1)[0] not in LOOPBACK:

@@ -172,11 +172,25 @@ def test_a_write_from_another_page_is_refused(client):
     assert client.post(url).status_code == 404, "a script on this Mac (no Origin) was refused"
 
 
-def test_a_request_for_another_host_is_refused(client):
+def test_a_request_for_another_host_is_refused(client, monkeypatch):
     """DNS REBINDING, which `app.own_page_only()` explains. Any name but the loopback ones is
-    refused, reads included."""
+    refused, reads included. And BOTH DOORS LISTEN ON 127.0.0.1 ONLY: `portfusion desk` is run
+    with the server stood in for, with and without the remote door, and has no flag to move it."""
+    import uvicorn
+    from portfusion.desk import __main__ as desk, remote
     assert client.get("/api/health", headers={"Host": "evil.example:8765"}).status_code == 403
     assert client.get("/api/health", headers={"Host": "localhost:8765"}).status_code == 200
+    bound = []
+    monkeypatch.setattr(uvicorn, "run", lambda app, **kw: bound.append(kw.get("host")))
+    monkeypatch.setattr(uvicorn, "Config", lambda app, **kw: bound.append(kw.get("host")))
+    monkeypatch.setattr(uvicorn, "Server", lambda config: None)
+    monkeypatch.setattr(desk.asyncio, "run", lambda serving: serving.close())
+    monkeypatch.setattr(remote, "PORT", None)
+    desk.main(["--no-open"])
+    desk.main(["--no-open", "--remote-port", "8768"])
+    assert bound == ["127.0.0.1"] * 3, bound
+    with pytest.raises(SystemExit):
+        desk.main(["--no-open", "--host", "0.0.0.0"])
 
 
 def test_the_page_and_the_health_line_answer(client):
