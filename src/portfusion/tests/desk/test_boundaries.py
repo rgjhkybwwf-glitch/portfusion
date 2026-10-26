@@ -186,7 +186,6 @@ def test_reaches_is_not_a_fourth_value_on_writes():
 #:   record/migrations.py
 #:                    MOVES A BOOK to this release's shape, on `portfusion migrate --write`, and
 #:                    puts every file back if the book will not open.
-#:   record/schema.py `dump()`, which nothing calls.
 #:
 #: desk/icon.py RETURNS BYTES and writes nothing — if it ever starts writing, this set is what
 #: says so.
@@ -194,7 +193,7 @@ WRITERS = {"desk/agent.py", "desk/auth.py", "desk/intake/bench.py", "desk/doors/
            "desk/doors/envelope.py", "desk/intake/dropoff.py", "desk/doors/freeze.py",
            "desk/doors/marks.py", "desk/doors/observations.py", "desk/doors/research_notes.py",
            "desk/intake/withdraw.py", "desk/publish.py", "feeds/ig.py", "feeds/tv.py",
-           "history/_appendonly.py", "init/__init__.py", "record/migrations.py", "record/schema.py"}
+           "history/_appendonly.py", "init/__init__.py", "record/migrations.py"}
 
 
 @functools.cache

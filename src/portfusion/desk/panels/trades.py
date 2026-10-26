@@ -15,6 +15,7 @@ from __future__ import annotations
 
 from portfusion.desk import engine
 from portfusion.desk.panels import _shape
+from portfusion.record import schema
 
 NAME = "trades"
 TITLE = "Trades"
@@ -64,7 +65,6 @@ def tickers_for_company(company: str) -> list[str]:
     that you want both legs of it. From store/securities.csv rather than from the open holdings,
     because a closed position still has a history and would be missing from the latter.
     """
-    from portfusion.record import schema
     return sorted(r[0] for r in schema.load("securities") if r[1] == company)
 
 
@@ -98,7 +98,6 @@ def _rows(b, frame) -> list[dict]:
 
 def _with_company(frame):
     """The ledger's rows with each code's company beside it, from the securities register."""
-    from portfusion.record import schema
     by_code = {r[0]: r[1] for r in schema.load("securities")}
     return frame.assign(company=frame["ticker"].map(by_code))
 
@@ -106,7 +105,6 @@ def _with_company(frame):
 def _companies(frame) -> list[str]:
     """The companies that actually appear in the ledger, in name order. A register entry with
     no trade behind it would be an option that returns nothing."""
-    from portfusion.record import schema
     by_code = {r[0]: r[1] for r in schema.load("securities")}
     return sorted({by_code[c] for c in _shape.uniques(frame, "ticker") if c in by_code})
 

@@ -19,7 +19,7 @@ from portfusion.record import schema
 
 # THE LOADED BOOK'S bench archive — commit.py owns it, and asking it here is what lets these
 # audits run on whatever book PORTFUSION_BOOK names rather than this repo's.
-from portfusion.desk.doors import commit   # noqa: E402
+from portfusion.desk.doors import commit
 
 BENCH = commit.archive()
 

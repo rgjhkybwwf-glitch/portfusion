@@ -21,7 +21,7 @@ if sys.version_info < (3, 13):
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 from portfusion.hooks.pre_commit import main  # noqa: E402 — the checkout's own app
-from portfusion.log import log  # noqa: E402
+from portfusion.log import log  # noqa: E402 — the checkout's own app
 
 
 #: Each dev tool the gate runs from .venv: its arguments, and what its failure means.

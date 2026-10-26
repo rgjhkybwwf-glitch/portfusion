@@ -141,7 +141,8 @@ def write_call(node) -> str | None:
     argument; a string's replace takes two, a frame's rename takes keywords — `os.rename`,
     `os.remove`, `shutil.copy`, `os.open` with a flag that writes, and `open()` with a mode that
     writes, appends or creates. A csv writer's rows are not counted: they go to whatever it was
-    handed, and a file is caught where it was opened."""
+    handed, and a file is caught where it was opened. The syntax has no types, so a method that
+    renames words, not a file, takes another name: `naming.Naming.apply()`."""
     import ast
     if not isinstance(node, ast.Call):
         return None

@@ -262,7 +262,7 @@ def test_only_one_quarter_return_series_is_exposed():
         "the net-invested series is beside the net asset value series"
 
 
-def test_no_renderer_names_simple_dietz(repo_root):
+def test_no_renderer_names_simple_dietz():
     """The book runs modified Dietz, day-weighted, whose formula `Book._dietz_row()` states.
     Simple Dietz must not appear where a reader meets the method: a renderer saying it describes
     a figure the engine does not make.

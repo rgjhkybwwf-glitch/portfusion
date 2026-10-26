@@ -34,8 +34,8 @@ def share_pools(ledger: pd.DataFrame) -> pd.DataFrame:
     share sale released and what an account still holds.
 
     A holding is one account's shares in one ticker, and every share in it costs the average
-    (S.104). Each is walked in date order — undated pre-baseline buys first, buys before sales on
-    a day, sales in sale id order. A buy adds its quantity and cost; a corporate action is a buy of
+    (S.104). Each is walked in date order — buys before sales on a day, sales in sale id
+    order. A buy adds its quantity and cost; a corporate action is a buy of
     nil cost, so it moves the quantity alone. A sale releases quantity x the average, or ALL that
     remains when it empties the pool, so rounding leaves nothing behind. An emptied pool bought
     again is a new holding, opened on its own date and closed under its own realisation.
@@ -52,8 +52,7 @@ def share_pools(ledger: pd.DataFrame) -> pd.DataFrame:
     """
     shares = ledger[(ledger["held_as"] == "shares") & ledger["direction"].isin(("Buy", "Sell"))]
     walk = (shares.assign(_sale=(shares["direction"] == "Sell").astype(int))
-                  .sort_values(["acct", "ticker", "date", "_sale", "event_id"],
-                               na_position="first", kind="stable"))
+                  .sort_values(["acct", "ticker", "date", "_sale", "event_id"], kind="stable"))
     out: dict[str, dict] = {}
     home: dict[str, tuple] = {}
     wrong: list[str] = []
@@ -76,7 +75,7 @@ def share_pools(ledger: pd.DataFrame) -> pd.DataFrame:
             if home.setdefault(rid, (acct, ticker, n)) != (acct, ticker, n):
                 wrong.append(f"{rid} spans two holdings — {home[rid][0]} {home[rid][1]} and "
                              f"{acct} {ticker}")
-            day = "an undated day" if pd.isna(r["date"]) else f"{r['date']:%Y-%m-%d}"
+            day = f"{r['date']:%Y-%m-%d}"
             if r["qty"] > qty + 1e-9:
                 raise ValueError(
                     f"{r['event_id']} ({rid}) sells {r['qty']:g} {ticker} from {acct}, which held "

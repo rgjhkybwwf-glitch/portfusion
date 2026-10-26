@@ -15,9 +15,11 @@ It is the ONE extractor: the bench imports it. It still runs standalone, which i
 for a document that will not parse.
 """
 import csv
+import datetime as _dt
 import io
 import os
 import sys
+from zoneinfo import ZoneInfo
 
 from portfusion.record import schema
 from portfusion.log import log
@@ -101,8 +103,6 @@ def modified(name):
     UK WALL-CLOCK TIME, as a document's own instant is (`rules.utc_instant()` reads it so). The
     Mac's own zone would put it off by the Mac's distance from London.
     """
-    import datetime as _dt
-    from zoneinfo import ZoneInfo
     try:
         path = _located(name)
     except FileNotFoundError:

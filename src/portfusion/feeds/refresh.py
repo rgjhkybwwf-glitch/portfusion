@@ -37,8 +37,6 @@ def _part(fn) -> dict:
     """One part of the sweep: its answer, or its failure in the vendor's own words."""
     try:
         return {"ok": True, **fn()}
-    except FileNotFoundError as e:
-        return {"ok": False, "error": f"no credentials: {e}"}
     except Exception as e:                          # noqa: BLE001 — the vendor, named
         return {"ok": False, "error": f"{type(e).__name__}: {e}"}
 
@@ -59,7 +57,7 @@ def _ig_now() -> tuple[dict, dict]:
     the levels fail, since a balance is worth having when a market is untradeable."""
     try:
         from portfusion.feeds import ig
-    except Exception as e:                          # noqa: BLE001
+    except Exception as e:      # noqa: BLE001 — an import runs the module, which can raise anything
         failed = {"ok": False, "error": f"feeds/ig.py could not be imported: {e}"}
         return failed, {**failed, "gap_seconds": None}
     levels = _part(ig.contract_levels)
@@ -80,7 +78,7 @@ def _ig_closes(on: str, filed=None) -> dict:
     statement that cannot be read costs the bar closes nothing."""
     try:
         from portfusion.feeds import ig
-    except Exception as e:                          # noqa: BLE001
+    except Exception as e:      # noqa: BLE001 — an import runs the module, which can raise anything
         return {"ok": False, "error": f"feeds/ig.py could not be imported: {e}"}
     r = _part(lambda: ig.contract_closes(on))
     if not r["ok"] or filed is None:

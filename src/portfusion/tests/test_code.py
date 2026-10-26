@@ -289,3 +289,21 @@ def test_nothing_outside_the_tests_prints(project_files):
              for n in ast.walk(_tree(p))
              if isinstance(n, ast.Call) and isinstance(n.func, ast.Name) and n.func.id == "print"]
     assert not found, f"these print; use `from portfusion.log import log`: {found}"
+
+
+def _asks_for_nothing_it_uses(tree, fixture: str) -> list[int]:
+    """The lines of each function in `tree` that takes `fixture` and never names it."""
+    return [f.lineno for f in ast.walk(tree) if isinstance(f, ast.FunctionDef)
+            and fixture in {a.arg for a in f.args.args}
+            and fixture not in {n.id for n in ast.walk(f) if isinstance(n, ast.Name)}]
+
+
+def test_a_test_asks_for_the_checkout_only_to_read_it():
+    """`repo_root` SKIPS A TEST ON AN INSTALLED COPY, saying it reads the checkout. A test that
+    asks for it and reads only the package skips for nothing, and the wheel's run of the suite
+    loses it."""
+    planted = ast.parse("def test_x(repo_root):\n    assert 1\n")
+    assert _asks_for_nothing_it_uses(planted, "repo_root") == [1]
+    unused = [f"{p.relative_to(SRC)}:{n}" for p in sorted(TESTS.rglob("*.py"))
+              for n in _asks_for_nothing_it_uses(_tree(p), "repo_root")]
+    assert not unused, f"these ask for the checkout and never read it: {unused}"

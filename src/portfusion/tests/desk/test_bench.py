@@ -16,7 +16,7 @@ from desk_support import (GOOD_CLASS, GOOD_DOCUMENT, GOOD_TRADE, GOOD_EVIDENCE, 
 # that each refuses what it should, and that it lets the legitimate case through. A gate
 # only tested on the refusing side is how you end up blocking real work.
 # =====================================================================================
-from portfusion.desk.intake import bench as _bench                                    # noqa: E402
+from portfusion.desk.intake import bench as _bench
 from portfusion.desk.panels import bench as bench_panel
 from portfusion.feeds import ig as _ig
 from harness import SRC, needs, holds, free_id, desk_script
@@ -272,18 +272,18 @@ def test_a_trade_whose_source_is_not_its_kinds_format_is_refused(item):
     assert next(g for g in _bench.gates(item) if g["name"] == "rows")["ok"]
 
 
-def test_the_authority_box_is_shown_and_not_typed(repo_root):
+def test_the_authority_box_is_shown_and_not_typed():
     """The record keeps no typed authority, so the box is read-only and carries the kind's."""
     js = desk_script()
     assert 'fixed ? " readonly" : ""' in js and 'const fixed = l.key === "authority"' in js
 
 
-def test_the_bench_speaks_the_desks_words_not_the_stores(item, repo_root):
+def test_the_bench_speaks_the_desks_words_not_the_stores(item):
     """Every field is headed for the Bench tab in house/headings.py (the panel's FORM_COLUMNS, so
     test_every_desk_column_has_a_heading_for_its_tab holds each one), every table has its word, and
     a gate a why blocks reads the why's heading."""
     from portfusion.house.headings import COMMON
-    js = _renderer_free(repo_root)
+    js = desk_script()
     field_fn = js[js.index("function field(spec"):js.index("function drawItem(d)")]
     assert "head(spec.name)" in field_fn and "sentence(spec.name)" not in field_fn
     assert "BENCH.table_labels" in js[js.index("function drawItem(d)"):]
@@ -294,11 +294,7 @@ def test_the_bench_speaks_the_desks_words_not_the_stores(item, repo_root):
     assert labels["why_exited"] == COMMON["why_exited"] == "Why we exited"
 
 
-def _renderer_free(repo_root):
-    return desk_script()
-
-
-def test_one_item_at_a_time_then_a_review_then_one_write_each(item, repo_root):
+def test_one_item_at_a_time_then_a_review_then_one_write_each(item):
     """An item takes the page; a finished one offers the next still owed, or the review; the review
     writes ONE ITEM PER PRESS, so each event keeps its own approval; "work it" redraws the list,
     and an item gone from under it says so."""
@@ -941,8 +937,6 @@ def test_reading_the_desk_leaves_every_store_file_byte_identical():
         module.data()
     engine.freshness()
     engine.book().findings()
-    engine.palette()
-    engine.tokens_css()
     actions.all_actions()
     actions.reaching_actions()
     actions.writing_actions()
@@ -969,7 +963,7 @@ def test_health_says_when_the_code_was_loaded():
     assert isinstance(body["pid"], int)
 
 
-def test_nothing_on_the_bench_writes_to_the_store(repo_root):
+def test_nothing_on_the_bench_writes_to_the_store():
     """THE CLAIM THAT MATTERS, for bench.py specifically. It works on a JSON note in
     _inbox/.bench/ and produces text to paste. THE WRITE LIVES IN desk/doors/commit.py, which is a
     separate module on purpose: this guard stays sharp.
@@ -1579,7 +1573,7 @@ def test_a_row_scoped_action_is_not_a_panel_button():
     assert 'await runAction(b.dataset.act, since ? { since } : {})' in sweep
 
 
-def test_the_panel_list_in_the_browser_skips_inline_actions(repo_root):
+def test_the_panel_list_in_the_browser_skips_inline_actions():
     """The filter has to be in app.js too — the desk renders the list client-side, and a
     correct flag nothing reads is not a fix."""
     js = desk_script()
@@ -1632,7 +1626,7 @@ def test_required_is_the_stores_own_answer_for_every_table():
                 f"store says {store_refuses}")
 
 
-def test_an_empty_list_says_nothing_and_the_page_explains_itself_once(repo_root):
+def test_an_empty_list_says_nothing_and_the_page_explains_itself_once():
     """An empty list is not drawn. The page explains itself in one place, its fold, in a reader's
     words and in the order the work comes in."""
     js = desk_script()
@@ -1649,7 +1643,7 @@ def test_an_empty_list_says_nothing_and_the_page_explains_itself_once(repo_root)
     assert bench_panel.data()["why"] == bench_panel.WHY
 
 
-def test_a_swept_event_row_is_not_held_to_the_prose_measure(repo_root):
+def test_a_swept_event_row_is_not_held_to_the_prose_measure():
     """A swept row carries a generated CSV line. `body.data #main .items li` caps a list item at
     the PROSE measure, which is right for every other list here and wrong for this one."""
     css = (SRC / "desk" / "static" / "app.css").read_text()
@@ -1753,7 +1747,7 @@ def test_a_reference_already_in_the_record_is_found():
     assert st["in_record"] is True and "income" in st["tables"]
 
 
-def test_a_negative_income_row_is_labelled_a_cost(repo_root):
+def test_a_negative_income_row_is_labelled_a_cost():
     """income.csv holds both, and its own schema doc says so: "COSTS ARE NEGATIVE, income
     positive". A -1.41 funding charge headed simply "income" reads as the opposite of what it
     is. The sign is the record's rule, so the label follows it rather than a second list."""
@@ -1762,7 +1756,7 @@ def test_a_negative_income_row_is_labelled_a_cost(repo_root):
     assert "a cost — negative" in js
 
 
-def test_the_header_is_re_read_on_every_panel_switch(repo_root):
+def test_the_header_is_re_read_on_every_panel_switch():
     """The status line has to be current when the reader arrives at it.
 
     Fetched at boot alone, `/api/state` would quote its page-load stamp while a bench commit
@@ -1823,7 +1817,7 @@ def test_the_cash_observation_evidence_is_still_a_closed_class_key():
         "trades has an `evidence` column again — its provenance line is `source`"
 
 
-def test_a_free_prose_column_offers_no_choices_either(repo_root):
+def test_a_free_prose_column_offers_no_choices_either():
     """Not just an open vocabulary — NO vocabulary. Offering the class keys as suggestions
     under a field that wants a sentence would invite the wrong value into the one column whose
     whole job is naming the document. The browser renders a `choices` list as a combobox

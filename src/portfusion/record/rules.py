@@ -169,8 +169,8 @@ def funding_nights(detail: str, dated) -> list[_dt.date]:
 #
 #   rules_evidence.py   what a document IS, and what retrieves it a second time
 #   rules_brokers.py    HL's own codes, and how an export is read
-from portfusion.record.rules_evidence import *    # noqa: F401,F403
-from portfusion.record.rules_brokers import *     # noqa: F401,F403
+from portfusion.record.rules_evidence import *    # noqa: F403 — their names are the record's
+from portfusion.record.rules_brokers import *     # noqa: F403 — as the comment above says
 
 
 def _build() -> dict:

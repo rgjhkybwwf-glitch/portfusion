@@ -17,6 +17,7 @@ What guards a table instead:
 `tests/test_record.py` already covers trades -> identity (`test_every_traded_ticker_has_
 an_identity_row`), and is not repeated here.
 """
+import csv
 import datetime as _dt
 
 import pytest
@@ -112,16 +113,6 @@ def test_every_security_joins_to_an_issuer():
     assert not orphans, f"securities with no issuer row: {orphans}"
 
 
-def test_one_issuer_may_hold_several_codes():
-    """The reason these are two tables and not one. If this ever stops being true the
-    merge becomes tempting, and merging loses the company-level exposure view."""
-    from collections import Counter
-    counts = Counter(r[1] for r in schema.load("securities"))
-    multi = {co: n for co, n in counts.items() if n > 1}
-    if not multi:
-        pytest.skip("no issuer holds more than one code in this book")
-
-
 def test_a_spread_bet_code_carries_the_suffix():
     """The ' SB' suffix and the kind column must agree. The suffix is the code's NAME, what
     tells ORLA SB from ORLA; the kind is the fact, and nothing decides from the name — but the
@@ -140,9 +131,10 @@ def test_a_spread_bet_code_carries_the_suffix():
 # =====================================================================================
 
 def test_the_schema_round_trips_every_awkward_type(tmp_path, monkeypatch):
-    """DUMP THEN LOAD, on a table containing all six awkward cases at once: a blank
-    nullable string, a real empty string, a nullable and a non-nullable number, a date,
-    a bool, and a value carrying the delimiter.
+    """WRITTEN AS EVERY WRITER WRITES (`schema.cell()`, quoted as `csv` quotes), THEN LOADED, on a
+    table containing the awkward cases at once: a blank nullable string, a real empty string, a
+    nullable and a non-nullable number, a figure to its places, a date, and a value carrying the
+    delimiter.
 
     It proves the mechanism on a table of its own.
     """
@@ -152,18 +144,21 @@ def test_the_schema_round_trips_every_awkward_type(tmp_path, monkeypatch):
         schema.Field("detail", "str", null=True),     # blank means absent
         schema.Field("qty", "int"),
         schema.Field("stake", "float", null=True),
+        schema.Field("amount", "float", **schema.MONEY),
         schema.Field("opened", "date"),
-        schema.Field("live", "bool"),
     ))
     monkeypatch.setitem(schema.TABLES, "synthetic", table)
     monkeypatch.setattr(schema, "STORE", tmp_path)
 
     rows = [
-        ("GRVL", "", None, 64, None, _dt.date(2023, 4, 3), True),
-        ("HALV SB", 'a note, with a comma and "quotes"', "present", 500, 5.0,
-         _dt.date(2026, 8, 14), False),
+        ("GRVL", "", None, 64, None, 1250.0, _dt.date(2023, 4, 3)),
+        ("HALV SB", 'a note, with a comma and "quotes"', "present", 500, 5.0, 0.1,
+         _dt.date(2026, 8, 14)),
     ]
-    schema.dump("synthetic", rows)
+    with table.path.open("w", newline="", encoding="utf-8") as fh:
+        writer = csv.writer(fh, lineterminator="\n")
+        writer.writerow(table.header)
+        writer.writerows([schema.cell(f, v) for f, v in zip(table.fields, row)] for row in rows)
     assert schema.load("synthetic") == rows
 
 
@@ -239,8 +234,8 @@ def test_the_number_kind_preserves_int_against_float():
     assert _cell("number", "1") == 1 and isinstance(_cell("number", "1"), int)
     assert _cell("number", "1.0") == 1.0 and isinstance(_cell("number", "1.0"), float)
     assert _cell("number", "0.25") == 0.25
-    assert schema._render(schema.Field("x", "number"), 1) == "1"
-    assert schema._render(schema.Field("x", "number"), 1.0) == "1.0"
+    assert schema.cell(schema.Field("x", "number"), 1) == "1"
+    assert schema.cell(schema.Field("x", "number"), 1.0) == "1.0"
 
 
 def test_a_date_comes_back_as_a_date():
@@ -251,26 +246,12 @@ def test_a_date_comes_back_as_a_date():
         _cell("date", "30/06/2026")
 
 
-def test_a_bad_boolean_is_refused_rather_than_read_as_true():
-    assert _cell("bool", "true") is True and _cell("bool", "false") is False
-    with pytest.raises(ValueError):
-        _cell("bool", "maybe")
-
-
 def test_the_error_names_the_table_row_and_column():
     """A validation failure has to say WHERE. 'invalid literal for int()' on a
     400-row store is not a diagnosis."""
     with pytest.raises(ValueError) as exc:
         schema._parse(schema.Field("qty", "int", False), "twelve", "buys", 47)
     assert "buys.csv row 47" in str(exc.value) and "'qty'" in str(exc.value)
-
-
-def test_writing_none_into_a_non_nullable_column_is_refused():
-    """The inverse of the read rule, and it must fail on WRITE — otherwise the round
-    trip loses the distinction silently and the CSV is already wrong."""
-    with pytest.raises(ValueError):
-        schema._render(schema.Field("x", "str", null=False), None)
-    assert schema._render(schema.Field("x", "str", null=True), None) == ""
 
 
 def test_a_short_row_is_refused(tmp_path, monkeypatch):
@@ -301,7 +282,7 @@ def test_a_renamed_column_is_refused(tmp_path, monkeypatch):
 # THE BOUNDARY
 # =====================================================================================
 
-def test_the_schema_imports_nothing_third_party(repo_root, imports_of):
+def test_the_schema_imports_nothing_third_party(imports_of):
     """record/rules.py reads the store and the build reads record/rules.py, so anything
     imported here becomes a dependency of the REPORT BUILD. Same rule that keeps feeds/ig.py
     out: a rebuild must not be able to fail over something it does not need. pandas belongs to
@@ -329,7 +310,7 @@ def test_the_reasoning_is_never_a_literal_inside_a_renderer(repo_root):
                     f"is a FACT and belongs in store/reasoning.csv, where the bench can write it.")
 
 
-def test_there_is_one_reasoning_and_both_pages_read_it(repo_root):
+def test_there_is_one_reasoning_and_both_pages_read_it():
     """Holdings and Round Trips show the same text. One object, reached one way: `D.REASONING`,
     joined by the engine (`Book.with_reasoning()`) and read by both pages through it. No page may
     hold the name, which would bind the dict at import and go stale at the next

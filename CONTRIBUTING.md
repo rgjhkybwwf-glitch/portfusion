@@ -119,6 +119,8 @@ One line each; kept by review, and by the test named where there is one.
 - **The linter, the import contracts and the type checker find nothing**: `python3 -m ruff check`,
   `lint-imports`, `pyright`.
 - **No formatter**: the aligned columns are the style; the linter holds the rest.
+- **A `noqa` names its reason**, and a blind `except Exception` is kept only with one (ruff's
+  `RUF100` and `BLE001`).
 - **A comment or docstring states the rule as it is**, not its history, and a function it names
   exists (`test_code.py::test_comments_state_the_rule_not_its_history`,
   `test_code.py::test_every_function_a_comment_names_exists`).
@@ -142,6 +144,8 @@ One line each; kept by review, and by the test named where there is one.
 - **A stability rule's test keeps on file the case that makes it fail**: a mutation, a sentinel or a
   negative case.
 - **Extend a test before adding one.**
+- **A test asks for `repo_root` only to read the checkout**, so the wheel's run keeps the rest
+  (`test_code.py::test_a_test_asks_for_the_checkout_only_to_read_it`).
 - **How to write a test, and what to do when one fails**, is [`docs/testing.md`](docs/testing.md)'s:
   by field, a relationship, the rows it needs, any book, a copy; read its docstring first; never
   weaken a check.

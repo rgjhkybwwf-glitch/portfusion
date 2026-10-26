@@ -236,7 +236,6 @@ class AppendOnlyCSV:
         """`rows` less the live reads no figure can take. Side effects: none."""
         if self.series is None or not rows:
             return rows
-        held = self.known(live)
         live_on = {tuple(m[c] for c in self.series): m["date"] for m in live}
         days = [_dt.date.fromisoformat(d)
                 for d in valued_days(min(r["date"] for r in rows), max(r["date"] for r in rows))]
@@ -258,7 +257,7 @@ class AppendOnlyCSV:
                 if near:
                     keep.add(min(near)[2])
         return [r for r in rows
-                if r.get("struck") != "live" or id(r) in keep or self.key(r) in held]
+                if r.get("struck") != "live" or id(r) in keep]
 
 
 def valued_days(first: str, last: str) -> list[str]:

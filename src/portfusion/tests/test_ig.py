@@ -112,7 +112,7 @@ def _code_strings(path):
             and id(n) not in docstrings]
 
 
-def test_no_dealing_endpoint_appears_in_code(repo_root):
+def test_no_dealing_endpoint_appears_in_code():
     """Belt-and-braces against the guard being bypassed rather than tripped.
 
     Defends against: a future edit that builds a urllib request directly instead
@@ -239,7 +239,7 @@ def test_a_corrupt_cache_is_not_fatal(tmp_path, monkeypatch):
     assert ig._load_session_cache() == {}
 
 
-def test_exit_does_not_log_out(repo_root):
+def test_exit_does_not_log_out():
     """__exit__ must NOT close the session.
 
     Logging out on exit forces every command to authenticate again, and a dozen logins in ten
@@ -312,7 +312,7 @@ def _invoke(flag):
     return ig.dispatch([flag] + FLAG_ARGS.get(flag, []))
 
 
-def _commands(repo_root):
+def _commands():
     import ast
     tree = ast.parse((SRC / "feeds" / "ig.py").read_text())
     return {n.name for n in ast.walk(tree)
@@ -328,17 +328,17 @@ def _selects(command):
     return next((n for n in command.__code__.co_names if n.startswith("cmd_")), None)
 
 
-def test_every_ig_command_is_reachable_from_a_flag(repo_root):
+def test_every_ig_command_is_reachable_from_a_flag():
     """A command nothing can invoke is a command that does not exist.
 
     It asks the WIRING. A check of the source text proves only a SPELLING.
     """
     reachable = {_selects(_invoke(flag)) for flag in _usage_flags()}
-    missing = _commands(repo_root) - reachable
+    missing = _commands() - reachable
     assert not missing, f"no flag reaches {sorted(missing)} — an unreachable command"
 
 
-def test_every_documented_flag_lands_somewhere(repo_root):
+def test_every_documented_flag_lands_somewhere():
     """The opposite failure, which a check on the source text cannot see: a flag written into USAGE
     that dispatches to nothing. The usage text is a promise."""
     for flag in _usage_flags():

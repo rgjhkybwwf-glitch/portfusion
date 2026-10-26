@@ -192,7 +192,7 @@ def test_a_note_is_one_line():
     assert rows and not [r["trade_id"] or r["sale_id"] for r in rows if "\n" in (r["note"] or "")]
 
 
-def test_price_precision_is_the_houses_not_reinvented(repo_root):
+def test_price_precision_is_the_houses_not_reinvented():
     """GBP is 4dp because LSE prices are quoted in pence and stored /100 — a line at 12.35p is
     0.1235, which 2dp would round to 0.12. One rule, house/precision.py's: every panel answer
     carries it beside its heads — the places per currency and which fields are local prices —
@@ -526,7 +526,7 @@ def test_the_refresh_panel_names_every_window_the_engine_drew():
 # =====================================================================================
 
 
-def test_movement_colour_is_used_and_scoped(repo_root):
+def test_movement_colour_is_used_and_scoped():
     """`--up` and `--down` are worn, or a loss renders in the ink of a gain. A token nobody
     consumes is a palette entry pretending to be a treatment.
 
@@ -575,7 +575,7 @@ def test_movement_colour_is_used_and_scoped(repo_root):
     assert "v === 0" in js, "movement() no longer leaves an exact zero uncoloured"
 
 
-def test_every_screen_colour_is_legible_in_both_schemes(repo_root):
+def test_every_screen_colour_is_legible_in_both_schemes():
     """A COLOUR THAT CANNOT BE READ IS WORSE THAN NONE, and nothing else in the project can tell.
 
     Every text colour is held to 4.5 on the paper and on the band a header or a total row sits on,
@@ -629,7 +629,7 @@ def test_every_screen_colour_is_legible_in_both_schemes(repo_root):
                 f"worse than one left plain.")
 
 
-def test_no_panel_leaves_a_handler_on_the_frame(repo_root):
+def test_no_panel_leaves_a_handler_on_the_frame():
     """#main OUTLIVES EVERY PANEL, so a handler a panel adds to it on each draw stays behind and
     multiplies. A panel's handlers go on its own elements; a delegated one on #main is wired once,
     behind a guard, from a `main` it has looked up."""
@@ -637,7 +637,7 @@ def test_no_panel_leaves_a_handler_on_the_frame(repo_root):
     assert '$("#main").addEventListener' not in js
 
 
-def test_no_call_site_puts_anything_in_a_style_attribute(repo_root):
+def test_no_call_site_puts_anything_in_a_style_attribute():
     """Every width, colour and spacing lives in app.css, so a call site sets none of them."""
     import re
     used = re.findall(r'style="([^"]*)"', desk_script())
@@ -724,7 +724,7 @@ def test_a_multi_contract_line_opens_both_contracts():
         assert keys <= opened, f"{key} is priced by {keys} but opens {opened}"
 
 
-def test_the_expansion_spans_the_whole_row_however_many_columns_there_are(repo_root):
+def test_the_expansion_spans_the_whole_row_however_many_columns_there_are():
     """The colspan is DERIVED from what was rendered, never typed.
 
     A hardcoded number goes stale the first time a column joins — silently, by leaving the
@@ -756,7 +756,7 @@ def test_the_expansion_spans_the_whole_row_however_many_columns_there_are(repo_r
 DESK_CHROME_WORDS = 456
 
 
-def _chrome_words(repo_root):
+def _chrome_words():
     """Every word the desk says about itself, counted one way. See DESK_CHROME_WORDS."""
     import re
 
@@ -786,7 +786,7 @@ def _chrome_words(repo_root):
     return words
 
 
-def test_the_desks_own_prose_only_goes_down(repo_root):
+def test_the_desks_own_prose_only_goes_down():
     """The desk is an operating interface, not a place to record decisions about it.
 
     Reasons accumulate, and together they push the work below the fold.
@@ -796,7 +796,7 @@ def test_the_desks_own_prose_only_goes_down(repo_root):
     written down beside it; the ordinary way past it is to move prose into the fold or into a
     docstring, where a maintainer wants it and an operator never looks.
     """
-    words = _chrome_words(repo_root)
+    words = _chrome_words()
     assert words <= DESK_CHROME_WORDS, (
         f"the desk now says {words} words about itself, above the {DESK_CHROME_WORDS} on file. "
         f"An explanation belongs below the work it describes — `whyFold()` — or in a docstring. "
@@ -818,7 +818,7 @@ def _renderer(js, name):
     return js[m.start():nxt.start() if nxt else len(js)]
 
 
-def test_the_dashboards_status_line_draws_what_it_is_sent(repo_root):
+def test_the_dashboards_status_line_draws_what_it_is_sent():
     """THE AGE LEADS THE PRICES STEP, and the year-to-date step names the 31 December the year
     opens at. A payload field the renderer drops is a figure shown nowhere. `year` is the one not
     drawn: `opens` names it."""
@@ -831,7 +831,7 @@ def test_the_dashboards_status_line_draws_what_it_is_sent(repo_root):
     assert not missing, f"the Dashboard is sent {missing} and draws none of it"
 
 
-def test_the_dashboard_lists_the_checks_the_audit_prints(repo_root):
+def test_the_dashboard_lists_the_checks_the_audit_prints():
     """WHAT WAS CHECKED, under what needs attention: what is captured has a display home. The
     engine's notes, in its words and its order."""
     data = panels.get("dashboard").data()
@@ -840,7 +840,7 @@ def test_the_dashboard_lists_the_checks_the_audit_prints(repo_root):
     assert "d.checks" in _renderer(desk_script(), "dashboard")
 
 
-def test_the_footer_says_whose_it_is_and_which_release(repo_root):
+def test_the_footer_says_whose_it_is_and_which_release():
     """Every page's footer says whose the desk is and which release it is, each held once — the
     book's words in its brand, the release in portfusion/__init__.py — and filled into the shell
     the Mac and the hosted desk both serve: "© <owner> · <release>", the app's half alone where a
@@ -857,7 +857,7 @@ def test_the_footer_says_whose_it_is_and_which_release(repo_root):
     assert f"<span>{line}</span>" in page, line
 
 
-def test_every_page_is_drawn_through_the_template(repo_root):
+def test_every_page_is_drawn_through_the_template():
     """`page()` draws the bands in one order, so a fix lands on every page; a page that skips it
     drifts."""
     js = desk_script()
@@ -867,7 +867,7 @@ def test_every_page_is_drawn_through_the_template(repo_root):
         f"template, where every page gets it, not in one page's renderer.")
 
 
-def test_the_template_has_no_note_box_and_no_pill(repo_root):
+def test_the_template_has_no_note_box_and_no_pill():
     """Two treatments add a second voice to a page: the note box between the figures and the
     table (explanations live in the fold), and the basis pill beside a figure whose label already
     says what it is.
@@ -883,7 +883,7 @@ def test_the_template_has_no_note_box_and_no_pill(repo_root):
     assert not typed, f"a heading is typed in capitals rather than styled so: {typed}"
 
 
-def test_the_page_head_is_ruled_off_on_every_page(repo_root):
+def test_the_page_head_is_ruled_off_on_every_page():
     """A rule under the title and its scope line, on every page: it belongs to the head, which
     every page draws through `page()`, and the status line draws none beneath it."""
     import re
@@ -894,19 +894,20 @@ def test_the_page_head_is_ruled_off_on_every_page(repo_root):
     assert "border-top" not in steps, "the status line draws a second rule under the head"
 
 
-def test_every_wide_table_scrolls_in_its_own_box(repo_root):
+def test_every_wide_table_scrolls_in_its_own_box():
     """A wide table scrolls in its own box, so the page never does. The two narrow kinds, a page's
     figures and Holdings' bars, are two or three columns and fit a phone as they are."""
     import re
     js = desk_script()
     narrow = ('<table class="figures">', '<table class="alloc">')
-    boxed = lambda at: re.search(r'<div class="scroll"[^>]*>\s*$', js[max(0, at - 80):at])  # noqa: E731
+    def boxed(at):
+        return re.search(r'<div class="scroll"[^>]*>\s*$', js[max(0, at - 80):at])
     loose = [js[m.start():m.start() + 60].split("\n")[0] for m in re.finditer(r"<table", js)
              if not boxed(m.start()) and not js.startswith(narrow, m.start())]
     assert not loose, f"a table outside a scroll box: {loose}"
 
 
-def test_the_dashboards_glance_stacks_on_a_phone(repo_root):
+def test_the_dashboards_glance_stacks_on_a_phone():
     """The Dashboard's figures stand beside Needs attention. Beside them on a phone the list would
     be one letter wide, so at the phone's width, the 48rem the gutter narrows at, the list goes
     below them."""
@@ -925,7 +926,7 @@ def test_the_dashboards_glance_stacks_on_a_phone(repo_root):
         "on a phone the Dashboard's glance still sets its two columns side by side"
 
 
-def test_every_filter_row_can_be_cleared(repo_root):
+def test_every_filter_row_can_be_cleared():
     """The filters band is one shape on every page, and "clear filters" is part of it."""
     import re
     js = desk_script()
@@ -997,7 +998,7 @@ def test_no_file_names_a_tab_or_button_that_no_longer_exists(repo_root, project_
         "these name a tab that no longer exists:\n  " + "\n  ".join(stale[:12]))
 
 
-def test_every_live_tab_title_is_one_a_panel_declares(repo_root):
+def test_every_live_tab_title_is_one_a_panel_declares():
     """The other half: the retired list must not name something still in use. A rename that
     was reverted, or never finished, would otherwise be policed against the wrong answer."""
     live = {m.TITLE for m in panels.all_panels()}
@@ -1012,7 +1013,7 @@ def test_every_live_tab_title_is_one_a_panel_declares(repo_root):
 # ONE WORD FOR A SPREAD-BET POSITION, on the desk as in the engine
 # =====================================================================================
 
-def test_the_desk_says_notional_too(repo_root):
+def test_the_desk_says_notional_too():
     """A RENDERER NO CHECK COVERS DRIFTS. `notional` is the store's own word, and the desk's labels
     say it too.
 

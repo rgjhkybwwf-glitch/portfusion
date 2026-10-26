@@ -160,7 +160,7 @@ def test_every_accepted_extension_is_one_the_intake_extractor_can_READ(inbox, tm
         assert "text" in doc and "scanned" in doc, f"{ext}: {doc}"
 
 
-def test_the_drop_off_has_no_way_to_make_a_document_LEAVE(repo_root):
+def test_the_drop_off_has_no_way_to_make_a_document_LEAVE():
     """ITS WHOLE CLAIM, ON THE SYNTAX TREE. `docs/intake.md` says a document leaves the
     workbench by being archived or by going back where it came from. A new route IN must not
     quietly become a route OUT, so the module's one write is an exclusive create, `open("xb")`,
@@ -870,7 +870,7 @@ def test_a_scan_is_refused_rather_than_guessed_at(item, monkeypatch):
 
 
 
-def test_the_proposal_reaches_no_network(repo_root):
+def test_the_proposal_reaches_no_network():
     """THE READER IS A SESSION, NOT AN API CALL. Nothing in propose.py may open a connection, so
     no key is needed and none can expire. Checked on the syntax tree; that it imports nothing
     that would is the `the-proposer` import contract."""

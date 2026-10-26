@@ -73,6 +73,9 @@ extend-include = [".githooks/pre-commit", ".githooks/commit-msg", ".githooks/pre
 
 [tool.ruff.lint]
 select = ["F", "E4", "E7", "E9", "W"]
+# A noqa that suppresses nothing, a blind `except Exception` (kept only with its reason), a blanket
+# noqa or type ignore, an error pylint finds, and a print: each caught where it is written.
+extend-select = ["RUF100", "BLE001", "PGH", "PLE", "T20"]
 
 [tool.ruff.lint.per-file-ignores]
 # It checks that the book's store is whole BEFORE importing the rest of the record, so a missing
@@ -164,7 +167,7 @@ allow_indirect_imports = true
 
 [[tool.importlinter.contracts]]
 id = "one-palette"
-name = "desk/app.py serves engine.tokens_css(), never deriving colours from house"
+name = "desk/app.py serves the bundle's tokens.css, never deriving colours from house"
 type = "forbidden"
 source_modules = ["portfusion.desk.app"]
 forbidden_modules = ["portfusion.house"]

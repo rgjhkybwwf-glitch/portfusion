@@ -313,7 +313,7 @@ def test_a_live_rate_says_how_old_it_is_as_a_price_does():
             assert r["age_days"] == (today - day).days, r
 
 
-def test_a_typed_figure_sits_on_the_line_of_a_fetched_one(repo_root):
+def test_a_typed_figure_sits_on_the_line_of_a_fetched_one():
     """A rate the sweep left unpriced opens for typing, its text on the column of fetched figures
     above it. The box reaches into the cell's padding by its own padding, on the side the column's
     text is set to."""
@@ -450,7 +450,7 @@ def test_a_refused_mark_write_leaves_the_journal_exactly_as_it_was(store_copy):
 # THE BAY'S TWO CONVENIENCES, AND THE RULE NEITHER MAY BEND
 # =====================================================================================
 
-def test_take_all_can_only_ever_tick_a_line_the_form_already_allows(repo_root):
+def test_take_all_can_only_ever_tick_a_line_the_form_already_allows():
     """SELECT-ALL IS A SHORTCUT THROUGH THE CLICKING, NEVER THROUGH THE RULE.
 
     Fetching the IG levels fills a row per contract at once, and one click takes them all rather
@@ -482,7 +482,7 @@ def test_take_all_can_only_ever_tick_a_line_the_form_already_allows(repo_root):
     assert "${takeAll(kind)}" in js, "a group row no longer carries its own take-all"
 
 
-def test_the_header_box_reports_its_column_rather_than_claiming_it(repo_root):
+def test_the_header_box_reports_its_column_rather_than_claiming_it():
     """A select-all showing "on" over a half-ticked column is a control lying about the thing it
     controls. It follows: checked only when every takeable row is taken, indeterminate when some
     are, disabled while none can be."""
@@ -491,7 +491,7 @@ def test_the_header_box_reports_its_column_rather_than_claiming_it(repo_root):
         assert state in js, f"the take-all no longer sets {state}"
 
 
-def test_a_written_refresh_moves_to_what_changed_and_a_refused_one_does_not(repo_root):
+def test_a_written_refresh_moves_to_what_changed_and_a_refused_one_does_not():
     """THE LOOP ENDS WHERE IT IS REPORTED: bay writes, What Changed says what it did.
 
     A REFUSAL MUST NOT MOVE. The refusal names the line and the rule that stopped it — which is
@@ -531,7 +531,7 @@ def test_a_refused_write_does_not_even_move_the_mtime(store_copy):
         "a refused write touched the file, so the desk will report the store as changed"
 
 
-def test_a_write_button_is_never_offered_without_something_to_write(repo_root):
+def test_a_write_button_is_never_offered_without_something_to_write():
     """AN ACTION STRIP OFFERS ONLY WHAT CAN BE PRESSED NOW.
 
     A write means something only against lines that have been fetched and ticked, so its button
@@ -787,7 +787,7 @@ def test_today_is_not_a_past_day(store_copy):
         marks.bank_closes(_dt.date.today().isoformat(), prices=[_close()])
 
 
-def test_the_bay_asks_for_a_past_day_and_the_write_banks_it(repo_root, monkeypatch):
+def test_the_bay_asks_for_a_past_day_and_the_write_banks_it(monkeypatch):
     """The fetch passes the day to the sweep; the write routes to the banking door; the screen
     carries the day from one to the other."""
     from portfusion.feeds import refresh
@@ -803,7 +803,7 @@ def test_the_bay_asks_for_a_past_day_and_the_write_banks_it(repo_root, monkeypat
     assert 'id="rb-on"' in js and "payload.close_of = closeOf" in js
 
 
-def test_the_bay_sends_every_column_a_mark_is_written_with(repo_root):
+def test_the_bay_sends_every_column_a_mark_is_written_with():
     """WHAT THE SWEEP SUPPLIES REACHES THE WRITE, for a rate as for a price.
 
     A rate sent without `struck` is written blank, and `bank_closes()` refuses a rate that does not
@@ -980,7 +980,7 @@ def test_the_bay_previews_each_ig_account_before_the_fetch():
         assert r["equity"] is not None and r["as_of"], r
 
 
-def test_an_ig_accounts_source_is_the_line_its_reading_is_filed_under(repo_root, monkeypatch):
+def test_an_ig_accounts_source_is_the_line_its_reading_is_filed_under(monkeypatch):
     """THE REVIEW SHOWS WHAT THE WRITE RECORDS. Each account's row carries the record's own
     provenance line for its reading, and the bay fills the row with it."""
     from portfusion.feeds import refresh
@@ -1002,7 +1002,7 @@ def test_an_ig_accounts_source_is_the_line_its_reading_is_filed_under(repo_root,
     assert "source: read.source" in m.group(1), "the bay composes an account's source again"
 
 
-def test_the_bay_sends_what_it_draws_and_a_mark_past_the_limit_says_so(repo_root):
+def test_the_bay_sends_what_it_draws_and_a_mark_past_the_limit_says_so():
     """The key is `mark_key`, as the grid heads it; the outgoing source is not sent and stays at
     its home, Holdings' Mark history; and the age of a mark past the limit is drawn in the warning
     ink, which is the desk's on every page."""
@@ -1050,7 +1050,7 @@ def test_each_group_of_the_grid_runs_a_to_z_by_its_line():
         assert said == sorted(said, key=str.upper), f"{key}s are not A-Z: {said}"
 
 
-def test_the_step_bar_says_the_marks_age_and_draws_the_bank_only_when_it_cannot_bank(repo_root):
+def test_the_step_bar_says_the_marks_age_and_draws_the_bank_only_when_it_cannot_bank():
     """The age leads, as the Dashboard's does and from the same figure, the Bank step is drawn only
     when the histories cannot be read, and the line says what came back."""
     from portfusion.engine import Book
@@ -1062,7 +1062,7 @@ def test_the_step_bar_says_the_marks_age_and_draws_the_bank_only_when_it_cannot_
     assert "filled in below" not in js and "can be replaced" not in js
 
 
-def test_the_tick_column_is_headed_and_its_boxes_carry_no_word(repo_root):
+def test_the_tick_column_is_headed_and_its_boxes_carry_no_word():
     """The tick column is headed once, in house/headings.py's words, and each box keeps its word
     only for a screen reader. The form's heads are GRID_COLUMNS, in its order: the rows are drawn
     by hand, so nothing else holds them to the panel's list."""
@@ -1079,7 +1079,7 @@ def test_the_tick_column_is_headed_and_its_boxes_carry_no_word(repo_root):
     assert js.count('data-tick disabled\n          aria-label="${head("take")}"') == 4
 
 
-def test_a_fetched_line_says_beside_its_date_whether_it_is_a_close_or_a_time(repo_root):
+def test_a_fetched_line_says_beside_its_date_whether_it_is_a_close_or_a_time():
     """The sweep says whether a read is a close (`struck`) and when (`at`), so a price or rate row
     shows "close" or the read's wall-clock time beside the date it sends. The date the write sends
     is the date alone: the time sits outside the form's fields."""
@@ -1182,7 +1182,7 @@ def test_the_audit_names_every_rate_the_record_lacks():
     assert f"dated rates: {len(owed)} owed a TradingView close" in f["notes"]
 
 
-def test_the_bay_offers_the_rates_the_record_lacks_and_banks_them(repo_root, monkeypatch):
+def test_the_bay_offers_the_rates_the_record_lacks_and_banks_them(monkeypatch):
     """The panel sends the engine's list; the fetch reads it in one press, the action reaching
     TradingView once per currency; the rows fill by currency and date, and the write sends them
     as rates for the past-day door to bank, never as live rates."""

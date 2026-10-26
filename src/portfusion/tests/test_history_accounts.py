@@ -87,7 +87,7 @@ def test_every_account_is_covered_at_every_quarter_end(rows):
     dates = sorted({str(q.as_of) for q in D.QUARTER_NAV})
     assert dates, "no quarter series on file — this asserts nothing"
     for d in dates:
-        covered = set(A.at(d, rows))
+        covered = {r["account"] for r in rows if r["as_of"] <= d}
         missing = sorted(set(D.accounts_open(d)) - covered)
         assert not missing, f"no statement on or before {d} for: {missing}"
 

@@ -17,6 +17,7 @@ from __future__ import annotations
 
 from portfusion.desk import engine
 from portfusion.desk.panels import _shape
+from portfusion.engine import Book
 
 #: RECONCILE, NOT ACCOUNTS: the register, capital and income are the Accounts page's, and this
 #: page is the reconciliation alone. Its file, URL and title are one name, as every panel's are.
@@ -41,7 +42,6 @@ VERDICT_TAG = {"units-agree": "ok", "within-band": "note", "differs": "problem",
 def data() -> dict:
     b = engine.book()
     # The engine itself once the record has loaded, not with the module (`price_refresh.data`).
-    from portfusion.engine import Book
     rests = b.quarter_evidence(None).set_index("account")
     rows = []
     for r in b.reconciliation().itertuples(index=False):
