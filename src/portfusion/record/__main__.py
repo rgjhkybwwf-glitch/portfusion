@@ -42,8 +42,8 @@ def close_reminder(today: _dt.date | None = None) -> str | None:
      Price Refresh → "closes of" {end} → fetch everything →
      tick → write.
   3. FREEZE. The first lists every line and the mark it takes; the second writes:
-       python3 -m portfusion.desk.doors.freeze {end}
-       python3 -m portfusion.desk.doors.freeze {end} --write
+       portfusion freeze {end}
+       portfusion freeze {end} --write
   4. REPORT. The page is on the desk's Reports page once the gate says READY; each
      account's last broker check prints beside it, and none is waited for:
        portfusion report --check {end}

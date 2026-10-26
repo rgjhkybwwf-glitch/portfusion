@@ -95,6 +95,11 @@ prints it.
   with a holdings export, waits only on the account history. The desk's two panels that acted now
   only shape: the Price Refresh's write is the marks door's `refresh()`, and the sweeps the desk
   asks of the feeds are `desk/intake/sweep.py`'s. No figure, page or store moves.
+- **The quarter close is an action: `portfusion freeze <quarter end>`**, and `--write` writes it.
+  The audit's close procedure and the report gate's refusal name it. `--book` reaches every
+  command run as `python3 -m portfusion.<command>`: `python3 -m portfusion.record --book demo` was
+  refused as an unrecognised argument. `portfusion --help` lists all fifteen commands: the seven actions, and
+  the eight reached by `python3 -m` alone. `python3 -m portfusion.desk.doors.freeze` still works.
 - **The engine is a package.** `engine.py` is `engine/`, a file per topic: the store, the two
   bases, the ledger and valuation, then `Book`, built from seven classes, each a group of its
   methods, over the construction they share (`engine/core.py`). `portfusion.engine` offers every

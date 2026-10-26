@@ -1,7 +1,7 @@
 """THE FREEZE — a quarter end written into the store from the engine, once.
 
-    python3 -m portfusion.desk.doors.freeze 2026-09-30             what would be written, and what is not ready
-    python3 -m portfusion.desk.doors.freeze 2026-09-30 --write     write it
+    portfusion freeze 2026-09-30             what would be written, and what is not ready
+    portfusion freeze 2026-09-30 --write     write it
 
 `Book.freeze_rows()` derives `quarter-snapshots.csv` and `quarter-nav.csv` from the price and FX
 histories, each line at its mark nearest the quarter end within `rules.CLOSE_CHECK_WINDOW_DAYS`
@@ -326,6 +326,9 @@ def _append(table: str, rows: list[dict]) -> None:
 
 
 def main(argv: list[str]) -> int:
+    if argv[:1] in (["-h"], ["--help"]):
+        log.info(__doc__)
+        return 0
     days = [a for a in argv if not a.startswith("--")]
     if len(days) != 1:
         log.info(__doc__)
