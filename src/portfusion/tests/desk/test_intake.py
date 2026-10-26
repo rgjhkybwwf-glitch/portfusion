@@ -54,33 +54,29 @@ def test_a_dropped_document_keeps_its_download_time(inbox):
         assert abs((inbox / name).stat().st_mtime - dt.datetime.now().timestamp()) < 60
 
 
-def test_a_document_that_states_no_instant_is_dated_by_its_download(tmp_path, monkeypatch):
+def test_a_document_that_states_no_instant_is_dated_by_its_download(inbox, monkeypatch):
     """ii's holdings export has no date in it. The bench reads the file's time instead and says
     so, rather than leaving Dated blank and the item blocked."""
     import datetime as dt
     import os
     from zoneinfo import ZoneInfo
-    from portfusion.desk.intake import read_document
-    doc = tmp_path / "Holdings.csv"
+    doc = inbox / "Holdings.csv"
     doc.write_text("Symbol,Name,Qty,Price\nWEND,Wendmoor,100,20p\n", encoding="utf-8")
     # A LONDON DOWNLOAD TIME, as the reader takes one: a naive time is the machine's own zone,
     # and would pass only where that zone is London.
     pulled = dt.datetime(2026, 9, 30, 15, 3, tzinfo=ZoneInfo("Europe/London"))
     os.utime(doc, (pulled.timestamp(), pulled.timestamp()))
-    monkeypatch.setattr(read_document, "INBOX", str(tmp_path))
     seen = _bench.recognise("Holdings.csv")
     assert seen["instant"] == "2026-09-30 15:03" and seen["instant_from"] == "download"
 
 
-def test_a_name_is_read_from_the_workbench_and_a_path_only_from_code(tmp_path, monkeypatch):
+def test_a_name_is_read_from_the_workbench_and_a_path_only_from_code(inbox, tmp_path):
     """EVERY BROWSER ROUTE REACHES THE READER, so a name is read from the workbench and never as a
     path; a path is read only by `extract_file`, which the code alone calls."""
     from portfusion.desk.intake import read_document
-    inbox, outside = tmp_path / "inbox", tmp_path / "elsewhere" / "kept.csv"
-    inbox.mkdir()
+    outside = tmp_path / "elsewhere" / "kept.csv"
     outside.parent.mkdir()
     outside.write_text("Date,Amount\n01/01/2026,1.00\n", encoding="utf-8")
-    monkeypatch.setattr(read_document, "INBOX", str(inbox))
     with pytest.raises(FileNotFoundError):
         read_document.extract(str(outside))
     assert read_document.modified(str(outside)) is None
@@ -967,8 +963,7 @@ def test_the_guide_is_the_rules_the_columns_and_what_is_waiting(read_item, monke
 # --- the archive name -----------------------------------------------------------------------
 
 @needs("accounts", "buys")
-def test_a_committed_document_is_filed_under_the_folder_s_own_convention(item, store_copy,
-                                                                        tmp_path, monkeypatch):
+def test_a_committed_document_is_filed_under_the_folder_s_own_convention(item, store_copy):
     """`_archive/statements/` names a document by `rules.ARCHIVE_CONVENTION`, never by the name it
     was dropped under. The three evidence limbs ARE the three parts of that convention, so the
     name is derived from them rather than typed.
@@ -977,22 +972,16 @@ def test_a_committed_document_is_filed_under_the_folder_s_own_convention(item, s
     it, and that half is test_bench.py's
     `test_the_archive_name_carries_the_instant_the_document_states`."""
     from portfusion.desk.doors import commit as _commit
-    monkeypatch.setattr(_commit, "ARCHIVE", tmp_path / "archive")
     from portfusion.record import schema
-    monkeypatch.setattr(schema, "STATEMENTS", tmp_path / "statements")
-    inbox = schema.BOOK / "_inbox"
-    held = sorted(inbox.iterdir()) if inbox.is_dir() else None
-    monkeypatch.setattr(filing, "BOOK", tmp_path)
-    (tmp_path / "_inbox").mkdir(exist_ok=True)
-    (tmp_path / "_inbox" / "Contract_Note_88213.pdf").write_bytes(b"%PDF-1.4")
+    (schema.inbox() / "Contract_Note_88213.pdf").write_bytes(b"%PDF-1.4")
+    filed_before = set(schema.filed_statements())
 
     _ready(item)
     item["document"] = {"name": "Contract_Note_88213.pdf"}
     _bench.save(item)
     name = f"01 Sep 2026 ii contract note TESTREF1 ({GOOD_TRADE['ticker']})"
     # BOTH NAMES TAKEN, the convention's and the one with the item's id: refused, nothing moved.
-    (tmp_path / "statements").mkdir()
-    taken = [tmp_path / "statements" / f"{name}{tail}.pdf" for tail in ("", f"-{item['id']}")]
+    taken = [schema.statements() / f"{name}{tail}.pdf" for tail in ("", f"-{item['id']}")]
     for i, path in enumerate(taken):
         path.write_bytes(b"another document %d" % i)
     item["acknowledged"] = _bench.already_in_the_record(item)     # the owner's: worked twice
@@ -1001,19 +990,16 @@ def test_a_committed_document_is_filed_under_the_folder_s_own_convention(item, s
     with pytest.raises(_commit.Refused, match="is filed already"):
         _commit.commit(item["id"])
     assert [p.read_bytes() for p in taken] == [b"another document 0", b"another document 1"]
-    assert (tmp_path / "_inbox" / "Contract_Note_88213.pdf").exists(), "the document moved"
+    assert (schema.inbox() / "Contract_Note_88213.pdf").exists(), "the document moved"
     assert (store_copy / "buys.csv").read_bytes() == buys, "a refused commit wrote its row"
     for path in taken:
         path.unlink()
 
     _commit.commit(item["id"])
 
-    filed = sorted(p.name for p in (tmp_path / "statements").iterdir())
-    assert filed == [f"{name}.pdf"], filed
-    assert not (tmp_path / "_inbox" / "Contract_Note_88213.pdf").exists(), "the document stayed"
-    # WHAT IT HELD, not that it exists: a book need not have one, and the demo has none.
-    assert (sorted(inbox.iterdir()) if inbox.is_dir() else None) == held, \
-        "the real inbox must be untouched by this test"
+    filed = set(schema.filed_statements()) - filed_before
+    assert filed == {f"{name}.pdf"}, filed
+    assert not (schema.inbox() / "Contract_Note_88213.pdf").exists(), "the document stayed"
 
 
 def test_an_unparseable_date_keeps_the_original_name_rather_than_inventing_one(item):
@@ -1068,9 +1054,10 @@ def test_a_refused_withdrawal_reaches_the_screen_as_a_409(workbench):
     from portfusion.desk import app as _app
     box, _ = workbench
     (box / "note.csv").write_bytes(b"x")
+    schema.statements().mkdir(parents=True)
 
     with pytest.raises(HTTPException) as e:
-        _app.inbox_withdraw("note.csv", destination=str(schema.STATEMENTS))
+        _app.inbox_withdraw("note.csv", destination=str(schema.statements()))
 
     assert e.value.status_code == 409, "a refusal must not reach the screen as a 500"
     assert "inside the repository" in str(e.value.detail), \
@@ -1103,7 +1090,7 @@ def test_every_archived_contract_note_reads_back_its_own_reference():
     import re
     from portfusion.record import schema
     from portfusion.desk.intake import read_document
-    notes = [(p, m.group(1)) for p in sorted(schema.STATEMENTS.glob("*.pdf"))
+    notes = [(p, m.group(1)) for p in sorted(schema.statements().glob("*.pdf"))
              if (m := re.search(r"contract note ([A-Z0-9]{5,})", p.name))]
     assert notes, "no archived contract note to read — has the naming convention moved?"
     for path, ref in notes:
@@ -1116,20 +1103,18 @@ def test_every_archived_contract_note_reads_back_its_own_reference():
 # A KIND THIS MACHINE READS IS READ WHEN IT IS OPENED, AND NEVER SENT
 # =====================================================================================
 
-def test_opening_a_readable_csv_reads_it_here_and_never_asks_for_a_reading(tmp_path, monkeypatch):
+def test_opening_a_readable_csv_reads_it_here_and_never_asks_for_a_reading(inbox, monkeypatch):
     """A class in `read_rows.LOCAL` is read by `bench.read_here()` as the item opens; no reading
     is asked for."""
     import sys
     sys.path.insert(0, str(SRC / "tests"))
     from test_read_rows import LEDGER
-    from portfusion.desk.intake import propose, read_document
-    monkeypatch.setattr(_bench, "BENCH_DIR", tmp_path / "bench")
-    monkeypatch.setattr(read_document, "INBOX", str(tmp_path))
+    from portfusion.desk.intake import propose
     monkeypatch.setattr(recorded, "matching_row", lambda table, values: None)
     monkeypatch.setattr(recorded, "cash_currencies", lambda account: {"GBP"})
     monkeypatch.setattr(recorded, "accounts_citing", lambda ref: {"Voss ii Trading"})
     monkeypatch.setattr(propose, "propose", lambda *a: pytest.fail("a reading was asked for"))
-    (tmp_path / "ledger.csv").write_text(LEDGER, encoding="utf-8")
+    (inbox / "ledger.csv").write_text(LEDGER, encoding="utf-8")
 
     it = _bench.for_document("ledger.csv")
     assert it["proposed"]["local"] and it["evidence_class"] == "ii-transactions"

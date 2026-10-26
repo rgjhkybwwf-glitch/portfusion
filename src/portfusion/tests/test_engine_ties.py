@@ -367,7 +367,7 @@ def test_every_share_reading_rests_on_units_that_still_agree(book):
     one holdings export, filed on the Bench, which writes the reading. Never a time of day.
     """
     from portfusion.desk.intake import read_document, read_rows
-    folder = D.schema.STATEMENTS
+    folder = D.schema.statements()
     filed = [p.name for p in folder.iterdir()] if folder.is_dir() else []
     owed = []
     for r in D.ac_rows:

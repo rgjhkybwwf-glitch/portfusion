@@ -158,7 +158,7 @@ def test_a_sweep_with_no_sign_in_anywhere_names_each_vendor_and_raises_nothing(
     def no_network(*a, **k):
         raise AssertionError("a request was built — the feed reached for the network")
     monkeypatch.setattr(urllib.request, "urlopen", no_network)
-    monkeypatch.setattr(ig.load_credentials, "__defaults__", (str(tmp_path / "none.json"),))
+    monkeypatch.setattr(ig._schema, "BOOK", tmp_path)
     monkeypatch.setattr(tv, "SESSION_FILE", str(tmp_path / "none.tv.json"))
     r = R.sweep()
     for part in ("ig_levels", "ig_equity", "tv", "watchlist"):

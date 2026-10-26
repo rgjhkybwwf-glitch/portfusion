@@ -32,7 +32,7 @@ def test_the_workbench_is_clear():
     """
     # THE LOADED BOOK'S WORKBENCH, not the checkout's.
     from portfusion.record import schema
-    inbox = schema.INBOX
+    inbox = schema.inbox()
     if not inbox.is_dir():
         return          # the workbench is optional; its discipline is not
 
@@ -82,7 +82,7 @@ def test_no_bench_item_has_been_written_and_not_archived():
     import json
 
     from portfusion.record import schema
-    bench = schema.INBOX / ".bench"             # the loaded book's
+    bench = schema.inbox() / ".bench"             # the loaded book's
     if not bench.is_dir():
         return
 
@@ -167,7 +167,7 @@ def test_a_working_note_and_its_document_are_never_separated():
     import json
 
     from portfusion.record import schema
-    inbox = schema.INBOX                        # the loaded book's
+    inbox = schema.inbox()                        # the loaded book's
     bench = inbox / ".bench"
 
     documents = {p.name for p in inbox.glob("*") if p.is_file() and not p.name.startswith(".")}

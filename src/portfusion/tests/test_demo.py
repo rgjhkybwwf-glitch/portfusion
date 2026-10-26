@@ -52,22 +52,16 @@ def test_a_fresh_run_of_the_generator_writes_the_demo_exactly(tmp_path, make_dem
     assert not differ, f"a fresh run differs from demo/ in {differ}: run tools/make_demo.py"
 
 
-def test_the_demos_bench_record_is_what_the_bench_gives_its_note_today(tmp_path, monkeypatch):
+def test_the_demos_bench_record_is_what_the_bench_gives_its_note_today(inbox):
     """THE BENCH RECORD IN THE CURRENT SHAPE, held rather than asserted. Its filed note is opened
     on a bench under the name it arrived as; what the bench recognises, the class and the three
     limbs must be the record's own, and every key the bench gives an item must be on it. A bench
     that starts writing another shape fails here, and the generator follows."""
-    from portfusion.desk.intake import bench, read_document
-    from portfusion.desk.intake import filing
+    from portfusion.desk.intake import bench, filing
     archived = [json.loads(p.read_text()) for p in sorted((ROOT / DEMO / "_archive" / "bench").glob("*.json"))]
     assert len(archived) == 1, "the demo keeps one bench record"
     item = archived[0]
-    inbox = tmp_path / "_inbox"
-    (inbox / ".bench").mkdir(parents=True)
     shutil.copy(ROOT / DEMO / item["document_archived_to"], inbox / item["document"]["name"])
-    monkeypatch.setattr(read_document, "INBOX", str(inbox))
-    monkeypatch.setattr(bench, "BENCH_DIR", inbox / ".bench")
-    monkeypatch.setattr(filing, "BOOK", tmp_path)
 
     fresh = bench.for_document(item["document"]["name"])
     for key in ("evidence_class", "evidence", "recognised", "origin", "title", "document"):

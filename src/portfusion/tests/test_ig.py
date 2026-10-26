@@ -516,12 +516,10 @@ def test_a_label_with_no_account_name_is_refused_rather_than_guessed(monkeypatch
 # the desk's `except Exception`.
 # =====================================================================================
 
-def _creds_file(tmp_path, monkeypatch, blocks):
+def _creds_file(tmp_path, blocks):
     import json
-    from portfusion.feeds import ig as I
     p = tmp_path / "credentials.json"
     p.write_text(json.dumps(blocks))
-    monkeypatch.setattr(I, "CREDENTIALS_PATH", str(p), raising=False)
     return p
 
 
@@ -530,22 +528,20 @@ IG_BLOCK = {"identifier": "u", "password": "p", "api_key": "k", "env": "demo",
 ANTHROPIC_BLOCK = {"api_key": "sk-ant-x", "workspace_id": "ws"}
 
 
-def test_a_non_ig_entry_does_not_break_the_ig_credentials(tmp_path, monkeypatch):
+def test_a_non_ig_entry_does_not_break_the_ig_credentials(tmp_path):
     """An ANTHROPIC block beside the IG ones must be ignored, not judged."""
     from portfusion.feeds import ig as I
-    path = _creds_file(tmp_path, monkeypatch,
-                       {"VOSS_IG": dict(IG_BLOCK), "ANTHROPIC": dict(ANTHROPIC_BLOCK)})
+    path = _creds_file(tmp_path, {"VOSS_IG": dict(IG_BLOCK), "ANTHROPIC": dict(ANTHROPIC_BLOCK)})
     assert sorted(I.load_credentials(str(path))) == ["VOSS_IG"], \
         "the non-IG entry was not skipped"
 
 
-def test_a_credentials_problem_raises_rather_than_exiting(tmp_path, monkeypatch):
+def test_a_credentials_problem_raises_rather_than_exiting(tmp_path):
     """CATCHABLE, so a server can report it. sys.exit() raises SystemExit, which slips past
     every `except Exception` between here and the browser."""
     from portfusion.feeds import ig as I
-    path = _creds_file(tmp_path, monkeypatch,
-                       {"VOSS_IG": {"identifier": "u", "password": "", "api_key": "k",
-                                      "env": "demo"}})
+    path = _creds_file(tmp_path, {"VOSS_IG": {"identifier": "u", "password": "", "api_key": "k",
+                                              "env": "demo"}})
     with pytest.raises(I.CredentialsError):
         I.load_credentials(str(path))
 

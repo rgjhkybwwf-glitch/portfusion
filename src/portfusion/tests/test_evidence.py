@@ -106,7 +106,7 @@ def _archive_names():
     """The loaded book's filed documents: the folder the doors file into. A dot-file (the Mac's
     `.DS_Store`) is the machine's, not a document."""
     from portfusion.record import schema
-    folder = schema.STATEMENTS
+    folder = schema.statements()
     return [p.name for p in folder.iterdir() if not p.name.startswith(".")] if folder.is_dir() else []
 
 
@@ -249,7 +249,7 @@ def test_every_stored_deal_reference_is_findable_in_an_archived_statement(D):
     pypdf = pytest.importorskip("pypdf", reason="pypdf reads the archived statements")
     # THE LOADED BOOK'S archive — the same derivation the doors use. The repo's own path
     # would open this book's statements whatever book the deal references belong to.
-    folder = D.schema.STATEMENTS
+    folder = D.schema.statements()
     if not folder.is_dir():
         pytest.skip("no _archive/statements/ on this checkout")
 
@@ -363,7 +363,7 @@ def test_an_ii_contract_note_is_recognised_and_nothing_else_is_taken_for_one():
     import datetime as dt
     from portfusion.record import rules as D
     from portfusion.desk.intake import read_document
-    folder = D.schema.STATEMENTS
+    folder = D.schema.statements()
     if not folder.is_dir():
         pytest.skip("this book has filed no documents")
     notes = 0
