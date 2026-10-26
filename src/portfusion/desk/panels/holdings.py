@@ -76,7 +76,7 @@ MARK_REFRESHES = 5
 #: flag (`why_entered_owed`), never decided here.
 REASON_COLUMNS = ("whys", "research_notes")
 
-#: WHAT A ROW'S DETAIL OPENS, under app.js's one desk-wide order: the whys, the research notes,
+#: WHAT A ROW'S DETAIL OPENS, under kit.js's one desk-wide order: the whys, the research notes,
 #: then the mark history (`marks`, MARK_COLUMNS' table).
 DETAIL_COLUMNS = ("why_entered", "why_exited", "research_notes", "marks")
 
@@ -160,7 +160,8 @@ def _split(b, account) -> tuple:
 
 def _allocation(b, account) -> dict:
     """The engine's allocation, one breakdown per axis in ALLOCATION_AXES, largest slice first.
-    `share_of_largest` is the bar's length, the engine's, so app.js divides nothing."""
+    `share_of_largest` is the bar's length, the engine's, so the desk's script divides
+    nothing."""
     out = {}
     for axis in ALLOCATION_AXES:
         frame = b.allocation(by=axis, account=account or None)

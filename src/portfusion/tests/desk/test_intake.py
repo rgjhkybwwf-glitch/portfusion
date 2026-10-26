@@ -6,7 +6,7 @@ from portfusion.desk import app
 from desk_support import GOOD_EVIDENCE, GOOD_TRADE, _ready
 from portfusion.desk.intake import bench as _bench
 from portfusion.desk.intake import filing, recorded
-from harness import SRC, needs
+from harness import SRC, needs, desk_script
 
 
 # =====================================================================================
@@ -209,7 +209,7 @@ def test_every_key_the_bench_panel_sends_is_actually_READ_by_the_shell():
     dynamically by name, so the same check there would fail on correct code.
     """
     from portfusion.desk.panels import bench as panel
-    js = (SRC / "desk" / "static" / "app.js").read_text()
+    js = desk_script()
     unread = [k for k in panel.data() if f".{k}" not in js]
     assert not unread, (
         f"the bench panel sends {unread}, which app.js never reads. An unread field cannot be "
@@ -226,7 +226,7 @@ def test_the_screen_states_the_rules_it_does_not_hold_them():
     assert a["extensions"] == list(dropoff.ACCEPTED)
     assert a["max_bytes"] == dropoff.MAX_BYTES
 
-    js = (SRC / "desk" / "static" / "app.js").read_text()
+    js = desk_script()
     for ext in dropoff.ACCEPTED:
         assert f'"{ext}"' not in js, \
             f"app.js names {ext} itself — the list belongs to dropoff.py and would drift here"
@@ -785,7 +785,7 @@ def test_prose_fields_are_declared_long_so_the_screen_can_size_them():
     assert spec["qty"]["long"] is False
     assert {f["name"] for f in _bench.form_for("income") if f["long"]} == {"note", "detail"}
 
-    js = (SRC / "desk" / "static" / "app.js").read_text()
+    js = desk_script()
     assert "spec.long" in js and "<textarea data-f=" in js, \
         "app.js no longer renders a long field as a textarea"
 
@@ -1084,7 +1084,7 @@ def test_the_withdraw_button_calls_the_route_that_exists():
     `test_no_file_names_a_tab_or_button_that_no_longer_exists` catches a RETIRED name; this
     catches the other direction — a button wired to a verb or a path the server does not serve.
     """
-    js = (SRC / "desk" / "static" / "app.js").read_text(encoding="utf-8")
+    js = desk_script()
     assert "/api/inbox/${name}" in js, "the withdraw button no longer calls /api/inbox/{name}"
     hit = js[js.index("/api/inbox/${name}"):][:400]
     assert "DELETE" in hit, "the withdraw button no longer uses the DELETE verb the route serves"

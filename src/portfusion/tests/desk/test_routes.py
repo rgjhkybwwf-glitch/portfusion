@@ -5,7 +5,7 @@ import re
 import pytest
 from portfusion.desk import actions, app, panels, engine
 from fastapi.testclient import TestClient
-from harness import SRC
+from harness import SRC, desk_script
 
 
 # =====================================================================================
@@ -504,7 +504,6 @@ def test_a_drop_with_no_download_time_is_not_refused_for_it(client, inbox):
     """A FILE WITH NO MODIFIED TIME is not refused for it: the page sends the parameter only when
     there is a time, and the route takes a drop without one."""
     import re
-    from desk_support import _static
-    js = re.sub(r"/\*.*?\*/", "", _static("app.js"), flags=re.S)
+    js = re.sub(r"/\*.*?\*/", "", desk_script(), flags=re.S)
     assert "`&modified=${f.lastModified || \"\"}`" not in js, "the page still sends an empty time"
     assert client.post("/api/inbox?name=note.pdf", content=b"%PDF-1.4 x").status_code == 200

@@ -1,5 +1,5 @@
 """THE DESK'S ANSWERS, for `desk_smoke.mjs`: the demo desk asked, in this process and with no
-server, for the page, its script, `/api/state` and every panel, written as one JSON file. Fails on
+server, for the page, its scripts, `/api/state` and every panel, written as one JSON file. Fails on
 any answer that is not a 200.
 
     npm ci --prefix tools                     # once: jsdom
@@ -28,9 +28,10 @@ def main(out: str) -> int:
         answers[url] = {"status": r.status_code, "body": r.text}
         return r.text
 
-    script = ask("/").split('<script src="', 1)[1].split('"', 1)[0]
-    answers["/"]["script"] = script
-    ask(script)
+    scripts = [s.split('"', 1)[0] for s in ask("/").split('<script src="')[1:]]
+    answers["/"]["scripts"] = scripts
+    for script in scripts:
+        ask(script)
     for p in json.loads(ask("/api/state"))["panels"]:
         ask(f"/api/panel/{p['name']}")
     with open(out, "w", encoding="utf-8") as f:

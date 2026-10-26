@@ -7,7 +7,7 @@ from portfusion.record import rules as _rules
 from portfusion.desk import actions
 from desk_support import SPREAD_BET_ACCOUNT, _ready, _static, all_crlf, to_crlf
 from portfusion.desk.intake import bench as _bench
-from harness import SRC, require
+from harness import SRC, require, desk_script
 
 # THE LOADED BOOK'S OWN LINES, derived once. These doors only replace rows the book has, so
 # every fixture row names whichever book is loaded rather than this one (docs/testing.md:
@@ -465,7 +465,7 @@ def test_take_all_can_only_ever_tick_a_line_the_form_already_allows(repo_root):
     the form had already opened, and this reads that filter rather than trusting the comment
     beside it.
     """
-    js = _static("app.js")
+    js = desk_script()
     import re
     m = re.search(r'const kind = e\.target\?\.dataset\?\.all;(.*?)\n    \}\);', js, re.S)
     assert m, "app.js no longer wires a take-all handler this test can read"
@@ -488,7 +488,7 @@ def test_the_header_box_reports_its_column_rather_than_claiming_it(repo_root):
     """A select-all showing "on" over a half-ticked column is a control lying about the thing it
     controls. It follows: checked only when every takeable row is taken, indeterminate when some
     are, disabled while none can be."""
-    js = _static("app.js")
+    js = desk_script()
     for state in ("all.indeterminate", "all.checked", "all.disabled"):
         assert state in js, f"the take-all no longer sets {state}"
 
@@ -501,7 +501,7 @@ def test_a_written_refresh_moves_to_what_changed_and_a_refused_one_does_not(repo
     early return is what guarantees it, so this reads for the return rather than for the
     navigation alone.
     """
-    js = _static("app.js")
+    js = desk_script()
     import re
     m = re.search(r'if \(res\.ok === false\) \{\s*out\.textContent = `refused(.*?)\n        \}',
                   js, re.S)
@@ -542,7 +542,7 @@ def test_a_write_button_is_never_offered_without_something_to_write(repo_root):
 
     ASSERTED ON THE SOURCE, because this is a rendering rule and no Python object holds it.
     """
-    js = (SRC / "desk" / "static" / "app.js").read_text()
+    js = desk_script()
     assert 'wireActions("bench")' in js, "the Bench offers every standing button it has"
     assert 'wireActions("accounts"' not in js, "Reconcile has no standing button to offer"
     # THE RESTART IS THE SHELL'S, not a Bench button: the rail draws it on every page, so the
@@ -801,7 +801,7 @@ def test_the_bay_asks_for_a_past_day_and_the_write_banks_it(repo_root, monkeypat
     monkeypatch.setattr(marks, "bank_closes", lambda day, prices=None, rates=None: {"day": day})
     assert marks.refresh(prices=[_close()], close_of=_DAY) == {"ok": True, "day": _DAY}
 
-    js = _static("app.js")
+    js = desk_script()
     assert 'id="rb-on"' in js and "payload.close_of = closeOf" in js
 
 
@@ -814,7 +814,7 @@ def test_the_bay_sends_every_column_a_mark_is_written_with(repo_root):
     """
     import re
     from portfusion.record import schema
-    js = _static("app.js")
+    js = desk_script()
     for table, kind in (("current-prices", "prices"), ("fx", "rates")):
         m = re.search(rf"payload\.{kind}\.push\(\{{(.*?)\}}\);", js, re.S)
         assert m, f"app.js no longer builds a row of {kind} this test can read"
@@ -997,7 +997,7 @@ def test_an_ig_accounts_source_is_the_line_its_reading_is_filed_under(repo_root,
     assert row["source"] == D.evidence_source(reading["evidence"],
                                               reference=reading["reference"], account=account)
     assert reading["reference"] in row["source"]
-    js = _static("app.js")
+    js = desk_script()
     import re
     m = re.search(r'fill\(r\.account, "reading", \{(.*?)\}', js, re.S)
     assert m, "app.js no longer fills an IG account's row in a way this test can read"
@@ -1014,7 +1014,7 @@ def test_the_bay_sends_what_it_draws_and_a_mark_past_the_limit_says_so(repo_root
     assert not any("source" in r for r in q["prices"] + q["rates"]), \
         "the outgoing mark's source is sent to a page that does not draw it"
     assert "source" in holdings.MARK_COLUMNS, "the outgoing source has lost its home"
-    js = _static("app.js")
+    js = desk_script()
     assert '${r.stale ? "stale" : "muted"}' in js, "a mark past the limit no longer says so"
     css = _static("app.css")
     import re
@@ -1058,7 +1058,7 @@ def test_the_step_bar_says_the_marks_age_and_draws_the_bank_only_when_it_cannot_
     from portfusion.engine import Book
     from portfusion.desk.panels import price_refresh
     assert price_refresh.query()["age_days"] == Book().price_ageing()["age_days"]
-    js = _static("app.js")
+    js = desk_script()
     assert "${d.age_days} days old · limit ${d.age_limit} days" in js
     assert "const bank = !b.unavailable ? [] :" in js, "the Bank step is drawn when all is well"
     assert "filled in below" not in js and "can be replaced" not in js
@@ -1070,7 +1070,7 @@ def test_the_tick_column_is_headed_and_its_boxes_carry_no_word(repo_root):
     import re
     from portfusion.desk.panels import price_refresh
     assert "take" in price_refresh.GRID_COLUMNS
-    js = _static("app.js")
+    js = desk_script()
     assert '<th>${head("take")}</th>' in js, "the tick column has no heading"
     assert not re.search(r"data-tick disabled> take", js), "a box still prints the word"
     # ONE BOX PER ROW TEMPLATE: a price, a rate, a rate the record lacks, an IG account.
@@ -1082,7 +1082,7 @@ def test_a_fetched_line_says_beside_its_date_whether_it_is_a_close_or_a_time(rep
     shows "close" or the read's wall-clock time beside the date it sends. The date the write sends
     is the date alone: the time sits outside the form's fields."""
     import re
-    js = _static("app.js")
+    js = desk_script()
     cells = re.findall(r'<tr data-kind="(price|rate)".*?<input data-f="as_of" readonly '
                        r'size="10"> <span class="muted small" data-when></span>', js, re.S)
     assert sorted(cells) == ["price", "rate"], "a price or rate row lost its time"
@@ -1205,7 +1205,7 @@ def test_the_bay_offers_the_rates_the_record_lacks_and_banks_them(repo_root, mon
         sorted((g["currency"], g["date"]) for g in q["lacking"])
     if q["lacking"]:
         assert got["on"] == max(g["date"] for g in q["lacking"])
-    js = _static("app.js")
+    js = desk_script()
     assert 'group("Rates the record lacks", "lacking", d.lacking.map(lackingRow))' in js
     assert re.search(r'fill\(`\$\{row\.currency\}@\$\{w\}`, "lacking"', js)
     assert 'fetchSweep(e.currentTarget, { lacking: true }, "TradingView")' in js
