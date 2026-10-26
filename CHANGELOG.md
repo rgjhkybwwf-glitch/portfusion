@@ -141,6 +141,10 @@ prints it.
 - **The desk always listens on 127.0.0.1.** `portfusion desk --host` is gone: no browser could use
   it, and a script that forged the loopback name was answered as the owner, an owner-level enrol
   code included. SECURITY.md states what the Mac's door assumes: one user account on the Mac.
+- **The Mac's desk is sent with the hosted desk's page policy.** Its shell had no
+  `Content-Security-Policy`, so any page could frame it, and nosniff and no-referrer reached the
+  hosted copy only. One `bundle.SHELL_HEADERS` now gives every file of the shell the same
+  headers on both doors; the published `_headers` is written from it, byte for byte as before.
 
 ## 0.3.2 — beta, 24 Oct 2026
 

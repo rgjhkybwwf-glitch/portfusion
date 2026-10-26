@@ -72,7 +72,8 @@ def index():
     `no-store` still stops the SHELL being cached; the stamp stops a stale asset being served
     into a fresh shell.
     """
-    return Response(bundle.index(), media_type="text/html", headers=NO_STORE)
+    return Response(bundle.index(), media_type="text/html",
+                    headers={**NO_STORE, **bundle.SHELL_HEADERS})
 
 
 # A cached stylesheet or script runs a copy from before a change while the API serves the new
@@ -113,7 +114,7 @@ def _shell(path: str) -> Response:
     except KeyError:
         raise HTTPException(404, "no such file")
     return Response(body, media_type=MEDIA[pathlib.PurePosixPath(path).suffix],
-                    headers=NO_STORE)
+                    headers={**NO_STORE, **bundle.SHELL_HEADERS})
 
 
 @app.get("/static/{name}")

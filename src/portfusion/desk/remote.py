@@ -126,9 +126,9 @@ SIGNATURE_LEEWAY = 30
 
 #: Whose answers no other cache may keep, and no search engine may list. NETLIFY ADDS NOTHING
 #: TO A PROXIED ANSWER — its `_headers` (desk/publish.py) reach only the files it serves — so the
-#: door sends the shell's own nosniff and no-referrer as well.
+#: door sends the shell's own headers as well, the policy aside: a policy is a page's.
 PRIVATE = {"Cache-Control": "no-store, private", "X-Robots-Tag": "noindex",
-           "X-Content-Type-Options": "nosniff", "Referrer-Policy": "no-referrer"}
+           **{k: v for k, v in bundle.SHELL_HEADERS.items() if k != "Content-Security-Policy"}}
 
 door = FastAPI(title="PortFusion — the desk, remote", docs_url=None, redoc_url=None,
                openapi_url=None)

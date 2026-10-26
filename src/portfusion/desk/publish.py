@@ -77,13 +77,10 @@ def _netlify(tunnel: str) -> str:
     return _NETLIFY + rules
 
 
-#: The page may load and connect to its own origin only; nothing may frame it; nothing indexes it.
+#: Every file is sent with the shell's own headers (`bundle.SHELL_HEADERS`), and nothing indexes it.
 #: The manifest is named as what it is: Netlify has no type for .webmanifest and sends a binary
 #: blob, which a browser may decline to read as a manifest.
-_HEADERS = """/*
-  Content-Security-Policy: default-src 'self'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'none'; form-action 'none'
-  X-Content-Type-Options: nosniff
-  Referrer-Policy: no-referrer
+_HEADERS = "/*\n" + "".join(f"  {k}: {v}\n" for k, v in bundle.SHELL_HEADERS.items()) + """\
   X-Robots-Tag: noindex
 /
   Cache-Control: no-store

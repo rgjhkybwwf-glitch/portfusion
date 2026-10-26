@@ -56,6 +56,16 @@ assert set(APP_ICON_SIZES) == set(brand.APP_ICONS)
 SCRIPTS = ("core.js", "kit.js", "reading.js", "access.js", "bench.js", "sweep.js",
            "price-refresh.js", "app.js")
 
+#: WHAT EVERY FILE OF THE SHELL IS SENT WITH, by the Mac's door and in the hosted desk's
+#: `_headers` (`desk/publish.py`) alike: the page loads and connects to its own origin only, and
+#: nothing may frame it; no type is sniffed and no referrer sent.
+SHELL_HEADERS = {
+    "Content-Security-Policy": "default-src 'self'; img-src 'self' data:; frame-ancestors 'none'; "
+                               "base-uri 'none'; form-action 'none'",
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "no-referrer",
+}
+
 #: The files under desk/static/ the shell loads. index.html is not one: it is the page itself,
 #: filled in by `index()`, and its raw template is served nowhere.
 SHELL_STATIC = ("app.css", *SCRIPTS)
