@@ -5,8 +5,8 @@
 # from the wheel built from them. A pull request is merged on GitHub once this is green
 # (CONTRIBUTING.md). `newest`, beside it, is not required (docs/environment.md, Moving the lock).
 #
-# WHEN IT RUNS: on a pull request and on a push to main, not on every branch push: a run on
-# every branch push would spend a free plan's minutes quickly.
+# WHEN IT RUNS: on a pull request and on a push to main, not on every branch push: a branch's
+# commits are checked once, through its pull request, rather than twice, a pull request and a push.
 #
 # Each action is GitHub's own, pinned to a commit, and the repository allows no others.
 

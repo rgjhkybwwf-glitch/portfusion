@@ -13,6 +13,7 @@ hook it tests.
 """
 import json
 import os
+import shutil
 import subprocess
 import sys
 
@@ -31,12 +32,11 @@ def _git(work, *args):
     return subprocess.run(["git", *args], cwd=work, capture_output=True, text=True)
 
 
-@pytest.fixture
-def repo(tmp_path, repo_root):
-    """A throwaway repo on the project's hooks and a new book's `.gitignore`, holding a fake
-    credentials.json, with no remote."""
+@pytest.fixture(scope="module")
+def _repo_made(tmp_path_factory, repo_root):
+    """`repo`, made once for the module: its first commit runs the hooks, which is the cost."""
     from portfusion import init
-    work = tmp_path / "work"
+    work = tmp_path_factory.mktemp("repo") / "work"
     work.mkdir()
     for args in (["init", "-q", "-b", "master"], ["config", "user.email", "t@t"],
                  ["config", "user.name", "t"], ["config", "core.hooksPath", str(repo_root / ".githooks")]):
@@ -47,6 +47,15 @@ def repo(tmp_path, repo_root):
         "account_id": ACCOUNT_ID, "env": "LIVE"}}))
     _git(work, "add", ".gitignore")
     assert _git(work, "commit", "-qm", "start").returncode == 0
+    return work
+
+
+@pytest.fixture
+def repo(_repo_made, tmp_path):
+    """A throwaway repo on the project's hooks and a new book's `.gitignore`, holding a fake
+    credentials.json, with no remote: a copy of the module's, for each test."""
+    work = tmp_path / "work"
+    shutil.copytree(_repo_made, work, symlinks=True)
     return work
 
 
@@ -162,11 +171,12 @@ def test_history_finds_what_no_verify_let_through(repo, repo_root):
 # PRE-PUSH: main only ever gains
 # =====================================================================================
 
-@pytest.fixture
-def pushed(tmp_path, repo_root):
-    """A repo on the project's hooks whose `main` is on a bare `origin`, two commits deep."""
-    origin, work = tmp_path / "origin.git", tmp_path / "pushed"
-    _git(tmp_path, "init", "-q", "--bare", "-b", "main", str(origin))
+@pytest.fixture(scope="module")
+def _pushed_made(tmp_path_factory, repo_root):
+    """`pushed`, made once for the module: its commits and push run the hooks, which is the cost."""
+    made = tmp_path_factory.mktemp("pushed")
+    origin, work = made / "origin.git", made / "pushed"
+    _git(made, "init", "-q", "--bare", "-b", "main", str(origin))
     work.mkdir()
     for args in (["init", "-q", "-b", "main"], ["config", "user.email", "t@t"],
                  ["config", "user.name", "t"], ["config", "core.hooksPath", str(repo_root / ".githooks")],
@@ -176,6 +186,17 @@ def pushed(tmp_path, repo_root):
         assert _commit(work, name, name).returncode == 0
     assert _push(work, "main").returncode == 0
     assert _tip(work, "origin/main") == _tip(work, "main"), "main did not reach origin"
+    return made
+
+
+@pytest.fixture
+def pushed(_pushed_made, tmp_path):
+    """A repo on the project's hooks whose `main` is on a bare `origin`, two commits deep: a copy
+    of the module's, its origin with it, for each test."""
+    for name in ("origin.git", "pushed"):
+        shutil.copytree(_pushed_made / name, tmp_path / name, symlinks=True)
+    work = tmp_path / "pushed"
+    _git(work, "remote", "set-url", "origin", str(tmp_path / "origin.git"))
     return work
 
 

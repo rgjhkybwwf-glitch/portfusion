@@ -12,7 +12,7 @@ The tracked files are copied to an empty folder and asked three ways:
   the desk's screens, the typeface, the suite) and reaches back into no checkout. The guards that
   read a checkout skip there, as they do for a user, which is why the copy is asked as well.
 
-Green means all three pass. The workflow, `.github/workflows/guard.yml`, runs this same file, so
+Green means all three pass; the first stage that fails ends the run. The workflow, `.github/workflows/guard.yml`, runs this same file, so
 the Mac and GitHub ask the question one way, and it is the workflow's one run of the suite.
 
     python3 tools/clean_room.py             run it; exit 0 only when all three pass
@@ -95,6 +95,13 @@ def verdict(code: int, output: str) -> list[str]:
     return [f"FAILED: {t}" for t in sorted(failed)]
 
 
+def failed(problems: list[str]) -> int:
+    """A stage's failures, said; the stages after it do not run, so CI is red when it is known."""
+    for line in problems:
+        log.error(line)
+    return 1
+
+
 def main(argv: list[str]) -> int:
     top = pathlib.Path(tempfile.mkdtemp(prefix="clean-room-"))
     into, user = top / "copy", top / "user"
@@ -107,6 +114,8 @@ def main(argv: list[str]) -> int:
         code, output = run_suite(into, copy, "pytest", "-p", "no:cacheprovider")
         log.info(output.rstrip())
         problems = [f"the copy: {p}" for p in verdict(code, output)]
+        if problems:
+            return failed(problems)
         # A NEW BOOK, the first a new user has: every table and no row. A test built from rows it
         # does not hold skips; one that fails leans on a book like the demo.
         empty = top / "a-new-book"
@@ -116,16 +125,17 @@ def main(argv: list[str]) -> int:
         code, output = run_suite(into, copy, "pytest", "-p", "no:cacheprovider", book=str(empty))
         log.info(output.rstrip().splitlines()[-1] if output.strip() else "")
         problems += [f"a new book: {p}" for p in verdict(code, output)]
+        if problems:
+            return failed(problems)
         wheel = build(into)
         log.info(f"clean room: built {wheel.name}; `portfusion check` from {user}")
         code, output = run_suite(user, install(f"{wheel}[dev]", lock, user), "portfusion", "check")
         log.info(output.rstrip())
         problems += [f"the wheel: {p}" for p in verdict(code, output)]
-        for line in problems:
-            log.error(line)
-        if not problems:
-            log.info("clean room: green — the app stands on its own")
-        return 1 if problems else 0
+        if problems:
+            return failed(problems)
+        log.info("clean room: green — the app stands on its own")
+        return 0
     finally:
         if "--keep" in argv:
             log.info(f"the copy, the wheel and the venvs are kept at {top}")

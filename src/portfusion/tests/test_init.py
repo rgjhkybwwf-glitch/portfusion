@@ -3,6 +3,7 @@ anything already there."""
 import csv
 import os
 import pathlib
+import shutil
 import subprocess
 import sys
 
@@ -212,23 +213,22 @@ def test_a_book_begun_mid_quarter_is_measured_from_its_opening(tmp_path):
     assert run.returncode == 0, run.stderr[-2000:]
 
 
-def test_init_runs_where_there_is_no_book(tmp_path):
+def test_init_runs_where_there_is_no_book(tmp_path, capsys):
     """A new user's first command is typed where no book is yet, and every other command refuses
     there: `init` alone must not, by either route to it."""
     env = {k: v for k, v in os.environ.items() if k != schema.ENV}
     for n, route in enumerate((["-m", "portfusion", "init"], ["-m", "portfusion.init"])):
-        run = subprocess.run([sys.executable, *route, f"book{n}", "--no-venv"], cwd=tmp_path,
-                             env=env, capture_output=True, text=True)
+        run = subprocess.run([sys.executable, *route, f"book{n}", "--no-venv", "--no-git"],
+                             cwd=tmp_path, env=env, capture_output=True, text=True)
         assert run.returncode == 0 and (tmp_path / f"book{n}" / "store").is_dir(), run.stderr
     # `--begins` TAKES A DAY as well as a year, and the book's record begins on it.
-    run = subprocess.run([sys.executable, "-m", "portfusion", "init", "dated", "--no-git",
-                          "--begins", "2026-05-18"], cwd=tmp_path, env=env, capture_output=True,
-                         text=True)
-    assert run.returncode == 0, run.stderr
+    from portfusion.init import __main__ as command
+    assert command.main([str(tmp_path / "dated"), "--no-git", "--no-venv",
+                         "--begins", "2026-05-18"]) == 0
     assert "record_begins,2026-05-18" in (tmp_path / "dated/store/settings.csv").read_text()
-    run = subprocess.run([sys.executable, "-m", "portfusion", "init", "undated", "--no-git",
-                          "--begins", "15 May"], cwd=tmp_path, env=env, capture_output=True, text=True)
-    assert run.returncode == 2 and "neither a year nor a day" in run.stderr, run.stderr
+    with pytest.raises(SystemExit) as refused:
+        command.main([str(tmp_path / "undated"), "--no-git", "--no-venv", "--begins", "15 May"])
+    assert refused.value.code == 2 and "neither a year nor a day" in capsys.readouterr().err
     assert not (tmp_path / "undated").exists()
 
 
@@ -265,15 +265,35 @@ def _git_env() -> dict:
         [str(pathlib.Path(sys.executable).parent), "/usr/bin", "/bin"])}
 
 
-def _started(tmp_path, **made):
-    """A new book, made as `create()` is told, with its history begun under a throwaway name."""
+@pytest.fixture(scope="module")
+def _books_started(tmp_path_factory):
+    """Each kind of started book, made once for the module: its first commit runs the gate,
+    which is the cost."""
     from portfusion.init import start_history
-    book = create(tmp_path / "book", **made)
-    with pytest.MonkeyPatch.context() as m:
-        for k, v in _GIT_NAMED.items():
-            m.setenv(k, v)
-        assert "first commit" in start_history(book)
-    return book
+    made = {}
+
+    def make(**kind):
+        key = tuple(sorted(kind.items()))
+        if key not in made:
+            book = create(tmp_path_factory.mktemp("started") / "book", **kind)
+            with pytest.MonkeyPatch.context() as m:
+                for k, v in _GIT_NAMED.items():
+                    m.setenv(k, v)
+                assert "first commit" in start_history(book)
+            made[key] = book
+        return made[key]
+    return make
+
+
+@pytest.fixture
+def started(_books_started, tmp_path):
+    """A new book, made as `create()` is told, with its history begun under a throwaway name: a
+    copy of the module's, for each test."""
+    def copy(**kind):
+        book = tmp_path / "book"
+        shutil.copytree(_books_started(**kind), book, symlinks=True)
+        return book
+    return copy
 
 
 def _commit(book, path_dirs):
@@ -287,10 +307,10 @@ def _commit(book, path_dirs):
                           capture_output=True, text=True)
 
 
-def test_a_new_book_never_tracks_its_venv_or_what_python_leaves(tmp_path):
+def test_a_new_book_never_tracks_its_venv_or_what_python_leaves(started, tmp_path):
     """The book's venv lives in the book's folder, where a `git add -A` would commit it: the
     .gitignore `init` writes names it, and what Python leaves."""
-    book = _started(tmp_path)
+    book = started()
     for leftover in (".venv/bin/python3", "store/__pycache__/x.pyc", ".pytest_cache/v",
                      ".DS_Store"):
         (book / leftover).parent.mkdir(parents=True, exist_ok=True)
@@ -306,17 +326,18 @@ def test_no_secret_file_is_tracked_by_a_new_book_or_this_checkout(where, tmp_pat
     on the .gitignore `init` writes, and on this checkout's, and the gate refuses whatever it
     ignores."""
     from portfusion import secret_scan
-    folder = _started(tmp_path) if where == "a new book" else request.getfixturevalue("repo_root")
+    folder = (request.getfixturevalue("started")() if where == "a new book"
+              else request.getfixturevalue("repo_root"))
     names = [pattern.replace("*", "x") for pattern in secret_scan.SECRET_FILES]
     ignored = subprocess.run(["git", "check-ignore", "--no-index", "--stdin"], cwd=folder,
                              input="\n".join(names), capture_output=True, text=True).stdout
     assert sorted(ignored.split()) == sorted(names), f"{where} tracks a secret file"
 
 
-def test_a_new_books_secret_gate_refuses_a_credential(tmp_path):
+def test_a_new_books_secret_gate_refuses_a_credential(started, tmp_path):
     """A NEW BOOK HOLDS ITS OWNER'S CREDENTIALS TOO, so it has a gate, on its files and its
     messages: the app's, on from the first commit, run by the portfusion the book has installed."""
-    book = _started(tmp_path)
+    book = started()
     assert "pre-commit" in subprocess.run(["git", "ls-files", ".githooks"], cwd=book,
                                           capture_output=True, text=True).stdout
     result = _commit(book, [str(pathlib.Path(sys.executable).parent), "/usr/bin", "/bin"])
@@ -328,10 +349,10 @@ def test_a_new_books_secret_gate_refuses_a_credential(tmp_path):
     assert said.returncode != 0 and "commit-msg: REFUSED" in said.stderr, said.stderr
 
 
-def test_a_new_book_refuses_a_push_that_takes_anything_from_main(tmp_path):
+def test_a_new_book_refuses_a_push_that_takes_anything_from_main(started, tmp_path):
     """A HOST MAY PROTECT NO BRANCH, so `init` writes the hook that refuses a deletion or a
     rewrite of `main`. The guard is the app's, run by the portfusion the book runs."""
-    book = _started(tmp_path)
+    book = started()
     env = _git_env()
     env.pop("MAIN_REWRITE", None)
 
@@ -351,20 +372,20 @@ def test_a_new_book_refuses_a_push_that_takes_anything_from_main(tmp_path):
     assert shown == there, "main moved on the remote"
 
 
-def test_a_new_books_gate_refuses_when_it_cannot_run(tmp_path):
+def test_a_new_books_gate_refuses_when_it_cannot_run(started, tmp_path):
     """A gate that cannot find the app has checked nothing, so the commit is refused and the
     line says how to give it the app: never waved through."""
-    book = _started(tmp_path)
+    book = started()
     result = _commit(book, ["/usr/bin", "/bin"])
     assert result.returncode != 0 and "could not run" in result.stderr, result.stderr
 
 
-def test_a_book_made_to_push_on_commit_says_when_a_commit_is_not_backed_up(tmp_path):
+def test_a_book_made_to_push_on_commit_says_when_a_commit_is_not_backed_up(started, tmp_path):
     """`--push-on-commit` pushes a BRANCH, and a detached HEAD has none, so the hook says a commit
     there is not backed up. It never fails a commit, and a book made without the option has no
     such hook."""
     assert not (create(tmp_path / "plain") / ".githooks" / "post-commit").exists()
-    book = _started(tmp_path, push_on_commit=True)
+    book = started(push_on_commit=True)
     env = _git_env()
 
     def commit(name):
