@@ -149,6 +149,10 @@ prints it.
   Reconcile's rule, the audit) carry the £ and print their dates as dates: "band £40.70",
   "since 1 Sep 2026". The Price Refresh's outgoing price, level and rate are printed at their
   places ("2.3500 GBP", "10,480 pts", "1.3300"), and Reconcile's table sorts by its headings.
+- **A broker's knowledge has one home**, `record/rules_brokers.py`: each kind of export's map
+  (`COLUMN_MAPS`, `HOLDINGS_COLUMNS`, `LEDGER_MAPS`) carries its columns, labels and line reader,
+  and IG's ledger words sit beside them, so the readers in `desk/intake/read_rows.py` and the IG
+  sweep name no broker. No figure, page, reading or store moves.
 
 ## 0.3.2 — beta, 24 Oct 2026
 
