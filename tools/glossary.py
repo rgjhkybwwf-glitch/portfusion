@@ -44,8 +44,10 @@ def _figures() -> list[str]:
         label = "Return since the day the record begins (MWR)" if label == Book.SINCE_START else label
         # `point_in_time` asks whether the figure HAS A VALUE AT A DATE. A quarterly report may
         # print one that does; one that does not is live-only — "YTD income" and the YTD return
-        # are year-to-date by construction, and the rest are as-they-stand-now.
-        dated = "yes" if spec["point_in_time"] else "**no — live only**"
+        # are year-to-date by construction, and the rest are as-they-stand-now. A quarter's own
+        # (`report_only`) has a value at a date and none live.
+        dated = ("**yes — the report only**" if spec.get("report_only") else "yes") \
+            if spec["point_in_time"] else "**no — live only**"
         out.append(f"| {label} | `{spec['basis']}` | {spec['unit']} | {dated} |")
     return out
 

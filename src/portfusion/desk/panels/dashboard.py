@@ -47,8 +47,8 @@ def data() -> dict:
                 **({"indent": True} if label in INDENT else {})}
 
     # THE REGISTRY'S FIGURES IN THE REGISTRY'S ORDER: net asset value leads, as on the report, and
-    # exposure follows with the two parts that make it up.
-    figures = [fig(label) for label in b.HEADLINE]
+    # exposure follows with the two parts that make it up. A quarter's own is the report's.
+    figures = [fig(label) for label, spec in b.HEADLINE.items() if not spec.get("report_only")]
 
     return {
         # WHERE THE BOOK STANDS, AND WHEN. The same Book.valued_at() the report and every page
