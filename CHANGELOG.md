@@ -67,6 +67,13 @@ prints it.
   join `Book.HEADLINE`, marked as the report's only (`report_only`), and the engine gives both, so
   the report no longer counts the accounts itself. The registry's test reads the labels from the
   drawn page, where it read the data and missed both. Nothing on the desk or the report moves.
+- **One census of every writer in the package.** The scan that names each module allowed to
+  write now walks the whole package, not `desk/` alone, and counts a removal, a copy and a rename
+  as writes. Six writers outside `desk/` are named: the two feeds' sign-in files, the histories'
+  bank, `init`, the migrations and the schema's unused `dump()`. The store's doors are counted
+  by what each opens, so the Bench's commit, research notes, `init`, the stamp and the demo
+  generator are listed. Eight hand scans share one helper; four tests that only repeated the
+  census are gone. `Naming.rename()` is `Naming.apply()`, so a path's `rename()` counts.
 
 ## 0.3.2 — beta, 24 Oct 2026
 

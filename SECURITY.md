@@ -21,9 +21,11 @@ The newest release. Fixes are not back-ported to older ones.
 
 - **The desk's sign-in**: passkeys and the access levels,
   [`docs/access-levels.md`](docs/access-levels.md).
-- **The writers**: the desk's, named in `DESK_WRITERS`
-  (`src/portfusion/tests/desk/test_boundaries.py`); the histories (`src/portfusion/history/`);
-  and `portfusion migrate --write`.
+- **The writers**: every module that writes a file, named in `WRITERS`
+  (`src/portfusion/tests/desk/test_boundaries.py`). The record is written only by the doors under
+  `desk/`, and its histories by those doors and the price refresh, through `history/`; outside
+  `desk/`, `portfusion init` and `portfusion migrate --write` write a book, and a feed writes only
+  its own sign-in file.
 - **The feeds**: read-only by construction; a dealing endpoint is refused in code.
 - **The secret gate**: a commit that would put a credential into git is refused, in this
   repository and in every book whose history `portfusion init` starts

@@ -15,7 +15,7 @@ is the authority. THIS MODULE ONLY REPORTS
 WHAT IS ON DISK. If a ref looks wrong, the answer is to look at the note, not to correct it here.
 
 READ-ONLY, AND THAT IS STRUCTURAL. There is no write path in this file, and it is not in
-`DESK_WRITERS` (tests/desk/test_boundaries.py), so adding one fails the suite. The research repo
+`WRITERS` (tests/desk/test_boundaries.py), so adding one fails the suite. The research repo
 is a different project with its own git history; this one has no business editing it.
 
 THE BOOK MUST BUILD WITHOUT IT. A book's research repo is optional, a setting it may leave

@@ -164,26 +164,17 @@ def test_every_accepted_extension_is_one_the_intake_extractor_can_READ(inbox, tm
 def test_the_drop_off_has_no_way_to_make_a_document_LEAVE(repo_root):
     """ITS WHOLE CLAIM, ON THE SYNTAX TREE. `docs/intake.md` says a document leaves the
     workbench by being archived or by going back where it came from. A new route IN must not
-    quietly become a route OUT, so the module may call exactly one writing name and no
-    removing or renaming one at all.
+    quietly become a route OUT, so the module's one write is `write_bytes`, with no removal,
+    move, copy or rename at all.
 
-    Checked on the syntax tree: prose is not behaviour. That it never reaches the record's rules
-    or the engine is the `the-drop-off` import contract.
+    Checked on the syntax tree (`harness.file_calls`): prose is not behaviour. That it never
+    reaches the record's rules or the engine is the `the-drop-off` import contract.
     """
-    import ast
-    tree = ast.parse((SRC / "desk" / "intake" / "dropoff.py").read_text())
-    called = set()
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Call):
-            called.add(getattr(node.func, "attr", None) or getattr(node.func, "id", None))
-    assert "write_bytes" in called, "dropoff.py no longer writes — has the door moved?"
-    # `replace` IS IN THIS SET, which is why dropoff.py splits a path twice instead of calling
-    # `str.replace` — a syntax tree cannot tell that from `os.replace`, and `os.replace` is
-    # exactly how a document would be moved out of here in one line.
-    forbidden = {"unlink", "rmdir", "rmtree", "remove", "move", "rename", "replace", "copy2"}
-    assert not (called & forbidden), (
-        f"dropoff.py calls {sorted(called & forbidden)}. It is a way IN to _inbox/ and must "
-        f"never become a way out: a document leaves by being archived.")
+    from harness import file_calls
+    calls = {call for _, call, _ in file_calls(SRC / "desk" / "intake" / "dropoff.py")}
+    assert calls == {"write_bytes"}, (
+        f"dropoff.py writes by {sorted(calls)}. It is a way IN to _inbox/ and must never become "
+        f"a way out: a document leaves by being archived.")
 
 
 def test_the_route_hands_a_refusal_back_as_a_400(inbox):
@@ -889,16 +880,6 @@ def test_the_proposal_reaches_no_network(repo_root):
     calls = {getattr(n.func, "attr", None) or getattr(n.func, "id", None)
              for n in ast.walk(tree) if isinstance(n, ast.Call)}
     assert not calls & {"urlopen", "urlretrieve", "create_connection"}, calls
-
-
-def test_the_proposal_writes_nothing_of_its_own(repo_root):
-    """It saves through `bench.save()`, so it is not another writing module: the pinned set
-    in test_boundaries.py does not move for it."""
-    import ast
-    tree = ast.parse((SRC / "desk" / "intake" / "propose.py").read_text())
-    names = {getattr(n.func, "attr", None) or getattr(n.func, "id", None)
-             for n in ast.walk(tree) if isinstance(n, ast.Call)}
-    assert not (names & {"write_text", "write_bytes", "unlink", "move", "copy2"}), names
 
 
 def test_a_quote_survives_the_round_trip_through_the_store(read_item, monkeypatch):

@@ -114,7 +114,7 @@ failed = [(p, r.status_code) for p in paths if (r := desk.get(p)).status_code !=
 assert not failed, failed
 from portfusion.desk import naming, remote
 for name in remote.REMOTE_PANELS:          # what the hosted door renames before it answers
-    naming.of(b).rename(desk.get(f"/api/panel/{name}").json())
+    naming.of(b).apply(desk.get(f"/api/panel/{name}").json())
 """
 
 

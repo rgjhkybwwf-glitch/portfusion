@@ -11,7 +11,6 @@ import sys
 import pytest
 
 from portfusion.feeds import refresh as R
-from harness import SRC
 
 
 def _run(args, repo_root):
@@ -73,24 +72,6 @@ def test_no_sweep_starts_if_the_bank_fails(monkeypatch, capsys):
     log = _logged(monkeypatch, fail_archive=True)
     assert R.main([]) == 2
     assert log == [] and "ARCHIVE FAILED" in capsys.readouterr().out
-
-
-def test_refresh_never_opens_a_file_for_writing(repo_root):
-    """It prints for review and never writes; the desk's Price Refresh is the door.
-
-    Checked on the syntax tree: a grep would fail on a docstring that names a file.
-    """
-    import ast
-    tree = ast.parse((SRC / "feeds" / "refresh.py").read_text())
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Call) and getattr(node.func, "id", None) == "open":
-            mode = ""
-            if len(node.args) > 1 and isinstance(node.args[1], ast.Constant):
-                mode = str(node.args[1].value)
-            mode += "".join(str(k.value.value) for k in node.keywords
-                            if k.arg == "mode" and isinstance(k.value, ast.Constant))
-            assert "w" not in mode and "a" not in mode, \
-                f"feeds/refresh.py opens a file for writing (mode {mode!r}) — it must only print"
 
 
 # =================================================================================================

@@ -376,21 +376,6 @@ def test_choosing_a_command_reaches_no_broker(monkeypatch):
     assert ig.dispatch(["--not-a-flag"]) is None
 
 
-def test_the_sweep_still_writes_nothing(repo_root):
-    """The contract every tool here works to. Asserted of cmd_events because it generates ROWS,
-    the closest this module comes to writing."""
-    import ast
-    tree = ast.parse((SRC / "feeds" / "ig.py").read_text())
-    fn = next(n for n in ast.walk(tree)
-              if isinstance(n, ast.FunctionDef) and n.name == "cmd_events")
-    calls = [n.func.id for n in ast.walk(fn)
-             if isinstance(n, ast.Call) and isinstance(n.func, ast.Name)]
-    assert "open" not in calls, "cmd_events opens a file; it must only print"
-    attrs = [n.func.attr for n in ast.walk(fn)
-             if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute)]
-    assert "write_text" not in attrs and "to_csv" not in attrs
-
-
 # =====================================================================================
 # THE STRUCTURED READS — what the cmd_* functions compute, split out so the desk can reach it.
 #

@@ -657,18 +657,20 @@ def test_a_flag_list_is_found_by_id_whatever_it_is_called():
 # THE RULES IT SHARES WITH feeds/ig.py
 # =====================================================================================
 
-def test_it_writes_nothing_but_its_own_sign_in():
-    """IT PRINTS. YOU TICK. `desk/doors/marks.py` writes. On the syntax tree: the one file opened for
-    writing is SESSION_FILE, and no CSV writer is built."""
-    tree = ast.parse((SRC / "feeds" / "tv.py").read_text())
-    for node in ast.walk(tree):
-        if not isinstance(node, ast.Call):
-            continue
-        called = getattr(node.func, "attr", None) or getattr(node.func, "id", None)
-        assert called not in {"to_csv", "writer", "DictWriter"}, f"a CSV writer at {node.lineno}"
-        if called == "open" and len(node.args) > 1 and "w" in str(getattr(node.args[1], "value", "")):
-            assert getattr(node.args[0], "id", None) == "SESSION_FILE", \
-                f"feeds/tv.py opens {ast.dump(node.args[0])} for writing at line {node.lineno}"
+@pytest.mark.parametrize("feed, sign_in", [("tv", "SESSION_FILE"), ("ig", "SESSION_CACHE")])
+def test_a_feed_writes_nothing_but_its_own_sign_in(feed, sign_in, tmp_path):
+    """IT PRINTS. YOU TICK. `desk/doors/marks.py` writes. On the syntax tree (`harness.file_calls`):
+    every write a feed makes is to its own sign-in file, never a mark or an event."""
+    from harness import file_calls
+    planted = tmp_path / "feed.py"
+    planted.write_text(f'with open({sign_in}, "w") as fh:\n    fh.write("")\n'
+                       'open("buys.csv", "a")\n')
+    assert [(line, call) for line, call, target in file_calls(planted) if sign_in not in target] \
+        == [(3, "open")], "a planted write beyond the sign-in is found"
+    writes = file_calls(SRC / "feeds" / f"{feed}.py")
+    assert writes, f"feeds/{feed}.py no longer saves its sign-in: has it moved?"
+    elsewhere = [(line, call) for line, call, target in writes if sign_in not in target]
+    assert not elsewhere, f"feeds/{feed}.py writes beyond {sign_in}: {elsewhere}"
 
 
 #: What each feed holds that is a credential, by the name it holds it under.

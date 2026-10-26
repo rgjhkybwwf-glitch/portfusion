@@ -983,31 +983,15 @@ def test_nothing_on_the_bench_writes_to_the_store(repo_root):
     _inbox/.bench/ and produces text to paste. THE WRITE LIVES IN desk/doors/commit.py, which is a
     separate module on purpose: this guard stays sharp.
 
-    CHECKED ON THE SYNTAX TREE, not by grepping the source. Prose is not behaviour; the calls
-    are.
+    CHECKED ON THE SYNTAX TREE (`harness.file_calls`), not by grepping the source. Prose is not
+    behaviour; the calls are. Every write, a removal among them, is of the item note, through
+    `_path()`.
     """
-    import ast
-    tree = ast.parse((SRC / "desk" / "intake" / "bench.py").read_text())
-
-    def called(node):
-        f = node.func
-        return getattr(f, "attr", None) or getattr(f, "id", None)
-
-    writes = {"write_text", "write_bytes", "dump", "to_csv", "writer", "writerow", "writerows"}
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Call):
-            name = called(node)
-            if name in writes:
-                # The ONLY permitted write is the item note, and it goes through _path().
-                target = node.func.value if isinstance(node.func, ast.Attribute) else None
-                assert isinstance(target, ast.Call) and called(target) == "_path", \
-                    f"bench.py calls {name}() on something other than _path() — it must not " \
-                    f"write anywhere but the bench item itself"
-            if name == "open":
-                mode = "".join(str(a.value) for a in node.args[1:2]
-                               if isinstance(a, ast.Constant))
-                assert "w" not in mode and "a" not in mode, \
-                    f"bench.py opens a file for writing (mode {mode!r})"
+    from harness import file_calls
+    writes = file_calls(SRC / "desk" / "intake" / "bench.py")
+    elsewhere = [(line, call, target) for line, call, target in writes
+                 if not target.startswith("_path(")]
+    assert not elsewhere, f"bench.py writes somewhere but its own item note: {elsewhere}"
 
 
 def test_the_bench_writes_only_inside_its_own_directory(item, tmp_path, monkeypatch):
@@ -1103,7 +1087,7 @@ def test_the_screen_shows_the_whys_already_on_file(item):
 
 def test_an_item_is_not_approvable_until_every_gate_is_green(item):
     assert not _bench.approved(item)
-    # THE GATES ARE A NAMED SET, the shape test_boundaries.py's DESK_WRITERS uses. A new one
+    # THE GATES ARE A NAMED SET, the shape test_boundaries.py's WRITERS uses. A new one
     # joins by being written down here, on purpose — a gate that appears without a decision is a
     # gate nobody chose. "the reference retrieves it" is statement-grade checked at the door,
     # rather than asserted about a row afterwards.

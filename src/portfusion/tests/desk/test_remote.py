@@ -620,7 +620,7 @@ def test_a_principal_reads_the_macs_figures_with_the_holders_renamed(client, pri
     mac = TestClient(local.app, base_url="http://127.0.0.1:8765")
     for name in remote.REMOTE_PANELS:
         assert client.get(f"/api/panel/{name}", headers=principal).json() == \
-            n.rename(mac.get(f"/api/panel/{name}").json()), f"{name} differs from the Mac's"
+            n.apply(mac.get(f"/api/panel/{name}").json()), f"{name} differs from the Mac's"
     labels = list(engine.book().account_codes()["label"])
     assert client.get("/api/holdings", headers=principal).json()["accounts"] == labels
 

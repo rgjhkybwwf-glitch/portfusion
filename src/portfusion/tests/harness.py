@@ -15,6 +15,7 @@ code — which is how the report is actually invoked, and an in-process call wou
 """
 import functools
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -93,34 +94,121 @@ def holds(*found, what: str = "the rows this test is built from"):
 #: THE CALLS THAT WRITE OR REMOVE A FILE, by name: the one list every guard asking "does this
 #: module write?" reads (`write_call`).
 WRITE_CALLS = {"write_text", "write_bytes", "move", "copy2", "copyfile", "copytree", "unlink",
-               "rmtree", "_append", "to_csv", "dump"}
+               "rmtree", "rmdir", "touch", "_append", "to_csv", "dump"}
+
+#: The flags with which `os.open` creates, writes or empties a file.
+_OS_WRITE_FLAGS = ("O_WRONLY", "O_RDWR", "O_CREAT", "O_APPEND", "O_TRUNC")
 
 
 def write_call(node) -> str | None:
-    """The name of the write a call makes, or None. Beyond `WRITE_CALLS`: `os.replace(a, b)` and a
-    path's `.replace(target)` — one argument; a string's takes two — `os.rename`, and `open()`
-    with a mode that writes, appends or creates. A csv writer's rows are not counted: they go to
-    whatever it was handed, and a file is caught where it was opened."""
+    """The name of the write a call makes, or None. Beyond `WRITE_CALLS`: `os.replace(a, b)`, a
+    path's `.replace(target)` and `.rename(target)` — one argument; a string's replace takes two,
+    a frame's rename takes keywords — `os.rename`, `os.remove`, `shutil.copy`, `os.open` with a
+    flag that writes, and `open()` with a mode that writes, appends or creates. A csv writer's rows
+    are not counted: they go to whatever it was handed, and a file is caught where it was opened."""
     import ast
     if not isinstance(node, ast.Call):
         return None
     name = getattr(node.func, "attr", None) or getattr(node.func, "id", None)
     if name in WRITE_CALLS:
         return name
-    on_os = (isinstance(node.func, ast.Attribute) and isinstance(node.func.value, ast.Name)
-             and node.func.value.id == "os")
-    if name == "replace" and isinstance(node.func, ast.Attribute) and (on_os or len(node.args) == 1):
-        return "replace"
-    if name == "rename" and on_os:
-        return "rename"
+    on = (node.func.value.id if isinstance(node.func, ast.Attribute)
+          and isinstance(node.func.value, ast.Name) else None)
+    one_target = len(node.args) == 1 and not node.keywords
+    if name in ("replace", "rename") and isinstance(node.func, ast.Attribute) and (
+            on == "os" or one_target):
+        return name
+    if (on, name) in (("os", "remove"), ("shutil", "copy")):
+        return name
+    if (on, name) == ("os", "open"):
+        return name if any(f in ast.unparse(a) for a in node.args[1:2] for f in _OS_WRITE_FLAGS) \
+            else None
     if name in ("open", "fdopen"):
         modes = [a for a in node.args[1:2]] + [k.value for k in node.keywords if k.arg == "mode"]
-        if name == "open" and isinstance(node.func, ast.Attribute):     # path.open("w")
+        if name == "open" and isinstance(node.func, ast.Attribute) and on != "os":  # path.open("w")
             modes = [a for a in node.args[:1]] + modes
         if any(isinstance(m, ast.Constant) and isinstance(m.value, str)
                and set(m.value) & set("wax+") for m in modes):
             return name
     return None
+
+
+#: What names the store in a call's target: a table's path, the store's folder, or a `store`.
+STORE_NAMES = re.compile(r"\b(TABLES|STORE|store_dir|store)\b")
+
+#: The calls that read a file, for a census of what a module OPENS (`file_calls(reads=True)`).
+READ_CALLS = {"open", "fdopen", "read_text", "read_bytes", "read_csv"}
+
+
+def _names(text: str) -> set[str]:
+    """The names an expression reads: `table.path` is `table`, `table.path` and any `.path`."""
+    out = set()
+    for token in re.findall(r"[A-Za-z_][\w.]*", text):
+        parts = token.split(".")
+        out |= {".".join(parts[:i]) for i in range(1, len(parts) + 1)}
+        out |= {f".{p}" for p in parts[1:]}
+    return out
+
+
+def file_calls(path, reads: bool = False) -> list[tuple[int, str, str]]:
+    """(line, call, target) for each call in a source file that writes a file (`write_call`), or,
+    with `reads`, opens or reads one: THE ONE SCAN every guard of what a module writes asks.
+
+    The target is the receiver and the arguments, then what each name in it is
+    assigned, in the same function or at the module, and what a property it reads returns, so
+    `path.write_text(…)` after `path = schema.TABLES[t].path` reads as a store write. Within the
+    function, because a name as common as `path` means another thing in the next one."""
+    import ast
+    functions = (ast.FunctionDef, ast.AsyncFunctionDef)
+
+    def bindings(scope, outer):
+        """`outer`'s names and what `scope` assigns, not reaching into a function inside it."""
+        bound = {k: list(v) for k, v in outer.items()}
+        stack = list(ast.iter_child_nodes(scope))
+        while stack:
+            node = stack.pop()
+            if isinstance(node, functions):
+                if any(getattr(d, "id", None) == "property" for d in node.decorator_list):
+                    bound.setdefault(f".{node.name}", []).extend(
+                        ast.unparse(r.value) for r in ast.walk(node)
+                        if isinstance(r, ast.Return) and r.value)
+                continue
+            if isinstance(node, ast.Assign):
+                for t in node.targets:
+                    for name in t.elts if isinstance(t, (ast.Tuple, ast.List)) else [t]:
+                        bound.setdefault(ast.unparse(name), []).append(ast.unparse(node.value))
+            elif isinstance(node, (ast.For, ast.comprehension)):
+                bound.setdefault(ast.unparse(node.target), []).append(ast.unparse(node.iter))
+            elif isinstance(node, ast.withitem) and node.optional_vars is not None:
+                bound.setdefault(ast.unparse(node.optional_vars), []).append(
+                    ast.unparse(node.context_expr))
+            stack.extend(ast.iter_child_nodes(node))
+        return bound
+
+    calls = []
+
+    def visit(node, bound):
+        for child in ast.iter_child_nodes(node):
+            inner = bindings(child, bound) if isinstance(child, functions) else bound
+            if isinstance(child, ast.Call):
+                calls.append((child, inner))
+            visit(child, inner)
+
+    tree = ast.parse(Path(path).read_text(encoding="utf-8"))
+    visit(tree, bindings(tree, {}))
+    out = []
+    for node, bound in calls:
+        name = getattr(node.func, "attr", None) or getattr(node.func, "id", None)
+        call = write_call(node) or (name if reads and name in READ_CALLS else None)
+        if call is None:
+            continue
+        receiver = [node.func.value] if isinstance(node.func, ast.Attribute) else []
+        target = " ".join(ast.unparse(a) for a in [*receiver, *node.args])
+        for _ in range(2):                          # a name assigned from another, once removed
+            for word in _names(target) & bound.keys():
+                target += " " + " ".join(bound[word])
+        out.append((node.lineno, call, target))
+    return sorted(out)
 
 
 def free_id(table: str, step: int = 0) -> str:

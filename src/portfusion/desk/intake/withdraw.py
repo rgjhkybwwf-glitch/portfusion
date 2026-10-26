@@ -2,10 +2,10 @@
 
 WHY IT IS ITS OWN MODULE. `dropoff.py` is the door IN, and
 `test_the_drop_off_has_no_way_to_make_a_document_LEAVE` proves on its syntax tree that it can
-never become the door out — it may call `write_bytes` and not one name that moves or removes.
-Putting the exit there would have meant deleting `move` from that test's forbidden set, which
-is gutting a guard to do the exact thing the guard forbids. So the exit is a separate door with
-its own rules, and `tests/desk/test_boundaries.py:DESK_WRITERS` names it.
+never become the door out — its one write is `write_bytes`, and nothing that moves or removes.
+Putting the exit there would have meant opening that test to a move, which is gutting a guard
+to do the exact thing the guard forbids. So the exit is a separate door with its own rules, and
+`tests/desk/test_boundaries.py:WRITERS` names it.
 
 THE GAP IT CLOSES. `bench.discard()` removes the working NOTE and its docstring promises it never
 touches a document; the drop-off cannot make one leave. Without this, a document dropped on the

@@ -28,34 +28,34 @@ def n():
 
 
 def test_a_register_name_becomes_its_label_and_a_short_form_its_code(n):
-    assert n.rename({"account": "Ann IG Spread bet"}) == {"account": "A4 · IG Spread bet"}
-    assert n.rename("the Ann IG Zephyr leg, read via ANN_IG") == "the A4 Zephyr leg, read via A4"
-    assert n.rename("Ann HL's dividend") == "A1's dividend"
+    assert n.apply({"account": "Ann IG Spread bet"}) == {"account": "A4 · IG Spread bet"}
+    assert n.apply("the Ann IG Zephyr leg, read via ANN_IG") == "the A4 Zephyr leg, read via A4"
+    assert n.apply("Ann HL's dividend") == "A1's dividend"
 
 
 def test_a_short_form_of_two_accounts_is_withheld_not_guessed(n):
     """"Bob ii" begins the ISA and the SIPP alike, so it names a holder and no one account."""
-    assert n.rename("moved from Bob ii to Bob ii SIPP") == \
+    assert n.apply("moved from Bob ii to Bob ii SIPP") == \
         f"moved from {naming.WITHHELD} ii to A3 · ii SIPP"
 
 
 def test_a_holder_and_a_number_are_withheld_anywhere(n):
-    assert n.rename("WHY (Bob, 31 Aug): per Ms Ann Smith, account 0001112") == \
+    assert n.apply("WHY (Bob, 31 Aug): per Ms Ann Smith, account 0001112") == \
         f"WHY ({naming.WITHHELD}, 31 Aug): per {naming.WITHHELD}, account {naming.WITHHELD}"
 
 
 def test_keys_are_renamed_as_well_as_values(n):
-    assert n.rename({"Bob ii ISA": [1, "Ann"]}) == {"A2 · ii ISA": [1, naming.WITHHELD]}
+    assert n.apply({"Bob ii ISA": [1, "Ann"]}) == {"A2 · ii ISA": [1, naming.WITHHELD]}
 
 
 def test_a_word_inside_a_longer_word_is_left_alone(n):
     """"Annual" is not Ann, and "Bobsleigh" is not Bob."""
-    assert n.rename("Annual Bobsleigh") == "Annual Bobsleigh"
+    assert n.apply("Annual Bobsleigh") == "Annual Bobsleigh"
 
 
 def test_what_the_renaming_misses_is_refused_by_the_check(n):
     with pytest.raises(naming.Withheld):
-        n.rename("Ann2 said so")
+        n.apply("Ann2 said so")
     with pytest.raises(naming.Withheld):
         n.check("ref ZZ1234567ZZ")
 
