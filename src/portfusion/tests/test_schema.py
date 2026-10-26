@@ -522,7 +522,13 @@ def test_a_quarter_result_names_a_registered_account_or_none(store_copy):
 def test_a_closed_vocabulary_refuses_a_value_outside_it():
     """Field.enum, the other half. Rows are proposed by column name and edited by hand, so a
     mistyped value would reach every total that filters on it with only review in its way. Each
-    closed list is declared to the loader, which refuses anything outside it."""
+    closed list is declared to the loader, which refuses anything outside it: quarter-nav's
+    `contribution` among them, the engine's two sets covering it exactly."""
+    from portfusion.engine import Book
+    field = next(f for f in schema.TABLES["quarter-nav"].fields if f.name == "contribution")
+    assert field.enum == schema.CONTRIBUTIONS, "the loader takes any contribution"
+    assert set(schema.CONTRIBUTIONS) == Book.NAV_BASES | Book.EXPOSURE_BASES, \
+        "the loader and the engine classify different contributions"
     f = schema.Field("quality", "str", enum=("sourced", "derived", "reconstructed"))
     assert schema._parse(f, "sourced", "t", 2) == "sourced"
     with pytest.raises(ValueError) as e:

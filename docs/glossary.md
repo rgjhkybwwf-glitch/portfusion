@@ -22,11 +22,11 @@ file and the code disagree, the code is right.
 | The question | Word | Values | Where |
 |---|---|---|---|
 | What kind of number is this? | **`basis`** | `capital` · `notional` · `count` | `Book.HEADLINE`, `MEASURE_BASIS` |
-| What document is this row's evidence? | **`source`** | `trade_source()`'s form on buys and sales | the event, mark and quarter-end tables; a reading's is `evidence` · `reference` |
-| How does this account contribute to net asset value? | **`contribution`** | `positions at market` · `account equity` · `notional` | `quarter-nav.csv` |
-| Do we own it, or have exposure to it? | **`held_as`**, shown as **Held as** | `shares` · `spread bet`; `mixed` on a company row holding both | `schema.KINDS`; `securities.csv`, `accounts.csv` and every frame |
+| What document is this row's evidence? | **`source`** | [the store](store.md) | the event, mark and quarter-end tables; a reading's is `evidence` · `reference` |
+| How does this account contribute to net asset value? | **`contribution`** | §9 | `schema.CONTRIBUTIONS` |
+| Do we own it, or have exposure to it? | **`held_as`**, shown as **Held as** | §9; `mixed` on a company row holding both | `schema.KINDS`, and every frame |
 | Which set of measures? | **`measure=`** | `nav` · `exposure` | `quarter_nav_rows()` |
-| What unit is a listing quoted in? | **`quote_unit`**, shown as **Quote unit** | `GBX` · a currency | `securities.csv` |
+| What unit is a listing quoted in? | **`quote_unit`**, shown as **Quote unit** | [the store](store.md) | `securities.csv` |
 | The accounting sense | **cost basis** | — | — |
 
 `basis` pairs with *measure*, a column you can total, in `MEASURE_BASIS` and `roll_up()`.
@@ -56,8 +56,7 @@ file and the code disagree, the code is right.
 | `derived` | anything else: computed or reconstructed by the book, or a figure nothing on file retrieves |
 
 A `derived` figure becomes `sourced` only when the evidence itself changes. The vocabulary is
-`schema.QUALITIES`, and each history declares its subset. A figure put right replaces its row; git
-keeps what the row said.
+`schema.QUALITIES`, and each history declares its subset.
 
 ## 4 · Time
 
@@ -77,26 +76,7 @@ freeze** writes a quarter end's rows (`Book.freeze_rows()`), and the quarter is 
 held to its **Results** (`quarter-results.csv`); **a restatement** replaces those rows, with its
 reason. **The close** is the work around a freeze.
 
-### The store's own names
-
-One idea, one column name, in every table.
-
-| Idea | Column |
-|---|---|
-| An account | `account` |
-| A deal's price, as its document states it | `traded_price` |
-| A mark: what a line is worth | `price`, filed under its `mark_key`: a share's ticker, a bet's contract |
-| The broker's rate, where its document states one | `rate` — units of the other currency per £1 |
-| An instrument's currency | `currency` |
-| The currency a deal's price is stated in | `cur` — not always the instrument's |
-| The provenance line | `source` |
-| An evidence-class key | `evidence`, on the two readings tables only |
-| Owned, or exposure | `held_as` |
-| A sterling amount on an event | `amount` |
-| A share leg's settled sterling | `cost` |
-| A spread-bet leg's entry level, in points | `level_points` |
-| A frozen line's value | `value` |
-| An instant | `at` |
+**One idea, one column name, in every table**: [the store](store.md) lists them.
 
 ### The three clocks
 
@@ -192,11 +172,11 @@ column headings.
 
 | Concept | Canonical | Note |
 |---|---|---|
-| One buy row in the ledger | **Leg** | a spread-bet sale names the leg it closes |
+| One buy row in the ledger | **Leg** | [the store](store.md) |
 | One account's shares in one ticker, at their average cost | **Pool** | an emptied pool bought again is a new one |
 | A spread bet counted in the company's shares: stake × points per unit × rate per pound on the deal date × shares per unit | **Share-equivalent** | how a company row adds a bet to shares |
 | What a sale took off the cost held | **Cost released** | a pool's average for a share; the leg's cost for a spread bet |
-| Everything sold out of one holding, keyed `R-…` | **Realisation** | headed **Realisation ID** |
+| Everything sold out of one holding | **Realisation** | headed **Realisation ID**; [the store](store.md) |
 | A realisation seen whole, entry to exit | **Round trip** | the Round Trips page |
 | A company's shares and bets, first purchase to the day nothing is held | **Company life** | Round Trips, by company life |
 | A life's realised gain, unrealised gain, dividends and funding interest together | **Life gain** | |
@@ -221,13 +201,11 @@ column headings.
 
 | Concept | Canonical | Note |
 |---|---|---|
-| The table of every write to the record | **The journal** | one row per write |
+| The table of every write to the record | **The journal** | [the store](store.md) |
 | Who made a write | **Route** | §9 |
 | What it did to the row count | **Op** — `open` · `append` · `replace` · `remove` | |
 | The row a table's journal opens with | **The opening count** | `route=baseline, op=open` |
 | A row that arrived by no journalled route | **Unaccounted** | `portfusion record` counts them: a finding, not a failure |
-
-Opening count + appends − removes = rows on file, table by table; a replace adds none.
 
 ## 6 · Where the book's words meet standard practice
 
@@ -298,6 +276,7 @@ A value outside these fails **on load**, naming the table, the row and the colum
 |---|---|---|
 | `held_as` | `shares` · `spread bet` | `securities` · `accounts` |
 | `category` | `Dividend` · `Funding interest` · `Cash interest` · `Fee` | `income` |
+| `contribution` | `positions at market` · `account equity` · `notional` | `quarter-nav` |
 | `quality` | `sourced` · `derived` | `quarter-nav` · `quarter-snapshots` |
 | `struck` | `close` · `live` | `fx` · `current-prices` |
 | `key` | `record_begins` · `reasoning_owed_from` · `first_report` · `tv_list_live` · `tv_list_exit` · `tv_list_entry` · `rate_carried` · `hosted_origin` · `passkey_domain` · `deploy_repo` · `research_repo` · `insights_url` · `practice` | `settings` |

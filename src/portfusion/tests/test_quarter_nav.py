@@ -65,9 +65,10 @@ def test_a_notional_row_does_not_move_net_asset_value():
 
 @needs("quarter-nav")
 def test_a_contribution_nobody_classified_stops_every_reader():
-    """`_classified()` IS THE ONE PLACE quarter-nav.csv is checked: a contribution in neither
-    NAV_BASES nor EXPOSURE_BASES must be neither summed nor dropped. Planted in memory, never
-    on file."""
+    """A contribution in neither NAV_BASES nor EXPOSURE_BASES must be neither summed nor
+    dropped: the loader refuses one outside `schema.CONTRIBUTIONS`
+    (`test_schema.py::test_a_closed_vocabulary_refuses_a_value_outside_it`), and `_classified()`
+    one planted in memory, never on file."""
     import pandas as pd
     b = Book()
     q = b.store["quarter_nav"]
