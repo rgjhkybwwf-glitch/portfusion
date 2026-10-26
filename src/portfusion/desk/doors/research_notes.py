@@ -22,7 +22,7 @@ from __future__ import annotations
 
 from portfusion.record import rules as D
 from portfusion.record import schema
-from portfusion.desk.doors import commit
+from portfusion.desk.doors import envelope
 from portfusion.desk.intake import research
 
 TABLE = "research-notes"
@@ -54,7 +54,7 @@ def owed(held: list[str] | None = None) -> list[dict]:
     return sorted(found.values(), key=lambda n: (n["date"], n["ref"]), reverse=True)
 
 
-@commit.held
+@envelope.held
 def write(ref: str) -> dict:
     """Append `ref`'s owed rows, one per code it covers, and journal them. Raises `Refused`,
     writing nothing, if the note is owed no row: not in the research repo, or on file already."""
@@ -66,11 +66,11 @@ def write(ref: str) -> dict:
             for code in note["codes"]]
     path = schema.TABLES[TABLE].path
     before = len(schema.load(TABLE))
-    with commit.atomic(path, schema.TABLES["journal"].path):
-        path.write_bytes(commit.placed({TABLE: [commit._rendered(TABLE, r) for r in rows]})[0][path])
+    with envelope.atomic(path, schema.TABLES["journal"].path):
+        path.write_bytes(envelope.placed({TABLE: [envelope.rendered(TABLE, r) for r in rows]})[0][path])
         if len(schema.load(TABLE)) != before + len(rows):
             raise Refused(f"{TABLE}.csv did not read back {len(rows)} new row(s)")
-        commit.journal([("bench", "append", TABLE, len(rows), ref,
-                         f"{ref} for {', '.join(note['codes'])}, from the research repo")])
+        envelope.journal([("bench", "append", TABLE, len(rows), ref,
+                           f"{ref} for {', '.join(note['codes'])}, from the research repo")])
     D.reload_store()
     return {"ref": ref, "codes": note["codes"], "written": len(rows)}

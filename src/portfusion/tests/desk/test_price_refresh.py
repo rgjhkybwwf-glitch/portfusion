@@ -395,15 +395,15 @@ def test_a_refused_commit_leaves_the_journal_exactly_as_it_was(
 
     A journal row for a write that was rolled back is worse than no row: it asserts the record
     holds something it does not, and the check would then report a row MISSING from the store.
-    `commit.atomic()` holds journal.csv among its targets, so a failure takes both.
+    `envelope.atomic()` holds journal.csv among its targets, so a failure takes both.
     """
     from portfusion.record import schema
-    from portfusion.desk.doors import commit as _commit
+    from portfusion.desk.doors import commit as _commit, envelope
     monkeypatch.setattr(_commit, "ARCHIVE", tmp_path / "archive")
     before = schema.TABLES["journal"].path.read_bytes()
 
-    real = _commit._rendered
-    monkeypatch.setattr(_commit, "_rendered", lambda tbl, v: real(tbl, v)[:-1])
+    real = envelope.rendered
+    monkeypatch.setattr(envelope, "rendered", lambda tbl, v: real(tbl, v)[:-1])
     with pytest.raises(Exception):          # the truncated row fails at the LOADER, not a gate
         _commit.commit(_bench.save(_ready(item))["id"])
 

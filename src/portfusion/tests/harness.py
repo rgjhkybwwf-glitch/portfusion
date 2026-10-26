@@ -78,9 +78,9 @@ def append_rows(path, lines) -> None:
 
 
 def write_rows(table: str, *rows: dict) -> None:
-    """`rows` written to the copied store as a door writes them (`commit.place()`)."""
-    from portfusion.desk.doors import commit
-    commit.place({table: [commit._rendered(table, r) for r in rows]})
+    """`rows` written to the copied store as a door writes them (`envelope.place()`)."""
+    from portfusion.desk.doors import envelope
+    envelope.place({table: [envelope.rendered(table, r) for r in rows]})
 
 
 def holds(*found, what: str = "the rows this test is built from"):
@@ -94,18 +94,22 @@ def holds(*found, what: str = "the rows this test is built from"):
 #: THE CALLS THAT WRITE OR REMOVE A FILE, by name: the one list every guard asking "does this
 #: module write?" reads (`write_call`).
 WRITE_CALLS = {"write_text", "write_bytes", "move", "copy2", "copyfile", "copytree", "unlink",
-               "rmtree", "rmdir", "touch", "_append", "to_csv", "dump"}
+               "rmtree", "rmdir", "touch", "append_lines", "rewrite", "to_csv", "dump"}
+
+#: The envelope's writers that find the store's tables themselves (`desk/doors/envelope.py`).
+ENVELOPE_WRITES = {"place", "journal"}
 
 #: The flags with which `os.open` creates, writes or empties a file.
 _OS_WRITE_FLAGS = ("O_WRONLY", "O_RDWR", "O_CREAT", "O_APPEND", "O_TRUNC")
 
 
 def write_call(node) -> str | None:
-    """The name of the write a call makes, or None. Beyond `WRITE_CALLS`: `os.replace(a, b)`, a
-    path's `.replace(target)` and `.rename(target)` — one argument; a string's replace takes two,
-    a frame's rename takes keywords — `os.rename`, `os.remove`, `shutil.copy`, `os.open` with a
-    flag that writes, and `open()` with a mode that writes, appends or creates. A csv writer's rows
-    are not counted: they go to whatever it was handed, and a file is caught where it was opened."""
+    """The name of the write a call makes, or None. Beyond `WRITE_CALLS`: `ENVELOPE_WRITES` called
+    on the envelope, `os.replace(a, b)`, a path's `.replace(target)` and `.rename(target)` — one
+    argument; a string's replace takes two, a frame's rename takes keywords — `os.rename`,
+    `os.remove`, `shutil.copy`, `os.open` with a flag that writes, and `open()` with a mode that
+    writes, appends or creates. A csv writer's rows are not counted: they go to whatever it was
+    handed, and a file is caught where it was opened."""
     import ast
     if not isinstance(node, ast.Call):
         return None
@@ -114,6 +118,8 @@ def write_call(node) -> str | None:
         return name
     on = (node.func.value.id if isinstance(node.func, ast.Attribute)
           and isinstance(node.func.value, ast.Name) else None)
+    if on == "envelope" and name in ENVELOPE_WRITES:
+        return name
     one_target = len(node.args) == 1 and not node.keywords
     if name in ("replace", "rename") and isinstance(node.func, ast.Attribute) and (
             on == "os" or one_target):
@@ -133,8 +139,9 @@ def write_call(node) -> str | None:
     return None
 
 
-#: What names the store in a call's target: a table's path, the store's folder, or a `store`.
-STORE_NAMES = re.compile(r"\b(TABLES|STORE|store_dir|store)\b")
+#: What names the store in a call's target: a table's path, the store's folder, a `store`, or
+#: the envelope, whose writes are the store's.
+STORE_NAMES = re.compile(r"\b(TABLES|STORE|store_dir|store|envelope)\b")
 
 #: The calls that read a file, for a census of what a module OPENS (`file_calls(reads=True)`).
 READ_CALLS = {"open", "fdopen", "read_text", "read_bytes", "read_csv"}
@@ -546,10 +553,9 @@ def item(tmp_path, monkeypatch):
     bench owes a kind before it approves, and a contract note is retrieved by its FILE; the
     commit door files it from this workbench, never the real `_inbox/`."""
     from desk_support import GOOD_CLASS, GOOD_DOCUMENT
-    from portfusion.desk.doors import commit as _commit
-    from portfusion.desk.intake import bench as _bench
+    from portfusion.desk.intake import bench as _bench, filing
     monkeypatch.setattr(_bench, "BENCH_DIR", tmp_path / "bench")
-    monkeypatch.setattr(_commit, "BOOK", tmp_path)
+    monkeypatch.setattr(filing, "BOOK", tmp_path)
     (tmp_path / "_inbox").mkdir(exist_ok=True)
     (tmp_path / "_inbox" / GOOD_DOCUMENT).write_bytes(b"%PDF-1.4")
     made = _bench.new_item(title="test item")

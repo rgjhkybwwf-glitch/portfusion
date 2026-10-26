@@ -204,7 +204,7 @@ def _write(prices=None, rates=None, readings=None, close_of=None):
     that is not there.
     """
     from portfusion.record import rules
-    from portfusion.desk.doors import commit, marks, observations
+    from portfusion.desk.doors import envelope, marks, observations
     prices, rates, readings = list(prices or []), list(rates or []), list(readings or [])
     try:
         if not (prices or rates or readings):
@@ -218,8 +218,8 @@ def _write(prices=None, rates=None, readings=None, close_of=None):
         if readings and not any(p.get("mark_key") in contracts for p in prices):
             raise marks.Refused("an IG account's equity is written with the contract levels "
                                 "read in the same pass, and none is among the ticked lines")
-        with (commit._record_follows_the_files(),
-              commit.atomic(*marks.paths(), *observations.paths())):
+        with (envelope.record_follows_the_files(),
+              envelope.atomic(*marks.paths(), *observations.paths())):
             written = marks.write(prices=prices, rates=rates) if (prices or rates) else {}
             read = observations.write(readings=readings) if readings else {}
     except (marks.Refused, observations.Refused) as e:

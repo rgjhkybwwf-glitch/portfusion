@@ -756,14 +756,14 @@ def test_a_refused_commit_leaves_no_thesis_behind(item, store_copy, tmp_path, mo
     must not leave a thesis for a trade that never landed — the book would then show a WHY WE
     ENTERED against a position it has no record of."""
     from portfusion.record import schema
-    from portfusion.desk.doors import commit as _commit
+    from portfusion.desk.doors import commit as _commit, envelope
     monkeypatch.setattr(_commit, "ARCHIVE", tmp_path / "archive")
     _ready(item, ticker="CRNT")
     _bench.save(item)
 
     before = schema.TABLES["reasoning"].path.read_bytes()
-    real = _commit._rendered
-    monkeypatch.setattr(_commit, "_rendered", lambda t, v: real(t, v)[:-1])
+    real = envelope.rendered
+    monkeypatch.setattr(envelope, "rendered", lambda t, v: real(t, v)[:-1])
     with pytest.raises(Exception):
         _commit.commit(item["id"])
     assert schema.TABLES["reasoning"].path.read_bytes() == before, \
@@ -836,7 +836,7 @@ def test_a_failure_on_the_SECOND_table_rolls_the_FIRST_one_back(item, store_copy
     Forced by making the income row render one cell short, which the loader rejects on the
     read-back. Both files must come out byte-identical."""
     from portfusion.record import schema
-    from portfusion.desk.doors import commit as _commit
+    from portfusion.desk.doors import commit as _commit, envelope
     item["evidence"] = dict(GOOD_EVIDENCE)
     item["why"] = {"why_entered": "Entered on the services margin story, which the hardware "
                                  "cycle masks.", "why_exited": ""}
@@ -844,8 +844,8 @@ def test_a_failure_on_the_SECOND_table_rolls_the_FIRST_one_back(item, store_copy
                     {"table": "income", "values": dict(GOOD_INCOME)}]
     _bench.save(item)
 
-    real = _commit._rendered
-    monkeypatch.setattr(_commit, "_rendered",
+    real = envelope.rendered
+    monkeypatch.setattr(envelope, "rendered",
                         lambda t, v: real(t, v)[:-1] if t == "income" else real(t, v))
 
     before = {t: schema.TABLES[t].path.read_bytes() for t in ("buys", "income")}
@@ -1777,32 +1777,32 @@ def test_the_archive_name_carries_the_instant_the_document_states(tmp_path, monk
     ONLY WHEN THE DOCUMENT AGREES WITH THE LIMB. A time spliced from a document onto a date the
     operator typed for a different day would invent a third thing.
     """
-    from portfusion.desk.doors import commit
+    from portfusion.desk.intake import filing
 
     inbox = tmp_path / "_inbox"
     inbox.mkdir()
     (inbox / "export.csv").write_bytes(
         'Portfolio Summary\nValuation as at,03-03-2025 14:10\n'
         'Account,Stock value,Total cash,Total value,Available to invest,\n'.encode("cp1252"))
-    monkeypatch.setattr(commit, "BOOK", tmp_path)
+    monkeypatch.setattr(filing, "BOOK", tmp_path)
 
     item = {"id": "B-T", "document": {"name": "export.csv"}, "rows": [],
             "evidence": {"dated": "2025-03-03", "authority": "HL Portfolio Summary totals "
                          "download", "reference": "3 Mar 2025 14:10"}}
-    assert commit._archive_name(item, "export.csv").startswith("03 Mar 2025 14.10 "), \
-        commit._archive_name(item, "export.csv")
+    assert filing.archive_name(item, "export.csv").startswith("03 Mar 2025 14.10 "), \
+        filing.archive_name(item, "export.csv")
 
     # A different day: the stamp is withheld rather than spliced.
     item["evidence"]["dated"] = "2026-09-07"
-    assert commit._archive_name(item, "export.csv").startswith("07 Sep 2026 HL"), \
-        commit._archive_name(item, "export.csv")
+    assert filing.archive_name(item, "export.csv").startswith("07 Sep 2026 HL"), \
+        filing.archive_name(item, "export.csv")
 
 
 def test_a_document_that_states_no_instant_still_gets_a_name():
     """The time is provenance the file happens to carry, not something the archive depends on.
     A document sitting unarchived is the worse outcome by a distance."""
-    from portfusion.desk.doors import commit
-    assert commit._document_stamp("does-not-exist.csv", __import__("datetime").date(2026, 9, 8)) == ""
+    from portfusion.desk.intake import filing
+    assert filing._document_stamp("does-not-exist.csv", __import__("datetime").date(2026, 9, 8)) == ""
 
 
 def test_a_recognised_document_prefills_only_what_it_states(tmp_path, monkeypatch):
@@ -1849,8 +1849,7 @@ def test_a_contract_note_fills_all_three_limbs_from_its_own_text(tmp_path, monke
     import shutil
     from portfusion.record import rules as D
     from portfusion.record import schema
-    from portfusion.desk.doors import commit
-    from portfusion.desk.intake import bench, read_document
+    from portfusion.desk.intake import bench, filing, read_document
 
     inbox = tmp_path / "_inbox"
     (inbox / ".bench").mkdir(parents=True)
@@ -1863,7 +1862,7 @@ def test_a_contract_note_fills_all_three_limbs_from_its_own_text(tmp_path, monke
     shutil.copy(filed, inbox / "note.pdf")
     monkeypatch.setattr(read_document, "INBOX", str(inbox))
     monkeypatch.setattr(bench, "BENCH_DIR", inbox / ".bench")
-    monkeypatch.setattr(commit, "BOOK", tmp_path)
+    monkeypatch.setattr(filing, "BOOK", tmp_path)
 
     item = bench.for_document("note.pdf")
     assert item["evidence_class"] == "ii-contract-note"
@@ -1871,9 +1870,9 @@ def test_a_contract_note_fills_all_three_limbs_from_its_own_text(tmp_path, monke
                                 "authority": D.EVIDENCE_BY_KEY["ii-contract-note"].authority}
     assert item["recognised"]["instant"] == f"{day} {time}"
     assert item["recognised"]["instant_from"] == "document"
-    assert commit._archive_name(item, "note.pdf").startswith(
+    assert filing.archive_name(item, "note.pdf").startswith(
         f"{day:%d %b %Y} {time.replace(':', '.')} ii contract note {ref}"), \
-        commit._archive_name(item, "note.pdf")
+        filing.archive_name(item, "note.pdf")
 
 
 def test_an_unrecognised_document_is_left_entirely_blank(tmp_path, monkeypatch):
@@ -1920,12 +1919,12 @@ def test_a_zero_row_document_keeps_its_account_in_the_archived_name():
     """`_covers()` reads the tickers or accounts off the ROWS, so a document that yields none would
     be filed under a name that does not say whose account it is. The reader derives the account from
     the client number the document prints; this is that derivation, one step later."""
-    from portfusion.desk.doors import commit
+    from portfusion.desk.intake import filing
     item = {"rows": [], "account": "Rowe HL ISA"}
-    assert commit._covers(item) == "Rowe HL ISA"
+    assert filing._covers(item) == "Rowe HL ISA"
     # A row's own account still wins — the fallback is a fallback.
     item = {"rows": [{"values": {"account": "Voss ii ISA"}}], "account": "Rowe HL ISA"}
-    assert commit._covers(item) == "Voss ii ISA"
+    assert filing._covers(item) == "Voss ii ISA"
 
 
 def test_a_withdrawn_document_leaves_the_workbench_and_is_not_destroyed(workbench):
@@ -2100,7 +2099,7 @@ def test_a_download_is_named_with_its_instant_once_and_still_resolves():
     """A download's reference IS the instant it was pulled, and the filed name leads with the
     date and time — so the time is written once, and the row citing the document must still
     find it under that name."""
-    from portfusion.desk.doors import commit as C
+    from portfusion.desk.intake import filing
     from portfusion.record import rules as D
     cases = [
         ("hl-valuation", "HL Account Summary download", "30 Sep 2026 22:35", "Rowe HL ISA",
@@ -2114,7 +2113,7 @@ def test_a_download_is_named_with_its_instant_once_and_still_resolves():
     for key, authority, reference, account, expected in cases:
         item = {"evidence_class": key, "account": account, "rows": [],
                 "evidence": {"dated": "2026-09-30", "authority": authority, "reference": reference}}
-        name = C._archive_name(item, "download.csv")
+        name = filing.archive_name(item, "download.csv")
         assert name == expected, name
         source = D.evidence_source(key, reference=reference, account=account)
         assert D.reference_resolves(source, [name]) is True, (source, name)

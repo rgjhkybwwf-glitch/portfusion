@@ -25,20 +25,18 @@ WHAT IT WILL NOT DO:
   · TOUCH A ROW IT WAS NOT GIVEN. Every line this module does not replace comes through
     BYTE-IDENTICAL, because it is passed through as the bytes it was read as rather than
     re-rendered.
-  · LEAVE A HALF-WRITTEN STORE. `commit.atomic()` holds every target's bytes and restores all of
+  · LEAVE A HALF-WRITTEN STORE. `envelope.atomic()` holds every target's bytes and restores all of
     them if anything raises. Same envelope as the other doors, deliberately.
 """
 from __future__ import annotations
 
-import csv
 import datetime as _dt
-import io
 import pathlib as _pathlib
 import re
 
 from portfusion.record import rules as D
 from portfusion.record import schema
-from portfusion.desk.doors import commit
+from portfusion.desk.doors import envelope
 
 #: The two tables a refresh replaces, and which column identifies a row in each: a line's price
 #: by its ticker, a currency's rate by the currency. Every row of both is live.
@@ -54,7 +52,7 @@ def paths() -> list:
     banked into, and the journal.
 
     NAMED SO A CALLER DOES NOT KEEP A SECOND LIST. `write()` already holds these under
-    `commit.atomic()`; a caller combining this door with another has to hold the union of both,
+    `envelope.atomic()`; a caller combining this door with another has to hold the union of both,
     and a hand-copied list drifts. The Reconcile write is that caller — its levels and its equity
     are ONE observation and must land or fail together, which is the whole reason the reading
     takes them in one pass.
@@ -126,42 +124,7 @@ def _require(row: dict, fields: tuple, what: str) -> None:
 
 def _cells(table: str, row: dict) -> list[str]:
     """A mark's row as the table's cells, each written as `schema.cell()` writes it."""
-    return commit._rendered(table, {f: row.get(f) for f in schema.TABLES[table].header})
-
-
-def _replace_lines(table: str, new_rows: dict) -> str:
-    """The table's text with `new_rows` swapped in by key, everything else UNTOUCHED.
-
-    LINE BY LINE, NOT THROUGH A CSV WRITER, and that is the whole point. Re-rendering the file
-    would requote every row to this writer's taste — `fx.csv`'s historical rows would change
-    bytes without changing meaning, and a diff nobody can read is a diff nobody checks. Only the
-    lines being replaced are rendered; every other line is passed through exactly as read.
-
-    The header is line one and is never a data row. A key is read with `csv.reader` rather than
-    `split(",")` because a quoted field may contain one.
-    """
-    path = schema.TABLES[table].path
-    key_col = schema.TABLES[table].header.index(KEYED_BY[table])
-    out, seen = [], set()
-    lines, eol = commit.lines_and_eol(path)         # returned in the file's own ending
-    for i, line in enumerate(lines):
-        if i == 0 or not line.strip():
-            out.append(line)
-            continue
-        key = next(csv.reader([line]))[key_col]
-        if key in new_rows:
-            buf = io.StringIO()
-            csv.writer(buf, lineterminator="").writerow(new_rows[key])
-            out.append(buf.getvalue())
-            seen.add(key)
-        else:
-            out.append(line)
-    unknown = set(new_rows) - seen
-    if unknown:
-        raise Refused(
-            f"{table}.csv has no row for {sorted(unknown)}. This door REPLACES a mark; it does "
-            f"not add a line. A new instrument is an event and goes to the bench.")
-    return eol.join(out) + eol
+    return envelope.rendered(table, {f: row.get(f) for f in schema.TABLES[table].header})
 
 
 def _asof(table: str, prices: list[dict], rates: list[dict]) -> str:
@@ -204,7 +167,7 @@ def _require_instant(row: dict, what: str) -> None:
                           f"dated the UK day it describes.")
 
 
-@commit.held
+@envelope.held
 def write(prices: list[dict] | None = None, rates: list[dict] | None = None) -> dict:
     """Bank the outgoing marks, then replace them. ONE operation, or none of it.
 
@@ -248,7 +211,7 @@ def write(prices: list[dict] | None = None, rates: list[dict] | None = None) -> 
     # that the prices and the rates are a second apart.
     at = schema.record_instant()
 
-    with commit._record_follows_the_files(), commit.atomic(*paths()):
+    with envelope.record_follows_the_files(), envelope.atomic(*paths()):
         # STEP 1, AND IT IS NOT OPTIONAL. Whatever is on file now is banked BEFORE it is
         # replaced, because a refresh done without this is a data point that cannot be recovered.
         try:
@@ -264,10 +227,18 @@ def write(prices: list[dict] | None = None, rates: list[dict] | None = None) -> 
                 f"rate(s) are still unbanked after archiving. Refusing to replace a mark whose "
                 f"outgoing value is not on file.")
 
-        before = {t: len(schema.load(t)) for t in by_table}
+        # EVERY LINE NOT REPLACED COMES THROUGH AS THE BYTES IT WAS READ AS (`envelope.rewrite()`):
+        # re-rendered, `fx.csv`'s historical rows would change bytes without changing meaning.
+        on_file = {t: schema.load(t) for t in by_table}
+        before = {t: len(r) for t, r in on_file.items()}
         for table, rows in by_table.items():
-            schema.TABLES[table].path.write_text(_replace_lines(table, rows), encoding="utf-8",
-                                                 newline="")
+            key = schema.TABLES[table].header.index(KEYED_BY[table])
+            unknown = set(rows) - {r[key] for r in on_file[table]}
+            if unknown:
+                raise Refused(
+                    f"{table}.csv has no row for {sorted(unknown)}. This door REPLACES a mark; it "
+                    f"does not add a line. A new instrument is an event and goes to the bench.")
+            envelope.rewrite(schema.TABLES[table].path, lambda cells: rows.get(cells[key], cells))
         # VERIFY BY READING IT BACK, through the loader the build uses — the same check the
         # other door makes. A REPLACE MUST NOT MOVE THE ROW COUNT: if it did, this wrote a line
         # rather than replacing one, which is the failure worth catching here.
@@ -294,7 +265,7 @@ def write(prices: list[dict] | None = None, rates: list[dict] | None = None) -> 
         #
         # THE REF IS THE MARK DATE, which is what retrieves the write — every replaced row
         # carries that `as_of`, and `store/price-history.csv` holds the value it displaced.
-        commit.journal(
+        envelope.journal(
             [("marks", "replace", table, len(rows), _asof(table, prices, rates),
               f"{len(rows)} {'mark' if table == 'current-prices' else 'rate'}"
               f"{'' if len(rows) == 1 else 's'} replaced")
@@ -338,12 +309,12 @@ def first(prices: list[dict], route: str, ref: str, at: str) -> list[str]:
         raise Refused(f"{', '.join(priced)} has a mark already: the Price Refresh replaces it")
     path = schema.TABLES["current-prices"].path
     was = len(schema.load("current-prices"))
-    commit._append(path, path.read_bytes(),
-                   [commit._csv_line(_cells("current-prices", r)) for r in prices])
+    envelope.append_lines(path, path.read_bytes(),
+                          [envelope.csv_line(_cells("current-prices", r)) for r in prices])
     if len(schema.load("current-prices")) != was + len(prices):
         raise Refused("current-prices.csv did not gain exactly the new marks")
-    commit.journal([(route, "append", "current-prices", len(prices), ref,
-                     f"{', '.join(named)}: first mark")], at=at)
+    envelope.journal([(route, "append", "current-prices", len(prices), ref,
+                       f"{', '.join(named)}: first mark")], at=at)
     return named
 
 
@@ -386,23 +357,13 @@ def retire(lines: list[str], route: str, ref: str, at: str) -> list[str]:
         raise Refused(f"{', '.join(unbanked)}: the live price is not in the history, so it is "
                       f"not retired")
 
-    prices = schema.TABLES["current-prices"].path
-    was = len(schema.load("current-prices"))
-    rows, eol = commit.lines_and_eol(prices)
-    kept = [line for i, line in enumerate(rows)
-            if i == 0 or not line.strip() or next(csv.reader([line]))[0] not in lines]
-    gone = len(rows) - len(kept)
-    prices.write_text(eol.join(kept) + eol, encoding="utf-8", newline="")
-
+    on_file = schema.load("current-prices")
+    was, gone = len(on_file), sum(1 for r in on_file if r[0] in lines)
+    envelope.rewrite(schema.TABLES["current-prices"].path,
+                     lambda cells: None if cells[0] in lines else cells)
     if contracts:
-        path = schema.TABLES["contracts"].path
-        out = []
-        rows, eol = commit.lines_and_eol(path)
-        for i, line in enumerate(rows):
-            cells = next(csv.reader([line])) if line.strip() else []
-            out.append(",".join([cells[0], "", *cells[2:]])
-                       if i and cells and cells[0] in contracts else line)
-        path.write_text(eol.join(out) + eol, encoding="utf-8", newline="")
+        envelope.rewrite(schema.TABLES["contracts"].path,
+                         lambda cells: [cells[0], "", *cells[2:]] if cells[0] in contracts else cells)
 
     # VERIFY BY READING IT BACK, as every door does.
     loaded = schema.load("current-prices")
@@ -421,11 +382,11 @@ def retire(lines: list[str], route: str, ref: str, at: str) -> list[str]:
     if contracts:
         entries.append((route, "replace", "contracts", len(contracts), ref,
                         f"{', '.join(contracts)}: epic blanked, a contract with no epic is closed"))
-    commit.journal(entries, at=at)
+    envelope.journal(entries, at=at)
     return lines
 
 
-@commit.held
+@envelope.held
 def bank_closes(day: str, prices: list[dict] | None = None,
                 rates: list[dict] | None = None) -> dict:
     """File PAST CLOSES into the price and FX histories, and leave the live marks alone: one
@@ -540,7 +501,7 @@ def bank_closes(day: str, prices: list[dict] | None = None,
 
     if new_p or new_f:
         gone = set(dropped)
-        with commit.atomic(*paths()):
+        with envelope.atomic(*paths()):
             if new_p:
                 PH.save([r for r in rows_p if id(r) not in gone] + new_p)
             if new_f:
