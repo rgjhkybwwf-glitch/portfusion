@@ -1,7 +1,3 @@
 # THE DEMO'S EXPECTED SKIPS (tests/harness.py, SKIPS_FILE): each a test the demo holds no rows for.
 # Any other skip on the demo fails the run.
-desk/test_bench.py::test_a_sale_leaving_another_leg_open_retires_nothing
-test_evidence.py::test_every_row_names_its_document_in_its_class_format[capital-movements]
-test_evidence.py::test_every_row_names_its_document_in_its_class_format[income]
-test_report.py::test_another_accounts_statement_does_not_put_this_one_on_file
 test_what_leaves.py::test_what_leaves_names_nothing_of_the_loaded_book

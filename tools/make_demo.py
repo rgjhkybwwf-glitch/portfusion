@@ -13,9 +13,10 @@ writing a demo the loader refuses. A source line is composed by `rules`, never t
 THE ARCHIVE IS INVENTED TOO. Each ii deal but one has a contract note, written here as a small
 PDF the bench reads the way it reads a real one; the sale of 20 Jun 2026 fell on a Saturday, so it
 stays not on file. One IG statement holds the two legs opened on 6 Jul 2026, so a stored deal id
-leads to a document as a real one must. The one bench record is the last note worked through
-the bench, in the shape the bench writes: `tests/test_demo.py` opens the filed note on a bench and
-compares.
+leads to a document as a real one must; two more each hold a day's cash, a deposit and a charge.
+The ISA's statement of the last quarter end is on file beside the spread bet's live read. The one
+bench record is the last note worked through the bench, in the shape the bench writes:
+`tests/test_demo.py` opens the filed note on a bench and compares.
 
 THE JOURNAL IS DERIVED. It opens once with every table's count, takes the quarter freezes and the
 bench write made before it opened, and the one hand edit after: the restatement of 13 Oct 2026.
@@ -109,6 +110,10 @@ def _settle(T: dict) -> tuple[list, dict]:
             if "_statement" in row:
                 row["source"] = D.trade_source("ig-statement", row["_statement"])
                 stated.setdefault(row["_statement"], []).append(row)
+    for row in T["capital-movements"] + T["income"]:
+        if "_statement" in row:
+            row["source"] = D.evidence_source("ig-statement", reference=_day(row["_statement"]))
+            stated.setdefault(row["_statement"], []).append(row)
     return noted, stated
 
 
@@ -152,6 +157,8 @@ def _book() -> dict[str, list[dict]]:
         for d, a, v in (("2026-01-15", ISA, 6000.0), ("2026-02-27", TRADING, 1500.0),
                         ("2026-05-05", ISA, 3000.0), ("2026-07-01", SPREAD, 5000.0),
                         ("2026-08-05", SPREAD, 1500.0))]
+    # THE SECOND DEPOSIT IS ON FILE, on the IG statement of its day.
+    next(r for r in T["capital-movements"] if r["date"] == "2026-08-05")["_statement"] = "2026-08-05"
     shares = dict(source=NOT_ON_FILE, cur="GBP")
     bets = dict(source=NOT_ON_FILE, account=SPREAD, cur="GBP")
     T["buys"] = [
@@ -179,8 +186,9 @@ def _book() -> dict[str, list[dict]]:
         {"date": "2026-07-06", "ticker": "VELD SB", "stake": 1, "level_points": 9900.0,
          "contract": "VELD-DEC26", **bets, "broker_ref": "DIAAAADEMOVELD07",
          "_statement": "2026-07-06"},
-        {"date": "2026-08-03", "ticker": "VELD SB", "stake": 0.8, "level_points": 10100.0,
-         "contract": "VELD-MAR27", **bets},
+        # TWO DEALS ON ONE CONTRACT, both still open.
+        *({"date": "2026-08-03", "ticker": "VELD SB", "stake": s, "level_points": 10100.0,
+           "contract": "VELD-MAR27", **bets} for s in (0.5, 0.3)),
         {"date": "2026-08-14", "ticker": "QNLR SB", "stake": 0.5, "level_points": 10200.0,
          "contract": "QNLR-DEC26", **bets},
         {"date": "2026-08-14", "ticker": "QNLR SB", "stake": 0.3, "level_points": 10300.0,
@@ -217,7 +225,7 @@ def _book() -> dict[str, list[dict]]:
          "detail": "BRYC.L final dividend", "amount": 30.0, "source": NOT_ON_FILE, "ticker": "BRYC.L"},
         {"date": "2026-08-20", "account": SPREAD, "category": "Funding interest",
          "detail": "Long interest 01/07/26 to 31/08/26, ref CS00DEMO0000001", "amount": -1.2,
-         "source": NOT_ON_FILE},
+         "source": NOT_ON_FILE, "_statement": "2026-08-20"},
         {"date": "2026-09-25", "account": ISA, "category": "Cash interest",
          "detail": "Gross interest", "amount": 1.1, "source": NOT_ON_FILE},
         {"date": "2026-09-26", "account": TRADING, "category": "Dividend",
@@ -410,7 +418,8 @@ def _histories() -> dict[str, tuple[list[str], list[dict]]]:
             for a, v in ((ISA, isa), (TRADING, trading)) if BEGINS.get(a, "") <= as_of]
     statements += [
         {"account": ISA, "as_of": "2026-09-30", "positions_value": 8260.53,
-         "source": NOT_ON_FILE, "quality": "sourced"},
+         "source": D.evidence_source("ii-statement", reference=_day("2026-09-30")),
+         "quality": "sourced"},
         {"account": TRADING, "as_of": "2026-09-30", "positions_value": 1175.0,
          "source": NOT_ON_FILE, "quality": "sourced"},
         {"account": SPREAD, "as_of": "2026-09-30", "positions_value": 24122.0, "equity": 8140.8,
@@ -535,6 +544,12 @@ def _ddmmyyyy(iso: str) -> str:
     return f"{iso[8:10]}/{iso[5:7]}/{iso[:4]}"
 
 
+def _day(iso: str) -> str:
+    """A date as a statement's reference names it: day, month, year."""
+    import datetime as dt
+    return f"{dt.date.fromisoformat(iso):%d %b %Y}"
+
+
 def _note_name(row: dict, note: dict) -> str:
     """The name `rules.ARCHIVE_CONVENTION` gives the note: date, instant, authority, number,
     what it covers."""
@@ -579,11 +594,9 @@ def _note_lines(row: dict, note: dict, account_number: str, side: str) -> list[s
     return lines
 
 
-def _statement_name(day: str) -> str:
-    """An IG statement is retrieved by its date, so its name carries the account it is for."""
-    import datetime as dt
-    authority = D.EVIDENCE_BY_KEY["ig-statement"].authority
-    return f"{dt.date.fromisoformat(day):%d %b %Y} {authority} ({SPREAD}).pdf"
+def _statement_name(day: str, key: str = "ig-statement", account: str = SPREAD) -> str:
+    """A statement is retrieved by its date, so its name carries the account it is for."""
+    return f"{_day(day)} {D.EVIDENCE_BY_KEY[key].authority} ({account}).pdf"
 
 
 #: Each contract's level at the close of its invented IG statement's day, as the statement's open
@@ -593,22 +606,42 @@ STATEMENT_LEVELS = {"VELD-SEP26": 9930.0, "VELD-DEC26": 9920.0}
 
 def _statement_lines(day: str, rows: list[dict], account_number: str) -> list[str]:
     """An invented IG statement of one day: the legs opened on it, each under its deal id, its
-    stake in pounds per point and its opening level, as IG states them; then its date alone, as
-    IG prints it, and each position open that day at its level."""
+    stake in pounds per point and its opening level, as IG states them; the cash that moved on it;
+    then its date alone, as IG prints it, and each leg opened that day at its level. A day of cash
+    alone lists no positions, so it prices none."""
     import datetime as dt
+    legs = [r for r in rows if r.get("contract")]
+    cash = [r for r in rows if not r.get("contract")]
     lines = ["INVENTED FOR THE DEMO BOOK - no such statement was issued",
-             f"Statement for account {account_number}, {dt.date.fromisoformat(day):%d %B %Y}",
-             "Opening positions",
-             "Date Deal ID Market Direction Size Opening level"]
-    for row in rows:
+             f"Statement for account {account_number}, {dt.date.fromisoformat(day):%d %B %Y}"]
+    if legs:
+        lines += ["Opening positions", "Date Deal ID Market Direction Size Opening level"]
+    for row in legs:
         lines.append(f"{_ddmmyyyy(row['date'])} {row['broker_ref']} {row['contract']} Buy "
                      f"{row['stake']} {row['level_points']}")
-    lines += [f"{dt.date.fromisoformat(day):%d %B %Y}", "Open positions"]
-    for row in rows:
+    if cash:
+        lines += ["Cash transactions", "Date Description Amount"]
+    for row in cash:
+        lines.append(f"{_ddmmyyyy(row['date'])} {row['detail']} £{row['amount']:,.2f}")
+    lines += [f"{dt.date.fromisoformat(day):%d %B %Y}", *(["Open positions"] if legs else [])]
+    for row in legs:
         lines += [row["broker_ref"],
                   f"{row['contract']} (24 Hours) £ +{row['stake']} {row['level_points']:,.1f} "
                   f"{STATEMENT_LEVELS[row['contract']]:,.1f} 0.00 0.00 0.00 0.00"]
     return lines
+
+
+def _ii_statement_lines(day: str, account: str, account_number: str, T: dict) -> list[str]:
+    """An invented ii statement of a quarter end: each holding the quarter froze, the total and the
+    cash, as the account's rows hold them."""
+    import datetime as dt
+    held = [r for r in T["quarter-snapshots"] if (r["as_of"], r["account"]) == (day, account)]
+    cash = next(r["cash"] for r in T["cash-readings"] if (r["as_of"], r["account"]) == (day, account))
+    return ["INVENTED FOR THE DEMO BOOK - no such statement was issued", "MS NIA VOSS",
+            f"Statement for account {account_number}, {dt.date.fromisoformat(day):%d %B %Y}",
+            "Stock Quantity Price Value (GBP)",
+            *(f"{r['ticker']} {r['qty']:,} {r['price']} {r['value']:,.2f}" for r in held),
+            f"Total holdings {sum(r['value'] for r in held):,.2f} GBP", f"Cash {cash:,.2f} GBP"]
 
 
 def _pdf(lines: list[str]) -> bytes:
@@ -646,7 +679,7 @@ def build(into: pathlib.Path) -> list[str]:
     _in_order(T)
     noted, stated = _settle(T)
     item = _bench_item(T)
-    for row in T["buys"] + T["sales"]:
+    for row in T["buys"] + T["sales"] + T["capital-movements"] + T["income"]:
         for key in [k for k in row if k.startswith("_")]:
             del row[key]
     histories = _histories()
@@ -671,6 +704,8 @@ def build(into: pathlib.Path) -> list[str]:
     for day, rows in stated.items():
         put(f"_archive/statements/{_statement_name(day)}",
             _pdf(_statement_lines(day, rows, numbers[SPREAD])))
+    put(f"_archive/statements/{_statement_name('2026-09-30', 'ii-statement', ISA)}",
+        _pdf(_ii_statement_lines("2026-09-30", ISA, numbers[ISA], T)))
 
     put(f"_archive/bench/{item['id']}.json", json.dumps(item, indent=2, ensure_ascii=False) + "\n")
     return sorted(written)

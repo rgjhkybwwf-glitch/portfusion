@@ -23,6 +23,20 @@ from portfusion.feeds import ig
 from harness import SRC, needs
 
 
+def _fake_session(answer):
+    """An `IGSession` stand-in whose transport answers `answer(label, path)`, THROUGH THE REAL
+    ALLOWLIST, so no fake reaches a path the feed itself may not."""
+    class _Fake:
+        def __init__(self, cred, label): self.label = label
+        def __enter__(self): return self
+        def __exit__(self, *a): return False
+
+        def _request(self, method, path, version, body=None):
+            ig._assert_readonly(method, path)
+            return answer(self.label, path), None
+    return _Fake
+
+
 # =====================================================================================
 # The read-only guard. This is the security claim, so it is tested hardest.
 # =====================================================================================
@@ -402,17 +416,13 @@ def _stub_accounts(monkeypatch, D):
                                       "balance": dict(_GOOD_BALANCE if n else _BAD_BALANCE)}]}
                 for n, label in enumerate(labels)}
 
-    class _StubSession:
-        def __init__(self, cred, label): self.label = label
-        def __enter__(self): return self
-        def __exit__(self, *a): return False
-        def _request(self, method, path, weight):
-            assert path.startswith("/accounts"), f"unexpected endpoint: {path}"
-            return payloads[self.label], None
+    def answer(label, path):
+        assert path.startswith("/accounts"), f"unexpected endpoint: {path}"
+        return payloads[label]
 
     monkeypatch.setattr(ig, "load_credentials",
                         lambda *a, **k: {label: {"env": "LIVE"} for label in labels})
-    monkeypatch.setattr(ig, "IGSession", _StubSession)
+    monkeypatch.setattr(ig, "IGSession", _fake_session(answer))
     by_label = ig.account_names(D)
     return labels[0], [by_label[label] for label in labels[1:]], by_label
 
@@ -463,15 +473,9 @@ def test_account_state_never_claims_a_notional(monkeypatch, D):
         _stub_accounts(monkeypatch, D)
         monkeypatch.setattr(ig, "load_credentials",
                             lambda *a, **k: {labels[0]: {"env": "LIVE"}})
-
-        class _AllGood:
-            def __init__(self, cred, label): self.label = label
-            def __enter__(self): return self
-            def __exit__(self, *a): return False
-            def _request(self, method, path, weight):
-                return {"accounts": [{"accountId": "ID0", "accountType": "SPREADBET",
-                                      "balance": dict(_GOOD_BALANCE)}]}, None
-        monkeypatch.setattr(ig, "IGSession", _AllGood)
+        monkeypatch.setattr(ig, "IGSession", _fake_session(lambda label, path: {
+            "accounts": [{"accountId": "ID0", "accountType": "SPREADBET",
+                          "balance": dict(_GOOD_BALANCE)}]}))
     else:
         _stub_accounts(monkeypatch, D)
     row = ig.account_state()["rows"][0]
@@ -482,16 +486,11 @@ def test_account_state_never_claims_a_notional(monkeypatch, D):
 def test_a_label_with_no_account_name_is_refused_rather_than_guessed(monkeypatch):
     """The register's feed_key maps a credential label to the book's account. An unmapped label must
     not be resolved by guessing — that is how a figure lands on the wrong account."""
-    class _Mystery:
-        def __init__(self, cred, label): self.label = label
-        def __enter__(self): return self
-        def __exit__(self, *a): return False
-        def _request(self, m, p, w):
-            return ({"accounts": [{"accountId": "X", "accountType": "SPREADBET",
-                                   "balance": {"balance": 1.0, "profitLoss": 0.0,
-                                               "deposit": 0.0, "available": 1.0}}]}, None)
     monkeypatch.setattr(ig, "load_credentials", lambda *a, **k: {"MYSTERY_IG": {"env": "LIVE"}})
-    monkeypatch.setattr(ig, "IGSession", _Mystery)
+    monkeypatch.setattr(ig, "IGSession", _fake_session(lambda label, path: {
+        "accounts": [{"accountId": "X", "accountType": "SPREADBET",
+                      "balance": {"balance": 1.0, "profitLoss": 0.0,
+                                  "deposit": 0.0, "available": 1.0}}]}))
     r = ig.account_state()
     assert r["rows"] == []
     assert "no account's feed_key" in r["refusals"][0]["text"]
@@ -632,15 +631,9 @@ def test_a_swept_close_names_its_parcel_and_its_leg(monkeypatch, D):
         act("DIAAAATESTCLOSEB", "POSITION_CLOSED", "DIAAAATESTOPEN", "29"),
     ]}
 
-    class _S(_EventSession):
-        def _request(self, method, path, weight):
-            if path.startswith("/history/activity"):
-                return activity, None
-            if path.startswith("/history/transactions"):
-                return {"transactions": []}, None
-            return super()._request(method, path, weight)
-    monkeypatch.setattr(ig, "load_credentials", lambda *a, **k: {label: {"env": "LIVE"}})
-    monkeypatch.setattr(ig, "IGSession", _S)
+    _sweep_with(monkeypatch, label, lambda path:
+                activity if path.startswith("/history/activity")
+                else {"transactions": []} if path.startswith("/history/transactions") else None)
 
     r = ig.ig_events("2026-09-01")
     opened = r["opens"][0]["values"]["trade_id"]
@@ -680,15 +673,9 @@ def test_a_first_bet_on_a_contract_the_book_lacks_is_offered_for_set_up(monkeypa
     activity = {"activities": [act("DIAAAATESTNEWOPEN", "POSITION_OPENED", None),
                                act("DIAAAATESTNEWCLOSE", "POSITION_CLOSED", "DIAAAAELSE")]}
 
-    class _S(_EventSession):
-        def _request(self, method, path, weight):
-            if path.startswith("/history/activity"):
-                return activity, None
-            if path.startswith("/history/transactions"):
-                return {"transactions": []}, None
-            return super()._request(method, path, weight)
-    monkeypatch.setattr(ig, "load_credentials", lambda *a, **k: {label: {"env": "LIVE"}})
-    monkeypatch.setattr(ig, "IGSession", _S)
+    _sweep_with(monkeypatch, label, lambda path:
+                activity if path.startswith("/history/activity")
+                else {"transactions": []} if path.startswith("/history/transactions") else None)
 
     r = ig.ig_events("2026-08-01")
     assert not r["opens"]
@@ -727,29 +714,27 @@ _TRANSACTIONS = {"transactions": [
 ]}
 
 
-class _EventSession:
-    def __init__(self, cred, label): self.label = label
+def _canned(path):
+    for prefix, payload in (("/history/activity", _ACTIVITY), ("/accounts", _EVENT_ACCOUNTS),
+                            ("/history/transactions", _TRANSACTIONS)):
+        if path.startswith(prefix):
+            return payload
+    raise AssertionError(f"unexpected endpoint: {path}")
 
-    def __enter__(self): return self
 
-    def __exit__(self, *a): return False
-
-    def _request(self, method, path, weight):
-        if path.startswith("/history/activity"):
-            return _ACTIVITY, None
-        if path.startswith("/history/transactions"):
-            return _TRANSACTIONS, None
-        if path.startswith("/accounts"):
-            return _EVENT_ACCOUNTS, None
-        raise AssertionError(f"unexpected endpoint: {path}")
+def _sweep_with(monkeypatch, label, answer=lambda path: None):
+    """Sweep the register label `label`, whose session answers `answer(path)`, or the canned
+    payloads where that gives None."""
+    monkeypatch.setattr(ig, "load_credentials", lambda *a, **k: {label: {"env": "LIVE"}})
+    monkeypatch.setattr(ig, "IGSession", _fake_session(
+        lambda _label, path: got if (got := answer(path)) is not None else _canned(path)))
 
 
 @pytest.fixture
 def stub_events(monkeypatch, D):
     """One register label, answering the canned payloads; yields the account it maps to."""
     label = _feed_labels(D)[0]
-    monkeypatch.setattr(ig, "load_credentials", lambda *a, **k: {label: {"env": "LIVE"}})
-    monkeypatch.setattr(ig, "IGSession", _EventSession)
+    _sweep_with(monkeypatch, label)
     return ig.account_names(D)[label]
 
 
@@ -790,19 +775,6 @@ def test_a_swept_row_carries_what_the_bench_needs(stub_events):
             assert row["kind"] in ("open", "close", "cost", "capital")
 
 
-def _sweep_with(monkeypatch, D, answer):
-    """Sweep one register label whose session answers `answer(path)` for the two histories."""
-    label = _feed_labels(D)[0]
-
-    class _S(_EventSession):
-        def _request(self, method, path, weight):
-            got = answer(path)
-            return (got, None) if got is not None else super()._request(method, path, weight)
-    monkeypatch.setattr(ig, "load_credentials", lambda *a, **k: {label: {"env": "LIVE"}})
-    monkeypatch.setattr(ig, "IGSession", _S)
-    return ig.account_names(D)[label]
-
-
 @needs("contracts", "buys")
 def test_a_withdrawal_is_capital_and_only_a_funding_line_is_a_cost(monkeypatch, D):
     """IG FILES ITS FUNDING CHARGES AND A WITHDRAWAL UNDER ONE TYPE, `WITH`. A line IG names as
@@ -813,7 +785,8 @@ def test_a_withdrawal_is_capital_and_only_a_funding_line_is_a_cost(monkeypatch, 
          "profitAndLoss": "£-1.52", "instrumentName": "Long Interest for US/Can shares 20/08/26"},
         {"dateUtc": "2026-08-22T00:00:00", "reference": "TX-OUT", "transactionType": "WITH",
          "profitAndLoss": "£-2,500.00", "instrumentName": "Bank withdrawal"}]}
-    _sweep_with(monkeypatch, D, lambda path: txns if path.startswith("/history/transactions")
+    _sweep_with(monkeypatch, _feed_labels(D)[0], lambda path:
+                txns if path.startswith("/history/transactions")
                 else {"activities": []} if path.startswith("/history/activity") else None)
     r = ig.ig_events("2026-08-01")
     assert [c["ref"] for c in r["costs"]] == ["TX-INT"], r["costs"]
@@ -841,7 +814,7 @@ def test_the_sweep_reads_every_page_of_both_histories(monkeypatch, D):
             return {"transactions": [tx(f"TX-{n}", f"1{n}")],
                     "metadata": {"pageData": {"pageNumber": n, "pageSize": 1, "totalPages": 2}}}
         return None
-    _sweep_with(monkeypatch, D, answer)
+    _sweep_with(monkeypatch, _feed_labels(D)[0], answer)
     r = ig.ig_events("2026-08-01")
     assert sorted(c["ref"] for c in r["capital"]) == ["TX-1", "TX-2"], r["capital"]
     assert sum(p.startswith("/history/activity") for p in asked) == 2, asked
@@ -854,7 +827,8 @@ def test_a_full_page_that_says_nothing_of_paging_is_refused(monkeypatch, D):
     full = {"transactions": [
         {"dateUtc": "2026-08-21T00:00:00", "reference": f"TX-{i}", "transactionType": "DEPO",
          "profitAndLoss": "£1.00", "instrumentName": "Card deposit"} for i in range(ig.PAGE)]}
-    _sweep_with(monkeypatch, D, lambda path: full if path.startswith("/history/transactions")
+    _sweep_with(monkeypatch, _feed_labels(D)[0], lambda path:
+                full if path.startswith("/history/transactions")
                 else {"activities": []} if path.startswith("/history/activity") else None)
     with pytest.raises(ig.IGError, match="no paging"):
         ig.ig_events("2026-08-01")
@@ -864,7 +838,7 @@ def test_a_full_page_that_says_nothing_of_paging_is_refused(monkeypatch, D):
 def test_an_account_the_sweep_did_not_read_has_no_orphans(monkeypatch, D):
     """THE REVERSE CHECK ASKS ONLY OF THE ACCOUNTS SWEPT: an account with no credentials here is
     never told its charges are missing from IG."""
-    _sweep_with(monkeypatch, D, lambda path: {"transactions": []}
+    _sweep_with(monkeypatch, _feed_labels(D)[0], lambda path: {"transactions": []}
                 if path.startswith("/history/transactions")
                 else {"activities": []} if path.startswith("/history/activity") else None)
     elsewhere = "Unswept IG Spread bet"

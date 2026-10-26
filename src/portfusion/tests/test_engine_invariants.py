@@ -26,7 +26,7 @@ import pytest
 
 from portfusion.record import rules as D
 from portfusion.engine import MEASURE_BASIS, BasisError, Book, roll_up
-from harness import needs, write_rows
+from harness import free_id, needs, write_rows
 
 PENNY = 0.01
 
@@ -399,7 +399,7 @@ def test_a_line_sold_outright_inside_the_window_lands_at_nothing(store_copy):
     proceeds = round(line["value_to"] * price / now, 2)      # at the rate the line ends at
     cur = book._identity().set_index("ticker")["currency"][line["ticker"]]   # the mark's currency
     write_rows("sales", {
-        "sale_id": "E-999", "date": line["priced_at"], "account": account, "ticker": line["ticker"],
+        "sale_id": free_id("sales"), "date": line["priced_at"], "account": account, "ticker": line["ticker"],
         "qty": qty, "traded_price": price, "cur": cur, "proceeds": proceeds,
         "source": "a test sale", "realisation_id": book.parcel(account, line["ticker"])})
     rules.reload_store()
@@ -848,7 +848,7 @@ def test_a_round_trip_is_closed_out_in_its_own_account_while_another_holds_the_c
     first = dict(zip(head, next(r for r in schema.load("buys")
                                 if r[head.index("account")] == account
                                 and r[head.index("ticker")] == ticker)))
-    write_rows("buys", {**first, "trade_id": "T-999", "account": other, "qty": 1,
+    write_rows("buys", {**first, "trade_id": free_id("buys"), "account": other, "qty": 1,
                         "cost": round(first["cost"] / first["qty"], 2), "broker_ref": "",
                         "source": "a test buy", "note": ""})
     if ticker not in {r[0] for r in D.CURRENT_PRICES}:

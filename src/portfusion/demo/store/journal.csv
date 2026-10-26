@@ -3,7 +3,7 @@ at,route,op,table,rows,ref,detail
 2026-09-30T17:00:00Z,baseline,open,securities,6,,rows on file when the journal opened
 2026-09-30T17:00:00Z,baseline,open,accounts,3,,rows on file when the journal opened
 2026-09-30T17:00:00Z,baseline,open,capital-movements,5,,rows on file when the journal opened
-2026-09-30T17:00:00Z,baseline,open,buys,11,,rows on file when the journal opened
+2026-09-30T17:00:00Z,baseline,open,buys,12,,rows on file when the journal opened
 2026-09-30T17:00:00Z,baseline,open,sales,4,,rows on file when the journal opened
 2026-09-30T17:00:00Z,baseline,open,income,4,,rows on file when the journal opened
 2026-09-30T17:00:00Z,baseline,open,quarter-nav,9,,rows on file when the journal opened

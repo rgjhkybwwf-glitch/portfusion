@@ -6,6 +6,7 @@ the loader's, which refuses a table out of order or an id not its place, and is 
 import pytest
 
 from portfusion.record import order
+from harness import needs
 
 _ACCOUNTS = ["Isa", "Bet"]
 _BUYS = ["trade_id", "date", "account", "ticker", "note"]
@@ -39,6 +40,18 @@ def test_two_rows_holding_one_id_are_refused_rather_than_followed():
     buys = [["T-001", "2026-01-05", "Isa", "AAA", ""], ["T-001", "2026-02-01", "Isa", "CCC", ""]]
     with pytest.raises(ValueError, match="T-001"):
         order.renumbered((_BUYS, buys), (_SALES, []))
+
+
+@needs("accounts", "buys")
+def test_the_record_refuses_two_rows_under_one_id(store_copy):
+    """THE SAME RULE, ON THE STORE: a hand edit that repeats an id stops the record loading, as
+    any other malformed row does, rather than becoming two legs nothing can tell apart."""
+    from portfusion.record import rules, schema
+    path = schema.TABLES["sales"].path
+    lines = path.read_text(encoding="utf-8").splitlines()
+    path.write_text("\n".join(lines + [lines[-1]]) + "\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="ids must be distinct"):
+        rules.reload_store()
 
 
 def test_a_door_refuses_a_file_with_a_cell_spanning_lines(store_copy):

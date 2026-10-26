@@ -7,7 +7,7 @@ from portfusion.record import rules as _rules
 from portfusion.desk import actions
 from desk_support import SPREAD_BET_ACCOUNT, _ready, _static, all_crlf, to_crlf
 from portfusion.desk.intake import bench as _bench
-from harness import SRC, require, desk_script
+from harness import SRC, needs, require, desk_script
 
 # THE LOADED BOOK'S OWN LINES, derived once. These doors only replace rows the book has, so
 # every fixture row names whichever book is loaded rather than this one (docs/testing.md:
@@ -166,43 +166,51 @@ def test_a_live_read_is_dated_by_its_uk_day_and_lands_with_its_instant(store_cop
     assert (landed["struck"], landed["at"]) == ("live", "2026-09-03T23:30:00Z")
 
 
-def test_a_refused_write_leaves_every_file_byte_identical(store_copy):
-    """The envelope, on this door. A half-written store is the one outcome worth machinery."""
-    from portfusion.record import schema
-    from portfusion.desk.doors import marks
-
-    paths = [schema.TABLES[t].path for t in ("current-prices", "fx")]
-    before = {p: p.read_bytes() for p in paths}
-
-    with pytest.raises(marks.Refused):
-        marks.write(prices=[{"mark_key": TICK, "price": 91.5, "currency": TICK_CUR,
-                             "as_of": "2026-09-04", "source": "fine", "struck": "close"}],
-                    rates=[{"currency": "XXX", "as_of": "2026-09-04", "rate": 1.0,
-                            "source": "names no row", "struck": "live"}])
-
-    for path, original in before.items():
-        assert path.read_bytes() == original, f"{path.name} was left modified by a refused write"
-
-
-
-def test_a_refused_write_takes_back_the_banking_too(store_copy):
-    """THE HISTORIES ARE INSIDE THE ENVELOPE, so a write refused after the bank leaves
-    price-history.csv as it was. The outgoing mark is unbanked here, so the bank has something to
-    do."""
+@pytest.mark.parametrize("prices, rates", [
+    ([{"mark_key": TICK, "price": 91.5, "currency": TICK_CUR, "as_of": "2026-09-04",
+       "source": "fine", "struck": "close"}],
+     [{"currency": "XXX", "as_of": "2026-09-04", "rate": 1.0, "source": "names no row",
+       "struck": "live"}]),
+    ([{"mark_key": "NOT-A-ROW", "price": 1.0, "currency": RATE_CUR, "as_of": "2026-09-04",
+       "source": "names no row", "struck": "close"}], None),
+], ids=["a rate naming no row", "a price naming no row"])
+def test_a_refused_write_leaves_every_file_as_it_was(store_copy, prices, rates):
+    """THE ENVELOPE, ON THIS DOOR: the two tables, the two histories they are banked into and the
+    journal are left byte for byte as they were. The outgoing mark is unbanked first, so the bank
+    has something to take back."""
     from portfusion.history import prices as PH
     from portfusion.desk.doors import marks
     live = {(m["mark_key"], m["date"]) for m in PH.current_marks() if m["mark_key"] == TICK}
     PH.save([r for r in PH.load() if (r["mark_key"], r["date"]) not in live])
-    history = store_copy / PH.CSV_NAME
-    before = history.read_bytes()
+    before = {p: p.read_bytes() for p in marks.paths() if p.is_file()}
 
     with pytest.raises(marks.Refused):
-        marks.write(prices=[{"mark_key": TICK, "price": 91.5, "currency": TICK_CUR,
-                             "as_of": "2026-09-04", "source": "fine", "struck": "close"}],
-                    rates=[{"currency": "XXX", "as_of": "2026-09-04", "rate": 1.0,
-                            "source": "names no row", "struck": "live"}])
+        marks.write(prices=prices, rates=rates)
 
-    assert history.read_bytes() == before, "a refused write banked the outgoing marks"
+    moved = [p.name for p, was in before.items() if p.read_bytes() != was]
+    assert not moved, f"a refused write left these files changed: {moved}"
+
+
+def test_a_refused_write_does_not_even_move_the_mtime(store_copy):
+    """Restoring identical bytes changes the MTIME, and `engine.freshness()` reads the store's
+    newest mtime — so a refused write would make the desk's header announce "store changed" when
+    nothing had. Byte-comparing the files, which is what every other test here does, passes on that
+    happily.
+
+    A guard that reports a change it caused is worse than no guard.
+    """
+    from portfusion.record import schema
+    from portfusion.desk.doors import marks
+
+    path = schema.TABLES["current-prices"].path
+    before = path.stat().st_mtime_ns
+
+    with pytest.raises(marks.Refused):
+        marks.write(prices=[{"mark_key": "NOT-A-ROW", "price": 1.0, "currency": RATE_CUR,
+                             "as_of": "2026-09-07", "source": "names a row that is not there", "struck": "close"}])
+
+    assert path.stat().st_mtime_ns == before, \
+        "a refused write touched the file, so the desk will report the store as changed"
 
 
 @pytest.mark.parametrize("fault", [RuntimeError, SystemExit])
@@ -435,17 +443,6 @@ def test_a_replaced_mark_is_journalled_as_a_replace_and_not_as_an_arrival(store_
         "sanity: a replace did not change the row count"
 
 
-def test_a_refused_mark_write_leaves_the_journal_exactly_as_it_was(store_copy):
-    """Same claim as the commit door's, on the door that replaces rather than appends."""
-    from portfusion.record import schema
-    from portfusion.desk.doors import marks
-    before = schema.TABLES["journal"].path.read_bytes()
-    with pytest.raises(marks.Refused):
-        marks.write(prices=[{"mark_key": "NOT-A-ROW", "price": 1.0, "currency": RATE_CUR,
-                             "as_of": "2026-09-04", "source": "test", "struck": "close"}])
-    assert schema.TABLES["journal"].path.read_bytes() == before
-
-
 # =====================================================================================
 # THE BAY'S TWO CONVENIENCES, AND THE RULE NEITHER MAY BEND
 # =====================================================================================
@@ -509,28 +506,6 @@ def test_a_written_refresh_moves_to_what_changed_and_a_refused_one_does_not():
     assert "LAST_REFRESH" in js, "the receipt is no longer carried to the destination"
 
 
-def test_a_refused_write_does_not_even_move_the_mtime(store_copy):
-    """Restoring identical bytes changes the MTIME, and `engine.freshness()` reads the store's
-    newest mtime — so a refused write would make the desk's header announce "store changed" when
-    nothing had. Byte-comparing the files, which is what every other test here does, passes on that
-    happily.
-
-    A guard that reports a change it caused is worse than no guard.
-    """
-    from portfusion.record import schema
-    from portfusion.desk.doors import marks
-
-    path = schema.TABLES["current-prices"].path
-    before = path.stat().st_mtime_ns
-
-    with pytest.raises(marks.Refused):
-        marks.write(prices=[{"mark_key": "NOT-A-ROW", "price": 1.0, "currency": RATE_CUR,
-                             "as_of": "2026-09-07", "source": "names a row that is not there", "struck": "close"}])
-
-    assert path.stat().st_mtime_ns == before, \
-        "a refused write touched the file, so the desk will report the store as changed"
-
-
 def test_a_write_button_is_never_offered_without_something_to_write():
     """AN ACTION STRIP OFFERS ONLY WHAT CAN BE PRESSED NOW.
 
@@ -551,6 +526,47 @@ def test_a_write_button_is_never_offered_without_something_to_write():
 
     # The write action is reachable, and not offered as a standing panel button.
     assert 'runAction("refresh-write-marks"' in js, "the bay must post its ticked marks"
+
+
+# =====================================================================================
+# THE PRICE REFRESH'S LABELS
+# =====================================================================================
+
+@needs("accounts", "account-readings", "buys")
+def test_the_bay_says_what_it_can_replace_rather_than_what_is_due():
+    """THE BAY LISTS WHAT IT CAN REPLACE, and nothing calls those lines "due".
+
+    The LIST is the whole set, never filtered by age: docs/prices.md's rule is that the book is
+    refreshed whole or not at all. The step says the marks' age against the limit, as the
+    Dashboard does, and a line past the limit says so in its own row.
+    """
+    from portfusion import engine
+    js = desk_script()
+    assert "price(s) due" not in js, "step 3 calls the replaceable lines due again"
+    assert "limit ${d.age_limit} days" in js, "step 3 does not say what the threshold is"
+
+    can = engine.Book().marks_replaceable()
+    assert can["age_limit"] == _rules.PRICE_AGE_LIMIT
+    assert can["replaceable"], "nothing is replaceable — this asserts nothing"
+    for row in can["replaceable"]:
+        assert row["stale"] == (row["age_days"] > can["age_limit"]), \
+            f"{row['ticker']}: stale and its age disagree"
+
+
+def test_the_age_limit_lives_where_the_classification_does(build_sources, repo_root):
+    """A limit kept in a renderer is one `book.marks_replaceable()` — which decides whether a
+    mark is old — cannot read, because `engine/` imports the record, `house` and pandas and
+    nothing else; the engine would have no threshold and call everything due. The limits are the
+    record's, and neither renderer — the report nor the desk — holds a name of its own for
+    either."""
+    import ast
+    renderers = [*build_sources, *sorted((SRC / "desk").rglob("*.py"))]
+    copies = [f"{f.relative_to(repo_root)}:{n.lineno}" for f in renderers
+              for n in ast.walk(ast.parse(f.read_text(encoding="utf-8")))
+              if isinstance(n, (ast.Assign, ast.AnnAssign))
+              and any(getattr(t, "id", None) in ("PRICE_AGE_LIMIT", "PRICE_SPREAD_LIMIT")
+                      for t in getattr(n, "targets", [getattr(n, "target", None)]))]
+    assert not copies, f"a renderer holds its own copy of a price limit: {copies}"
 
 
 # =====================================================================================
