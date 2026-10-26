@@ -88,7 +88,7 @@ function drawFreshness(f) {
 
 function drawTabs(panels, active, onPick) {
   const tab = (p) =>
-    `<button role="tab" aria-selected="${p.name === active}" data-name="${esc(p.name)}">` +
+    `<button${p.name === active ? ` aria-current="page"` : ""} data-name="${esc(p.name)}">` +
     `${esc(p.title)}</button>`;
   /* THE PAGES APART FROM THE WORK sit below a rule, off the thread, with no heading: Method and
      Access on the Mac (`APART` on the panel module). The rule alone sets them apart. */
@@ -110,78 +110,6 @@ function drawTabs(panels, active, onPick) {
   toggle.addEventListener("click", () => {
     toggle.setAttribute("aria-expanded", String($("#rail").classList.toggle("open")));
   });
-}
-
-/* Filter controls for the reading panels. Each one re-asks the SERVER — the narrowing is the
-   engine's, and re-filtering an already-fetched array in the browser would be a second answer
-   to a question engine.py answers. */
-function wireStage5(name, fresh = true) {
-  const reload = async (path) => {
-    const d = await get(path);
-    $("#main").innerHTML = RENDER[name](d);
-    wireStage5(name, false);
-  };
-  /* THE FILTERS HELD FOR THIS PAGE are asked for again on arrival — only then, and only when
-     they differ from what was drawn, so the redraw that answers them cannot ask again. */
-  /* A VIEW MAY DRAW FEWER BOXES (Round Trips by company life has no account or ticker), so
-     both read only the boxes on the page. */
-  const hold = (ids) => {
-    HELD_FILTERS[name] = Object.fromEntries(ids.filter((id) => $(`#${id}`))
-      .map((id) => [id, $(`#${id}`).value]));
-  };
-  const restore = (ids, go) => {
-    const held = HELD_FILTERS[name];
-    const els = ids.map((id) => $(`#${id}`)).filter(Boolean);
-    if (!fresh || !held || !els.length) return;
-    if (els.every((el) => el.value === (held[el.id] ?? ""))) return;
-    els.forEach((el) => { el.value = held[el.id] ?? ""; });
-    go();
-  };
-  if (name === "holdings") {
-    const by = $("#h-by"), acct = $("#h-acct"), ids = ["h-by", "h-acct"];
-    const go = () => {
-      hold(ids);
-      reload(`/api/holdings?by=${encodeURIComponent(by.value)}`
-        + `&account=${encodeURIComponent(acct.value)}`);
-    };
-    if (by) by.addEventListener("change", go);
-    if (acct) acct.addEventListener("change", go);
-    const clear = $("#h-clear");
-    if (clear) clear.addEventListener("click", () => {
-      delete HELD_FILTERS[name];
-      reload("/api/holdings");
-    });
-    restore(ids, go);
-  }
-  if (name === "round-trips") {
-    const tk = $("#rt-ticker"), acct = $("#rt-acct"), co = $("#rt-company");
-    const from = $("#rt-from"), to = $("#rt-to"), clear = $("#rt-clear"), view = $("#rt-view");
-    const ids = ["rt-view", "rt-acct", "rt-company", "rt-ticker", "rt-from", "rt-to"];
-    const go = () => {
-      hold(ids);
-      reload(`/api/round-trips?view=${encodeURIComponent(view ? view.value : "holding")}`
-        + `&ticker=${encodeURIComponent(tk ? tk.value : "")}`
-        + `&company=${encodeURIComponent(co ? co.value : "")}`
-        + `&account=${encodeURIComponent(acct ? acct.value : "")}`
-        + `&start=${encodeURIComponent(from ? from.value : "")}`
-        + `&end=${encodeURIComponent(to ? to.value : "")}`);
-    };
-    if (view) view.addEventListener("change", go);
-    if (tk) tk.addEventListener("change", go);
-    if (acct) acct.addEventListener("change", go);
-    /* A COMPANY CHOSEN STARTS ITS TICKER AFRESH, and the page comes back with that company's
-       codes in the Ticker box. */
-    if (co) co.addEventListener("change", () => { if (tk) tk.value = ""; go(); });
-    /* `change` and not `input`: a date input fires on every keystroke while a year is being
-       typed, and each one would be a request for a range nobody meant. */
-    if (from) from.addEventListener("change", go);
-    if (to) to.addEventListener("change", go);
-    if (clear) clear.addEventListener("click", () => {
-      delete HELD_FILTERS[name];
-      reload(`/api/round-trips?view=${encodeURIComponent(view ? view.value : "holding")}`);
-    });
-    restore(ids, go);
-  }
 }
 
 /* HOLDINGS -> THE LEDGER, filtered to one company. Delegated from #main rather than bound per
@@ -312,12 +240,19 @@ function paintPanel(p) {
   PAGE_TITLE = p.title;
   HEADS = p.heads || {};
   PRECISION = p.precision || PRECISION;
-  if (RENDER_LATE[p.name]) return RENDER_LATE[p.name](p.data);
-  const render = RENDER[p.name];
-  $("#main").innerHTML = render
-    ? render(p.data)
+  $("#main").innerHTML = DRAW[p.name]
+    ? DRAW[p.name](p.data)
     : `<h2>${esc(p.title)}</h2><pre class="error">${esc(JSON.stringify(p.data, null, 2))}</pre>`;
-  wireStage5(p.name);
+  return WIRE[p.name]?.(p.data, false);
+}
+
+/* A PAGE THAT COULD NOT BE READ: the hosted door asking who you are, no Mac behind it, or the
+   record's own refusal, verbatim — it names the exact file that was missing, which is the useful
+   half. */
+function drawFailure(e) {
+  if (e.signIn) return drawSignIn();
+  if (e.unreachable) return drawUnreachable();
+  $("#main").innerHTML = `<h2>The record refused to load</h2><pre class="error">${esc(e.message)}</pre>`;
 }
 
 async function show(name) {
@@ -326,8 +261,9 @@ async function show(name) {
      the message is a flicker rather than information. Held back 180ms, it appears only when the
      store really is slow, which is the only time it says anything. Until then the previous panel
      stays up, which also keeps the page from collapsing to an empty measure on the way. */
+  const asked = ++ASKED;
   const slow = setTimeout(() => {
-    $("#main").innerHTML = `<p class="loading">reading the store…</p>`;
+    if (asked === ASKED) $("#main").innerHTML = `<p class="loading">reading the store…</p>`;
   }, 180);
   /* THE HEADER IS RE-READ ON EVERY SWITCH.
 
@@ -340,14 +276,10 @@ async function show(name) {
   try {
     const p = await get(`/api/panel/${encodeURIComponent(name)}`);
     clearTimeout(slow);
-    await paintPanel(p);
+    if (asked === ASKED) await paintPanel(p);
   } catch (e) {
     clearTimeout(slow);
-    if (e.signIn) { drawSignIn(); return; }
-    if (e.unreachable) { drawUnreachable(); return; }
-    /* The record's own refusal comes through verbatim — it names the exact file that was
-       missing, which is the useful half. */
-    $("#main").innerHTML = `<h2>The record refused to load</h2><pre class="error">${esc(e.message)}</pre>`;
+    if (asked === ASKED) drawFailure(e);
   }
   const s = await fresh;
   if (s) { takeState(s); drawFreshness(s.freshness); otherVersion(s); }
@@ -425,12 +357,9 @@ function drawSignIn(why) {
 
 async function passkey(ask, answer, verb, body) {
   const out = $("#signin-out");
-  const post = (url, data) => fetch(url, { method: "POST",
-    headers: { "Content-Type": "application/json" }, body: JSON.stringify(data || {}) })
-    .then(readJson);
   try {
-    const o = await post(ask, body);
-    if (!o.ok) throw new Error(o.body?.detail || o.raw);
+    const o = await post(ask, body || {});
+    if (o.error) throw new Error(o.error);
     const opts = o.body;
     opts.challenge = b64u.dec(opts.challenge);
     if (opts.user) opts.user.id = b64u.dec(opts.user.id);
@@ -450,7 +379,7 @@ async function passkey(ask, answer, verb, body) {
     }
     const v = await post(answer, { id: cred.id, rawId: b64u.enc(cred.rawId), type: cred.type,
                                    response, clientExtensionResults: {} });
-    if (!v.ok) throw new Error(v.body?.detail || v.raw);
+    if (v.error) throw new Error(v.error);
     location.reload();
   } catch (e) {
     out.hidden = false;

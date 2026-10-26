@@ -195,7 +195,8 @@ def test_every_filter_row_has_the_same_shape(repo_root):
     from portfusion.desk.panels import holdings
     assert set(holdings.GROUPING_WORDS) == set(holdings.GROUPINGS) and "d.grouping_words[g]" in js
     assert holdings.GROUPING_WORDS["issuer"] == "company", "the group by speaks the engine's word"
-    assert "d.company_tickers[co]" in js and 'co.addEventListener("change", () => { if (tk) tk.value = ""' in js, \
+    assert "d.company_tickers[co]" in js and 'resets: { "rt-company": "rt-ticker" }' in js \
+        and 'resets: { "q-company": "q-ticker" }' in js, \
         "a Ticker box does not follow the company chosen beside it"
 
 

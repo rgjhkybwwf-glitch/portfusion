@@ -35,7 +35,7 @@ COLUMNS = ("account", "book", "broker", "difference", "verdict", "last_check", "
 
 def data() -> dict:
     b = engine.book()
-    # The engine itself once the record has loaded, not with the module (`price_refresh.query`).
+    # The engine itself once the record has loaded, not with the module (`price_refresh.data`).
     from portfusion.engine import Book
     rests = b.quarter_evidence(None).set_index("account")
     rows = []

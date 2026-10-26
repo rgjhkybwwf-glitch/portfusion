@@ -6,7 +6,7 @@
    typed into a line it left open — so the form comes back as it was left. */
 let PRICE_SWEEP = null;
 
-Object.assign(RENDER_LATE, {
+Object.assign(DRAW, {
   /* PRICE REFRESH — the screen that writes marks.
 
      THE FOUR STEPS ARE THE PANEL, not decoration. feeds/refresh.py exists as ONE command because
@@ -17,9 +17,7 @@ Object.assign(RENDER_LATE, {
      its date together — enforced at the point of entry rather than explained afterwards. The
      SERVER refuses the same thing; this only makes the refusal visible before it happens, which
      is the difference between a form that teaches and a form that scolds. */
-  async "price-refresh"(d) {
-    /* Read before the form's first re-check, which would record the empty form over it. */
-    const heldRows = PRICE_SWEEP ? PRICE_SWEEP.rows : null;
+  "price-refresh"(d) {
     /* THE REVIEW STEP LEADS WITH THE MARKS' AGE, the engine's figure and the Dashboard's words
       , against the limit that judges it; a count past the limit is its tag. */
     const stale = (d.prices || []).filter((r) => r.stale).length;
@@ -111,7 +109,7 @@ Object.assign(RENDER_LATE, {
     const group = (label, kind, rows) => `
       <tbody><tr><th colspan="7">${label}</th><th>${takeAll(kind)}</th></tr>${rows.join("")}</tbody>`;
 
-    $("#main").innerHTML = page({
+    return page({
       scope: `the marks stand at ${day(d.valued_at)}`,
       status: [
         ...bank,
@@ -134,7 +132,7 @@ Object.assign(RENDER_LATE, {
             (docs/prices.md: the whole book or none); the stale count is in words. `stale` is
             the engine's, against rules.PRICE_AGE_LIMIT. */ ""}
       <div id="rb-fetched"></div>
-      <pre id="rb-out" class="paste" hidden></pre>
+      <pre id="rb-out" class="paste" aria-live="polite" hidden></pre>
       ${/* TAKE THE WHOLE COLUMN. A fetch fills many rows at once. One per group, not one for the
             page: the groups arrive by different routes and are finished at different moments.
 
@@ -152,6 +150,13 @@ Object.assign(RENDER_LATE, {
         ${group("IG accounts", "reading", d.readings.map(readingRow))}
       </table></div>`,
     });
+  },
+});
+
+Object.assign(WIRE, {
+  async "price-refresh"(d) {
+    /* Read before the form's first re-check, which would record the empty form over it. */
+    const heldRows = PRICE_SWEEP ? PRICE_SWEEP.rows : null;
 
     const rows = () => [...document.querySelectorAll("#main tr[data-kind]")];
     const fields = (tr) => Object.fromEntries(
@@ -411,12 +416,9 @@ Object.assign(RENDER_LATE, {
       button.disabled = true;
       out.innerHTML = `<p class="muted">asking ${who}…</p>`;
       try {
-        const r = await fetch("/api/action/refresh-fetch-all", {
-          method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(ask) });
-        const { body, raw } = await readJson(r);
-        if (raw) { out.innerHTML = `<pre class="paste">${esc(raw)}</pre>`; return; }
-        PRICE_SWEEP = { res: body.result || {}, on: ask.on || null, at: stampNow(), rows: {} };
+        const { result, error } = await runAction("refresh-fetch-all", ask);
+        if (error) { out.innerHTML = `<pre class="paste">${esc(error)}</pre>`; return; }
+        PRICE_SWEEP = { res: result, on: ask.on || null, at: stampNow(), rows: {} };
         applySweep(PRICE_SWEEP.res, {});
       } finally {
         button.disabled = false;
@@ -461,16 +463,11 @@ Object.assign(RENDER_LATE, {
       out.textContent = closeOf ? `banking the closes of ${closeOf}…`
                                 : "banking the outgoing marks, then writing…";
       try {
-        const r = await fetch("/api/action/refresh-write-marks", {
-          method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload) });
-        const { body, raw } = await readJson(r);
-        if (raw) { out.textContent = raw; return; }
-        const res = body.result || body;
+        const { result: res, error, refused } = await runAction("refresh-write-marks", payload);
         /* A REFUSAL IS SHOWN IN FULL. Those messages name the rule that stopped the write —
            which line, and why — and that is the half worth reading. */
-        if (res.ok === false) {
-          out.textContent = `refused — nothing was written.\n\n${res.refused}`;
+        if (error) {
+          out.textContent = refused ? `refused — nothing was written.\n\n${error}` : error;
           return;
         }
         /* A WRITTEN REFRESH MOVES YOU ON. The bay is the machine and What Changed is the report,

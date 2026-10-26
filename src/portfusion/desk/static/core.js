@@ -75,6 +75,36 @@ async function readJson(r) {
                   `\n  ~/Library/Logs/portfusion-desk.log` };
   }
 }
+
+/* EVERY WRITE GOES THROUGH post(): JSON in, readJson() out, and it never throws. `error` is set
+   on a refusal, an answer that is not JSON or no answer at all, in the server's own words. */
+async function post(url, data, method = "POST") {
+  let r;
+  try {
+    r = await fetch(url, { method, headers: { "Content-Type": "application/json" },
+                           body: data === undefined ? undefined : JSON.stringify(data) });
+  } catch (e) { return { ok: false, body: null, status: 0, error: `no answer: ${e.message || e}` }; }
+  const { ok, body, raw } = await readJson(r);
+  const said = body && (body.detail || body.error);
+  const error = raw || (ok ? null
+    : typeof said === "string" ? said : said ? JSON.stringify(said) : r.statusText || "refused");
+  return { ok: !error, body, status: r.status, error };
+}
+
+/* AN ACTION, ANSWERED ONE WAY. The route answers `{result}`; an action that refuses says
+   `{ok: false}` with its words in `error` or `refused`, and perhaps a `hint`. `result` is what it
+   did, `error` what to show, and `refused` says the action itself said no. */
+async function runAction(name, data = {}) {
+  const { ok, body, error } = await post(`/api/action/${name}`, data);
+  if (!ok) return { error };
+  const res = body.result || {};
+  if (res.ok === false) {
+    return { refused: true,
+             error: (res.error || res.refused || "refused") + (res.hint ? `\n\n${res.hint}` : "") };
+  }
+  return { result: res.result ?? res };
+}
+
 /* SWITCH TO A PANEL FROM ANYWHERE. Every panel link calls it. Clicking the real tab rather than
    calling show() keeps the tab strip's own selected state correct — it is the tab that owns it. */
 function openPanel(name) {
@@ -82,9 +112,16 @@ function openPanel(name) {
   if (tab) tab.click();
 }
 
-/* Renderers, one per panel name. A panel the shell has no renderer for still LISTS — it shows
-   its raw payload rather than vanishing, so a half-built panel is visible while it is built. */
-let RENDER_LATE = {};
+/* EACH PAGE, BY PANEL NAME: `DRAW[name](d)` returns its HTML from the panel's answer, and
+   `WIRE[name](d, again)`, where a page has one, wires what was drawn; `again` is a redraw of a
+   filter's answer. A panel the shell cannot draw still LISTS — it shows its raw payload rather
+   than vanishing, so a half-built panel is visible while it is built. */
+const DRAW = {}, WIRE = {};
+
+/* THE PAGE LAST ASKED FOR IS THE ONE PAINTED. Each ask, a tab or a filter, takes the next
+   number, and an answer that is no longer the latest is dropped, so a slow page never draws
+   over a quick one. */
+let ASKED = 0;
 
 /* The open tab's own name, set as each panel is painted, so `page()` titles the page with the
    word the tab strip already uses rather than a second spelling of it. */

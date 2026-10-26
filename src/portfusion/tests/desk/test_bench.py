@@ -310,7 +310,7 @@ def test_one_item_at_a_time_then_a_review_then_one_write_each(item, repo_root):
     assert 'id="bench-list"' in js and "list.hidden = on" in js, "an item must take the page"
     nxt = js[js.index("function nextStep("):js.index("async function reviewItems(")]
     assert 'id="nextitem"' in nxt and 'id="reviewall"' in nxt and "d.approved" in nxt
-    review = js[js.index("async function reviewItems("):js.index("Object.assign(RENDER_LATE",
+    review = js[js.index("async function reviewItems("):js.index("Object.assign(DRAW",
                                                                   js.index("async function reviewItems("))]
     assert 'data-write="${esc(it.id)}"' in review and "/commit" in review
     assert "write all" not in js.lower(), "one press per item: nothing writes them all"
