@@ -163,11 +163,14 @@ def show(account: str | None = None) -> None:
 
 
 def main(argv: list[str]) -> int:
-    """The command line: --show [account], --check, --archive. Side effects: prints.
+    """The command line: --show [account], --check, --archive, --help. Side effects: prints.
 
     --archive APPENDS to store/account-statements.csv; everything else reports. Repairing the
     record is the bench's job, and REPLACING an observation is desk/doors/observations.py's.
     """
+    if argv[:1] in (["-h"], ["--help"]):
+        log.info(__doc__)
+        return 0
     if "--archive" in argv:
         archive()
     elif "--check" in argv:

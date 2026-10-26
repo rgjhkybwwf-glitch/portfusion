@@ -50,14 +50,13 @@ portfusion check                     # the guard, on this book
 portfusion record                    # the audit
 ```
 
-The first install is forced because two commits can carry one version number, and a plain install
-keeps the old code. Until a release's store moves are made, the book will not load, and the
-loader names the table; `portfusion migrate --write` makes them, opens and audits the book, and
-puts every file back if either fails, so the moves the release's entry gives as by hand are made
-first. The lines of the book's `checks/` it lists are moved by
-hand before the guard, and the move is committed as the book's own change. A hook or `.gitignore`
-the audit names is copied from a book `portfusion init` makes in a scratch folder. Restart the
-desk afterwards: it does not notice an upgraded package ([`docs/desk-app.md`](docs/desk-app.md)).
+| Step | Why |
+|---|---|
+| the first install is forced | two commits can carry one version number, and a plain install keeps the old code |
+| `migrate --write` | until the release's store moves are made the book will not load, and the loader names the table; it opens and audits the book, and puts every file back if either fails |
+| moves the entry gives as by hand, and the lines of `checks/` it lists | made first, and committed as the book's own change |
+| a hook or `.gitignore` the audit names | copied from a book `portfusion init` makes in a scratch folder |
+| restart the desk | it does not notice an upgraded package ([`docs/desk-app.md`](docs/desk-app.md)) |
 
 ## Where everything is
 
@@ -73,10 +72,9 @@ desk afterwards: it does not notice an upgraded package ([`docs/desk-app.md`](do
 | `tests/` | the guard, shipped with the app: `portfusion check` runs it; a folder per package it tests |
 | `demo/` | the invented book; `tools/make_demo.py` writes it |
 
-A document becomes a row on the desk's Bench: it is read, each figure quoted back with the line
-it came from, a person approves, and `desk/doors/commit.py` places the row by its date
-(`record/order.py`), files the document and journals the write in one step. The engine derives
-from the record and the two renderers show it; neither computes a figure of its own.
+A document becomes a row only on the desk's Bench, by a person's approval
+([`docs/intake.md`](docs/intake.md)). The engine derives every figure from the record; the desk and
+the report show it and compute none.
 
 A book holds no code, so a change to PortFusion is made here: [`CONTRIBUTING.md`](CONTRIBUTING.md)
 sets up a checkout and says where each kind of change goes, [`docs/`](docs) holds the component

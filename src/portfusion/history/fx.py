@@ -158,10 +158,13 @@ def show(currency: str | None = None) -> None:
 
 
 def main(argv: list[str]) -> int:
-    """The command line: --show [ccy], --archive, --check, --rate CCY DATE.
+    """The command line: --show [ccy], --archive, --check, --rate CCY DATE, --help.
 
     Side effects: --archive APPENDS to store/fx-history.csv. Everything else reports.
     """
+    if argv[:1] in (["-h"], ["--help"]):
+        log.info(__doc__)
+        return 0
     if "--archive" in argv:
         archive()
     elif "--check" in argv:

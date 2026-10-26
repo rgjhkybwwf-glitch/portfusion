@@ -283,7 +283,7 @@ def test_each_action_of_the_command_answers_help_and_runs_nothing():
     """`portfusion --help` and each action's `--help` answer and exit 0, and the audit's does not
     start the audit: a stranger's first question of a command must not run it. EVERY COMMAND IS
     IN `portfusion --help`: each action, and each module the package runs as `python3 -m`, but
-    the hooks, which git runs."""
+    the hooks, which git runs; and each of those modules answers `--help` and exits 0."""
     import subprocess
     import sys
     from harness import SRC
@@ -302,6 +302,10 @@ def test_each_action_of_the_command_answers_help_and_runs_nothing():
     listed = said[()].replace(".", "/")
     missing = sorted(m for m in runs if m not in listed)
     assert not missing, f"not in portfusion --help: {missing}"
+    for m in sorted(runs):
+        r = subprocess.run([sys.executable, "-m", "portfusion." + m.replace("/", "."), "--help"],
+                           capture_output=True, text=True, timeout=60)
+        assert r.returncode == 0 and r.stdout.strip(), (m, r.stdout, r.stderr)
 
 
 def test_book_names_the_folder_for_every_action(monkeypatch, repo_root):

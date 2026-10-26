@@ -583,6 +583,9 @@ def _item_for(target: str) -> str:
 
 
 def main(argv: list[str]) -> int:
+    if argv[:1] in (["-h"], ["--help"]):
+        log.info(__doc__)
+        return 0
     if not argv:
         log.info(_guide())
         return 0

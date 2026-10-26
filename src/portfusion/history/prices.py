@@ -8,7 +8,7 @@ no figure can take leaves (`AppendOnlyCSV.kept()`), and git keeps what each said
 this is the table whose diff is worth reading.
 
     python3 -m portfusion.history.prices --archive      # before a refresh: bank the current marks
-    python3 -m portfusion.history.prices --show TSSL    # one instrument's series
+    python3 -m portfusion.history.prices --show BRYC.L  # one instrument's series
     python3 -m portfusion.history.prices --check        # is the current set banked?
 
 A tool alongside the build, never part of it: the build must not import it.
@@ -122,10 +122,13 @@ def show(ticker: str | None = None) -> None:
 
 
 def main(argv: list[str]) -> int:
-    """The command line: --show [ticker], --archive, --check.
+    """The command line: --show [ticker], --archive, --check, --help.
 
     Side effects: --archive APPENDS to store/price-history.csv. Everything else reports.
     """
+    if argv[:1] in (["-h"], ["--help"]):
+        log.info(__doc__)
+        return 0
     if "--archive" in argv:
         archive()
     elif "--check" in argv:

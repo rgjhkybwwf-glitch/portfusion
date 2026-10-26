@@ -23,8 +23,8 @@ HOST = "127.0.0.1"
 
 def main(argv=None):
     from portfusion.desk import auth
-    ap = argparse.ArgumentParser(prog="portfusion desk", description="the desk")
-    ap.add_argument("--port", type=int, default=8765)
+    ap = argparse.ArgumentParser(prog="portfusion desk", description="the desk, in a browser, on this Mac only (127.0.0.1)")
+    ap.add_argument("--port", type=int, default=8765, help="the desk's port (default 8765)")
     ap.add_argument("--no-open", action="store_true", help="do not open a browser")
     ap.add_argument("--enrol", metavar="NAME",
                     help="print a one-time code for enrolling a passkey on the hosted desk, "

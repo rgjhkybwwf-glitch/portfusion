@@ -30,8 +30,11 @@ the audit, never in a book's `checks/`.
 | `portfusion check` | the code passes on the demo, and the loaded book opens: figures, findings, every page | that the code is right on your book's rows |
 | `portfusion record` | whether the record is in good order: the findings, then the audit tests | anything about the code |
 | `tools/clean_room.py` | the tracked files install fresh and pass on the demo and on a new, empty book, and the wheel built from them passes `portfusion check` | that nothing of a book is named in what leaves |
+| `ruff check` | the code holds none of the faults `pyproject.toml` selects: an undefined or unused name, a blind `except`, a stray `print` | layout: there is no formatter |
+| the secret scan, `.githooks/pre-commit --history` | no commit holds a secret's shape or a file that reaches a broker or a reader | a secret in a shape it does not know |
 | `lint-imports` | each part of the app imports only what `pyproject.toml`'s contracts allow, the build no desk, feed or history | an import made by name at run time (`importlib`) |
 | `pyright` | the packages `pyproject.toml` lists type-check | anything of the packages it does not yet list, or the names `rules._build()` binds |
+| CI's `newest` job | the suite passes on the newest packages the floors allow, without `requirements.lock`; not a required check | that the lock's own set passes: the guard proves that |
 | `tools/advisories.py` | no package `requirements.lock` or `tools/package-lock.json` pins has an advisory OSV knows of | that the floors' older versions have none |
 | `node --check` on each of `src/portfusion/desk/static/*.js` | the desk's script parses: a syntax error there blanks every page | that it runs |
 | `tools/desk_smoke.py`, then `tools/desk_smoke.mjs` | every desk page draws on the demo, at start-up and from its tab: no error, rejected promise, error box or unanswered fetch | that a figure is right, or that anything inside a page works when clicked |

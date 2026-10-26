@@ -22,6 +22,9 @@ Rebuild it with the first line above, after `rm -rf .venv`; do the same after ch
 **A second checkout needs a venv of its own**: the tests refuse unless the app comes from their
 own `src/`.
 
+**A book has its own venv.** `portfusion init` makes the book's `.venv` and installs the release
+into it, constrained to that release's `requirements.lock`; `--no-venv` skips it.
+
 **A running desk keeps what it imported.** Rebuilding the venv or changing Python reaches it only
 when it restarts ([`desk-app.md`](desk-app.md)).
 
@@ -49,3 +52,11 @@ portfusion desk --book demo --port 8769
 
 Every test run and every audit names the book it read on a `book:` line. Read it before trusting
 a green.
+
+## Variables the app reads
+
+| Variable | Read by | Means |
+|---|---|---|
+| `PORTFUSION_BOOK` | every command and the suite | the book to read, as above |
+| `MAIN_REWRITE` | the `pre-push` hook | the first seven or more characters of the remote `main` a push may replace |
+| `DESK_PROXY_SECRET` | Netlify, not the Mac | the proxy secret ([`desk-app.md`](desk-app.md)) |
