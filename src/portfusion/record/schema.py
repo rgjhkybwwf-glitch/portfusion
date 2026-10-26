@@ -26,7 +26,7 @@ import datetime as _dt
 import os
 import pathlib
 import threading
-from typing import NamedTuple
+from typing import Any, NamedTuple
 
 #: THE APP'S OWN FOLDER, the package: installed or checked out, the demo ships inside it.
 APP = pathlib.Path(__file__).resolve().parents[1]
@@ -145,9 +145,9 @@ class Field(NamedTuple):
 
 
 #: A SUM OF MONEY, in sterling or its line's own currency: written to the penny, always two places.
-MONEY = {"places": 2, "exact": True}
+MONEY: dict[str, Any] = {"places": 2, "exact": True}
 #: A PRICE, A RATE OR A LEVEL: at most six places, a trailing nought never written.
-QUOTE = {"places": 6}
+QUOTE: dict[str, Any] = {"places": 6}
 
 
 class Table(NamedTuple):
@@ -791,7 +791,7 @@ def _held_to_places(field: Field, text: str) -> None:
     """Raise unless `text` is written to the field's places: exactly, for money; at most, else."""
     digits = text.strip().partition(".")[2]
     if any(c in text for c in "eE") or (len(digits) != field.places if field.exact
-                                        else len(digits) > field.places):
+                                        else len(digits) > field.places):  # pyright: ignore[reportOperatorIssue]
         raise ValueError(f"{text!r} is not written to {'exactly' if field.exact else 'at most'} "
                          f"{field.places} decimal places")
 
@@ -878,7 +878,7 @@ def check_references() -> None:
     loaded, so a hand-edited CSV fails at import — the same moment a bad TYPE fails.
     A check that runs only in the test suite would let a bad build reach the desk.
     """
-    cache: dict[tuple, set] = {}
+    cache: dict[str, set] = {}
     problems = []
     for (table, column), (target, target_col) in REFERENCES.items():
         if table not in TABLES or target not in TABLES:
