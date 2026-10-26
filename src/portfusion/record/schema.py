@@ -293,7 +293,7 @@ BUYS = Table(
          "share one; the movements downloads print each deal's own reference."),
     fields=(
         Field("trade_id", "str"),
-        Field("date", "str", required=True),   # ISO; tests/test_record.py holds it; never blank
+        Field("date", "str", required=True),   # ISO; tests/record/test_record.py holds it; never blank
         # `source`: WHAT DOCUMENT IS THIS ROW'S EVIDENCE — its kind and its date, "ii contract
         # note 14 Apr 2026" (`rules.trade_source()`) — the provenance line every other table
         # calls `source`. Not `evidence`, which names an EVIDENCE_CLASSES key wherever it appears

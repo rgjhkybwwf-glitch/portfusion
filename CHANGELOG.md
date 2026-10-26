@@ -5,6 +5,9 @@ prints it.
 
 ## Unreleased
 
+- **The suite mirrors the app's packages**: `tests/engine/`, `record/`, `history/`, `feeds/`,
+  `report/` and `desk/`. A book's `checks/skips.txt` is matched by file name and test, never
+  folder, so a list written before the move still holds.
 - **The demo holds a row of every kind the suite is built from.** A contract with two open legs,
   a deposit and a funding charge each on its IG statement, and the ISA's quarter-end ii statement
   on file, so every test the demo once skipped now runs on it, and in CI.

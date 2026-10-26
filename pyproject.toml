@@ -57,7 +57,7 @@ where = ["src"]
 [tool.setuptools.package-data]
 # THE SUITE, as files and not a package: no __init__.py, so pytest imports each test by its own
 # folder exactly as it does in a checkout, and `from harness import …` keeps working.
-"portfusion" = ["tests/*.py", "tests/pytest.ini", "tests/desk/*.py",
+"portfusion" = ["tests/*.py", "tests/pytest.ini", "tests/*/*.py",
                  # THE DEMO BOOK, so an installed copy has a book to show and `portfusion init --practice` to copy
                  "demo/store/*.csv", "demo/_archive/**/*", "demo/checks/*"]
 "portfusion.desk" = ["static/*"]

@@ -7,7 +7,7 @@ compute nothing of their own (tests/test_figures.py), and `Book.HEADLINE` regist
 every headline figure with its basis and unit.
 
 It reads the record through ONE seam, `load_store()`, and imports only pandas and the record's
-rules (tests/test_store_doors.py).
+rules (tests/record/test_store_doors.py).
 
 THE BASIS IS A COLUMN, NOT A WARNING: a figure is money or notional, and roll_up() refuses to add
 across the two.

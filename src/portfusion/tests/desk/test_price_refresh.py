@@ -351,7 +351,7 @@ def test_the_engine_still_imports_nothing_new_for_the_refresh_set():
 #
 # `store/journal.csv` is record time — when the book LEARNED a thing. Its whole value rests on
 # a claim these tests make from the door end: a write to the record cannot happen without a
-# journal row, and a refused write cannot leave one behind. `tests/test_journal.py` holds the
+# journal row, and a refused write cannot leave one behind. `tests/record/test_journal.py` holds the
 # table's own shape and arithmetic; this is the half that exercises the doors.
 # =====================================================================================
 

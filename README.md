@@ -70,7 +70,7 @@ desk afterwards: it does not notice an upgraded package ([`docs/desk-app.md`](do
 | `house/` | what both renderers share: headings, precision, PortFusion's palette |
 | `feeds/` | the market feeds (IG, TradingView), read-only |
 | `history/` | the histories: prices, FX rates and account values over time |
-| `tests/` | the guard, shipped with the app: `portfusion check` runs it |
+| `tests/` | the guard, shipped with the app: `portfusion check` runs it; a folder per package it tests |
 | `demo/` | the invented book; `tools/make_demo.py` writes it |
 
 A document becomes a row on the desk's Bench: it is read, each figure quoted back with the line

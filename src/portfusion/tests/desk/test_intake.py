@@ -5,7 +5,7 @@ import json
 import pytest
 from portfusion.record import rules as _rules
 from portfusion.desk import app
-from desk_support import GOOD_EVIDENCE, GOOD_TRADE, _ready
+from desk_support import GOOD_EVIDENCE, GOOD_TRADE, LEDGER, _ready
 from portfusion.desk.intake import bench as _bench
 from portfusion.desk.intake import filing, recorded
 from harness import SRC, needs, desk_script
@@ -1372,9 +1372,6 @@ def test_every_archived_contract_note_reads_back_its_own_reference():
 def test_opening_a_readable_csv_reads_it_here_and_never_asks_for_a_reading(inbox, monkeypatch):
     """A class in `read_rows.LOCAL` is read by `bench.read_here()` as the item opens; no reading
     is asked for."""
-    import sys
-    sys.path.insert(0, str(SRC / "tests"))
-    from test_read_rows import LEDGER
     from portfusion.desk.intake import propose
     monkeypatch.setattr(recorded, "matching_row", lambda table, values: None)
     monkeypatch.setattr(recorded, "cash_currencies", lambda account: {"GBP"})

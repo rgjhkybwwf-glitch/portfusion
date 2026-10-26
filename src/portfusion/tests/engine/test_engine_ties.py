@@ -69,7 +69,7 @@ def test_quarter_end_navs_are_per_account_and_roll_up(book):
     """Per account AND in total, from one set of numbers.
 
     The share accounts' contributions are also on Performance's SNAPSHOT COMPONENTS
-    block, which is tied separately by tests/test_quarter_nav.py; what this asserts is
+    block, which is tied separately by tests/engine/test_quarter_nav.py; what this asserts is
     that the engine's roll-up equals the sum of its own parts, so the total can never
     be a figure somebody typed.
     """
