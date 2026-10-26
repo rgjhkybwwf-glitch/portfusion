@@ -7,7 +7,7 @@ fills its form from `sweep()`, and the terminal prints the same thing.
     python3 -m portfusion.feeds.refresh --bank        bank only
     python3 -m portfusion.feeds.refresh --check       are both histories current? changes nothing
 
-ONE PASS, FOUR PARTS, each reporting its own failure, so one vendor being down costs the others
+ONE PASS, THREE PARTS, each reporting its own failure, so one vendor being down costs the others
 nothing:
 
     ig_levels   every IG contract's level (`feeds/ig.py`), and straight after it
@@ -15,7 +15,6 @@ nothing:
                 spread-bet account's equity from the levels and reconciles it against the
                 broker's, so read apart they describe different markets (`Book.comparability`).
     tv          TradingView's shares and FX rates, each line struck at its own instant
-    watchlist   the Live, Exit and Entry lists against the book: reported, never acted on
 
 A PAST DAY (`on`) IS CLOSES ONLY: TradingView's day bars, IG's close bars, and for a contract IG
 does not quote through the evening, the level on that day's filed statement. The caller reads the
@@ -117,14 +116,9 @@ def sweep(on: str | None = None, filed=None) -> dict:
         from portfusion.feeds import tv
         conn = tv.connect()
     except Exception as e:                          # noqa: BLE001 — the vendor, named
-        failed = {"ok": False, "error": f"{type(e).__name__}: {e}"}
-        out["tv"] = failed
-        if not on:
-            out["watchlist"] = failed
+        out["tv"] = {"ok": False, "error": f"{type(e).__name__}: {e}"}
         return out
     out["tv"] = _part(lambda: tv.closes(on, conn=conn) if on else tv.sweep(conn=conn))
-    if not on:
-        out["watchlist"] = _part(lambda: tv.watchlist(conn))
     return out
 
 
@@ -175,15 +169,6 @@ def _print(r: dict) -> None:
         log.info(f"  {row['currency']:<14}{row['rate']:>12}      {row['struck']:<5}  {row['source']}")
     for f in tv.get("failed", []):
         log.info(f"  NOT PRICED {f['key']}: {f['why']}")
-
-    if "watchlist" in r:
-        wl = r["watchlist"]
-        _rule("The flag lists against the book")
-        if wl["ok"]:
-            from portfusion.feeds import tv as TV
-            TV.print_watchlist(wl)
-        else:
-            log.info(f"  {wl['error']}")
 
 
 def check():
@@ -247,7 +232,7 @@ def main(argv):
 
     # ---- 2: the sweep ----------------------------------------------------------------
     _rule(f"STEP 2 of 3 — the closes of {on}" if on else
-          "STEP 2 of 3 — the sweep: IG levels and equity, TradingView, the flag lists")
+          "STEP 2 of 3 — the sweep: IG levels and equity, TradingView")
     _print(sweep(on))
 
     # ---- 3: what the human does next -------------------------------------------------

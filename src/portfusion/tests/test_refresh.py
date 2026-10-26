@@ -114,8 +114,6 @@ def _vendors(monkeypatch, log, tv_signed_in=True, levels_fail=False):
         "prices": [], "rates": [], "failed": []})
     monkeypatch.setattr(tv, "closes", lambda on, conn: log.append(f"tv closes {on}") or {
         "prices": [], "rates": [], "failed": []})
-    monkeypatch.setattr(tv, "watchlist", lambda conn: log.append("list") or {
-        "findings": [{"said": "flagged Live, and not held", "items": ["NASDAQ:EBAY"]}]})
 
 
 def test_the_equity_is_read_straight_after_the_levels(monkeypatch):
@@ -124,7 +122,7 @@ def test_the_equity_is_read_straight_after_the_levels(monkeypatch):
     log = []
     _vendors(monkeypatch, log)
     r = R.sweep()
-    assert log == ["levels", "equity", "tv", "quotes", "list"]
+    assert log == ["levels", "equity", "tv", "quotes"]
     assert r["ig_equity"]["gap_seconds"] is not None
     reading = r["ig_equity"]["readings"][0]
     assert (reading["account"], reading["equity"], reading["funds"], reading["evidence"]) == (
@@ -139,13 +137,13 @@ def test_one_vendors_failure_is_not_the_others(monkeypatch):
     _vendors(monkeypatch, log, levels_fail=True)
     r = R.sweep()
     assert not r["ig_levels"]["ok"] and "IG is down" in r["ig_levels"]["error"]
-    assert r["ig_equity"]["ok"] and r["tv"]["ok"] and r["watchlist"]["ok"]
+    assert r["ig_equity"]["ok"] and r["tv"]["ok"]
 
     log = []
     _vendors(monkeypatch, log, tv_signed_in=False)
     r = R.sweep()
     assert r["ig_levels"]["ok"] and r["ig_equity"]["ok"]
-    assert "not signed in" in r["tv"]["error"] and "not signed in" in r["watchlist"]["error"]
+    assert "not signed in" in r["tv"]["error"]
 
 
 def test_a_sweep_with_no_sign_in_anywhere_names_each_vendor_and_raises_nothing(
@@ -161,7 +159,7 @@ def test_a_sweep_with_no_sign_in_anywhere_names_each_vendor_and_raises_nothing(
     monkeypatch.setattr(ig._schema, "BOOK", tmp_path)
     monkeypatch.setattr(tv, "SESSION_FILE", str(tmp_path / "none.tv.json"))
     r = R.sweep()
-    for part in ("ig_levels", "ig_equity", "tv", "watchlist"):
+    for part in ("ig_levels", "ig_equity", "tv"):
         assert r[part]["ok"] is False, part
     assert "CredentialsError" in r["ig_levels"]["error"]
     assert "not signed in to TradingView" in r["tv"]["error"]
