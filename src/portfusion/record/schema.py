@@ -426,6 +426,11 @@ QUALITIES = ("sourced", "derived")
 #: be reproduced. Declared here for the same reason as QUALITIES; `history/prices.py` reads it.
 STRUCK_KINDS = ("close", "live")
 
+#: HOW AN ACCOUNT CONTRIBUTES TO NET ASSET VALUE at a quarter end: its positions at market, a
+#: spread-bet account's equity, or that account's notional, the exposure measure and never NAV.
+#: Not `basis` (docs/glossary.md §2). `Book.NAV_BASES` and `Book.EXPOSURE_BASES` sort them.
+CONTRIBUTIONS = ("positions at market", "account equity", "notional")
+
 
 QUARTER_NAV = Table(
     name="quarter-nav",
@@ -439,10 +444,8 @@ QUARTER_NAV = Table(
         Field("as_of", "str"),
         Field("account", "str"),
         Field("amount", "float", **MONEY),
-        # `contribution`: HOW THIS ACCOUNT CONTRIBUTES TO NET ASSET VALUE — positions at market,
-        # account equity, notional. Not `basis` (docs/glossary.md §2).
-        Field("contribution", "str"),      # positions at market | account equity
         # Declared to the loader, so a stray value fails at the door rather than in review.
+        Field("contribution", "str", enum=CONTRIBUTIONS),
         Field("quality", "str", enum=QUALITIES),
         Field("source", "str"),
     ),
