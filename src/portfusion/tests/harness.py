@@ -364,8 +364,11 @@ def pytest_sessionstart(session):
 
 
 def _test_id(nodeid: str) -> str:
-    """A test's id from the suite's own folder, the same in a checkout and an installed copy."""
-    return nodeid.split("portfusion/tests/", 1)[-1]
+    """A test's id as a book lists it: its file's name and the test, the same in a checkout and an
+    installed copy. Never the folder: no two of the suite's files share a name (pytest's import mode
+    refuses them), so moving a file between folders changes no book's list."""
+    path, sep, test = nodeid.partition("::")
+    return path.rsplit("/", 1)[-1] + sep + test
 
 
 def _the_books(report) -> bool:
@@ -404,8 +407,8 @@ def expected_skips() -> set[str] | None:
     path = schema.BOOK / "checks" / SKIPS_FILE
     if not path.is_file():
         return None
-    return {ln.split("#")[0].strip() for ln in path.read_text(encoding="utf-8").splitlines()
-            if ln.split("#")[0].strip()}
+    lines = (ln.split("#")[0].strip() for ln in path.read_text(encoding="utf-8").splitlines())
+    return {_test_id(ln) for ln in lines if ln}
 
 
 def pytest_sessionfinish(session, exitstatus):

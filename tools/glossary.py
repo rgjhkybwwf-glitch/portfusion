@@ -120,7 +120,7 @@ def generate() -> str:
              "",
              "**Everything below this line is DERIVED from the `record/` modules,",
              "`house/headings.py` and `Book.HEADLINE` by `tools/glossary.py`, and",
-             "`tests/test_record.py` asserts that the checked-in file matches what those constants",
+             "`tests/record/test_record.py` asserts that the checked-in file matches what those constants",
              "produce.** It cannot drift. It is an INDEX — names, values and where they live. What a",
              "word MEANS stays where it is defined, and `test_record.py` refuses this block if it",
              "starts to define one.",

@@ -11,6 +11,25 @@ from portfusion.record import schema
 from harness import SRC, an_account, free_id
 
 
+#: An invented ii GBP ledger, in ii's shape, BOM and all: `test_read_rows` reads it, and
+#: `test_intake` opens it on the bench.
+LEDGER = (
+    "﻿﻿Date,Settlement Date,Symbol,Sedol,Quantity,Price,Description,Reference,"
+    "Debit,Credit,Running Balance\n"
+    "25/02/2025,25/02/2025,n/a,n/a,n/a,n/a,Gross interest to 24/02/25,n/a,n/a,£1.50,£950.00\n"
+    "14/01/2025,16/01/2025,QNLR,B000000,1500,£0.045,1500 QUENLAN ROBOTICS  Del     .04 S Date "
+    "16/01/25,12345ABC123,n/a,£67.50,£948.50\n"
+    '02/02/2025,02/02/2025,n/a,n/a,n/a,n/a,PAYMENT Q0000000000000 N VOSS,n/a,"£2,200.00",n/a,'
+    "£200.00\n"
+    "11/01/2025,11/01/2025,n/a,n/a,n/a,n/a,Fee Transfer,n/a,£12.50,n/a,£400.00\n"
+    "10/02/2025,10/02/2025,KELS,B000001,n/a,n/a,Div 1000   KELSTRAND FOODS   ORD GBP0.01,n/a,"
+    "n/a,£40.00,£245.00\n"
+    "12/02/2025,12/02/2025,ZQX,B000002,n/a,n/a,Div 500   ZEQUAX MINING   ORD,n/a,n/a,£5.00,"
+    "£250.00\n"
+    "01/02/2025,01/02/2025,n/a,n/a,n/a,n/a,Transfer in from somewhere,n/a,n/a,£5.00,£205.00\n"
+)
+
+
 def _rows(table):
     return [dict(zip(schema.TABLES[table].header, r)) for r in schema.load(table)]
 

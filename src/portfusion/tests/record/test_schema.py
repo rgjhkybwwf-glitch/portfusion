@@ -12,9 +12,9 @@ What guards a table instead:
   * the CONTENT INVARIANTS below — uniqueness, the join between the two tables, and the
     controlled vocabularies. These do not need updating when a company is added, which
     is what makes them worth having.
-  * and, outside this file, the engine's figures tied to the record: tests/test_engine_ties.py.
+  * and, outside this file, the engine's figures tied to the record: tests/engine/test_engine_ties.py.
 
-`tests/test_record.py` already covers trades -> identity (`test_every_traded_ticker_has_
+`tests/record/test_record.py` already covers trades -> identity (`test_every_traded_ticker_has_
 an_identity_row`), and is not repeated here.
 """
 import csv

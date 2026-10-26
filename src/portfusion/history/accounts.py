@@ -18,7 +18,7 @@ account is positions_value for a share account and equity for a spread-bet one.
 
 CASH IS NOT HERE AND NEVER IN NAV. A share account's cash is its cash readings
 (cash-readings.csv), the record's one place for it; the return counts flows into positions, so
-NAV does not. `Book.by_account()` agrees, and tests/test_quarter_nav.py cross-checks the two.
+NAV does not. `Book.by_account()` agrees, and tests/engine/test_quarter_nav.py cross-checks the two.
 """
 from __future__ import annotations
 

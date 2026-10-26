@@ -134,7 +134,7 @@ def build_ledger() -> pd.DataFrame:
 
     ledger = pd.concat([buys, sells], ignore_index=True)
 
-    # EVERY EVENT IS DATED, in ISO (tests/test_record.py holds trades.date to it), so a date that
+    # EVERY EVENT IS DATED, in ISO (tests/record/test_record.py holds trades.date to it), so a date that
     # will not parse is a fault to stop on, never a leg to quietly read as undated.
     ledger["date"] = pd.to_datetime(ledger["date"], format="%Y-%m-%d")
 
@@ -158,7 +158,7 @@ def build_ledger() -> pd.DataFrame:
     ledger["pool_emptied"] = _lookup(ledger["event_id"], pools["emptied"])
 
     # THE PROVENANCE IS `source` FROM THE STORE TO THE LEDGER, as on every other table, so nothing
-    # is copied under a second name; tests/test_engine_invariants.py holds every ledger row to
+    # is copied under a second name; tests/engine/test_engine_invariants.py holds every ledger row to
     # having one.
 
     # An OPEN buy leg is a buy that no realisation has consumed. Drives QUANTITY and COST.

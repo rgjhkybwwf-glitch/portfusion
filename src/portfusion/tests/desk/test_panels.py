@@ -796,7 +796,7 @@ def test_the_expansion_spans_the_whole_row_however_many_columns_there_are():
 #: point of the fold — an explanation moved below the work it describes has stopped competing
 #: with it, and pricing it the same would punish the fix.
 #:
-#: A ratchet, in the shape `tests/test_evidence.py:_UNCLASSIFIED_HIGH_WATER` uses. Cutting can
+#: A ratchet, in the shape `tests/record/test_evidence.py:_UNCLASSIFIED_HIGH_WATER` uses. Cutting can
 #: never fail it; only new prose can.
 #:
 #: The step line's quiet notes (`<span class="muted small">`, `quiet()`) are counted too.

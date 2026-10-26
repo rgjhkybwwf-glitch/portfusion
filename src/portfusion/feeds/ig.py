@@ -712,7 +712,7 @@ def _epic_to_ticker(D):
     return {epic: D.CONTRACT_CODE[c] for c, epic in D.CONTRACTS.items() if epic}
 
 
-#: THE COLUMNS EACH GENERATED ROW FILLS, in the store's own order, BY NAME. tests/test_ig.py
+#: THE COLUMNS EACH GENERATED ROW FILLS, in the store's own order, BY NAME. tests/feeds/test_ig.py
 #: asserts these against schema.TABLES.
 ROW_COLUMNS = {
     "buys": ("trade_id", "date", "source", "account", "ticker", "cur", "qty", "stake", "cost",

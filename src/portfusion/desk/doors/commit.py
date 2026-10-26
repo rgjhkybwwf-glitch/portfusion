@@ -17,7 +17,7 @@ What keeps that honest is structural:
   - THE BOOK MUST STILL LOAD, or nothing is written: `_the_book_loads()`, last in the envelope.
   - NOTHING RESTS IN `written`. The record would hold the row while its evidence sat in the
     inbox, so writing and archiving are one operation and `written` exists only in memory
-    between them. `tests/test_inbox.py` fails on any item left on disk in that state.
+    between them. `tests/desk/test_inbox.py` fails on any item left on disk in that state.
 
 It never deletes a row, and edits one only to move its id when an earlier-dated row takes its
 place (`record/order.py`). A mistake is corrected by a further row, or by a hand edit with a

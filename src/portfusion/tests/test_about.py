@@ -45,6 +45,10 @@ def test_a_skip_fails_the_run_unless_the_book_lists_it_and_a_listed_one_that_ran
     assert not harness._the_books(skipped(harness.NO_CHECKOUT))
     assert not harness._the_books(skipped(harness.DEMO_ONLY))
     assert harness.skips_off(seen={"a", "b"}, ran={"c", "d"}, listed={"b", "c"}) == (["a"], ["c"])
+    # BY FILE NAME, never folder: a file moved between the suite's folders changes no book's list.
+    assert {harness._test_id(n) for n in ("src/portfusion/tests/desk/test_x.py::test_y[a/b]",
+                                          "desk/test_x.py::test_y[a/b]", "test_x.py::test_y[a/b]")
+            } == {"test_x.py::test_y[a/b]"}
 
 
 # =====================================================================================

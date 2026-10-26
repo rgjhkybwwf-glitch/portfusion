@@ -102,17 +102,17 @@ One line each; kept by review, and by the test named where there is one.
 
 | To add | Write it in | Held by |
 |---|---|---|
-| a table, or a value in a vocabulary | `record/schema.py` | `tests/test_schema.py` |
-| a change the loader would refuse an older book for | its move in `record/migrations.py` | `tests/test_migrations.py` |
+| a table, or a value in a vocabulary | `record/schema.py` | `tests/record/test_schema.py` |
+| a change the loader would refuse an older book for | its move in `record/migrations.py` | `tests/record/test_migrations.py` |
 | a headline figure | a `Book` method and its entry in `Book.HEADLINE` | `tests/test_figures.py` |
 | a column heading | `house/headings.py` | `tests/test_figures.py` |
 | a desk panel | `desk/panels/<name>.py` | `tests/desk/test_panels.py` |
 | a desk button | its `Action` in `desk/actions.py` | `tests/desk/test_boundaries.py` |
 | a route on the hosted desk | `REMOTE_ROUTES` in `desk/remote.py` | `tests/desk/test_remote.py` |
-| anything that writes a file, or opens a file of the store | its door, named in `WRITERS` or `STORE_FILE_DOORS` | `tests/desk/test_boundaries.py`, `tests/test_store_doors.py` |
-| a kind of document | an `Evidence` in `record/rules_evidence.py` | `tests/test_evidence.py` |
+| anything that writes a file, or opens a file of the store | its door, named in `WRITERS` or `STORE_FILE_DOORS` | `tests/desk/test_boundaries.py`, `tests/record/test_store_doors.py` |
+| a kind of document | an `Evidence` in `record/rules_evidence.py` | `tests/record/test_evidence.py` |
 | which part of the app may import which | an import contract in `pyproject.toml` | `lint-imports` |
-| a feed endpoint | the allowlist in `feeds/ig.py` or `feeds/tv.py` | `tests/test_ig.py`, `tests/test_tv.py` — meant to stop you |
+| a feed endpoint | the allowlist in `feeds/ig.py` or `feeds/tv.py` | `tests/feeds/test_ig.py`, `tests/feeds/test_tv.py` — meant to stop you |
 
 ### The code
 

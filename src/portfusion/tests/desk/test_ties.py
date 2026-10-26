@@ -4,7 +4,7 @@ THE DESK TIES — every page shows exactly what the engine computed, in the engi
 The desk's pages are tied here field by field, not cell by cell, so a tie cannot drift from a
 layout: a page that stopped showing the engine's figure, showed it on the
 wrong row, or re-sorted what the engine ordered, fails. Nothing here asks whether the engine is
-right — tests/test_engine_invariants.py does.
+right — tests/engine/test_engine_invariants.py does.
 """
 import pandas as pd
 import pytest

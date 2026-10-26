@@ -679,7 +679,7 @@ def test_no_file_writes_out_a_rule_the_record_states_once(project_files):
     offenders = []
     for path in project_files(".md", ".py", ".js", ".css"):
         rel = app_name(path)
-        if rel in ("record/rules.py", "tests/test_record.py"):
+        if rel in ("record/rules.py", "tests/record/test_record.py"):
             continue
         text = path.read_text()
         if re.search(r"contract note\s*/\s*statement\s*[>/]", _flat(text)):
