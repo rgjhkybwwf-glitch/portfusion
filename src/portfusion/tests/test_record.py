@@ -391,8 +391,8 @@ def test_a_negative_quantity_carries_no_value(D):
 
 def test_a_brokers_rate_stands_beside_a_foreign_price(D):
     """A rate means nothing without the price it converted, and a price stated in sterling
-    needed none. The load refuses both (`rules._misstated`); this names the rows if it ever
-    stops."""
+    needed none. The load refuses both, in the ledger's currency check; this names the rows if
+    it ever stops."""
     bad = sorted(i for i, cur, price, rate in
                  [(t.trade_id, t.cur, t.traded_price, t.rate) for t in D.buys]
                  + [(e.sale_id, e.cur, e.traded_price, e.rate) for e in D.sales]

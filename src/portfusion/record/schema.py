@@ -78,8 +78,6 @@ STORE = BOOK / "store"
 #: request can fall between a check and its write, a refusal's restore put back bytes another
 #: write has moved on from, and a Book be built over a half-read record.
 #: REENTRANT, because a door's envelope holds it while the reload inside takes it again.
-#: HERE AND NOT IN `rules`, because the reload re-executes that module and would rebind a lock
-#: there while it was held.
 LOCK = threading.RLock()
 
 

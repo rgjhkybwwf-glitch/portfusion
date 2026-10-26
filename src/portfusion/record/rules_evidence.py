@@ -1,7 +1,7 @@
 """rules_evidence.py — WHAT A DOCUMENT IS, and what retrieves it a second time.
 
 A vocabulary and the functions that read it, holding no state and touching no table. That purity
-is what lets `rules.reload_store()` re-execute `rules` alone and still be right: nothing here
+is what lets `rules.reload_store()` rebuild the record alone and still be right: nothing here
 derives from the store, so nothing here needs reloading.
 
 `rules` re-exports every name, so `D.EVIDENCE_CLASSES` and `D.identify()` work. Import THIS
