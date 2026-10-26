@@ -161,6 +161,12 @@ prints it.
   (`COLUMN_MAPS`, `HOLDINGS_COLUMNS`, `LEDGER_MAPS`) carries its columns, labels and line reader,
   and IG's ledger words sit beside them, so the readers in `desk/intake/read_rows.py` and the IG
   sweep name no broker. No figure, page, reading or store moves.
+- **The TradingView flag-list check leaves the app**, with `--tv-watchlist`, the sweep's fourth
+  part, the Price Refresh's flag-list note and the two watchlist reads on the allowlist; every
+  tool that edits stays refused. **The store moves: `portfusion migrate --write` drops the
+  `tv_list_live`, `tv_list_exit` and `tv_list_entry` settings** and journals the removal; until
+  it runs, the loader refuses the book naming the first, and it lists a `checks/` line that reads
+  one.
 
 ## 0.3.2 — beta, 24 Oct 2026
 

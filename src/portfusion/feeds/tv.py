@@ -80,14 +80,12 @@ _IDS = threading.Lock()
 
 
 # =================================================================================================
-# THE ALLOWLIST — five reads, and every writing tool refused by name
+# THE ALLOWLIST — three reads, and every writing tool refused by name
 # =================================================================================================
 _ALLOWED = (
     "mcp-tv-get-symbol-data-batch",   # the quote screen: every live line in one call
     "mcp-tv-get-ohlcv",               # daily bars: a completed session, and which day it was
     "mcp-tv-search-symbols",          # symbol discovery — a symbol is looked up, never guessed
-    "mcp-watchlist-get-watchlist",    # the flag lists, checked against the book
-    "mcp-watchlist-list-watchlists",  # finding a list's id
 )
 
 _WRITES_TO_THE_ACCOUNT = ("changes the owner's TradingView account. This feed reads prices; "
@@ -336,19 +334,6 @@ def symbols(D=None) -> dict:
             for r in D.SECURITIES if r[sym] and r[unit]}
 
 
-def flag_symbols(D=None) -> dict:
-    """book key -> the symbol it is on the flag lists as, in TradingView's form. A security by its
-    own `symbol`; a contract, which IG prices, by the symbol of the security its legs are in."""
-    D = D or _rules()
-    h = D.schema.TABLES["securities"].header
-    out = {r[h.index("ticker")]: tv_symbol(r[h.index("symbol")])
-           for r in D.SECURITIES if r[h.index("symbol")]}
-    for t in D.buys:
-        if t.contract and t.ticker in out:
-            out.setdefault(t.contract, out[t.ticker])
-    return out
-
-
 def _rules():
     from portfusion.record import rules as D
     return D
@@ -368,12 +353,6 @@ def rate_currencies(D=None) -> list[str]:
     """The currencies a refresh reads a live rate for: fx.csv's, less any the book carries."""
     D = D or _rules()
     return [r[0] for r in D.fx_rows if r[0] not in D.RATE_CARRIED]
-
-def flag_lists() -> dict:
-    """The three flag lists, by id, from settings.csv. By id, because a list's name changes. A
-    symbol carries one flag at a time, so a position being sold moves from Live to Exit."""
-    from portfusion.record import rules as D
-    return {k: D.SETTINGS[f"tv_list_{k}"] for k in ("live", "exit", "entry")}
 
 
 def _record_unit(unit: str) -> tuple[str, int]:
@@ -679,55 +658,6 @@ def closes(on: str, tickers=None, currencies=None, conn=None) -> dict:
 
 
 # =================================================================================================
-# THE FLAG LISTS — read, and set against the book by what each flag means. Never changed.
-# =================================================================================================
-def watchlist_check(held: list[str], lists: dict[str, list[str]], symbol_of: dict | None = None) -> dict:
-    """Where the flag lists and the book disagree. A position held is flagged Live, or Exit while
-    it is being sold; an Exit flag is on a position still held; an Entry flag is on one not yet
-    taken. The caller passes the book's lines, each list's symbols and `symbol_of`, each line's
-    symbol on the lists; left out, it is `flag_symbols()` of the record."""
-    symbol_of = flag_symbols() if symbol_of is None else symbol_of
-    expected = {}
-    for key in held:
-        symbol = symbol_of.get(key)
-        if symbol:
-            expected.setdefault(symbol, []).append(key)
-    live, exiting, entry = ({s for s in lists.get(k, []) if not s.startswith("###")}
-                            for k in ("live", "exit", "entry"))    # "###" heads a section
-
-    def keys(symbols):
-        return sorted(k for s in symbols for k in expected[s])
-
-    return {"findings": [
-        {"said": "held, and flagged neither Live nor Exit",
-         "items": keys(set(expected) - live - exiting - entry)},
-        {"said": "held, and still flagged Entry", "items": keys(set(expected) & entry)},
-        {"said": "flagged Live, and not held", "items": sorted(live - set(expected))},
-        {"said": "flagged Exit, and not held", "items": sorted(exiting - set(expected))},
-        {"said": "held, with no symbol mapped",
-         "items": sorted(k for k in held if not symbol_of.get(k))},
-    ]}
-
-
-def flag_list(key: str, conn=None) -> dict:
-    """One flag list as TradingView holds it: its current name and its symbols."""
-    conn = conn or connect()
-    list_id = flag_lists()[key]
-    wl = conn.call("mcp-watchlist-get-watchlist", watchlist_id=list_id)["watchlist"]
-    return {"id": list_id, "name": wl.get("name"), "symbols": list(wl.get("symbols") or [])}
-
-
-def watchlist(conn=None) -> dict:
-    """The three flag lists set against every line the book prices from a feed."""
-    from portfusion.record import rules as D
-    conn = conn or connect()
-    lists = {k: flag_list(k, conn) for k in flag_lists()}
-    held = [r[0] for r in D.CURRENT_PRICES if r[0] not in D.STATEMENT_PRICED]
-    return {"lists": lists, "held": held,
-            **watchlist_check(held, {k: wl["symbols"] for k, wl in lists.items()}, flag_symbols(D))}
-
-
-# =================================================================================================
 # THE COMMAND LINE — the prices are printed by the sweep, `python3 -m portfusion.feeds.refresh`
 # =================================================================================================
 def search(query: str, conn=None) -> list[dict]:
@@ -735,14 +665,6 @@ def search(query: str, conn=None) -> list[dict]:
     `exchange` and `description`. The reply nests them under `data.symbols`."""
     conn = conn or connect()
     return list((conn.call("mcp-tv-search-symbols", query=query).get("data") or {}).get("symbols") or [])
-
-
-def print_watchlist(wl: dict) -> None:
-    log.info("\n" + " · ".join(f"{x['name']} {len(x['symbols'])}" for x in wl["lists"].values())
-          + f" symbols, against {len(wl['held'])} lines the book prices")
-    for f in wl["findings"]:
-        log.info(f"  {f['said']}: {', '.join(f['items']) if f['items'] else 'none'}")
-    log.info("")
 
 
 def dispatch(args) -> int:
@@ -755,13 +677,9 @@ def dispatch(args) -> int:
         for hit in search(query)[:15]:
             log.info(f"  {hit.get('symbol', ''):<22} {hit.get('type', ''):<8} {hit.get('description', '')}")
         return 0
-    if "--tv-watchlist" in args:
-        print_watchlist(watchlist())
-        return 0
     log.info("feeds/tv.py — the TradingView share and FX feed. It prints; it never writes.\n")
     log.info("  python3 -m portfusion.feeds.tv --tv-sign-in            one browser sign-in, kept for later runs")
     log.info("  python3 -m portfusion.feeds.tv --tv-search QUERY       find a symbol — never guess one")
-    log.info("  python3 -m portfusion.feeds.tv --tv-watchlist          the Live, Exit and Entry lists against the book")
     log.info("  the prices: python3 -m portfusion.feeds.refresh [--on D]")
     return 0
 

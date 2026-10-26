@@ -265,9 +265,7 @@ def _book() -> dict[str, list[dict]]:
     T["quarter-results"] = _quarter_results()
     T["settings"] = [{"key": k, "value": v} for k, v in (
         ("record_begins", "2026-01-01"), ("reasoning_owed_from", "2026-04-01"),
-        ("first_report", "2026-09-30"), ("tv_list_live", "100000001"),
-        ("tv_list_exit", "100000002"), ("tv_list_entry", "100000003"),
-        ("rate_carried", ""),
+        ("first_report", "2026-09-30"), ("rate_carried", ""),
         # An invented hosted desk on a reserved test domain; no deploy or research repository,
         # so --publish and the research notes decline on the demo, as on a new book.
         ("hosted_origin", "https://desk.example.test"), ("passkey_domain", "example.test"),

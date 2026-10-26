@@ -279,7 +279,7 @@ A value outside these fails **on load**, naming the table, the row and the colum
 | `contribution` | `positions at market` · `account equity` · `notional` | `quarter-nav` |
 | `quality` | `sourced` · `derived` | `quarter-nav` · `quarter-snapshots` |
 | `struck` | `close` · `live` | `fx` · `current-prices` |
-| `key` | `record_begins` · `reasoning_owed_from` · `first_report` · `tv_list_live` · `tv_list_exit` · `tv_list_entry` · `rate_carried` · `hosted_origin` · `passkey_domain` · `deploy_repo` · `research_repo` · `insights_url` · `practice` | `settings` |
+| `key` | `record_begins` · `reasoning_owed_from` · `first_report` · `rate_carried` · `hosted_origin` · `passkey_domain` · `deploy_repo` · `research_repo` · `insights_url` · `practice` | `settings` |
 | `funding` | `daily` · `dated` | `contracts` |
 | `route` | `baseline` · `bench` · `marks` · `freeze` · `hand` · `migrate` | `journal` |
 | `op` | `open` · `append` · `replace` · `remove` | `journal` |

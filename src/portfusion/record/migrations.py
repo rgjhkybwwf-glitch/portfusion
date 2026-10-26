@@ -38,8 +38,40 @@ class Migration(NamedTuple):
     rows: Callable[[pathlib.Path], list] | None = None
 
 
+#: THE TRADINGVIEW FLAG LISTS' SETTINGS, which no release after 0.3.2 reads: the check left the
+#: app, and the loader refuses a key it does not know.
+FLAG_LISTS = ("tv_list_live", "tv_list_exit", "tv_list_entry")
+
+
+def _drop_flag_lists(store: pathlib.Path) -> list:
+    """settings.csv without the flag lists' rows, every other line as its bytes, and the journal
+    saying so (`migrate`, `remove`), so its count of the settings still closes."""
+    from portfusion import __version__
+    from portfusion.record import schema
+    path, journal = store / "settings.csv", store / "journal.csv"
+    lines, rows, _ = _rows(path.read_text(encoding="utf-8"))
+    keep = [line for line, r in zip(lines, rows) if not (r and r[0] in FLAG_LISTS)]
+    gone = len(lines) - len(keep)
+    if not gone:
+        return []
+    text = journal.read_text(encoding="utf-8")
+    _, jrows, eol = _rows(text)
+    cells = {"at": schema.record_instant(), "route": "migrate", "op": "remove",
+             "table": "settings", "rows": str(gone), "ref": f"portfusion {__version__}",
+             "detail": "the TradingView flag lists' settings, which this release does not read"}
+    entry = _line([cells.get(c, "") for c in jrows[0]], eol)
+    return [Change(path, path, "".join(keep), [f"settings.csv: {gone} row(s) removed, "
+                                                + ", ".join(FLAG_LISTS)]),
+            Change(journal, journal, text + ("" if text.endswith("\n") else eol) + entry,
+                   ["journal.csv: the removal journalled"])]
+
+
 #: A RELEASE THAT CHANGES THE STORE DECLARES THE MOVE HERE, as data, in the order it applies.
-MIGRATIONS: tuple[Migration, ...] = ()
+MIGRATIONS: tuple[Migration, ...] = (
+    Migration(issue="#111: the TradingView flag-list check leaves the app, and its settings go",
+              tables={}, columns={}, splits={}, marks={},
+              code=(r"\btv_list_(?:live|exit|entry)\b",), rows=_drop_flag_lists),
+)
 
 
 class Change(NamedTuple):

@@ -2,9 +2,6 @@ key,value
 record_begins,2026-01-01
 reasoning_owed_from,2026-04-01
 first_report,2026-09-30
-tv_list_live,100000001
-tv_list_exit,100000002
-tv_list_entry,100000003
 rate_carried,
 hosted_origin,https://desk.example.test
 passkey_domain,example.test
