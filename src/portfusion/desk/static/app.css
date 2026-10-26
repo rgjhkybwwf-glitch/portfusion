@@ -751,7 +751,5 @@ body.data #main .items li.swept { max-width: none; }
 .swept-do { flex: 0 0 auto; margin-left: auto; text-align: right; white-space: nowrap; }
 .swept-meta { margin: 2px 0 0; font-size: var(--text-note); }
 
-/* An event already in the record is DONE. It stays on the sweep — the window it covers has not
-   changed — but it must not read like something outstanding. */
+/* An event on the bench says what it still owes, beside it. */
 .swept-state { flex: 0 0 auto; margin-left: auto; white-space: nowrap; }
-li.swept-done .swept-what { color: var(--muted); }

@@ -18,7 +18,8 @@ from desk_support import (GOOD_CLASS, GOOD_DOCUMENT, GOOD_TRADE, GOOD_EVIDENCE, 
 # =====================================================================================
 from portfusion.desk.intake import bench as _bench                                    # noqa: E402
 from portfusion.desk.panels import bench as bench_panel
-from harness import SRC, needs, free_id, desk_script
+from portfusion.feeds import ig as _ig
+from harness import SRC, needs, holds, free_id, desk_script
 
 #: The ids a test's own sale takes: the book's next free ones, never typed (a book that has reached
 #: E-099 holds one).
@@ -1571,6 +1572,11 @@ def test_a_row_scoped_action_is_not_a_panel_button():
     bench_listed = [x.name for x in actions.all_actions()
                     if x.panel == "bench" and not x.inline]
     assert "ig-events" in bench_listed, "the sweep must be offered where its output goes"
+    # BESIDE IT, THE LOOK-BACK: the feed's default, 90 days, or since the account began, sent
+    # as the sweep's `since`.
+    sweep = desk_script("sweep.js")
+    assert f'["", "{_ig.LOOKBACK_DAYS} days"], ["90", "90 days"], ["{_ig.BEGINS}", ' in sweep
+    assert 'await runAction(b.dataset.act, since ? { since } : {})' in sweep
 
 
 def test_the_panel_list_in_the_browser_skips_inline_actions(repo_root):
@@ -1662,6 +1668,61 @@ def test_the_sweep_can_ask_what_became_of_its_events():
     out = bench.sweep_status(["NOT-A-REAL-REFERENCE", ""])
     assert "" not in out, "a blank reference is not a question worth asking"
     assert out["NOT-A-REAL-REFERENCE"] == {"in_record": False, "tables": [], "item": None}
+
+
+#: The first IG login the register names, and its account: the sweep's window is read for it.
+_IG = next(iter(sorted(_ig.account_names(_rules).items())), (None, None))
+
+
+@holds(_IG[0], what="an IG account with a feed key")
+@pytest.mark.parametrize("since", [None, "90", "begins", "early", "between", "unbegun"])
+def test_the_sweep_never_asks_before_an_accounts_record_began(monkeypatch, since):
+    """THE WINDOW IS THE CHOICE MADE BESIDE THE BUTTON, 30 days when none is, and it never starts
+    before an account's record began: the later of the book's `record_begins` and the account's
+    own. A `since` before that is clamped to it, each account its own, and the answer says so;
+    "since the account began" asks from it; an account whose record begins after today is not
+    asked. Both of IG's reads ask from the window's start."""
+    import datetime as dt
+    from portfusion.desk import actions, engine
+    from portfusion.feeds import ig
+    label, account = _IG
+    other = "ZZ_UNREGISTERED"                     # a login the register does not name
+    today = dt.date.today()
+    def day(n):
+        return (today - dt.timedelta(days=n)).isoformat()
+    D = engine.book().D
+    monkeypatch.setattr(D, "RECORD_BEGINS", today - dt.timedelta(days=200))
+    monkeypatch.setattr(D, "ACCOUNT_BEGINS", {**D.ACCOUNT_BEGINS,
+                                              account: day(-5 if since == "unbegun" else 100)})
+    asked = {}
+
+    class Session:
+        def __init__(self, cred, label):
+            self.label = label
+        def __enter__(self):
+            return self
+        def __exit__(self, *a):
+            return False
+        def _request(self, method, path, version):
+            ig._assert_readonly(method, path)
+            asked.setdefault(self.label, set()).add(path.split("from=")[1][:10])
+            return ({"activities": []} if path.startswith("/history/activity")
+                    else {"transactions": []}), {}
+    monkeypatch.setattr(ig, "load_credentials", lambda *a, **k: {label: {}, other: {}})
+    monkeypatch.setattr(ig, "IGSession", Session)
+
+    choice = {"early": "2000-01-02", "between": day(150), "unbegun": None}.get(since, since)
+    got = actions.get("ig-events").run(**({} if choice is None else {"since": choice}))
+    assert got["ok"], got
+    want = {None: (day(30), day(30)), "90": (day(90), day(90)), "begins": (day(100), day(200)),
+            "early": (day(100), day(200)), "between": (day(100), day(150)),
+            "unbegun": (None, day(30))}[since]
+    windows = {account: want[0], other: want[1]}
+    assert got["result"]["windows"] == {a: w for a, w in windows.items() if w}
+    assert asked == {k: {w} for k, w in ((label, want[0]), (other, want[1])) if w}, asked
+    clamped = {"early": [account, other], "between": [account], "unbegun": [account]}.get(since, [])
+    assert sorted(c.split(":")[0] for c in got["result"]["clamped"]) == sorted(clamped), \
+        got["result"]["clamped"]
 
 
 def test_an_event_on_the_bench_is_reported_as_such(swept):

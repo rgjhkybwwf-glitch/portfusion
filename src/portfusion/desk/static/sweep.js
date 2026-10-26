@@ -4,13 +4,19 @@
    through the DOM — the same reason `collect()` rebuilds a bench row from named inputs. */
 let IG_EVENTS = {};
 
-/* THE SWEEP SURVIVES LEAVING THE TAB. Losing it would cost another 30-day call to the broker.
+/* THE SWEEP SURVIVES LEAVING THE TAB. Losing it would cost another call to the broker.
    Held here and re-rendered on return, which also repopulates IG_EVENTS, since the renderer
    fills it as it draws. */
 let LAST_SWEEP = null;
 /* What has happened to those events SINCE. Fetched every time the sweep is drawn, never cached
    with it: the sweep is a snapshot and this is the half that moves. */
 let SWEEP_STATUS = {};
+
+/* HOW FAR BACK THE IG SWEEP READS: feeds/ig.py's `since`. The first sends none, the feed's own
+   default; no choice reaches before an account's record began, which the feed holds. */
+const LOOKBACKS = [["", "30 days"], ["90", "90 days"], ["begins", "since the account began"]];
+/* The look-back of the sweep on screen, so a return to the Bench shows the one it was read with. */
+let LOOKBACK = "";
 
 /* HOW EACH BROKER ANSWER IS SHOWN. Rendering only — every figure arrives already computed by
    feeds/ig.py, and working one out here would be a second calculation of something the feed already
@@ -28,7 +34,10 @@ async function wireActions(panelName) {
   /* THE BUTTON AND WHAT IT REACHES, and no paragraph: what it does is in the page's fold. */
   $("#acts").innerHTML = acts.map((a) =>
     `<p><button class="link" data-act="${esc(a.name)}">
-       ${esc(a.label)}</button>` + badges(a.name) + `</p>`).join("");
+       ${esc(a.label)}</button>` + (a.name === "ig-events" ? ` <select id="lookback">${
+         LOOKBACKS.map(([v, l]) => `<option value="${v}"${v === LOOKBACK ? " selected" : ""}>${
+           esc(l)}</option>`).join("")}</select>`
+       : "") + badges(a.name) + `</p>`).join("");
 
   $("#acts").querySelectorAll("[data-act]").forEach((b) =>
     b.addEventListener("click", async () => {
@@ -36,7 +45,8 @@ async function wireActions(panelName) {
       view.hidden = true; view.innerHTML = "";
       out.hidden = false; out.textContent = "asking the broker…";
       try {
-        const { result, error } = await runAction(b.dataset.act);
+        const since = b.dataset.act === "ig-events" && (LOOKBACK = $("#lookback").value);
+        const { result, error } = await runAction(b.dataset.act, since ? { since } : {});
         if (error) { out.textContent = error; return; }
 
         /* THE ANSWER IS FIGURES, NOT JSON. A renderer per action, and JSON only where there is
@@ -82,38 +92,44 @@ const ACTION_VIEW = {
     /* The swept events, held by deal id so a button can name one without carrying the whole
        row through the DOM. Replaced on every sweep — a stale ref must not be workable. */
     IG_EVENTS = {};
-    const events = (label, rows, setup) => !(rows || []).length ? "" : `
-      <h3>${esc(label)} <span class="tag gap">${rows.length}</span></h3>
-      <ul class="items">${rows.map((r) => {
+    /* WHAT THIS EVENT IS NOW, not what it was when the sweep ran. An event already in the
+       record is DONE, and offering to work it again is how a duplicate gets made: it is
+       counted, not listed, so only the new ones show. */
+    const fresh = (rows) => (rows || []).filter((r) => !(SWEEP_STATUS[r.ref] || {}).in_record);
+    const events = (label, rows, setup) => {
+      const shown = fresh(rows), done = (rows || []).length - shown.length;
+      return !(rows || []).length ? "" : `
+      <h3>${esc(label)} <span class="tag gap">${shown.length}</span></h3>
+      <ul class="items">${shown.map((r) => {
         IG_EVENTS[r.ref] = r;
         /* THE STATUS SITS BESIDE THE EVENT, NOT UNDER IT. `.swept` gives the row a fixed shape —
-           description left, status right, neither wrapping into the other. */
-        /* WHAT THIS EVENT IS NOW, not what it was when the sweep ran. An event already in the
-           record is DONE and offering to work it again is how a duplicate gets made; one on the
-           bench is in progress and says what it still owes. */
-        const st = SWEEP_STATUS[r.ref] || {};
-        const done = st.in_record;
-        const item = st.item;
-        const state = done
-          ? `<span class="tag ok swept-state">in the book</span>`
-          : item
+           description left, status right, neither wrapping into the other. One on the bench is
+           in progress and says what it still owes. */
+        const item = (SWEEP_STATUS[r.ref] || {}).item;
+        const state = item
             ? `<span class="tag swept-state">on the bench${
                 item.blocked && item.blocked.length
                   ? ` — ${esc(item.blocked.join(", "))} owed` : " — ready"}</span>`
             : setup
               ? `<button class="link swept-do" data-setup="${esc(r.ref)}">set it up</button>`
               : `<button class="link swept-do" data-ig-event="${esc(r.ref)}">work it</button>`;
-        return `<li class="swept${done ? " swept-done" : ""}"><div class="swept-head">
+        return `<li class="swept"><div class="swept-head">
             <span class="swept-what">${esc(r.what || r.ref)}</span>${state}</div>
           <p class="muted swept-meta">${esc(r.account || "")} · ${esc(r.ref)}</p>${
             setup ? `<div data-setup-form="${esc(r.ref)}" hidden></div>` : ""}</li>`;
-      }).join("")}${setup ? (d.skipped || []).map((s) => `<li>${esc(s)}</li>`).join("") : ""}</ul>`;
+      }).join("")}${done
+        ? `<li class="muted" data-in-record>${done} already in the record</li>` : ""}${
+        setup ? (d.skipped || []).map((s) => `<li>${esc(s)}</li>`).join("") : ""}</ul>`;
+    };
     const missing = ["opens", "closes", "costs", "capital", "setups"]
-      .reduce((n, k) => n + (d[k] || []).length, 0);
+      .reduce((n, k) => n + fresh(d[k]).length, 0);
+    const from = Object.entries(d.windows || {})
+      .map(([a, f]) => `${esc(f)} (${esc(a)})`).join(", ");
     return `
-      <p class="muted">${esc(d.frm || "")} to ${esc(d.to || "")} ·
+      <p class="muted">${from} to ${esc(d.to || "")} ·
         <strong>${(d.matched || []).length}</strong> already in the book ·
         <strong>${missing}</strong> the book does not have.</p>
+      ${(d.clamped || []).map((c) => `<p class="muted">${esc(c)}</p>`).join("")}
 
       ${events("Buys", d.opens)}
       ${events("Sales", d.closes)}
