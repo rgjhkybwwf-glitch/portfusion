@@ -116,6 +116,15 @@ prints it.
   device revoked part-way through came back, signed in. The passkeys, the readers and the sessions
   in memory now change under one lock, and a session opens only while its passkey is on file. A
   restart's exit waits for a write in progress to finish, as every door's write does.
+- **The secret gate reads the commit message, and more of each value.** A key in a commit message
+  was committed: a new `commit-msg` hook refuses it, in this repository and in a new book. A
+  value is found in either case, URL-encoded and in base64 as well as as it is; `.env` values are
+  read; a link made a file holding a key is checked. One list, `secret_scan.SECRET_FILES`, names
+  every file a book keeps a secret in, and a new book's `.gitignore` is written from it, now with
+  the desk's `.desk_*.tmp` files. A push from a checkout that names no book is refused:
+  `PORTFUSION_BOOK=demo` pushes without the leak test. **An existing book gets the new hook and
+  ignore list only when its pin moves**: the audit then names `.githooks/commit-msg` and
+  `.gitignore`, and both are copied from a new book (`portfusion init <folder>`).
 
 ## 0.3.2 — beta, 24 Oct 2026
 

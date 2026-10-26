@@ -27,6 +27,7 @@ The newest release. Fixes are not back-ported to older ones.
   `desk/`, `portfusion init` and `portfusion migrate --write` write a book, and a feed writes only
   its own sign-in file.
 - **The feeds**: read-only by construction; a dealing endpoint is refused in code.
-- **The secret gate**: a commit that would put a credential into git is refused, in this
-  repository and in every book whose history `portfusion init` starts
-  (`src/portfusion/hooks/pre_commit.py`).
+- **The secret gate**: a commit that would put a credential into git, in a file or in its
+  message, is refused, in this repository and in every book whose history `portfusion init`
+  starts (`src/portfusion/hooks/pre_commit.py`). The files a book keeps secrets in are
+  `src/portfusion/secret_scan.py`'s `SECRET_FILES`.

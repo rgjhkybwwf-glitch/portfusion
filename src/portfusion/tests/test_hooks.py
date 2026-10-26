@@ -13,13 +13,15 @@ hook it tests.
 """
 import json
 import os
-import shutil
 import subprocess
+import sys
 
 import pytest
 
 API_KEY = "0f1e2d3c4b5a" * 3 + "abcd"
 PASSWORD = "fake-" + "password-" + "1234"
+TOKEN = "fake+" + "token/" + "with=symbols"
+ENV_TOKEN = "fake-" + "env-" + "token-" + "5678"
 ACCOUNT_ID = "ZZ9Q1"
 IDENTIFIER = "someuser"
 ANTHROPIC_SHAPE = "sk-" + "ant-" + "api03-" + "x" * 40
@@ -31,16 +33,17 @@ def _git(work, *args):
 
 @pytest.fixture
 def repo(tmp_path, repo_root):
-    """A throwaway repo on the project's hooks and `.gitignore`, holding a fake credentials.json,
-    with no remote."""
+    """A throwaway repo on the project's hooks and a new book's `.gitignore`, holding a fake
+    credentials.json, with no remote."""
+    from portfusion import init
     work = tmp_path / "work"
     work.mkdir()
     for args in (["init", "-q", "-b", "master"], ["config", "user.email", "t@t"],
                  ["config", "user.name", "t"], ["config", "core.hooksPath", str(repo_root / ".githooks")]):
         _git(work, *args)
-    shutil.copy(repo_root / ".gitignore", work / ".gitignore")
+    (work / ".gitignore").write_text(init.GITIGNORE)
     (work / "credentials.json").write_text(json.dumps({"VOSS_IG": {
-        "identifier": IDENTIFIER, "password": PASSWORD, "api_key": API_KEY,
+        "identifier": IDENTIFIER, "password": PASSWORD, "api_key": API_KEY, "token": TOKEN,
         "account_id": ACCOUNT_ID, "env": "LIVE"}}))
     _git(work, "add", ".gitignore")
     assert _git(work, "commit", "-qm", "start").returncode == 0
@@ -70,11 +73,45 @@ def test_the_credentials_file_is_refused_even_when_forced(repo):
 
 
 def test_a_planted_value_is_refused_by_NAME_and_never_quoted(repo):
-    """A refusal that printed the key would leave it in the terminal's scrollback."""
-    result = _commit(repo, "notes.md", f"key was {API_KEY} for a moment")
-    assert _refused(result)
-    assert "credentials.json VOSS_IG/api_key" in result.stderr
+    """A refusal that printed the key would leave it in the terminal's scrollback. A value is
+    found as it is and in each form it arrives changed, from a `.env` as from the JSON files, in
+    a file that was a link until this commit, and in the commit's message, above the scissors line
+    `commit -v` writes in the comment string the repository uses."""
+    import base64
+    import urllib.parse
+    (repo / ".env").write_text(f"export BROKER_TOKEN='{ENV_TOKEN}'  # the broker's\n")
+    for planted, label in (
+            (API_KEY, "credentials.json VOSS_IG/api_key"),
+            (PASSWORD.upper(), "VOSS_IG/password (upper case)"),
+            (urllib.parse.quote(TOKEN, safe=""), "VOSS_IG/token (URL-encoded)"),
+            (base64.b64encode(f"{API_KEY} and more".encode()).decode(), "VOSS_IG/api_key (base64)"),
+            (ENV_TOKEN, ".env BROKER_TOKEN")):
+        result = _commit(repo, "notes.md", f"key was {planted} for a moment")
+        assert _refused(result) and label in result.stderr, (label, result.stderr)
+        assert planted not in result.stdout + result.stderr
+        _git(repo, "restore", "--staged", "notes.md")
+    (repo / "link.md").symlink_to("elsewhere.md")
+    _git(repo, "add", "link.md")
+    assert _git(repo, "commit", "-qm", "a link").returncode == 0
+    (repo / "link.md").unlink()
+    result = _commit(repo, "link.md", f"key was {API_KEY}")
+    assert _refused(result) and "link.md" in result.stderr, result.stderr
+    _git(repo, "restore", "--staged", "link.md")
+    result = _git(repo, "commit", "--allow-empty", "-qm", f"key was {API_KEY}")
+    assert _refused(result) and "commit-msg" in result.stderr
+    assert "the commit message" in result.stderr and "VOSS_IG/api_key" in result.stderr
     assert API_KEY not in result.stdout + result.stderr
+    _git(repo, "config", "core.commentChar", ";")
+    (repo / "old.md").write_text(f"key was {API_KEY}\n")
+    _git(repo, "add", "old.md")
+    assert _git(repo, "commit", "--no-verify", "-qm", "a key, let through").returncode == 0
+    (repo / "old.md").write_text("no key\n")
+    _git(repo, "add", "old.md")
+    taken_out = subprocess.run(["git", "commit", "-qv"], cwd=repo, capture_output=True, text=True,
+                               env={**os.environ, "GIT_EDITOR": f"{sys.executable} -c \"import sys; "
+                                    "p = sys.argv[1]; s = open(p).read(); "
+                                    "open(p, 'w').write('the key, taken out' + chr(10) + s)\""})
+    assert taken_out.returncode == 0, f"`commit -v` below the scissors was read: {taken_out.stderr}"
 
 
 def test_a_value_inside_a_binary_file_is_refused(repo):
@@ -243,12 +280,14 @@ def test_a_checkouts_push_is_refused_when_it_names_the_book(tmp_path, monkeypatc
     assert what_leaves(_checkout(tmp_path, passes)) == status
 
 
-def test_with_no_book_named_the_push_goes_and_says_nothing_was_checked(tmp_path, monkeypatch,
-                                                                      capfd):
+def test_with_no_book_named_the_push_is_refused_and_says_how_to_name_one(tmp_path, monkeypatch,
+                                                                         capfd):
+    """A push that checks nothing for a book's names is a choice, made by naming the demo."""
     from portfusion.hooks.pre_push import what_leaves
     monkeypatch.delenv("PORTFUSION_BOOK", raising=False)
-    assert what_leaves(_checkout(tmp_path, False)) == 0
-    assert "names no book" in "".join(capfd.readouterr())
+    assert what_leaves(_checkout(tmp_path, True)) == 1
+    said = "".join(capfd.readouterr())
+    assert "names no book" in said and "PORTFUSION_BOOK=demo" in said
 
 
 def test_the_suites_commits_are_never_signed(tmp_path):
