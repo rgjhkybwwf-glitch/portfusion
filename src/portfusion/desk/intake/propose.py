@@ -37,7 +37,7 @@ rather than as behaviour. And a reading can do one thing: fill a bench item. The
 only when the owner approves that item on the desk.
 
 IT WRITES NOTHING ITSELF. The surviving cells go into the item through `bench.save()`, so this
-module is not in `DESK_WRITERS` (tests/desk/test_boundaries.py) and must not join it.
+module is not in `WRITERS` (tests/desk/test_boundaries.py) and must not join it.
 """
 from __future__ import annotations
 

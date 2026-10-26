@@ -231,11 +231,11 @@ def _as_read(request: Request, answer):
     try:
         if isinstance(answer, JSONResponse):
             return JSONResponse(status_code=answer.status_code,
-                                content=n.rename(json.loads(answer.body)))
+                                content=n.apply(json.loads(answer.body)))
         if isinstance(answer, Response):
             n.check(answer.body.decode("utf-8", "replace"))
             return answer
-        return n.rename(answer)
+        return n.apply(answer)
     except naming.Withheld as e:
         return JSONResponse(status_code=500, content={"error": "withheld", "detail": str(e)})
 

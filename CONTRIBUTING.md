@@ -31,7 +31,7 @@ once, here, beside that test.
 | # | Rule | Held by |
 |---|---|---|
 | 1 | **Tests never touch your book.** A test run never moves the book's `store/`, `_archive/` or `_inbox/`; every test writes to a copy. | `harness.py::pytest_sessionfinish` |
-| 2 | **Every write is a named door.** Every write to the store or a history is a declared door, and a new writer anywhere in the package is a decision. | `test_boundaries.py::test_a_new_writer_under_desk_is_a_decision`, `test_boundaries.py::test_only_the_declared_doors_under_desk_write_the_record`; outside `desk/`, and a removal or a copy (being made to fire) |
+| 2 | **Every write is a named door.** Every write to the store or a history is a declared door, and a new writer anywhere in the package is a decision. | `test_boundaries.py::test_a_new_writer_is_a_decision`, `test_boundaries.py::test_only_the_declared_doors_under_desk_write_the_record` |
 | 3 | **A write is all or nothing.** A commit places the row by date, files the document and journals the write in one step; a refused or failed write leaves every file byte-identical. | `test_price_refresh.py::test_a_fault_mid_write_puts_back_the_files_and_the_record_in_memory`, `test_lock.py::test_every_door_waits_for_the_lock` |
 | 4 | **Every row is checked on the way in.** Every row is written through the schema and reads back as written, money to the penny and a quote to six places; the loader refuses a cell a field cannot hold, a table out of date order, an id not in its place, a reference that joins to nothing. | `test_schema.py::test_the_schema_round_trips_every_awkward_type`, `test_order.py::test_the_loader_finds_a_row_out_of_order_and_an_id_not_its_place` |
 | 5 | **A record is whole or not served.** The store is whole or nothing is read; a record that will not load is refused by name and never served half-read. | `test_routes.py::test_a_record_that_will_not_load_is_unavailable_on_every_panel`, `test_store_doors.py::test_a_store_that_will_not_load_leaves_the_record_where_it_was`; after a refused reload (being made to fire) |
@@ -66,7 +66,7 @@ once, here, beside that test.
 | # | Rule | Held by |
 |---|---|---|
 | 16 | **The desk answers only this Mac and signed-in readers.** The local desk listens on 127.0.0.1 only; the hosted door fails shut without its secret, only reads, serves only its pinned routes, answers only a signed-in reader at their level, and withholds holders' names from a principal. | `test_routes.py::test_a_request_for_another_host_is_refused`, `test_remote.py::test_with_no_secret_on_the_mac_the_door_fails_shut`, `test_remote.py::test_every_remote_route_only_reads`, `test_remote.py::test_the_remote_door_serves_only_the_pinned_routes`, `test_remote.py::test_each_level_opens_what_was_agreed`, `test_remote.py::test_a_principal_reads_no_holder_and_no_number_anywhere`; the bind to 127.0.0.1 (being made to fire) |
-| 17 | **The feeds only read.** A feed makes only allowlisted reads, refused by name before a request is built; a feed writes no mark and no event. | `test_ig.py::test_guard_refuses_everything_that_is_not_a_read`, `test_tv.py::test_the_allowlist_is_checked_before_a_request_is_built`; writes no mark and no event (being made to fire) |
+| 17 | **The feeds only read.** A feed makes only allowlisted reads, refused by name before a request is built; a feed writes no mark and no event. | `test_ig.py::test_guard_refuses_everything_that_is_not_a_read`, `test_tv.py::test_the_allowlist_is_checked_before_a_request_is_built`, `test_tv.py::test_a_feed_writes_nothing_but_its_own_sign_in` |
 
 ### Upgrades and releases
 
@@ -109,7 +109,7 @@ One line each; kept by review, and by the test named where there is one.
 | a desk panel | `desk/panels/<name>.py` | `tests/desk/test_panels.py` |
 | a desk button | its `Action` in `desk/actions.py` | `tests/desk/test_boundaries.py` |
 | a route on the hosted desk | `REMOTE_ROUTES` in `desk/remote.py` | `tests/desk/test_remote.py` |
-| anything under `desk/` that writes a file, or anything that opens a CSV | its door, named in `DESK_WRITERS` or `CSV_FILE_READERS` | `tests/desk/test_boundaries.py`, `tests/test_store_doors.py` |
+| anything that writes a file, or opens a file of the store | its door, named in `WRITERS` or `STORE_FILE_DOORS` | `tests/desk/test_boundaries.py`, `tests/test_store_doors.py` |
 | a kind of document | an `Evidence` in `record/rules_evidence.py` | `tests/test_evidence.py` |
 | which part of the app may import which | an import contract in `pyproject.toml` | `lint-imports` |
 | a feed endpoint | the allowlist in `feeds/ig.py` or `feeds/tv.py` | `tests/test_ig.py`, `tests/test_tv.py` — meant to stop you |

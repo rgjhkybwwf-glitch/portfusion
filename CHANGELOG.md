@@ -63,6 +63,13 @@ prints it.
   refused; the engine's case of the lock test waits on `book()`'s own lock; and **a skip a book
   lists that ran fails the run**. When a book's pin moves, delete any such line from its
   `checks/skips.txt`; the demo's one is gone.
+- **One census of every writer in the package.** The scan that names each module allowed to
+  write now walks the whole package, not `desk/` alone, and counts a removal, a copy and a rename
+  as writes. Six writers outside `desk/` are named: the two feeds' sign-in files, the histories'
+  bank, `init`, the migrations and the schema's unused `dump()`. The store's doors are counted
+  by what each opens, so the Bench's commit, research notes, `init`, the stamp and the demo
+  generator are listed. Eight hand scans share one helper; four tests that only repeated the
+  census are gone. `Naming.rename()` is `Naming.apply()`, so a path's `rename()` counts.
 
 ## 0.3.2 — beta, 24 Oct 2026
 

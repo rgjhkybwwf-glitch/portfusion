@@ -114,7 +114,7 @@ def test_an_account_with_no_broker_figure_is_a_gap_not_a_pass():
 
 
 #: Every column the desk draws, panel by panel. A census, not a target, in the shape
-#: test_boundaries.py's `DESK_WRITERS` already uses.
+#: test_boundaries.py's `WRITERS` already uses.
 #:
 #: Why it exists: no content is added without acceptance. `tests/test_figures.py` holds both
 #: renderers to `Book.HEADLINE` — but only for headline figures. A table column could be added,

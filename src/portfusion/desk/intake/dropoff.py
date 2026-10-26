@@ -5,8 +5,8 @@ WHY IT EXISTS. **ii and HL have no retail API**, so their documents reach this b
 document is already beside the browser; switching to Finder to drop it into `_inbox/` is pure
 ceremony.
 
-IT WRITES, AND THAT IS A STRUCTURAL DECISION, NOT A CONVENIENCE. `DESK_WRITERS` in
-`tests/desk/test_boundaries.py` names it, as it names every module under desk/ that writes.
+IT WRITES, AND THAT IS A STRUCTURAL DECISION, NOT A CONVENIENCE. `WRITERS` in
+`tests/desk/test_boundaries.py` names it, as it names every module in the package that writes.
 
 THE SYMMETRY IS WITH commit.py. That is the door by which an event enters `store/`; this is the
 one door INTO `_inbox/`. Both exist in order to be the only one, and both are narrower than they
@@ -63,10 +63,7 @@ def safe_name(raw: str) -> str:
     is expected on localhost — because a name is data, and the one thing that must never be
     possible here is a write outside `_inbox/`.
     """
-    # SPLIT TWICE RATHER THAN `str.replace`, and that is not an idiom preference. The guard in
-    # `test_the_drop_off_has_no_way_to_make_a_document_LEAVE` walks this file's syntax tree for
-    # the names that could move or remove a document, and a tree cannot tell `str.replace` from
-    # `os.replace`. Forbidding the name outright is worth more here than the shorter line.
+    # THE NAME'S LAST PART, after either separator: a name holding a folder lands in `_inbox/`.
     name = str(raw or "").strip()
     for sep in ("\\", "/"):
         name = name.rsplit(sep, 1)[-1]

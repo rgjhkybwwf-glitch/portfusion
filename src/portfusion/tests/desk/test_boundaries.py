@@ -10,9 +10,11 @@ The rest of tests/desk/ is detail on these two, split by subject.
 from __future__ import annotations
 
 import datetime as _dt
+import functools
+
 import pytest
 from portfusion.desk import actions
-from harness import SRC, write_call
+from harness import SRC, STORE_NAMES, file_calls, write_call
 
 
 # =====================================================================================
@@ -150,17 +152,21 @@ def test_an_action_may_still_name_its_own_date():
 
 
 # =====================================================================================
-# THE NAMED WRITERS — what under desk/ may write, and which of those reach the record
+# THE NAMED WRITERS — what in the package may write, and which under desk/ reach the record
 # =====================================================================================
 
-#: What a write is: `harness.write_call()`, the one list. `_append` is `desk/doors/commit.py`'s
-#: shared append, in the file's own line ending: a module that writes through it writes, and the
-#: freeze does exactly that.
+#: What a write is: `harness.write_call()`, the one list, a removal, a copy and a rename among
+#: them. `_append` is `desk/doors/commit.py`'s shared append, in the file's own line ending: a
+#: module that writes through it writes, and the freeze does exactly that.
 
 
-#: Every module under desk/ that writes any file at all, and what each one writes. A NAMED SET:
-#: a new writer is a structural change, and wants a considered yes rather than a convenience
-#: slipped in beside a layout tweak.
+#: Every module in the package that writes any file at all, and what each one writes. A NAMED
+#: SET: a new writer is a structural change, and wants a considered yes rather than a convenience
+#: slipped in beside a layout tweak. The record is written only by the doors under desk/, and its
+#: histories by those doors and the price refresh, through history/; outside desk/, `init` and
+#: `migrate --write` write a book, and a feed writes only its own sign-in file.
+#:
+#: UNDER desk/:
 #:
 #:   auth.py          the hosted desk's three files at the root, all out of git and none the
 #:                    record: the passkeys (.desk_passkeys.json), each reader's level
@@ -195,53 +201,38 @@ def test_an_action_may_still_name_its_own_date():
 #:                    deletes only that plist. Nothing of the book: it is the desk's own start,
 #:                    run from the terminal (`portfusion desk --install-agent`), never an action.
 #:
+#: OUTSIDE desk/:
+#:
+#:   feeds/ig.py, feeds/tv.py
+#:                    each its own sign-in file, out of git and never the record
+#:                    (`test_tv.py::test_a_feed_writes_nothing_but_its_own_sign_in`).
+#:   history/_appendonly.py
+#:                    BANKS a history, swapped in whole: the three histories' one writer.
+#:   init/__init__.py WRITES A NEW BOOK: its tables, histories, hooks and ignore list.
+#:   record/migrations.py
+#:                    MOVES A BOOK to this release's shape, on `portfusion migrate --write`, and
+#:                    puts every file back if the book will not open.
+#:   record/schema.py `dump()`, which nothing calls.
+#:
 #: desk/icon.py RETURNS BYTES and writes nothing — if it ever starts writing, this set is what
 #: says so.
-DESK_WRITERS = {"agent.py", "auth.py", "intake/bench.py", "doors/commit.py", "intake/dropoff.py",
-                "doors/freeze.py", "doors/marks.py", "doors/observations.py",
-                "doors/research_notes.py", "intake/withdraw.py", "publish.py"}
+WRITERS = {"desk/agent.py", "desk/auth.py", "desk/intake/bench.py", "desk/doors/commit.py",
+           "desk/intake/dropoff.py", "desk/doors/freeze.py", "desk/doors/marks.py",
+           "desk/doors/observations.py", "desk/doors/research_notes.py", "desk/intake/withdraw.py",
+           "desk/publish.py", "feeds/ig.py", "feeds/tv.py", "history/_appendonly.py",
+           "init/__init__.py", "record/migrations.py", "record/schema.py"}
 
 
-def _writes_under_desk(repo_root):
-    """Every write call under desk/, with the module and the expression written TO.
-
-    The target matters and the filename does not. A module writing a plist into
-    ~/Applications and a module writing a row into store/buys.csv both "write"; only one
-    of them touches the record. This resolves the receiver back to its assignment in the
-    enclosing function, so `path.write_text(...)` after `path = schema.TABLES[t].path` is
-    recognised as a store write rather than as an unknown `path`.
-    """
-    import ast
-    out = []
-    for file in sorted((SRC / "desk").rglob("*.py")):
-        src = file.read_text()
-        tree = ast.parse(src)
-        module = file.relative_to(SRC / "desk").as_posix()
-
-        bound = {}                      # name -> every RHS ever assigned to it
-        for node in ast.walk(tree):
-            if isinstance(node, ast.Assign):
-                for t in node.targets:
-                    if isinstance(t, ast.Name):
-                        bound.setdefault(t.id, []).append(
-                            ast.get_source_segment(src, node.value) or "")
-
-        for node in ast.walk(tree):
-            if not isinstance(node, ast.Call):
-                continue
-            if write_call(node) is None:
-                continue
-            target = ""
-            if isinstance(node.func, ast.Attribute):
-                target = ast.get_source_segment(src, node.func.value) or ""
-            if node.args:                                   # shutil.move(src, dst)
-                target += " " + " ".join(ast.get_source_segment(src, a) or ""
-                                         for a in node.args)
-            for word in list(bound):
-                if word in target:
-                    target += " " + " ".join(bound[word])
-            out.append((module, target, node.lineno))
-    return out
+@functools.cache
+def _writes():
+    """Every write call in the package (`harness.file_calls`), with the module, from the package,
+    and the expression written TO. The target matters and the filename does not: a module writing
+    a plist into ~/Library and one writing a row into store/buys.csv both "write"; only one of them
+    touches the record."""
+    files = [f for f in sorted(SRC.rglob("*.py"))
+             if f.relative_to(SRC).parts[0] not in ("tests", "demo")]
+    return [(file.relative_to(SRC).as_posix(), target, line)
+            for file in files for line, _, target in file_calls(file)]
 
 
 #: The doors that may write to store/, and what each may write.
@@ -265,7 +256,7 @@ STORE_DOORS_UNDER_DESK = {
 }
 
 
-def test_only_the_declared_doors_under_desk_write_the_record(repo_root):
+def test_only_the_declared_doors_under_desk_write_the_record():
     """THE WRITE TARGET, NOT THE FILENAME.
 
     A set of FILENAMES conflates "writes a file" with "writes the record": bench.py writes its
@@ -281,8 +272,9 @@ def test_only_the_declared_doors_under_desk_write_the_record(repo_root):
     write whose path arrives as a PARAMETER cannot be resolved by the scan below, so a restore
     moved into a module of its own would go on writing store files and would stop being seen to.
     """
-    store_writers = {module for module, target, _ in _writes_under_desk(repo_root)
-                     if "TABLES" in target or "store" in target.lower()}
+    assert STORE_NAMES.search("schema.TABLES[t].path") and not STORE_NAMES.search("restore(x)")
+    store_writers = {module.removeprefix("desk/") for module, target, _ in _writes()
+                     if module.startswith("desk/") and STORE_NAMES.search(target)}
     # AND THE FOLDER SAYS SO. desk/doors/ holds the store writers and nothing else, so the code
     # that can change the record is the code in one place — a store write outside it, or a
     # module inside it that writes no store file, fails here.
@@ -298,26 +290,30 @@ def test_only_the_declared_doors_under_desk_write_the_record(repo_root):
         + ". A new one is not forbidden, it is forbidden to be quiet.")
 
 
-def test_a_new_writer_under_desk_is_a_decision(repo_root):
-    """A module that starts writing ANYTHING must be written down before it can pass. The set is
-    not a count — it is a named list, and a new entry fails here until somebody says what it
-    writes and why."""
-    writers = {module for module, _, _ in _writes_under_desk(repo_root)}
-    assert writers == DESK_WRITERS, (
-        f"the set of writing modules under desk/ changed: {sorted(writers)}. "
-        f"Added: {sorted(writers - DESK_WRITERS)}. Removed: {sorted(DESK_WRITERS - writers)}.")
+def test_a_new_writer_is_a_decision():
+    """A module anywhere in the package that starts writing ANYTHING must be written down before
+    it can pass. The set is not a count — it is a named list, and a new entry fails here until
+    somebody says what it writes and why."""
+    writers = {module for module, _, _ in _writes()}
+    assert writers == WRITERS, (
+        f"the set of writing modules changed: {sorted(writers)}. "
+        f"Added: {sorted(writers - WRITERS)}. Removed: {sorted(WRITERS - writers)}.")
 
 
 @pytest.mark.parametrize("code, writes", [
     ("os.replace(tmp, path)", "replace"), ("path.replace(target)", "replace"),
     ("os.rename(a, b)", "rename"), ("open(path, 'w')", "open"), ("open(path, mode='a')", "open"),
     ("path.open('x')", "open"), ("shutil.rmtree(folder)", "rmtree"),
+    ("os.remove(path)", "remove"), ("shutil.copy(a, b)", "copy"), ("path.rename(target)", "rename"),
+    ("path.touch()", "touch"), ("path.rmdir()", "rmdir"),
+    ("os.open(path, os.O_WRONLY | os.O_CREAT, 0o600)", "open"),
     ("'2026-10-21'.replace('-', '')", None), ("frame.rename(columns={'a': 'b'})", None),
-    ("open(path)", None), ("open(path, 'rb')", None),
+    ("open(path)", None), ("open(path, 'rb')", None), ("rows.remove(row)", None),
+    ("frame.copy()", None), ("os.open(path, os.O_RDONLY)", None),
 ])
 def test_the_write_scan_sees_every_way_a_file_is_written(code, writes):
     """WHAT THE SCAN CALLS A WRITE (`harness.write_call`): an atomic swap (`os.replace`), a rename,
-    a removed folder and an `open()` for writing; and not a string's replace or a frame's
-    rename."""
+    a removal, a copy, a removed folder and an `open()` for writing; and not a string's replace,
+    a frame's rename or copy, or a list's remove."""
     import ast
     assert write_call(ast.parse(code).body[0].value) == writes

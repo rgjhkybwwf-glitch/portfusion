@@ -1,8 +1,8 @@
 """
 EVERY READ OF THE STORE GOES THROUGH A DECLARED DOOR.
 
-An AST scan of the whole repository against an explicit allow-list. Matched on the call, never
-on a file's text or a substring, and across every module.
+An AST scan of the whole repository against an explicit allow-list. Matched on the call and the
+names in what it opens, never on a file's text or a substring, and across every module.
 
 The allow-list is the point: each door is named, so closing one is a visible deletion from
 this file rather than a silent improvement nobody can audit.
@@ -12,22 +12,12 @@ import pathlib
 
 import pytest
 
-from harness import ROOT, SRC, TESTS, needs
+from harness import NO_CHECKOUT, ROOT, SRC, STORE_NAMES, TESTS, file_calls, needs
 
-#: The CSV doors. These four constructors plus pandas are how tabular data enters or
-#: leaves a file in this project — every store access goes through one of them, and
-#: nothing else in the repo uses them. Scoping to CSV rather than to `open` is what keeps
-#: this precise: dropoff opens documents, and that is not a record door.
-CSV_CALLS = {"reader", "DictReader", "writer", "DictWriter", "read_csv", "to_csv"}
-
-#: A csv.writer over an in-memory buffer FORMATS a line; it does not open anything. feeds/ig.py
-#: and desk/doors/commit.py both do this to build one CSV row for printing, and neither is a
-#: door on that account.
-BUFFER_HINTS = ("buf", "stringio", "io.")
-
-#: EVERY MODULE THAT READS OR WRITES A CSV FILE, and each one is a door into store/. A new
-#: door is not forbidden, it is forbidden to be quiet; closing one is a deletion here that
-#: somebody can point at.
+#: EVERY MODULE THAT OPENS A FILE OF THE STORE, to read it or to write it, and each one is a door
+#: into store/: a call on a path a table, the store's folder or a `store` names
+#: (`harness.file_calls`, `harness.STORE_NAMES`). A new door is not forbidden, it is forbidden to
+#: be quiet; closing one is a deletion here that somebody can point at.
 #:
 #:   record/schema.py     THE INTENDED DOOR. load(ref) is what every table in schema.TABLES
 #:                        comes through.
@@ -59,15 +49,20 @@ BUFFER_HINTS = ("buf", "stringio", "io.")
 #:   desk/doors/freeze.py the same read in service of a RESTATEMENT, which takes out the rows
 #:                        it replaces, so every line it is not taking out passes through as the
 #:                        bytes it read.
+#:   desk/doors/commit.py an event placed where its date puts it (`place()`, `placed()`), and the
+#:                        envelope that puts every file back when a write fails (`atomic()`).
+#:   desk/doors/research_notes.py
+#:                        a published research note's rows, placed by `commit.placed()`.
+#:   init/__init__.py     a new book's tables and histories, each headed as the demo's are.
+#:   about.py             every table's bytes, read for the record's fingerprint in a page's stamp.
+#:   tools/make_demo.py   the demo's store, written whole (`test_demo.py` holds it to the demo).
 #:
-#: `desk/intake/read_document.py` READS DOCUMENTS AND IS NOT HERE. A UK broker's export is
-#: CP1252, so it decodes the bytes itself and parses from memory; the scan resolves a csv call's
-#: target back to an assignment and cannot see one there. That is the scan being honest about
-#: what it can prove, and the module reads _inbox/, which is not the record.
-CSV_FILE_READERS = {
+#: A document is not the store: `desk/intake/read_document.py` reads _inbox/ and is not here.
+STORE_FILE_DOORS = {
     "record/schema.py", "engine.py", "record/migrations.py",
     "desk/doors/marks.py", "desk/doors/observations.py", "desk/doors/freeze.py",
-    "history/_appendonly.py",
+    "history/_appendonly.py", "desk/doors/commit.py", "desk/doors/research_notes.py",
+    "init/__init__.py", "about.py", "tools/make_demo.py",
 }
 
 
@@ -79,48 +74,22 @@ def _sources(project_files):
         yield (path.relative_to(SRC) if path.is_relative_to(SRC) else path.relative_to(ROOT)).as_posix(), path
 
 
-def _csv_calls(path):
-    """Every call in `path` that points a CSV reader or writer at a FILE.
-
-    Returns (tree, parents, hits). Matched on the call itself, so `open(path)`,
-    `pd.read_csv(STORE / x)` and `(ROOT / p).open()` all register through the csv or
-    pandas call wrapped around them.
-    """
-    src = path.read_text()
-    tree = ast.parse(src)
-    parents = {}
-    for node in ast.walk(tree):
-        for child in ast.iter_child_nodes(node):
-            parents[child] = node
-
-    hits = []
-    for node in ast.walk(tree):
-        if not isinstance(node, ast.Call):
-            continue
-        name = node.func.attr if isinstance(node.func, ast.Attribute) else \
-            node.func.id if isinstance(node.func, ast.Name) else None
-        if name not in CSV_CALLS:
-            continue
-        first = ast.get_source_segment(src, node.args[0]) if node.args else ""
-        target = (first or "").lower()
-        if isinstance(node.func, ast.Attribute) and not node.args:
-            target = (ast.get_source_segment(src, node.func.value) or "").lower()
-        if any(h in target for h in BUFFER_HINTS):
-            continue                                    # formats a line, opens nothing
-        hits.append((node, name))
-    return tree, parents, hits
+def _store_calls(path):
+    """(line, call) for each call in `path` that opens a file of the store, to read or to write."""
+    return [(line, call) for line, call, target in file_calls(path, reads=True)
+            if STORE_NAMES.search(target)]
 
 
 def test_every_store_read_goes_through_a_declared_door(project_files):
     """The set of files that touch the store is a DECISION, written down here.
 
     A new door is not forbidden — it is forbidden to be quiet. Adding one means adding a
-    line to CSV_FILE_READERS above, which is a diff a reviewer sees.
+    line to STORE_FILE_DOORS above, which is a diff a reviewer sees.
     """
-    found = {rel for rel, path in _sources(project_files) if _csv_calls(path)[2]}
-    assert found == CSV_FILE_READERS, (
-        f"CSV file doors changed.\n  opened: {sorted(found - CSV_FILE_READERS)}\n"
-        f"  closed: {sorted(CSV_FILE_READERS - found)}\n"
+    found = {rel for rel, path in _sources(project_files) if _store_calls(path)}
+    assert found == STORE_FILE_DOORS, (
+        f"store doors changed.\n  opened: {sorted(found - STORE_FILE_DOORS)}\n"
+        f"  closed: {sorted(STORE_FILE_DOORS - found)}\n"
         f"If a door was closed, delete it from the list. If one was opened, say why "
         f"beside it — a new reader of the record is a decision, not a detail.")
 
@@ -132,18 +101,11 @@ def test_the_engine_still_reads_the_record_through_one_function():
     reorder, and a split of engine.py into a package.
     """
     path = SRC / "engine.py"
-    tree, parents, hits = _csv_calls(path)
-
-    def enclosing_function(node):
-        while node in parents:
-            node = parents[node]
-            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-                return node.name
-        return None
-
+    hits = _store_calls(path)
+    seam = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef)
+                and n.name == "load_store")
     assert hits, "engine.py reads no store file at all — has the seam moved?"
-    outside = {(enclosing_function(n), n.lineno) for n, _ in hits
-               if enclosing_function(n) != "load_store"}
+    outside = [(line, call) for line, call in hits if not seam.lineno <= line <= seam.end_lineno]
     assert not outside, (
         f"engine.py opens a store file outside load_store(): {sorted(outside)}. "
         f"Every table must come through the seam.")
@@ -180,13 +142,15 @@ def test_the_engine_imports_nothing_but_the_record_and_pandas(imports_of):
     assert taken <= {"record.rules"}, f"engine.py takes {sorted(taken)} from record/"
 
 
-@pytest.mark.parametrize("door", sorted(CSV_FILE_READERS))
+@pytest.mark.parametrize("door", sorted(STORE_FILE_DOORS))
 def test_each_declared_door_still_exists(door):
     """A door listed here that no longer opens anything is stale documentation. The set
     equality above catches it, but this names WHICH one so the failure reads plainly."""
-    path = SRC / door
+    if door.startswith("tools/") and ROOT is None:
+        pytest.skip(NO_CHECKOUT)                    # the maintainer's tools sit beside the app
+    path = ROOT / door if door.startswith("tools/") else SRC / door
     assert path.exists(), f"{door} is on the list but the file is gone"
-    assert _csv_calls(path)[2], f"{door} no longer reads a CSV file — remove it from the list"
+    assert _store_calls(path), f"{door} opens no file of the store now — remove it from the list"
 
 
 # =====================================================================================

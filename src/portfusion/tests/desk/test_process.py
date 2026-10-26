@@ -25,18 +25,6 @@ def test_the_restart_is_declared_and_writes_nothing():
     assert a.gate, "a button that kills a server names the human step that presses it"
 
 
-def test_the_restart_module_touches_no_file(repo_root):
-    """It is not another writer to the record, and it is not a writer at all. Checked on the
-    syntax tree rather than by reading the docstring — prose is not behaviour, which is the
-    lesson bench.py's own guard records."""
-    import ast
-    from harness import write_call
-    tree = ast.parse((SRC / "desk" / "restart.py").read_text())
-    # THE SUITE'S ONE LIST OF WHAT WRITES (`harness.write_call`).
-    found = {write_call(n) for n in ast.walk(tree)} - {None}
-    assert not found, f"desk/restart.py writes something: {sorted(found)}"
-
-
 def test_the_restart_will_not_default_to_a_port_it_was_not_given():
     """A default port would restart whichever desk is on it: a different server, quite possibly
     someone else's work.

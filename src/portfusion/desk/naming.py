@@ -2,7 +2,7 @@
 
     from portfusion.desk import naming
     n = naming.of(engine.book())
-    n.rename({"account": "Sam IG Spread bet", "note": "per Alex"})
+    n.apply({"account": "Sam IG Spread bet", "note": "per Alex"})
         # {"account": "A4 · IG Spread bet", "note": "per [withheld]"}
 
 An account is named by its register code to anyone but the owner, and a holder's name and an
@@ -77,7 +77,7 @@ class Naming:
     def _text(self, s: str) -> str:
         return self._pattern.sub(lambda m: self._subs[m.group(0).lower()], s)
 
-    def rename(self, answer):
+    def apply(self, answer):
         """The answer with every string renamed, dictionary keys included, and checked."""
         def walk(v):
             if isinstance(v, str):
