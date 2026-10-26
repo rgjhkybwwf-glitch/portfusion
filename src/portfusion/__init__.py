@@ -7,7 +7,7 @@ import sys as _sys
 #: it, and the desk's footer and the report's stamp carry it (`about.release()`). Raised by
 #: decision, never by every merge. Between releases it is the next one's `.devN`, and the commit
 #: says which code it is; a release is tagged `v<version>` when this says it.
-__version__ = "0.4.0"
+__version__ = "0.4.1.dev0"
 #: What a release in this series is called beside its number. A label, not part of the number.
 LABEL = "beta"
 
