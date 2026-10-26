@@ -52,7 +52,7 @@ def closes(on: str) -> dict:
     for name in schema.filed_statements():
         if not fnmatch.fnmatchcase(name, f"{label}*IG statement*.pdf"):
             continue
-        path = schema.STATEMENTS / name
+        path = schema.statements() / name
         doc = read_document.extract_file(path)
         printed = _PRINTED_DATE.search(doc["text"])
         if doc["scanned"] or not printed or (

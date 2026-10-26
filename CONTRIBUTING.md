@@ -127,7 +127,7 @@ One line each; kept by review, and by the test named where there is one.
 - **Every line a command says goes through `portfusion.log`**
   (`test_code.py::test_nothing_outside_the_tests_prints`).
 - **Hold a module, never its names, where they move**: `rules.X`, not `from … import X`, and the
-  schema's `STORE`, `STATEMENTS` and `INBOX` likewise (`test_code.py::test_a_module_is_imported_one_way`).
+  schema's `STORE` and `BOOK` likewise (`test_code.py::test_a_module_is_imported_one_way`).
 - **A cached frame is returned as a copy.**
 - **The engine keeps its numbered sections in order**, each topic in one place and its window stated
   once (`test_code.py::test_book_py_keeps_each_topic_in_one_place`,

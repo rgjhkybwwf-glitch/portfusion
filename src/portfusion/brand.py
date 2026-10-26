@@ -36,7 +36,7 @@ import tomllib
 from typing import cast
 
 from portfusion.house import mark, palette as P
-from portfusion.record.schema import BOOK
+from portfusion.record import schema
 
 #: The app's name, wherever software is operated and wherever a book names none of its own.
 APP = "PortFusion"
@@ -49,7 +49,7 @@ FOLLOW_ACCENT = ("link", "mark", "key-clear", "chart")
 APP_ICONS = ("apple-touch-icon.png", "icon-192.png", "icon-512.png")
 
 #: THE FOLDER, or None when the book has none.
-DIR = BOOK / "brand" if (BOOK / "brand").is_dir() else None
+DIR = schema.BOOK / "brand" if (schema.BOOK / "brand").is_dir() else None
 
 _KEYS = {"name", "ownership", "wordmark", "light", "dark", "font"}
 

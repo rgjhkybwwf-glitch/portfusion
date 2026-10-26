@@ -363,7 +363,6 @@ def test_a_committed_item_lands_in_the_journal_as_well_as_the_record(
     of the two is comparing one fact rather than two clock readings a second apart.
     """
     from portfusion.desk.doors import commit as _commit
-    monkeypatch.setattr(_commit, "ARCHIVE", tmp_path / "archive")
     was = len(_journal(store_copy))
 
     result = _commit.commit(_bench.save(_ready(item))["id"])
@@ -398,7 +397,6 @@ def test_a_refused_commit_leaves_the_journal_exactly_as_it_was(
     """
     from portfusion.record import schema
     from portfusion.desk.doors import commit as _commit, envelope
-    monkeypatch.setattr(_commit, "ARCHIVE", tmp_path / "archive")
     before = schema.TABLES["journal"].path.read_bytes()
 
     real = envelope.rendered

@@ -55,8 +55,9 @@ the audit, never in a book's `checks/`.
   them, so it passes on a book with two IG accounts as on the demo with one. A test of the
   demo's own documents skips elsewhere with `DEMO_ONLY`, which no book lists.
 - **Write to a copy, never the loaded book.** `store_copy`, `item`, `workbench` and `inbox` give
-  one. A run that moves the loaded book's `store/`, `_archive/` or `_inbox/` fails, every test
-  green or not.
+  one: each makes the test's `tmp_path` the book, `schema.BOOK`, whose folders every module asks
+  for when it needs them. A run that moves the loaded book's `store/`, `_archive/` or `_inbox/`
+  fails, every test green or not.
 
 ## A failing test
 

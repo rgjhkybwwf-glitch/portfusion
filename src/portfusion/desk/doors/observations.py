@@ -253,7 +253,7 @@ def _check_units(account: str, as_of: str, name: str, key: str, document=None) -
     that is not. The comparison is `Book.units_check()`'s; this only reads the document."""
     from portfusion.engine import Book
     from portfusion.desk.intake import read_document, read_rows
-    path = document or schema.STATEMENTS / name
+    path = document or schema.statements() / name
     units = read_rows.holdings(read_document.extract_file(path)["text"], key)
     if not units:
         raise Refused(f"{account}: {name} lists no units this door can read.")
