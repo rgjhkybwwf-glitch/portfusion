@@ -210,3 +210,23 @@ def test_a_bank_moves_no_figure(store_copy):
     after, headline_after = figures()
     pd.testing.assert_frame_equal(after, changes)
     pd.testing.assert_series_equal(pd.Series(headline_after), pd.Series(headline))
+
+
+@pytest.mark.parametrize("history, argv, code", [
+    ("prices", ["--archive"], 0), ("prices", ["--check"], 0), ("prices", ["--show"], 0),
+    ("prices", [], 2),
+    ("fx", ["--archive"], 0), ("fx", ["--check"], 0), ("fx", ["--show", "USD"], 0),
+    ("fx", ["--rate", "USD", "2026-06-30"], 0), ("fx", ["--rate", "USD"], 2), ("fx", [], 2),
+    ("accounts", ["--archive"], 0), ("accounts", ["--check"], 0), ("accounts", ["--show"], 0),
+    ("accounts", [], 2)])
+def test_each_history_command_answers_or_says_how_it_is_used(store_copy, capsys, history, argv,
+                                                             code):
+    """Every way in, on a copy: an answer, or the usage and exit 2, never a traceback. A check
+    runs after its bank, so the live set is on file."""
+    import importlib
+    command = importlib.import_module(f"portfusion.history.{history}")
+    if argv == ["--check"]:
+        command.main(["--archive"])
+    assert command.main(argv) == code, capsys.readouterr()
+    said = capsys.readouterr()
+    assert said.out or said.err, f"{history} {argv} said nothing"

@@ -836,7 +836,7 @@ def test_a_failure_on_the_SECOND_table_rolls_the_FIRST_one_back(item, store_copy
     the book would look complete and be wrong.
 
     Forced by making the income row render one cell short, which the loader rejects on the
-    read-back. Both files must come out byte-identical."""
+    read-back. Both files must come out byte-identical, and a file the write made is removed."""
     from portfusion.record import schema
     from portfusion.desk.doors import commit as _commit, envelope
     item["evidence"] = dict(GOOD_EVIDENCE)
@@ -856,6 +856,12 @@ def test_a_failure_on_the_SECOND_table_rolls_the_FIRST_one_back(item, store_copy
     for t, original in before.items():
         assert schema.TABLES[t].path.read_bytes() == original, \
             f"{t}.csv was left modified after a refused commit"
+
+    made = store_copy / "made.csv"
+    with pytest.raises(OSError), envelope.atomic(schema.TABLES["buys"].path, made):
+        made.write_text("a file no table held\n")
+        raise OSError("the second table failed")
+    assert not made.exists(), "a file the refused write made was left behind"
 
 
 def test_the_desks_reload_re_reads_every_table_in_the_store():
@@ -1929,17 +1935,30 @@ def test_a_zero_row_document_keeps_its_account_in_the_archived_name():
     assert filing._covers(item) == "Voss ii ISA"
 
 
-def test_a_withdrawn_document_leaves_the_workbench_and_is_not_destroyed(workbench):
-    """The exit, and the whole of its claim: the document is somewhere afterwards."""
-    from portfusion.desk.intake import withdraw
+def test_a_withdrawn_document_leaves_the_workbench_and_is_not_destroyed(workbench, monkeypatch):
+    """The exit, and the whole of its claim: the document is somewhere afterwards. The note of
+    the item working it is archived first, so a note that cannot be archived moves nothing."""
+    from portfusion.desk.doors import commit
+    from portfusion.desk.intake import bench, withdraw
     box, out = workbench
     (box / "note.csv").write_bytes(b"a,b\n1,2\n")
+    working = bench.new_item(document={"name": "note.csv"})
+    archive = commit.ARCHIVE
 
+    monkeypatch.setattr(commit, "ARCHIVE", box / "note.csv")
+    with pytest.raises(OSError):
+        withdraw.withdraw("note.csv", why="not needed")
+    assert (box / "note.csv").exists() and not (out / "note.csv").exists(), "it moved unarchived"
+    assert [i["id"] for i in bench.all_items()] == [working["id"]], "its note left the bench"
+
+    monkeypatch.setattr(commit, "ARCHIVE", archive)
     r = withdraw.withdraw("note.csv", why="not needed")
 
     assert not (box / "note.csv").exists(), "it did not leave the workbench"
     assert (out / "note.csv").read_bytes() == b"a,b\n1,2\n", "the bytes did not survive"
     assert r["returned"] is False, "nothing was already at the destination"
+    assert not bench.all_items(), "its note is still on the bench"
+    assert json.loads((archive / f"{working['id']}.json").read_text())["state"] == "withdrawn"
 
 
 def test_withdrawing_refuses_a_destination_inside_the_repository(workbench):

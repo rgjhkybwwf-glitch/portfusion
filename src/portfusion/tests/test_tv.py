@@ -133,6 +133,19 @@ def test_a_read_that_stalls_is_the_feeds_error_and_not_a_crash(monkeypatch):
         _bare_connection()._rpc("tools/call", {"name": "mcp-tv-get-ohlcv", "arguments": {}})
 
 
+@pytest.mark.parametrize("body, ctype", [
+    ("", "application/json"), ('{"jsonrpc": "2.0", "id": 1}', "application/json"),
+    ('event: message\ndata: {"jsonrpc": "2.0", "id": 7, "result": {}}\n\n', "text/event-stream")])
+def test_a_reply_that_answers_nothing_is_the_feeds_error(monkeypatch, body, ctype):
+    """No body, no result, or a stream with no message for this request: each is no answer, raised
+    as the feed's own error so the sweep names the line, and an empty payload is not data."""
+    monkeypatch.setattr(tv.urllib.request, "urlopen", lambda *a, **k: _Reply(body, ctype))
+    with pytest.raises(tv.TVError, match="no answer to request 1$"):
+        _bare_connection()._rpc("tools/call", {"name": "mcp-tv-get-ohlcv"})
+    with pytest.raises(tv.TVError, match="an empty reply$"):
+        tv._Connection._read("mcp-tv-get-ohlcv", {"structuredContent": {}})
+
+
 def _bare_connection():
     conn = object.__new__(tv._Connection)
     conn.token, conn.session_id, conn.n = "x", None, 0
@@ -141,8 +154,8 @@ def _bare_connection():
 
 class _Reply:
     """What urlopen hands back: headers, and a body read once."""
-    def __init__(self, body):
-        self.body, self.headers = body, {"Content-Type": "application/json"}
+    def __init__(self, body, ctype="application/json"):
+        self.body, self.headers = body, {"Content-Type": ctype}
 
     def read(self):
         return self.body.encode()

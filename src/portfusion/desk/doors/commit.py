@@ -396,5 +396,7 @@ def _archive_document(item: dict):
     if target.exists():
         stem, suffix = target.stem, target.suffix
         target = schema.STATEMENTS / f"{stem}-{item['id']}{suffix}"
+    if target.exists():
+        raise Refused(f"{target.name} is filed already and is never replaced. Nothing was written.")
     shutil.move(str(source), str(target))
     return target

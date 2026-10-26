@@ -973,7 +973,7 @@ def test_the_engines_own_column_names_say_notional(book):
         + "\n'notional' is the store's own word — quarter-nav.csv carries basis 'notional'.")
 
 
-def test_a_pair_is_judged_when_it_is_comparable_and_not_when_it_is_not(book):
+def test_a_pair_is_judged_when_it_is_comparable_and_not_when_it_is_not(book, store_copy):
     """The comparability rule, at its boundaries.
 
     It asks whether the two figures describe the SAME STATE OF THE MARKET. `Book.comparability()`
@@ -1008,6 +1008,27 @@ def test_a_pair_is_judged_when_it_is_comparable_and_not_when_it_is_not(book):
         out = v(row["statement"], row["difference"], row["evidence"],
                 row["comparable"], row["comparability"])
         assert out["verdict"] == "struck-apart", row["account"]
+
+    # AND ITS REFUSALS, each from a reading the book judges in one pass: a week later the marks
+    # are not of its day; on a copy, the same marks struck at a close.
+    pair = rc[rc["comparable"] == True]                    # noqa: E712 — None is not True
+    if pair.empty:
+        pytest.skip("the book holds no reading struck in one pass")
+    account, day, evidence = (pair.iloc[0][c] for c in ("account", "struck_on", "evidence"))
+    week = (pd.Timestamp(day) + pd.Timedelta(days=7)).date().isoformat()
+    apart, why = book.comparability(account, week, evidence)
+    assert apart is False, why
+    assert why.startswith(f"the equity was read on {week} and the marks are from"), why
+    import csv
+    path = store_copy / "price-history.csv"
+    marks = list(csv.DictReader(path.open(newline="", encoding="utf-8")))
+    with path.open("w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=list(marks[0]), lineterminator="\n")
+        w.writeheader()
+        w.writerows({**m, "struck": "close"} if m["date"] == day else m for m in marks)
+    D.reload_store()
+    assert Book().comparability(account, day, evidence) == (
+        False, "a live read compares only with live marks, and these are closes")
 
 
 # =====================================================================================
