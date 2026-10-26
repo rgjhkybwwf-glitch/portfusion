@@ -39,7 +39,7 @@ file and the code disagree, the code is right.
 |---|---|
 | Capital crossing the book's boundary | **capital movement** — `capital-movements.csv`, `Book.capital_movements()` |
 | A broker's document | the broker's own name for it |
-| The up and down colour on the desk | **movement colour** — `house/palette.py`, `MOVEMENTCOL` in `app.js` |
+| The up and down colour on the desk | **movement colour** — `house/palette.py`, `MOVEMENTCOL` in `kit.js` |
 | Ordinary prose | *price movement*, wherever no named figure is at stake |
 
 | Sense | Spelling |
@@ -160,7 +160,7 @@ not *realized*.
 | The judgement | **Why · Research notes** |
 | Who opens the hosted desk | **Reader · Level · Since · Devices · Last signed in · Now · Device · Enrolled · Last used · At · Result · Address · Named as** |
 | A currency as a category, on the Dashboard | **Currency** |
-| What happened, on a capital movement, an income row, a write or a sign-in | **Detail**; a row's detail link opens in `DETAIL`'s order (`app.js`) |
+| What happened, on a capital movement, an income row, a write or a sign-in | **Detail**; a row's detail link opens in `DETAIL`'s order (`kit.js`) |
 
 **Entry price and Traded price are different quantities**: the first is the weighted mean of the
 legs still held, the second what one fill paid.
@@ -251,7 +251,7 @@ positions. `roll_up()` and `MEASURE_BASIS` keep them apart.
 | What retrieves a document | `rules.RETRIEVAL_KINDS` |
 | How a document is recognised | `rules.Evidence.fingerprint` |
 | How an archived document is named | `rules.ARCHIVE_CONVENTION` |
-| Which desk columns wear movement colour | `MOVEMENTCOL` in `app.js` |
+| Which desk columns wear movement colour | `MOVEMENTCOL` in `kit.js` |
 | Currency, region, sector, ticker | open: a new one is not refused, and the Bench offers those in use |
 
 ---

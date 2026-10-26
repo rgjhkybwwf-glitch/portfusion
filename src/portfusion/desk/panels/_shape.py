@@ -1,9 +1,9 @@
 """
 SHAPING A FRAME FOR THE BROWSER — the one implementation.
 
-A panel's job is to hand `app.js` a list of plain dicts. Written once per panel, that drifts
-the two ways copies always do: one copy gets a bug fix the others do not, and two copies of one
-helper under one name come to return different types.
+A panel's job is to hand the desk's script a list of plain dicts. Written once per panel, that
+drifts the two ways copies always do: one copy gets a bug fix the others do not, and two copies of
+one helper under one name come to return different types.
 
 BY COLUMN NAME, NEVER `itertuples()`. `return` is a Python keyword, so pandas renames that
 column on a namedtuple and `getattr(row, "return")` is quietly None for every row. Any frame
