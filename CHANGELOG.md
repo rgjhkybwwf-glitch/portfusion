@@ -74,6 +74,13 @@ prints it.
   by what each opens, so the Bench's commit, research notes, `init`, the stamp and the demo
   generator are listed. Eight hand scans share one helper; four tests that only repeated the
   census are gone. `Naming.rename()` is `Naming.apply()`, so a path's `rename()` counts.
+- **The guard on GitHub draws every desk page.** `tools/desk_smoke.py` asks the demo desk for its
+  page, script and panels with no server; `tools/desk_smoke.mjs` loads them into jsdom and opens
+  each tab, failing on any error, rejected promise, error box or unanswered fetch, at start-up and
+  on each page. A misspelt name crashes a page yet passes `node --check` and every test that reads
+  the script; CI plants one at start-up to prove it is refused. jsdom is pinned in
+  `tools/package-lock.json`, which the advisory check and Dependabot now read too. A dev tool
+  only: a book installs none of it.
 - **The record is built, then taken.** `record/rules.py` read each table into the module as it
   went, so a reload the record refused — a store caught mid-edit, a bad cell — left the refused
   tables beside the old ones, a record no store ever held, until a reload passed. It now reads
