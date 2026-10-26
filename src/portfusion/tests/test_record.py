@@ -242,6 +242,36 @@ def test_a_spread_bet_with_no_contract_is_refused_on_load(store_copy):
         rules.reload_store()
 
 
+@pytest.mark.parametrize("table, which, change, refusal", [
+    ("account-readings", lambda r, D: D.ACCOUNT_KIND.get(r["account"]) == "spread bet",
+     lambda D: dict(funds="100.00", running_pl="0.00", equity="100.01"),
+     "AN ACCOUNT READING IS NOT ITS KIND'S"),
+    ("buys", lambda r, D: D.ACCOUNT_KIND.get(r["account"]) == "shares" and not r["contract"],
+     lambda D: dict(account=next(a for a, k in D.ACCOUNT_KIND.items() if k == "spread bet")),
+     "A LINE'S KIND IS NOT ITS ACCOUNT'S"),
+    ("income", lambda r, D: True, lambda D: dict(ticker="NOLINE.L"),
+     "AN INCOME ROW NAMES A LINE securities.csv DOES NOT HOLD")])
+def test_a_row_the_record_cannot_reconcile_is_refused_on_load(store_copy, table, which, change,
+                                                              refusal):
+    """A reading that breaks IG's arithmetic by a penny, a share bought in a spread-bet account,
+    an income row naming no line: each loads without complaint and is quietly wrong, so the load
+    refuses it by name."""
+    import csv
+    from portfusion.record import rules
+    path = store_copy / f"{table}.csv"
+    rows = list(csv.DictReader(path.open(newline="", encoding="utf-8")))
+    row = next((r for r in rows if which(r, rules)), None)
+    if row is None or table != "income" and "spread bet" not in rules.ACCOUNT_KIND.values():
+        pytest.skip(f"the book holds no {table} row this is built from")
+    row.update(change(rules))
+    with path.open("w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=list(rows[0]), lineterminator="\n")
+        w.writeheader()
+        w.writerows(rows)
+    with pytest.raises(ValueError, match=re.escape(refusal)):
+        rules.reload_store()
+
+
 @needs("buys")
 @pytest.mark.parametrize("bet", [False, True])
 def test_a_buy_whose_figure_is_in_the_other_kinds_column_is_refused_on_load(store_copy, bet):

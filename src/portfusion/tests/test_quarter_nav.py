@@ -186,16 +186,31 @@ def test_the_desks_quarter_navs_are_the_records():
         assert round(shown[d], 2) == nav, f"Performance's net asset value at {d}"
 
 
-@needs("quarter-nav")
-def test_a_quarter_return_only_exists_where_both_endpoints_have_a_nav():
+@needs("quarter-nav", "current-prices")
+def test_a_quarter_return_only_exists_where_both_endpoints_have_a_nav(store_copy):
     """A return may only sit on a row where BOTH endpoints carry a net asset value, because a
     return measured from a blank is not a return. Every row of the series carries both ends,
-    for the book and for each account, so the check is on the row itself.
+    for the book and for each account, so the check is on the row itself. The open quarter's
+    "to date" row too: on a copy, one live mark a week past the newest.
     """
+    import csv
+    import datetime as dt
+    path = store_copy / "current-prices.csv"
+    rows = list(csv.DictReader(path.open(newline="", encoding="utf-8")))
+    mark = max((r for r in rows if r["mark_key"] not in D.STATEMENT_PRICED),
+               key=lambda r: r["as_of"])
+    day = (dt.date.fromisoformat(mark["as_of"]) + dt.timedelta(days=7)).isoformat()
+    mark.update(as_of=day, struck="live", at=f"{day}T12:00Z")
+    with path.open("w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=list(rows[0]), lineterminator="\n")
+        w.writeheader()
+        w.writerows(rows)
+    D.reload_store()
     b = Book()
     for frame in (b.quarter_returns(include_open=True),
                   b.account_quarter_returns(include_open=True)):
         assert len(frame), "the quarter series has no rows"
+        assert frame["quarter"].str.endswith(" to date").any(), "the open quarter has no row"
         for r in frame.to_dict("records"):
             if r["return"] == r["return"] and r["return"] is not None:
                 for end in ("opening_nav", "closing_nav"):

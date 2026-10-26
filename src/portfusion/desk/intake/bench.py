@@ -43,7 +43,7 @@ BENCH_DIR = schema.INBOX / ".bench"
 # `withdrawn` is the other terminal state. A document that produced no rows ends here rather
 # than at `archived`, which would claim it was filed as evidence. `desk/intake/withdraw.py` is the only
 # thing that sets it, and it archives the note in the same breath exactly as a commit does.
-STATES = ("open", "proposed", "approved", "written", "archived", "withdrawn")
+STATES = ("open", "proposed", "written", "archived", "withdrawn")
 
 #: The two judgement fields, and they are the RECORD's names — `store/reasoning.csv` has these
 #: columns. Naming them anything else here would be a second vocabulary for one idea.

@@ -180,6 +180,9 @@ def main(argv: list[str]) -> int:
         log.info("  ✓ every live rate is on file")
     elif "--rate" in argv:
         i = argv.index("--rate")
+        if len(argv) < i + 3:
+            log.error("--rate takes a currency and a date: --rate USD 2026-06-30")
+            return 2
         ccy, date = argv[i + 1], argv[i + 2]
         r = rate_on(ccy, date)
         log.info(f"  GBP/{ccy} on {date}: {r if r is not None else 'no spot rate on or before that date'}")

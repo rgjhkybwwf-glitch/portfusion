@@ -116,6 +116,12 @@ prints it.
   device revoked part-way through came back, signed in. The passkeys, the readers and the sessions
   in memory now change under one lock, and a session opens only while its passkey is on file. A
   restart's exit waits for a write in progress to finish, as every door's write does.
+- **A document is never filed over another.** A commit files a document under its convention's
+  name, or that name with the item's id when the first is taken; when both are, the commit is now
+  refused and nothing is written, where the document on file was replaced. A TradingView reply
+  that answers nothing now fails only its own line, where it stopped the whole sweep.
+  `python3 -m portfusion.history.fx --rate` without a currency and a date says how it is used,
+  where it crashed.
 
 ## 0.3.2 — beta, 24 Oct 2026
 
