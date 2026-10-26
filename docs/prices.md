@@ -6,6 +6,7 @@ How the book's marks are fetched, when, and the three rules that stop a bad one 
 portfusion desk                              # Price Refresh: fetch, tick, write
 python3 -m portfusion.feeds.refresh          # bank, then sweep; --on D for a past day's closes
 python3 -m portfusion.feeds.refresh --check  # are both histories current?
+python3 -m portfusion.history.prices --check # is the outgoing set banked? .fx and .accounts alike
 ```
 
 The terminal sweep banks the current marks, then prints; it replaces no mark. On the desk, the
@@ -28,6 +29,11 @@ older than `PRICE_AGE_LIMIT`.
 **A quarter end needs no sweep of its own.** The freeze takes each line's nearest mark within
 `CLOSE_CHECK_WINDOW_DAYS`. For that day's closes instead, use Price Refresh's *closes of* date,
 from the next day on. A close outranks a live read of its own day.
+
+```bash
+portfusion freeze 2026-09-30          # what the freeze would write, and what is not ready
+portfusion freeze 2026-09-30 --write  # write it; `portfusion record` says when one is owed
+```
 
 **A rate on a date is that day's close.** The rates the record still owes are listed under
 *Rates the record lacks* on Price Refresh, and fetched in one press.
