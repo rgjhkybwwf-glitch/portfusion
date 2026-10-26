@@ -350,11 +350,9 @@ Object.assign(WIRE, {
                      struck: row.struck, at: row.at }, "fetched");
         });
         notes.push(`TradingView ${(tv.prices || []).length + (tv.rates || []).length}`);
-        /* THE QUOTE SCREEN'S OWN ANSWER, when it is not `ok`: every line still trading
-           waits on it, so one refusal is named once here as well as on each line. */
-        if (tv.quote_screen && tv.quote_screen !== "ok") {
-          notes.push(`<span class="stale">quote screen — ${esc(tv.quote_screen)}</span>`);
-        }
+        /* TRADINGVIEW'S FAILURE, said once in the feed's own words (`tv.sweep()`'s notice), as
+           well as on each line it left unpriced. */
+        if (tv.notice) notes.push(`<span class="stale">${esc(tv.notice)}</span>`);
         (tv.failed || []).forEach((f) => {
           why[f.wanted ? `${f.key}@${f.wanted}` : f.key] = f.why;
           notes.push(`<span class="stale">${esc(f.key)}: ${esc(f.why)}</span>`);

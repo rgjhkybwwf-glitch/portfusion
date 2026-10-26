@@ -339,7 +339,7 @@ def test_a_trading_line_is_a_live_read_at_its_own_instant_and_a_shut_one_its_las
     assert (by[PENCE]["struck"], by[PENCE]["at"]) == ("live", "2026-09-29T13:00:00Z")
     assert (by[THIRD]["struck"], by[THIRD]["at"]) == ("live", "2026-09-29T12:45:00Z"), \
         "a delayed quote describes the market fifteen minutes before it was read"
-    assert not r["failed"]
+    assert not r["failed"] and r["notice"] == ""
 
 
 @HOLDS_LINES
@@ -380,6 +380,8 @@ def test_when_the_quote_screen_refuses_the_trading_lines_are_unpriced_and_named(
     assert all("429" in f["why"] and "the quote screen gave no price" in f["why"]
                for f in r["failed"])
     assert r["quote_screen"].startswith("refused")
+    assert r["notice"].startswith("TradingView failed: no quote for") and "refused" in r["notice"]
+    assert PENCE in r["notice"] and THIRD in r["notice"] and US not in r["notice"]
 
 
 @HOLDS_LINES
@@ -388,6 +390,45 @@ def test_a_line_the_vendor_does_not_return_is_reported_and_never_zero():
     assert all(p["price"] for p in r["prices"])
     assert {f["key"] for f in r["failed"]} == {PENCE, THIRD}
     assert all("left this symbol out, and gave no reason" in f["why"] for f in r["failed"])
+    assert r["notice"].endswith("— the quote screen gave none")
+
+
+def _uk_close(ticker):
+    """`ticker`'s venue close on the day these tests sweep, in summer time, as a UTC instant."""
+    D = tv._rules()
+    ccy = {r[0]: r[2] for r in D.CURRENT_PRICES}[ticker]
+    h, m = (int(x) for x in D.VENUE_CLOSE_UK.get(ccy, D.VENUE_CLOSE_UK_DEFAULT).split(":"))
+    return dt.datetime(2026, 9, 29, h - 1, m, tzinfo=UTC)
+
+
+@HOLDS_LINES
+def test_a_delayed_venue_just_past_its_close_never_prices_from_its_forming_bar():
+    """A delayed venue's day bar keeps forming until its close reaches the delayed feed. Read in
+    those minutes with no quote — and no line on its exchange quoted to say its delay — a line is
+    held to the longest delay TradingView declares and is unpriced, never its forming bar written
+    as the day's close. Once that delay has passed, the bar is the close."""
+    exchange = SYM[THIRD].split(":")[0]
+    quotes = {s: q for s, q in _conn().quotes.items() if s.split(":")[0] != exchange}
+    r = _sweep(_conn(quotes=quotes), _uk_close(THIRD) + dt.timedelta(minutes=5))
+    assert THIRD not in {p["mark_key"] for p in r["prices"]}
+    assert THIRD in r["notice"]
+    later = _uk_close(THIRD) + dt.timedelta(minutes=tv.LONGEST_DELAY + 1)
+    by = {p["mark_key"]: p for p in _sweep(_conn(quotes=quotes), later)["prices"]}
+    assert (by[THIRD]["struck"], by[THIRD]["as_of"], by[THIRD]["raw"]) == \
+        ("close", "2026-09-29", 30.4)
+
+
+@HOLDS_LINES
+def test_a_line_with_no_quote_takes_its_venues_delay_from_another_line_on_its_exchange():
+    """Another line on its exchange quoted fifteen minutes behind: sixteen minutes past the close
+    the delayed feed has shut too, and the line prices at its close. Not knowing the delay, it is
+    held to the longest and unpriced."""
+    ccy = {r[0]: r[2] for r in tv._rules().CURRENT_PRICES}[THIRD]
+    at = _uk_close(THIRD) + dt.timedelta(minutes=16)
+    line = (_conn(), THIRD, SYM[THIRD], UNIT[THIRD], None, "left out", at, ccy)
+    assert tv._one_line(*line, venue_delay=15)["struck"] == "close"
+    with pytest.raises(tv.TVUnquoted):
+        tv._one_line(*line)
 
 
 def _quote_screen_answers(conn, answer):

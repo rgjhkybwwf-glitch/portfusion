@@ -14,7 +14,8 @@ not a price: a line quoting 50.0p can have a part-formed day bar reading 49.7p. 
 bar: the bars can run on a delayed feed while the quote streams live, so one standing in for a
 quote is a stale price looking current. Completed bars are exact. So when the quote screen,
 TradingView's scanner, refuses, cannot be reached, or leaves a line out, a line still trading is
-REPORTED UNPRICED with the screen's reason, and the next sweep asks again.
+REPORTED UNPRICED with the screen's reason, the sweep's `notice` says TradingView failed, and the
+next sweep asks again.
 
 A REFUSAL ARRIVES AS A NORMAL REPLY — `success: false` inside HTTP 200, or `isError` with a reason
 in plain text. It is raised as a refusal and named, never read as data. A reply that is only
@@ -104,6 +105,11 @@ class TVError(Exception):
 
 class TVRefused(TVError):
     """TradingView answered and declined — `success: false` or `isError` in a normal reply."""
+
+
+class TVUnquoted(TVError):
+    """A line still trading that the quote screen gave no price: TradingView's failure, never the
+    book's, and the sweep's `notice` says so."""
 
 
 def _assert_allowed(tool: str) -> None:
@@ -407,6 +413,12 @@ def _complete_bar(bars: list[dict], on: str) -> tuple[str, float]:
 #: its quote screen.
 AT_ONCE = 5
 
+#: A LINE WITH NO QUOTE OF ITS OWN takes its venue's delay from another line the quote screen
+#: answered on that exchange, else this: the longest delay TradingView declares
+#: (`delayed_streaming_1200`). Its day bar keeps forming until the close reaches the delayed feed,
+#: so a venue is shut for it only once the longest delay has passed.
+LONGEST_DELAY = 20
+
 
 def _utc(now: _dt.datetime) -> str:
     return now.astimezone(_dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -457,17 +469,19 @@ def _quote_screen(conn, symbols: list[str]) -> tuple[dict, str, dict]:
     return quotes, screen, absent
 
 
-def _one_line(conn, key, symbol, unit, quote, absent, now, record_currency=None):
+def _one_line(conn, key, symbol, unit, quote, absent, now, record_currency=None, venue_delay=None):
     """Price one line: its quote if its venue is trading, else its latest session's close from the
-    bars. `absent` is why there is no quote, when there is none. Returns the row, or raises TVError
-    with the reason it is unpriced."""
+    bars. `absent` is why there is no quote, when there is none; `venue_delay` is the delay another
+    line on its exchange was quoted with. Returns the row, or raises TVError with the reason it is
+    unpriced — TVUnquoted when only the quote is missing."""
     from portfusion.record import rules as D
     today = D.uk_date(_utc(now))
     bars = conn.call("mcp-tv-get-ohlcv", symbol=symbol, interval="1D", count=5)["bars"]
     last_day, last_close = _complete_bar(bars, today)
     currency, divisor = _record_unit(unit)
     delay = _delay_minutes((quote or {}).get("update_mode"))
-    trading = _still_trading(record_currency, now, delay or 0, last_day == today)
+    held_to = next(d for d in (delay, venue_delay, LONGEST_DELAY) if d is not None)
+    trading = _still_trading(record_currency, now, held_to, last_day == today)
 
     if trading:
         if quote is not None and quote.get("currency") != unit:
@@ -476,7 +490,7 @@ def _one_line(conn, key, symbol, unit, quote, absent, now, record_currency=None)
         if quote is None or delay is None or quote.get("close") is None:
             why = absent if quote is None else (f"its quote has no price or an unknown delay "
                                                 f"({quote.get('update_mode')!r})")
-            raise TVError(f"{symbol} is trading, and the quote screen gave no price: {why}")
+            raise TVUnquoted(f"{symbol} is trading, and the quote screen gave no price: {why}")
         raw, struck = float(quote["close"]), "live"
         at = _utc(now - _dt.timedelta(minutes=delay))
         source = (f"TradingView quote {symbol} {raw} {unit}"
@@ -496,7 +510,8 @@ def sweep(tickers=None, currencies=None, now=None, conn=None) -> dict:
 
     The book decides what is priced: every share `current-prices.csv` holds that is not a contract
     and not carried, and every live rate that is not carried. A line this feed cannot price comes
-    back in `failed` with its reason — never dropped, never zero.
+    back in `failed` with its reason — never dropped, never zero — and `notice` says plainly when
+    TradingView gave a line still trading no quote.
     """
     from portfusion.record import rules as D
     now = now or _dt.datetime.now(_dt.timezone.utc)
@@ -513,14 +528,17 @@ def sweep(tickers=None, currencies=None, now=None, conn=None) -> dict:
     wanted = {t: SYMBOLS[t]["symbol"] for t in tickers if t in SYMBOLS}
     wanted.update({c: rate_symbol(c) for c in currencies})
     quotes, screen, absent = _quote_screen(conn, sorted(set(wanted.values())))
+    venue_delay = {s.split(":")[0]: d for s, q in quotes.items()
+                   if (d := _delay_minutes((q or {}).get("update_mode"))) is not None}
 
     def priced(job):
         key, symbol, unit, record_currency = job
         try:
             return _one_line(conn, key, symbol, unit, quotes.get(symbol), absent.get(symbol), now,
-                             record_currency)
+                             record_currency, venue_delay.get(symbol.split(":")[0]))
         except TVError as e:
-            return {"key": key, "symbol": symbol, "why": str(e)}
+            return {"key": key, "symbol": symbol, "why": str(e),
+                    "unquoted": isinstance(e, TVUnquoted)}
 
     jobs = ([(t, SYMBOLS[t]["symbol"], SYMBOLS[t]["unit"], record_ccy.get(t))
              for t in tickers if t in SYMBOLS]
@@ -546,8 +564,12 @@ def sweep(tickers=None, currencies=None, now=None, conn=None) -> dict:
         row.pop("key")
         row.update(rate=row.pop("price"))
         rates.append(row)
+    # A LINE STILL TRADING WITH NO QUOTE is TradingView's failure, told once in plain words.
+    unquoted = [f["key"] for f in failed if f.pop("unquoted", False)]
+    notice = (f"TradingView failed: no quote for {', '.join(unquoted)} — the quote screen "
+              f"{screen if screen != 'ok' else 'gave none'}" if unquoted else "")
     return {"now": _utc(now), "prices": prices, "rates": rates, "failed": failed,
-            "quote_screen": screen}
+            "quote_screen": screen, "notice": notice}
 
 
 def rate_closes(wanted: dict, conn=None, today=None) -> dict:
