@@ -35,9 +35,9 @@ class Quarters(Core):
     def _classified(self) -> pd.DataFrame:
         """quarter-nav.csv, with every basis checked against the two sets above.
 
-        The ONE place the table is validated. A basis nobody has classified must not be
-        silently dropped OR silently summed; refusing is the only answer that cannot be
-        quietly wrong.
+        The loader refuses a value outside `schema.CONTRIBUTIONS`; this refuses one the two sets
+        do not classify. A basis nobody has classified must not be silently dropped OR silently
+        summed; refusing is the only answer that cannot be quietly wrong.
         """
         q = self.quarter_nav()
         unknown = set(q["contribution"]) - self.NAV_BASES - self.EXPOSURE_BASES

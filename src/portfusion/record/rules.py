@@ -665,8 +665,7 @@ def _build() -> dict:
         as_of: str
         account: str
         amount: float        # this account's CONTRIBUTION to net asset value
-        contribution: str    # HOW it contributes: "positions at market" | "account equity" |
-                             # "notional" (glossary §2).
+        contribution: str    # HOW it contributes: schema.CONTRIBUTIONS
         quality: str         # sourced | derived — schema.QUALITIES
         source: str
 

@@ -5,6 +5,10 @@ prints it.
 
 ## Unreleased
 
+- **A quarter's `contribution` is a closed list.** `quarter-nav.csv`'s `contribution` is
+  `positions at market`, `account equity` or `notional`, and the loader now refuses a book holding
+  any other value, naming the row; before, the engine refused it when a figure was first asked for.
+  The freeze writes only these three.
 - **The FX history keeps every rate.** A bank dropped the live rates read between the days the
   book is valued on, but What Changed sets a share line against the rate of the day before its
   mark, which may be one of them: a refresh could move a line's FX effect. 0.2.1's "No figure
