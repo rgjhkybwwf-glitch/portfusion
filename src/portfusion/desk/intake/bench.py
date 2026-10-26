@@ -44,11 +44,6 @@ def bench_dir():
     return schema.inbox() / ".bench"
 
 
-# `withdrawn` is the other terminal state. A document that produced no rows ends here rather
-# than at `archived`, which would claim it was filed as evidence. `desk/intake/withdraw.py` is the only
-# thing that sets it, and it archives the note in the same breath exactly as a commit does.
-STATES = ("open", "proposed", "written", "archived", "withdrawn")
-
 #: The two judgement fields, and they are the RECORD's names — `store/reasoning.csv` has these
 #: columns. Naming them anything else here would be a second vocabulary for one idea.
 WHY_FIELDS = ("why_entered", "why_exited")
@@ -448,13 +443,13 @@ def _register_problems(rows: list[dict]) -> list[str]:
         out.append(f"{company}: a new company needs its line")
     for r in new["securities"]:
         if v(r, "company") not in companies | new_companies:
-            out.append(f"{v(r, 'code')}: {v(r, 'company')} has no company row")
+            out.append(f"{v(r, 'ticker')}: {v(r, 'company')} has no company row")
     for r in new["contracts"]:
         name = v(r, "contract")
         if name in contracts:
             out.append(f"{name} is a contract already")
         if v(r, "ticker") not in codes | new_codes:
-            out.append(f"{name}: {v(r, 'code')} is not a line")
+            out.append(f"{name}: {v(r, 'ticker')} is not a line")
         if not any(v(t, "contract") == name and v(t, "ticker") == v(r, "ticker") for t in trades):
             out.append(f"{name}: a new contract needs its trade, on its line")
     return out
@@ -633,6 +628,23 @@ def already_in_the_record(item: dict) -> list[str]:
     return out
 
 
+def unusual_signs(item: dict) -> list[str]:
+    """Each income row whose amount's sign is not the one its category usually carries
+    (`schema.USUAL_SIGN`). A blank or unreadable amount is the rows gate's to report."""
+    out = []
+    for i, row in enumerate(item.get("rows") or [], 1):
+        values = row.get("values") or {}
+        usual = row.get("table") == "income" and schema.USUAL_SIGN.get(values.get("category"))
+        try:
+            amount = float(str(values.get("amount") or "").replace(",", ""))
+        except ValueError:
+            continue
+        if usual and amount and (amount > 0) != (usual > 0):
+            out.append(f"row {i} (income): a {values['category']} of {amount:,.2f}, where one "
+                       f"is usually money {'in' if usual > 0 else 'out'}")
+    return out
+
+
 # =================================================================================================
 # THE GATES — every one of them must be green before a row may be approved.
 # =================================================================================================
@@ -759,6 +771,15 @@ def gates(item: dict) -> list[dict]:
                    else "; ".join(unacknowledged)),
         "findings": findings,
     })
+
+    # A SIGN ITS CATEGORY DOES NOT USUALLY CARRY. The quote check cannot see a sign (`verify`),
+    # and it is the one figure the reader composes; acknowledgeable, as the duplicates are.
+    signs = unusual_signs(item)
+    unconfirmed = [f for f in signs if f not in acknowledged]
+    out.append({"name": "signs as the category's", "ok": not unconfirmed,
+                "detail": "; ".join(unconfirmed) if unconfirmed
+                          else "every income row's sign is its category's, or confirmed",
+                "findings": signs, "ack": "I have checked these signs"})
 
     # TWO WHY FIELDS, because the record has two. Each is appended to `store/reasoning.csv`
     # under the trade's date, and Holdings and Round Trips show both. One field could only ever

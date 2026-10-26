@@ -206,6 +206,10 @@ KINDS = ("shares", "spread bet")
 #: a line's currency, sector and region are `required` all the same, so none is ever blank.
 #: `rules.POSITION_INCOME` and `rules.ACCOUNT_INCOME` split these, each into exactly one.
 INCOME_CATEGORIES = ("Dividend", "Funding interest", "Cash interest", "Fee")
+#: THE SIGN AN INCOME AMOUNT USUALLY CARRIES, by category: money in is positive. Funding interest
+#: is either, as a short bet is paid it. The Bench asks the owner to confirm another sign
+#: (`bench.gates()`): a dividend charged on a short, or a fee refunded, is real.
+USUAL_SIGN = {"Dividend": 1, "Cash interest": 1, "Fee": -1}
 
 SECURITIES = Table(
     name="securities",

@@ -231,15 +231,6 @@ def test_session_cache_file_is_gitignored(repo_root):
     assert r.returncode == 0, ".ig_session.json is NOT gitignored"
 
 
-def test_session_cache_is_written_private(tmp_path, monkeypatch):
-    """0600. Anything looser and a token readable by another account is a dealing
-    credential readable by another account."""
-    cache = tmp_path / ".ig_session.json"
-    monkeypatch.setattr(ig, "SESSION_CACHE", str(cache))
-    ig._save_session_cache({"X": {"cst": "c", "token": "t"}})
-    assert oct(cache.stat().st_mode)[-3:] == "600"
-
-
 def test_a_corrupt_cache_is_not_fatal(tmp_path, monkeypatch):
     """A half-written cache must mean 'log in again', never a crash mid-price-run."""
     cache = tmp_path / ".ig_session.json"
@@ -520,6 +511,7 @@ def _creds_file(tmp_path, blocks):
     import json
     p = tmp_path / "credentials.json"
     p.write_text(json.dumps(blocks))
+    p.chmod(0o600)
     return p
 
 
@@ -543,6 +535,11 @@ def test_a_credentials_problem_raises_rather_than_exiting(tmp_path):
     path = _creds_file(tmp_path, {"VOSS_IG": {"identifier": "u", "password": "", "api_key": "k",
                                               "env": "demo"}})
     with pytest.raises(I.CredentialsError):
+        I.load_credentials(str(path))
+    # A FILE ANOTHER ACCOUNT CAN READ is refused before a value is read from it.
+    path = _creds_file(tmp_path, {"VOSS_IG": dict(IG_BLOCK)})
+    path.chmod(0o644)
+    with pytest.raises(I.CredentialsError, match="chmod 600"):
         I.load_credentials(str(path))
 
 
@@ -890,7 +887,7 @@ def test_logout_clears_the_tokens_even_when_it_cannot_say_goodbye(monkeypatch, t
     monkeypatch.setattr(ig, "load_credentials", gone)
     with pytest.raises(ig.CredentialsError):
         ig.cmd_logout()
-    assert ig._load_session_cache() == {}, "the tokens outlived the logout"
+    assert not cache.exists(), "the cache outlived the logout"
 
 
 

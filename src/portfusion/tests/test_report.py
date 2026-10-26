@@ -552,13 +552,26 @@ def test_another_accounts_statement_does_not_put_this_one_on_file():
 
 
 @needs("quarter-nav", "buys")
-def test_no_check_answers_none_never_nan():
+def test_no_check_answers_none_never_nan(monkeypatch):
     """No reading at all answers None in every column. pandas 3 stores a missing str as NaN,
-    which is truthy, and the page would print "nan"."""
+    which is truthy, and the page would print "nan". A quarter that opens at nothing has no
+    gain, and its cell is a dash in no colour."""
+    import re
     b = Book()
     before = b.quarter_evidence("2020-03-31")
     assert list(before["account"]) == list(D.ACCOUNT_ORDER)
     assert before[["as_of", "document", "held"]].map(lambda v: v is None).all().all()
+
+    real = Book.quarter_returns
+
+    def opened_at_nothing(self, *a, **k):
+        q = real(self, *a, **k)
+        return pd.concat([q.iloc[:1].assign(**Book._dietz_row(0.0, 0.0, 0.0, 0.0, 0.0)), q],
+                         ignore_index=True)
+    monkeypatch.setattr(Book, "quarter_returns", opened_at_nothing)
+    page = render(_frozen_quarters()[-1])
+    assert not re.search(r"\bnan\b", page, re.I), "a blank printed as nan"
+    assert '<td class="n dim">—</td>' in page, "a blank gain wears a colour or a figure"
 
 
 def test_a_quarter_end_cites_a_broker_check_or_says_there_is_none():

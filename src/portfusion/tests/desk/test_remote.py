@@ -758,10 +758,13 @@ def test_every_sign_in_and_refusal_is_logged_with_its_device_and_address(door):
                            "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 "
                            "Safari/604.1", "x-nf-client-connection-ip": "198.51.100.4"}
     pk = SoftPasskey()
+    auth.log("refused", "198.51.100.9", now=time.time() - (auth.SIGNINS_KEEP_DAYS + 1) * 86400)
+    assert oct(auth.SIGNINS.stat().st_mode & 0o777) == "0o600", "the log was made readable"
     _enrol(door, pk, _code("rowe", "principal"), headers=phone)
     door.cookies.clear()
     _sign_in(door, pk, headers=phone)
     door.post("/auth/enrol/options", json={"code": "WRON-GGGG"}, headers=HOSTED)
+    assert "198.51.100.9" not in auth.SIGNINS.read_text(), "a line past its age stayed"
     lines = auth.signins()
     assert [line["result"] for line in lines] == ["refused", "signed in", "enrolled"]
     assert lines[1]["who"] == "rowe" and lines[1]["device"] == "iPhone · Safari"

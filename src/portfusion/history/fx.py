@@ -184,6 +184,11 @@ def main(argv: list[str]) -> int:
             log.error("--rate takes a currency and a date: --rate USD 2026-06-30")
             return 2
         ccy, date = argv[i + 1], argv[i + 2]
+        try:
+            _dt.date.fromisoformat(date)
+        except ValueError:
+            log.error(f"--rate takes a date as YYYY-MM-DD, not {date!r}")
+            return 2
         r = rate_on(ccy, date)
         log.info(f"  GBP/{ccy} on {date}: {r if r is not None else 'no spot rate on or before that date'}")
     elif "--show" in argv:

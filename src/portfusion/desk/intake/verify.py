@@ -10,8 +10,10 @@ against their memory. A figure that was never on the page cannot get through.
 It is a module of its own because it has nothing to do with prompting: it is the safety
 argument, and worth being able to read apart from the guide a session reads.
 
-WHAT IT DELIBERATELY DOES NOT VERIFY: MAGNITUDE — `_digits` says why. The quote covers it,
-sitting under the field where it can be read.
+WHAT IT DELIBERATELY DOES NOT VERIFY: MAGNITUDE AND SIGN — `_digits` says why. The quote covers
+the magnitude, sitting under the field where it can be read; the sign is the one figure the reader
+composes, and the Bench asks the owner to confirm one its category does not usually carry
+(`bench.unusual_signs()`).
 
 IT TOUCHES NOTHING. No network, no disk, no state — every function here is a pure one over the
 cell and the document text it was read from.
@@ -46,7 +48,8 @@ def _digits(text: str) -> str:
 
     So this tolerates a shift of the decimal point and NOTHING ELSE. A transposition (4859 for
     4895) fails. A figure that was never on the page fails. What it does not verify is
-    MAGNITUDE — and that is what the quote is for, sitting under the field where it can be read.
+    MAGNITUDE — that is what the quote is for, sitting under the field where it can be read — nor
+    SIGN, which a statement prints as a column, a word or a bracket.
     """
     digits = re.sub(r"\D", "", text or "")
     # ZERO IS A NUMBER: stripped to nothing, a value of 0 would skip the check that it stands in

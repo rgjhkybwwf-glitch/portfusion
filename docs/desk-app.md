@@ -54,7 +54,7 @@ only, deploy previews off, and your domain on it. Then set the proxy secret; run
 which git ignores. This makes one and puts it on the clipboard, never the screen:
 
 ```bash
-python3 -c "import json,secrets,pathlib; s=secrets.token_urlsafe(32); p=pathlib.Path('.desk_proxy_secret.json'); p.write_text(json.dumps({'secret': s})); p.chmod(0o600); print(s, end='')" | pbcopy
+python3 -c "import json,os,secrets; s=secrets.token_urlsafe(32); f=os.open('.desk_proxy_secret.json', os.O_WRONLY|os.O_CREAT|os.O_EXCL, 0o600); os.write(f, json.dumps({'secret': s}).encode()); os.close(f); print(s, end='')" | pbcopy
 ```
 
 Until both hold the same value, every request is refused, and the Access page says why.

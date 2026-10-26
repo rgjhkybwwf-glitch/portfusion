@@ -159,7 +159,7 @@ def account_from(text: str) -> tuple[str | None, str]:
         return [(r[0], str(r[3])) for r in schema.load("accounts") if str(r[3]).strip()]
     try:
         accounts = _guarded(_load)
-    except Exception:
+    except RecordUnavailable:
         return None, ""
 
     hits = []
