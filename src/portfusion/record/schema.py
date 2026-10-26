@@ -647,9 +647,6 @@ SETTING_KEYS = (
     "record_begins",        # the first day of the record; the opening is the day before
     "reasoning_owed_from",  # a thesis or an exit reason is owed for a position opened or closed from here
     "first_report",         # the first quarter end the quarterly report is built for
-    "tv_list_live",         # the TradingView flag lists, by id: Live, Exit and Entry
-    "tv_list_exit",
-    "tv_list_entry",
     "rate_carried",         # currencies whose live rate is not refreshed, space-separated
     # WHERE THIS BOOK IS PUBLISHED AND WHAT IT READS BESIDE ITSELF. Each is optional: without one,
     # the feature that needs it declines and names the key, so a new book starts with none.

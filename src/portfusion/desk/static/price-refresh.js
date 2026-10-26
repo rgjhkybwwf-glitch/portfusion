@@ -381,16 +381,6 @@ Object.assign(WIRE, {
         .filter((tr) => !fields(tr)[figure[tr.dataset.kind]])
         .forEach((tr) => unpriced(tr, why[tr.dataset.key] || "not returned by this sweep"));
 
-      /* THE FLAG LISTS ARE CHECKED, NEVER CHANGED: a disagreement is named beside the result,
-         in the feed's own words (feeds/tv.py:watchlist_check). */
-      const wl = res.watchlist;
-      if (wl && wl.ok === false) {
-        notes.push(`<span class="stale">flag lists: ${failed(wl.error)}</span>`);
-      } else if (wl) {
-        (wl.findings || []).filter((f) => f.items.length).forEach((f) => notes.push(
-          `<span class="stale">${esc(f.items.join(", "))} ${esc(f.said)}</span>`));
-      }
-
       /* WHAT CAME BACK AND WHAT DID NOT, each vendor in turn: a filled row is
          its own receipt, so the line counts nothing else. */
       out.innerHTML = `<p class="muted">${notes.join(" · ")}</p>`;

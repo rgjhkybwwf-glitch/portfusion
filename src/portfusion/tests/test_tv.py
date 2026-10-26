@@ -26,9 +26,8 @@ def _t(stamp: str) -> int:
 class FakeConnection:
     """Answers tool calls from canned replies, through the real allowlist."""
 
-    def __init__(self, quotes=None, bars=None, refuse_quotes=None, watchlist=None, minutes=None,
-                 hits=None):
-        self.quotes, self.bars, self.refuse, self.wl = quotes or {}, bars or {}, refuse_quotes, watchlist
+    def __init__(self, quotes=None, bars=None, refuse_quotes=None, minutes=None, hits=None):
+        self.quotes, self.bars, self.refuse = quotes or {}, bars or {}, refuse_quotes
         self.minutes, self.hits = minutes or {}, hits or []
         self.calls = []
 
@@ -48,8 +47,6 @@ class FakeConnection:
             if args["symbol"] not in self.bars:
                 raise tv.TVRefused(f"{tool}: unknown symbol {args['symbol']}")
             return {"success": True, "bars": self.bars[args["symbol"]]}
-        if tool == "mcp-watchlist-get-watchlist":
-            return {"watchlist": self.wl}
         if tool == "mcp-tv-search-symbols":
             return {"success": True, "data": {"count": len(self.hits), "symbols": self.hits}}
         raise AssertionError(tool)
@@ -79,11 +76,10 @@ def test_a_tool_nobody_has_considered_is_refused_too():
         tv._assert_allowed(allowed)
 
 
-def test_the_allowlist_is_five_reads_and_a_sixth_is_a_decision():
+def test_the_allowlist_is_three_reads_and_a_fourth_is_a_decision():
     """Pinned, so widening it shows up in a diff."""
     assert set(tv._ALLOWED) == {
-        "mcp-tv-get-symbol-data-batch", "mcp-tv-get-ohlcv", "mcp-tv-search-symbols",
-        "mcp-watchlist-get-watchlist", "mcp-watchlist-list-watchlists"}
+        "mcp-tv-get-symbol-data-batch", "mcp-tv-get-ohlcv", "mcp-tv-search-symbols"}
     assert not set(tv._ALLOWED) & set(tv._REFUSED)
 
 
@@ -604,66 +600,6 @@ def test_a_carried_rate_is_not_fetched(monkeypatch):
     monkeypatch.setattr(D, "RATE_CARRIED", {held[0]: "planted for the test"})
     assert tv.rate_currencies() == held[1:]
     assert tv.rate_symbol("USD") == "FX_IDC:GBPUSD"
-
-
-@needs("contracts", "current-prices")
-def test_every_contract_the_book_holds_has_a_symbol_for_the_live_list():
-    """The contracts PRICED NOW — LEG_CONTRACT also names closed legs. Each is on the flag lists
-    as the symbol of the security its legs are in."""
-    from portfusion.record import rules as D
-    priced = {r[0] for r in D.CURRENT_PRICES} & set(D.LEG_CONTRACT.values())
-    assert priced, "no contract is priced — check this test's premise"
-    for contract in priced:
-        assert tv.flag_symbols().get(contract), contract
-
-
-# =====================================================================================
-# THE FLAG LISTS — reported, never changed
-# =====================================================================================
-
-def _said(check):
-    return {f["said"]: f["items"] for f in check["findings"] if f["items"]}
-
-
-@HOLDS_LINES
-def test_the_lists_agree_with_the_book():
-    """Every line held flagged Live, the contracts by their underlying, Exit empty, two Entry
-    candidates not held. A section header is not a symbol. The names are the loaded book's; the
-    check uniquely covers section headers and a contract matched by its underlying's symbol."""
-    from portfusion.record import rules as D
-    priced = sorted({r[0] for r in D.CURRENT_PRICES} & set(D.LEG_CONTRACT.values()))
-    assert priced, "no contract is priced — the underlying-match premise is gone"
-    held = [US, PENCE, THIRD] + priced
-    lists = {"live": ["###SECTION", SYM[US], SYM[PENCE], SYM[THIRD]]
-                     + sorted({tv.flag_symbols()[c] for c in priced}),
-             "exit": [], "entry": ["NASDAQ:ZZEB", "LSE:ZZII"]}
-    assert _said(tv.watchlist_check(held, lists)) == {}
-
-
-@HOLDS_LINES
-def test_each_flag_is_read_by_what_it_means():
-    """A held line being sold is flagged Exit, which is right while it is held and wrong once
-    it is not; a line held and still flagged Entry was entered; one held and flagged nothing
-    is missing. The names are the loaded book's."""
-    held = [US, THIRD, PENCE, "ZZPY-DEC26"]
-    lists = {"live": [SYM[US], "NASDAQ:ZZEB"], "exit": [SYM[THIRD], "NASDAQ:TSSL"],
-             "entry": [SYM[PENCE]]}
-    assert _said(tv.watchlist_check(held, lists)) == {
-        "held, and still flagged Entry": [PENCE],
-        "flagged Live, and not held": ["NASDAQ:ZZEB"],
-        "flagged Exit, and not held": ["NASDAQ:TSSL"],
-        "held, with no symbol mapped": ["ZZPY-DEC26"]}
-    assert _said(tv.watchlist_check([US], {"live": [], "exit": [], "entry": []})) == {
-        "held, and flagged neither Live nor Exit": [US]}
-
-
-def test_a_flag_list_is_found_by_id_whatever_it_is_called():
-    """A list's name may change; its id does not."""
-    conn = FakeConnection(watchlist={"name": "Exit List", "symbols": []})
-    wl = tv.flag_list("exit", conn)
-    assert (wl["id"], wl["name"], wl["symbols"]) == (tv.flag_lists()["exit"], "Exit List", [])
-    assert conn.calls == [("mcp-watchlist-get-watchlist",
-                           {"watchlist_id": tv.flag_lists()["exit"]})]
 
 
 # =====================================================================================

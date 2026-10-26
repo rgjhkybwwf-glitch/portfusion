@@ -9,6 +9,7 @@ a row's bytes on the way, fails here.
 import csv
 import io
 import json
+import pathlib
 import shutil
 
 from portfusion.record import migrations as M, schema
@@ -145,10 +146,51 @@ def test_a_book_two_moves_behind_is_carried_through_both_before_it_is_opened(tmp
     assert _files(book) == old
 
 
-def test_this_release_declares_no_move_so_a_book_in_its_shape_has_nothing_to_carry(tmp_path):
+def test_a_book_holding_the_flag_lists_is_refused_carried_and_opens(tmp_path):
+    """THIS RELEASE'S MOVE, on the demo put back before it. Its settings hold the TradingView flag
+    lists' three rows, counted when its journal opened, and the loader refuses the book naming
+    one. `carry()` removes them and journals the removal, so the book opens and its journal still
+    closes; `put_back()` returns the old shape byte for byte. A book in this release's shape has
+    nothing to carry, and a check reading a flag list is listed to move by hand."""
+    import pytest
+    import portfusion
+    from portfusion.engine import Book
+    from portfusion.record import rules
     book = _demo_copy(tmp_path)
-    assert M.plan(book) == (None, [])
-    assert M.carry(book) == ([], {})
+    assert M.plan(book) == (None, []) and M.carry(book) == ([], {})
+
+    store = book / "store"
+    def rewrite(name, fn):
+        rows = list(csv.reader(io.StringIO((store / name).read_text(encoding="utf-8"))))
+        out = io.StringIO()
+        csv.writer(out, lineterminator="\n").writerows(fn(rows))
+        (store / name).write_text(out.getvalue(), encoding="utf-8")
+    rewrite("settings.csv", lambda rows: rows + [[k, f"10000000{i}"]
+                                                 for i, k in enumerate(M.FLAG_LISTS, 1)])
+    rewrite("journal.csv", lambda rows: [
+        r[:4] + [str(int(r[4]) + 3)] + r[5:] if r[1:4] == ["baseline", "open", "settings"] else r
+        for r in rows])
+    (book / "checks").mkdir()
+    (book / "checks" / "test_mine.py").write_text('lists = D.SETTINGS["tv_list_live"]\n')
+    old = _files(book)
+    with pytest.raises(ValueError, match="'tv_list_live' is not one of"):
+        with rules.store_at(store):
+            pass
+    assert M.named_in_checks(book) == ['test_mine.py:1: lists = D.SETTINGS["tv_list_live"]']
+
+    done, before = M.carry(book)
+    assert done == list(M.MIGRATIONS)
+    assert (store / "settings.csv").read_bytes() == (schema.DEMO / "store" / "settings.csv").read_bytes()
+    added = (store / "journal.csv").read_bytes()[len(old[pathlib.Path("store/journal.csv")]):]
+    assert added.decode().split(",")[1:6] == [
+        "migrate", "remove", "settings", "3", f"portfusion {portfusion.__version__}"], added
+    assert M.plan(book) == (None, []), "a moved book still planned a move"
+    with rules.store_at(store):
+        assert "tv_list_live" not in rules.SETTINGS
+        assert Book().journal_unaccounted().empty, "the journal no longer closes"
+
+    M.put_back(before)
+    assert _files(book) == old, "put_back() did not return the book to its old shape"
 
 
 def test_a_books_check_naming_an_old_table_is_listed_to_move_by_hand(tmp_path, monkeypatch):
@@ -163,8 +205,9 @@ def test_a_books_check_naming_an_old_table_is_listed_to_move_by_hand(tmp_path, m
         'test_mine.py:1: rows = schema.load("purchases")', "test_mine.py:2: first = D.purchases[0]"]
 
 
-def test_with_nothing_declared_no_check_is_listed(tmp_path):
+def test_with_nothing_declared_no_check_is_listed(tmp_path, monkeypatch):
     """No old name and no pattern match nothing, not every empty string a check quotes."""
+    monkeypatch.setattr(M, "MIGRATIONS", ())
     (tmp_path / "checks").mkdir()
     (tmp_path / "checks" / "test_mine.py").write_text("blank = \"\"\nalso = ''\n", encoding="utf-8")
     assert M.named_in_checks(tmp_path) == []
