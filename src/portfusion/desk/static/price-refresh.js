@@ -43,7 +43,7 @@ Object.assign(DRAW, {
     const priceRow = (r) => `
       <tr data-kind="price" data-key="${esc(r.mark_key)}">
         <td class="oneline">${esc(r.mark_key)}</td>
-        <td class="num muted">${r.price} ${r.contract ? "pts" : esc(r.currency)}</td>
+        <td class="num muted">${r.contract ? points(r.price) : `${localPrice(r.price, r.currency)} ${esc(r.currency)}`}</td>
         <td class="small ${r.stale ? "stale" : "muted"}">${esc(day(r.as_of))} · ${r.age_days}d</td>
         <td class="num"><input data-f="price" readonly size="10"></td>
         <td class="oneline"><input data-f="as_of" readonly size="10"> <span class="muted small" data-when></span></td>
@@ -71,7 +71,7 @@ Object.assign(DRAW, {
     const rateRow = (r) => `
       <tr data-kind="rate" data-key="${esc(r.currency)}">
         <td class="oneline">${esc(r.currency)}</td>
-        <td class="num muted">${r.rate}</td>
+        <td class="num muted">${rate(r.rate)}</td>
         <td class="muted small">${esc(day(r.as_of))}${r.age_days == null ? "" : ` · ${r.age_days}d`}</td>
         <td class="num"><input data-f="rate" readonly inputmode="decimal" size="10"></td>
         <td class="oneline"><input data-f="as_of" readonly size="10"> <span class="muted small" data-when></span></td>
@@ -88,7 +88,7 @@ Object.assign(DRAW, {
     const lackingRow = (r) => `
       <tr data-kind="lacking" data-key="${esc(r.currency)}@${esc(r.date)}" data-currency="${esc(r.currency)}">
         <td class="oneline">${esc(r.currency)}</td>
-        <td class="num muted">${r.rate == null ? "—" : r.rate}</td>
+        <td class="num muted">${rate(r.rate)}</td>
         <td class="muted small">${esc(day(r.date))} · ${esc(r.why)}</td>
         <td class="num"><input data-f="rate" readonly inputmode="decimal" size="10"></td>
         <td class="oneline"><input data-f="as_of" readonly size="10"> <span class="muted small" data-when></span></td>

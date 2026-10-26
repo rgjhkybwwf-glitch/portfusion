@@ -270,7 +270,8 @@ def test_the_gap_list_quotes_the_engines_rule_rather_than_composing_one(repo_roo
     assert "no broker figure at all" not in drawn, (
         "app.js hard-codes why a row cannot be judged; there are three gaps, and the "
         "engine's `rule` says which.")
-    assert '"struck-apart": "gap"' in drawn, \
+    from portfusion.desk.panels import reconcile
+    assert reconcile.VERDICT_TAG["struck-apart"] == "gap" and "esc(r.tag)" in drawn, \
         "a struck-apart row has no tag of its own and falls through to the default"
 
 

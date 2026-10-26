@@ -3,27 +3,44 @@
 
 const $ = (s) => document.querySelector(s);
 
+/* EVERY FIGURE AT THE HOUSE'S PLACES, house/precision.py's, which each panel answer carries
+   beside its heads (paintPanel takes it): sterling's, a percentage's, a rate's, a local price's,
+   and which fields are money, percentages and movement. `portfusion record` and the report print
+   the same places, so a figure reads the same on all three. */
+let PRECISION = {};
+
+/* ONE ROUNDING, house/precision.py's fixed(): an exact half rounds away from zero, from the
+   figure's own decimal digits (its shortest spelling), never from the binary float under them.
+   Unsigned; `shift` moves the point first, `group` writes the thousands. */
+const fixed = (n, dp, { group = false, shift = 0 } = {}) => {
+  const m = Math.abs(n), s = m.toString();
+  const [w, f = ""] = (!s.includes("e") ? s : m < 1 ? m.toFixed(20) : BigInt(m).toString()).split(".");
+  const digits = (w + f).padEnd(w.length + shift + dp + 1, "0");
+  const at = w.length + shift + dp;
+  const kept = BigInt(digits.slice(0, at) || "0") + (digits[at] >= "5" ? 1n : 0n);
+  const t = kept.toString().padStart(dp + 1, "0");
+  const whole = BigInt(t.slice(0, t.length - dp));
+  return (group ? whole.toLocaleString("en-GB") : whole.toString()) + (dp ? `.${t.slice(-dp)}` : "");
+};
+
 /* The sign goes OUTSIDE the currency symbol: -£5.82, never £-5.82. */
 const money = (n) =>
   n === null || n === undefined ? "—"
-  : (n < 0 ? "-" : "") + "£" +
-    Math.abs(n).toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  : (n < 0 ? "-" : "") + "£" + fixed(n, PRECISION.money_dp, { group: true });
 
-/* EVERY PERCENTAGE AT THE HOUSE'S PLACES, house/precision.py's PCT_DP, which each panel answer
-   carries beside its heads (paintPanel takes it). `portfusion record` and the report print the
-   same places, so a figure reads the same on all three. */
-let PRECISION = {};
+/* A RATE PER £1, at house/precision.py's RATE_DP. */
+const rate = (v) => v == null ? "—" : fixed(Number(v), PRECISION.rate_dp);
 
 /* A LOCAL PRICE, in its line's own currency (which the Ccy column names) at house/precision.py's
    places for it, carried in PRECISION with the fields that are one. Never money(): a £ on a
    dollar price is wrong twice. GBP is 4dp because LSE prices are quoted in pence and stored
    /100; a raw float prints 0.49887600000000004. */
 const localPrice = (v, cur) => v == null ? "—"
-  : Number(v).toFixed(PRECISION.local_price_dp[cur] ?? PRECISION.local_price_default);
+  : (Number(v) < 0 ? "-" : "")
+    + fixed(Number(v), PRECISION.local_price_dp[cur] ?? PRECISION.local_price_default);
 const pct = (n) =>
   n === null || n === undefined ? "—"
-  : (n * 100).toLocaleString("en-GB", { minimumFractionDigits: PRECISION.pct_dp,
-                                        maximumFractionDigits: PRECISION.pct_dp }) + "%";
+  : (n < 0 ? "-" : "") + fixed(n, PRECISION.pct_dp, { group: true, shift: 2 }) + "%";
 
 /* EVERY DATE A READER SEES, house/precision.py's day(): "14 Oct 2026", and a moment "14 Oct
    2026, 10:39". The months arrive with PRECISION. What is not an ISO date is left as it came,

@@ -7,6 +7,7 @@ import pandas as pd
 from portfusion.record import rules as D
 from portfusion.engine.store import utc_of
 from portfusion.engine.core import Core
+from portfusion.house import precision as P
 
 
 class Reconciliation(Core):
@@ -279,7 +280,7 @@ class Reconciliation(Core):
         ties = abs(difference or 0) < band
         return {"checkable": True, "live": True, "band": band, "ties": ties,
                 "verdict": "within-band" if ties else "differs",
-                "rule": f"{why or 'live read'} — band {band:,.2f}"}
+                "rule": f"{why or 'live read'} — band {P.money(band)}"}
 
     def quarter_readings(self, quarter_end: str | None, latest: bool = False,
                          checks: bool = False) -> pd.DataFrame:
