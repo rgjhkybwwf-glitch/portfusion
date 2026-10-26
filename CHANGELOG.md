@@ -149,6 +149,8 @@ Nothing here changes a figure. Do these when the book's pin moves.
 - **A document is never filed over another.** When the convention's name and the name with the
   item's id are both taken, the commit is refused and nothing is written.
 - **A TradingView reply that answers nothing fails only its own line**, not the whole sweep.
+- **Every `python3 -m` command answers `--help`** with its guide and exits 0. `read_document`
+  looked for a document named `--help`; `propose` and the three histories exited 2.
 - **A desk request that fails says so.** A Bench button whose answer was not the desk's JSON now
   shows the server's words, not an empty box. A refused action no longer reads as done. A slow
   page no longer draws over a quicker one opened after it. The open page is marked current for a

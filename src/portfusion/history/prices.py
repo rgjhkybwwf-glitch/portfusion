@@ -122,10 +122,13 @@ def show(ticker: str | None = None) -> None:
 
 
 def main(argv: list[str]) -> int:
-    """The command line: --show [ticker], --archive, --check.
+    """The command line: --show [ticker], --archive, --check, --help.
 
     Side effects: --archive APPENDS to store/price-history.csv. Everything else reports.
     """
+    if argv[:1] in (["-h"], ["--help"]):
+        log.info(__doc__)
+        return 0
     if "--archive" in argv:
         archive()
     elif "--check" in argv:

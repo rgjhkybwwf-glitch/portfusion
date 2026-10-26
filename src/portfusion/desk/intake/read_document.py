@@ -203,7 +203,9 @@ def text_of(name):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1:
+    if sys.argv[1:2] in (["-h"], ["--help"]):
+        log.info(__doc__)
+    elif len(sys.argv) > 1:
         # TYPED AT A TERMINAL, a path means what it means there: a file in this folder is read by
         # its full path (`extract_file()`). A bare name is the workbench's.
         arg = sys.argv[1]
