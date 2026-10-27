@@ -84,12 +84,13 @@ One line each; kept by review, and by the test named where there is one.
 
 ### Agreeing a change
 
-- **Propose before changing**, in an issue or the conversation, and wait for the maintainer's yes.
-  An approval covers exactly what it names.
+- **A pull request is the proposal**: a small change is made on a branch and agreed in its pull
+  request; a large one (a new table, a store move, a change of direction) is raised in an issue
+  first. An approval covers exactly what it names.
 - **A decision that appears mid-task is a stop**, and so is a test or guide that would bend one
   already agreed; a test that only needs its expectation moved to the agreed outcome is not.
 - **Options carry their cost** (files, tests, figures that move), with a recommendation. A declined
-  one is not raised again.
+  one is not raised again unless something material has changed, and then with what changed.
 - **Search for what already does the job before adding anything**: a function takes a parameter
   rather than gaining a second version, and nothing gets a helper or a package for a single use (the
   upload is a raw body, not multipart; the icon is drawn with the standard library).
@@ -149,8 +150,8 @@ One line each; kept by review, and by the test named where there is one.
 - **How to write a test, and what to do when one fails**, is [`docs/testing.md`](docs/testing.md)'s:
   by field, a relationship, the rows it needs, any book, a copy; read its docstring first; never
   weaken a check.
-- **A count on file only goes down**: `DESK_CHROME_WORDS`, `REPORT_PROSE_WORDS`,
-  `REPEATED_PROSE_HIGH_WATER`.
+- **A count on file goes down, or up with its reason beside it** in the pull request's diff:
+  `DESK_CHROME_WORDS`, `REPORT_PROSE_WORDS`, `REPEATED_PROSE_HIGH_WATER`.
 - **Opening an allowlist is a visible diff**: each entry a name, never a count or a pattern.
 - **A fake answers through the real allowlist.**
 - **A run names the book it ran on**, and git runs unsigned in the suite (`harness.py::book_line`,
@@ -161,10 +162,10 @@ One line each; kept by review, and by the test named where there is one.
 ### Commits and pull requests
 
 - **One logical change per commit**, its message written for a reader who was not there.
-- **Review the change before every commit**, and settle what the review finds.
+- **Review the branch's diff before its pull request opens**, and settle what the review finds.
 - **A store move is named in [`CHANGELOG.md`](CHANGELOG.md).**
-- **Never bypass a hook.** A branch reaches `main` as a pull request, merged once CI's `guard` is
-  green; it runs on every pull request and on `main`.
+- **Never bypass a hook.** A branch reaches `main` as a pull request, merged on the maintainer's
+  yes once CI's `guard` is green; it runs on every pull request and on `main`.
 
 ### The desk and the report
 
