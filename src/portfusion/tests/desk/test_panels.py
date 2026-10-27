@@ -783,10 +783,10 @@ def test_the_expansion_spans_the_whole_row_however_many_columns_there_are():
 
 
 # =====================================================================================
-# THE DESK'S OWN PROSE — a ratchet that only goes down
+# THE DESK'S OWN PROSE — a ratchet that rises only with a reason
 # =====================================================================================
 
-#: How many words of CHROME the desk shows. A ratchet: it may only go down.
+#: How many words of CHROME the desk shows. A ratchet: it goes down, or up with a reason beside it.
 #:
 #: The desk is for account management, and chrome above the work pushes it below the fold.
 #:
@@ -833,7 +833,7 @@ def _chrome_words():
     return words
 
 
-def test_the_desks_own_prose_only_goes_down():
+def test_the_desks_own_prose_rises_only_with_a_reason():
     """The desk is an operating interface, not a place to record decisions about it.
 
     Reasons accumulate, and together they push the work below the fold.
@@ -847,7 +847,7 @@ def test_the_desks_own_prose_only_goes_down():
     assert words <= DESK_CHROME_WORDS, (
         f"the desk now says {words} words about itself, above the {DESK_CHROME_WORDS} on file. "
         f"An explanation belongs below the work it describes — `whyFold()` — or in a docstring. "
-        f"The ratchet only goes down; take prose out rather than raising this.")
+        f"Take prose out, or raise this with the reason beside it.")
 
 
 # =====================================================================================

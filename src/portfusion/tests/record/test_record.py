@@ -772,7 +772,8 @@ def test_the_code_repeats_itself_no_more_than_it_did(repo_root, project_files):
                        if run in shared and len(lines) > len(had.get(run, ()))]
     assert copies <= REPEATED_PROSE_HIGH_WATER, (
         f"comment and docstring prose repeats {copies} eight-word runs beyond their first "
-        f"telling, above the {REPEATED_PROSE_HIGH_WATER} on file. Gained since the last commit:\n  "
+        f"telling, above the {REPEATED_PROSE_HIGH_WATER} on file; say a thing once, or raise this "
+        f"with the reason beside it. Gained since the last commit:\n  "
         + ("\n  ".join(gained[:20]) or "(nothing uncommitted — the rise is in committed work)"))
 
 

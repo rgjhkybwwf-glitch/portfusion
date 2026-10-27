@@ -646,9 +646,9 @@ def _report_words() -> int:
 
 
 @holds(COMPLETE, what="a complete quarter before the first report")
-def test_the_reports_own_prose_only_goes_down():
+def test_the_reports_own_prose_rises_only_with_a_reason():
     """Its figures are the engine's and its headings the registry's; this holds its sentences. A
-    sentence added is a decision, so the count only goes down; raising it takes a reason written
+    sentence added is a decision, so the count goes down, or rises with a reason written
     beside it, as DESK_CHROME_WORDS does."""
     words = _report_words()
     assert words <= REPORT_PROSE_WORDS, (
