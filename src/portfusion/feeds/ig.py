@@ -1007,7 +1007,13 @@ def ig_events(since=None, book=None):
             day = r["dateUtc"][:10]
             # A `WITH` IS MONEY OUT, and only some of it is a cost (`rules.ig_line()`).
             code = D.ig_line(r["transactionType"], r.get("instrumentName"))
-            if code is not None and code.table == "income":
+            if code is None:
+                # A TYPE NO RULE KNOWS is reported, never dropped: silence hid IG's dividends.
+                skipped.append(f"{day} {r['reference']} {r['transactionType']} "
+                               f"{r.get('instrumentName', '')} £{amt:,.2f} ({acct}) — a ledger "
+                               f"type rules_brokers.ig_line() does not know")
+                continue
+            if code.table == "income":
                 seen_api_cash.add((acct, day, round(amt, 2)))
                 if (day, round(amt, 2)) in known_cash:
                     matched.append(f"{r['instrumentName']} · £{amt:,.2f} · {day} · in the book")
@@ -1021,7 +1027,7 @@ def ig_events(since=None, book=None):
                                                    endpoint="/history/transactions"),
                         "note": "", "currency": "", "local_amount": "", "rate": "",
                         "ticker": ""}))
-            elif code is not None and code.table == "capital-movements":
+            elif code.table == "capital-movements":
                 if (day, round(amt, 2)) in known_moves:
                     matched.append(f"{r['instrumentName']} · £{amt:,.2f} · {day} · in the book")
                     continue
@@ -1078,7 +1084,7 @@ def cmd_events(since=None):
         log.info(f"    {m}")
     block("MISSING opens", r["opens"], "store/buys.csv")
     block("MISSING closes", r["closes"], "store/sales.csv")
-    block("MISSING costs", r["costs"], "store/income.csv")
+    block("MISSING income", r["costs"], "store/income.csv")
     block("MISSING capital", r["capital"], "store/capital-movements.csv")
 
     if orphans:

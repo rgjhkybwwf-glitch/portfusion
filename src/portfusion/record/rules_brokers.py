@@ -238,18 +238,24 @@ HOLDINGS_COLUMNS = {
 
 #: WHAT AN IG LEDGER LINE IS (/history/transactions), by its `transactionType`. A `DEPO` or `WITH`
 #: is money crossing the account's boundary, but IG files its funding charges under `WITH` too:
-#: one is known by the words IG prints on it ("Long Interest for US/Can shares 10/08/26"). Any
-#: other type becomes no row.
+#: one is known by the words IG prints on it ("Long Interest for US/Can shares 10/08/26"). A
+#: `DIVIDEND` is the adjustment a bet line is paid, already in sterling. A `DEAL` is a close's
+#: P/L, whose activity is the entry.
 IG_CAPITAL_TYPES = ("DEPO", "WITH")
 IG_FUNDING_WORDS = ("interest", "funding")
 IG_FUNDING = BrokerCode("income", "Funding interest", "a funding cost, charged to the account")
 IG_CAPITAL = BrokerCode("capital-movements", "", "money paid into or out of the account")
+IG_TYPES = {
+    "DIVIDEND": BrokerCode("income", "Dividend", "a dividend adjustment paid on a bet line"),
+    "DEAL":     BrokerCode(None, "", "a close's P/L — its activity is the entry"),
+}
 
 
 def ig_line(transaction_type: str, instrument_name) -> BrokerCode | None:
-    """What one IG ledger line is, by its type and then its words. None means no row."""
+    """What one IG ledger line is, by its type and then its words. None means unrecognised,
+    which is a real answer."""
     if transaction_type == "WITH" and any(w in str(instrument_name or "").lower()
                                           for w in IG_FUNDING_WORDS):
         return IG_FUNDING
-    return IG_CAPITAL if transaction_type in IG_CAPITAL_TYPES else None
+    return IG_CAPITAL if transaction_type in IG_CAPITAL_TYPES else IG_TYPES.get(transaction_type)
 

@@ -776,21 +776,30 @@ def test_a_swept_row_carries_what_the_bench_needs(stub_events):
 
 
 @needs("contracts", "buys")
-def test_a_withdrawal_is_capital_and_only_a_funding_line_is_a_cost(monkeypatch, D):
+def test_each_ledger_type_becomes_its_row_and_an_unknown_one_is_reported(monkeypatch, D):
     """IG FILES ITS FUNDING CHARGES AND A WITHDRAWAL UNDER ONE TYPE, `WITH`. A line IG names as
     interest or funding is the cost; any other `WITH` is capital leaving, proposed for the
-    reader to confirm, as a deposit is."""
+    reader to confirm, as a deposit is. A `DIVIDEND` is income; a `DEAL` is no row; a type no
+    rule knows is skipped aloud."""
     txns = {"transactions": [
         {"dateUtc": "2026-08-21T00:00:00", "reference": "TX-INT", "transactionType": "WITH",
          "profitAndLoss": "£-1.52", "instrumentName": "Long Interest for US/Can shares 20/08/26"},
         {"dateUtc": "2026-08-22T00:00:00", "reference": "TX-OUT", "transactionType": "WITH",
-         "profitAndLoss": "£-2,500.00", "instrumentName": "Bank withdrawal"}]}
+         "profitAndLoss": "£-2,500.00", "instrumentName": "Bank withdrawal"},
+        {"dateUtc": "2026-08-23T00:00:00", "reference": "TX-DIV", "transactionType": "DIVIDEND",
+         "profitAndLoss": "£12.40", "instrumentName": "Adjustment for dividend in Voss Holdings"},
+        {"dateUtc": "2026-08-24T00:00:00", "reference": "TX-PNL", "transactionType": "DEAL",
+         "profitAndLoss": "£30.00", "instrumentName": "Voss Holdings"},
+        {"dateUtc": "2026-08-25T00:00:00", "reference": "TX-NEW", "transactionType": "NEWTYPE",
+         "profitAndLoss": "£1.00", "instrumentName": "Something IG adds"}]}
     _sweep_with(monkeypatch, _feed_labels(D)[0], lambda path:
                 txns if path.startswith("/history/transactions")
                 else {"activities": []} if path.startswith("/history/activity") else None)
     r = ig.ig_events("2026-08-01")
-    assert [c["ref"] for c in r["costs"]] == ["TX-INT"], r["costs"]
+    assert [(c["ref"], c["values"]["category"]) for c in r["costs"]] == [
+        ("TX-INT", "Funding interest"), ("TX-DIV", "Dividend")], r["costs"]
     assert [(c["ref"], c["values"]["amount"]) for c in r["capital"]] == [("TX-OUT", -2500.0)]
+    assert [x.split()[1] for x in r["skipped"]] == ["TX-NEW"], r["skipped"]
 
 
 @needs("contracts", "buys")
