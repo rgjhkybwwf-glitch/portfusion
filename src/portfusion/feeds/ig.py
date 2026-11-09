@@ -24,6 +24,7 @@ CREDENTIALS live in credentials.json in the book's folder (`schema.BOOK`, the fo
 PORTFUSION_BOOK names), gitignored by `credentials.*`. Run any
 command without it for the template. Nothing here logs, prints or transmits a credential.
 """
+import re
 import sys
 import os
 import json
@@ -705,6 +706,28 @@ def _record():
     return D
 
 
+#: IG'S WORDS ON A DIVIDEND LINE name the market it was paid in, as IG names that market's epics:
+#: "Adjustment for dividend in  <market> for 1073 Positions @ 0.15 and converted at 0.74".
+_DIVIDEND_IN = re.compile(r"dividend in\s+(.+?)\s+for\s+[\d,.]+\s+Positions", re.I)
+
+
+def _named_lines(s, tick_of) -> dict:
+    """IG's market name -> the book's ticker, through every epic a contract carries, in one call:
+    how a ledger line, which names its market but carries no epic, finds its line. A name two
+    lines share resolves to nothing, never to a guess."""
+    by_name = {}
+    for epic, m in s.markets(sorted(tick_of)).items():
+        if epic in tick_of:
+            by_name.setdefault(" ".join(m["name"].split()), set()).add(tick_of[epic])
+    return {name: t.pop() for name, t in by_name.items() if len(t) == 1}
+
+
+def _paid_on(named: dict, instrument_name) -> str:
+    """The ticker a dividend line was paid on, or blank where its market resolves to no one line."""
+    m = _DIVIDEND_IN.search(str(instrument_name or ""))
+    return named.get(" ".join(m.group(1).split()), "") if m else ""
+
+
 def _epic_to_ticker(D):
     """epic -> the book's ticker: the code of the line its contract is on (contracts.csv). An
     epic no contract carries resolves to nothing, never to a guess: a wrong ticker would file a
@@ -719,9 +742,9 @@ ROW_COLUMNS = {
              "level_points", "broker_ref", "note", "contract", "traded_price", "rate"),
     "sales": ("sale_id", "date", "account", "ticker", "qty", "stake", "traded_price", "cur",
               "rate", "proceeds", "source", "broker_ref", "realisation_id", "closes", "note"),
-    # IG bills funding interest in the account currency, so a swept row leaves `currency`,
-    # `local_amount` and `rate` blank, and `ticker`, since funding is no one line's — named
-    # explicitly, or the paste misaligns.
+    # IG pays and bills in the account currency, so a swept row leaves `currency`,
+    # `local_amount` and `rate` blank; `ticker` is a dividend's line, blank on funding, which is
+    # no one line's — named explicitly, or the paste misaligns.
     "income": ("date", "account", "category", "detail", "amount", "source", "note",
                "currency", "local_amount", "rate", "ticker"),
     "capital-movements": ("date", "account", "amount", "source", "detail"),
@@ -936,6 +959,10 @@ def ig_events(since=None, book=None):
             transactions = _every_page(
                 s, f"/history/transactions?from={frm}T00:00:00&to={to}T23:59:59"
                    f"&pageSize={PAGE}", 2, "transactions")
+            # A DIVIDEND IS MATCHED TO ITS LINE as a price is, through the epic: IG's name for
+            # each contract's epic, read only when the ledger holds a dividend.
+            named = (_named_lines(s, tick_of)
+                     if any(r["transactionType"] == "DIVIDEND" for r in transactions) else {})
 
         for a in sorted(activities, key=lambda x: x["date"]):
             d = a.get("details") or {}
@@ -1026,7 +1053,8 @@ def ig_events(since=None, book=None):
                         "source": D.evidence_source("ig-api", r["reference"],
                                                    endpoint="/history/transactions"),
                         "note": "", "currency": "", "local_amount": "", "rate": "",
-                        "ticker": ""}))
+                        "ticker": _paid_on(named, r["instrumentName"])
+                        if code.category == "Dividend" else ""}))
             elif code.table == "capital-movements":
                 if (day, round(amt, 2)) in known_moves:
                     matched.append(f"{r['instrumentName']} · £{amt:,.2f} · {day} · in the book")
