@@ -26,7 +26,7 @@ from harness import SRC, needs
 def _fake_session(answer):
     """An `IGSession` stand-in whose transport answers `answer(label, path)`, THROUGH THE REAL
     ALLOWLIST, so no fake reaches a path the feed itself may not."""
-    class _Fake:
+    class _Fake(ig.IGSession):     # the real reads (`markets()`), over a fake transport
         def __init__(self, cred, label): self.label = label
         def __enter__(self): return self
         def __exit__(self, *a): return False
@@ -776,21 +776,42 @@ def test_a_swept_row_carries_what_the_bench_needs(stub_events):
 
 
 @needs("contracts", "buys")
-def test_a_withdrawal_is_capital_and_only_a_funding_line_is_a_cost(monkeypatch, D):
+def test_each_ledger_type_becomes_its_row_and_an_unknown_one_is_reported(monkeypatch, D):
     """IG FILES ITS FUNDING CHARGES AND A WITHDRAWAL UNDER ONE TYPE, `WITH`. A line IG names as
     interest or funding is the cost; any other `WITH` is capital leaving, proposed for the
-    reader to confirm, as a deposit is."""
+    reader to confirm, as a deposit is. A `DIVIDEND` is income, on the line whose epic IG names
+    as the market it was paid in, as a price finds its line; a `DEAL` is no row; a type no rule
+    knows is skipped aloud. Another account's row of the same day and amount is not this one."""
+    epic, ticker = next(iter(ig._epic_to_ticker(D).items()))
+    label = _feed_labels(D)[0]
+    other = next(c for c in D.ci_rows if c.account != ig.account_names(D)[label])
+    names = {"marketDetails": [{"instrument": {"epic": epic, "name": "Voss Holdings (24 Hours)"},
+                                "snapshot": {}}]}
     txns = {"transactions": [
         {"dateUtc": "2026-08-21T00:00:00", "reference": "TX-INT", "transactionType": "WITH",
          "profitAndLoss": "£-1.52", "instrumentName": "Long Interest for US/Can shares 20/08/26"},
         {"dateUtc": "2026-08-22T00:00:00", "reference": "TX-OUT", "transactionType": "WITH",
-         "profitAndLoss": "£-2,500.00", "instrumentName": "Bank withdrawal"}]}
-    _sweep_with(monkeypatch, _feed_labels(D)[0], lambda path:
+         "profitAndLoss": "£-2,500.00", "instrumentName": "Bank withdrawal"},
+        {"dateUtc": "2026-08-23T00:00:00", "reference": "TX-DIV", "transactionType": "DIVIDEND",
+         "profitAndLoss": "£12.40", "instrumentName": "Adjustment for dividend in  Voss Holdings (24 Hours) for 1 "
+                           "Position @ 0.40 and converted at 0.80"},
+        {"dateUtc": f"{other.date}T00:00:00", "reference": "TX-TWIN",
+         "transactionType": "DIVIDEND", "profitAndLoss": f"£{other.amount:.2f}",
+         "instrumentName": "Adjustment for dividend in  Bryncoed (24 Hours) for 2 Positions"},
+        {"dateUtc": "2026-08-24T00:00:00", "reference": "TX-PNL", "transactionType": "DEAL",
+         "profitAndLoss": "£30.00", "instrumentName": "Voss Holdings"},
+        {"dateUtc": "2026-08-25T00:00:00", "reference": "TX-NEW", "transactionType": "NEWTYPE",
+         "profitAndLoss": "£1.00", "instrumentName": "Something IG adds"}]}
+    _sweep_with(monkeypatch, label, lambda path:
                 txns if path.startswith("/history/transactions")
+                else names if path.startswith("/markets")
                 else {"activities": []} if path.startswith("/history/activity") else None)
     r = ig.ig_events("2026-08-01")
-    assert [c["ref"] for c in r["costs"]] == ["TX-INT"], r["costs"]
+    assert sorted((c["ref"], c["values"]["category"], c["values"]["ticker"]) for c in r["costs"]) == [
+        ("TX-DIV", "Dividend", ticker), ("TX-INT", "Funding interest", ""),
+        ("TX-TWIN", "Dividend", "")], r["costs"]
     assert [(c["ref"], c["values"]["amount"]) for c in r["capital"]] == [("TX-OUT", -2500.0)]
+    assert [x.split()[1] for x in r["skipped"]] == ["TX-NEW"], r["skipped"]
 
 
 @needs("contracts", "buys")

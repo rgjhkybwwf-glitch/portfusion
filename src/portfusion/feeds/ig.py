@@ -24,6 +24,7 @@ CREDENTIALS live in credentials.json in the book's folder (`schema.BOOK`, the fo
 PORTFUSION_BOOK names), gitignored by `credentials.*`. Run any
 command without it for the template. Nothing here logs, prints or transmits a credential.
 """
+import re
 import sys
 import os
 import json
@@ -705,6 +706,36 @@ def _record():
     return D
 
 
+#: IG'S WORDS ON A DIVIDEND LINE name the market it was paid in, as IG names that market's epics:
+#: "Adjustment for dividend in  <market> for <n> Positions @ <per unit> and converted at <rate>".
+_DIVIDEND_IN = re.compile(r"dividend in\s+(.+?)\s+for\s+[\d,.]+\s+Positions?\b", re.I)
+
+
+def _named_lines(s, tick_of) -> dict:
+    """IG's market name -> the book's ticker, through every epic a contract carries, in one call:
+    how a ledger line, which names its market but carries no epic, finds its line. A name two
+    lines share names neither. A read IG refuses names nothing: the
+    tickers stay blank, and the sweep's events still arrive."""
+    if not tick_of:
+        return {}
+    try:
+        got = s.markets(sorted(tick_of))
+    except IGError as e:
+        log.warning(f"IG's market names could not be read, so no dividend's line is named: {e}")
+        return {}
+    by_name = {}
+    for epic, m in got.items():
+        if epic in tick_of:
+            by_name.setdefault(" ".join(m["name"].split()), set()).add(tick_of[epic])
+    return {name: t.pop() for name, t in by_name.items() if len(t) == 1}
+
+
+def _paid_on(named: dict, instrument_name) -> str:
+    """The ticker a dividend line was paid on, or blank where its market resolves to no one line."""
+    m = _DIVIDEND_IN.search(str(instrument_name or ""))
+    return named.get(" ".join(m.group(1).split()), "") if m else ""
+
+
 def _epic_to_ticker(D):
     """epic -> the book's ticker: the code of the line its contract is on (contracts.csv). An
     epic no contract carries resolves to nothing, never to a guess: a wrong ticker would file a
@@ -719,9 +750,9 @@ ROW_COLUMNS = {
              "level_points", "broker_ref", "note", "contract", "traded_price", "rate"),
     "sales": ("sale_id", "date", "account", "ticker", "qty", "stake", "traded_price", "cur",
               "rate", "proceeds", "source", "broker_ref", "realisation_id", "closes", "note"),
-    # IG bills funding interest in the account currency, so a swept row leaves `currency`,
-    # `local_amount` and `rate` blank, and `ticker`, since funding is no one line's — named
-    # explicitly, or the paste misaligns.
+    # IG pays and bills in the account currency, so a swept row leaves `currency`,
+    # `local_amount` and `rate` blank; `ticker` is a dividend's line, blank on funding, which is
+    # no one line's — named explicitly, or the paste misaligns.
     "income": ("date", "account", "category", "detail", "amount", "source", "note",
                "currency", "local_amount", "rate", "ticker"),
     "capital-movements": ("date", "account", "amount", "source", "detail"),
@@ -911,7 +942,7 @@ def ig_events(since=None, book=None):
                 engine.append(Book())
             parcel_of[(acct, tk)] = engine[0].parcel(acct, tk)
         return parcel_of[(acct, tk)]
-    known_cash = {(c.date, round(c.amount, 2)) for c in D.ci_rows}
+    known_cash = {(c.account, c.date, round(c.amount, 2)) for c in D.ci_rows}
     known_moves = {(m[0], round(m[2], 2)) for m in D.movements}
 
     free = D.next_free_ids()
@@ -920,6 +951,7 @@ def ig_events(since=None, book=None):
 
     matched, rows_t, rows_e, rows_i, rows_m, skipped, setups = [], [], [], [], [], [], []
     seen_api_cash, windows, clamped = set(), {}, []
+    named = None                        # IG's market names, read once a dividend needs them
     for label in sorted(creds):
         acct = account_names(D).get(label, label)
         start = floor(D, acct)
@@ -936,6 +968,10 @@ def ig_events(since=None, book=None):
             transactions = _every_page(
                 s, f"/history/transactions?from={frm}T00:00:00&to={to}T23:59:59"
                    f"&pageSize={PAGE}", 2, "transactions")
+            # A DIVIDEND IS MATCHED TO ITS LINE as a price is, through the epic: IG's name for
+            # each contract's epic, read only when the ledger holds a dividend.
+            if named is None and any(r["transactionType"] == "DIVIDEND" for r in transactions):
+                named = _named_lines(s, tick_of)
 
         for a in sorted(activities, key=lambda x: x["date"]):
             d = a.get("details") or {}
@@ -1007,9 +1043,15 @@ def ig_events(since=None, book=None):
             day = r["dateUtc"][:10]
             # A `WITH` IS MONEY OUT, and only some of it is a cost (`rules.ig_line()`).
             code = D.ig_line(r["transactionType"], r.get("instrumentName"))
-            if code is not None and code.table == "income":
+            if code is None:
+                # A TYPE NO RULE KNOWS is reported, never dropped: silence hid IG's dividends.
+                skipped.append(f"{day} {r['reference']} {r['transactionType']} "
+                               f"{r.get('instrumentName', '')} £{amt:,.2f} ({acct}) — a ledger "
+                               f"type rules_brokers.ig_line() does not know")
+                continue
+            if code.table == "income":
                 seen_api_cash.add((acct, day, round(amt, 2)))
-                if (day, round(amt, 2)) in known_cash:
+                if (acct, day, round(amt, 2)) in known_cash:
                     matched.append(f"{r['instrumentName']} · £{amt:,.2f} · {day} · in the book")
                     continue
                 rows_i.append(_event(
@@ -1020,8 +1062,8 @@ def ig_events(since=None, book=None):
                         "source": D.evidence_source("ig-api", r["reference"],
                                                    endpoint="/history/transactions"),
                         "note": "", "currency": "", "local_amount": "", "rate": "",
-                        "ticker": ""}))
-            elif code is not None and code.table == "capital-movements":
+                        "ticker": _paid_on(named or {}, r["instrumentName"])}))
+            elif code.table == "capital-movements":
                 if (day, round(amt, 2)) in known_moves:
                     matched.append(f"{r['instrumentName']} · £{amt:,.2f} · {day} · in the book")
                     continue
@@ -1078,7 +1120,7 @@ def cmd_events(since=None):
         log.info(f"    {m}")
     block("MISSING opens", r["opens"], "store/buys.csv")
     block("MISSING closes", r["closes"], "store/sales.csv")
-    block("MISSING costs", r["costs"], "store/income.csv")
+    block("MISSING income", r["costs"], "store/income.csv")
     block("MISSING capital", r["capital"], "store/capital-movements.csv")
 
     if orphans:

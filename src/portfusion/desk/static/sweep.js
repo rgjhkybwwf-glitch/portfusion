@@ -133,7 +133,7 @@ const ACTION_VIEW = {
 
       ${events("Buys", d.opens)}
       ${events("Sales", d.closes)}
-      ${events("Costs", d.costs)}
+      ${events("Income", d.costs)}
       ${events("Money in or out", d.capital)}
       ${list("Unmatched, and not obviously a book event", d.orphans, "note")}
       ${(d.setups || []).length ? events("Skipped", d.setups, true) : list("Skipped", d.skipped, "note")}
