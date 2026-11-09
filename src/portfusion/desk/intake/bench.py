@@ -1063,7 +1063,9 @@ def for_event(event: dict, origin: str = "ig-events", marks: list[dict] | None =
     item["evidence_class"] = "ig-api"
     item["evidence"] = {
         "dated": str(row["values"].get("date", "") or ""),
-        "authority": "IG REST /history/activity",
+        # A DEAL IS IG's ACTIVITY; MONEY IS ITS LEDGER, where the sweep read each.
+        "authority": "IG REST /history/" + (
+            "activity" if row["table"] in ("buys", "sales") else "transactions"),
         "reference": ref,
     }
     item["rows"] = [{"table": r["table"], "values": dict(r["values"])} for r in setup] + [row]

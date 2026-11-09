@@ -707,16 +707,24 @@ def _record():
 
 
 #: IG'S WORDS ON A DIVIDEND LINE name the market it was paid in, as IG names that market's epics:
-#: "Adjustment for dividend in  <market> for 1073 Positions @ 0.15 and converted at 0.74".
-_DIVIDEND_IN = re.compile(r"dividend in\s+(.+?)\s+for\s+[\d,.]+\s+Positions", re.I)
+#: "Adjustment for dividend in  <market> for <n> Positions @ <per unit> and converted at <rate>".
+_DIVIDEND_IN = re.compile(r"dividend in\s+(.+?)\s+for\s+[\d,.]+\s+Positions?\b", re.I)
 
 
 def _named_lines(s, tick_of) -> dict:
     """IG's market name -> the book's ticker, through every epic a contract carries, in one call:
     how a ledger line, which names its market but carries no epic, finds its line. A name two
-    lines share resolves to nothing, never to a guess."""
+    lines share names neither. A read IG refuses names nothing: the
+    tickers stay blank, and the sweep's events still arrive."""
+    if not tick_of:
+        return {}
+    try:
+        got = s.markets(sorted(tick_of))
+    except IGError as e:
+        log.warning(f"IG's market names could not be read, so no dividend's line is named: {e}")
+        return {}
     by_name = {}
-    for epic, m in s.markets(sorted(tick_of)).items():
+    for epic, m in got.items():
         if epic in tick_of:
             by_name.setdefault(" ".join(m["name"].split()), set()).add(tick_of[epic])
     return {name: t.pop() for name, t in by_name.items() if len(t) == 1}
@@ -934,7 +942,7 @@ def ig_events(since=None, book=None):
                 engine.append(Book())
             parcel_of[(acct, tk)] = engine[0].parcel(acct, tk)
         return parcel_of[(acct, tk)]
-    known_cash = {(c.date, round(c.amount, 2)) for c in D.ci_rows}
+    known_cash = {(c.account, c.date, round(c.amount, 2)) for c in D.ci_rows}
     known_moves = {(m[0], round(m[2], 2)) for m in D.movements}
 
     free = D.next_free_ids()
@@ -943,6 +951,7 @@ def ig_events(since=None, book=None):
 
     matched, rows_t, rows_e, rows_i, rows_m, skipped, setups = [], [], [], [], [], [], []
     seen_api_cash, windows, clamped = set(), {}, []
+    named = None                        # IG's market names, read once a dividend needs them
     for label in sorted(creds):
         acct = account_names(D).get(label, label)
         start = floor(D, acct)
@@ -961,8 +970,8 @@ def ig_events(since=None, book=None):
                    f"&pageSize={PAGE}", 2, "transactions")
             # A DIVIDEND IS MATCHED TO ITS LINE as a price is, through the epic: IG's name for
             # each contract's epic, read only when the ledger holds a dividend.
-            named = (_named_lines(s, tick_of)
-                     if any(r["transactionType"] == "DIVIDEND" for r in transactions) else {})
+            if named is None and any(r["transactionType"] == "DIVIDEND" for r in transactions):
+                named = _named_lines(s, tick_of)
 
         for a in sorted(activities, key=lambda x: x["date"]):
             d = a.get("details") or {}
@@ -1042,7 +1051,7 @@ def ig_events(since=None, book=None):
                 continue
             if code.table == "income":
                 seen_api_cash.add((acct, day, round(amt, 2)))
-                if (day, round(amt, 2)) in known_cash:
+                if (acct, day, round(amt, 2)) in known_cash:
                     matched.append(f"{r['instrumentName']} · £{amt:,.2f} · {day} · in the book")
                     continue
                 rows_i.append(_event(
@@ -1053,8 +1062,7 @@ def ig_events(since=None, book=None):
                         "source": D.evidence_source("ig-api", r["reference"],
                                                    endpoint="/history/transactions"),
                         "note": "", "currency": "", "local_amount": "", "rate": "",
-                        "ticker": _paid_on(named, r["instrumentName"])
-                        if code.category == "Dividend" else ""}))
+                        "ticker": _paid_on(named or {}, r["instrumentName"])}))
             elif code.table == "capital-movements":
                 if (day, round(amt, 2)) in known_moves:
                     matched.append(f"{r['instrumentName']} · £{amt:,.2f} · {day} · in the book")
