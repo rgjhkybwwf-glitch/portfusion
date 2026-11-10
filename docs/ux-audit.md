@@ -93,6 +93,11 @@ A screenshot is named for the first row it shows.
 | 43 | Performance | 8 | "modified Dietz (day-weighted)"; and under "detail", "Positions at market frozen from the engine at the marks nearest 2026-09-30 / Quality derived". | wording | 1 | `reading.js`; the source sentence is the store's |
 | 44 | Performance | 8 | "The book" rows have no "detail"; each account's rows do. [shot](ux-audit/42.png) | missing state | 1 | `reading.js`; no test |
 | 45 | Performance | 11 | Three incomes under one heading. "Income" here is £12.50 for Q3 and £42.50 for the year; the Dashboard's "YTD income" is £42.40; the report has "+13", "Position income +11" and a total of 12.40. They are the income the return counts, the positions' income and all income. [shot](ux-audit/42.png) | wording | 2 | `return_income` is headed "Income": `house/headings.py`, `test_figures.py`; the report moves with it |
+| 46 | Holdings | 7 | At 1440 wide the table runs off the page. Unrealised gain, weight, entry date, days held and the only ways into a row, "trades" and "detail", are out of sight; a black bar is the one sign. [shot](ux-audit/46.png) | layout | 2 | `app.css`, `kit.js`; no test |
+| 47 | Holdings | 7 | Clicking a row highlights it and does nothing else. | missing function | 1 | `kit.js`; no test |
+| 48 | Holdings | 7 | Scrolled right, "detail" opened a tall empty gap: its content is drawn at the table's left, out of sight. It looked broken. | layout | 2 | `app.css`, `kit.js`; no test |
+| 49 | Holdings | 7 | "detail" is the mark history alone. Bought and sold are on Trades, received is on Accounts, by account, in free text. No one place holds a holding's history; Round Trips' "company life" view holds much of it, and nothing points there. | missing function | 2 | `panels/holdings.py`, `reading.js`; `test_panels.py` extended |
+| 50 | Holdings | 7 | The Method says the thesis "shows under 'why' on Holdings". None was seen on the holding opened; whether it has one was not traced. | wording | 1 | not traced |
 
 ## Timing
 
