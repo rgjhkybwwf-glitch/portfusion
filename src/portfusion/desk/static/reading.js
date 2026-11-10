@@ -94,7 +94,7 @@ Object.assign(DRAW, {
     /* WHAT NEEDS ATTENTION, THEN WHAT WAS CHECKED: the record's notes, in the engine's words and
        in the order `portfusion record` prints them, under the problems and gaps. A tag's space
        and no dot, so the text lines up with the items above it. */
-    const items = [...d.attention, ...(PANELS.has("bench") ? d.bench : [])].map((a) =>
+    const items = [...d.attention, ...(PANELS.has("bench") ? d.bench || [] : [])].map((a) =>
       `<li class="${esc(a.level)}"><span class="tag">${esc(a.level)}</span>${esc(a.text)}
         ${a.panel ? panelLink(a.panel) : ""}</li>`
     ).join("") + (d.checks || []).map((c) =>

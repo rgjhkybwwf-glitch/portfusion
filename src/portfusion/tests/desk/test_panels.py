@@ -889,7 +889,7 @@ def test_the_dashboard_lists_the_checks_the_audit_prints():
     assert data["checks"] == found["notes"]
     assert any(c.startswith("evidence:") for c in data["checks"])
     assert "d.checks" in js
-    sent = {a["text"]: a["panel"] for a in data["attention"] + data["bench"]}
+    sent = {a["text"]: a.get("panel") for a in data["attention"] + data["bench"]}
     for f in found["problems"] + found["gaps"]:
         assert sent[f] == getattr(f, "page", None), f
     assert {p for p in sent.values() if p} <= {p.NAME for p in panels.all_panels()}, sent
