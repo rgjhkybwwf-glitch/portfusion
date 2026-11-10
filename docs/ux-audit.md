@@ -77,6 +77,10 @@ A screenshot is named for the first row it shows.
 | 27 | Bench | 3 | "discard item" removed the item at once: no question, no undo, no word after. | missing function | 1 | `bench.js`; no test |
 | 28 | Bench | 3 | A worked document is listed twice, "Ready" on the bench and still "Waiting", and the header still counts it in the inbox. [shot](ux-audit/28.png) | missing state | 1 | `panels/bench.py`, `bench.js`; `test_bench.py` extended |
 | 29 | Bench | 2, 3 | "write to the record" did nothing: the browser pane cancels the desk's confirming dialog. No write was tested. | missing function | 0 | none |
+| 30 | Price Refresh | 1 | "6 marks", "Mark key", "the marks stand at": taken to mean prices, by a guess. [shot](ux-audit/30.png) | wording | 1 | the word is the glossary's: `house/headings.py`, `price-refresh.js` |
+| 31 | Price Refresh | 1 | "2 rate(s) the record lacks" sits beside "fetch everything" and "or closes of" a date. The walker could not tell what either would do, and pressed neither. [shot](ux-audit/30.png) | wording | 1 | decided 10 Nov: stays as it is |
+| 32 | Price Refresh | 1 | A "New" cell takes the outline of a box to type in and takes no typing; "Take" will not tick. Nothing says why. [shot](ux-audit/30.png) | missing state | 2 | decided 10 Nov: stays as it is |
+| 33 | Price Refresh | 1 | "fetch everything" was not pressed, so ticking and writing the marks were not walked or timed. | missing function | 0 | none |
 
 ## Timing
 
