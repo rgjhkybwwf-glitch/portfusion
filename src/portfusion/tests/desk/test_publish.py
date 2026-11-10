@@ -151,8 +151,10 @@ def test_publish_never_empties_a_folder_it_did_not_write(deploy, monkeypatch):
     checkout or the home folder, or a clone of something else, is refused before a file goes."""
     from portfusion.record import schema
     clone, origin = deploy
-    with pytest.raises(publish.Refused, match="too close to the app"):
-        publish.publish(deploy=schema.APP / "desk", tunnel=TUNNEL, commit=SOURCE)
+    with monkeypatch.context() as m:                        # a book's own .venv holds the app
+        m.setattr(schema, "BOOK", clone)
+        with pytest.raises(publish.Refused, match="too close to the app"):
+            publish.publish(deploy=schema.APP / "desk", tunnel=TUNNEL, commit=SOURCE)
     with monkeypatch.context() as m:
         m.setattr(publish.pathlib.Path, "home", lambda: clone)
         with pytest.raises(publish.Refused, match="too close to the home folder"):
