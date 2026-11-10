@@ -9,6 +9,7 @@ decision. Taken on 10 Nov 2026 at `1c61c41`, on a practice copy of the demo book
 | Not pressed | "Fetch everything", "Sweep IG events", "Set up this bet": they leave the machine |
 | Not completed | any write: the browser pane cancels the desk's "Write this to the record?" dialog |
 | Timing | three runs each, in the browser, the desk on the same Mac |
+| Not walked | Access, and the desk on a phone |
 
 ## The jobs
 
@@ -58,7 +59,7 @@ A screenshot is named for the first row it shows.
 | 8 | Dashboard | 8 | "YTD return (MWR)" and "Return since 1 Jan 2026 (MWR)" show the same 36.54%; the year runs "from 31 Dec 2025" in one place and "since 1 Jan 2026" in the other; MWR is not spelled out. [shot](ux-audit/01.png) | wording | 1 | the same figure whenever the record began this year: `engine/book.py`, `test_figures.py`; the report moves with it |
 | 9 | Dashboard | 9 | "Closed round trips 1", and Round Trips lists four rows under "Realisations 4 / Closed out 1". [shot](ux-audit/01.png) | wording | 1 | the label in `Book.HEADLINE`; `test_figures.py`; the report moves with it |
 | 10 | Dashboard | 11 | "Total gain £3,292.53" here, "Capital growth £3,291.33" on Performance, "Gain +3,334" on the report. They agree: £1.20 of funding interest lowers net asset value and sits in income. Nothing says so. [shot](ux-audit/01.png) | wording | 2 | a line of the Method (`record/rules.py`), or a label and `test_figures.py` |
-| 11 | Dashboard | all | The slowest page, at 0.22 s. Its findings are derived again on every request, and the first load asks for the shell before it asks for the page. Not slow on the demo's 189 rows; not measured on a larger book. | speed | 1 | `desk/engine.py` holds the findings for a store's mtime; one test |
+| 11 | Dashboard | all | The slowest page, at 0.22 s. Its findings are derived again on every request, and the first load asks for the shell before it asks for the page. Not slow on the demo's 189 rows, and 0.29 s on 1,525. | speed | 1 | `desk/engine.py` holds the findings for a store's mtime; one test |
 | 12 | Dashboard | 1, 2 | The walker saw the last page stay up for 2 to 4 s after a tab was pressed, with no sign of loading. Not reproduced: every page paints in 5 to 230 ms. The browser pane runs the page as a hidden one. [shot](ux-audit/12.jpg) | speed | 0 | none |
 | 13 | Bench | 2 | The item's own labels had to be decoded: "Evidence — statement-grade", "Authority that can be asked again", "Named reference that retrieves it". [shot](ux-audit/13.png) | wording | 2 | `bench.js`; no test |
 | 14 | Bench | 2 | A dividend the owner knows of, with no file, cannot be recorded: "Blocked the reference retrieves it a ii-statement is retrieved by its FILE and none is on the bench." The kinds offered are broker documents only. The job was abandoned. [shot](ux-audit/14.jpg) | missing function | 3 | the rule is the record's (`docs/intake.md`, Never), so a decision before a file; saying it before the form is filled is `bench.js` |
@@ -119,23 +120,52 @@ A screenshot is named for the first row it shows.
 | 69 | Every page | all | House words met with no meaning given: mark, bench, gates, statement-grade, round trip, realisation, frozen, read live, band, typed, owed, new line; and record, book, store and journal for what looked like one thing. | wording | 2 | `docs/glossary.md` holds them and the desk does not link it: `kit.js`, or the words themselves |
 | 70 | Every page | all | File and code names on screen: `_archive/statements/`, "cash-readings.csv row 0, column 'as_of'", the `propose` command, "ii-statement", "quarter-nav", `/api/report/2026-09-30`. | wording | 1 | each where it is drawn: `bench.js`, `reading.js`, `engine/findings.py` |
 
+## Ranked
+
+Severity times how often the job is done: every sitting 5, weekly 4, monthly 3, quarterly 2,
+occasional 1; a row on every page counts as every sitting. Rows 31 and 32 are decided and left
+out.
+
+| Score | Rows |
+|---|---|
+| 10 | 3, 4, 54, 68, 69 |
+| 9 | 14 |
+| 8 | 42, 46, 48, 49 |
+| 6 | 2, 13, 15, 18, 19, 22, 23, 26, 38, 39, 57 |
+| 5 | 5, 6, 11, 70 |
+| 4 | 1, 8, 10, 30, 34, 35, 43, 44, 45, 47, 50, 52, 59, 60, 62, 63 |
+| 3 | 16, 17, 20, 21, 24, 25, 27, 28, 40, 41, 58, 67 |
+| 2 | 7, 9, 36, 37, 51, 53, 55, 56, 61, 64 |
+| 1 | 65, 66 |
+| 0 | 12, 29, 33 |
+
+| Class | Rows |
+|---|---|
+| wording | 29 |
+| missing state | 15 |
+| missing function | 12 |
+| layout | 12 |
+| speed | 2 |
+
 ## Timing
 
-Load is a tab pressed to the page painted, three runs. The first load of the desk, address to
-Dashboard painted: 353, 240, 231 ms.
+Load is a tab pressed to the page painted, in the browser, on the demo's 189 rows. The first load
+of the desk, address to Dashboard painted: 353, 240, 231 ms. The last column is the page's data
+alone, made on the server, for the demo and for a practice book with its share positions
+multiplied to 1,525 rows; a larger book was not timed.
 
-| Page | Load, ms | Slowest action |
-|---|---|---|
-| Dashboard | 218, 228, 230 | open the Q3 report: 131, 137, 139 |
-| Bench | 14, 12, 15 | |
-| Price Refresh | 36, 33, 36 | |
-| What Changed | 27, 31, 26 | |
-| Reconcile | 47, 37, 38 | |
-| Performance | 176, 122, 122 | |
-| Holdings | 81, 67, 78 | |
-| Round Trips | 67, 52, 59 | |
-| Trades | 26, 21, 21 | |
-| Accounts | 17, 17, 21 | |
-| Reports | 7, 12, 7 | |
-| Method | 5, 5, 5 | |
-| Access | 11, 12, 12 | |
+| Page | Load, ms | Slowest action, ms | Data, ms: 189 rows, 1,525 rows |
+|---|---|---|---|
+| Dashboard | 218, 228, 230 | open the Q3 report: 144, 141, 140 | 127, 289 |
+| Bench | 14, 12, 15 | open an item: 4, 5, 4 | 3, 3 |
+| Price Refresh | 36, 33, 36 | the fetch, not pressed | 20, 106 |
+| What Changed | 27, 31, 26 | none | 10, 10 |
+| Reconcile | 47, 37, 38 | none | 25, 33 |
+| Performance | 176, 122, 122 | none | 99, 102 |
+| Holdings | 81, 67, 78 | regroup: 55, 54, 55 | 50, 211 |
+| Round Trips | 67, 52, 59 | filter: 40, 40, 41 | 38, 160 |
+| Trades | 26, 21, 21 | filter: 9, 7, 7 | 5, 9 |
+| Accounts | 17, 17, 21 | none | 4, 4 |
+| Reports | 7, 12, 7 | open the Q3 report: 144, 141, 140 | 0, 0 |
+| Method | 5, 5, 5 | none | 0, 0 |
+| Access | 11, 12, 12 | not walked | 1, 1 |
