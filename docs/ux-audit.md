@@ -104,6 +104,8 @@ A screenshot is named for the first row it shows.
 | 54 | Round Trips | 4, 9 | An "Owed" tag sits unlabelled at the row's far right. Its detail reads "Why we exited Owed" with nowhere to write it. It is written on a Bench item, and neither page says so. | missing function | 2 | `reading.js` (a link to the Bench); with row 4 |
 | 55 | Round Trips | 9 | A row's entry date is 26 Jun 2026 and its "Why we entered" is dated 6 Jul 2026. | wording | 1 | the second is the reasoning's own date: `reading.js` |
 | 56 | Round Trips | 9 | "View: holding / company life": the walker did not know what the second would change. | wording | 1 | `reading.js` |
+| 57 | Trades | 10 | Opened from its tab, the page was still filtered to the company looked at before: "2 trades" under "every buy and sale on file" read as the whole book. The company's name is cut off in its box. | missing state | 2 | `kit.js` (`HELD_FILTERS`), `app.css`; no test |
+| 58 | Trades | 10 | There is no total for a company bought in lots. A spread bet's "Trade value (GBP)" is notional, not money paid, and nothing says so. [shot](ux-audit/57.png) | missing state | 1 | `panels/trades.py`, `reading.js`; `test_panels.py` extended |
 
 ## Timing
 
