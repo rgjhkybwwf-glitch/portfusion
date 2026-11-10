@@ -115,6 +115,9 @@ A screenshot is named for the first row it shows.
 | 65 | Method | 12 | "Retired terms, do not reintroduce: economic interest · contract value …" speaks to whoever writes the app. [shot](ux-audit/64.png) | wording | 1 | `record/rules.py`; the tests that pin the Method |
 | 66 | Method | 12 | It gives the formula and not the numbers that went into this book's figure. | missing state | 1 | the engine's working for each headline figure: `engine/book.py`, `panels/method.py`; a test |
 | 67 | Method | 2, 12 | It explained, after the fact, why the dividend was refused. The Bench does not point here. | wording | 1 | `bench.js`; with row 14 |
+| 68 | Every page | all | "How this page works" is folded shut at the foot of a page. It was the most useful text there, and was opened only once stuck. Trades, Accounts, Round Trips and Reports have none. | layout | 2 | `kit.js` (`whyFold`), `reading.js`; no test |
+| 69 | Every page | all | House words met with no meaning given: mark, bench, gates, statement-grade, round trip, realisation, frozen, read live, band, typed, owed, new line; and record, book, store and journal for what looked like one thing. | wording | 2 | `docs/glossary.md` holds them and the desk does not link it: `kit.js`, or the words themselves |
+| 70 | Every page | all | File and code names on screen: `_archive/statements/`, "cash-readings.csv row 0, column 'as_of'", the `propose` command, "ii-statement", "quarter-nav", `/api/report/2026-09-30`. | wording | 1 | each where it is drawn: `bench.js`, `reading.js`, `engine/findings.py` |
 
 ## Timing
 
