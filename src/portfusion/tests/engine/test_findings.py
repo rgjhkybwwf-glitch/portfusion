@@ -90,10 +90,13 @@ def test_the_reasoning_is_the_records(book):
 
 @needs("buys", "current-prices")
 def test_theses_owed_names_each_missing_half(book, monkeypatch):
-    """Moving the cut-off back puts every position in scope, and every blank half then owes."""
+    """Moving the cut-off back puts every position in scope, and every blank half then owes; each
+    is a finding that names the Bench, where a why is written."""
     monkeypatch.setattr(book.D, "REVIEW_FROM", dt.date(2000, 1, 1))
     owed = book.theses_owed()
     assert owed and all(o["half"] in ("why we entered", "why we exited") for o in owed)
+    gaps = [g for g in book.findings()["gaps"] if g.startswith("reasoning owed")]
+    assert len(gaps) == len(owed) and all(g.page == "bench" for g in gaps)
     blank_open = [t for t in book.holdings(by="ticker")["ticker"]
                   if not any(r.why_entered for r in D.REASONING.get(t, []))]
     assert {o["ticker"] for o in owed if o["account"] is None} == set(blank_open)
@@ -155,14 +158,26 @@ def test_a_difference_that_rounds_to_nothing_carries_no_sign(book, monkeypatch):
         assert line.startswith(agree + "£0.00 ("), line
 
 
-@needs("buys", "current-prices")
+@needs("buys", "current-prices", "account-readings")
 def test_an_account_with_no_statement_is_a_gap_not_a_problem(book, monkeypatch):
+    """A reading with no figure owes a statement, and an account never read owes a reading: each
+    a gap that names the account, and the unread one the page its reading is taken on. With no
+    net asset value, an unread account is left out."""
     rec = book.reconciliation()
-    rec.loc[0, "statement"] = float("nan")
+    read = rec["evidence"].notna()
+    empty = book.by_account().assign(nav=0.0)
+    with monkeypatch.context() as m:
+        m.setattr(book, "by_account", lambda *a, **k: empty)
+        assert list(book.reconciliation()["account"]) == list(rec.loc[read, "account"])
+    row = read.idxmax()
+    rec.loc[row, "statement"] = float("nan")
     monkeypatch.setattr(book, "reconciliation", lambda: rec)
     f = book.findings()
-    assert any(g.startswith("NO STATEMENT") and rec.loc[0, "account"] in g for g in f["gaps"])
-    assert not any(rec.loc[0, "account"] in p for p in f["problems"])
+    assert any(g.startswith("NO STATEMENT") and rec.loc[row, "account"] in g for g in f["gaps"])
+    assert not any(rec.loc[row, "account"] in p for p in f["problems"])
+    for account in rec.loc[~read, "account"]:
+        gap = next(g for g in f["gaps"] if g == f"NO READING to reconcile against: {account}")
+        assert gap.page == book.reading_page(account)
 
 
 def test_the_evidence_line_survives_an_absent_archive(book, monkeypatch, tmp_path):
@@ -276,7 +291,8 @@ def test_the_findings_judge_every_judgeable_account_and_name_the_rest(book):
     assert int(re.match(r"(\d+)", line).group(1)) == judged
     if judged < len(rec):
         assert "GAPS, so not judged:" in f["notes"] or any(
-            g.startswith("NO STATEMENT") for g in f["gaps"]), "fewer judged and none named"
+            g.startswith(("NO STATEMENT", "NO READING")) for g in f["gaps"]), \
+            "fewer judged and none named"
 
 
 def test_each_action_of_the_command_answers_help_and_runs_nothing():

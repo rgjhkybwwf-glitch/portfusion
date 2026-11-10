@@ -12,6 +12,7 @@ the engine and this module only decides what to show and how to label it.
 from __future__ import annotations
 
 from portfusion.desk import engine
+from portfusion.desk.intake import bench, read_document
 from portfusion.desk.panels import _shape
 
 NAME = "dashboard"
@@ -60,6 +61,8 @@ def data() -> dict:
         # year-to-date figure is blank.
         "ytd": b.ytd_window(),
         "attention": _attention(found),
+        # WHAT WAITS ON THE BENCH, drawn where the Bench opens: staging, so never a finding.
+        "bench": _bench(),
         # THE CHECKS BEHIND IT, in the engine's words: the lines `portfusion record` prints under
         # the figures, so a clean list shows what was checked as well as that nothing failed.
         "checks": found["notes"],
@@ -75,8 +78,8 @@ def _attention(f: dict) -> list[dict]:
     `Book.findings()`'s, the same list `portfusion record` prints, so the desk and the command
     line cannot disagree about whether something is a problem.
     """
-    items = ([{"level": "problem", "text": p} for p in f["problems"]]
-             + [{"level": "gap", "text": g} for g in f["gaps"]])
+    items = [{"level": level, "text": text, "panel": getattr(text, "page", None)}
+             for level, key in (("problem", "problems"), ("gap", "gaps")) for text in f[key]]
 
     fresh = engine.freshness()
     # A PROBLEM RATHER THAN A NOTE: a stale SERVER answers with an older engine while serving
@@ -92,3 +95,18 @@ def _attention(f: dict) -> list[dict]:
     if not items:
         items.append({"level": "clear", "text": "nothing outstanding — the record's findings are clean"})
     return items
+
+
+def _bench() -> list[dict]:
+    """The Bench's unfinished work, counted: documents waiting, and items every gate passes.
+    Staging that cannot be read is said, and never takes the figures down."""
+    try:
+        items = [i for i in bench.all_items() if i.get("state") not in ("written", "archived")]
+        counts = ((len(read_document.waiting()), "document", "waiting"),
+                  (sum(all(g["ok"] for g in bench.gates(i)) for i in items), "item",
+                   "ready to write"))
+    except Exception as e:                       # noqa: BLE001 — staging must not blank the page
+        return [{"level": "problem", "panel": "bench",
+                 "text": f"the Bench could not be read: {type(e).__name__}: {e}"}]
+    return [{"level": "gap", "text": f"{n} {noun}{'s' * (n != 1)} {state}", "panel": "bench"}
+            for n, noun, state in counts if n]

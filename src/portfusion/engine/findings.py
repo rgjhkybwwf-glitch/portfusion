@@ -9,6 +9,17 @@ from portfusion.engine.core import Core
 from portfusion.house import precision as P
 
 
+class Finding(str):
+    """A finding's sentence, and the desk page its work is done on: `page` is a panel's name, None
+    where the work is not the desk's."""
+    page: str | None
+
+    def __new__(cls, text: str, page: str | None = None):
+        self = super().__new__(cls, text)
+        self.page = page
+        return self
+
+
 class Findings(Core):
 
     # ---- RECORD TIME  —  what the book LEARNED, and when -----------------------------
@@ -93,12 +104,14 @@ class Findings(Core):
 
         A PROBLEM is a defect until explained: an account past its reconciliation band, prices
         past their age or spread limit, a conversion at a stale rate, a row entered since the line
-        whose document is not on file. A GAP is work owed: an account with no statement, a
-        judgement owed. A NOTE is the state, stated, so a working check is visible as working.
+        whose document is not on file. A GAP is work owed: an account with no statement or never
+        read, a judgement owed. A NOTE is the state, stated, so a working check is visible as working.
 
         No expected figure is written in: every finding is a relationship in today's record. Each
         part that reads machinery outside the ledger — the journal, the conversions, the archive —
         reports that it could not look rather than raising.
+
+        A problem or gap worked on a desk page is a `Finding` and names it.
 
         `today` is an ISO date for the price-age test; today's date if omitted.
         """
@@ -108,15 +121,19 @@ class Findings(Core):
         checked, ungrounded, apart = 0, [], []
         for r in self.reconciliation().to_dict("records"):
             statement = r["statement"]
-            if statement is None or statement != statement:
-                ungrounded.append(r["account"])
-                continue
             difference = r["difference"]
             difference = None if difference is None or difference != difference else difference
             comparable = r["comparable"]
-            v = self.reconciliation_verdict(statement, difference, r["evidence"] or "",
+            v = self.reconciliation_verdict(statement, difference, r["evidence"],
                                             comparable if comparable is not None else None,
                                             "" if comparable else str(r["comparability"] or ""))
+            if v["verdict"] == "no-reading":
+                gaps.append(Finding(f"NO READING to reconcile against: {r['account']}",
+                                    self.reading_page(r["account"])))
+                continue
+            if v["verdict"] == "no-statement":
+                ungrounded.append(r["account"])
+                continue
             if not v["checkable"]:
                 apart.append(f"{r['account']} — {v['rule']}")
                 continue
@@ -125,9 +142,10 @@ class Findings(Core):
                 continue
             if difference is None or not v["ties"]:
                 shown = "an unknown amount" if difference is None else P.money(difference)
-                problems.append(f"reconciliation failed — {r['account']}: book and broker differ "
-                                f"by {shown}" + (f", past the {P.money(v['band'])} live band"
-                                                 if v["live"] else ""))
+                problems.append(Finding(
+                    f"reconciliation failed — {r['account']}: book and broker differ by {shown}"
+                    + (f", past the {P.money(v['band'])} live band" if v["live"] else ""),
+                    "reconcile"))
             elif v["live"]:
                 # A difference that rounds to nothing is £0.00, never -£0.00 or +£0.00.
                 agree = P.money(difference, signed=True)
@@ -138,7 +156,8 @@ class Findings(Core):
                              f"band {P.money(v['band'])}")
         notes.append(f"{checked} account(s) reconcile to statement")
         if ungrounded:
-            gaps.append("NO STATEMENT to reconcile against: " + ", ".join(ungrounded))
+            gaps.append(Finding("NO STATEMENT to reconcile against: " + ", ".join(ungrounded),
+                                "reconcile"))
         if apart:
             notes.append("GAPS, so not judged:")
             notes.extend(f"  {a}" for a in apart)
@@ -151,38 +170,40 @@ class Findings(Core):
                    f"{age} days (oldest of {p['marks']} marks) · spread {spread}d"]
                   if p["marks"] else ["no marks yet", "nothing to age"])
         if age > self.D.PRICE_AGE_LIMIT:
-            problems.append(f"prices are {age} days old — past the {self.D.PRICE_AGE_LIMIT}-day "
-                            f"limit, refresh before relying on them")
+            problems.append(Finding(
+                f"prices are {age} days old — past the {self.D.PRICE_AGE_LIMIT}-day limit, refresh "
+                f"before relying on them", "price-refresh"))
         if spread > self.D.PRICE_SPREAD_LIMIT:
-            problems.append(f"price marks span {spread} days ({P.day(oldest)} to {P.day(newest)}) "
-                            f"— past the {self.D.PRICE_SPREAD_LIMIT}-day spread limit. A ticker "
-                            f"was probably missed in the last sweep; the newest mark being fresh "
-                            f"hides it")
+            problems.append(Finding(
+                f"price marks span {spread} days ({P.day(oldest)} to {P.day(newest)}) — past the "
+                f"{self.D.PRICE_SPREAD_LIMIT}-day spread limit. A ticker was probably missed in "
+                f"the last sweep; the newest mark being fresh hides it", "price-refresh"))
         unheld = self.priced_unheld()
         if unheld:
-            problems.append(f"a live price nothing holds — {', '.join(unheld)}: every refresh "
-                            f"fetches it, and its age counts against the prices' freshness")
+            problems.append(Finding(
+                f"a live price nothing holds — {', '.join(unheld)}: every refresh fetches it, and "
+                f"its age counts against the prices' freshness", "price-refresh"))
 
         # ---- JUDGEMENTS OWED ------------------------------------------------------------
         owed = self.theses_owed()
         notes.append(f"reasoning: {len(owed)} owed (from "
                      f"{P.day(self.D.REVIEW_FROM)}, on entry and on exit)")
-        gaps.extend(f"reasoning owed — {o['ticker']}"
-                    + (f" in {o['account']}" if o["account"] else "")
-                    + f": {o['half']}, since {P.day(o['since'])}" for o in owed)
+        gaps.extend(Finding(f"reasoning owed — {o['ticker']}"
+                            + (f" in {o['account']}" if o["account"] else "")
+                            + f": {o['half']}, since {P.day(o['since'])}", "bench") for o in owed)
 
         # ---- FUNDING: every night a daily funded leg was held has its row -----------------
         unfunded = self.funding_gaps()
         notes.append(f"funding: {len(self.D.DAILY_FUNDED_LEGS)} daily funded leg(s), "
                      f"{len(unfunded)} night(s) with no funding-interest row")
-        gaps.extend(f"funding interest missing — {a}: {leg} held overnight {night} with no row"
-                    for a, leg, night in unfunded)
+        gaps.extend(Finding(f"funding interest missing — {a}: {leg} held overnight {night} with "
+                            f"no row", "bench") for a, leg, night in unfunded)
 
         # ---- DATED RATES: every date a figure converts at has that day's close ----------
         owed = self.rate_gaps(today)
         notes.append(f"dated rates: {len(owed)} owed a TradingView close")
-        gaps.extend(f"rate owed — {g['currency']} {P.day(g['date'])} ({g['why']}): no TradingView "
-                    f"close on file for it" for g in owed)
+        gaps.extend(Finding(f"rate owed — {g['currency']} {P.day(g['date'])} ({g['why']}): no "
+                            f"TradingView close on file for it", "price-refresh") for g in owed)
 
         # ---- A DIVIDEND'S LINE: what lets a company's life count it ---------------------
         gaps.extend(f"dividend not assigned to a line — {r.date} {r.account}: {r.detail}"
@@ -262,13 +283,13 @@ class Findings(Core):
             note = (f"conversions: {len(conv)} foreign-currency income row(s) · "
                     + (f"rate up to {max(apart)}d before the event, limit {limit}d" if apart
                        else "none with a rate on file"))
-            return note, [
+            return note, [Finding(
                 (f"{r.account} {str(r.date)[:10]}: {r.currency} {r.local_amount} converted at "
                  f"the close of {r.rate_date} — {r.days_apart} days before the event, past the "
                  f"{limit}-day limit. Fetch the rate for the day.") if pd.notna(r.days_apart)
                 else (f"{r.account} {str(r.date)[:10]}: {r.currency} {r.local_amount} has no "
-                      f"close on file on or before its date. Fetch the rate for the day.")
-                for r in conv[conv["stale"]].itertuples()]
+                      f"close on file on or before its date. Fetch the rate for the day."),
+                "price-refresh") for r in conv[conv["stale"]].itertuples()]
         except Exception as e:                       # noqa: BLE001 — never fail over this check
             # NOT CHECKED IS A PROBLEM, not a note: a check that cannot run must not read as good
             # order.
@@ -303,8 +324,9 @@ class Findings(Core):
             if not gaps:
                 return line, None
             return (f"{line} · {len(gaps)} cannot",
-                    f"{len(gaps)} row(s) cite a document that is in no archived filename: "
-                    f"{', '.join(sorted(gaps))} — file it, or correct the row's source")
+                    Finding(f"{len(gaps)} row(s) cite a document that is in no archived filename: "
+                            f"{', '.join(sorted(gaps))} — file it, or correct the row's source",
+                            "bench"))
         except Exception as e:                       # noqa: BLE001 — never fail over provenance
             # NOT CHECKED IS A PROBLEM, as the conversions' is.
             return (f"evidence: unknown ({type(e).__name__})",

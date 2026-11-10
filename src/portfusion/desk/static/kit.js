@@ -56,8 +56,13 @@ const stepLine = (steps) => `<ol class="steps">${steps.map((s) => `
 const quiet = (text) => `<span class="muted small">${text}</span>`;
 /* A page the server does not list — Bench and Price Refresh on the hosted desk — is left out:
    a pointer to a page the reader cannot open is an instruction they cannot follow. */
-const panelLink = (panel, label) => !PANELS.has(panel) ? "" :
-  `<button class="link" data-panel="${panel}">${esc(label)}</button>`;
+const panelLink = (panel, label = PANELS.get(panel)) => !PANELS.has(panel) ? "" :
+  `<button class="link" data-panel="${esc(panel)}">${esc(label)}</button>`;
+/* AN OWED WHY IS WRITTEN ON THE BENCH, so its tag leads there where the Bench opens. */
+const owedTag = () => {
+  const tag = `<span class="tag gap">owed</span>`;
+  return PANELS.has("bench") ? `<button class="link" data-panel="bench">${tag}</button>` : tag;
+};
 
 /* ONE QUARTER'S REPORT, opened beside the desk: the report's page, rendered by
    the desk's /api/report route from the same frozen inputs. Three pages offer one, so the link is
@@ -318,7 +323,7 @@ const whyPart = (half) => (x) => {
   return ws.length
     ? ws.map((w) => `<dt>${head(half)} <span class="muted small">${esc(day(w.date))}</span></dt>` +
                     `<dd>${esc(w.text)}</dd>`).join("")
-    : x[`${half}_owed`] ? `<dt>${head(half)}</dt><dd><span class="tag gap">owed</span></dd>` : "";
+    : x[`${half}_owed`] ? `<dt>${head(half)}</dt><dd>${owedTag()}</dd>` : "";
 };
 const listPart = (c) => (x) => !(x[c] || []).length ? "" :
   `<dt>${head(c)}</dt><dd>${x[c].map(esc).join(" · ")}</dd>`;

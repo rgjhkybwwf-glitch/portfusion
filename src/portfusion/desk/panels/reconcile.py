@@ -36,7 +36,8 @@ COLUMNS = ("account", "book", "broker", "difference", "verdict", "last_check", "
 #: EVERY VERDICT HAS A TAG, the colour its row's tag wears. One that fell through to `note` would
 #: wear the colour of a row inside its band, for a row that has not been judged at all.
 VERDICT_TAG = {"units-agree": "ok", "within-band": "note", "differs": "problem",
-               "no-statement": "gap", "no-holdings": "gap", "struck-apart": "gap"}
+               "no-statement": "gap", "no-holdings": "gap", "struck-apart": "gap",
+               "no-reading": "gap"}
 
 
 def data() -> dict:
@@ -69,7 +70,11 @@ def data() -> dict:
             # classification living in a renderer — and a second renderer needing the same
             # distinction would work out its own, and get it wrong.
             "rule": v["rule"],
-            **_rests_on(rests.loc[r.account] if r.account in rests.index else None),
+            # WHERE ITS READING IS TAKEN, which a row not judged links to.
+            "reads": b.reading_page(r.account),
+            # AN ACCOUNT NEVER READ RESTS ON NOTHING: the newest statement is not this row's.
+            **_rests_on(rests.loc[r.account] if v["verdict"] != "no-reading" and r.account in rests.index
+                        else None),
         })
     return {
         "rows": rows,

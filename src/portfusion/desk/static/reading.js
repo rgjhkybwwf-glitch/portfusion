@@ -94,8 +94,9 @@ Object.assign(DRAW, {
     /* WHAT NEEDS ATTENTION, THEN WHAT WAS CHECKED: the record's notes, in the engine's words and
        in the order `portfusion record` prints them, under the problems and gaps. A tag's space
        and no dot, so the text lines up with the items above it. */
-    const items = d.attention.map((a) =>
-      `<li class="${esc(a.level)}"><span class="tag">${esc(a.level)}</span>${esc(a.text)}</li>`
+    const items = [...d.attention, ...(PANELS.has("bench") ? d.bench || [] : [])].map((a) =>
+      `<li class="${esc(a.level)}"><span class="tag">${esc(a.level)}</span>${esc(a.text)}
+        ${a.panel ? panelLink(a.panel) : ""}</li>`
     ).join("") + (d.checks || []).map((c) =>
       `<li class="check"><span class="tag"></span>${esc(c)}</li>`).join("");
 
@@ -242,7 +243,7 @@ Object.assign(DRAW, {
                 (r.company ? `<button class="link" data-trades="${esc(r.company)}">trades</button>`
                            : "") +
                 detailLink(holdingDetail(r, d)) +
-                ((r.reasons || []).some((x) => x.why_entered_owed) ? ` <span class="tag gap">owed</span>` : "") +
+                ((r.reasons || []).some((x) => x.why_entered_owed) ? ` ${owedTag()}` : "") +
                 `</td>`,
               {name: "holdings", afterRow: (r, span) => detailRow(holdingDetail(r, d), span),
                inserts: [{after: "held_as", head: `<th class="num">${head("qty")}</th>`,
@@ -285,7 +286,7 @@ Object.assign(DRAW, {
                   (r) => `<td class="nowrap">${r.company
                     ? `<button class="link" data-trades="${esc(r.company)}">trades</button>` : ""}${
                     detailLink(detailList(r, d.detail))}${owes(r, d.owed)
-                    ? ` <span class="tag gap">owed</span>` : ""}</td>`,
+                    ? ` ${owedTag()}` : ""}</td>`,
                   { name: "round trips", afterRow: (r, span) => detailRow(detailList(r, d.detail), span),
                     /* A SPREAD BET IN ITS OWN TERMS, as Trades reads one: its stake per point
                        for a quantity, its entry and exit as levels in points, and no currency
@@ -469,7 +470,9 @@ Object.assign(DRAW, {
       book: (r) => `<td class="num">${money(r.book)}</td>`,
       broker: (r) => `<td class="num">${money(r.broker)}${igFigures(r)}</td>`,
       difference: (r) => `<td class="num">${money(r.difference)}</td>`,
-      verdict: (r) => `<td><span class="tag ${esc(r.tag)}">${esc(verdictWords(r.verdict))}</span></td>`,
+      /* A ROW NOT JUDGED LEADS TO WHERE ITS READING IS TAKEN. */
+      verdict: (r) => `<td><span class="tag ${esc(r.tag)}">${esc(verdictWords(r.verdict))}</span>${
+        r.checkable ? "" : panelLink(r.reads)}</td>`,
       document: (r) => `<td>${r.document ? esc(r.document) : "—"}</td>`,
     };
 

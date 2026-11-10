@@ -76,6 +76,9 @@ def test_each_reconcile_row_names_the_reading_its_broker_side_rests_on():
     d = panels.get("reconcile").data()
     assert d["rows"], "no account — this asserts nothing"
     for r in d["rows"]:
+        if r["verdict"] == "no-reading":
+            assert (r["last_check"], r["document"]) == ("no broker check", None), r
+            continue
         e = rests.loc[r["account"]]
         assert str(e["as_of"])[:10] == struck[r["account"]], (
             f"{r['account']}: the document is the reading of {e['as_of']}, the figures are of "
@@ -95,6 +98,7 @@ def test_an_account_with_no_broker_figure_is_a_gap_not_a_pass():
     # document arrives, so a test naming them goes stale on exactly the event it exists for.
     v = _engine.Book.reconciliation_verdict
     assert v(None, None, "ii-valuation")["verdict"] == "no-statement"
+    assert v(None, None, None)["verdict"] == v(None, None, float("nan"))["verdict"] == "no-reading"
     apart = v(100.0, 1.0, "ig-accounts", False, "the marks are not one pass")
     assert apart["verdict"] == "struck-apart"
     assert apart["rule"] == "the marks are not one pass", "the verdict prints comparability's words"
@@ -108,7 +112,8 @@ def test_an_account_with_no_broker_figure_is_a_gap_not_a_pass():
 
     d = panels.get("reconcile").data()
     for r in d["gaps"]:
-        assert r["verdict"] in ("no-statement", "no-holdings", "struck-apart"), r["verdict"]
+        assert r["verdict"] in ("no-statement", "no-holdings", "struck-apart", "no-reading"), \
+            r["verdict"]
         assert len(r["rule"].split()) >= 4, f"{r['verdict']} must say why, and said {r['rule']!r}"
     assert all(r["verdict"] not in ("within-band", "units-agree") for r in d["gaps"])
 

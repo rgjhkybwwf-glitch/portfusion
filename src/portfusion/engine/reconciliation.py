@@ -47,6 +47,11 @@ class Reconciliation(Core):
         for a in self.D.ACCOUNT_ORDER:
             r = next((x for x in self.D.ac_rows if x.acct == a), None)
             if r is None:
+                # AN ACCOUNT NEVER READ IS A ROW WITH NO READING, a gap, never an absence; one that
+                # holds nothing has nothing to check and is no row.
+                held = _nav_at(None).get(a)
+                if held is not None and held == held and round(held, 2):
+                    rows.append({"account": a})
                 continue
             # TWO CHECKS, ONE PER KIND OF ACCOUNT. A SPREAD-BET ACCOUNT'S BOOK SIDE IS ITS
             # DERIVED EQUITY — never cells typed off the statement it is compared against, which
@@ -103,6 +108,11 @@ class Reconciliation(Core):
             "account", "positions", "cash_at_recon", "cash_at_recon_at", "equity", "funds",
             "running_pl", "deposit", "available", "book", "statement", "difference", "as_of",
             "struck_on", "at", "comparable", "comparability", "evidence"])
+
+    def reading_page(self, account: str) -> str:
+        """The desk page an account's reading is taken on: Price Refresh strikes a spread-bet
+        account's, and the Bench files a share account's."""
+        return "price-refresh" if self.is_spread_bet(account) else "bench"
 
     def newest_cash(self) -> pd.DataFrame:
         """Each account's newest cash on file and what it was read from: one row per account in
@@ -252,6 +262,8 @@ class Reconciliation(Core):
           "within-band"   an IG pair inside the derivation band
           "differs"       past the band. A difference is a defect until explained.
 
+          "no-reading"    an account no reading has been taken of — a GAP
+
         `rule` is the verdict in a reader's words, here so every renderer says it the same way.
         It carries no date: agreement is of the reading's day, and a page heads that day itself,
         with the document behind it (`quarter_evidence()`).
@@ -260,8 +272,11 @@ class Reconciliation(Core):
         """
         missing = statement is None or (isinstance(statement, float) and statement != statement)
         if missing:
+            unread = evidence is None or evidence != evidence or not str(evidence)
             return {"checkable": False, "live": False, "band": None, "ties": None,
-                    "verdict": "no-statement", "rule": "nothing to check against"}
+                    **({"verdict": "no-reading", "rule": "no reading on file to check against"}
+                       if unread else
+                       {"verdict": "no-statement", "rule": "nothing to check against"})}
         ev = D.EVIDENCE_BY_KEY.get(str(evidence or ""))
         if ev is None or ev.retrieval != "reading":
             if ev is not None and ev.key in D.HOLDINGS_COLUMNS:
