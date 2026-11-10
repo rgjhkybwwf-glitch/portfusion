@@ -202,7 +202,8 @@ PANEL_COLUMNS = {
         "COLUMNS": (
             "ticker", "company", "held_as", "account", "currency", "qty", "entry_price",
             "exit_price", "cost",
-            "proceeds", "realised", "realised_pct", "opened", "closed", "days_held", "fully_closed"
+            "proceeds", "realised", "realised_pct", "opened", "closed", "days_held", "fully_closed",
+            "annualised_pct"
         ),
         "REASON_COLUMNS": ("whys", "research_notes"),
         "DETAIL_COLUMNS": ("why_entered", "why_exited", "research_notes", "note"),

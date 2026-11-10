@@ -29,6 +29,9 @@ No figure moves, and there is no migration. Do these when the book's pin moves.
 - **A holding's detail holds its history**: its company's life in the engine's figures, and by
   account where it is held in several, the income rows that name it, newest first, and a link to
   the company's life on Round Trips.
+- **Round Trips gives a closed share round trip's annualised gain**: the yearly rate at which
+  its purchases grow to its sales, each on its own day, once the trip is fully closed out and
+  was held thirty days or more. Blank on a spread bet.
 - **`docs/ux-audit.md`**: a newcomer's walk of the desk on the demo, 70 ranked findings.
 
 ### Changed

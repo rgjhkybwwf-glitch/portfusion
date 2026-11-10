@@ -11,6 +11,10 @@ from portfusion.engine.core import Core
 
 class Trades(Core):
 
+    #: The days a round trip must have been held before its gain is put on a yearly footing:
+    #: compounding a few days' gain over a year gives a figure with no meaning.
+    ANNUALISED_FROM = 30
+
     # ---- ROUND TRIPS -----------------------------------------------------------------
 
     def round_trips(self, ticker: str | None = None, account: str | None = None,
@@ -103,6 +107,7 @@ class Trades(Core):
         rt["exit_level_points"] = rt["exit_price"].where(is_sb).round(2)
         rt["realised"] = rt["proceeds"] - rt["cost"]
         rt["realised_pct"] = rt["realised"] / rt["cost"]
+        rt["annualised_pct"] = self._annualised(rt)
         rt["pre_baseline"] = rt["opened"] < self.baseline
         # BY EXIT DATE, MOST RECENT FIRST — a realisation log reads what happened lately first —
         # with a stable tie-break on the realisation id, as activity() uses: several realisations
@@ -123,6 +128,45 @@ class Trades(Core):
             rt = rt[rt["closed"] <= pd.Timestamp(end)]
         return (rt.sort_values(["closed", "realisation_id"], ascending=False)
                   .reset_index(drop=True))
+
+    def _annualised(self, rt: pd.DataFrame) -> pd.Series:
+        """A SHARE ROUND TRIP'S GAIN ON A YEARLY FOOTING, once it is fully closed out and was
+        held ANNUALISED_FROM days or more; blank on any other, and on a spread bet, whose money
+        put up the record does not hold.
+
+        THE YEARLY RATE AT WHICH ITS PURCHASES GROW TO ITS SALES, each on its own day: the rate
+        that brings every purchase's cost and every sale's proceeds, discounted to the trip's
+        first day, to nothing. Money in late or out early counts for the days it was in, and a
+        trip of one purchase and one sale is its realised percentage compounded to a year.
+        Found by halving between a total loss and `ceiling`; a trip that brought nothing back is
+        a total loss, and any other with no such rate is blank."""
+        L = self.ledger[self.ledger["realisation_id"].notna()]
+        paid = L[L["direction"] == "Buy"].assign(amount=lambda d: -d["cost"])
+        got = L[L["direction"] == "Sell"].assign(amount=lambda d: d["proceeds"])
+        flows = {k: list(zip(g["date"], g["amount"])) for k, g in
+                 pd.concat([paid, got]).dropna(subset=["amount"]).groupby("realisation_id")}
+        floor, ceiling = -0.999999, 1000.0
+
+        def rate(trip) -> float | None:
+            mine = [((day - trip.opened).days / 365, amount)
+                    for day, amount in flows.get(trip.realisation_id, [])]
+
+            def worth(r: float) -> float:
+                return sum(amount / (1 + r) ** years for years, amount in mine)
+            low, high = floor, ceiling
+            if mine and not any(amount > 0 for _, amount in mine):
+                return -1.0
+            if not mine or worth(low) * worth(high) > 0:
+                return None
+            for _ in range(100):
+                mid = (low + high) / 2
+                low, high = (low, mid) if worth(low) * worth(mid) <= 0 else (mid, high)
+            return (low + high) / 2
+
+        shown = (rt["fully_closed"].astype(bool) & rt["held_as"].eq("shares")
+                 & (rt["days_held"] >= self.ANNUALISED_FROM))
+        return pd.Series([rate(t) if ok else None for t, ok in zip(rt.itertuples(index=False), shown)],
+                         index=rt.index, dtype=float)
 
     def round_trip_totals(self, ticker: str | None = None, account: str | None = None,
                           start: str | None = None, end: str | None = None,

@@ -600,7 +600,7 @@ def test_movement_colour_is_used_and_scoped():
       change price_effect fx_effect price_move_pct
                   all four are RESULTS — the sign says whether the book is better or worse off,
                   which is the test this list has always applied.
-      unrealised unrealised_pct realised realised_pct life_gain life_pct
+      unrealised unrealised_pct realised realised_pct annualised_pct life_gain life_pct
                   a holding's, a round trip's and a company life's gains: results, as `gain` is.
       transacted  NOT a result, and never to be added. Buying shares is not a
                   gain and selling them is not a loss. Same exclusion as
@@ -617,7 +617,7 @@ def test_movement_colour_is_used_and_scoped():
     cols = set(MOVEMENT_FIELDS)
     assert cols == {"gain", "unrealised", "unrealised_pct", "realised_pct", "return",
                     "change", "price_effect", "fx_effect", "price_move_pct",
-                    "realised", "life_gain", "life_pct"}, \
+                    "realised", "life_gain", "life_pct", "annualised_pct"}, \
         f"MOVEMENT_FIELDS is {sorted(cols)}"
 
     for excluded, why in (("difference", "a reconciliation gap is not a loss"),

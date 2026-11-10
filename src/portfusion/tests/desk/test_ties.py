@@ -81,6 +81,14 @@ def test_round_trips_are_the_engines_newest_first(b):
         "the page re-sorted what the engine ordered"
     for r, f in zip(rows, frame):
         assert _same(r["realised"], f["realised"]), f["realisation_id"]
+        # ON A YEARLY FOOTING only for shares fully closed out and held long enough; a gain
+        # is then a yearly gain and a loss a yearly loss.
+        yearly = f["annualised_pct"]
+        assert r["annualised_pct"] == (pytest.approx(yearly) if yearly == yearly else None)
+        if yearly == yearly:
+            assert f["fully_closed"] and f["held_as"] == "shares"
+            assert f["days_held"] >= b.ANNUALISED_FROM
+            assert abs(f["realised"]) < 0.01 or (yearly > 0) == (f["realised"] > 0)
     closed = [r["closed"] for r in rows]
     assert closed == sorted(closed, reverse=True), "Round Trips is not newest first"
 

@@ -45,7 +45,7 @@ TOKENS = {
 #: Dashboard's headline gains stay plain too: a summary is read, a column is scanned.
 MOVEMENT_FIELDS = ("gain", "unrealised", "unrealised_pct", "realised_pct", "return", "change",
                    "price_effect", "fx_effect", "price_move_pct", "realised", "life_gain",
-                   "life_pct")
+                   "life_pct", "annualised_pct")
 
 #: The dark theme: only the tokens that change. The field and the footer do not.
 TOKENS_DARK = {

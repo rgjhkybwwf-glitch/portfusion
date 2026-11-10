@@ -67,6 +67,7 @@ COMMON = {
     "unrealised_pct": "Unrealised gain (%)",
     "realised": "Realised gain (GBP)",
     "realised_pct": "Realised gain (%)",
+    "annualised_pct": "Annualised gain (%)",    # a round trip fully closed out, compounded
     "quarter_gain": "Quarter gain (GBP)",
     "weight": "Weight",
     "share": "% of book",

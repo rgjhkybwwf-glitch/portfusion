@@ -243,6 +243,23 @@ def test_a_full_exit_then_a_new_purchase_is_a_second_life(store_copy):
 
 
 @needs("accounts")
+def test_a_round_trip_is_annualised_on_the_money_and_the_days_it_was_in(store_copy):
+    """100 shares at 100p, 100 more at 100p twenty days on, all sold at 110p on day forty: £20
+    on £200. The second £100 was in for half the trip, so the yearly rate is the one that grows
+    each £100 from its own day to the £220, above the trip's percentage compounded."""
+    co = _Company(store_copy, "ANLZ", price=1.10)
+    co.buy(_on(0), 100, 1.00)
+    co.buy(_on(20), 100, 1.00)
+    co.sell(_on(40), 200, 1.10, "R-ANLZ")
+    trip = _reloaded().round_trips().set_index("realisation_id").loc["R-ANLZ"]
+    ties(trip["realised_pct"], 20 / 200, "the trip's own percentage, on all it cost")
+    yearly = trip["annualised_pct"]
+    ties(100 * (1 + yearly) ** (40 / 365) + 100 * (1 + yearly) ** (20 / 365), 220.0,
+         "each purchase grown to the sale")
+    assert yearly > (1 + 20 / 200) ** (365 / 40) - 1, "the late money counted as in from the start"
+
+
+@needs("accounts")
 def test_a_dividend_is_its_lifes_even_when_paid_after_the_final_sale(store_copy):
     """A dividend counts in the life open on its date, or, paid after the line was sold out, in
     the life it was earned in; it lowers the life cost of what is still held."""

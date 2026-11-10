@@ -73,7 +73,11 @@ def data() -> dict:
                 "entry. Holdings divides by what is still held, Round Trips by holding by what "
                 "was sold, by company life by everything bought in the life. A bet taken beside "
                 "the shares adds its exposure, so the life's % reads lower even when the bet "
-                "gains.")},
+                "gains. A share round trip's annualised gain is the yearly rate at which its "
+                "purchases grow to its sales, each on its own day; for one purchase and one "
+                "sale, (1 + gain) ^ (365 ÷ days held) − 1. It is shown once the trip is fully "
+                f"closed out, and blank on one held under {b.ANNUALISED_FROM} days and on a "
+                "spread bet.")},
             {"topic": "Quarterly returns — one series", "text": (
                 "One series, on net asset value (Performance), by the same day-weighted formula "
                 "as the headline YTD return. Each quarter end's value says what it rests on: sourced "
