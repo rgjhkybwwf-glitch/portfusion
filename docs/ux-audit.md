@@ -81,6 +81,10 @@ A screenshot is named for the first row it shows.
 | 31 | Price Refresh | 1 | "2 rate(s) the record lacks" sits beside "fetch everything" and "or closes of" a date. The walker could not tell what either would do, and pressed neither. [shot](ux-audit/30.png) | wording | 1 | decided 10 Nov: stays as it is |
 | 32 | Price Refresh | 1 | A "New" cell takes the outline of a box to type in and takes no typing; "Take" will not tick. Nothing says why. [shot](ux-audit/30.png) | missing state | 2 | decided 10 Nov: stays as it is |
 | 33 | Price Refresh | 1 | "fetch everything" was not pressed, so ticking and writing the marks were not walked or timed. | missing function | 0 | none |
+| 34 | What Changed | 6 | The page never names net asset value. Its two blocks cannot be added to the book's move, and the spread bets' "Value now £24,122.00" is notional. The answer is one row of Performance and section 05 of the report; nothing points to either. [shot](ux-audit/34.png) | missing state | 2 | `reading.js`, `panels/what_changed.py`; `test_panels.py` extended |
+| 35 | What Changed | 6 | "Compared new line → 30 Sep 2026 3 lines · 30 Jun 2026 → 30 Sep 2026 3 lines" was not understood. It is not a control, and no other period can be chosen. [shot](ux-audit/34.png) | wording | 2 | the words: `reading.js`. A choice of period: the panel, its route and a test |
+| 36 | What Changed | 6 | "Market time — what the marks did" and "Record time — every write since": the second table reads as a system log (route, did, table), and one detail is cut off with "…". | wording | 1 | `house/headings.py`, `reading.js`, `app.css` |
+| 37 | What Changed | 6 | "3 earlier, since the journal opened 30 Sep 2026" sits under rows dated June and August. | wording | 1 | `reading.js`; no test |
 
 ## Timing
 
