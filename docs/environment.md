@@ -1,6 +1,6 @@
 # The environment
 
-The Python a checkout runs on, and which book each command reads.
+The Python a checkout runs on, the JavaScript tools beside it, and which book each command reads.
 
 ## The venv
 
@@ -27,6 +27,21 @@ into it, constrained to that release's `requirements.lock`; `--no-venv` skips it
 
 **A running desk keeps what it imported.** Rebuilding the venv or changing Python reaches it only
 when it restarts ([`desk-app.md`](desk-app.md)).
+
+## The JavaScript tools
+
+Two of the guard's checks run in Node, from `tools/`: every page drawn in jsdom, and the desk
+walked in Chromium by Playwright ([`testing.md`](testing.md)). `tools/package.json` names the
+packages and `tools/package-lock.json` the exact set; a book installs none of them.
+
+```bash
+npm ci --prefix tools              # once per checkout: into tools/node_modules
+npm --prefix tools run browser     # once per Mac: Playwright's Chromium, into ~/Library/Caches/ms-playwright
+npm --prefix tools run walk        # the walk; it starts its own desk, so the venv must be active
+```
+
+Each Playwright version brings its own Chromium, and the walk's baselines are that Chromium's: a
+move of the pin may need them taken again.
 
 ## Moving the lock
 
