@@ -51,7 +51,7 @@ MONEY_FIELDS = ("cost", "value", "gain", "unrealised", "proceeds",
                 "amount", "cash", "realised", "dividends", "funding_interest",
                 "total", "life_gain", "book", "broker", "difference")
 PCT_FIELDS = ("unrealised_pct", "realised_pct", "weight", "return", "price_move_pct", "ytd",
-              "life_pct")
+              "life_pct", "annualised_pct")
 
 MONTHS = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
 

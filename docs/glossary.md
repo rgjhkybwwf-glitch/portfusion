@@ -100,6 +100,7 @@ not *realized*.
 |---|---|
 | Gain on an open position | **Unrealised gain (GBP) · Unrealised gain (%)** |
 | Gain on a closed position | **Realised gain (GBP) · Realised gain (%)** |
+| The yearly rate at which a share round trip's purchases grow to its sales, each on its own day; blank until the trip is fully closed out, on one held under thirty days, and on a spread bet | **Annualised gain (%)** |
 | A line's gain over a quarter | **Quarter gain (GBP)** |
 | A round trip's prices, in the share's own currency | **Entry price · Exit price**, beside **Ccy** |
 | Issuer name | **Company** |

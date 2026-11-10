@@ -29,7 +29,7 @@ ORDER = 50
 #: it cost and brought in, then its dates.
 COLUMNS = ("ticker", "company", "held_as", "account", "currency", "qty", "entry_price",
            "exit_price", "cost", "proceeds", "realised", "realised_pct", "opened", "closed", "days_held",
-           "fully_closed")
+           "fully_closed", "annualised_pct")
 
 #: THE ROW'S KEY, carried and not drawn: R- and the ticker repeats the Ticker column, and Trades'
 #: detail shows it beside each sale it joins.
