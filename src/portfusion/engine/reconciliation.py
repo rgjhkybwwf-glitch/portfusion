@@ -47,8 +47,11 @@ class Reconciliation(Core):
         for a in self.D.ACCOUNT_ORDER:
             r = next((x for x in self.D.ac_rows if x.acct == a), None)
             if r is None:
-                # AN ACCOUNT NEVER READ IS A ROW WITH NO READING, a gap, never an absence.
-                rows.append({"account": a})
+                # AN ACCOUNT NEVER READ IS A ROW WITH NO READING, a gap, never an absence; one that
+                # holds nothing has nothing to check and is no row.
+                held = _nav_at(None).get(a)
+                if held is not None and held == held and round(held, 2):
+                    rows.append({"account": a})
                 continue
             # TWO CHECKS, ONE PER KIND OF ACCOUNT. A SPREAD-BET ACCOUNT'S BOOK SIDE IS ITS
             # DERIVED EQUITY — never cells typed off the statement it is compared against, which

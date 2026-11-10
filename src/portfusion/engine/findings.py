@@ -120,21 +120,20 @@ class Findings(Core):
         # ---- the book against the BROKERS' STATEMENTS -------------------------------------
         checked, ungrounded, apart = 0, [], []
         for r in self.reconciliation().to_dict("records"):
-            if self.reconciliation_verdict(r["statement"], None,
-                                           r["evidence"])["verdict"] == "no-reading":
-                gaps.append(Finding(f"NO READING to reconcile against: {r['account']}",
-                                    self.reading_page(r["account"])))
-                continue
             statement = r["statement"]
-            if statement is None or statement != statement:
-                ungrounded.append(r["account"])
-                continue
             difference = r["difference"]
             difference = None if difference is None or difference != difference else difference
             comparable = r["comparable"]
-            v = self.reconciliation_verdict(statement, difference, r["evidence"] or "",
+            v = self.reconciliation_verdict(statement, difference, r["evidence"],
                                             comparable if comparable is not None else None,
                                             "" if comparable else str(r["comparability"] or ""))
+            if v["verdict"] == "no-reading":
+                gaps.append(Finding(f"NO READING to reconcile against: {r['account']}",
+                                    self.reading_page(r["account"])))
+                continue
+            if v["verdict"] == "no-statement":
+                ungrounded.append(r["account"])
+                continue
             if not v["checkable"]:
                 apart.append(f"{r['account']} — {v['rule']}")
                 continue

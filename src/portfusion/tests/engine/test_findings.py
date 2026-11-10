@@ -161,9 +161,14 @@ def test_a_difference_that_rounds_to_nothing_carries_no_sign(book, monkeypatch):
 @needs("buys", "current-prices", "account-readings")
 def test_an_account_with_no_statement_is_a_gap_not_a_problem(book, monkeypatch):
     """A reading with no figure owes a statement, and an account never read owes a reading: each
-    a gap that names the account, and the unread one the page its reading is taken on."""
+    a gap that names the account, and the unread one the page its reading is taken on. With no
+    net asset value, an unread account is left out."""
     rec = book.reconciliation()
     read = rec["evidence"].notna()
+    empty = book.by_account().assign(nav=0.0)
+    with monkeypatch.context() as m:
+        m.setattr(book, "by_account", lambda *a, **k: empty)
+        assert list(book.reconciliation()["account"]) == list(rec.loc[read, "account"])
     row = read.idxmax()
     rec.loc[row, "statement"] = float("nan")
     monkeypatch.setattr(book, "reconciliation", lambda: rec)
