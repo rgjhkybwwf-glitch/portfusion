@@ -85,6 +85,10 @@ A screenshot is named for the first row it shows.
 | 35 | What Changed | 6 | "Compared new line → 30 Sep 2026 3 lines · 30 Jun 2026 → 30 Sep 2026 3 lines" was not understood. It is not a control, and no other period can be chosen. [shot](ux-audit/34.png) | wording | 2 | the words: `reading.js`. A choice of period: the panel, its route and a test |
 | 36 | What Changed | 6 | "Market time — what the marks did" and "Record time — every write since": the second table reads as a system log (route, did, table), and one detail is cut off with "…". | wording | 1 | `house/headings.py`, `reading.js`, `app.css` |
 | 37 | What Changed | 6 | "3 earlier, since the journal opened 30 Sep 2026" sits under rows dated June and August. | wording | 1 | `reading.js`; no test |
+| 38 | Reconcile | 5 | "Every account" lists one of three. The two share accounts are absent and nothing says why. [shot](ux-audit/38.png) | missing state | 2 | the engine hands the page one row: `engine/reconciliation.py`, `panels/reconcile.py`, `reading.js`; `test_panels.py` extended |
+| 39 | Reconcile | 5 | The page has nothing to press. "Reading IG equity Price Refresh · a holdings export Bench" was read as: fetch, or find a file. The job stopped. [shot](ux-audit/38.png) | missing function | 2 | the page reads and the work is elsewhere, by design: the words are `reading.js` |
+| 40 | Reconcile | 5 | "read live" beside a date 41 days old; the Dashboard's "reconcile to statement" for an account with no statement; "read in one pass — band £40.70"; "running P/L — · deposit — · available —". [shot](ux-audit/38.png) | wording | 1 | `reading.js`, `engine/findings.py`; the tests that pin the sentences |
+| 41 | Reconcile | 5 | The help says a share account's units are counted when its reading is written. No page shows the count. | missing state | 1 | follows row 38 |
 
 ## Timing
 
