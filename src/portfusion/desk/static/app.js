@@ -211,15 +211,18 @@ function alignTables() {
   });
 }
 
-/* A BOX THAT SCROLLS SIDEWAYS SAYS SO, for the stylesheet's edge on its pinned first column.
-   And a table no longer on the page lets go of its rows. */
+/* A BOX THAT SCROLLS SIDEWAYS SAYS SO, for the stylesheet's edge on its pinned columns, and
+   says how wide it is, for a row's detail. And a table no longer on the page lets go of its
+   rows. */
 function markOverflow() {
   alignTables();
   const live = new Set([...document.querySelectorAll("#main table[data-sorts]")]
     .map((t) => Number(t.dataset.sorts)));
   [...SORTED.keys()].forEach((k) => { if (!live.has(k)) SORTED.delete(k); });
-  document.querySelectorAll("#main .scroll").forEach((b) =>
-    b.classList.toggle("overflows", b.scrollWidth > b.clientWidth + 1));
+  document.querySelectorAll("#main .scroll").forEach((b) => {
+    b.classList.toggle("overflows", b.scrollWidth > b.clientWidth + 1);
+    b.style.setProperty("--box-width", `${b.clientWidth}px`);
+  });
 }
 window.addEventListener("resize", markOverflow);
 

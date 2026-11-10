@@ -604,7 +604,7 @@ td.num input[readonly] { padding-right: 0; }
    window, so its heading row stays in view down a long table (Trades) and its sideways bar is
    on screen rather than under the last row; the first column, the row's name, stays put while
    the figures scroll under it. Every row is one line; a note is still clipped, whole on hover. */
-.scroll { overflow: auto; max-height: calc(100vh - var(--space-5)); }
+.scroll { overflow: auto; max-height: calc(100vh - var(--space-5)); --box-width: 100%; }
 .scroll > table > thead > tr > th { position: sticky; top: 0; z-index: 2; background: var(--paper); }
 .scroll > table > thead > tr > th:first-child { left: 0; z-index: 3; }
 .scroll > table > tbody > tr:not(.detail-row):not(.devices) > td { white-space: nowrap; }
@@ -613,6 +613,16 @@ td.num input[readonly] { padding-right: 0; }
 }
 /* THE PINNED EDGE shows only while the box scrolls sideways (`overflows`, set by app.js). */
 .scroll.overflows > table > * > tr > :first-child { box-shadow: inset -1px 0 0 var(--hair); }
+/* THE ROW'S LINKS STAY PUT TOO, at the other edge: the last cell, where a table has them. Not
+   on a phone, where two pinned columns would leave the figures no room. */
+@media (min-width: 48rem) {
+  .scroll > table > thead > tr > th:empty:last-child { right: 0; z-index: 3; }
+  .scroll > table > tbody > tr > td.nowrap:last-child {
+    position: sticky; right: 0; z-index: 1; background: var(--paper);
+  }
+  .scroll.overflows > table > thead > tr > th:empty:last-child,
+  .scroll.overflows > table > tbody > tr > td.nowrap:last-child { box-shadow: inset 1px 0 0 var(--hair); }
+}
 .scroll > table > tbody > tr.differs > td:first-child {
   background: color-mix(in srgb, var(--warn) 20%, var(--paper));
 }
@@ -670,10 +680,15 @@ table.figures td.indent { padding-left: var(--space-5); }
    of a labelled control. The grid's gap keeps a label off the select beside it.
 
    NARROWER THAN A BENCH FORM. A bench field holds a note and wants 15rem; a filter holds a date
-   or a short list and reads better in a tighter track, so more of them fit on one line. */
-.grid.filters { grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
-                margin-bottom: var(--space-3); }
+   or a short list and reads better in a tighter box, so more of them fit on one line. */
+.grid.filters { display: flex; flex-wrap: wrap; margin-bottom: var(--space-3); }
+/* A BOX IS AS WIDE AS ITS LONGEST CHOICE, so a company chosen is read whole. */
+.grid.filters .f { flex: 0 1 auto; min-width: 10rem; }
 .grid.filters .f input, .grid.filters .f select { width: 100%; min-width: 0; max-width: none; }
+/* A BOX THAT NARROWS THE PAGE SAYS SO (`narrows`, set by kit.js): the accent, at a rule's weight. */
+.f.narrows input, .f.narrows select {
+  border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent);
+}
 .filter-clear { margin: 0 0 var(--space-5); }
 
 /* THE COMBOBOX: start typing and find the ticker.
@@ -724,13 +739,17 @@ dl.method dd { margin: var(--space-1) 0 0; }
 
 /* A SELECT MUST NOT BE SIZED BY ITS CONTENTS ALONE. A native select shrinks to its widest
    option, so a short list clips its own words. A floor stops that, and a ceiling stops one long
-   account name stretching the list. In a FILTER grid the track supplies the width instead, which
-   is why .grid.filters overrides both bounds. */
+   account name stretching the list. In a FILTER row the box takes its longest choice instead,
+   which is why .grid.filters overrides both bounds. */
 .f select { min-width: 9rem; max-width: 18rem; }
 
 /* A DETAIL ROW INSIDE A TABLE: a pane cannot sit inside a <tr> and still span the table, so it
    IS the next row. No display rule, so [hidden] keeps working. */
 tr.detail-row td { border-bottom: 1px solid var(--hair); }
+/* IT OPENS WHERE THE READER IS: no wider than the box (`--box-width`, set by app.js) and held
+   at its left edge however far the table is scrolled sideways. */
+.detail-pane { position: sticky; left: var(--cell-pad);
+               max-width: calc(var(--box-width) - 2 * var(--cell-pad)); }
 tr.detail-row p { margin: 0; max-width: var(--measure); }
 
 
