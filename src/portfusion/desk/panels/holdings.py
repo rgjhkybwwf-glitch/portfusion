@@ -82,10 +82,11 @@ DETAIL_COLUMNS = ("why_entered", "why_exited", "research_notes", "life", "income
 
 #: THE HOLDING'S HISTORY: the life its company has open (`Book.company_lives()`), whole whatever
 #: account the page is narrowed to, then the income rows naming the row's lines in that account,
-#: from the life's first purchase. The life names its accounts, so a page narrowed to one says
-#: what the figures beside its row cover.
-LIFE_COLUMNS = ("accounts", "opened", "realised", "unrealised", "dividends", "funding_interest", "life_gain",
-                "life_pct")
+#: from the life's first purchase. The life names its accounts, and one held in several is
+#: followed by a row for each (`Book.company_life_accounts()`), so a page narrowed to one account
+#: shows that account's figures beside the company's, and where a dividend was paid.
+LIFE_COLUMNS = ("accounts", "opened", "realised", "unrealised", "dividends", "funding_interest",
+                "life_gain", "life_pct")
 INCOME_COLUMNS = ("date", "account", "category", "amount")
 
 #: WHERE THE EXPOSURE SITS, under the table: the report's split, in its order and its words
@@ -203,14 +204,20 @@ def _rows(frame, columns: list, b, by: str, account) -> list[dict]:
         income = income[income["account"] == account]
     lives = b.company_lives()
     lives = lives[lives["closed"].isna()]
+    split = b.company_life_accounts()
+    split = split[split["closed"].isna()].rename(columns={"account": "accounts"}).assign(life_pct=None)
     for row, key, size, company in zip(out, keys, held, frame["company"]):
         row.update(size)
         row["marks"] = _marks(b.mark_history(key, by=by, account=account))
         row["reasons"] = reasons.get(key, [])
         tickers = [key] if by == "ticker" else [r["ticker"] for r in row["reasons"]]
         life = lives[lives["company"] == company]
-        row["life"] = _shape.rows(life, LIFE_COLUMNS, dates=("opened",))
+        each = split[split["company"] == company]
+        row["life"] = (_shape.rows(life, LIFE_COLUMNS, dates=("opened",))
+                       + (_shape.rows(each, LIFE_COLUMNS, dates=("opened",)) if len(each) > 1 else []))
         # FROM THE LIFE'S FIRST PURCHASE, so the rows are the ones its dividends are made of.
         mine = income[income["ticker"].isin(tickers) & (income["date"] >= life["opened"].min())]
-        row["income"] = _shape.rows(mine, INCOME_COLUMNS, dates=("date",))
+        # NEWEST FIRST, across accounts: the engine's order is by account.
+        row["income"] = _shape.rows(mine.sort_values("date", ascending=False, kind="stable"),
+                                    INCOME_COLUMNS, dates=("date",))
     return out

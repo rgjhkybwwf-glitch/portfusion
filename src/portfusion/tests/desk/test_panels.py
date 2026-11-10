@@ -1122,7 +1122,10 @@ def test_the_judgement_reaches_holdings_and_round_trips():
     lives = lives[lives["closed"].isna()].set_index("company")["life_gain"]
     income = b.income_rows().groupby("ticker")["amount"].sum()
     for r in rows:
-        assert [x["life_gain"] for x in r["life"]] == pytest.approx([lives[r["company"]]])
+        whole, *each = r["life"]
+        assert whole["life_gain"] == pytest.approx(lives[r["company"]])
+        assert not each or sum(x["life_gain"] for x in each) == pytest.approx(whole["life_gain"])
+        assert len(each) != 1, "a life in one account repeats itself"
         assert sum(x["amount"] for x in r["income"]) == pytest.approx(income.get(r["ticker"], 0))
 
 

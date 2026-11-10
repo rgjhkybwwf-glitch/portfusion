@@ -205,8 +205,17 @@ class Trades(Core):
         by_company: dict[str, list] = {}
         for lv in lives:
             by_company.setdefault(lv["company"], []).append(lv)
-        out = {(lv["company"], lv["opened"]): {"dividends": [], "funding_interest": []} for lv in lives}
+        out = {(lv["company"], lv["opened"]): {"dividends": [], "funding_interest": [],
+                                               "by_account": {}} for lv in lives}
         loose = []
+
+        def take(lv, kind, r, amount):
+            """One income row's amount into its life, and into the account it was paid in."""
+            mine = out[(lv["company"], lv["opened"])]
+            mine[kind].append((pd.Timestamp(r.date), amount))
+            paid = mine["by_account"].setdefault(r.account, {"dividends": 0.0,
+                                                             "funding_interest": 0.0})
+            paid[kind] += amount
 
         def life_on(company, day):
             day = pd.Timestamp(day)
@@ -226,8 +235,7 @@ class Trades(Core):
                 if lv is None:
                     loose.append(r)
                     continue
-                out[(lv["company"], lv["opened"])]["dividends"].append(
-                    (pd.Timestamp(r.date), r.amount))
+                take(lv, "dividends", r, r.amount)
             elif r.category == "Funding interest":
                 pairs = [(leg, n) for n in self.D.funding_nights(r.detail, r.date)
                          for account, leg, opened, closed in self.D.DAILY_FUNDED_LEGS
@@ -238,9 +246,8 @@ class Trades(Core):
                     loose.append(r)
                     continue
                 for leg, _ in pairs:
-                    lv = life_of_leg[leg]
-                    out[(lv["company"], lv["opened"])]["funding_interest"].append(
-                        (pd.Timestamp(r.date), r.amount * size.get(leg, 0.0) / weight))
+                    take(life_of_leg[leg], "funding_interest", r,
+                         r.amount * size.get(leg, 0.0) / weight)
         return out, loose
 
     def company_lives(self, company: str | None = None, start: str | None = None,
@@ -380,6 +387,50 @@ class Trades(Core):
                          _when=out["closed"].fillna(out["opened"]))
         return (out.sort_values(["_open", "_when", "life"], ascending=[False, False, True])
                    .drop(columns=["_open", "_when"]).reset_index(drop=True))
+
+    def company_life_accounts(self, company: str | None = None) -> pd.DataFrame:
+        """EACH LIFE BY ACCOUNT: a row for every account a life was dealt in or paid in, its own
+        first purchase, realised and unrealised gain, dividends, funding interest and their sum.
+        Each figure adds up, over a life's accounts, to `company_lives()`'s: a sale's gain is its
+        account's, a line's unrealised gain the account's that holds it, and an income row's
+        amount the account's it was paid in. No percentage: a life's is the whole company's."""
+        if "accounts" not in self._lives_cache:
+            self._lives_cache["accounts"] = self._life_account_rows()
+        out = self._lives_cache["accounts"]
+        return (out[out["company"] == company] if company else out).reset_index(drop=True)
+
+    def _life_account_rows(self) -> pd.DataFrame:
+        gain = {e.sale_id: e.proceeds - self.cost_released[e.sale_id] for e in self.D.sales}
+        order = {a: i for i, a in enumerate(self.D.ACCOUNT_ORDER)}
+        income, _ = self._life_income()
+        lines: dict[str, pd.DataFrame] = {}
+        rows = []
+        for life in self._lives():
+            name, is_open = life["company"], life["closed"] is None
+            paid = income[(name, life["opened"])]["by_account"]
+            dealt = {r["acct"] for r in life["buys"] + life["sales"]}
+            for account in sorted(dealt | set(paid), key=lambda a: order.get(a, 99)):
+                if is_open and account not in lines:
+                    lines[account] = self.holdings(account=account, by="ticker")
+                held = lines[account] if is_open else None
+                bought = [r["date"] for r in life["buys"] if r["acct"] == account]
+                realised = float(sum(gain[r["event_id"]] for r in life["sales"]
+                                     if r["acct"] == account))
+                unrealised = (float(held.loc[held["company"] == name, "unrealised"].sum())
+                              if held is not None else None)
+                earned = paid.get(account, {"dividends": 0.0, "funding_interest": 0.0})
+                rows.append({
+                    "life": f"{name} · {life['opened']:%Y-%m-%d}", "company": name,
+                    "account": account, "opened": min(bought) if bought else None,
+                    "closed": life["closed"], "realised": realised, "unrealised": unrealised,
+                    "dividends": float(earned["dividends"]),
+                    "funding_interest": float(earned["funding_interest"]),
+                    "life_gain": (realised + (unrealised or 0.0) + earned["dividends"]
+                                  + earned["funding_interest"]),
+                })
+        return pd.DataFrame(rows, columns=[
+            "life", "company", "account", "opened", "closed", "realised", "unrealised",
+            "dividends", "funding_interest", "life_gain"])
 
     def company_life_totals(self, company: str | None = None, start: str | None = None,
                             end: str | None = None) -> dict[str, float]:

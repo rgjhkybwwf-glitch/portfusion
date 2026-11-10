@@ -26,8 +26,9 @@ No figure moves, and there is no migration. Do these when the book's pin moves.
   its reading is taken.
 - **Performance says where the record begins**: the day, the opening net asset value and the
   return since, above the quarters.
-- **A holding's detail holds its history**: its company's life in the engine's figures, the
-  income rows that name it, and a link to the company's life on Round Trips.
+- **A holding's detail holds its history**: its company's life in the engine's figures, and by
+  account where it is held in several, the income rows that name it, newest first, and a link to
+  the company's life on Round Trips.
 - **`docs/ux-audit.md`**: a newcomer's walk of the desk on the demo, 70 ranked findings.
 
 ### Changed
