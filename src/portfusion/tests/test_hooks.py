@@ -264,6 +264,25 @@ def test_every_other_branch_is_free(pushed):
     assert _push(pushed, "--delete", "side").returncode == 0
 
 
+def test_a_checkouts_branch_that_changes_the_app_writes_it_up(pushed, capfd):
+    """A branch that changes the app and not the changelog is refused, and names the files; its
+    tests alone owe no line, and the changelog's line clears it."""
+    from portfusion.hooks.pre_push import APP, CHANGELOG, TESTS, ZERO, unlogged, written_up
+    _git(pushed, "fetch", "-q", "origin")
+    _git(pushed, "switch", "-q", "-c", "side")
+    (pushed / TESTS).mkdir(parents=True)
+    _commit(pushed, f"{TESTS}test_x.py", "x")
+    assert unlogged("HEAD", pushed) == []
+    _commit(pushed, f"{APP}x.py", "x")
+    assert unlogged("HEAD", pushed) == [f"{APP}x.py"]
+    tip = _tip(pushed, "side")
+    assert written_up([f"refs/heads/side {tip} refs/heads/side {ZERO}"], pushed) == 1
+    assert f"{APP}x.py" in "".join(capfd.readouterr())
+    assert written_up([f"(delete) {ZERO} refs/heads/side {tip}"], pushed) == 0
+    _commit(pushed, CHANGELOG, "## Unreleased")
+    assert unlogged("HEAD", pushed) == []
+
+
 def test_a_main_moved_on_github_and_not_fetched_is_never_overwritten(pushed, tmp_path):
     """A merge made on GitHub that this checkout has not pulled: what a push would overwrite has
     not been seen here, so not even the override lets it through."""

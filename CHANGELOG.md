@@ -34,6 +34,8 @@ No figure moves, and there is no migration. Do these when the book's pin moves.
   and amount in any account.
 - **A pull request is the proposal** for a small change (CONTRIBUTING); a large one is still
   raised in an issue first.
+- **A push that changes the app and not this changelog is refused** by the checkout's `pre-push`
+  hook, which names the files. Tests alone owe no line. A book's own push is not checked.
 
 ### Fixed
 

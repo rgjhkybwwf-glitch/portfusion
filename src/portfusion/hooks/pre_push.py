@@ -31,6 +31,10 @@ A PUSH OF THIS CHECKOUT ALSO NAMES NOTHING OF A BOOK: its hook runs `LEAKS` on t
 `PORTFUSION_BOOK` names and refuses a push that names it, or that names no book, so a push that
 checks nothing is a choice made by naming the demo. A book's own push does not.
 
+AND IT WRITES UP WHAT IT CHANGES: a branch that changes the app since it left `origin/main`, its
+tests apart, also changes `CHANGELOG.md`, or the push is refused (`unlogged`). The version beside
+it is `test_brand.py`'s to hold.
+
 Held by tests/test_hooks.py.
 """
 import os
@@ -109,8 +113,38 @@ def what_leaves(checkout) -> int:
     return 1
 
 
+#: What a push of this checkout writes up, and where: the app, its tests apart.
+APP, TESTS, CHANGELOG = "src/portfusion/", "src/portfusion/tests/", "CHANGELOG.md"
+
+
+def unlogged(sha: str, checkout) -> list[str]:
+    """The app's files `sha` changes since it left `origin/main`, when it leaves `CHANGELOG.md`
+    as it was; none when it changes the changelog too, or `origin/main` is not here to ask."""
+    run = subprocess.run(["git", "diff", "--name-only", f"origin/main...{sha}"], cwd=checkout,
+                         capture_output=True, text=True)
+    names = run.stdout.split()
+    if run.returncode or CHANGELOG in names:
+        return []
+    return [n for n in names if n.startswith(APP) and not n.startswith(TESTS)]
+
+
+def written_up(lines: list[str], checkout) -> int:
+    """0 when every branch pushed writes up the app changes it carries, 1 and the files if not."""
+    for line in lines:
+        fields = line.split()
+        if len(fields) != 4 or fields[1] == ZERO:
+            continue
+        files = unlogged(fields[1], checkout)
+        if files:
+            log.error(f"pre-push: REFUSED. {fields[0]} changes the app and not {CHANGELOG}: add "
+                      f"its line under Unreleased.\n  " + "\n  ".join(files[:10]))
+            return 1
+    return 0
+
+
 def main(argv: list[str], lines: list[str], checkout=None) -> int:
-    """`checkout`, given only by a checkout's own hook pushing that checkout, adds `what_leaves`."""
+    """`checkout`, given only by a checkout's own hook pushing that checkout, adds `written_up`
+    and `what_leaves`."""
     remote = argv[0] if argv else "the remote"
     problems = []
     for line in lines:
@@ -122,7 +156,7 @@ def main(argv: list[str], lines: list[str], checkout=None) -> int:
         if refused and not (refused[1] and approved(remote_sha)):
             problems.append((*refused, remote_sha))
     if not problems:
-        return what_leaves(checkout) if checkout else 0
+        return (written_up(lines, checkout) or what_leaves(checkout)) if checkout else 0
     log.error(f"pre-push: REFUSED. This push to {remote} would take something away from main.\n")
     for why, _, _ in problems:
         log.error(f"  {why}")
