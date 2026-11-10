@@ -34,6 +34,10 @@ No figure moves, and there is no migration. Do these when the book's pin moves.
   and amount in any account.
 - **A pull request is the proposal** for a small change (CONTRIBUTING); a large one is still
   raised in an issue first.
+- **The guard walks the desk in Chromium** (`tools/desk_walk.spec.mjs`, Playwright): each page
+  opened on the demo at 1440 × 900 and compared with a screenshot kept in `tools/desk_walk/`,
+  axe-core run on it, a finding followed to its page, and a wide table's links in view. Dev
+  tools only: a book installs none of them.
 - **A push that changes the app and not this changelog is refused** by the checkout's `pre-push`
   hook, which names the files. Tests alone owe no line. A book's own push is not checked.
 

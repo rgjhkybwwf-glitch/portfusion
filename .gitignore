@@ -73,6 +73,9 @@ src/portfusion/demo/_inbox/
 
 # The JavaScript tools' packages (tools/package.json): `npm ci` rebuilds them from the lock.
 node_modules/
+# What a failed walk of the desk leaves (tools/desk_walk.spec.mjs): the page it saw, beside the
+# baseline it expected. The baselines themselves, tools/desk_walk/, are tracked.
+tools/desk_walk_results/
 
 # Claude Code's own files. A clone carries no machine-level ignore, so they are listed here:
 # otherwise the worktrees, whole checkouts of this repo, would go to the next `git add -A`.

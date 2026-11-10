@@ -1,9 +1,10 @@
-# THE GUARD, ON GITHUB. One job, eight checks, each the command run on the Mac: the secret scan
+# THE GUARD, ON GITHUB. One job, nine checks, each the command run on the Mac: the secret scan
 # over every commit, the linter, the import contracts, the type checker, the locks' known
-# advisories, a parse of the desk's script, every desk page drawn in Node, and the clean-room test,
-# which is the suite on the demo and on a new book from the tracked files, and `portfusion check`
-# from the wheel built from them. A pull request is merged on GitHub once this is green
-# (CONTRIBUTING.md). `newest`, beside it, is not required (docs/environment.md, Moving the lock).
+# advisories, a parse of the desk's script, every desk page drawn in Node, the desk walked in
+# Chromium, and the clean-room test, which is the suite on the demo and on a new book from the
+# tracked files, and `portfusion check` from the wheel built from them. A pull request is merged
+# on GitHub once this is green (CONTRIBUTING.md). `newest`, beside it, is not required
+# (docs/environment.md, Moving the lock).
 #
 # WHEN IT RUNS: on a pull request and on a push to main, not on every branch push: a branch's
 # commits are checked once, through its pull request, rather than twice, a pull request and a push.
@@ -76,6 +77,19 @@ jobs:
           grep -q "start: drew an error: wireSortin is not defined" <<< "$said" \
             || { echo "$said"; echo "::error::the planted start-up break was not refused"; exit 1; }
           git checkout -- src/portfusion/desk/static/app.js
+      - name: The desk walked in Chromium
+        id: walk
+        run: |
+          npm --prefix tools run browser -- --with-deps
+          npm --prefix tools run walk
+      - name: What the walk saw, when it fails
+        if: failure() && steps.walk.outcome == 'failure'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9   # v7.0.2
+        with:
+          name: desk-walk
+          path: |
+            tools/desk_walk
+            tools/desk_walk_results
       - name: The clean-room test
         run: python3 tools/clean_room.py
 
