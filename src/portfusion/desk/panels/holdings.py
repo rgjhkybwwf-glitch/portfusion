@@ -82,8 +82,9 @@ DETAIL_COLUMNS = ("why_entered", "why_exited", "research_notes", "life", "income
 
 #: THE HOLDING'S HISTORY: the life its company has open (`Book.company_lives()`), whole whatever
 #: account the page is narrowed to, then the income rows naming the row's lines in that account,
-#: from the life's first purchase.
-LIFE_COLUMNS = ("opened", "realised", "unrealised", "dividends", "funding_interest", "life_gain",
+#: from the life's first purchase. The life names its accounts, so a page narrowed to one says
+#: what the figures beside its row cover.
+LIFE_COLUMNS = ("accounts", "opened", "realised", "unrealised", "dividends", "funding_interest", "life_gain",
                 "life_pct")
 INCOME_COLUMNS = ("date", "account", "category", "amount")
 

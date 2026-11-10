@@ -194,7 +194,7 @@ PANEL_COLUMNS = {
         "REASON_COLUMNS": ("whys", "research_notes"),
         "DETAIL_COLUMNS": ("why_entered", "why_exited", "research_notes", "life", "income",
                            "marks"),
-        "LIFE_COLUMNS": ("opened", "realised", "unrealised", "dividends", "funding_interest",
+        "LIFE_COLUMNS": ("accounts", "opened", "realised", "unrealised", "dividends", "funding_interest",
                          "life_gain", "life_pct"),
         "INCOME_COLUMNS": ("date", "account", "category", "amount"),
     },
