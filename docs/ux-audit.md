@@ -89,6 +89,10 @@ A screenshot is named for the first row it shows.
 | 39 | Reconcile | 5 | The page has nothing to press. "Reading IG equity Price Refresh · a holdings export Bench" was read as: fetch, or find a file. The job stopped. [shot](ux-audit/38.png) | missing function | 2 | the page reads and the work is elsewhere, by design: the words are `reading.js` |
 | 40 | Reconcile | 5 | "read live" beside a date 41 days old; the Dashboard's "reconcile to statement" for an account with no statement; "read in one pass — band £40.70"; "running P/L — · deposit — · available —". [shot](ux-audit/38.png) | wording | 1 | `reading.js`, `engine/findings.py`; the tests that pin the sentences |
 | 41 | Reconcile | 5 | The help says a share account's units are counted when its reading is written. No page shows the count. | missing state | 1 | follows row 38 |
+| 42 | Performance | 8 | No figure is named as since the book began. The first row is Q1 2026, opening at £2,000.00, and Trades holds a buy of 10 Nov 2025: the walker could not tell whether 2025 is in any figure. [shot](ux-audit/42.png) | missing state | 2 | `panels/performance.py`, `reading.js`; `test_panels.py` extended |
+| 43 | Performance | 8 | "modified Dietz (day-weighted)"; and under "detail", "Positions at market frozen from the engine at the marks nearest 2026-09-30 / Quality derived". | wording | 1 | `reading.js`; the source sentence is the store's |
+| 44 | Performance | 8 | "The book" rows have no "detail"; each account's rows do. [shot](ux-audit/42.png) | missing state | 1 | `reading.js`; no test |
+| 45 | Performance | 11 | Three incomes under one heading. "Income" here is £12.50 for Q3 and £42.50 for the year; the Dashboard's "YTD income" is £42.40; the report has "+13", "Position income +11" and a total of 12.40. They are the income the return counts, the positions' income and all income. [shot](ux-audit/42.png) | wording | 2 | `return_income` is headed "Income": `house/headings.py`, `test_figures.py`; the report moves with it |
 
 ## Timing
 
