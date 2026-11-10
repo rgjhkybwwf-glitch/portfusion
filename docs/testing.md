@@ -38,6 +38,7 @@ the audit, never in a book's `checks/`.
 | `tools/advisories.py` | no package `requirements.lock` or `tools/package-lock.json` pins has an advisory OSV knows of | that the floors' older versions have none |
 | `node --check` on each of `src/portfusion/desk/static/*.js` | the desk's script parses: a syntax error there blanks every page | that it runs |
 | `tools/desk_smoke.py`, then `tools/desk_smoke.mjs` | every desk page draws on the demo, at start-up and from its tab: no error, rejected promise, error box or unanswered fetch | that a figure is right, or that anything inside a page works when clicked |
+| `tools/desk_walk.spec.mjs`, on the desk `tools/desk_walk.py` serves | in Chromium at 1440 × 900, on the demo with the date held: each page opens, holds no accessibility fault axe-core knows but those listed, and looks as its baseline in `tools/desk_walk/` does; a finding leads to its page; a wide table's links are in view | that a figure is right, that a write works, or anything on a phone |
 | `test_engine_ties`, `desk/test_ties.py` | the engine's figures agree seen from more than one side, and each page shows what the engine computed | that the engine is right |
 | `test_engine_invariants` | the engine's arithmetic agrees with itself, assuming nothing | that a figure is the right answer |
 | `test_demo` | `tools/make_demo.py` writes the demo exactly | that the demo's invented figures agree beyond the suite |

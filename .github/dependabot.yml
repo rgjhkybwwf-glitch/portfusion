@@ -1,5 +1,6 @@
 # THE ACTIONS AND THE JAVASCRIPT TOOLS. Each action in the workflow is pinned to a commit, and
-# tools/package-lock.json pins jsdom and what it brings; this keeps both current, as a pull request
+# tools/package-lock.json pins jsdom, Playwright, axe-core and what they bring; this keeps both
+# current, as a pull request
 # the guard then runs on. The Python packages are not here: the exact set the suite was proved on
 # is requirements.lock, moved on purpose by an upgrade.
 version: 2
