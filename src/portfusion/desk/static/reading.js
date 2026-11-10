@@ -161,7 +161,8 @@ const holdingDetail = (r, d) => {
   const each = (r.reasons || []).map((x) => [x, detailList(x, d.detail)]).filter(([, h]) => h);
   return each.map(([x, h]) =>
     (r.reasons.length > 1 ? `<p><strong>${esc(x.ticker)}</strong></p>` : "") + h).join("")
-    + detailList(r, ["marks"].filter((c) => d.detail.includes(c)), d.mark_columns);
+    + [["life", d.life_columns], ["income", d.income_columns], ["marks", d.mark_columns]]
+      .map(([c, cols]) => d.detail.includes(c) ? detailList(r, [c], cols) : "").join("");
 };
 
 /* ROUND TRIPS' TWO VIEWS, in the engine's words. */
@@ -384,6 +385,11 @@ Object.assign(DRAW, {
       scope: `every return on ${d.measure}, modified Dietz (day-weighted)`,
       status: d.reports.length ? [{ label: "Reports",
         body: d.reports.map(reportLink).join(" · ") }] : null,
+      /* SINCE THE RECORD BEGAN: the day, what the book stood at, and the engine's return from
+         it. What was bought before that day is in the opening figure and in no return. */
+      figures: [["Record begins", esc(day(d.since.begins))],
+                [sentence(HEADS.opening_nav), money(d.firm[0]?.opening_nav)],
+                [d.since.label, pct(d.since.return)]],
       /* THE BOOK AND EACH ACCOUNT IN ONE TABLE, under one set of heads:
          the same columns named alike, so a figure is read down its column from the book to
          any account. THE ACCOUNT IS A COLUMN, named on its first row and blank on the rest,
@@ -520,6 +526,14 @@ Object.assign(WIRE, {
   },
 
   "round-trips"(d, again) {
+    /* ARRIVED FROM A "company life" LINK: the life view, narrowed to the link's company. The
+       Company box lists the companies with a round trip, so one with none yet is added to it. */
+    if (PENDING_COMPANY && !again) {
+      const box = $("#rt-company");
+      if (box && ![...box.options].some((o) => o.value === PENDING_COMPANY)) box.add(new Option(PENDING_COMPANY));
+      HELD_FILTERS["round-trips"] = { "rt-view": "life", "rt-company": PENDING_COMPANY };
+      PENDING_COMPANY = null;
+    }
     const view = (v) => `/api/round-trips?view=${encodeURIComponent(v["rt-view"] || "holding")}`;
     /* A COMPANY CHOSEN STARTS ITS TICKER AFRESH, and the page comes back with that company's
        codes in the Ticker box. */

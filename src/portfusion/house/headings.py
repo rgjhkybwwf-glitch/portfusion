@@ -97,6 +97,13 @@ COMMON = {
     "mark_key": "Mark key",
     "quality": "Quality",
     "stale": "Stale",
+    # A COMPANY LIFE'S FIGURES (Book.company_lives()), on Round Trips and in a holding's detail.
+    "dividends": "Dividends (GBP)",
+    "funding_interest": "Funding interest (GBP)",
+    "life_gain": "Life gain (GBP)",
+    "life_pct": "Life gain (%)",
+    "life": "Company life",                 # a holding's company, first purchase to now
+    "income": "Income and costs",           # the income rows that name a holding's line
     "marks": "Mark history",                # a line's banked marks, the last part of its detail
     # ---- the judgement ------------------------------------------------------------------------
     "whys": "Why",
@@ -122,10 +129,6 @@ BY_TAB = {
         "exit_level_points": "Exit level (points)",
         # A COMPANY LIFE (the life view, Book.company_lives()).
         "state": "State",
-        "dividends": "Dividends (GBP)",
-        "funding_interest": "Funding interest (GBP)",
-        "life_gain": "Life gain (GBP)",
-        "life_pct": "Life gain (%)",
         "life_cost_per_share": "Life cost per share",
         "realisations": "Round trips",
         "lines": "Lines",

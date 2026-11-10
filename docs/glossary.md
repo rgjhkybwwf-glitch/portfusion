@@ -162,6 +162,8 @@ The three sum exactly to **Change (GBP)**; the order they are taken in is
 |---|---|---|
 | How far a line's mark moved, against its own previous mark | **Mark move (%)** | not the change in value |
 | Every banked mark behind one line | **Mark history** | the end of a Holdings row's detail |
+| A holding's company, first purchase to now | **Company life** | in a Holdings row's detail; the concept is §5b's |
+| The income rows that name one line | **Income and costs** | in a Holdings row's detail, as Accounts heads the year's |
 
 ## 5b · The book's concepts
 

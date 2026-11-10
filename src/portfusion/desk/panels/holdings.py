@@ -78,7 +78,16 @@ REASON_COLUMNS = ("whys", "research_notes")
 
 #: WHAT A ROW'S DETAIL OPENS, under kit.js's one desk-wide order: the whys, the research notes,
 #: then the mark history (`marks`, MARK_COLUMNS' table).
-DETAIL_COLUMNS = ("why_entered", "why_exited", "research_notes", "marks")
+DETAIL_COLUMNS = ("why_entered", "why_exited", "research_notes", "life", "income", "marks")
+
+#: THE HOLDING'S HISTORY: the life its company has open (`Book.company_lives()`), whole whatever
+#: account the page is narrowed to, then the income rows naming the row's lines in that account,
+#: from the life's first purchase. The life names its accounts, and one held in several is
+#: followed by a row for each (`Book.company_life_accounts()`), so a page narrowed to one account
+#: shows that account's figures beside the company's, and where a dividend was paid.
+LIFE_COLUMNS = ("accounts", "opened", "realised", "unrealised", "dividends", "funding_interest",
+                "life_gain", "life_pct")
+INCOME_COLUMNS = ("date", "account", "category", "amount")
 
 #: WHERE THE EXPOSURE SITS, under the table: the report's split, in its order and its words
 #: (house/headings.py's Dashboard ones, as the report's `_allocation` heads them).
@@ -103,6 +112,8 @@ def query(account: str | None = None, by: str = GROUPINGS[0]) -> dict:
         "rows": _rows(frame, columns, b, by, account or None),
         "columns": columns,
         "mark_columns": list(MARK_COLUMNS),
+        "life_columns": list(LIFE_COLUMNS),
+        "income_columns": list(INCOME_COLUMNS),
         "detail": list(DETAIL_COLUMNS),
         "groupings": list(GROUPINGS),
         "grouping_words": GROUPING_WORDS,
@@ -188,8 +199,25 @@ def _rows(frame, columns: list, b, by: str, account) -> list[dict]:
                          REASON_COLUMNS + ("ticker", "company", "why_entered_owed")):
         reasons.setdefault(r[key_col], []).append(r)
 
-    for row, key, size in zip(out, keys, held):
+    income = b.income_rows()
+    if account:
+        income = income[income["account"] == account]
+    lives = b.company_lives()
+    lives = lives[lives["closed"].isna()]
+    split = b.company_life_accounts()
+    split = split[split["closed"].isna()].rename(columns={"account": "accounts"}).assign(life_pct=None)
+    for row, key, size, company in zip(out, keys, held, frame["company"]):
         row.update(size)
         row["marks"] = _marks(b.mark_history(key, by=by, account=account))
         row["reasons"] = reasons.get(key, [])
+        tickers = [key] if by == "ticker" else [r["ticker"] for r in row["reasons"]]
+        life = lives[lives["company"] == company]
+        each = split[split["company"] == company]
+        row["life"] = (_shape.rows(life, LIFE_COLUMNS, dates=("opened",))
+                       + (_shape.rows(each, LIFE_COLUMNS, dates=("opened",)) if len(each) > 1 else []))
+        # FROM THE LIFE'S FIRST PURCHASE, so the rows are the ones its dividends are made of.
+        mine = income[income["ticker"].isin(tickers) & (income["date"] >= life["opened"].min())]
+        # NEWEST FIRST, across accounts: the engine's order is by account.
+        row["income"] = _shape.rows(mine.sort_values("date", ascending=False, kind="stable"),
+                                    INCOME_COLUMNS, dates=("date",))
     return out

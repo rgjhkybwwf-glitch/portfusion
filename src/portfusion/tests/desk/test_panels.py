@@ -360,6 +360,13 @@ def test_performance_says_which_basis_every_return_is_on():
     d = performance.data()
     assert d["measure"] == "net asset value"
     assert any("exposure" in c["detail"] for c in d["caveats"])
+    # SINCE THE RECORD BEGAN: the record's day and the engine's figure under the engine's label.
+    from portfusion.desk import engine
+    b = engine.book()
+    assert d["since"]["begins"] == b.baseline.date().isoformat()
+    assert d["since"]["label"] == b.SINCE_START
+    since = b.headline()[b.SINCE_START]         # blank on a book with no year to date yet
+    assert d["since"]["return"] == (pytest.approx(since) if since == since else None)
 
 
 @needs("buys")
@@ -1110,6 +1117,16 @@ def test_the_judgement_reaches_holdings_and_round_trips():
         "an issuer row dropped an instrument's thesis"
     trip = round_trips.data()["rows"][0]
     assert {"opened", "whys", "research_notes", "why_entered_owed", "why_exited_owed"} <= set(trip)
+    # THE HISTORY UNDER A HOLDING: the engine's life gain, and the income naming the line.
+    lives = b.company_lives()
+    lives = lives[lives["closed"].isna()].set_index("company")["life_gain"]
+    income = b.income_rows().groupby("ticker")["amount"].sum()
+    for r in rows:
+        whole, *each = r["life"]
+        assert whole["life_gain"] == pytest.approx(lives[r["company"]])
+        assert not each or sum(x["life_gain"] for x in each) == pytest.approx(whole["life_gain"])
+        assert len(each) != 1, "a life in one account repeats itself"
+        assert sum(x["amount"] for x in r["income"]) == pytest.approx(income.get(r["ticker"], 0))
 
 
 @needs("buys")

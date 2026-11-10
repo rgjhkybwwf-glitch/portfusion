@@ -32,6 +32,14 @@ def test_the_lives_add_up_to_the_books_gain(book):
     ties(totals["unrealised"], book.unrealised(), "open lives' unrealised vs the book's")
     ties(totals["life_gain"], totals["realised"] + totals["unrealised"] + totals["dividends"]
          + totals["funding_interest"], "total vs its parts")
+    # BY ACCOUNT, each life's figures are the same figures: no sale, line or income row is
+    # dropped or counted in two accounts.
+    lives = book.company_lives().set_index("life")
+    for life, mine in book.company_life_accounts().groupby("life"):
+        for figure in ("realised", "unrealised", "dividends", "funding_interest", "life_gain"):
+            whole = lives.at[life, figure]
+            ties(mine[figure].fillna(0).sum(), 0.0 if whole != whole else whole,
+                 f"{life}: {figure} by account vs the life's")
 
 
 @needs("buys")
