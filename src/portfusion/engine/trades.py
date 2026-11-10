@@ -278,9 +278,13 @@ class Trades(Core):
             out = out[out["closed"] <= pd.Timestamp(end)]
         return out.reset_index(drop=True)
 
+    def _sale_gains(self) -> dict[str, float]:
+        """Each sale's realised gain: its proceeds less the cost it released."""
+        return {e.sale_id: e.proceeds - self.cost_released[e.sale_id] for e in self.D.sales}
+
     def _life_rows(self) -> pd.DataFrame:
         """`company_lives()`'s rows, every life, in its order."""
-        gain = {e.sale_id: e.proceeds - self.cost_released[e.sale_id] for e in self.D.sales}
+        gain = self._sale_gains()
         lines = self.holdings(by="ticker")
         companies = self.holdings(by="issuer").set_index("company")
         order = {a: i for i, a in enumerate(self.D.ACCOUNT_ORDER)}
@@ -400,7 +404,7 @@ class Trades(Core):
         return (out[out["company"] == company] if company else out).reset_index(drop=True)
 
     def _life_account_rows(self) -> pd.DataFrame:
-        gain = {e.sale_id: e.proceeds - self.cost_released[e.sale_id] for e in self.D.sales}
+        gain = self._sale_gains()
         order = {a: i for i, a in enumerate(self.D.ACCOUNT_ORDER)}
         income, _ = self._life_income()
         lines: dict[str, pd.DataFrame] = {}

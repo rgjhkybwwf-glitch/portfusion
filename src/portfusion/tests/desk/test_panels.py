@@ -363,7 +363,7 @@ def test_performance_says_which_basis_every_return_is_on():
     # SINCE THE RECORD BEGAN: the record's day and the engine's figure under the engine's label.
     from portfusion.desk import engine
     b = engine.book()
-    assert d["since"]["begins"] == b.D.RECORD_BEGINS.isoformat()
+    assert d["since"]["begins"] == b.baseline.date().isoformat()
     assert d["since"]["label"] == b.SINCE_START
     since = b.headline()[b.SINCE_START]         # blank on a book with no year to date yet
     assert d["since"]["return"] == (pytest.approx(since) if since == since else None)

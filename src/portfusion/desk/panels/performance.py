@@ -74,7 +74,7 @@ def data() -> dict:
         "year_opens": b.ytd_opens(),
         "measure": "net asset value",
         # SINCE THE RECORD BEGAN: the day, and the engine's linked return under its own label.
-        "since": {"begins": b.D.RECORD_BEGINS.isoformat(), "label": b.SINCE_START,
+        "since": {"begins": b.baseline.date().isoformat(), "label": b.SINCE_START,
                   "return": _shape.plain(b.since_start())},
         # EACH QUARTER'S REPORT THE GATE ALLOWS, oldest first, as the table reads.
         "reports": [q for q in engine.reports()["quarters"][::-1] if q["closed"] and not q["gaps"]],
