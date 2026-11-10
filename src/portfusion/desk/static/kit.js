@@ -152,9 +152,13 @@ const filters = (fields, clearId) => `
    THE FILTERS HELD FOR THIS PAGE are asked for again on arrival — only then, and only when they
    differ from what was drawn, so the redraw that answers them cannot ask again. A VIEW MAY DRAW
    FEWER BOXES (Round Trips by company life has no account or ticker), so only the boxes on the
-   page are read. */
+   page are read.
+   A BOX THAT NARROWS IS MARKED (`narrows`, the stylesheet's): one holding a value it could have
+   been left without, so a filter held from an earlier visit is seen. */
 function wireFilters(name, d, again, { ids, button, ask, clear, resets = {} }) {
   const boxes = ids.map((id) => $(`#${id}`)).filter(Boolean);
+  boxes.forEach((el) => el.closest(".f").classList.toggle("narrows", el.value !== "" &&
+    (!el.options || [...el.options].some((o) => o.value === ""))));
   const values = () => Object.fromEntries(ids.map((id) => [id, $(`#${id}`)?.value ?? ""]));
   const reload = async (path) => {
     const asked = ++ASKED;
@@ -262,7 +266,7 @@ const table = (rows, cols, extraHead = "", extraCell = () => "", opts = {}) => {
       head(c)}${state ? `<span class="arrow" aria-hidden="true">${state === "up" ? "▲" : "▼"}</span>` : ""}</th>`;
   };
   return `
-  <div class="scroll"><table${sort ? ` data-sorts="${id}"` : ""}${align
+  <div class="scroll"><table${sort ? ` data-sorts="${id}"` : ""}${extraHead ? " data-links" : ""}${align
     ? ` data-align="${esc(align)}" data-align-cols="${cols.length + inserts.length}"` : ""}>
     <thead><tr>${cols.map((c) => th(c) +
       at(c).map((i) => i.head).join("")).join("")}${extraHead}</tr></thead>
@@ -349,7 +353,7 @@ const detailList = (x, fields, markCols) => {
 const detailLink = (html) => !html ? "" :
   ` <button class="link detail-toggle" aria-expanded="false">detail</button>`;
 const detailRow = (html, span) => !html ? "" :
-  `<tr class="detail-row" hidden><td colspan="${span}">${html}</td></tr>`;
+  `<tr class="detail-row" hidden><td colspan="${span}"><div class="detail-pane">${html}</div></td></tr>`;
 
 /* THE DETAIL LINK. Delegated from the document because a table is rebuilt on every filter
    change, and per-button listeners would be lost or doubled each time. A plain button and a
@@ -369,5 +373,7 @@ function wireDetailLinks() {
     b.setAttribute("aria-expanded", String(open));
     /* The label says what the link DOES next. */
     b.textContent = open ? "hide" : "detail";
+    /* A detail opened can give the box its upright bar, and so a new width. */
+    markOverflow();
   });
 }
