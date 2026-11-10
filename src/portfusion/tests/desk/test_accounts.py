@@ -192,7 +192,11 @@ PANEL_COLUMNS = {
         ),
         "MARK_COLUMNS": ("date", "mark_key", "price", "currency", "source"),
         "REASON_COLUMNS": ("whys", "research_notes"),
-        "DETAIL_COLUMNS": ("why_entered", "why_exited", "research_notes", "marks"),
+        "DETAIL_COLUMNS": ("why_entered", "why_exited", "research_notes", "life", "income",
+                           "marks"),
+        "LIFE_COLUMNS": ("opened", "realised", "unrealised", "dividends", "funding_interest",
+                         "life_gain", "life_pct"),
+        "INCOME_COLUMNS": ("date", "account", "category", "amount"),
     },
     "round-trips": {
         "COLUMNS": (

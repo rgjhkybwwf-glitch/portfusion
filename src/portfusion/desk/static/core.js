@@ -177,7 +177,8 @@ const badges = (name) => {
   const a = ACTIONS[name] || {};
   return badge("writes", a.writes) + badge("reaches", a.reaches);
 };
-/* Set by a "trades" link (Holdings, Round Trips) and taken once by Trades, which then HOLDS the
+/* Set by a "trades" link (Holdings, Round Trips) and taken once by Trades, or by a holding's
+   "company life" link and taken once by Round Trips; the page that takes it then HOLDS the
    company as a filter chosen there: the box shows it and "clear filters" sits beside it, so it
    narrows nothing out of sight. */
 let PENDING_COMPANY = null;

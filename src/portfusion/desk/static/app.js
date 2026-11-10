@@ -131,6 +131,12 @@ function wireTradeLinks() {
     PENDING_COMPANY = b.dataset.trades;
     openPanel("trades");
   });
+  main.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-life]");
+    if (!b) return;
+    PENDING_COMPANY = b.dataset.life;
+    openPanel("round-trips");
+  });
 }
 
 /* A PAGE TAKES THE WINDOW BY WHAT IT RENDERED, never by a list of panel names, which would drift

@@ -313,7 +313,7 @@ const pointsCell = (v) => `<td class="num">${points(v)}</td>`;
 const DETAIL = ["why_entered", "why_exited", "research_notes", "note", "source", "quality",
                 "broker_ref", "trade_id", "sale_id", "realisation_id", "contract", "funding",
                 "fx_at_trade",
-                "fx_from", "marks", "realisations", "lines"];
+                "fx_from", "life", "income", "marks", "realisations", "lines"];
 
 /* EACH WHY UNDER ITS HALF, oldest first, with the date of the trade it explains. An OWED half
    says so in words; a blank before the cut-off says nothing, because nothing is owed — the
@@ -339,6 +339,14 @@ const DETAIL_PART = {
   /* THE LINE'S LAST FIVE REFRESHES, newest first. A spread bet on two contracts shows both, at
      their own levels, and a line whose older marks were banked under its TICKER shows those
      too. */
+  /* A HOLDING'S COMPANY, first purchase to now, in the engine's figures, with the way to its
+     round trips and lines; then the income rows that name the holding's own lines. */
+  life: (x, cols) => !(x.life || []).length ? "" :
+    `<dt>${head("life")}</dt><dd class="wide">${table(x.life, cols, "", () => "", { sort: false })}
+      ${PANELS.has("round-trips")
+        ? `<button class="link" data-life="${esc(x.company)}">company life</button>` : ""}</dd>`,
+  income: (x, cols) => !(x.income || []).length ? "" :
+    `<dt>${head("income")}</dt><dd class="wide">${table(x.income, cols, "", () => "", { sort: false })}</dd>`,
   marks: (x, markCols) => !(x.marks || []).length ? "" :
     `<dt>${head("marks")}</dt><dd class="wide">${table(x.marks, markCols, "", () => "",
       { sort: false,

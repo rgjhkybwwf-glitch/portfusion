@@ -81,3 +81,15 @@ for (const name of ["holdings", "round-trips"]) {
       .toBeInViewport({ ratio: 1 });
   });
 }
+
+test("a holding's detail leads to its company's life", async ({ page }) => {
+  await open(page, "holdings");
+  const row = page.locator("#main table[data-links] tbody tr:not(.detail-row)").first();
+  await row.locator(".detail-toggle").click();
+  const link = page.locator("#main .detail-row:not([hidden]) [data-life]");
+  const company = await link.getAttribute("data-life");
+  await link.click();
+  await expect(page.locator("#rt-view")).toHaveValue("life");
+  await expect(page.locator("#rt-company")).toHaveValue(company);
+  await expect(page.locator("#main .scroll > table > tbody > tr:not(.detail-row)")).toHaveCount(1);
+});

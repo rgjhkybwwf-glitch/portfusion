@@ -262,10 +262,10 @@ def test_every_sorting_table_names_itself_and_holds_its_own_sort():
 
 def test_a_table_whose_order_is_its_layout_keeps_it():
     """A table naming the book first and then each account once keeps that order, as a detail's
-    mark history keeps its own."""
+    mark history, life and income keep theirs."""
     kept = {c.split(",")[0].strip() for c in map(_own, _table_calls(desk_script()))
             if "sort: false" in c}
-    assert kept == {"x.marks", "quarters", "d.year", "d.income"}, kept
+    assert kept == {"x.marks", "x.life", "x.income", "quarters", "d.year", "d.income"}, kept
 
 
 def test_every_account_dropdown_offers_individual_accounts_in_the_books_order():
