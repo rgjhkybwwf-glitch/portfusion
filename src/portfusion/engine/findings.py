@@ -325,8 +325,9 @@ class Findings(Core):
             if not gaps:
                 return line, None
             return (f"{line} · {len(gaps)} cannot",
-                    f"{len(gaps)} row(s) cite a document that is in no archived filename: "
-                    f"{', '.join(sorted(gaps))} — file it, or correct the row's source")
+                    Finding(f"{len(gaps)} row(s) cite a document that is in no archived filename: "
+                            f"{', '.join(sorted(gaps))} — file it, or correct the row's source",
+                            "bench"))
         except Exception as e:                       # noqa: BLE001 — never fail over provenance
             # NOT CHECKED IS A PROBLEM, as the conversions' is.
             return (f"evidence: unknown ({type(e).__name__})",
