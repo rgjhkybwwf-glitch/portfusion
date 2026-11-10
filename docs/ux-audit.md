@@ -106,6 +106,8 @@ A screenshot is named for the first row it shows.
 | 56 | Round Trips | 9 | "View: holding / company life": the walker did not know what the second would change. | wording | 1 | `reading.js` |
 | 57 | Trades | 10 | Opened from its tab, the page was still filtered to the company looked at before: "2 trades" under "every buy and sale on file" read as the whole book. The company's name is cut off in its box. | missing state | 2 | `kit.js` (`HELD_FILTERS`), `app.css`; no test |
 | 58 | Trades | 10 | There is no total for a company bought in lots. A spread bet's "Trade value (GBP)" is notional, not money paid, and nothing says so. [shot](ux-audit/57.png) | missing state | 1 | `panels/trades.py`, `reading.js`; `test_panels.py` extended |
+| 59 | Accounts | 7 | Income is by account, behind "detail", and names its holding only in free text. A holding in two accounts means opening both. [shot](ux-audit/59.png) | missing function | 1 | with row 49 |
+| 60 | Accounts | 11 | "Read from: Not on file, 30 Sep 2026" for an account the report calls "ii statement, 30 Sep 2026, on file". Which reading each means was not traced. [shot](ux-audit/59.png) | wording | 2 | not traced |
 
 ## Timing
 
