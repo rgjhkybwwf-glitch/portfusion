@@ -111,6 +111,10 @@ A screenshot is named for the first row it shows.
 | 61 | Reports | 11 | "Open Q4 2026" is no link, Q3 is "Ready", and "for the record" follows Q2 and Q1 only. Which is the latest, and what the phrase means, were guesses. [shot](ux-audit/61.png) | wording | 1 | `reading.js`; no test |
 | 62 | Reports | 11 | The report has no control: nothing prints, saves or sends it, nothing leads back to the desk, and its address is `/api/report/2026-09-30`. "Ready to send" was left to the browser. | missing function | 2 | the report allows no script, so a control is the desk's: `reading.js`. Its format is an open decision |
 | 63 | Reports | 11 | Is it fit to send? It ends "A2 · ii Trading Not on file", and its footer reads "+uncommitted" (the test's own doing: the checkout held an edit). Nothing says either way. | missing state | 2 | `panels/reports.py`, `reading.js`; `test_reports.py` extended |
+| 64 | Method | 12 | One long page with no contents and no search, headed by topic and not by the Dashboard's labels. "Total gain", "Exposure above net asset value" and "Capital employed" could not be found by name. [shot](ux-audit/64.png) | layout | 2 | `panels/method.py`, `reading.js`; with row 7 |
+| 65 | Method | 12 | "Retired terms, do not reintroduce: economic interest · contract value …" speaks to whoever writes the app. [shot](ux-audit/64.png) | wording | 1 | `record/rules.py`; the tests that pin the Method |
+| 66 | Method | 12 | It gives the formula and not the numbers that went into this book's figure. | missing state | 1 | the engine's working for each headline figure: `engine/book.py`, `panels/method.py`; a test |
+| 67 | Method | 2, 12 | It explained, after the fact, why the dividend was refused. The Bench does not point here. | wording | 1 | `bench.js`; with row 14 |
 
 ## Timing
 
