@@ -98,6 +98,12 @@ A screenshot is named for the first row it shows.
 | 48 | Holdings | 7 | Scrolled right, "detail" opened a tall empty gap: its content is drawn at the table's left, out of sight. It looked broken. | layout | 2 | `app.css`, `kit.js`; no test |
 | 49 | Holdings | 7 | "detail" is the mark history alone. Bought and sold are on Trades, received is on Accounts, by account, in free text. No one place holds a holding's history; Round Trips' "company life" view holds much of it, and nothing points there. | missing function | 2 | `panels/holdings.py`, `reading.js`; `test_panels.py` extended |
 | 50 | Holdings | 7 | The Method says the thesis "shows under 'why' on Holdings". None was seen on the holding opened; whether it has one was not traced. | wording | 1 | not traced |
+| 51 | Round Trips | 9 | The tab's name did not say closed positions, and "Realisations 4 / Closed out 1" were not told apart. [shot](ux-audit/51.png) | wording | 1 | `reading.js`, `house/headings.py` |
+| 52 | Round Trips | 9 | The table runs off the page as on Holdings: "Entry date" is cut to "Entr", and exit date, days held, closed out, "trades" and "detail" are out of sight. [shot](ux-audit/51.png) | layout | 2 | as row 46 |
+| 53 | Round Trips | 9 | A heading sorts when pressed, and nothing shows that until one is. | layout | 1 | `app.css`; no test |
+| 54 | Round Trips | 4, 9 | An "Owed" tag sits unlabelled at the row's far right. Its detail reads "Why we exited Owed" with nowhere to write it. It is written on a Bench item, and neither page says so. | missing function | 2 | `reading.js` (a link to the Bench); with row 4 |
+| 55 | Round Trips | 9 | A row's entry date is 26 Jun 2026 and its "Why we entered" is dated 6 Jul 2026. | wording | 1 | the second is the reasoning's own date: `reading.js` |
+| 56 | Round Trips | 9 | "View: holding / company life": the walker did not know what the second would change. | wording | 1 | `reading.js` |
 
 ## Timing
 
