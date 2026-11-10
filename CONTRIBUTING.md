@@ -163,7 +163,9 @@ One line each; kept by review, and by the test named where there is one.
 
 - **One logical change per commit**, its message written for a reader who was not there.
 - **Review the branch's diff before its pull request opens**, and settle what the review finds.
-- **A store move is named in [`CHANGELOG.md`](CHANGELOG.md).**
+- **A change to the app is written up in [`CHANGELOG.md`](CHANGELOG.md)**, under Unreleased, a
+  store move by name; a push that changes the app and not the changelog is refused
+  (`test_hooks.py::test_a_checkouts_branch_that_changes_the_app_writes_it_up`).
 - **Never bypass a hook.** A branch reaches `main` as a pull request, merged on the maintainer's
   yes once CI's `guard` is green; it runs on every pull request and on `main`.
 

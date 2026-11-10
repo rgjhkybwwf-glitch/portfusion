@@ -5,6 +5,43 @@ prints it.
 
 ## Unreleased
 
+### Upgrading a book
+
+No figure moves, and there is no migration. Do these when the book's pin moves.
+
+- **Expect a new line in `portfusion record`**: "NO READING to reconcile against: <account>", a
+  gap, for each account that holds something and has never had a reading. A holdings export filed
+  on the Bench, or a price refresh for an IG account, answers it.
+- **Reinstall against `requirements.lock`**: pypdf is 7 and python-dateutil 4.
+
+### New
+
+- **The IG sweep brings a bet line's dividend adjustment** as an income row, category Dividend,
+  with the line whose market IG names; blank where no one line has that name. A ledger type no
+  rule knows is listed under Skipped, where it was dropped without a word.
+- **What needs attention leads to where it is done.** Each finding on the Dashboard ends in a
+  link to the page its work is done on, and the Dashboard counts the documents waiting and the
+  items ready on the Bench. An "owed" tag on Round Trips and Holdings is the link to the Bench.
+- **Reconcile lists an account never read**, as "No reading", and a row not judged links to where
+  its reading is taken.
+- **`docs/ux-audit.md`**: a newcomer's walk of the desk on the demo, 70 ranked findings.
+
+### Changed
+
+- **A wide table keeps its links at its right edge** and a row's detail in view, from 70rem.
+- **A filter box is as wide as its longest choice**, and one holding a choice is outlined.
+- **The sweep matches income already in the book by account, day and amount**; it matched by day
+  and amount in any account.
+- **A pull request is the proposal** for a small change (CONTRIBUTING); a large one is still
+  raised in an issue first.
+- **A push that changes the app and not this changelog is refused** by the checkout's `pre-push`
+  hook, which names the files. Tests alone owe no line. A book's own push is not checked.
+
+### Fixed
+
+- **The publish test's app case uses a book outside the app**, so it passes where a checkout sits
+  inside a book.
+
 ## 0.4.0 — beta, 26 Oct 2026
 
 The review's release: every part in its own place, the 22 stability rules all held by tests,
