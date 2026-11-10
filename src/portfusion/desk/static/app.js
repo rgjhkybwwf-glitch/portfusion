@@ -219,10 +219,13 @@ function markOverflow() {
   const live = new Set([...document.querySelectorAll("#main table[data-sorts]")]
     .map((t) => Number(t.dataset.sorts)));
   [...SORTED.keys()].forEach((k) => { if (!live.has(k)) SORTED.delete(k); });
-  document.querySelectorAll("#main .scroll").forEach((b) => {
-    b.classList.toggle("overflows", b.scrollWidth > b.clientWidth + 1);
-    b.style.setProperty("--box-width", `${b.clientWidth}px`);
-  });
+  /* Every box measured, then every box told: a write between two readings lays the page out
+     again for each. */
+  [...document.querySelectorAll("#main .scroll")].map((b) => [b, b.scrollWidth, b.clientWidth])
+    .forEach(([b, full, seen]) => {
+      b.classList.toggle("overflows", full > seen + 1);
+      b.style.setProperty("--box-width", `${seen}px`);
+    });
 }
 window.addEventListener("resize", markOverflow);
 

@@ -266,7 +266,7 @@ const table = (rows, cols, extraHead = "", extraCell = () => "", opts = {}) => {
       head(c)}${state ? `<span class="arrow" aria-hidden="true">${state === "up" ? "▲" : "▼"}</span>` : ""}</th>`;
   };
   return `
-  <div class="scroll"><table${sort ? ` data-sorts="${id}"` : ""}${align
+  <div class="scroll"><table${sort ? ` data-sorts="${id}"` : ""}${extraHead ? " data-links" : ""}${align
     ? ` data-align="${esc(align)}" data-align-cols="${cols.length + inserts.length}"` : ""}>
     <thead><tr>${cols.map((c) => th(c) +
       at(c).map((i) => i.head).join("")).join("")}${extraHead}</tr></thead>
@@ -373,5 +373,7 @@ function wireDetailLinks() {
     b.setAttribute("aria-expanded", String(open));
     /* The label says what the link DOES next. */
     b.textContent = open ? "hide" : "detail";
+    /* A detail opened can give the box its upright bar, and so a new width. */
+    markOverflow();
   });
 }

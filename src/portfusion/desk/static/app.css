@@ -613,15 +613,18 @@ td.num input[readonly] { padding-right: 0; }
 }
 /* THE PINNED EDGE shows only while the box scrolls sideways (`overflows`, set by app.js). */
 .scroll.overflows > table > * > tr > :first-child { box-shadow: inset -1px 0 0 var(--hair); }
-/* THE ROW'S LINKS STAY PUT TOO, at the other edge: the last cell, where a table has them. Not
-   on a phone, where two pinned columns would leave the figures no room. */
-@media (min-width: 48rem) {
-  .scroll > table > thead > tr > th:empty:last-child { right: 0; z-index: 3; }
-  .scroll > table > tbody > tr > td.nowrap:last-child {
+/* THE ROW'S LINKS STAY PUT TOO, at the other edge: the last cell of a table that has them
+   (`data-links`, kit.js's table()). Not on a narrow window, where two pinned columns would
+   leave the figures no room. */
+@media (min-width: 70rem) {
+  .scroll > table[data-links] > thead > tr > th:last-child { right: 0; z-index: 3; }
+  .scroll > table[data-links] > tbody > tr:not(.detail-row):not(.devices) > td:last-child {
     position: sticky; right: 0; z-index: 1; background: var(--paper);
   }
-  .scroll.overflows > table > thead > tr > th:empty:last-child,
-  .scroll.overflows > table > tbody > tr > td.nowrap:last-child { box-shadow: inset 1px 0 0 var(--hair); }
+  .scroll.overflows > table[data-links] > thead > tr > th:last-child,
+  .scroll.overflows > table[data-links] > tbody > tr:not(.detail-row):not(.devices) > td:last-child {
+    box-shadow: inset 1px 0 0 var(--hair);
+  }
 }
 .scroll > table > tbody > tr.differs > td:first-child {
   background: color-mix(in srgb, var(--warn) 20%, var(--paper));
@@ -677,13 +680,14 @@ table.figures tr.lead td:first-child { color: var(--ink); }
 table.figures td.indent { padding-left: var(--space-5); }
 
 /* THE FILTER ROW — one shape on every tab that has one: the `.f` box, the bench's field, ONE idea
-   of a labelled control. The grid's gap keeps a label off the select beside it.
+   of a labelled control. The row's gap keeps a label off the select beside it.
 
    NARROWER THAN A BENCH FORM. A bench field holds a note and wants 15rem; a filter holds a date
    or a short list and reads better in a tighter box, so more of them fit on one line. */
 .grid.filters { display: flex; flex-wrap: wrap; margin-bottom: var(--space-3); }
-/* A BOX IS AS WIDE AS ITS LONGEST CHOICE, so a company chosen is read whole. */
-.grid.filters .f { flex: 0 1 auto; min-width: 10rem; }
+/* A BOX IS AS WIDE AS ITS LONGEST CHOICE, so a company chosen is read whole, between a floor
+   and the ceiling that stops one long name taking the row. */
+.grid.filters .f { flex: 0 1 auto; min-width: 10rem; max-width: 18rem; }
 .grid.filters .f input, .grid.filters .f select { width: 100%; min-width: 0; max-width: none; }
 /* A BOX THAT NARROWS THE PAGE SAYS SO (`narrows`, set by kit.js): the accent, at a rule's weight. */
 .f.narrows input, .f.narrows select {
