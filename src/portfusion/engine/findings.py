@@ -104,8 +104,8 @@ class Findings(Core):
 
         A PROBLEM is a defect until explained: an account past its reconciliation band, prices
         past their age or spread limit, a conversion at a stale rate, a row entered since the line
-        whose document is not on file. A GAP is work owed: an account with no statement, a
-        judgement owed. A NOTE is the state, stated, so a working check is visible as working.
+        whose document is not on file. A GAP is work owed: an account with no statement or never
+        read, a judgement owed. A NOTE is the state, stated, so a working check is visible as working.
 
         No expected figure is written in: every finding is a relationship in today's record. Each
         part that reads machinery outside the ledger — the journal, the conversions, the archive —
@@ -120,6 +120,11 @@ class Findings(Core):
         # ---- the book against the BROKERS' STATEMENTS -------------------------------------
         checked, ungrounded, apart = 0, [], []
         for r in self.reconciliation().to_dict("records"):
+            if self.reconciliation_verdict(r["statement"], None,
+                                           r["evidence"])["verdict"] == "no-reading":
+                gaps.append(Finding(f"NO READING to reconcile against: {r['account']}",
+                                    self.reading_page(r["account"])))
+                continue
             statement = r["statement"]
             if statement is None or statement != statement:
                 ungrounded.append(r["account"])

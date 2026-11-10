@@ -470,7 +470,9 @@ Object.assign(DRAW, {
       book: (r) => `<td class="num">${money(r.book)}</td>`,
       broker: (r) => `<td class="num">${money(r.broker)}${igFigures(r)}</td>`,
       difference: (r) => `<td class="num">${money(r.difference)}</td>`,
-      verdict: (r) => `<td><span class="tag ${esc(r.tag)}">${esc(verdictWords(r.verdict))}</span></td>`,
+      /* A ROW NOT JUDGED LEADS TO WHERE ITS READING IS TAKEN. */
+      verdict: (r) => `<td><span class="tag ${esc(r.tag)}">${esc(verdictWords(r.verdict))}</span>${
+        r.checkable ? "" : panelLink(r.reads)}</td>`,
       document: (r) => `<td>${r.document ? esc(r.document) : "—"}</td>`,
     };
 

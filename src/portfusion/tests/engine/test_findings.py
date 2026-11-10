@@ -158,14 +158,21 @@ def test_a_difference_that_rounds_to_nothing_carries_no_sign(book, monkeypatch):
         assert line.startswith(agree + "£0.00 ("), line
 
 
-@needs("buys", "current-prices")
+@needs("buys", "current-prices", "account-readings")
 def test_an_account_with_no_statement_is_a_gap_not_a_problem(book, monkeypatch):
+    """A reading with no figure owes a statement, and an account never read owes a reading: each
+    a gap that names the account, and the unread one the page its reading is taken on."""
     rec = book.reconciliation()
-    rec.loc[0, "statement"] = float("nan")
+    read = rec["evidence"].notna()
+    row = read.idxmax()
+    rec.loc[row, "statement"] = float("nan")
     monkeypatch.setattr(book, "reconciliation", lambda: rec)
     f = book.findings()
-    assert any(g.startswith("NO STATEMENT") and rec.loc[0, "account"] in g for g in f["gaps"])
-    assert not any(rec.loc[0, "account"] in p for p in f["problems"])
+    assert any(g.startswith("NO STATEMENT") and rec.loc[row, "account"] in g for g in f["gaps"])
+    assert not any(rec.loc[row, "account"] in p for p in f["problems"])
+    for account in rec.loc[~read, "account"]:
+        gap = next(g for g in f["gaps"] if g == f"NO READING to reconcile against: {account}")
+        assert gap.page == book.reading_page(account)
 
 
 def test_the_evidence_line_survives_an_absent_archive(book, monkeypatch, tmp_path):
@@ -279,7 +286,8 @@ def test_the_findings_judge_every_judgeable_account_and_name_the_rest(book):
     assert int(re.match(r"(\d+)", line).group(1)) == judged
     if judged < len(rec):
         assert "GAPS, so not judged:" in f["notes"] or any(
-            g.startswith("NO STATEMENT") for g in f["gaps"]), "fewer judged and none named"
+            g.startswith(("NO STATEMENT", "NO READING")) for g in f["gaps"]), \
+            "fewer judged and none named"
 
 
 def test_each_action_of_the_command_answers_help_and_runs_nothing():
