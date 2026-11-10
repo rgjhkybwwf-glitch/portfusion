@@ -108,6 +108,9 @@ A screenshot is named for the first row it shows.
 | 58 | Trades | 10 | There is no total for a company bought in lots. A spread bet's "Trade value (GBP)" is notional, not money paid, and nothing says so. [shot](ux-audit/57.png) | missing state | 1 | `panels/trades.py`, `reading.js`; `test_panels.py` extended |
 | 59 | Accounts | 7 | Income is by account, behind "detail", and names its holding only in free text. A holding in two accounts means opening both. [shot](ux-audit/59.png) | missing function | 1 | with row 49 |
 | 60 | Accounts | 11 | "Read from: Not on file, 30 Sep 2026" for an account the report calls "ii statement, 30 Sep 2026, on file". Which reading each means was not traced. [shot](ux-audit/59.png) | wording | 2 | not traced |
+| 61 | Reports | 11 | "Open Q4 2026" is no link, Q3 is "Ready", and "for the record" follows Q2 and Q1 only. Which is the latest, and what the phrase means, were guesses. [shot](ux-audit/61.png) | wording | 1 | `reading.js`; no test |
+| 62 | Reports | 11 | The report has no control: nothing prints, saves or sends it, nothing leads back to the desk, and its address is `/api/report/2026-09-30`. "Ready to send" was left to the browser. | missing function | 2 | the report allows no script, so a control is the desk's: `reading.js`. Its format is an open decision |
+| 63 | Reports | 11 | Is it fit to send? It ends "A2 · ii Trading Not on file", and its footer reads "+uncommitted" (the test's own doing: the checkout held an edit). Nothing says either way. | missing state | 2 | `panels/reports.py`, `reading.js`; `test_reports.py` extended |
 
 ## Timing
 
