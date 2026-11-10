@@ -90,10 +90,13 @@ def test_the_reasoning_is_the_records(book):
 
 @needs("buys", "current-prices")
 def test_theses_owed_names_each_missing_half(book, monkeypatch):
-    """Moving the cut-off back puts every position in scope, and every blank half then owes."""
+    """Moving the cut-off back puts every position in scope, and every blank half then owes; each
+    is a finding that names the Bench, where a why is written."""
     monkeypatch.setattr(book.D, "REVIEW_FROM", dt.date(2000, 1, 1))
     owed = book.theses_owed()
     assert owed and all(o["half"] in ("why we entered", "why we exited") for o in owed)
+    gaps = [g for g in book.findings()["gaps"] if g.startswith("reasoning owed")]
+    assert len(gaps) == len(owed) and all(g.page == "bench" for g in gaps)
     blank_open = [t for t in book.holdings(by="ticker")["ticker"]
                   if not any(r.why_entered for r in D.REASONING.get(t, []))]
     assert {o["ticker"] for o in owed if o["account"] is None} == set(blank_open)

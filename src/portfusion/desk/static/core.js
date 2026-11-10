@@ -148,14 +148,15 @@ let PAGE_TITLE = "";
    and because `drawItem()` is synchronous and cannot await it. Primed by `loadActions()`
    before any screen that renders a badge. */
 let ACTIONS = {};
-/* And the pages, so a link to one the server does not list can say so rather than do nothing. */
-let PANELS = new Set();
+/* And the pages, each with its title, so a link to one the server does not list can say so
+   rather than do nothing. */
+let PANELS = new Map();
 /* Whether this page is the hosted desk, which the remote door says of itself. */
 let REMOTE = false;
 
 function takeState(s) {
   ACTIONS = Object.fromEntries(s.actions.map((a) => [a.name, a]));
-  PANELS = new Set(s.panels.map((p) => p.name));
+  PANELS = new Map(s.panels.map((p) => [p.name, p.title]));
   REMOTE = !!s.remote;
 }
 

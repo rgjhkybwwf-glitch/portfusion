@@ -369,6 +369,8 @@ button.link {
   font: inherit; color: var(--link); text-decoration: underline; text-underline-offset: 2px;
 }
 button.link.danger { color: var(--warn-ink); }
+/* A TAG THAT LEADS SOMEWHERE reads as the link it is, and takes no column's width. */
+button.link .tag { min-width: 0; margin-right: 0; color: inherit; text-decoration: inherit; }
 /* A LINK DARKENS TO INK UNDER THE POINTER, as the website's do. A destructive one keeps its
    warning ink, and a disabled one does not answer. */
 button.link:not(.danger):not([disabled]):hover { color: var(--heading); }

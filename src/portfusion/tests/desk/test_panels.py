@@ -880,11 +880,20 @@ def test_the_dashboards_status_line_draws_what_it_is_sent():
 
 def test_the_dashboard_lists_the_checks_the_audit_prints():
     """WHAT WAS CHECKED, under what needs attention: what is captured has a display home. The
-    engine's notes, in its words and its order."""
-    data = panels.get("dashboard").data()
-    assert data["checks"] == _engine.Book().findings()["notes"]
+    engine's notes, in its words and its order.
+
+    AND EACH FINDING LEADS TO ITS PAGE: the engine's, one the desk has, drawn as a link; what
+    waits on the Bench is drawn only where the Bench opens."""
+    data, found = panels.get("dashboard").data(), _engine.Book().findings()
+    js = _renderer(desk_script(), "dashboard")
+    assert data["checks"] == found["notes"]
     assert any(c.startswith("evidence:") for c in data["checks"])
-    assert "d.checks" in _renderer(desk_script(), "dashboard")
+    assert "d.checks" in js
+    sent = {a["text"]: a["panel"] for a in data["attention"] + data["bench"]}
+    for f in found["problems"] + found["gaps"]:
+        assert sent[f] == getattr(f, "page", None), f
+    assert {p for p in sent.values() if p} <= {p.NAME for p in panels.all_panels()}, sent
+    assert "panelLink(a.panel)" in js and 'PANELS.has("bench") ? d.bench' in js
 
 
 def test_the_footer_says_whose_it_is_and_which_release():
