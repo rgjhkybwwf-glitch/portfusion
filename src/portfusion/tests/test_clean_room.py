@@ -59,5 +59,6 @@ WORKFLOW = ROOT / ".github" / "workflows" / "guard.yml"
 def test_every_action_the_workflow_uses_is_pinned_to_a_commit():
     """A tag can be moved to other code after it is reviewed; a commit cannot. The repository
     also refuses an unpinned action, so this says why before GitHub does."""
-    uses = re.findall(r"uses:\s*(\S+)", WORKFLOW.read_text(encoding="utf-8"))
+    uses = [u for w in sorted(WORKFLOW.parent.glob("*.yml"))
+            for u in re.findall(r"uses:\s*(\S+)", w.read_text(encoding="utf-8"))]
     assert uses and all(re.fullmatch(r"actions/[\w.-]+@[0-9a-f]{40}", u) for u in uses), uses

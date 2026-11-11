@@ -1,0 +1,40 @@
+# A DEPENDABOT BUMP THAT STAYS IN ITS MAJOR VERSION MERGES ITSELF once `guard` is green. A major
+# bump, a 0.x bump, or a pull request whose title names no two dotted versions is left for the
+# maintainer, and the request is withdrawn if a later update turns a bump into one of those.
+# Nothing here merges: it asks GitHub to, and the `main` ruleset still requires the guard on a
+# branch level with main, so what merges is the tree the guard ran on. The merge is the token's
+# own, which starts no workflow: the guard does not run again on main for it. A branch that falls
+# behind main waits for Dependabot's own rebase.
+#
+# No action is used, only `gh`, which the runner carries. The title reaches the shell as a
+# variable, never as script.
+
+name: dependabot-merge
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, edited]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  merge:
+    if: github.event.pull_request.user.login == 'dependabot[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Ask for the merge, unless the major version moves
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.html_url }}
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          if [[ "$TITLE" =~ from\ v?([0-9]+)\.[0-9][^\ ]*\ to\ v?([0-9]+)\.[0-9] ]] \
+             && [[ "${BASH_REMATCH[1]}" == "${BASH_REMATCH[2]}" && "${BASH_REMATCH[1]}" != 0 ]]; then
+            gh pr merge --auto --merge "$PR"
+          else
+            echo "left for the maintainer: $TITLE"
+            gh pr merge --disable-auto "$PR" || true
+          fi
