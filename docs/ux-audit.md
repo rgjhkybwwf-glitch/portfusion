@@ -59,7 +59,7 @@ A screenshot is named for the first row it shows.
 | 8 | Dashboard | 8 | "YTD return (MWR)" and "Return since 1 Jan 2026 (MWR)" show the same 36.54%; the year runs "from 31 Dec 2025" in one place and "since 1 Jan 2026" in the other; MWR is not spelled out. [shot](ux-audit/01.png) | wording | 1 | the same figure whenever the record began this year: `engine/book.py`, `test_figures.py`; the report moves with it |
 | 9 | Dashboard | 9 | "Closed round trips 1", and Round Trips lists four rows under "Realisations 4 / Closed out 1". [shot](ux-audit/01.png) | wording | 1 | the label in `Book.HEADLINE`; `test_figures.py`; the report moves with it |
 | 10 | Dashboard | 11 | "Total gain £3,292.53" here, "Capital growth £3,291.33" on Performance, "Gain +3,334" on the report. They agree: £1.20 of funding interest lowers net asset value and sits in income. Nothing says so. [shot](ux-audit/01.png) | wording | 2 | a line of the Method (`record/rules.py`), or a label and `test_figures.py` |
-| 11 | Dashboard | all | The slowest page, at 0.22 s. Its findings are derived again on every request, and the first load asks for the shell before it asks for the page. Not slow on the demo's 189 rows, and 0.29 s on 1,525. | speed | 1 | `desk/engine.py` holds the findings for a store's mtime; one test |
+| 11 | Dashboard | all | The slowest page, at 0.22 s. Its findings are derived again on every request, and the first load asks for the shell before it asks for the page. Not slow on the demo's 189 rows, and 0.29 s on 1,525. | speed | 1 | decided 11 Nov: stays as it is |
 | 12 | Dashboard | 1, 2 | The walker saw the last page stay up for 2 to 4 s after a tab was pressed, with no sign of loading. Not reproduced: every page paints in 5 to 230 ms. The browser pane runs the page as a hidden one. [shot](ux-audit/12.jpg) | speed | 0 | none |
 | 13 | Bench | 2 | The item's own labels had to be decoded: "Evidence — statement-grade", "Authority that can be asked again", "Named reference that retrieves it". [shot](ux-audit/13.png) | wording | 2 | `bench.js`; no test |
 | 14 | Bench | 2 | A dividend the owner knows of, with no file, cannot be recorded: "Blocked the reference retrieves it a ii-statement is retrieved by its FILE and none is on the bench." The kinds offered are broker documents only. The job was abandoned. [shot](ux-audit/14.jpg) | missing function | 3 | the rule is the record's (`docs/intake.md`, Never), so a decision before a file; saying it before the form is filled is `bench.js` |
@@ -98,7 +98,7 @@ A screenshot is named for the first row it shows.
 | 47 | Holdings | 7 | Clicking a row highlights it and does nothing else. | missing function | 1 | `kit.js`; no test |
 | 48 | Holdings | 7 | Scrolled right, "detail" opened a tall empty gap: its content is drawn at the table's left, out of sight. It looked broken. | layout | 2 | `app.css`, `kit.js`; no test |
 | 49 | Holdings | 7 | "detail" is the mark history alone. Bought and sold are on Trades, received is on Accounts, by account, in free text. No one place holds a holding's history; Round Trips' "company life" view holds much of it, and nothing points there. | missing function | 2 | `panels/holdings.py`, `reading.js`; `test_panels.py` extended |
-| 50 | Holdings | 7 | The Method says the thesis "shows under 'why' on Holdings". None was seen on the holding opened; whether it has one was not traced. | wording | 1 | not traced |
+| 50 | Holdings | 7 | The Method says the thesis "shows under 'why' on Holdings". None was seen on the holding opened. Traced 11 Nov: that holding has none on file, and one that has shows it. | wording | 0 | none |
 | 51 | Round Trips | 9 | The tab's name did not say closed positions, and "Realisations 4 / Closed out 1" were not told apart. [shot](ux-audit/51.png) | wording | 1 | `reading.js`, `house/headings.py` |
 | 52 | Round Trips | 9 | The table runs off the page as on Holdings: "Entry date" is cut to "Entr", and exit date, days held, closed out, "trades" and "detail" are out of sight. [shot](ux-audit/51.png) | layout | 2 | as row 46 |
 | 53 | Round Trips | 9 | A heading sorts when pressed, and nothing shows that until one is. | layout | 1 | `app.css`; no test |
@@ -123,7 +123,7 @@ A screenshot is named for the first row it shows.
 ## Ranked
 
 Severity times how often the job is done: every sitting 5, weekly 4, monthly 3, quarterly 2,
-occasional 1; a row on every page counts as every sitting. Rows 31 and 32 are decided and left
+occasional 1; a row on every page counts as every sitting. Rows 11, 31 and 32 are decided and left
 out.
 
 | Score | Rows |
@@ -132,12 +132,12 @@ out.
 | 9 | 14 |
 | 8 | 42, 46, 48, 49 |
 | 6 | 2, 13, 15, 18, 19, 22, 23, 26, 38, 39, 57 |
-| 5 | 5, 6, 11, 70 |
-| 4 | 1, 8, 10, 30, 34, 35, 43, 44, 45, 47, 50, 52, 59, 60, 62, 63 |
+| 5 | 5, 6, 70 |
+| 4 | 1, 8, 10, 30, 34, 35, 43, 44, 45, 47, 52, 59, 60, 62, 63 |
 | 3 | 16, 17, 20, 21, 24, 25, 27, 28, 40, 41, 58, 67 |
 | 2 | 7, 9, 36, 37, 51, 53, 55, 56, 61, 64 |
 | 1 | 65, 66 |
-| 0 | 12, 29, 33 |
+| 0 | 12, 29, 33, 50 |
 
 | Class | Rows |
 |---|---|
@@ -146,6 +146,28 @@ out.
 | missing function | 12 |
 | layout | 12 |
 | speed | 2 |
+
+## Where each row went
+
+As at 11 Nov 2026, on main at `a1b2815`. The issue holds the row from here.
+
+| Rows | Issue | State |
+|---|---|---|
+| 3, 4, 38, 39, 54 | #128 | closed |
+| 46, 48, 52, 57 | #130 | closed |
+| 42, 49, 59 | #139 | closed |
+| 8, 9, 10, 45, 55, 58, 60 | #149 | open, 0.4.1 |
+| 1, 5, 6, 40 | #150 | open, 0.4.1 |
+| 2, 30, 43, 51, 56, 65, 68, 69, 70 | #129 | open, 0.4.1 |
+| 41, 44, 47, 53 | #151 | open, 0.4.1 |
+| 14, 67 | #138 | open, 0.4.2 |
+| 13, 15, 16, 17, 18, 20, 24 | #10 | open, 0.4.2 |
+| 19, 21, 22, 23, 25, 26, 27, 28 | #152 | open, 0.4.2 |
+| 34, 35, 36, 37 | #153 | open, 0.5.0 |
+| 7, 64, 66 | #154 | open, 0.5.0 |
+| 61, 62, 63 | #155 | open, 0.5.0 |
+| 11, 31, 32 | none | decided, stays as it is |
+| 12, 29, 33, 50 | none | not a fault |
 
 ## Timing
 
