@@ -163,6 +163,11 @@ One line each; kept by review, and by the test named where there is one.
 
 - **One logical change per commit**, its message written for a reader who was not there.
 - **Review the branch's diff before its pull request opens**, and settle what the review finds.
+- **A changed desk page is walked cold before its pull request opens**: a reader with the desk's
+  address and the issue's jobs, and no code or guides, as [`docs/ux-audit.md`](docs/ux-audit.md)
+  was made. The pull request says which of its rows the walk found closed.
+- **A release's guides are read whole before its tag**, one reader to a guide, each running its
+  commands and opening its paths; one writer makes the changes.
 - **A change to the app is written up in [`CHANGELOG.md`](CHANGELOG.md)**, under Unreleased, a
   store move by name; a push that changes the app and not the changelog is refused
   (`test_hooks.py::test_a_checkouts_branch_that_changes_the_app_writes_it_up`).
