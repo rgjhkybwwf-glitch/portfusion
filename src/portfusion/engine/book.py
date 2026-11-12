@@ -131,7 +131,7 @@ class Book(Positions, Trades, Accounts, Reconciliation, Quarters, PastDates, Fin
         "Open positions":                        {"basis": "count", "unit": "count", "point_in_time": True},
         # The accounts open at the quarter end, which the report sets beside "Open positions".
         "Accounts / positions":                  {"basis": "count", "unit": "count", "point_in_time": True, "report_only": True},
-        "Closed round trips":                    {"basis": "count", "unit": "count", "point_in_time": False},
+        "Round trips closed out":                {"basis": "count", "unit": "count", "point_in_time": False},
     }
 
     HEADLINE = _OfTheRecord(_registry)
@@ -183,7 +183,7 @@ class Book(Positions, Trades, Accounts, Reconciliation, Quarters, PastDates, Fin
                 self.SINCE_START: self.since_start(t["ytd"]),
                 "Capital employed (opening + deployed)": t["capital_employed"],
                 "Open positions": float(len(h)),
-                "Closed round trips": float(len(self.round_trips().query("fully_closed"))),
+                "Round trips closed out": float(len(self.round_trips().query("fully_closed"))),
             }
 
         # ONE TABLE, so the parts and the total cannot disagree. Splitting the same rows by

@@ -201,7 +201,8 @@ def _performance(b, qr, quarter_end) -> str:
     {_head("Performance", "quarter", *((f, ' class="n"') for f in (
         "opening_nav", "capital_deployed", "return_income", "closing_nav", "gain", "return")))}
     <tbody>{perf}</tbody></table></div>
-  <p {_NOTE}>Income: share-account dividends. A spread bet&rsquo;s is inside its equity.</p>"""
+  <p {_NOTE}>{heading("Performance", "return_income")}: share-account dividends.
+    A spread bet&rsquo;s is inside its equity.</p>"""
 
 
 def _allocation(b, quarter_end) -> str:

@@ -91,13 +91,14 @@ def test_the_dashboard_says_which_year_ytd_is_and_why_it_is_blank(monkeypatch):
     live = panels.get("dashboard").data()["ytd"]
     assert live == _engine.Book().ytd_window()
     assert live["opens"] == f"{live['year'] - 1}-12-31"
+    assert live["first_day"] == f"{live['year']}-01-01", "the first day counted is the day after"
     for frozen in (False, True):
         b = book_in_the_next_year(frozen=frozen)
         monkeypatch.setattr(engine, "book", lambda b=b: b)
         data = panels.get("dashboard").data()
         figs = {f["label"]: f["value"] for f in data["figures"]}
         assert data["ytd"] == {"year": live["year"] + 1, "opens": f"{live['year']}-12-31",
-                               "frozen": frozen}
+                               "first_day": f"{live['year'] + 1}-01-01", "frozen": frozen}
         assert (figs["YTD return (MWR)"] is None) is not frozen
 
 
@@ -541,9 +542,10 @@ def test_an_accounts_quarter_names_what_its_closing_nav_rests_on():
 
 @needs("buys")
 def test_a_year_row_rebuilds_its_own_return():
-    """THE YEAR TABLE SHOWS THE RETURN'S INCOME, so every row's YTD return is its own figures:
-    (capital growth + income) ÷ (opening NAV + the capital deployed, each flow weighted by the
-    days after it — the engine's weights, since the row carries the flows' sum)."""
+    """THE YEAR TABLE SHOWS THE RETURN'S INCOME AND THE GAIN WITH IT, so every row's YTD return
+    is its own figures: the gain, which is capital growth plus that income, ÷ (opening NAV + the
+    capital deployed, each flow weighted by the days after it — the engine's weights, since the
+    row carries the flows' sum)."""
     d = panels.get("performance").data()
     assert "return_income" in d["year_columns"] and "income" not in d["year_columns"]
     rows = [r for r in d["year"] if r["ytd"] is not None]
@@ -552,7 +554,8 @@ def test_a_year_row_rebuilds_its_own_return():
     weighted = b.weighted_flows(b.ytd_opens(), b.valued_at())
     for r in rows:
         wcf = float(weighted.sum() if r["account"] == "The book" else weighted[r["account"]])
-        rebuilt = (r["capital_growth"] + r["return_income"]) / (r["opening_nav"] + wcf)
+        assert abs(r["gain"] - (r["capital_growth"] + r["return_income"])) < 1e-9, r["account"]
+        rebuilt = r["gain"] / (r["opening_nav"] + wcf)
         assert abs(rebuilt - r["ytd"]) < 1e-9, (
             f"{r['account']}: the row rebuilds to {rebuilt:.4%}, the page says {r['ytd']:.4%}")
 
@@ -873,16 +876,18 @@ def _renderer(js, name):
 
 
 def test_the_dashboards_status_line_draws_what_it_is_sent():
-    """THE AGE LEADS THE PRICES STEP, and the year-to-date step names the 31 December the year
-    opens at. A payload field the renderer drops is a figure shown nowhere. `year` is the one not
-    drawn: `opens` names it."""
+    """THE AGE LEADS THE PRICES STEP, and the year-to-date step names the first day the year
+    counts. A payload field the renderer drops is a figure shown nowhere. `year` and `opens` are
+    the two not drawn: `first_day` names both, and no page prints the day before it."""
     js = _renderer(desk_script(), "dashboard")
     data = panels.get("dashboard").data()
     assert set(data["prices"]) == {"newest", "oldest", "spread_days", "marks", "age_days"}
-    assert set(data["ytd"]) == {"year", "opens", "frozen"}
+    assert set(data["ytd"]) == {"year", "opens", "first_day", "frozen"}
     missing = ([f"p.{k}" for k in data["prices"] if f"p.{k}" not in js]
-               + [f"y.{k}" for k in ("opens", "frozen") if f"y.{k}" not in js])
+               + [f"y.{k}" for k in ("first_day", "frozen") if f"y.{k}" not in js])
     assert not missing, f"the Dashboard is sent {missing} and draws none of it"
+    assert "y.opens" not in js, "the Dashboard prints the day before the year's first"
+    assert panels.get("performance").data()["year_from"] == data["ytd"]["first_day"]
 
 
 def test_the_dashboard_lists_the_checks_the_audit_prints():

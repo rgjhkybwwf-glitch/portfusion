@@ -110,15 +110,18 @@ class Accounts(Core):
         return quarter_opens(quarter_end, self.baseline_asof)
 
     def ytd_window(self) -> dict:
-        """What the live year-to-date figures measure, for a page to state: `year`, the day they
-        open at (`opens`, `year_opens()`), and whether that day's net asset value is `frozen` on file.
+        """What the live year-to-date figures measure, for a page to state: `year`; `opens`, the
+        day whose closing net asset value they measure from (`year_opens()`); `first_day`, the
+        first day they count, the day after, which a page prints; and whether the opening net
+        asset value is `frozen` on file.
 
         Until it is, every year-to-date figure is BLANK (`by_account()`), and `frozen` is the
         reason a page gives — the newest mark alone cannot say which year a "YTD" is of, because
         `ytd_year()` rolls at a new year's first row as well as its first price.
         """
         opens = self.ytd_opens()
-        return {"year": self.ytd_year(), "opens": opens,
+        first_day = (pd.Timestamp(opens) + pd.Timedelta(days=1)).date().isoformat()
+        return {"year": self.ytd_year(), "opens": opens, "first_day": first_day,
                 "frozen": opens in self.quarter_nav_total().index}
 
     def by_account(self, as_of: str | None = None, window: int | None = None) -> pd.DataFrame:
@@ -143,6 +146,8 @@ class Accounts(Core):
           capital_growth    money     nav − capital_employed: what the holdings did
           income            money     the year's dividends + interest − fees
           opened_in_period  —         the year opened on a zero balance: OPENED_IN_PERIOD
+          gain              money     capital_growth + return_income, what the return divides:
+                                      `_dietz_row()`'s, blank where the return is
           ytd               —         the day-weighted return on money: `_dietz_row()`
 
         THE YEAR ROLLS AND THE BALANCE DOES NOT. Every column but `exposure` and `nav` is the
@@ -245,8 +250,10 @@ class Accounts(Core):
         # THE ONE FORMULA, `_dietz_row()`, for the year as for a quarter: each flow weighted by
         # the days from its date to the newest mark, which is where the live figures stand.
         weighted = per_account(self.weighted_flows(start=opens, end=as_of or self.valued_at()))
-        out["ytd"] = [self._dietz_row(bv, ev, cf, wcf, inc)["return"]
-                      for bv, ev, cf, wcf, inc in zip(opening, nav, deployed, weighted, ret_income)]
+        year = [self._dietz_row(bv, ev, cf, wcf, inc)
+                for bv, ev, cf, wcf, inc in zip(opening, nav, deployed, weighted, ret_income)]
+        out["gain"] = [r["gain"] for r in year]
+        out["ytd"] = [r["return"] for r in year]
         out["opened_in_period"] = (out["opening_nav"] == 0) & out["ytd"].notna()
         return out
 
@@ -257,8 +264,9 @@ class Accounts(Core):
                     "nav", "capital_growth", "income", "return_income")
         # THE ONE FORMULA, as every account row: the year's flows weighted to the newest mark.
         weighted = float(self.weighted_flows(start=self.ytd_opens(), end=self.valued_at()).sum())
-        t["ytd"] = self._dietz_row(t["opening_nav"], t["nav"], t["capital_deployed"],
-                                   weighted, t["return_income"])["return"]
+        year = self._dietz_row(t["opening_nav"], t["nav"], t["capital_deployed"],
+                               weighted, t["return_income"])
+        t["gain"], t["ytd"] = year["gain"], year["return"]
         return t
 
     def nav(self) -> float:
