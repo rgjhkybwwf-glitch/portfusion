@@ -12,6 +12,7 @@ from portfusion.engine.quarters import Quarters
 from portfusion.engine.past import PastDates
 from portfusion.engine.findings import Findings
 from portfusion.house import precision as P
+from portfusion.house import headings as H
 
 
 # =====================================================================================
@@ -33,7 +34,7 @@ class _OfTheRecord:
 
 def _since_start(d) -> str:
     """The since-start return's label, which carries the day the record begins."""
-    return f"Return since {P.day(d.RECORD_BEGINS)} (MWR)"
+    return H.FIGURES["since_start"].format(P.day(d.RECORD_BEGINS))
 
 
 def _registry(d) -> dict[str, dict]:
@@ -109,29 +110,29 @@ class Book(Positions, Trades, Accounts, Reconciliation, Quarters, PastDates, Fin
     SINCE_START = _OfTheRecord(_since_start)
 
     _HEADLINE = {
-        "Net asset value":                       {"basis": "capital", "unit": "gbp", "point_in_time": True},
-        "Total market exposure":                 {"basis": "notional", "unit": "gbp", "point_in_time": True},
-        "— of which securities owned":           {"basis": "capital", "unit": "gbp", "point_in_time": True},
-        "— of which spread-bet notional":        {"basis": "notional", "unit": "gbp", "point_in_time": True},
-        "Exposure above net asset value":        {"basis": "notional", "unit": "gbp", "point_in_time": True},
-        "Cost of securities owned":              {"basis": "capital", "unit": "gbp", "point_in_time": False},
-        "Spread-bet notional at entry":          {"basis": "notional", "unit": "gbp", "point_in_time": False},
+        H.FIGURES["nav"]:                        {"basis": "capital", "unit": "gbp", "point_in_time": True},
+        H.FIGURES["total_exposure"]:             {"basis": "notional", "unit": "gbp", "point_in_time": True},
+        H.FIGURES["owned"]:                      {"basis": "capital", "unit": "gbp", "point_in_time": True},
+        H.FIGURES["notional"]:                   {"basis": "notional", "unit": "gbp", "point_in_time": True},
+        H.FIGURES["above_nav"]:                  {"basis": "notional", "unit": "gbp", "point_in_time": True},
+        H.FIGURES["owned_cost"]:                 {"basis": "capital", "unit": "gbp", "point_in_time": False},
+        H.FIGURES["notional_at_entry"]:          {"basis": "notional", "unit": "gbp", "point_in_time": False},
         # A GAIN IS MONEY ON EITHER KIND OF LINE: a bet's unrealised gain is stake x (level now
         # less entry level), IG's running profit or loss, inside its equity (rules.SPREAD_BET),
         # as its realised gain is money. Only the VALUE a bet's gain is measured from is
         # notional. The two costs stand apart above, as exposure's two parts do.
-        "Unrealised gain / loss":                {"basis": "capital", "unit": "gbp", "point_in_time": False},
-        "Realised gain / loss to date":          {"basis": "capital", "unit": "gbp", "point_in_time": False},
-        "Total gain":                            {"basis": "capital", "unit": "gbp", "point_in_time": False},
-        "YTD income":                            {"basis": "capital", "unit": "gbp", "point_in_time": False},
-        "Capital employed (opening + deployed)": {"basis": "capital", "unit": "gbp", "point_in_time": False},
-        "YTD return (MWR)":                      {"basis": "capital", "unit": "pct", "point_in_time": False},
+        H.FIGURES["unrealised_total"]:           {"basis": "capital", "unit": "gbp", "point_in_time": False},
+        H.FIGURES["realised_total"]:             {"basis": "capital", "unit": "gbp", "point_in_time": False},
+        H.FIGURES["total_gain"]:                 {"basis": "capital", "unit": "gbp", "point_in_time": False},
+        H.FIGURES["ytd_income"]:                 {"basis": "capital", "unit": "gbp", "point_in_time": False},
+        H.FIGURES["capital_employed_total"]:     {"basis": "capital", "unit": "gbp", "point_in_time": False},
+        H.FIGURES["ytd"]:                        {"basis": "capital", "unit": "pct", "point_in_time": False},
         None:                                    {"basis": "capital", "unit": "pct", "point_in_time": False},
-        "Return this quarter":                   {"basis": "capital", "unit": "pct", "point_in_time": True, "report_only": True},
-        "Open positions":                        {"basis": "count", "unit": "count", "point_in_time": True},
-        # The accounts open at the quarter end, which the report sets beside "Open positions".
-        "Accounts / positions":                  {"basis": "count", "unit": "count", "point_in_time": True, "report_only": True},
-        "Round trips closed out":                {"basis": "count", "unit": "count", "point_in_time": False},
+        H.FIGURES["quarter_return"]:             {"basis": "capital", "unit": "pct", "point_in_time": True, "report_only": True},
+        H.FIGURES["open_positions"]:             {"basis": "count", "unit": "count", "point_in_time": True},
+        # The accounts open at the quarter end, which the report sets beside the open positions.
+        H.FIGURES["accounts_positions"]:         {"basis": "count", "unit": "count", "point_in_time": True, "report_only": True},
+        H.FIGURES["round_trips_closed"]:         {"basis": "count", "unit": "count", "point_in_time": False},
     }
 
     HEADLINE = _OfTheRecord(_registry)
@@ -168,22 +169,22 @@ class Book(Positions, Trades, Accounts, Reconciliation, Quarters, PastDates, Fin
             exposure = self.total_exposure()
             nav = t["nav"]
             return {
-                "Net asset value": nav,
-                "Total market exposure": exposure,
-                "— of which securities owned": self.owned(),
-                "— of which spread-bet notional": self.exposure(),
-                "Exposure above net asset value": exposure - nav,
-                "Cost of securities owned": float(h.loc[h["held_as"] == "shares", "cost"].sum()),
-                "Spread-bet notional at entry": float(h.loc[h["held_as"] == "spread bet", "cost"].sum()),
-                "Unrealised gain / loss": unrealised,
-                "Realised gain / loss to date": realised,
-                "Total gain": unrealised + realised,
-                "YTD income": t["income"],
-                "YTD return (MWR)": t["ytd"],
+                H.FIGURES["nav"]: nav,
+                H.FIGURES["total_exposure"]: exposure,
+                H.FIGURES["owned"]: self.owned(),
+                H.FIGURES["notional"]: self.exposure(),
+                H.FIGURES["above_nav"]: exposure - nav,
+                H.FIGURES["owned_cost"]: float(h.loc[h["held_as"] == "shares", "cost"].sum()),
+                H.FIGURES["notional_at_entry"]: float(h.loc[h["held_as"] == "spread bet", "cost"].sum()),
+                H.FIGURES["unrealised_total"]: unrealised,
+                H.FIGURES["realised_total"]: realised,
+                H.FIGURES["total_gain"]: unrealised + realised,
+                H.FIGURES["ytd_income"]: t["income"],
+                H.FIGURES["ytd"]: t["ytd"],
                 self.SINCE_START: self.since_start(t["ytd"]),
-                "Capital employed (opening + deployed)": t["capital_employed"],
-                "Open positions": float(len(h)),
-                "Round trips closed out": float(len(self.round_trips().query("fully_closed"))),
+                H.FIGURES["capital_employed_total"]: t["capital_employed"],
+                H.FIGURES["open_positions"]: float(len(h)),
+                H.FIGURES["round_trips_closed"]: float(len(self.round_trips().query("fully_closed"))),
             }
 
         # ONE TABLE, so the parts and the total cannot disagree. Splitting the same rows by
@@ -194,15 +195,15 @@ class Book(Positions, Trades, Accounts, Reconciliation, Quarters, PastDates, Fin
         nav = float(self.quarter_nav_total()[as_of])
         returns = self.quarter_returns().set_index("quarter_end")["return"]
         return {
-            "Net asset value": nav,
-            "Total market exposure": exposure,
-            "— of which securities owned": exposure - sb,
-            "— of which spread-bet notional": sb,
-            "Exposure above net asset value": exposure - nav,
+            H.FIGURES["nav"]: nav,
+            H.FIGURES["total_exposure"]: exposure,
+            H.FIGURES["owned"]: exposure - sb,
+            H.FIGURES["notional"]: sb,
+            H.FIGURES["above_nav"]: exposure - nav,
             # NO RETURN for the record's first quarter end, which opens on nothing: never zero.
-            "Return this quarter": float(returns.get(as_of, float("nan"))),
+            H.FIGURES["quarter_return"]: float(returns.get(as_of, float("nan"))),
             # THE FROZEN COMPOSITION'S LINES, as the exposure above is its accounts' frozen rows: a
             # ledger count at the marks takes in lines no frozen account holds.
-            "Open positions": float(len(self.quarter_lines(as_of))),
-            "Accounts / positions": float(len(self.accounts_open(as_of))),
+            H.FIGURES["open_positions"]: float(len(self.quarter_lines(as_of))),
+            H.FIGURES["accounts_positions"]: float(len(self.accounts_open(as_of))),
         }

@@ -152,7 +152,7 @@ from portfusion.report.gate import completeness
 from portfusion.report.page import render
 b = Book()
 assert b.ytd_opens() == b.baseline_asof == "2026-05-17", b.ytd_opens()
-assert not math.isnan(b.headline()["YTD return (MWR)"]), "the year has nothing to open from"
+assert not math.isnan(b.headline()["YTD return"]), "the year has nothing to open from"
 first = b.quarter_returns().iloc[0]
 assert (first["quarter"], first["opens"]) == ("Q2 2026, from 17 May", "2026-05-17"), first
 year = b.year_to_quarter("2026-09-30")

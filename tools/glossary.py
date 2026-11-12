@@ -37,11 +37,13 @@ def _figures() -> list[str]:
     here, a reader meets the page's words in one place without reading Python.
     """
     from portfusion.engine import Book
+    from portfusion.house import headings as H
     out = ["| Figure | Basis | Unit | A dated page may quote it |", "|---|---|---|---|"]
     for label, spec in Book.HEADLINE.items():
         # THE LOADED BOOK'S DAY IS NOT A CONSTANT: the since-start label carries it, so the index
         # names the day rather than printing one book's.
-        label = "Return since the day the record begins (MWR)" if label == Book.SINCE_START else label
+        label = (H.FIGURES["since_start"].format("the day the record begins")
+                 if label == Book.SINCE_START else label)
         # `point_in_time` asks whether the figure HAS A VALUE AT A DATE. A quarterly report may
         # print one that does; one that does not is live-only — "YTD income" and the YTD return
         # are year-to-date by construction, and the rest are as-they-stand-now. A quarter's own

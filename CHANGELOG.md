@@ -16,6 +16,9 @@ No figure moves, and there is no migration. Do these when the book's pin moves.
 
 ### New
 
+- **"YTD return (MWR)" is "YTD return"**, on the Dashboard, `portfusion record` and the report's
+  index: the word Performance already heads the column with. Every figure's name is written once,
+  in `house/headings.py`'s `FIGURES`, and the engine, the Dashboard and the report read it there.
 - **The IG sweep brings a bet line's dividend adjustment** as an income row, category Dividend,
   with the line whose market IG names; blank where no one line has that name. A ledger type no
   rule knows is listed under Skipped, where it was dropped without a word.
