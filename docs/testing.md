@@ -76,13 +76,12 @@ warning that fires on a successful build is furniture, not a check. The feeds' a
 
 ## A page that looks different on purpose
 
-The walk compares each page with a baseline in `tools/desk_walk/`, one per platform, and a page
-changed on purpose fails it until its baseline is taken again, in the pull request that changes the page.
-[`environment.md`](environment.md) sets the walk up.
-
-| Baseline | Taken by |
-|---|---|
-| `<page>-darwin.png` | `npm --prefix tools run walk -- --update-snapshots`, on the Mac, by the maintainer when convenient: the guard on GitHub never reads it, so no pull request waits on it |
-| `<page>-linux.png` | the label `baselines` on the pull request: `baselines.yml` walks the branch on GitHub, commits each page's picture and runs the guard again. By hand, the guard's failed walk uploads what it saw: `gh run download <run> -n desk-walk`, and the page's `-actual.png` is its new baseline |
+The walk compares each page with a baseline in `tools/desk_walk/`, taken on Linux, the guard's
+platform; on a Mac it walks the pages without comparing them, since a Mac sets type apart. A page
+changed on purpose fails the guard until its baseline is taken again, in the pull request that
+changes the page: the label `baselines` on the pull request has `baselines.yml` walk the branch on
+GitHub, commit each page's `<page>-linux.png` and run the guard again. By hand, the guard's failed
+walk uploads what it saw: `gh run download <run> -n desk-walk`, and the page's `-actual.png` is its
+new baseline. [`environment.md`](environment.md) sets the walk up.
 
 A table that scrolls in its box changes no baseline when a column is added beyond its edge.

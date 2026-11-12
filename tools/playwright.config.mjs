@@ -1,5 +1,5 @@
 // THE WALK'S BROWSER: Chromium at the audit's 1440 × 900, one desk served by `desk_walk.py`, and a
-// baseline per page and platform in `desk_walk/`, since a Mac and GitHub's Linux set type apart.
+// baseline per page in `desk_walk/`, taken on Linux, the guard's platform (`desk_walk.spec.mjs`).
 import { defineConfig } from "@playwright/test";
 
 const PORT = 8771;
