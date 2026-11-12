@@ -189,11 +189,24 @@ changes it.
 - **From a routine on claude.ai** at 02:00 UK time, in the personal cloud environment
   "PortFusion", whose setup script builds the venv on Python 3.13 and installs `tools/`. The
   routine points here and sets how many issues a night; nothing else is kept there.
+- **A run has a cap.** No more issues than the routine names, and no issue past a second attempt
+  at a green guard: one that will not go green is left as a draft pull request with what blocks it
+  at the top, and the run moves on. A run that is going nowhere stops and says so; it does not file
+  issues to show work.
 
 **Which issues, in what order**
 
-- **`ready` on an issue means its decisions are made**, so it can be built unattended and merged
-  unread: the label is the maintainer's yes, given in advance.
+- **`ready` on an issue means it meets the Definition of Ready**, so it can be built unattended
+  and merged unread: the label is the maintainer's yes, given in advance. An issue is ready when
+  it has all five:
+  - **Cause**: what in the code makes the symptom, by file and function. A symptom alone is
+    evidence, not an issue.
+  - **Done**: the checks that say it is done, each one a test, a walk step or a command can make.
+  - **Not in scope**: what the fix leaves alone.
+  - **Decisions**: every question answered by the maintainer, quoted with the date.
+  - **Order**: what it waits on, and what waits on it.
+  An issue without them is labelled `decision`, with its questions at the end, or is evidence for
+  one that has them.
 - **Oldest first**, skipping an issue that has an open pull request of its own; another issue's
   open pull request holds nothing back. An issue whose "Order" names one to follow waits for it.
   Each issue is read whole, comments included, before its work starts.
@@ -217,6 +230,11 @@ changes it.
 
 **Building**
 
+- **A plan, checked, before code.** The agent writes its plan as a comment on the issue: the files
+  it will change, how each "Done" check will be made, and what it will not touch. A fresh agent,
+  given only the issue and that plan, checks the plan against the code and says what is missing or
+  wrong; the plan is mended before a line is written. A plan that finds the issue's cause is wrong
+  is a stop, asked as a decision.
 - **One issue, one branch, one pull request**: a branch claude/<name> from the latest `main`,
   worked by the conventions above (changelog, own diff reviewed, a changed desk page walked cold),
   the guard run, and the desk walk if a desk file changed. The pull request says "Closes #n", and
@@ -243,8 +261,13 @@ changes it.
 
 **Merging**
 
+- **A reviewer who did not build it.** Before a pull request is called clean, a fresh agent given
+  only the issue's "Done" checks and the diff reviews it, as a skeptic: does each check hold, did
+  a test's expectation move without the issue saying so, did anything outside the issue change. Its
+  findings are fixed, or said at the top of the pull request.
 - **A clean pull request merges itself**: one that asks the maintainer nothing, made no choice
-  its issue did not, passes the guard and the walk, and has its cold walk's finds filed. The agent
+  its issue did not, passes the guard, the walk and the reviewer, and has its cold walk's finds
+  filed. The agent
   turns its auto-merge on as it opens it, and GitHub merges it once `guard` is green. Pictures
   retaken for a page the issue meant to change keep it clean.
 - **Any other waits for the maintainer's yes**, auto-merge off, with what is needed from them at
