@@ -1,0 +1,62 @@
+# THE WALK'S LINUX PICTURES, RETAKEN ON A PULL REQUEST THAT CHANGES A PAGE ON PURPOSE. Labelling a
+# pull request `baselines` walks the desk on this branch as the guard does, keeps what each page
+# now looks like as its `tools/desk_walk/<page>-linux.png`, commits those to the branch, takes the
+# label off, and runs the guard again on the new commit. A commit made with the workflow's own
+# token starts no workflow, so the guard is asked for by name. The Mac's pictures are the
+# maintainer's (docs/testing.md); the guard on GitHub never reads them.
+#
+# Only a branch of this repository: a fork's pull request gets no token that can push.
+
+name: baselines
+
+on:
+  pull_request:
+    types: [labeled]
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+
+jobs:
+  retake:
+    if: >-
+      github.event.label.name == 'baselines'
+      && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1    # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: requirements.lock
+      - name: Install
+        run: |
+          python3 -m pip install -q -e '.[dev]' -c requirements.lock
+          npm ci --prefix tools --no-audit --no-fund
+          npm --prefix tools run browser -- --with-deps
+      - name: The desk walked, its Linux pictures retaken
+        run: npm --prefix tools run walk -- --update-snapshots
+      - name: Commit the pictures, and run the guard on them
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.html_url }}
+          BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          gh pr edit "$PR" --remove-label baselines
+          git add tools/desk_walk/*-linux.png
+          if git diff --cached --quiet; then
+            gh pr comment "$PR" --body "🤖 **PortFusion agent** · the walk's Linux pictures already match every page; nothing to commit."
+            exit 0
+          fi
+          pages=$(git diff --cached --name-only | sed 's|tools/desk_walk/||; s|-linux.png||' | paste -sd, - | sed 's/,/, /g')
+          git -c user.name="github-actions[bot]" \
+              -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+              commit -q -m "Retake the walk's Linux pictures: $pages"
+          git push origin "HEAD:$BRANCH"
+          gh workflow run guard --ref "$BRANCH"
+          gh pr comment "$PR" --body "🤖 **PortFusion agent** · the walk's Linux pictures are retaken for: $pages. The guard is running again on them."
