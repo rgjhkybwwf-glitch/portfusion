@@ -4,7 +4,8 @@
 # account, that mentions the owner, and GitHub notifies them as for anyone else's comment:
 #
 # - an issue labelled `decision`: an agent stopped at a choice the issue does not settle;
-# - a pull request opened, reopened or marked ready from a `claude/` branch: work waits for the yes.
+# - a pull request opened, reopened or marked ready from a `claude/` branch: it says whether the
+#   pull request merges itself (the agent turned auto-merge on) or waits for the yes.
 #
 # No action is used, only `gh`, which the runner carries; the token is the workflow's own, so its
 # comment starts no other workflow. Titles and links reach the shell as variables, never as script.
@@ -43,10 +44,17 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
-      - name: Ask the owner for the yes
+      # The nightly agent turns auto-merge on just after it opens a clean pull request, so the
+      # comment waits a minute and says which it is: merging itself, or waiting for the yes.
+      - name: Tell the owner it merges itself, or ask for the yes
         env:
           GH_TOKEN: ${{ github.token }}
           PR: ${{ github.event.pull_request.html_url }}
           OWNER: ${{ github.repository_owner }}
         run: |
-          gh pr comment "$PR" --body "🤖 **PortFusion agent** · @$OWNER, this is ready for your review. If it is right, enable auto-merge and it merges once \`guard\` is green."
+          sleep 60
+          if [ -n "$(gh pr view "$PR" --json autoMergeRequest --jq '.autoMergeRequest // empty')" ]; then
+            gh pr comment "$PR" --body "🤖 **PortFusion agent** · @$OWNER, this asks you nothing, so it merges itself once \`guard\` is green. What changed is above; a merge can be reverted."
+          else
+            gh pr comment "$PR" --body "🤖 **PortFusion agent** · @$OWNER, this is ready for your review. If it is right, enable auto-merge, or merge it if \`guard\` is already green."
+          fi

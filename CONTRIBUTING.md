@@ -174,26 +174,33 @@ One line each; kept by review, and by the test named where there is one.
 - **Never bypass a hook.** A branch reaches `main` as a pull request. The maintainer's yes turns
   its auto-merge on, and GitHub merges it once CI's `guard` is green; it runs on every pull
   request and on `main`. A Dependabot bump within its major version merges the same way, unasked
-  (`dependabot-merge.yml`).
+  (`dependabot-merge.yml`), and so does the nightly agent's clean pull request, whose yes was
+  given in advance by `ready` (below).
 
 ### The nightly agent (on trial since 12 Nov 2026)
 
-An unattended Claude session works one issue a night, and the maintainer checks in by morning.
-This is a trial: the process is being developed as it runs, and each surprise becomes a rule here,
-a test, or a better-written issue.
+An unattended Claude session works the `ready` issues, up to a number a night set in the routine,
+and the maintainer checks in by morning. This is a trial: the process is being developed as it
+runs, and each surprise becomes a rule here, a test, or a better-written issue.
 
 - **It runs from a routine on claude.ai** at 02:00 UK time, in the personal cloud environment
   "PortFusion", whose setup script builds the venv on Python 3.13 and installs `tools/`. The
   routine's instructions are kept there, not in this repository.
-- **`ready` on an issue means its decisions are made**, so it can be built unattended. The agent
-  takes the oldest `ready` issue with no open pull request, and only that one.
+- **`ready` on an issue means its decisions are made**, so it can be built unattended and merged
+  unread: the label is the maintainer's yes, given in advance. The agent takes the `ready` issues
+  with no open pull request, oldest first, each on its own branch and pull request.
 - **A decision is still a stop**: the agent comments the options with its recommendation and swaps
-  `ready` for `decision`. The maintainer answers and puts `ready` back.
-- **The maintainer's yes still merges**: the agent opens its pull request without auto-merge.
+  `ready` for `decision`. The maintainer answers and puts `ready` back. Something a comment raises
+  outside its issue becomes a new issue labelled `decision`, not part of the work.
+- **A clean pull request merges itself**: one that asks the maintainer nothing, whose guard and
+  walk pass, and whose cold walk's finds are filed as issues. The agent turns its auto-merge on,
+  and GitHub merges it once `guard` is green. A pull request that asks anything, or that made a
+  choice the issue did not, keeps auto-merge off and waits for the maintainer's yes.
 - **A question or pull request reaches the maintainer as a mention**: the agent works as the
   maintainer's account, so GitHub would tell them nothing; an issue labelled `decision`, and a pull
   request from a branch whose name begins claude/, get a comment from `github-actions[bot]`, headed
-  "PortFusion agent", that names them (`notify.yml`).
+  "PortFusion agent", that names them and says whether the pull request is merging itself or
+  waiting for a yes (`notify.yml`).
 - **The agent never changes** a workflow, a ruleset, or a test that holds a stability rule; those
   are changed in a session the maintainer is part of.
 
