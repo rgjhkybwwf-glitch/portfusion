@@ -1,9 +1,10 @@
 # THE WALK'S LINUX PICTURES, RETAKEN ON A PULL REQUEST THAT CHANGES A PAGE ON PURPOSE. Labelling a
 # pull request `baselines` walks the desk on this branch as the guard does, keeps what each page
-# now looks like as its `tools/desk_walk/<page>-linux.png`, commits those to the branch, takes the
-# label off, and runs the guard again on the new commit. A commit made with the workflow's own
-# token starts no workflow, so the guard is asked for by name. Pictures are kept for Linux alone
-# (docs/testing.md).
+# now looks like as its `tools/desk_walk/<page>-linux.png`, commits those to a branch beside it,
+# `baselines/<branch>`, and takes the label off. The branch's author merges that in and pushes. A
+# commit pushed to the pull request by this workflow's token would leave its required `guard`
+# waiting for an approval no one gives; the author's push starts the guard as any push does.
+# Pictures are kept for Linux alone (docs/testing.md).
 #
 # Only a branch of this repository: a fork's pull request gets no token that can push.
 
@@ -16,7 +17,6 @@ on:
 permissions:
   contents: write
   pull-requests: write
-  actions: write
 
 jobs:
   retake:
@@ -41,7 +41,7 @@ jobs:
           npm --prefix tools run browser -- --with-deps
       - name: The desk walked, its Linux pictures retaken
         run: npm --prefix tools run walk -- --update-snapshots
-      - name: Commit the pictures, and run the guard on them
+      - name: Push the pictures beside the branch, for the branch's author to merge in
         env:
           GH_TOKEN: ${{ github.token }}
           PR: ${{ github.event.pull_request.html_url }}
@@ -57,6 +57,5 @@ jobs:
           git -c user.name="github-actions[bot]" \
               -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
               commit -q -m "Retake the walk's Linux pictures: $pages"
-          git push origin "HEAD:$BRANCH"
-          gh workflow run guard --ref "$BRANCH"
-          gh pr comment "$PR" --body "🤖 **PortFusion agent** · the walk's Linux pictures are retaken for: $pages. The guard is running again on them."
+          git push --force origin "HEAD:refs/heads/baselines/$BRANCH"
+          gh pr comment "$PR" --body "🤖 **PortFusion agent** · the walk's Linux pictures are retaken for: $pages, on \`baselines/$BRANCH\`. Merge it into the branch (\`git fetch origin baselines/$BRANCH && git merge FETCH_HEAD\`) and push: the guard then runs as on any push."
