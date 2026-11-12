@@ -34,7 +34,7 @@ jobs:
           ISSUE: ${{ github.event.issue.html_url }}
           OWNER: ${{ github.repository_owner }}
         run: |
-          gh issue comment "$ISSUE" --body "🤖 **PortFusion agent** · @$OWNER, a decision is needed here: the options and a recommendation are in the comment above. Answer it, then swap \`decision\` for \`ready\`."
+          gh issue comment "$ISSUE" --body "🤖 **PortFusion agent** · @$OWNER, a decision is needed here: the options and a recommendation are in the comment above. Answer each row in the issue's Answer column, or in a comment as lines begun \"Row 8: …\", then swap \`decision\` for \`ready\`."
 
   review:
     if: >-
