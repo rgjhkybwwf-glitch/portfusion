@@ -44,7 +44,8 @@ No figure moves, and there is no migration. Do these when the book's pin moves.
   and its hand. A press on another control in the row, or one that selected text, opens
   nothing. "trades" at a row's end is a button, Trades.
 - **A heading that sorts shows it** (row 53): a faint up-and-down mark until it is pressed, then
-  its arrow. A table that does not sort shows none.
+  its arrow. A table that does not sort shows none, and a table of fewer than two rows does not
+  sort.
 - **A book row on Performance opens** (row 44): each account's part of the quarter's closing
   NAV, how it counts and what it rests on, adding to the row's figure.
 - **A filter box is as wide as its longest choice**, and one holding a choice is outlined.

@@ -79,6 +79,9 @@ for (const name of ["holdings", "round-trips"]) {
     await row.locator("td").nth(1).click();
     await expect(chevron).toHaveAttribute("aria-expanded", "false");
     await expect(page.locator("#main .detail-row:not([hidden])")).toHaveCount(0);
+    // A DOUBLE PRESS THAT SELECTS A WORD, to copy it, leaves the row as it was.
+    await row.locator("td").nth(1).dblclick();
+    await expect(chevron).toHaveAttribute("aria-expanded", "false");
     // A HEADING THAT SORTS SHOWS IT before it is pressed, and its arrow once it is.
     const heading = page.locator("#main table[data-links] > thead th.sortable").first();
     await expect(heading.locator(".arrow.idle")).toBeVisible();

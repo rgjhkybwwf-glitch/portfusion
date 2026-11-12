@@ -260,8 +260,11 @@ const sortOrder = (rows, key) => {
 };
 
 const table = (rows, cols, extraHead = "", extraCell = () => "", opts = {}) => {
-  const { afterRow = null, inserts = [], cells = {}, rowClass = null, sort = true,
+  const { afterRow = null, inserts = [], cells = {}, rowClass = null, sort: sorts = true,
           align = null, name = null } = opts;
+  /* A TABLE WITH NOTHING TO PUT IN ORDER DOES NOT SORT: fewer than two rows, and its headings
+     take no mark and no press. */
+  const sort = sorts && rows.length > 1;
   /* A LOCAL PRICE'S FORMAT IS ITS ROW'S: it prints at its line's currency's places. */
   const local = new Set(PRECISION.local_price_fields || []);
   /* AN EMPTY FIGURE SITS WHERE ITS FIGURES DO: the dash in a column of figures is right-aligned
@@ -402,23 +405,32 @@ const tradesButton = (company) => !company ? "" :
    <details>, whose content is trapped inside the same box as its summary. The detail is the
    row's NEXT row (`detailRow()`).
    ANOTHER CONTROL ON THE ROW KEEPS ITS OWN PRESS, and A PRESS THAT SELECTED TEXT, to copy a
-   figure, opens nothing. */
+   figure, opens nothing: a drag is passed over, and a double press that selected a word puts
+   the row back as its first press found it. */
 function wireDetailLinks() {
   if (document.body.dataset.detailWired) return;
   document.body.dataset.detailWired = "1";
-  document.addEventListener("click", (e) => {
+  const opening = (e) => {
     const row = e.target.closest("tr");
-    if (!row || !row.classList.contains("has-detail")) return;
-    const b = row.querySelector(".detail-toggle");
-    if (!e.target.closest(".detail-toggle") &&
-        (e.target.closest("button, a, input, select, textarea, label")
-         || String(window.getSelection ? window.getSelection() : ""))) return;
-    const pane = row.nextElementSibling;
+    return row && row.classList.contains("has-detail") ? row : null;
+  };
+  const other = (e) => e.target.closest("button, a, input, select, textarea, label");
+  const selected = () => String(window.getSelection ? window.getSelection() : "");
+  const toggle = (row) => {
+    const b = row.querySelector(".detail-toggle"), pane = row.nextElementSibling;
     if (!b || !pane || !pane.classList.contains("detail-row")) return;
     const open = pane.hidden;
     pane.hidden = !open;
     b.setAttribute("aria-expanded", String(open));
     /* A detail opened can give the box its upright bar, and so a new width. */
     markOverflow();
+  };
+  document.addEventListener("click", (e) => {
+    const row = opening(e);
+    if (row && (e.target.closest(".detail-toggle") || !(other(e) || selected()))) toggle(row);
+  });
+  document.addEventListener("dblclick", (e) => {
+    const row = opening(e);
+    if (row && !other(e) && selected()) toggle(row);
   });
 }
