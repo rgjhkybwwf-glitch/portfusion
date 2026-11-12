@@ -107,7 +107,7 @@ def test_theses_owed_names_each_missing_half(book, monkeypatch):
 def test_findings_are_data_and_hardcode_no_figure(book):
     f = book.findings()
     assert set(f) == {"problems", "gaps", "notes", "prices"}
-    assert any(n.endswith("account(s) reconcile to statement") for n in f["notes"])
+    assert any(n.endswith("account(s) checked against the broker") for n in f["notes"])
     assert any(n.startswith("journal:") for n in f["notes"])
     assert any(n.startswith("evidence:") for n in f["notes"])
 
@@ -137,12 +137,13 @@ def test_the_dashboard_and_the_audit_read_one_price_age(book):
 
 
 @needs("buys", "current-prices")
-def test_a_reconciliation_past_its_band_is_a_problem(book, monkeypatch):
+def test_a_reconciliation_past_its_tolerance_is_a_problem(book, monkeypatch):
     rec = book.reconciliation()
     ig = rec[rec["comparable"] == True].index[0]   # noqa: E712 — a column, compared elementwise
     rec.loc[ig, "difference"] = rec.loc[ig, "statement"]                # 100% apart
     monkeypatch.setattr(book, "reconciliation", lambda: rec)
-    assert any(p.startswith("reconciliation failed") for p in book.findings()["problems"])
+    assert any(p.startswith(f"{rec.loc[ig, 'account']}: equity differs from ")
+               for p in book.findings()["problems"])
 
 
 @needs("buys", "current-prices")
@@ -150,12 +151,12 @@ def test_a_difference_that_rounds_to_nothing_carries_no_sign(book, monkeypatch):
     """Less than a penny reads "agree to £0.00": its sign does not outlive the rounding."""
     rec = book.reconciliation()
     ig = rec[rec["comparable"] == True].index[0]   # noqa: E712 — a column, compared elementwise
-    agree = f"{rec.loc[ig, 'account']}: book and broker agree to "
+    agree = f"{rec.loc[ig, 'account']}: equity agrees with "
     monkeypatch.setattr(book, "reconciliation", lambda: rec)
     for residue in (-1e-12, 0.0, 1e-12):
         rec.loc[ig, "difference"] = residue
         line = next(n for n in book.findings()["notes"] if n.startswith(agree))
-        assert line.startswith(agree + "£0.00 ("), line
+        assert line.endswith(", to £0.00"), line
 
 
 @needs("buys", "current-prices", "account-readings")
@@ -173,10 +174,12 @@ def test_an_account_with_no_statement_is_a_gap_not_a_problem(book, monkeypatch):
     rec.loc[row, "statement"] = float("nan")
     monkeypatch.setattr(book, "reconciliation", lambda: rec)
     f = book.findings()
-    assert any(g.startswith("NO STATEMENT") and rec.loc[row, "account"] in g for g in f["gaps"])
+    assert any(g.startswith(f"{rec.loc[row, 'account']}: ") and "gives no total to check" in g
+               for g in f["gaps"])
     assert not any(rec.loc[row, "account"] in p for p in f["problems"])
+    said = book.account_checks().set_index("account")["sentence"]
     for account in rec.loc[~read, "account"]:
-        gap = next(g for g in f["gaps"] if g == f"NO READING to reconcile against: {account}")
+        gap = next(g for g in f["gaps"] if g == said[account])
         assert gap.page == book.reading_page(account)
 
 
@@ -217,6 +220,57 @@ def test_the_record_command_prints_every_finding(capsys):
     for line in f["notes"] + f["gaps"] + f["problems"] + f["prices"]:
         assert line in out, line
     assert "backup:" in out and "python:" in out
+
+
+#: Each verdict an IG reading can take, as a change to its reconciliation row.
+_IG_CASES = {
+    "within-band": lambda rec, ig: rec.assign(difference=rec["difference"].where(
+        rec.index != ig, 0.0)),
+    "differs": lambda rec, ig: rec.assign(difference=rec["difference"].where(
+        rec.index != ig, rec.loc[ig, "statement"])),
+    "struck-apart": lambda rec, ig: rec.assign(
+        comparable=rec["comparable"].where(rec.index != ig, False),
+        comparability=rec["comparability"].where(
+            rec.index != ig, "the equity was read on one day and the marks are from another")),
+}
+
+
+@needs("buys", "current-prices", "account-readings")
+@pytest.mark.parametrize("case", sorted(_IG_CASES))
+def test_reconcile_the_dashboard_and_the_command_say_one_sentence(case, monkeypatch, capsys):
+    """ONE SENTENCE-MAKER, `Book.account_checks()`: what an account was last checked against,
+    on what day, what was compared and the next step. The findings carry its sentence and page,
+    the Dashboard lists them and `portfusion record` prints them, word for word — for an IG
+    reading inside its tolerance, past it, and struck apart, whatever the loaded book holds.
+    None of them says "band", "LIVE" or "reconcile to statement" of an IG account."""
+    import re
+    from portfusion.desk.panels import dashboard
+    from portfusion.record.__main__ import findings
+    rec = Book().reconciliation()
+    pair = rec[rec["comparable"] == True]          # noqa: E712 — a column, compared elementwise
+    if pair.empty:
+        pytest.skip("the book holds no IG reading struck in one pass")
+    ig = pair.index[0]
+    account = rec.loc[ig, "account"]
+    rec = _IG_CASES[case](rec, ig)
+    monkeypatch.setattr(Book, "reconciliation", lambda self: rec.copy())
+    b = Book()
+    c = b.account_checks().set_index("account").loc[account]
+    assert (c["verdict"], c["compared"]) == (case, "equity"), c.to_dict()
+    assert c["sentence"].startswith(f"{account}: equity ") and c["state"] in c["sentence"]
+    assert c["against"] and c["on"], "the last broker check is not said"
+    f = b.findings()
+    said = [x for x in f["problems"] + f["gaps"] + f["notes"] if account in x]
+    assert c["sentence"] in said, (c["sentence"], said)
+    if case == "differs":
+        found = next(x for x in f["problems"] if x == c["sentence"])
+        assert found.page == "reconcile", found.page
+        items = [i for i in dashboard._attention(f) if i["text"] == c["sentence"]]
+        assert [i["panel"] for i in items] == ["reconcile"], "the Dashboard does not list it"
+    findings()
+    assert c["sentence"] in capsys.readouterr().out, "portfusion record does not print it"
+    for line in said:
+        assert not re.search(r"\bband\b|LIVE|reconcile to statement", line), line
 
 
 def test_the_close_procedure_names_the_freeze_and_its_window(monkeypatch):
@@ -283,16 +337,15 @@ def test_the_findings_judge_every_judgeable_account_and_name_the_rest(book):
     never passed over."""
     import re
     f = book.findings()
-    line = next(n for n in f["notes"] if n.endswith("account(s) reconcile to statement"))
+    line = next(n for n in f["notes"] if n.endswith("account(s) checked against the broker"))
     rec = book.reconciliation()
     judged = sum(1 for _, r in rec.iterrows()
                  if book.reconciliation_verdict(r["statement"], r["difference"], r["evidence"],
                                                 r["comparable"], r["comparability"])["checkable"])
     assert int(re.match(r"(\d+)", line).group(1)) == judged
-    if judged < len(rec):
-        assert "GAPS, so not judged:" in f["notes"] or any(
-            g.startswith(("NO STATEMENT", "NO READING")) for g in f["gaps"]), \
-            "fewer judged and none named"
+    for c in book.account_checks().to_dict("records"):
+        if not c["checkable"]:
+            assert c["sentence"] in f["notes"] + f["gaps"], f"{c['account']} is not named"
 
 
 def test_each_action_of_the_command_answers_help_and_runs_nothing():

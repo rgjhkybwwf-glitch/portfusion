@@ -553,13 +553,13 @@ def test_the_hosted_page_checks_the_version_before_drawing():
 
 def test_the_hosted_page_points_at_no_page_it_cannot_open():
     """A POINTER TO A PAGE THE DOOR DOES NOT LIST, an instruction no hosted reader can follow, is
-    left out, and Reconcile's reading line goes with it."""
+    left out, and Reconcile's next step on a row goes with it."""
     js = desk_script()
     link = js[js.index("const panelLink ="):js.index("const reportLink =")]
     assert '!PANELS.has(panel) ? ""' in link, "a page the door does not list is still named"
-    reading = js[js.index('label: "Reading"') - 80:js.index('label: "Reading"')]
-    assert 'PANELS.has("bench") ?' in reading, \
-        "Reconcile's reading line is drawn where the Bench does not open"
+    step = js[js.index("r.next &&"):js.index("r.next &&") + 80]
+    assert "PANELS.has(r.reads) ?" in step, \
+        "Reconcile's next step is drawn where its page does not open"
 
 
 # =====================================================================================

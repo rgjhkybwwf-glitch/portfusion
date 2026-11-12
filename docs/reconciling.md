@@ -5,21 +5,35 @@ broker's accounts need.
 
 ## What reconciled means
 
-**A share account is checked on units**: its holdings export, filed on the Bench, must agree with
-the book's units at the export's date. **An IG account is checked on equity**: the book's figure,
+**A share account is checked on units**: every holding in its holdings export against the book's
+units at the export's date. The Bench files an export only if they agree, and Reconcile and the
+Dashboard count them again from the filed export, so an event entered since shows as a
+difference. The book's value is set beside the broker's, with the same cash on both sides; it is
+information, never the verdict, so a holdings export with no cash reading of its day is still
+checked on its units. **An IG account is checked on equity**: the book's figure,
 derived from the ledger and the marks, against IG's own reading, struck in the same pass.
 
 **The book's side is never typed.** A figure read off the document it is compared with makes the
 check agree with itself.
 
+**One sentence per account**, `Book.account_checks()`'s: what it was checked on, what was found,
+and the step that clears it. Reconcile shows it on the account's row, and the Dashboard and
+`portfusion record` print it. `portfusion record` cannot read a document, so its findings take the
+check made when the export was filed; its audit counts the export again.
+
+**The last broker check** is the account history's newest broker document or reading, on
+Reconcile and in the report alike. A reading from IG keeps no document: it is "read from IG on"
+its day.
+
 | Verdict | Means | What clears it |
 |---|---|---|
-| `units-agree` | the holdings export agreed on units when it was filed | nothing: this is the pass |
+| `units-agree` | every holding's units agree with the holdings export | nothing: this is the pass |
 | `no-holdings` | a share reading that lists no units | a holdings export, filed on the Bench |
-| `no-statement` | no broker figure at all | a reading |
-| `within-band` | an IG pair inside `RECON_LIVE_TOLERANCE_PCT` | nothing: this is the pass |
+| `no-reading` | an account that holds something and has no reading | a holdings export on the Bench, or IG read on Price Refresh |
+| `no-statement` | a reading, not a holdings export, that gives no figure to check | the same |
+| `within-band` | IG's equity within `RECON_LIVE_TOLERANCE_PCT` of the book's | nothing: this is the pass |
 | `struck-apart` | an IG reading not struck in one pass with the marks | a Price Refresh with the IG accounts ticked |
-| `differs` | an IG pair past the band | finding out why |
+| `differs` | IG's equity past the tolerance, or a holding's units counted again that disagree | finding out why |
 
 ## The order
 

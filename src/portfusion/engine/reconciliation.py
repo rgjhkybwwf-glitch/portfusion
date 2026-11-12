@@ -56,15 +56,16 @@ class Reconciliation(Core):
             # TWO CHECKS, ONE PER KIND OF ACCOUNT. A SPREAD-BET ACCOUNT'S BOOK SIDE IS ITS
             # DERIVED EQUITY — never cells typed off the statement it is compared against, which
             # can only ever agree with it — valued at the reading's own instant and compared by
-            # value. A SHARE ACCOUNT IS CHECKED ON UNITS at the door that
-            # took its holdings document, so nothing is valued here: its verdict follows from the
-            # evidence class, in `reconciliation_verdict()`.
+            # value. A SHARE ACCOUNT IS CHECKED ON UNITS (`account_checks()`); its book side is
+            # its stock at the reading's day, set beside the broker's as information and never
+            # the verdict.
             sb = self.is_spread_bet(a)
+            book_total = _nav_at(r.as_of).get(a)
+            book_total = None if book_total is None or book_total != book_total else book_total
             if sb:
                 comparable, why = self.comparability(a, r.as_of, r.evidence, r.at)
-                book_total = _nav_at(r.as_of).get(a)
             else:
-                comparable, why, book_total = None, "", None
+                comparable, why = None, ""
             struck_on = str(r.as_of)[:10] if r.as_of else ""
             # A SPREAD-BET READING IS IG'S FIVE FIGURES: its cash is the funds, its total the
             # equity. A SHARE READING HOLDS ITS STOCK ALONE: its cash is the account's newest cash
@@ -78,6 +79,9 @@ class Reconciliation(Core):
                 cash_on = held.as_of.isoformat() if held else None
                 total = (round(r.positions + held.cash, 2)
                          if held and r.positions is not None else None)
+                # THE SAME CASH ON BOTH SIDES, so the difference is the stock's alone.
+                if book_total is not None and held:
+                    book_total = round(book_total + held.cash, 2)
             rows.append({
                 "account": a,
                 "positions": r.positions,
@@ -271,6 +275,13 @@ class Reconciliation(Core):
         Side effects: none.
         """
         missing = statement is None or (isinstance(statement, float) and statement != statement)
+        held = D.EVIDENCE_BY_KEY.get(str(evidence or ""))
+        if held is not None and held.key in D.HOLDINGS_COLUMNS:
+            # UNITS, NOT VALUE: a holdings export's verdict needs no total, and a missing cash
+            # reading leaves only the value beside it unsaid.
+            return {"checkable": True, "live": False, "band": None, "ties": True,
+                    "verdict": "units-agree",
+                    "rule": "units agree with the broker's holdings"}
         if missing:
             unread = evidence is None or evidence != evidence or not str(evidence)
             return {"checkable": False, "live": False, "band": None, "ties": None,
@@ -279,10 +290,6 @@ class Reconciliation(Core):
                        {"verdict": "no-statement", "rule": "nothing to check against"})}
         ev = D.EVIDENCE_BY_KEY.get(str(evidence or ""))
         if ev is None or ev.retrieval != "reading":
-            if ev is not None and ev.key in D.HOLDINGS_COLUMNS:
-                return {"checkable": True, "live": False, "band": None, "ties": True,
-                        "verdict": "units-agree",
-                        "rule": "units agree with the broker's holdings"}
             return {"checkable": False, "live": False, "band": None, "ties": None,
                     "verdict": "no-holdings",
                     "rule": f"{ev.label if ev else evidence} lists no units — a holdings export "
@@ -296,6 +303,93 @@ class Reconciliation(Core):
         return {"checkable": True, "live": True, "band": band, "ties": ties,
                 "verdict": "within-band" if ties else "differs",
                 "rule": f"{why or 'live read'} — band {P.money(band)}"}
+
+    def account_checks(self, counted: dict[str, dict[str, float]] | None = None) -> pd.DataFrame:
+        """WHAT EACH ACCOUNT WAS LAST CHECKED AGAINST, IN ONE VOICE: one row per row of
+        `reconciliation()`, the sentence Reconcile, the Dashboard and `portfusion record` print.
+
+        Columns: account; verdict and checkable, `reconciliation_verdict()`'s; compared, "units"
+        or "equity", None where nothing was; against, on and held, the last broker check
+        (`quarter_evidence(None)`, as the report reads it); state, what the reading found; next,
+        the step that clears it, and page, the panel it is taken on, both None where none is
+        owed; sentence, the account, its state and its step. The step names no page: each
+        renderer leads to `page` its own way.
+
+        `counted` is each share account's units as its filed holdings export lists them, counted
+        again by a caller that can read the document: given, a holding whose units differ makes
+        the account differ, each one named. Not given, the door's check stands.
+
+        Side effects: none.
+        """
+        # AN ARCHIVE THAT CANNOT BE LISTED LEAVES THE LAST CHECK UNSAID, never the verdict: the
+        # evidence chain's own finding reports it.
+        try:
+            last = self.quarter_evidence(None).set_index("account")
+        except OSError:
+            last = pd.DataFrame(columns=["as_of", "document", "held"])
+        rows = []
+        for r in self.reconciliation().to_dict("records"):
+            a = r["account"]
+            difference = r["difference"]
+            difference = None if difference is None or difference != difference else difference
+            comparable = r["comparable"]
+            v = self.reconciliation_verdict(r["statement"], difference, r["evidence"],
+                                            comparable if comparable is not None else None,
+                                            "" if comparable else str(r["comparability"] or ""))
+            verdict, sb = v["verdict"], self.is_spread_bet(a)
+            ev = self.D.EVIDENCE_BY_KEY.get(str(r["evidence"]))
+            read = f"{ev.label if ev else r['evidence']}, " \
+                   f"{P.day(pd.Timestamp(r['struck_on']))}" if verdict != "no-reading" else ""
+            step = page = None
+            if verdict == "units-agree" and (counted or {}).get(a) is not None:
+                check = self.units_check(a, r["struck_on"], counted[a])
+                differ = check[~check["agrees"]]
+                if not differ.empty:
+                    verdict = "differs"
+                    state = f"units differ from {read}: " + "; ".join(
+                        f"{d.ticker} book {d.book:,.0f}, broker {d.broker:,.0f}"
+                        for d in differ.itertuples(index=False))
+                    step, page = "enter what the book is missing", "bench"
+            if verdict == "units-agree":
+                n = len((counted or {}).get(a) or {})
+                state = (f"units of {n} holding(s), counted again, agree with {read}" if n else
+                         f"units agree with {read}")
+            elif verdict == "within-band":
+                # A difference that rounds to nothing is £0.00, never -£0.00 or +£0.00.
+                agree = P.money(difference, signed=True)
+                state = f"equity agrees with {read}, to " \
+                        f"{P.money(0) if agree[1:] == P.money(0) else agree}"
+            elif verdict == "differs" and sb:
+                state = (f"equity differs from {read} by "
+                         + ("an unknown amount" if difference is None else P.money(difference)))
+                step, page = "enter the event or rate the book is missing", "bench"
+            elif verdict == "struck-apart":
+                state = f"equity read from IG on {P.day(pd.Timestamp(r['struck_on']))} is " \
+                        f"unchecked: {v['rule']}"
+                step, page = "read IG again", "price-refresh"
+            elif verdict == "no-holdings":
+                state = f"{read} lists no units, so they are unchecked"
+                step, page = "file a holdings export", "bench"
+            elif verdict in ("no-statement", "no-reading"):
+                state = (f"{read} gives no total to check" if verdict == "no-statement" else
+                         "no reading from IG on file" if sb else
+                         "no holdings export on file, so its units are unchecked")
+                step = "read IG" if sb else "file a holdings export"
+                page = self.reading_page(a)
+            e = last.loc[a] if a in last.index else None
+            rows.append({
+                "account": a, "verdict": verdict,
+                "checkable": v["checkable"], "compared": (None if verdict == "no-reading" else
+                                                         "equity" if sb else "units"),
+                "against": None if e is None else e["document"],
+                "on": None if e is None else e["as_of"],
+                "held": None if e is None else e["held"],
+                "state": state, "next": step, "page": page,
+                "sentence": f"{a}: {state}" + (f" — {step}" if step else ""),
+            })
+        return pd.DataFrame(rows, columns=[
+            "account", "verdict", "checkable", "compared", "against", "on", "held", "state",
+            "next", "page", "sentence"], dtype=object)
 
     def quarter_readings(self, quarter_end: str | None, latest: bool = False,
                          checks: bool = False) -> pd.DataFrame:
@@ -320,7 +414,9 @@ class Reconciliation(Core):
         """
         st = self.statements()
         if checks:
-            st = st[st["source"].map(lambda s: self.D.evidence_from_source(str(s)) is not None)]
+            # A BOOLEAN MASK, typed: on a history with no rows an untyped one selects columns.
+            st = st[st["source"].map(lambda s: self.D.evidence_from_source(str(s)) is not None)
+                    .astype(bool)]
         if quarter_end is None:
             return (st.sort_values("as_of").groupby("account", sort=False).tail(1)
                     .reset_index(drop=True))
@@ -341,28 +437,26 @@ class Reconciliation(Core):
         in ACCOUNT_ORDER — the three limbs of statement-grade, as a reader outside the repo meets
         them.
 
-        The check is `quarter_readings(latest=True)`'s, and AT A QUARTER END ONLY A BROKER'S
-        (`checks=True`): the newest reading whose source names an evidence class, so a page never
-        cites the record's own figure as its check. `as_of` is None where there is none.
-        `document` is its evidence class's label, None where the source names no class — which
-        only the undated answer can give, since Reconcile shows the reading its row compares. `held`:
+        The check is `quarter_readings(latest=True, checks=True)`'s: the newest reading whose
+        source names an evidence class, so a page never cites the record's own figure as its
+        check. `as_of` is None where there is none. `document` is its evidence class's label.
+        `held`:
 
           "on file"                the cited document sits in `_archive/statements/`
           "NOT on file"            it cites one, and the archive does not hold it — whether
                                    the row says so (`not-on-file`) or not
-          "read live"              A LIVE READ KEEPS NO DOCUMENT: nothing can be asked what the
-                                   account was worth at that instant, and the row is the only
-                                   copy
+          "read from IG"           A READ FROM IG'S FEED KEEPS NO DOCUMENT: nothing can be asked
+                                   what the account was worth at that instant, and the row is
+                                   the only copy
           "retrieved another way"  a classified source that cites no file
           None                     no classified source, or no check
 
         `filed` is the archive's names, so a test can say what is filed; None lists the folder.
-        With no `quarter_end`, each account's newest reading: the reconciliation the desk shows.
+        With no `quarter_end`, each account's newest check: Reconcile's last broker check.
         """
         if filed is None:
             filed = self.D.schema.filed_statements()
-        at = self.quarter_readings(quarter_end, latest=True,
-                                   checks=quarter_end is not None).set_index("account")
+        at = self.quarter_readings(quarter_end, latest=True, checks=True).set_index("account")
         rows = []
         for account in self.D.ACCOUNT_ORDER:
             if account not in at.index:
@@ -378,7 +472,7 @@ class Reconciliation(Core):
             elif resolves is not None:
                 held = "on file" if resolves else "NOT on file"
             elif ev and ev.retrieval == "reading":
-                held = "read live"
+                held = "read from IG"
             else:
                 held = "retrieved another way" if ev else None
             rows.append({"account": account, "as_of": str(at.loc[account, "as_of"]),

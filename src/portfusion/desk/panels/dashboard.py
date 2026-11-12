@@ -12,6 +12,7 @@ the engine and this module only decides what to show and how to label it.
 from __future__ import annotations
 
 from portfusion.desk import engine
+from portfusion.desk.doors import observations
 from portfusion.desk.intake import bench, read_document
 from portfusion.desk.panels import _shape
 from portfusion.house import headings as H
@@ -29,7 +30,7 @@ INDENT = frozenset(H.FIGURES[k] for k in ("owned", "notional"))
 def data() -> dict:
     b = engine.book()
     ageing = b.price_ageing()
-    found = b.findings()
+    found = b.findings(counted=observations.counted())
 
     # EVERY FIGURE AND ITS LABEL COME FROM THE ENGINE — `Book.headline()`, the route the report
     # takes too. Two routes to one number is one route too many. Every registered figure is

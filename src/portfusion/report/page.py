@@ -368,7 +368,7 @@ def _evidence(b, quarter_end, names) -> str:
         if r["as_of"] is None:
             return ("no broker check", "&mdash;")
         on = day(r["as_of"])
-        held = {"read live": f"read live, {on}",
+        held = {"read from IG": f"read from IG on {on}",
                 "retrieved another way": "n/a &mdash; retrieved another way",
                 None: "&mdash;"}.get(r["held"], r["held"])
         return (esc(f"{r['document']}, {on}"), held)

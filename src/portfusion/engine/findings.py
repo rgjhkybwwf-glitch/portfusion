@@ -99,10 +99,11 @@ class Findings(Core):
     # The findings `portfusion record` prints and the Dashboard lists under "Needs attention". Every
     # one is read from the record, never from a rendering.
 
-    def findings(self, today: str | None = None) -> dict:
+    def findings(self, today: str | None = None,
+                 counted: dict[str, dict[str, float]] | None = None) -> dict:
         """The record's state as data: {problems, gaps, notes, prices}.
 
-        A PROBLEM is a defect until explained: an account past its reconciliation band, prices
+        A PROBLEM is a defect until explained: an account the broker does not agree with, prices
         past their age or spread limit, a conversion at a stale rate, a row entered since the line
         whose document is not on file. A GAP is work owed: an account with no statement or never
         read, a judgement owed. A NOTE is the state, stated, so a working check is visible as working.
@@ -113,54 +114,30 @@ class Findings(Core):
 
         A problem or gap worked on a desk page is a `Finding` and names it.
 
-        `today` is an ISO date for the price-age test; today's date if omitted.
+        `today` is an ISO date for the price-age test; today's date if omitted. `counted` is
+        `account_checks()`'s.
         """
         problems, gaps, notes = [], [], []
 
         # ---- the book against the BROKERS' STATEMENTS -------------------------------------
-        checked, ungrounded, apart = 0, [], []
-        for r in self.reconciliation().to_dict("records"):
-            statement = r["statement"]
-            difference = r["difference"]
-            difference = None if difference is None or difference != difference else difference
-            comparable = r["comparable"]
-            v = self.reconciliation_verdict(statement, difference, r["evidence"],
-                                            comparable if comparable is not None else None,
-                                            "" if comparable else str(r["comparability"] or ""))
-            if v["verdict"] == "no-reading":
-                gaps.append(Finding(f"NO READING to reconcile against: {r['account']}",
-                                    self.reading_page(r["account"])))
-                continue
-            if v["verdict"] == "no-statement":
-                ungrounded.append(r["account"])
-                continue
-            if not v["checkable"]:
-                apart.append(f"{r['account']} — {v['rule']}")
-                continue
-            checked += 1
-            if v["verdict"] == "units-agree":
-                continue
-            if difference is None or not v["ties"]:
-                shown = "an unknown amount" if difference is None else P.money(difference)
-                problems.append(Finding(
-                    f"reconciliation failed — {r['account']}: book and broker differ by {shown}"
-                    + (f", past the {P.money(v['band'])} live band" if v["live"] else ""),
-                    "reconcile"))
-            elif v["live"]:
-                # A difference that rounds to nothing is £0.00, never -£0.00 or +£0.00.
-                agree = P.money(difference, signed=True)
-                if agree[1:] == P.money(0):
-                    agree = P.money(0)
-                notes.append(f"{r['account']}: book and broker agree to {agree} "
-                             f"({P.pct(abs(difference) / abs(statement))}) on a LIVE read, "
-                             f"band {P.money(v['band'])}")
-        notes.append(f"{checked} account(s) reconcile to statement")
-        if ungrounded:
-            gaps.append(Finding("NO STATEMENT to reconcile against: " + ", ".join(ungrounded),
-                                "reconcile"))
-        if apart:
-            notes.append("GAPS, so not judged:")
-            notes.extend(f"  {a}" for a in apart)
+        # EACH ACCOUNT IN `account_checks()`'s WORDS, which Reconcile shows: an account never
+        # read owes a reading, and one with nothing to check against a figure, each a gap; a
+        # difference is a problem, worked from Reconcile; the rest, the state stated.
+        checked = 0
+        for c in self.account_checks(counted).to_dict("records"):
+            if c["verdict"] == "no-reading":
+                gaps.append(Finding(c["sentence"], c["page"]))
+            elif c["verdict"] == "no-statement":
+                gaps.append(Finding(c["sentence"], "reconcile"))
+            elif not c["checkable"]:
+                notes.append(c["sentence"])
+            else:
+                checked += 1
+                if c["verdict"] == "differs":
+                    problems.append(Finding(c["sentence"], "reconcile"))
+                elif c["verdict"] == "within-band":
+                    notes.append(c["sentence"])
+        notes.append(f"{checked} account(s) checked against the broker")
 
         # ---- PRICE FRESHNESS ------------------------------------------------------------
         p = self.price_ageing(today)
