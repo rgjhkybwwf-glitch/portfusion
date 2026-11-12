@@ -1188,6 +1188,7 @@ def test_the_method_page_renders_the_records_rules():
 # RECONCILE — each account in the engine's one voice
 # =====================================================================================
 
+@needs("accounts", "buys")
 def test_reconcile_shows_what_each_account_was_last_checked_against():
     """EACH ROW QUOTES `Book.account_checks()`: compared, state, next step, page, sentence, and
     the last broker check's document and day (`test_findings.py` holds the other two pages)."""
@@ -1204,6 +1205,7 @@ def test_reconcile_shows_what_each_account_was_last_checked_against():
                                    else f"{c['against']}, {P.day(c['on'])}"), r["account"]
 
 
+@needs("accounts", "buys")
 def test_a_figure_an_ig_reading_lacks_is_left_out():
     """AN IG READING'S FIGURES ARE THE ONES IT HOLDS: one it lacks is left out, never a dash, and
     a share row has none."""

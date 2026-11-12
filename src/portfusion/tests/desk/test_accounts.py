@@ -1099,6 +1099,7 @@ def test_a_reading_takes_its_cash_and_total_from_their_own_fields_alone():
     assert (r["cash"], r["total"]) == (None, None), r
 
 
+@needs("accounts", "buys")
 def test_an_archive_that_will_not_list_leaves_the_count_and_the_pages_standing(monkeypatch):
     """THE COUNT IS THE DESK'S TO TRY, NEVER TO FAIL ON: an archive that cannot be listed counts
     nothing, and the Dashboard and Reconcile still draw, the door's check standing."""
