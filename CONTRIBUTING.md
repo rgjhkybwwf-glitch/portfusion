@@ -202,15 +202,18 @@ changes it.
   and its CI made green, so none waits on the maintainer for anything but a yes it asked for.
 - **No `ready` issue and nothing to tend: stop**, posting nothing.
 
-**Answering an issue**
+**Asking and answering**
 
-- **An issue's questions are rows**: a "To decide before it is built" table, or the numbered rows
-  an audit issue lists. A question table is filed with an empty **Answer** column, which the
-  maintainer fills in by editing the issue.
-- **In a comment, each answer is a line begun with its row**, a word first: "Row 8: build it",
-  "Where an answer is written: a". Never "8. …", which GitHub turns into a list and renumbers.
-- **A row is settled when its answer is written in one of those two places**; a recommendation is
+- **Every question for the maintainer is asked at the end, under "Questions for you"**: of an
+  issue, and of a comment that stops one. A question is one line, written to be answered on a
+  phone: `**Q1** the question? **a** an option (recommended) · **b** another`, with what it
+  costs in a few words. Tables above it are evidence, read only when wanted, and carry no column
+  to fill in.
+- **The maintainer answers in one comment, a line a question**: `Q1: a`, `Q2: b, and …`, or
+  `All as recommended`. A question is settled when its answer is written so; a recommendation is
   not an answer, and neither is a comment's tone.
+- **An issue's questions are kept few**: what only the maintainer can decide. What the agent can
+  settle from the code, the record's rules or an answer already given, it settles and says so.
 
 **Building**
 
@@ -227,8 +230,9 @@ changes it.
   linked from the issue, and is not built.
 - **What a cold walk finds that the change did not cause** is filed as an issue, or added to one,
   and listed in the pull request.
-- **An issue the agent files goes in the milestone of the issue it came from**, with that issue's
-  area labels, so no issue is left outside a release.
+- **A milestone being worked only gets shorter.** An issue the agent files goes in the next
+  milestone, with the area labels of the issue it came from and `decision` until it is answered,
+  unless an issue of the current one cannot close without it. A walk's finds are one issue a walk.
 - **A CI failure on its pull request** is the agent's to fix, and it waits for the guard's result
   before it leaves a pull request. When the walk fails only because a page the issue meant to
   change looks different, the agent labels the pull request `baselines`: a workflow retakes the
