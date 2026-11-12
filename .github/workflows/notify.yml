@@ -1,0 +1,52 @@
+# THE MAINTAINER IS TOLD WHEN AN AGENT NEEDS THEM. A Claude session works as the maintainer's own
+# account, and GitHub tells no one of their own comment or pull request, so a session's question or
+# finished work would arrive silently. This posts a comment as `github-actions[bot]`, a different
+# account, that mentions the owner, and GitHub notifies them as for anyone else's comment:
+#
+# - an issue labelled `decision`: an agent stopped at a choice the issue does not settle;
+# - a pull request opened, reopened or marked ready from a `claude/` branch: work waits for the yes.
+#
+# No action is used, only `gh`, which the runner carries; the token is the workflow's own, so its
+# comment starts no other workflow. Titles and links reach the shell as variables, never as script.
+
+name: notify
+
+on:
+  issues:
+    types: [labeled]
+  pull_request:
+    types: [opened, reopened, ready_for_review]
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  decision:
+    if: github.event_name == 'issues' && github.event.label.name == 'decision'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Ask the owner for the decision
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE: ${{ github.event.issue.html_url }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          gh issue comment "$ISSUE" --body "🤖 **PortFusion agent** · @$OWNER, a decision is needed here: the options and a recommendation are in the comment above. Answer it, then swap \`decision\` for \`ready\`."
+
+  review:
+    if: >-
+      github.event_name == 'pull_request'
+      && startsWith(github.event.pull_request.head.ref, 'claude/')
+      && !github.event.pull_request.draft
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Ask the owner for the yes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.html_url }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          gh pr comment "$PR" --body "🤖 **PortFusion agent** · @$OWNER, this is ready for your review. If it is right, enable auto-merge and it merges once \`guard\` is green."
