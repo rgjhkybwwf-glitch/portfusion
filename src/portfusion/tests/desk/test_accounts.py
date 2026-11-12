@@ -65,28 +65,34 @@ def test_the_accounts_panel_asks_that_function_rather_than_deciding():
         assert rows[r.account]["verdict"] == expected["verdict"]
 
 
-@needs("accounts", "account-readings", "buys")
-def test_each_reconcile_row_names_the_reading_its_broker_side_rests_on():
-    """EACH ROW CARRIES THE DAY ITS BROKER FIGURE WAS READ AND WHAT FROM: the report's two cells,
-    from the same engine answer the report asks — and for the SAME reading the row compares, which
-    is the half that could quietly drift."""
+@needs("accounts", "buys")
+def test_reconcile_and_the_report_give_one_last_broker_check():
+    """THE LAST BROKER CHECK IS THE ACCOUNT HISTORY'S, ON BOTH PAGES: each Reconcile row's two
+    cells are the report's, laid out from the same `Book.quarter_evidence()` answer, for every
+    account — one with no reading too. And where a row compares a reading, the check is that
+    reading: the readings door banks it in the history as it writes it."""
+    import html
+    import re
+    from portfusion.report import page
     b = engine.book()
-    rests = b.quarter_evidence(None).set_index("account")
+    names = {a: a for a in _rules.ACCOUNT_ORDER}
+    drawn = re.findall(r'<tr><td>(.*?)</td><td class="dim">(.*?)</td><td class="dim">(.*?)</td>',
+                       page._evidence(b, None, names))
+    report = {html.unescape(a): (html.unescape(k), html.unescape(h)) for a, k, h in drawn}
     struck = b.reconciliation().set_index("account")["struck_on"]
-    d = panels.get("reconcile").data()
-    assert d["rows"], "no account — this asserts nothing"
-    for r in d["rows"]:
-        if r["verdict"] == "no-reading":
-            assert (r["last_check"], r["document"]) == ("no broker check", None), r
-            continue
-        e = rests.loc[r["account"]]
-        assert str(e["as_of"])[:10] == struck[r["account"]], (
-            f"{r['account']}: the document is the reading of {e['as_of']}, the figures are of "
-            f"{struck[r['account']]}")
-        day = f"{_dt.date.fromisoformat(struck[r['account']]):%-d %b %Y}"
-        assert r["last_check"] == f"{e['document']}, {day}", (
-            f"{r['account']}: the page says {r['last_check']!r}, and its figures are of {day}")
-        assert r["document"] == e["held"], r["document"]
+    rows = panels.get("reconcile").data()["rows"]
+    assert rows, "no account — this asserts nothing"
+    for r in rows:
+        assert (r["last_check"], r["document"] or "—") == report[r["account"]], r["account"]
+    # AND THE REPORT ITSELF, for the newest frozen quarter wherever its answer is the newest check:
+    # the page a reader holds says what Reconcile says.
+    q = str(b.quarter_nav_total().index.max())[:10] if len(b.quarter_nav_total()) else None
+    if q and b.quarter_evidence(q).equals(b.quarter_evidence(None)):
+        assert page._evidence(b, q, names) == page._evidence(b, None, names)
+        if r["verdict"] != "no-reading":
+            day = f"{_dt.date.fromisoformat(struck[r['account']]):%-d %b %Y}"
+            assert r["last_check"].endswith(day), (
+                f"{r['account']}: the page cites {r['last_check']!r}, and its figures are of {day}")
 
 
 def test_an_account_with_no_broker_figure_is_a_gap_not_a_pass():
@@ -97,7 +103,9 @@ def test_an_account_with_no_broker_figure_is_a_gap_not_a_pass():
     # ON THE RULE, NOT ON A NAMED ACCOUNT. Which account sits in which gap changes every time a
     # document arrives, so a test naming them goes stale on exactly the event it exists for.
     v = _engine.Book.reconciliation_verdict
-    assert v(None, None, "ii-valuation")["verdict"] == "no-statement"
+    assert v(None, None, "ii-statement")["verdict"] == "no-statement"
+    # A HOLDINGS EXPORT IS CHECKED ON UNITS, so a total it cannot give leaves its verdict alone.
+    assert v(None, None, "ii-valuation")["verdict"] == "units-agree"
     assert v(None, None, None)["verdict"] == v(None, None, float("nan"))["verdict"] == "no-reading"
     apart = v(100.0, 1.0, "ig-accounts", False, "the marks are not one pass")
     assert apart["verdict"] == "struck-apart"
@@ -107,14 +115,15 @@ def test_an_account_with_no_broker_figure_is_a_gap_not_a_pass():
     # none it checks nothing, so each kind says why here whatever the book holds.
     none = v(100.0, 1.0, "ii-statement")
     assert none["verdict"] == "no-holdings" and not none["checkable"], none
-    for gap in (v(None, None, "ii-valuation"), apart, none):
+    for gap in (v(None, None, "ii-statement"), apart, none):
         assert len(gap["rule"].split()) >= 4, f"{gap['verdict']} must say why: {gap['rule']!r}"
 
     d = panels.get("reconcile").data()
     for r in d["gaps"]:
         assert r["verdict"] in ("no-statement", "no-holdings", "struck-apart", "no-reading"), \
             r["verdict"]
-        assert len(r["rule"].split()) >= 4, f"{r['verdict']} must say why, and said {r['rule']!r}"
+        assert len(r["state"].split()) >= 4, f"{r['verdict']} must say why, and said {r['state']!r}"
+        assert r["next"] and r["reads"], f"{r['verdict']} must say what clears it"
     assert all(r["verdict"] not in ("within-band", "units-agree") for r in d["gaps"])
 
 
@@ -265,7 +274,7 @@ def test_the_desk_draws_only_the_columns_that_were_agreed():
 
 
 def test_the_gap_list_quotes_the_engines_rule_rather_than_composing_one():
-    """THE GAP LIST DRAWS EACH ROW'S OWN `rule`, never one sentence over every unjudgeable row:
+    """THE GAP LIST DRAWS EACH ROW'S OWN `state`, never one sentence over every unjudgeable row:
     "no broker figure at all" is true of `no-statement` and false of the others. A struck-apart
     row has a tag of its own.
 
@@ -277,8 +286,8 @@ def test_the_gap_list_quotes_the_engines_rule_rather_than_composing_one():
     # Comments are stripped before the ban, because the ban is on what RENDERS.
     drawn = re.sub(r"/\*.*?\*/", "", js, flags=re.S)
 
-    assert "esc(r.rule)" in drawn, \
-        "the gap list no longer renders the engine's own rule for each row"
+    assert "esc(r.state)" in drawn, \
+        "the gap list no longer renders the engine's own words for each row"
     assert "no broker figure at all" not in drawn, (
         "app.js hard-codes why a row cannot be judged; there are three gaps, and the "
         "engine's `rule` says which.")
@@ -864,6 +873,36 @@ def test_a_reading_off_a_document_that_states_no_cash_is_its_stock_alone(store_c
 
 
 @needs("accounts", "account-readings", "buys")
+def test_a_share_account_is_counted_again_and_its_value_set_beside_the_brokers(store_copy):
+    """An invented ii reading: the book's value set beside the broker's, then
+    the desk's count of the filed export, agreeing, and moved by seven units."""
+    from portfusion.desk.doors import observations
+    from portfusion.engine import Book
+    account = _ii_filed(store_copy)
+    out = _write([_ii(as_of="2026-10-01", at="2026-10-01T07:31Z", reference="1 Oct 2026 08:31")])
+    assert out["ok"] is True, out.get("refused")
+    append_rows(store_copy / "cash-readings.csv",
+                [f"{account},2026-10-01,1200.00,ii-transactions,the ledger of the export's day"])
+    _rules.reload_store()
+    b = Book()
+    row = b.reconciliation().set_index("account").loc[account]
+    stock = b.by_account("2026-10-01").set_index("account").loc[account, "nav"]
+    assert (row["book"], row["statement"]) == (round(stock + 1200.00, 2), 41200.00), row.to_dict()
+    assert abs(row["difference"] - (stock - 40000.00)) < 0.005, row.to_dict()
+
+    counted = observations.counted()
+    assert counted.get(account) == {t: float(q) for t, q in _book_units(account).items()}, counted
+    agree = b.account_checks(counted).set_index("account").loc[account]
+    assert (agree["verdict"], agree["compared"], agree["next"]) == ("units-agree", "units", None)
+    ticker, units = next(iter(counted[account].items()))
+    moved = {account: {**counted[account], ticker: units + 7}}
+    c = b.account_checks(moved).set_index("account").loc[account]
+    assert (c["verdict"], c["page"]) == ("differs", "bench"), c.to_dict()
+    assert f"{ticker} book {units:,.0f}, broker {units + 7:,.0f}" in c["sentence"], c["sentence"]
+    assert c["sentence"] in b.findings(counted=moved)["problems"]
+
+
+@needs("accounts", "account-readings", "buys")
 def test_a_cash_figure_on_a_reading_whose_document_states_none_is_refused(store_copy):
     """Refused at the door: a cash figure on an ii export's reading is the account's ledger's,
     wearing the export's evidence."""
@@ -1058,3 +1097,18 @@ def test_a_reading_takes_its_cash_and_total_from_their_own_fields_alone():
     r = bench.reading_of({"reading": {"account": "x", "positions": "1.00", "recon_cash": "2.00",
                                       "stmt_value": "3.00"}})
     assert (r["cash"], r["total"]) == (None, None), r
+
+
+@needs("accounts", "buys")
+def test_an_archive_that_will_not_list_leaves_the_count_and_the_pages_standing(monkeypatch):
+    """THE COUNT IS THE DESK'S TO TRY, NEVER TO FAIL ON: an archive that cannot be listed counts
+    nothing, and the Dashboard and Reconcile still draw, the door's check standing."""
+    from portfusion.desk.doors import observations
+    from portfusion.record import schema
+
+    def broken():
+        raise PermissionError("unreadable")
+    monkeypatch.setattr(schema, "filed_statements", broken)
+    assert observations.counted() == {}
+    assert panels.get("dashboard").data()["attention"]
+    assert panels.get("reconcile").data()["rows"]
