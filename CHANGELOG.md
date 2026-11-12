@@ -58,6 +58,7 @@ No figure moves, and there is no migration. Do these when the book's pin moves.
   - The year reads "from 1 Jan 2026" on the Dashboard and on Performance, the first day it
     counts, and the Dashboard's Year to date line says "MWR on NAV".
   - Accounts' "Read from" is "Cash read from": the document an account's cash was read from.
+- **The demo's ISA cash of 30 Sep 2026 cites its ii statement**, which the archive holds.
 
 ### Fixed
 
