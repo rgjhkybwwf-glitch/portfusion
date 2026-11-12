@@ -275,6 +275,13 @@ class Reconciliation(Core):
         Side effects: none.
         """
         missing = statement is None or (isinstance(statement, float) and statement != statement)
+        held = D.EVIDENCE_BY_KEY.get(str(evidence or ""))
+        if held is not None and held.key in D.HOLDINGS_COLUMNS:
+            # UNITS, NOT VALUE: a holdings export's verdict needs no total, and a missing cash
+            # reading leaves only the value beside it unsaid.
+            return {"checkable": True, "live": False, "band": None, "ties": True,
+                    "verdict": "units-agree",
+                    "rule": "units agree with the broker's holdings"}
         if missing:
             unread = evidence is None or evidence != evidence or not str(evidence)
             return {"checkable": False, "live": False, "band": None, "ties": None,
@@ -283,10 +290,6 @@ class Reconciliation(Core):
                        {"verdict": "no-statement", "rule": "nothing to check against"})}
         ev = D.EVIDENCE_BY_KEY.get(str(evidence or ""))
         if ev is None or ev.retrieval != "reading":
-            if ev is not None and ev.key in D.HOLDINGS_COLUMNS:
-                return {"checkable": True, "live": False, "band": None, "ties": True,
-                        "verdict": "units-agree",
-                        "rule": "units agree with the broker's holdings"}
             return {"checkable": False, "live": False, "band": None, "ties": None,
                     "verdict": "no-holdings",
                     "rule": f"{ev.label if ev else evidence} lists no units — a holdings export "

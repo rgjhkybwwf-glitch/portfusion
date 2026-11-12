@@ -84,6 +84,11 @@ def test_reconcile_and_the_report_give_one_last_broker_check():
     assert rows, "no account — this asserts nothing"
     for r in rows:
         assert (r["last_check"], r["document"] or "—") == report[r["account"]], r["account"]
+    # AND THE REPORT ITSELF, for the newest frozen quarter wherever its answer is the newest check:
+    # the page a reader holds says what Reconcile says.
+    q = str(b.quarter_nav_total().index.max())[:10] if len(b.quarter_nav_total()) else None
+    if q and b.quarter_evidence(q).equals(b.quarter_evidence(None)):
+        assert page._evidence(b, q, names) == page._evidence(b, None, names)
         if r["verdict"] != "no-reading":
             day = f"{_dt.date.fromisoformat(struck[r['account']]):%-d %b %Y}"
             assert r["last_check"].endswith(day), (
@@ -98,7 +103,9 @@ def test_an_account_with_no_broker_figure_is_a_gap_not_a_pass():
     # ON THE RULE, NOT ON A NAMED ACCOUNT. Which account sits in which gap changes every time a
     # document arrives, so a test naming them goes stale on exactly the event it exists for.
     v = _engine.Book.reconciliation_verdict
-    assert v(None, None, "ii-valuation")["verdict"] == "no-statement"
+    assert v(None, None, "ii-statement")["verdict"] == "no-statement"
+    # A HOLDINGS EXPORT IS CHECKED ON UNITS, so a total it cannot give leaves its verdict alone.
+    assert v(None, None, "ii-valuation")["verdict"] == "units-agree"
     assert v(None, None, None)["verdict"] == v(None, None, float("nan"))["verdict"] == "no-reading"
     apart = v(100.0, 1.0, "ig-accounts", False, "the marks are not one pass")
     assert apart["verdict"] == "struck-apart"
@@ -108,7 +115,7 @@ def test_an_account_with_no_broker_figure_is_a_gap_not_a_pass():
     # none it checks nothing, so each kind says why here whatever the book holds.
     none = v(100.0, 1.0, "ii-statement")
     assert none["verdict"] == "no-holdings" and not none["checkable"], none
-    for gap in (v(None, None, "ii-valuation"), apart, none):
+    for gap in (v(None, None, "ii-statement"), apart, none):
         assert len(gap["rule"].split()) >= 4, f"{gap['verdict']} must say why: {gap['rule']!r}"
 
     d = panels.get("reconcile").data()
@@ -1090,3 +1097,17 @@ def test_a_reading_takes_its_cash_and_total_from_their_own_fields_alone():
     r = bench.reading_of({"reading": {"account": "x", "positions": "1.00", "recon_cash": "2.00",
                                       "stmt_value": "3.00"}})
     assert (r["cash"], r["total"]) == (None, None), r
+
+
+def test_an_archive_that_will_not_list_leaves_the_count_and_the_pages_standing(monkeypatch):
+    """THE COUNT IS THE DESK'S TO TRY, NEVER TO FAIL ON: an archive that cannot be listed counts
+    nothing, and the Dashboard and Reconcile still draw, the door's check standing."""
+    from portfusion.desk.doors import observations
+    from portfusion.record import schema
+
+    def broken():
+        raise PermissionError("unreadable")
+    monkeypatch.setattr(schema, "filed_statements", broken)
+    assert observations.counted() == {}
+    assert panels.get("dashboard").data()["attention"]
+    assert panels.get("reconcile").data()["rows"]

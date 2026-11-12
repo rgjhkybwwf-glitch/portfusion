@@ -9,7 +9,8 @@ broker's accounts need.
 units at the export's date. The Bench files an export only if they agree, and Reconcile and the
 Dashboard count them again from the filed export, so an event entered since shows as a
 difference. The book's value is set beside the broker's, with the same cash on both sides; it is
-information, never the verdict. **An IG account is checked on equity**: the book's figure,
+information, never the verdict, so a holdings export with no cash reading of its day is still
+checked on its units. **An IG account is checked on equity**: the book's figure,
 derived from the ledger and the marks, against IG's own reading, struck in the same pass.
 
 **The book's side is never typed.** A figure read off the document it is compared with makes the
@@ -29,7 +30,7 @@ its day.
 | `units-agree` | every holding's units agree with the holdings export | nothing: this is the pass |
 | `no-holdings` | a share reading that lists no units | a holdings export, filed on the Bench |
 | `no-reading` | an account that holds something and has no reading | a holdings export on the Bench, or IG read on Price Refresh |
-| `no-statement` | a reading that gives no total | the same |
+| `no-statement` | a reading, not a holdings export, that gives no figure to check | the same |
 | `within-band` | IG's equity within `RECON_LIVE_TOLERANCE_PCT` of the book's | nothing: this is the pass |
 | `struck-apart` | an IG reading not struck in one pass with the marks | a Price Refresh with the IG accounts ticked |
 | `differs` | IG's equity past the tolerance, or a holding's units counted again that disagree | finding out why |

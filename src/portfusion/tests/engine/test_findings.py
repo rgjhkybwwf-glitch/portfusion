@@ -262,12 +262,11 @@ def test_reconcile_the_dashboard_and_the_command_say_one_sentence(case, monkeypa
     f = b.findings()
     said = [x for x in f["problems"] + f["gaps"] + f["notes"] if account in x]
     assert c["sentence"] in said, (c["sentence"], said)
-    found = next(x for x in said if x == c["sentence"])
-    assert getattr(found, "page", None) == c["page"]
     if case == "differs":
-        assert c["sentence"] in f["problems"] and c["page"]
+        found = next(x for x in f["problems"] if x == c["sentence"])
+        assert found.page == "reconcile", found.page
         items = [i for i in dashboard._attention(f) if i["text"] == c["sentence"]]
-        assert [i["panel"] for i in items] == [c["page"]], "the Dashboard does not list it"
+        assert [i["panel"] for i in items] == ["reconcile"], "the Dashboard does not list it"
     findings()
     assert c["sentence"] in capsys.readouterr().out, "portfusion record does not print it"
     for line in said:

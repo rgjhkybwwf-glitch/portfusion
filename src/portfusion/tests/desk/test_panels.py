@@ -1211,6 +1211,7 @@ def test_a_figure_an_ig_reading_lacks_is_left_out():
     rows = panels.get("reconcile").data()["rows"]
     names = {"funds": "funds", "running P/L": "running_pl", "deposit": "deposit",
              "available": "available"}
+    assert rows, "no account — this asserts nothing"
     for r in rows:
         held = frame.loc[r["account"]]
         want = [k for k, col in names.items() if held[col] is not None and held[col] == held[col]]

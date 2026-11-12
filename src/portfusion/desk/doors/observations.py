@@ -263,7 +263,10 @@ def counted() -> dict[str, dict[str, float]]:
     reading cites, for `Book.account_checks()`. An account whose export cannot be found or read
     again is left out, and its reading's own check stands."""
     out = {}
-    names = schema.filed_statements()
+    try:
+        names = schema.filed_statements()
+    except OSError:
+        return out
     for r in D.ac_rows:
         if r.evidence not in D.HOLDINGS_COLUMNS or D.ACCOUNT_KIND.get(r.acct) == "spread bet":
             continue
@@ -273,7 +276,7 @@ def counted() -> dict[str, dict[str, float]]:
             continue
         try:
             units = filed_units(found[0], r.evidence)
-        except (OSError, ValueError, RuntimeError):
+        except Exception:                    # noqa: BLE001 — a document that will not read is not counted
             continue
         if units:
             out[r.acct] = units

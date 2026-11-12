@@ -105,8 +105,8 @@ class Findings(Core):
 
         A PROBLEM is a defect until explained: an account the broker does not agree with, prices
         past their age or spread limit, a conversion at a stale rate, a row entered since the line
-        whose document is not on file. A GAP is work owed: an account not checked against its
-        broker, a judgement owed. A NOTE is the state, stated, so a working check is visible as working.
+        whose document is not on file. A GAP is work owed: an account with no statement or never
+        read, a judgement owed. A NOTE is the state, stated, so a working check is visible as working.
 
         No expected figure is written in: every finding is a relationship in today's record. Each
         part that reads machinery outside the ledger — the journal, the conversions, the archive —
@@ -120,17 +120,21 @@ class Findings(Core):
         problems, gaps, notes = [], [], []
 
         # ---- the book against the BROKERS' STATEMENTS -------------------------------------
-        # EACH ACCOUNT IN `account_checks()`'s WORDS, which Reconcile shows: an account not
-        # checked owes the step that checks it, a gap; a difference, a problem; the rest, the
-        # state stated.
+        # EACH ACCOUNT IN `account_checks()`'s WORDS, which Reconcile shows: an account never
+        # read owes a reading, and one with nothing to check against a figure, each a gap; a
+        # difference is a problem, worked from Reconcile; the rest, the state stated.
         checked = 0
         for c in self.account_checks(counted).to_dict("records"):
-            if not c["checkable"]:
+            if c["verdict"] == "no-reading":
                 gaps.append(Finding(c["sentence"], c["page"]))
+            elif c["verdict"] == "no-statement":
+                gaps.append(Finding(c["sentence"], "reconcile"))
+            elif not c["checkable"]:
+                notes.append(c["sentence"])
             else:
                 checked += 1
                 if c["verdict"] == "differs":
-                    problems.append(Finding(c["sentence"], c["page"]))
+                    problems.append(Finding(c["sentence"], "reconcile"))
                 elif c["verdict"] == "within-band":
                     notes.append(c["sentence"])
         notes.append(f"{checked} account(s) checked against the broker")

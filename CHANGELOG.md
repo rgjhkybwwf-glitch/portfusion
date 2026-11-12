@@ -12,8 +12,9 @@ No figure moves, and there is no migration. Do these when the book's pin moves.
 - **Expect each account's reconciliation in new words**, the same on Reconcile, the Dashboard
   and `portfusion record`. An account never read: "<account>: no holdings export on file, so its
   units are unchecked — file a holdings export", or, for IG, "no reading from IG on
-  file". An account read apart from its prices, or off a document that lists no units, is now a
-  gap with its step, not a note. The count note reads "N account(s) checked against the broker".
+  file". The count note reads "N account(s) checked against the broker". A share account whose
+  reading is a holdings export is checked on its units even with no cash reading of its day: it
+  is no longer "NO STATEMENT".
 - **Reinstall against `requirements.lock`**: pypdf is 7 and python-dateutil 4.
 
 ### New
