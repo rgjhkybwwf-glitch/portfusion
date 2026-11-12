@@ -259,8 +259,9 @@ changes it.
 - **A CI failure on its pull request** is the agent's to fix, and it waits for the guard's result
   before it leaves a pull request. When the walk fails only because a page the issue meant to
   change looks different, the agent labels the pull request `baselines`: a workflow retakes the
-  walk's Linux pictures on the branch and runs the guard again (`baselines.yml`), and the pull
-  request lists the pages whose pictures changed. The pictures are the agent's to keep; the
+  walk's Linux pictures onto a branch beside it, `baselines/<branch>` (`baselines.yml`); the agent
+  merges that in and pushes, which runs the guard, and the pull request lists the pages whose
+  pictures changed. The pictures are the agent's to keep; the
   maintainer never takes or reads them, and they are compared on Linux alone. A failure the agent
   cannot fix is said at the top of the pull request, with what would fix it.
 
