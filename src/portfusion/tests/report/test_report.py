@@ -505,7 +505,7 @@ def test_the_last_check_is_the_newest_up_to_the_window_and_no_later():
 
 
 #: Every answer `Book.quarter_evidence()` may give for `held`.
-HELD = {"on file", "NOT on file", "read live", "retrieved another way", None}
+HELD = {"on file", "NOT on file", "read from IG", "retrieved another way", None}
 
 
 def test_what_a_figure_rests_on_is_decided_by_the_engine_not_the_page():
@@ -524,8 +524,8 @@ def test_the_archive_decides_on_file_and_a_live_read_needs_none():
     b = Book()
     q = str(b.quarter_nav_total().index.max())[:10]
     listed = b.quarter_evidence(q).set_index("account")["held"]
-    if "read live" not in set(listed):
-        pytest.skip(f"no account at {q} was read live")
+    if "read from IG" not in set(listed):
+        pytest.skip(f"no account at {q} was read from IG")
     empty = b.quarter_evidence(q, filed=[]).set_index("account")["held"]
     assert set(listed) | set(empty) <= HELD
     assert "on file" not in set(empty), "an empty archive filed a document"
@@ -625,14 +625,14 @@ def test_check_is_read_wherever_it_stands(monkeypatch):
 #: table prints, its row labels, the lede and the notice, the evidence words, and the engine's one
 #: sentence it prints (`Book.OPENED_IN_PERIOD`). Headings are house/headings.py's and section
 #: titles are headings, so neither counts. DESK_CHROME_WORDS holds the desk's in the same way.
-REPORT_PROSE_WORDS = 160
+REPORT_PROSE_WORDS = 162      # "read from IG on" its day: who a reading came from, and when
 
 #: Where the page types prose, in report/page.py's own source.
 _PROSE = (r'<p \{_NOTE\}>(.*?)</p>', r'<div class="sub">(.*?)</div>', r'<h3[^>]*>(.*?)</h3>',
           r'<p style="color:var\(--muted\)">(.*?)</p>', r'class="dim">([A-Z][^<{]*?)</td>',
           r'<tr(?: class="total")?><td>([A-Z][^<{]*?)</td>', r'<p class="lede">(.*?)</p>',
           r'<div class="eyebrow">(.*?)</div>', r'return \("([a-z][^"]*)", "&mdash;"\)',
-          r'f"(read live), \{on\}"', r'"(n/a &mdash; retrieved another way)"')
+          r'f"(read from IG on) \{on\}"', r'"(n/a &mdash; retrieved another way)"')
 
 
 def _report_words() -> int:

@@ -250,13 +250,41 @@ def preflight(reading: dict, filed_as: str, document) -> None:
                       f"reading; it does not add one.")
 
 
+def filed_units(name: str, key: str, document=None) -> dict[str, float]:
+    """Each holding's units as the filed holdings export `name` lists them, read from `document`
+    where it is not yet filed. {} where it lists none."""
+    from portfusion.desk.intake import read_document, read_rows
+    path = document or schema.statements() / name
+    return read_rows.holdings(read_document.extract_file(path)["text"], key)
+
+
+def counted() -> dict[str, dict[str, float]]:
+    """THE UNITS COUNTED AGAIN: each share account's, off the one filed holdings export its
+    reading cites, for `Book.account_checks()`. An account whose export cannot be found or read
+    again is left out, and its reading's own check stands."""
+    out = {}
+    names = schema.filed_statements()
+    for r in D.ac_rows:
+        if r.evidence not in D.HOLDINGS_COLUMNS or D.ACCOUNT_KIND.get(r.acct) == "spread bet":
+            continue
+        source = D.evidence_source(r.evidence, reference=str(r.reference), account=r.acct)
+        found = D.filed_as(source, names) or []
+        if len(found) != 1:
+            continue
+        try:
+            units = filed_units(found[0], r.evidence)
+        except (OSError, ValueError, RuntimeError):
+            continue
+        if units:
+            out[r.acct] = units
+    return out
+
+
 def _check_units(account: str, as_of: str, name: str, key: str, document=None) -> None:
     """Refuse unless every holding's units in `name` are the book's at `as_of`, naming each one
     that is not. The comparison is `Book.units_check()`'s; this only reads the document."""
     from portfusion.engine import Book
-    from portfusion.desk.intake import read_document, read_rows
-    path = document or schema.statements() / name
-    units = read_rows.holdings(read_document.extract_file(path)["text"], key)
+    units = filed_units(name, key, document)
     if not units:
         raise Refused(f"{account}: {name} lists no units this door can read.")
     check = Book().units_check(account, as_of, units)

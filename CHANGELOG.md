@@ -9,13 +9,23 @@ prints it.
 
 No figure moves, and there is no migration. Do these when the book's pin moves.
 
-- **Expect a new line in `portfusion record`**: "NO READING to reconcile against: <account>", a
-  gap, for each account that holds something and has never had a reading. A holdings export filed
-  on the Bench, or a price refresh for an IG account, answers it.
+- **Expect each account's reconciliation in new words**, the same on Reconcile, the Dashboard
+  and `portfusion record`. An account never read: "<account>: no holdings export on file, so its
+  units are unchecked — file a holdings export on the Bench", or, for IG, "no reading from IG on
+  file". An account read apart from its prices, or off a document that lists no units, is now a
+  gap with its step, not a note. The count note reads "N account(s) checked against the broker".
 - **Reinstall against `requirements.lock`**: pypdf is 7 and python-dateutil 4.
 
 ### New
 
+- **Reconcile says what each account was last checked against, on what day, what was compared,
+  and what to do next**, in the engine's one sentence (`Book.account_checks()`), which the
+  Dashboard and `portfusion record` print too. A share account's units are counted again on the
+  page from its filed holdings export, and its value in the book is set beside the broker's, for
+  information only. The last broker check is read from the account history, as the report reads
+  it, for every account. An IG reading's figures it does not hold are left out. The page leads
+  with what disagrees; the "Reading" band is gone, each account's next step on its own row.
+- **"read live" is "read from IG on" its day**, on Reconcile and the report.
 - **The IG sweep brings a bet line's dividend adjustment** as an income row, category Dividend,
   with the line whose market IG names; blank where no one line has that name. A ledger type no
   rule knows is listed under Skipped, where it was dropped without a word.

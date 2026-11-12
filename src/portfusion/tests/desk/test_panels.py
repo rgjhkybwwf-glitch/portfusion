@@ -1182,3 +1182,40 @@ def test_the_method_page_renders_the_records_rules():
     for rule in (D.SPREAD_BET, D.STATEMENT_GRADE, D.SOURCE_HIERARCHY, D.SOURCE_HIERARCHY_NOTE):
         assert rule in text
     assert f"{D.REVIEW_FROM:%-d %b %Y}" in text
+
+
+# =====================================================================================
+# RECONCILE — each account in the engine's one voice
+# =====================================================================================
+
+def test_reconcile_shows_what_each_account_was_last_checked_against():
+    """EACH ROW QUOTES `Book.account_checks()`: compared, state, next step, page, sentence, and
+    the last broker check's document and day (`test_findings.py` holds the other two pages)."""
+    from portfusion.desk.doors import observations
+    from portfusion.house import precision as P
+    checks = engine.book().account_checks(observations.counted()).set_index("account")
+    rows = panels.get("reconcile").data()["rows"]
+    assert rows, "no account — this asserts nothing"
+    for r in rows:
+        c = checks.loc[r["account"]]
+        assert (r["verdict"], r["compared"], r["state"], r["next"], r["reads"], r["sentence"]) \
+            == (c["verdict"], c["compared"], c["state"], c["next"], c["page"], c["sentence"])
+        assert r["last_check"] == ("no broker check" if c["on"] is None
+                                   else f"{c['against']}, {P.day(c['on'])}"), r["account"]
+
+
+def test_a_figure_an_ig_reading_lacks_is_left_out():
+    """AN IG READING'S FIGURES ARE THE ONES IT HOLDS: one it lacks is left out, never a dash, and
+    a share row has none."""
+    frame = engine.book().reconciliation().set_index("account")
+    rows = panels.get("reconcile").data()["rows"]
+    names = {"funds": "funds", "running P/L": "running_pl", "deposit": "deposit",
+             "available": "available"}
+    for r in rows:
+        held = frame.loc[r["account"]]
+        want = [k for k, col in names.items() if held[col] is not None and held[col] == held[col]]
+        assert [f["label"] for f in r["ig_figures"]] == want, r["account"]
+        assert all(f["value"] is not None for f in r["ig_figures"])
+    js = desk_script()
+    assert "r.ig_figures.map" in js and "running P/L ${" not in js, \
+        "the page draws IG's figures by name rather than the ones the reading holds"
