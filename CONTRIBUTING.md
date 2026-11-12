@@ -175,11 +175,11 @@ One line each; kept by review, and by the test named where there is one.
   its auto-merge on, and GitHub merges it once CI's `guard` is green; it runs on every pull
   request and on `main`. A Dependabot bump within its major version merges the same way, unasked
   (`dependabot-merge.yml`), and so does the nightly agent's clean pull request, whose yes was
-  given in advance by `ready` (below).
+  given in advance by a ready issue (below).
 
 ### The nightly agent (on trial since 12 Nov 2026)
 
-An unattended Claude session works the `ready` issues, and the maintainer checks in by morning.
+An unattended Claude session works the ready issues, and the maintainer checks in by morning.
 This is a trial: the process is being developed as it runs, and each surprise becomes a rule here,
 a test, or a better-written issue. **This section is the agent's instructions**; the agent never
 changes it.
@@ -196,24 +196,25 @@ changes it.
 
 **Which issues, in what order**
 
-- **`ready` on an issue means it meets the Definition of Ready**, so it can be built unattended
-  and merged unread: the label is the maintainer's yes, given in advance. An issue is ready when
-  it has all five:
+- **An issue is ready when it meets the Definition of Ready and carries no `decision` label**, so
+  it can be built unattended and merged unread: taking `decision` off is the maintainer's yes,
+  given in advance, and no other label is needed. The Definition of Ready is all five:
   - **Cause**: what in the code makes the symptom, by file and function. A symptom alone is
     evidence, not an issue.
   - **Done**: the checks that say it is done, each one a test, a walk step or a command can make.
   - **Not in scope**: what the fix leaves alone.
-  - **Decisions**: every question answered by the maintainer, quoted with the date.
+  - **Decisions**: every question answered by the maintainer, quoted with the date. An answer in
+    a comment counts; the agent copies it into this section before it starts.
   - **Order**: what it waits on, and what waits on it.
   An issue without them is labelled `decision`, with its questions at the end, or is evidence for
   one that has them.
-- **Oldest first**, skipping an issue that has an open pull request of its own; another issue's
+- **The earliest open milestone first, and oldest first within it**, skipping an issue that has an open pull request of its own; another issue's
   open pull request holds nothing back. An issue whose "Order" names one to follow waits for it.
   Each issue is read whole, comments included, before its work starts.
 - **Its own open pull requests come first.** Before a new issue, each one is brought level with
   `main` (merged in, never rebased), its pictures retaken when a page it changed moved under it,
   and its CI made green, so none waits on the maintainer for anything but a yes it asked for.
-- **No `ready` issue and nothing to tend: stop**, posting nothing.
+- **No ready issue and nothing to tend: stop**, posting nothing.
 
 **Asking and answering**
 
@@ -241,8 +242,8 @@ changes it.
   the agent goes on to the next issue without waiting for a merge.
 - **Settled rows are built; open rows are asked.** When some of an issue's rows are open, the
   settled ones are built in a pull request that says "Part of #n", auto-merge off; the open ones
-  are asked in one comment on the issue, options and a recommendation each, and the issue swaps
-  `ready` for `decision`. The maintainer answers and puts `ready` back.
+  are asked in one comment on the issue, options and a recommendation each, and the issue is
+  labelled `decision`. The maintainer answers and takes the label off.
 - **A decision that appears mid-build is a stop** for that row, asked the same way.
 - **Something a comment raises outside its issue** becomes a new issue labelled `decision`,
   linked from the issue, and is not built.
