@@ -261,10 +261,12 @@ def _book() -> dict[str, list[dict]]:
             ("QNLR SB", "2026-09-15", False,
              "Invented for the demo: why the smaller leg closed."),
         )]
-    # EACH SHARE ACCOUNT'S CASH AT EACH QUARTER END, in the record's one place for it.
+    # EACH SHARE ACCOUNT'S CASH AT EACH QUARTER END, in the record's one place for it. One is
+    # read off a document: the ISA's at the last quarter end, off its statement in the archive.
+    stated = {(ISA, "2026-09-30"): {"evidence": "ii-statement", "reference": _day("2026-09-30")}}
     T["cash-readings"] = [
         {"account": a, "as_of": d, "cash": c, "evidence": "not-on-file",
-         "reference": "invented for the demo"}
+         "reference": "invented for the demo", **stated.get((a, d), {})}
         for a, d, c in ((ISA, "2025-12-31", 0.0), (ISA, "2026-03-31", 4000.0),
                         (TRADING, "2026-03-31", 475.0), (ISA, "2026-06-30", 2470.0),
                         (TRADING, "2026-06-30", 475.0), (ISA, "2026-09-30", 4271.1),

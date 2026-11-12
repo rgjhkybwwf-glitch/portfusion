@@ -70,7 +70,7 @@ def test_the_year_so_far_is_the_engines(b):
     assert _same(firm["exposure"], b.total_exposure()), ("The book", "exposure")
     assert [r["account"] for r in shown] == [f["account"] for f in frame] == b.account_order()
     for r, f in zip(shown, frame):
-        for c in ("exposure", "nav", "opening_nav", "capital_deployed", "return_income"):
+        for c in ("exposure", "nav", "opening_nav", "capital_deployed", "return_income", "gain"):
             assert _same(r[c], f[c]), (f["account"], c)
         assert _same(r["ytd"], f["ytd"], RATE)
 

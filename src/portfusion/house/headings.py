@@ -80,7 +80,7 @@ COMMON = {
     # ---- the quarter, firm and account alike --------------------------------------------------
     "opening_nav": "Opening NAV",
     "capital_deployed": "Capital deployed",
-    "return_income": "Income",
+    "return_income": "Return income",       # the income a return counts, not all income (§5)
     "closing_nav": "Closing NAV",
     "return": "Return",
     "contribution": "Contribution",         # how an account counts towards NAV (§2)
@@ -135,7 +135,7 @@ BY_TAB = {
         "lines": "Lines",
     },
     "Performance": {
-        "gain": "Gain",
+        "gain": "Gain with income",         # capital growth plus return income (§5)
     },
     "Trades": {
         "value": "Trade value (GBP)",
@@ -191,7 +191,7 @@ BY_TAB = {
         "local_amount": "Amount",
         "rate_date": "FX rate as at",
         "cash": "Cash / Funds (GBP)",      # an IG row's is its funds, from its reading
-        "cash_read": "Read from",           # the document, then its day, as Reconcile names one
+        "cash_read": "Cash read from",      # the document, then its day, as Reconcile names one
         "feed_key": "Feed",
         "record_begins": "Record begins",                   # blank for an account held from the book's opening
     },

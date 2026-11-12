@@ -255,7 +255,9 @@ def test_only_one_quarter_return_series_is_exposed():
     from portfusion.desk.panels import performance
     from portfusion.house.headings import heading
     heads = [heading("Performance", c) for c in performance.COLUMNS]
-    returns = [h for h in heads if "return" in h.lower()]
+    # THE RETURN'S INCOME IS AN AMOUNT a return counts, named for it, and no return itself.
+    amount = heading("Performance", "return_income")
+    returns = [h for h in heads if "return" in h.lower() and h != amount]
     assert returns == ["Return"], (
         f"expected exactly one quarter-return column in the series, found {returns}")
     assert "net-invested" not in " ".join(heads).lower(), \

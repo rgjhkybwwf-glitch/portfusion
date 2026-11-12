@@ -151,7 +151,7 @@ class Quarters(Core):
     def quarter_label(date: str, opens: str | None = None) -> str:
         """A quarter-end date -> the quarter's NAME. "2026-06-30" -> "Q2 2026". A quarter that
         `opens` after the quarter end before it, the one the record began inside, names the day it
-        opens at, as the year does ("from 31 Dec"): "Q2 2026, from 17 May".
+        opens at, as the year to a quarter does: "Q2 2026, from 17 May".
 
         DERIVED, NEVER TYPED: deriving the name here is what lets the quarter blocks key on
         identical values and be read across — typing "Q1 2026" in a second place is how they

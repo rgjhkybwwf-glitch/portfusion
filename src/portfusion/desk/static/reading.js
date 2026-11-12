@@ -129,7 +129,8 @@ Object.assign(DRAW, {
       status: [{ label: "Prices", body: `${quiet(`${p.age_days} days old · ${p.marks} marks
         · newest ${esc(day(p.newest))} · oldest ${esc(day(p.oldest))} · spread ${p.spread_days}d`)}
         ${panelLink("price-refresh", "run a refresh")}` },
-        { label: "Year to date", body: quiet(`from ${esc(day(y.opens))}${y.frozen ? "" : " · not frozen"}`) },
+        { label: "Year to date", body: quiet(`from ${esc(day(y.first_day))} · MWR on NAV${
+          y.frozen ? "" : " · not frozen"}`) },
         ...(d.report ? [{ label: "Report", body: `${reportLink(d.report)}
           ${panelLink("reports", "every report")}` }] : [])],
       /* THE FIGURES BESIDE WHAT NEEDS ATTENTION, so the page is one screen. */
@@ -255,11 +256,11 @@ Object.assign(DRAW, {
        context rather than as the answer. */
     const t = d.totals, w = d.whole;
     return page({
-      scope: "every closed position, gain net of dealing commission",
+      scope: "every position sold, in part or whole, gain net of dealing commission",
       status: d.narrowed ? [{ state: "note", tag: "selected", label: "Whole book",
-        body: quiet(`${w.realisations} realisation(s) · proceeds ${money(w.proceeds)}
+        body: quiet(`${w.realisations} round trip(s) · proceeds ${money(w.proceeds)}
           · realised gain ${money(w.realised)}`) }] : null,
-      figures: [["Realisations", t.realisations],
+      figures: [["Round trips", t.realisations],
                 ["Closed out", t.closed_out],
                 ["Proceeds", money(t.proceeds)],
                 ["Realised gain", money(t.realised)]],
@@ -400,7 +401,7 @@ Object.assign(DRAW, {
                     cells: { account: (r) => `<td>${opens.has(r) ? esc(r.account) : ""}</td>` },
                     rowClass: (r) => opens.has(r) && r !== quarters[0] ? "opens" : "",
                     afterRow: (r, span) => detailRow(rests(r), span) }) +
-        `<h2>The year so far, from ${esc(day(d.year_opens))}</h2>` + table(d.year, d.year_columns,
+        `<h2>The year so far, from ${esc(day(d.year_from))}</h2>` + table(d.year, d.year_columns,
           "", () => "", { sort: false, align: "performance",
             inserts: [{ after: "account", head: NO_HEAD, cell: () => "<td>Year to date</td>" }] }),
       why: d.caveats.map((c) => [c.scope, c.detail]),

@@ -182,8 +182,8 @@ PANEL_COLUMNS = {
             "closing_nav", "gain", "return"
         ),
         "YEAR_COLUMNS": ("account", "opening_nav", "capital_deployed", "return_income",
-                         "nav", "capital_growth", "ytd", "capital_employed", "exposure",
-                         "held_as"),
+                         "nav", "gain", "ytd", "capital_growth", "capital_employed",
+                         "exposure", "held_as"),
     },
     "holdings": {
         "HELD_COLUMNS": ("qty", "stake"),

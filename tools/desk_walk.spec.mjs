@@ -42,10 +42,14 @@ test("each page opens, holds no new accessibility fault and looks as it did", as
     await test.step(name, async () => {
       await open(page, name);
       await expect.soft(page.locator("pre.error:visible"), `${name} drew an error`).toHaveCount(0);
-      // The screenshot waits for the page to stop moving, so it comes before axe reads it.
-      await expect.soft(page).toHaveScreenshot(`${name}.png`, {
-        fullPage: true, mask: [page.locator("footer.foot")],      // the footer names the commit
-      });
+      // The screenshot waits for the page to stop moving, so it comes before axe reads it. Pictures
+      // are compared on Linux alone, the guard's platform: a Mac sets type apart, and its pictures
+      // would be one more set for a person to keep.
+      if (process.platform === "linux") {
+        await expect.soft(page).toHaveScreenshot(`${name}.png`, {
+          fullPage: true, mask: [page.locator("footer.foot")],    // the footer names the commit
+        });
+      }
       for (const v of (await new AxeBuilder({ page }).analyze()).violations) {
         (faults[v.id] ??= []).push(name);
       }

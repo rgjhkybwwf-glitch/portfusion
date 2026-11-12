@@ -199,7 +199,11 @@ function wireSorting() {
 
 /* TABLES THAT READ AS ONE GRID (`align` in table()): What Changed's two blocks, Performance's
    quarters and year. Each shared column takes the widest of its fellows, so a figure sits under
-   the one above it; a table's columns past the others' (the year's own) keep their own width. */
+   the one above it; a table's columns past the others' (the year's own) keep their own width.
+   A TABLE TOO WIDE FOR ITS BOX AT THOSE WIDTHS is squeezed by the browser, and beside a fellow
+   that fits, as the year is beside the quarters, the grid is lost. The shared columns are then
+   measured with every head broken where it can be, so both tables' heads break alike. Tables
+   squeezed together, as What Changed's two are, keep their widths. */
 function alignTables() {
   const groups = {};
   document.querySelectorAll("#main table[data-align]").forEach((t) =>
@@ -208,11 +212,24 @@ function alignTables() {
     if (ts.length < 2) return;
     const heads = ts.map((t) => [...t.tHead.rows[0].cells]);
     const upto = Math.min(...ts.map((t) => Number(t.dataset.alignCols)));
-    heads.forEach((h) => h.slice(0, upto).forEach((c) => { c.style.width = ""; }));
-    for (let i = 0; i < upto; i++) {
-      const w = Math.max(...heads.map((h) => h[i].getBoundingClientRect().width));
-      heads.forEach((h) => { h[i].style.width = `${w}px`; });
-    }
+    const across = (h) => h.slice(0, upto).reduce((sum, c) => sum + c.getBoundingClientRect().width, 0);
+    /* Sets each shared column to its widest, and answers what they come to. */
+    const share = () => {
+      heads.forEach((h) => h.slice(0, upto).forEach((c) => { c.style.width = ""; }));
+      let asked = 0;
+      for (let i = 0; i < upto; i++) {
+        const w = Math.max(...heads.map((h) => h[i].getBoundingClientRect().width));
+        heads.forEach((h) => { h[i].style.width = `${w}px`; });
+        asked += w;
+      }
+      return asked;
+    };
+    const asked = share();
+    const squeezed = heads.map((h) => asked - across(h) > 1);
+    if (!squeezed.includes(true) || !squeezed.includes(false)) return;
+    ts.forEach((t) => { t.style.width = "min-content"; });
+    share();
+    ts.forEach((t) => { t.style.width = ""; });
   });
 }
 

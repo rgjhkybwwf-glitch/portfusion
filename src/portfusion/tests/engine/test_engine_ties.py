@@ -1054,6 +1054,7 @@ def test_every_return_is_the_gain_over_the_day_weighted_capital(book):
     for _, r in a.loc[a["ytd"].notna()].iterrows():
         wcf = float(book.weighted_flows(opens, end)[r["account"]])
         gain = r["nav"] - r["opening_nav"] - r["capital_deployed"] + r["return_income"]
+        assert abs(r["gain"] - gain) < RATE, r.to_dict()
         assert abs(r["ytd"] - gain / (r["opening_nav"] + wcf)) < RATE, r.to_dict()
 
 
