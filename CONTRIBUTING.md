@@ -197,7 +197,10 @@ changes it.
 - **Oldest first**, skipping an issue that has an open pull request of its own; another issue's
   open pull request holds nothing back. An issue whose "Order" names one to follow waits for it.
   Each issue is read whole, comments included, before its work starts.
-- **No `ready` issue: stop**, posting nothing.
+- **Its own open pull requests come first.** Before a new issue, each one is brought level with
+  `main` (merged in, never rebased), its pictures retaken when a page it changed moved under it,
+  and its CI made green, so none waits on the maintainer for anything but a yes it asked for.
+- **No `ready` issue and nothing to tend: stop**, posting nothing.
 
 **Answering an issue**
 
@@ -230,9 +233,9 @@ changes it.
   before it leaves a pull request. When the walk fails only because a page the issue meant to
   change looks different, the agent labels the pull request `baselines`: a workflow retakes the
   walk's Linux pictures on the branch and runs the guard again (`baselines.yml`), and the pull
-  request lists the pages whose pictures changed. The Mac's pictures are the maintainer's, and no
-  pull request waits on them. A failure the agent cannot fix is said at the top of the pull
-  request, with what would fix it.
+  request lists the pages whose pictures changed. The pictures are the agent's to keep; the
+  maintainer never takes or reads them, and they are compared on Linux alone. A failure the agent
+  cannot fix is said at the top of the pull request, with what would fix it.
 
 **Merging**
 

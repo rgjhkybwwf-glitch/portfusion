@@ -2,8 +2,8 @@
 # pull request `baselines` walks the desk on this branch as the guard does, keeps what each page
 # now looks like as its `tools/desk_walk/<page>-linux.png`, commits those to the branch, takes the
 # label off, and runs the guard again on the new commit. A commit made with the workflow's own
-# token starts no workflow, so the guard is asked for by name. The Mac's pictures are the
-# maintainer's (docs/testing.md); the guard on GitHub never reads them.
+# token starts no workflow, so the guard is asked for by name. Pictures are kept for Linux alone
+# (docs/testing.md).
 #
 # Only a branch of this repository: a fork's pull request gets no token that can push.
 
