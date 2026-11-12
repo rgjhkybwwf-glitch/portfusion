@@ -309,7 +309,8 @@ class Reconciliation(Core):
         or "equity", None where nothing was; against, on and held, the last broker check
         (`quarter_evidence(None)`, as the report reads it); state, what the reading found; next,
         the step that clears it, and page, the panel it is taken on, both None where none is
-        owed; sentence, the account, its state and its step.
+        owed; sentence, the account, its state and its step. The step names no page: each
+        renderer leads to `page` its own way.
 
         `counted` is each share account's units as its filed holdings export lists them, counted
         again by a caller that can read the document: given, a holding whose units differ makes
@@ -345,9 +346,11 @@ class Reconciliation(Core):
                     state = f"units differ from {read}: " + "; ".join(
                         f"{d.ticker} book {d.book:,.0f}, broker {d.broker:,.0f}"
                         for d in differ.itertuples(index=False))
-                    step, page = "enter what the book is missing on the Bench", "bench"
+                    step, page = "enter what the book is missing", "bench"
             if verdict == "units-agree":
-                state = f"units agree with {read}"
+                n = len((counted or {}).get(a) or {})
+                state = (f"units of {n} holding(s), counted again, agree with {read}" if n else
+                         f"units agree with {read}")
             elif verdict == "within-band":
                 # A difference that rounds to nothing is £0.00, never -£0.00 or +£0.00.
                 agree = P.money(difference, signed=True)
@@ -356,19 +359,19 @@ class Reconciliation(Core):
             elif verdict == "differs" and sb:
                 state = (f"equity differs from {read} by "
                          + ("an unknown amount" if difference is None else P.money(difference)))
-                step, page = "enter the event or rate the book is missing on the Bench", "bench"
+                step, page = "enter the event or rate the book is missing", "bench"
             elif verdict == "struck-apart":
                 state = f"equity read from IG on {P.day(pd.Timestamp(r['struck_on']))} is " \
                         f"unchecked: {v['rule']}"
-                step, page = "read IG again on Price Refresh", "price-refresh"
+                step, page = "read IG again", "price-refresh"
             elif verdict == "no-holdings":
                 state = f"{read} lists no units, so they are unchecked"
-                step, page = "file a holdings export on the Bench", "bench"
+                step, page = "file a holdings export", "bench"
             elif verdict in ("no-statement", "no-reading"):
                 state = (f"{read} gives no total to check" if verdict == "no-statement" else
                          "no reading from IG on file" if sb else
                          "no holdings export on file, so its units are unchecked")
-                step = "read IG on Price Refresh" if sb else "file a holdings export on the Bench"
+                step = "read IG" if sb else "file a holdings export"
                 page = self.reading_page(a)
             e = last.loc[a] if a in last.index else None
             rows.append({
