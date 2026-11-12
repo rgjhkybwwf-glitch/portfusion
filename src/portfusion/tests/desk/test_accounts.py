@@ -174,6 +174,8 @@ PANEL_COLUMNS = {
     "performance": {
         # WHAT A QUARTER-END NAV RESTS ON, under each account row's detail.
         "DETAIL_COLUMNS": ("source", "quality"),
+        # EACH ACCOUNT'S PART OF THE BOOK'S, under a book row's.
+        "NAV_COLUMNS": ("account", "amount", "contribution", "source", "quality"),
         # NO START OR END DATE, as the report has none; the ACCOUNT a column, leading.
         "COLUMNS": (
             "account", "quarter", "opening_nav", "capital_deployed", "return_income",

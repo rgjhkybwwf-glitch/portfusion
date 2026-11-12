@@ -521,7 +521,8 @@ def test_an_accounts_quarter_names_what_its_closing_nav_rests_on():
     """THE RECORD SAYS WHAT EACH QUARTER END RESTS ON: a statement, a reconstruction, a freeze from
     the engine — and whether that is sourced or derived. Each account's frozen quarter row carries
     its quarter end's source and quality, for the row's detail; the open quarter, at today's marks,
-    and the book's rows carry none."""
+    carries none. A BOOK ROW CARRIES WHAT ITS FIGURE IS MADE OF instead: the engine's rows for
+    that quarter end, one an account, which add to the closing figure on the row."""
     b = engine.book()
     d = panels.get("performance").data()
     assert d["detail"] == ["source", "quality"]
@@ -538,6 +539,19 @@ def test_an_accounts_quarter_names_what_its_closing_nav_rests_on():
             assert row.get("source") is None, f"{row['account']} {row['quarter']} is not frozen"
     assert checked, "no frozen quarter — this asserts nothing"
     assert all(r.get("source") is None for r in d["firm"]), "a book row has an account's source"
+    firm = b.quarter_returns(include_open=True)
+    made = 0
+    for row, end in zip(d["firm"], firm["quarter_end"].astype(str).str[:10]):
+        if end not in frozen:
+            assert "nav_rows" not in row, f"{row['quarter']} is not frozen"
+            continue
+        parts = b.quarter_nav_rows(end).to_dict("records")
+        assert [{c: p[c] for c in d["nav_columns"]} for p in parts] == row["nav_rows"], row["quarter"]
+        assert abs(sum(p["amount"] for p in row["nav_rows"]) - row["closing_nav"]) < 0.005, (
+            f"{row['quarter']}: the accounts' parts do not add to the book's closing NAV")
+        made += 1
+    assert made, "no frozen quarter — this asserts nothing"
+    assert not any("nav_rows" in r for r in d["accounts"]), "an account's row has the book's parts"
 
 
 @needs("buys")
