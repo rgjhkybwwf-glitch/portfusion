@@ -179,30 +179,74 @@ One line each; kept by review, and by the test named where there is one.
 
 ### The nightly agent (on trial since 12 Nov 2026)
 
-An unattended Claude session works the `ready` issues, up to a number a night set in the routine,
-and the maintainer checks in by morning. This is a trial: the process is being developed as it
-runs, and each surprise becomes a rule here, a test, or a better-written issue.
+An unattended Claude session works the `ready` issues, and the maintainer checks in by morning.
+This is a trial: the process is being developed as it runs, and each surprise becomes a rule here,
+a test, or a better-written issue. **This section is the agent's instructions**; the agent never
+changes it.
 
-- **It runs from a routine on claude.ai** at 02:00 UK time, in the personal cloud environment
+**How it runs**
+
+- **From a routine on claude.ai** at 02:00 UK time, in the personal cloud environment
   "PortFusion", whose setup script builds the venv on Python 3.13 and installs `tools/`. The
-  routine's instructions are kept there, not in this repository.
+  routine points here and sets how many issues a night; nothing else is kept there.
+
+**Which issues, in what order**
+
 - **`ready` on an issue means its decisions are made**, so it can be built unattended and merged
-  unread: the label is the maintainer's yes, given in advance. The agent takes the `ready` issues
-  with no open pull request, oldest first, each on its own branch and pull request.
-- **A decision is still a stop**: the agent comments the options with its recommendation and swaps
-  `ready` for `decision`. The maintainer answers and puts `ready` back. Something a comment raises
-  outside its issue becomes a new issue labelled `decision`, not part of the work.
-- **A clean pull request merges itself**: one that asks the maintainer nothing, whose guard and
-  walk pass, and whose cold walk's finds are filed as issues. The agent turns its auto-merge on,
-  and GitHub merges it once `guard` is green. A pull request that asks anything, or that made a
-  choice the issue did not, keeps auto-merge off and waits for the maintainer's yes.
+  unread: the label is the maintainer's yes, given in advance.
+- **Oldest first**, skipping an issue that has an open pull request of its own; another issue's
+  open pull request holds nothing back. An issue whose "Order" names one to follow waits for it.
+  Each issue is read whole, comments included, before its work starts.
+- **No `ready` issue: stop**, posting nothing.
+
+**Answering an issue**
+
+- **An issue's questions are rows**: a "To decide before it is built" table, or the numbered rows
+  an audit issue lists. A question table is filed with an empty **Answer** column, which the
+  maintainer fills in by editing the issue.
+- **In a comment, each answer is a line begun with its row**, a word first: "Row 8: build it",
+  "Where an answer is written: a". Never "8. …", which GitHub turns into a list and renumbers.
+- **A row is settled when its answer is written in one of those two places**; a recommendation is
+  not an answer, and neither is a comment's tone.
+
+**Building**
+
+- **One issue, one branch, one pull request**: a branch claude/<name> from the latest `main`,
+  worked by the conventions above (changelog, own diff reviewed, a changed desk page walked cold),
+  the guard run, and the desk walk if a desk file changed. The pull request says "Closes #n", and
+  the agent goes on to the next issue without waiting for a merge.
+- **Settled rows are built; open rows are asked.** When some of an issue's rows are open, the
+  settled ones are built in a pull request that says "Part of #n", auto-merge off; the open ones
+  are asked in one comment on the issue, options and a recommendation each, and the issue swaps
+  `ready` for `decision`. The maintainer answers and puts `ready` back.
+- **A decision that appears mid-build is a stop** for that row, asked the same way.
+- **Something a comment raises outside its issue** becomes a new issue labelled `decision`,
+  linked from the issue, and is not built.
+- **What a cold walk finds that the change did not cause** is filed as an issue, or added to one,
+  and listed in the pull request.
+- **A CI failure on its pull request** is the agent's to fix.
+
+**Merging**
+
+- **A clean pull request merges itself**: one that asks the maintainer nothing, made no choice
+  its issue did not, passes the guard and the walk, and has its cold walk's finds filed. The agent
+  turns its auto-merge on as it opens it, and GitHub merges it once `guard` is green.
+- **Any other waits for the maintainer's yes**, auto-merge off, with what is needed from them at
+  the top of its description.
+
+**Telling the maintainer**
+
 - **A question or pull request reaches the maintainer as a mention**: the agent works as the
   maintainer's account, so GitHub would tell them nothing; an issue labelled `decision`, and a pull
   request from a branch whose name begins claude/, get a comment from `github-actions[bot]`, headed
   "PortFusion agent", that names them and says whether the pull request is merging itself or
   waiting for a yes (`notify.yml`).
-- **The agent never changes** a workflow, a ruleset, or a test that holds a stability rule; those
-  are changed in a session the maintainer is part of.
+
+**Never**
+
+- **The agent never pushes to `main`, bypasses a hook, or changes** a workflow, a ruleset, a test
+  that holds a stability rule, or this section; those are changed in a session the maintainer is
+  part of.
 
 ### The desk and the report
 
