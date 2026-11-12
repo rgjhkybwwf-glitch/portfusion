@@ -189,7 +189,7 @@ function companyLives(d) {
              min="${esc(d.span.first || "")}" max="${esc(d.span.last || "")}">`),
       viewField(d),
     ] },
-    work: table(d.rows, d.columns, "<th></th>",
+    work: table(d.rows, d.columns, NO_HEAD,
                 (r) => `<td class="nowrap"><button class="link" data-trades="${esc(r.company)}">trades</button>${
                   detailLink(detailList(r, d.detail))}</td>`,
                 { name: "company lives", afterRow: (r, span) => detailRow(detailList(r, d.detail), span),
@@ -208,7 +208,7 @@ function companyLives(d) {
    inline (app.css draws it). It follows the account filter as the table does. */
 const allocation = (d) => !d.allocation ? "" : `<h2>Where the exposure sits</h2>
   <div class="allocs">${Object.entries(d.allocation).map(([axis, slices]) => `
-    <table class="alloc"><thead><tr><th>${esc(sentence(d.allocation_heads[axis]))}</th><th></th>
+    <table class="alloc"><thead><tr><th>${esc(sentence(d.allocation_heads[axis]))}</th>${NO_HEAD}
       <th class="num">${esc(sentence(d.allocation_heads.share))}</th></tr></thead>
       <tbody>${slices.map((s) => `<tr><td class="oneline">${esc(s.key ?? "—")}</td>
         <td class="alloc-bar"><svg viewBox="0 0 1 1" preserveAspectRatio="none" aria-hidden="true">
@@ -239,7 +239,7 @@ Object.assign(DRAW, {
       work: `${/* ONE CLICK TO THE WHOLE HISTORY, by COMPANY and not by ticker: one company can be a
             share AND a spread bet, and a link that showed one leg would answer half the question while
             looking complete. */ ""}
-      ${table(d.rows, d.columns, "<th></th>",
+      ${table(d.rows, d.columns, NO_HEAD,
               (r) => `<td class="nowrap">` +
                 (r.company ? `<button class="link" data-trades="${esc(r.company)}">trades</button>`
                            : "") +
@@ -283,7 +283,7 @@ Object.assign(DRAW, {
       /* THE SAME "trades" LINK AS HOLDINGS', by company: the sales a round trip took, and the
          buys before them, are Trades' to show. Then the row's detail: its whys, research notes
          and note. */
-      work: table(d.rows, d.columns, "<th></th>",
+      work: table(d.rows, d.columns, NO_HEAD,
                   (r) => `<td class="nowrap">${r.company
                     ? `<button class="link" data-trades="${esc(r.company)}">trades</button>` : ""}${
                     detailLink(detailList(r, d.detail))}${owes(r, d.owed)
@@ -334,7 +334,7 @@ Object.assign(DRAW, {
       work: `<h2>Register</h2>${table(d.register, d.columns.register, "", () => "",
           { name: "register", cells: { feed_key: (r) => cell("feed_key", r.feed_key || "") } })}
         <h2>External capital</h2>${table(d.movements, d.columns.movements, "", () => "", { name: "capital" })}
-        <h2>Income and costs, ${esc(d.year)}</h2>${table(d.income, d.columns.summary, "<th></th>",
+        <h2>Income and costs, ${esc(d.year)}</h2>${table(d.income, d.columns.summary, NO_HEAD,
           (r) => `<td class="nowrap">${detailLink(r.rows.length ? "rows" : "")}</td>`,
           { sort: false, cells: asMoney,
             afterRow: (r, span) => detailRow(r.rows.length
@@ -398,7 +398,7 @@ Object.assign(DRAW, {
          column's place with "Year to date", so its opening NAV, capital deployed, income,
          closing value, gain and return each sit under the quarter table's, in the same widths;
          its year-only columns follow. */
-      work: table(quarters, d.columns, "<th></th>",
+      work: table(quarters, d.columns, NO_HEAD,
                   (r) => `<td class="nowrap">${detailLink(detailList(r, d.detail))}</td>`,
                   { sort: false, align: "performance",
                     cells: { account: (r) => `<td>${opens.has(r) ? esc(r.account) : ""}</td>` },
@@ -406,7 +406,7 @@ Object.assign(DRAW, {
                     afterRow: (r, span) => detailRow(detailList(r, d.detail), span) }) +
         `<h2>The year so far, from ${esc(day(d.year_opens))}</h2>` + table(d.year, d.year_columns,
           "", () => "", { sort: false, align: "performance",
-            inserts: [{ after: "account", head: "<th></th>", cell: () => "<td>Year to date</td>" }] }),
+            inserts: [{ after: "account", head: NO_HEAD, cell: () => "<td>Year to date</td>" }] }),
       why: d.caveats.map((c) => [c.scope, c.detail]),
     });
   },
@@ -443,7 +443,7 @@ Object.assign(DRAW, {
       /* A TABLE IN HOLDINGS' ORDER: the deal as struck on the line, and
          everything else the record holds on the trade in its detail. A spread bet reads in its
          own terms, a stake per point at a level in points, with no currency of its own. */
-      work: `<div id="q-rows">${d.rows.length ? table(d.rows, d.columns, "<th></th>",
+      work: `<div id="q-rows">${d.rows.length ? table(d.rows, d.columns, NO_HEAD,
         (r) => `<td class="nowrap">${detailLink(detailList(r, d.detail))}</td>`,
         { name: "trades", afterRow: (r, span) => detailRow(detailList(r, d.detail), span),
           cells: {

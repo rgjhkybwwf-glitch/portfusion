@@ -1105,8 +1105,9 @@ def test_a_fetched_line_says_beside_its_date_whether_it_is_a_close_or_a_time():
     is the date alone: the time sits outside the form's fields."""
     import re
     js = desk_script()
-    cells = re.findall(r'<tr data-kind="(price|rate)".*?<input data-f="as_of" readonly '
-                       r'size="10"> <span class="muted small" data-when></span>', js, re.S)
+    cells = re.findall(r'<tr data-kind="(price|rate)".*?<input data-f="as_of" readonly size="10" '
+                       r'aria-label="\$\{head\("new_at"\)\}"> <span class="muted small" data-when></span>',
+                       js, re.S)
     assert sorted(cells) == ["price", "rate"], "a price or rate row lost its time"
     assert 'values.struck === "close" ? "close"' in js and "clock(values.at)" in js
 

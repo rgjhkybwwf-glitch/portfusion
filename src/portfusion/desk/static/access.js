@@ -24,7 +24,7 @@ Object.assign(DRAW, {
 
         <h2>Readers</h2>
         ${table(d.readers,
-          cols.readers.filter((c) => c !== "level" && c !== "now"), "<th></th>",
+          cols.readers.filter((c) => c !== "level" && c !== "now"), NO_HEAD,
           (r) => `<td class="oneline"><button class="link" data-revoke-reader="${esc(r.who)}">` +
                  `revoke</button></td>`,
           { name: "readers", inserts: [
@@ -36,7 +36,7 @@ Object.assign(DRAW, {
                   ? "ok" : "note"}">${esc(r.now)}</span></td>` }],
             /* EACH READER'S DEVICES UNDER THEIR ROW, each with its own revoke. */
             afterRow: (r, span) => r.device_list.length ? `<tr class="devices"><td colspan="${span}">
-              ${table(r.device_list, cols.devices, "<th></th>", (v) => `<td class="oneline">
+              ${table(r.device_list, cols.devices, NO_HEAD, (v) => `<td class="oneline">
                 <button class="link" data-revoke-device="${esc(v.key)}"
                         data-device="${esc(v.device)}">revoke</button></td>`, { name: `devices ${r.who}` })}
               </td></tr>` : "" })}

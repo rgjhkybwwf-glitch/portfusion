@@ -33,11 +33,12 @@ def _rows(items):
 
 def _head(tab: str, *cols) -> str:
     """A table head in house/headings.py's words for `tab`. Each column is a field, or a
-    (field, attributes) pair; None is a column with no heading."""
+    (field, attributes) pair; None is a column with nothing to head, a plain cell."""
     cells = []
     for c in cols:
         field, attrs = (c, "") if not isinstance(c, tuple) else c
-        cells.append(f"<th{attrs}>{'' if field is None else html.escape(heading(tab, field))}</th>")
+        cells.append("<td></td>" if field is None
+                     else f"<th{attrs}>{html.escape(heading(tab, field))}</th>")
     return f"<thead><tr>{''.join(cells)}</tr></thead>"
 
 

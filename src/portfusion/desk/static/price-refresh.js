@@ -45,9 +45,9 @@ Object.assign(DRAW, {
         <td class="oneline">${esc(r.mark_key)}</td>
         <td class="num muted">${r.contract ? points(r.price) : `${localPrice(r.price, r.currency)} ${esc(r.currency)}`}</td>
         <td class="small ${r.stale ? "stale" : "muted"}">${esc(day(r.as_of))} · ${r.age_days}d</td>
-        <td class="num"><input data-f="price" readonly size="10"></td>
-        <td class="oneline"><input data-f="as_of" readonly size="10"> <span class="muted small" data-when></span></td>
-        <td class="wide-cell"><input data-f="source" readonly></td>
+        <td class="num"><input data-f="price" readonly size="10" aria-label="${head("new")}"></td>
+        <td class="oneline"><input data-f="as_of" readonly size="10" aria-label="${head("new_at")}"> <span class="muted small" data-when></span></td>
+        <td class="wide-cell"><input data-f="source" readonly aria-label="${head("source")}"></td>
         <td class="origin"></td>
         <td><label class="tick"><input type="checkbox" data-tick disabled
           aria-label="${head("take")}"></label></td>
@@ -60,9 +60,9 @@ Object.assign(DRAW, {
         <td class="oneline">${esc(r.account)}</td>
         <td class="num muted">${money(r.equity)}</td>
         <td class="muted small">${esc(day(r.as_of))} · ${r.age_days}d</td>
-        <td class="num"><input data-f="equity" readonly size="10"></td>
-        <td><input data-f="as_of" readonly size="10"></td>
-        <td class="wide-cell"><input data-f="source" readonly></td>
+        <td class="num"><input data-f="equity" readonly size="10" aria-label="${head("new")}"></td>
+        <td><input data-f="as_of" readonly size="10" aria-label="${head("new_at")}"></td>
+        <td class="wide-cell"><input data-f="source" readonly aria-label="${head("source")}"></td>
         <td class="origin"></td>
         <td><label class="tick"><input type="checkbox" data-tick disabled
           aria-label="${head("take")}"></label></td>
@@ -73,9 +73,9 @@ Object.assign(DRAW, {
         <td class="oneline">${esc(r.currency)}</td>
         <td class="num muted">${rate(r.rate)}</td>
         <td class="muted small">${esc(day(r.as_of))}${r.age_days == null ? "" : ` · ${r.age_days}d`}</td>
-        <td class="num"><input data-f="rate" readonly inputmode="decimal" size="10"></td>
-        <td class="oneline"><input data-f="as_of" readonly size="10"> <span class="muted small" data-when></span></td>
-        <td class="wide-cell"><input data-f="source" readonly></td>
+        <td class="num"><input data-f="rate" readonly inputmode="decimal" size="10" aria-label="${head("new")}"></td>
+        <td class="oneline"><input data-f="as_of" readonly size="10" aria-label="${head("new_at")}"> <span class="muted small" data-when></span></td>
+        <td class="wide-cell"><input data-f="source" readonly aria-label="${head("source")}"></td>
         <td class="origin"></td>
         <td><label class="tick"><input type="checkbox" data-tick disabled
           aria-label="${head("take")}"></label></td>
@@ -90,9 +90,9 @@ Object.assign(DRAW, {
         <td class="oneline">${esc(r.currency)}</td>
         <td class="num muted">${rate(r.rate)}</td>
         <td class="muted small">${esc(day(r.date))} · ${esc(r.why)}</td>
-        <td class="num"><input data-f="rate" readonly inputmode="decimal" size="10"></td>
-        <td class="oneline"><input data-f="as_of" readonly size="10"> <span class="muted small" data-when></span></td>
-        <td class="wide-cell"><input data-f="source" readonly></td>
+        <td class="num"><input data-f="rate" readonly inputmode="decimal" size="10" aria-label="${head("new")}"></td>
+        <td class="oneline"><input data-f="as_of" readonly size="10" aria-label="${head("new_at")}"> <span class="muted small" data-when></span></td>
+        <td class="wide-cell"><input data-f="source" readonly aria-label="${head("source")}"></td>
         <td class="origin"></td>
         <td><label class="tick"><input type="checkbox" data-tick disabled
           aria-label="${head("take")}"></label></td>
@@ -116,7 +116,7 @@ Object.assign(DRAW, {
         { label: d.steps[1].label, state: null, body: `
           <button class="link" id="rb-fetch">fetch everything</button>
           ${d.lacking.length ? `<button class="link" id="rb-lacking">${d.lacking.length} rate(s) the record lacks</button>` : ""}
-          <span class="muted small">or closes of</span> <input type="date" id="rb-on">
+          <label for="rb-on"><span class="muted small">or closes of</span></label> <input type="date" id="rb-on">
           <button class="link" id="rb-discard" hidden></button>` },
         { label: d.steps[2].label, state: stale ? "gap" : null, tag: `${stale} past the limit`,
           body: quiet(`${d.age_days} days old · limit ${d.age_limit} days`) },

@@ -209,7 +209,7 @@ function wireFilters(name, d, again, { ids, button, ask, clear, resets = {} }) {
 
    `afterRow` OPENS A FULL-WIDTH ROW UNDER EACH ROW, which is the only way a table can carry a
    detail pane: a note cannot live inside a <tr> and still span the columns. The colspan is
-   DERIVED from what was actually rendered — declared columns, inserts, and however many <th>
+   DERIVED from what was actually rendered — declared columns, inserts, and however many cells
    the caller's own header string added. A hardcoded number would go stale the first time a
    column joined, silently, leaving the last cell of every expansion outside the table.
 
@@ -218,6 +218,9 @@ function wireFilters(name, d, again, { ids, button, ask, clear, resets = {} }) {
 
    `rowClass` NAMES A ROW'S STATE for the stylesheet: Performance rules off where the next
    account starts. */
+/* A COLUMN WITH NOTHING TO HEAD, a row's links or an allocation's bar, takes a plain cell in the
+   head row: an empty heading is announced, and says nothing. */
+const NO_HEAD = "<td></td>";
 /* EVERY TABLE SORTS BY ITS HEADINGS. A heading pressed sorts its column —
    figures largest first, words and dates A to Z first — pressed again reverses it, and a third
    press puts the page's own order back. A row's detail moves with it. The sort is held per page
@@ -258,7 +261,7 @@ const table = (rows, cols, extraHead = "", extraCell = () => "", opts = {}) => {
   const num = Object.fromEntries(cols.map((c) => [c, isNumCol(c, rows)]));
   const draw = (c, v) => v == null && num[c] ? `<td class="num">—</td>` : cell(c, v);
   const at = (c) => inserts.filter((i) => i.after === c);
-  const span = cols.length + inserts.length + (extraHead.match(/<th/g) || []).length;
+  const span = cols.length + inserts.length + (extraHead.match(/<t[hd]/g) || []).length;
   const key = sortKey(name);
   const id = sort ? SORTED_NEXT++ : null;
   if (sort) SORTED.set(id, { rows, key });

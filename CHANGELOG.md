@@ -53,6 +53,11 @@ No figure moves, and there is no migration. Do these when the book's pin moves.
 
 - **The publish test's app case uses a book outside the app**, so it passes where a checkout sits
   inside a book.
+- **The desk's four accessibility faults, as axe-core found them.** The page names its language;
+  the Bench's look-back list, and the Price Refresh's date and each row's read-only boxes, have
+  names a screen reader says; and a column with nothing to head, a row's links or an
+  allocation's bar, has a plain cell above it where it had an empty heading, on the report too.
+  No page looks different.
 
 ## 0.4.0 — beta, 26 Oct 2026
 

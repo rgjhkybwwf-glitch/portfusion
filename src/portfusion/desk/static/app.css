@@ -212,12 +212,15 @@ table { width: 100%; border-collapse: collapse; line-height: 1.3; }
 /* A TABLE OPENS ON THE DESIGN SYSTEM'S 2px RULE, and its heads sit on the page in the label style, with a
    hairline under them: borders, not bands. */
 table { border-top: var(--rule-section) solid var(--rule); }
-th {
+th, thead td {
   text-align: left; color: var(--muted); vertical-align: bottom;
   padding: var(--space-2) var(--cell-pad); border-bottom: 1px solid var(--hair);
 }
 td { padding: var(--row-pad) var(--cell-pad); border-bottom: 1px solid var(--hair); }
 tr:last-child td { border-bottom: 0; }
+/* A CELL IN THE HEAD ROW, over a column with nothing to head (`NO_HEAD`, kit.js), sits as a
+   heading does, and keeps the head's hairline. */
+thead tr:last-child td { border-bottom: 1px solid var(--hair); }
 /* WHERE ONE ACCOUNT'S ROWS START, in a table that names the account once (Performance): a rule
    in the ink of the table's own top, one pixel — not a title row. */
 tr.opens td { border-top: 1px solid var(--rule); }
@@ -607,8 +610,8 @@ td.num input[readonly] { padding-right: 0; }
    on screen rather than under the last row; the first column, the row's name, stays put while
    the figures scroll under it. Every row is one line; a note is still clipped, whole on hover. */
 .scroll { overflow: auto; max-height: calc(100vh - var(--space-5)); --box-width: 100%; }
-.scroll > table > thead > tr > th { position: sticky; top: 0; z-index: 2; background: var(--paper); }
-.scroll > table > thead > tr > th:first-child { left: 0; z-index: 3; }
+.scroll > table > thead > tr > * { position: sticky; top: 0; z-index: 2; background: var(--paper); }
+.scroll > table > thead > tr > :first-child { left: 0; z-index: 3; }
 .scroll > table > tbody > tr:not(.detail-row):not(.devices) > td { white-space: nowrap; }
 .scroll > table > tbody > tr:not(.detail-row):not(.devices) > td:first-child {
   position: sticky; left: 0; z-index: 1; background: var(--paper);
@@ -619,11 +622,11 @@ td.num input[readonly] { padding-right: 0; }
    (`data-links`, kit.js's table()). Not on a narrow window, where two pinned columns would
    leave the figures no room. */
 @media (min-width: 70rem) {
-  .scroll > table[data-links] > thead > tr > th:last-child { right: 0; z-index: 3; }
+  .scroll > table[data-links] > thead > tr > :last-child { right: 0; z-index: 3; }
   .scroll > table[data-links] > tbody > tr:not(.detail-row):not(.devices) > td:last-child {
     position: sticky; right: 0; z-index: 1; background: var(--paper);
   }
-  .scroll.overflows > table[data-links] > thead > tr > th:last-child,
+  .scroll.overflows > table[data-links] > thead > tr > :last-child,
   .scroll.overflows > table[data-links] > tbody > tr:not(.detail-row):not(.devices) > td:last-child {
     box-shadow: inset 1px 0 0 var(--hair);
   }
