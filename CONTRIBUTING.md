@@ -224,13 +224,22 @@ changes it.
   linked from the issue, and is not built.
 - **What a cold walk finds that the change did not cause** is filed as an issue, or added to one,
   and listed in the pull request.
-- **A CI failure on its pull request** is the agent's to fix.
+- **An issue the agent files goes in the milestone of the issue it came from**, with that issue's
+  area labels, so no issue is left outside a release.
+- **A CI failure on its pull request** is the agent's to fix, and it waits for the guard's result
+  before it leaves a pull request. When the walk fails only because a page the issue meant to
+  change looks different, the agent labels the pull request `baselines`: a workflow retakes the
+  walk's Linux pictures on the branch and runs the guard again (`baselines.yml`), and the pull
+  request lists the pages whose pictures changed. The Mac's pictures are the maintainer's, and no
+  pull request waits on them. A failure the agent cannot fix is said at the top of the pull
+  request, with what would fix it.
 
 **Merging**
 
 - **A clean pull request merges itself**: one that asks the maintainer nothing, made no choice
   its issue did not, passes the guard and the walk, and has its cold walk's finds filed. The agent
-  turns its auto-merge on as it opens it, and GitHub merges it once `guard` is green.
+  turns its auto-merge on as it opens it, and GitHub merges it once `guard` is green. Pictures
+  retaken for a page the issue meant to change keep it clean.
 - **Any other waits for the maintainer's yes**, auto-merge off, with what is needed from them at
   the top of its description.
 
