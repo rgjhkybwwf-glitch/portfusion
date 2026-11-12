@@ -208,13 +208,17 @@ changes it.
   - **Order**: what it waits on, and what waits on it.
   An issue without them is labelled `decision`, with its questions at the end, or is evidence for
   one that has them.
-- **The earliest open milestone first, and oldest first within it**, skipping an issue that has an open pull request of its own; another issue's
-  open pull request holds nothing back. An issue whose "Order" names one to follow waits for it.
-  Each issue is read whole, comments included, before its work starts.
+- **The Queue sets the order**: the open issue "Queue: what the nightly agent builds next" (#206)
+  ranks the work, unblockers first, then bugs and wrong figures, small safe fixes, features and
+  polish. The agent takes the first line under Next whose issue is ready and has no open pull
+  request of its own, and whose "waits" issues are all closed; it skips the rest and never
+  reorders. Each issue is read whole, comments included, before its work starts.
+- **The agent keeps the Queue current**: after each pull request merges it ticks the line and moves
+  it to Done, and each issue it files goes under To rank, for the maintainer to place.
 - **Its own open pull requests come first.** Before a new issue, each one is brought level with
   `main` (merged in, never rebased), its pictures retaken when a page it changed moved under it,
   and its CI made green, so none waits on the maintainer for anything but a yes it asked for.
-- **No ready issue and nothing to tend: stop**, posting nothing.
+- **No ready line in the Queue and nothing to tend: stop**, posting nothing.
 
 **Asking and answering**
 
