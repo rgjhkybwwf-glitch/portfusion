@@ -101,7 +101,7 @@ def _record_vocabularies() -> list[str]:
 def _tables() -> list[str]:
     """Every table in the store and what it is for, the first sentence of the schema's `doc`, and
     each column beside the heading a reader meets it under: one name from store to page."""
-    from portfusion.house.headings import store_heading
+    from portfusion.house import headings as H
     from portfusion.record import schema
     out = ["| Table | What it holds | Columns, as the desk heads them |", "|---|---|---|"]
     for name in sorted(schema.TABLES):
@@ -109,7 +109,7 @@ def _tables() -> list[str]:
         first = " ".join((table.doc or "").split()).split(". ")[0].rstrip(".")
         cols = []
         for f in table.fields:
-            word = store_heading(name, f.name)
+            word = H.store_heading(name, f.name)
             cols.append(f"`{f.name}` {word}" if word else f"`{f.name}`")
         out.append(f"| `{name}.csv` | {first} | {' · '.join(cols)} |")
     return out

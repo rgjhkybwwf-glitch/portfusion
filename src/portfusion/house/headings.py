@@ -122,8 +122,8 @@ COMMON = {
 #: A FIGURE'S NAME, ONE PLACE FOR IT: every headline figure (`Book.HEADLINE`, keyed by these),
 #: and the names the report gives a figure it shows outside a table. A figure that is a column's
 #: field elsewhere takes that column's word, so the two cannot drift. Not a column registry:
-#: `registered()` holds columns, and `tests/test_figures.py` holds these to the glossary and to
-#: every renderer. `since_start` is a template, filled with the record's first day.
+#: `registered()` holds columns, and `tests/test_figures.py` holds these to the glossary, the
+#: registry and the report's source. `since_start` is a template, filled with the record's first day.
 FIGURES = {
     "nav": COMMON["nav"],
     "total_exposure": "Total market exposure",

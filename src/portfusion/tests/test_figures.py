@@ -516,7 +516,6 @@ def _headings_used(monkeypatch) -> set[tuple[str, str]]:
     tables — caught at `heading()` itself, so a column headed outside a `*COLUMNS` constant
     still counts."""
     import portfusion.house.headings as H
-    import portfusion.report.page as RP
     from portfusion.desk import panels
     used, real = set(), H.heading
 
@@ -524,7 +523,6 @@ def _headings_used(monkeypatch) -> set[tuple[str, str]]:
         used.add((tab, field))
         return real(tab, field)
     monkeypatch.setattr(H, "heading", record)
-    monkeypatch.setattr(RP, "heading", record)
     for mod in panels.all_panels():
         used.update((mod.TITLE, f) for f in panels.heads(mod))
         mod.data()
@@ -597,14 +595,19 @@ def _figure_names_typed(source: str) -> list[str]:
             and isinstance(n.body[0], ast.Expr) and isinstance(n.body[0].value, ast.Constant)}
     typed = [n.value for n in ast.walk(tree) if isinstance(n, ast.Constant)
              and isinstance(n.value, str) and id(n) not in docs]
-    names = [v.split("{}")[0] for v in FIGURES.values()]
-    return sorted({name for text in typed for name in names if name in text})
+    names = [v.split("{}")[0].lower() for v in FIGURES.values()]
+    # ONE SPACE FOR ANY RUN OF THEM, and one case: a name broken across the lines of a
+    # triple-quoted string, or capitalised otherwise, is still the name typed.
+    flat = [" ".join(t.split()).lower() for t in typed]
+    return sorted({name for text in flat for name in names if name in text})
 
 
 def test_the_report_types_no_figures_name():
     """THE REPORT ASKS `FIGURES` FOR A FIGURE'S NAME, never types it: a name typed in
     `report/page.py` would drift from the Dashboard's. A planted one is found."""
     source = (SRC / "report" / "page.py").read_text(encoding="utf-8")
-    assert _figure_names_typed('x = "<td>Position income</td>"') == ["Position income"]
+    assert _figure_names_typed('x = "<td>Position income</td>"') == ["position income"]
+    assert _figure_names_typed('x = f"""<td>{a}Position\n      Income</td>"""') == \
+        ["position income"]
     assert not _figure_names_typed(source), _figure_names_typed(source)
 

@@ -11,7 +11,6 @@ import html
 from portfusion import about, brand
 from portfusion.engine import Book
 from portfusion.house import headings as H
-from portfusion.house.headings import heading
 from portfusion.house.precision import (MONEY_DP, REPORT_MONEY_DP, day, local_price, money, pct,
                                         points)
 from portfusion.record import rules as D
@@ -39,7 +38,7 @@ def _head(tab: str, *cols) -> str:
     for c in cols:
         field, attrs = (c, "") if not isinstance(c, tuple) else c
         cells.append("<td></td>" if field is None
-                     else f"<th{attrs}>{html.escape(heading(tab, field))}</th>")
+                     else f"<th{attrs}>{html.escape(H.heading(tab, field))}</th>")
     return f"<thead><tr>{''.join(cells)}</tr></thead>"
 
 
@@ -202,7 +201,7 @@ def _performance(b, qr, quarter_end) -> str:
     {_head("Performance", "quarter", *((f, ' class="n"') for f in (
         "opening_nav", "capital_deployed", "return_income", "closing_nav", "gain", "return")))}
     <tbody>{perf}</tbody></table></div>
-  <p {_NOTE}>{heading("Performance", "return_income")}: share-account dividends.
+  <p {_NOTE}>{H.heading("Performance", "return_income")}: share-account dividends.
     A spread bet&rsquo;s is inside its equity.</p>"""
 
 
@@ -276,7 +275,7 @@ def _movers(b, quarter_end) -> str:
     <tr><td>Not attributed to a line</td><td class="n">{_change(attrib["unattributed"])}</td></tr>
     <tr class="total"><td>The quarter&rsquo;s gain</td><td class="n">{_change(attrib["gain"])}</td></tr>
   </tbody></table></div>
-  <p {_NOTE}>{heading("Holdings", "quarter_gain")}:
+  <p {_NOTE}>{H.heading("Holdings", "quarter_gain")}:
     change in unrealised gain, plus realised.</p>"""
 
 
@@ -334,7 +333,7 @@ def _cash_and_income(b, start, quarter_end, names) -> str:
     <tbody>{moved}</tbody></table></div>
   <h3 style="font-size:.95rem;margin:18px 0 0">Income and costs</h3>
   <div class="scroll"><table>
-    <thead><tr><th>{heading("Accounts", "account")}</th>{"".join(f'<th class="n">{esc(c)}</th>' for c in cats)}<th class="n">{heading("Accounts", "total")}</th></tr></thead>
+    <thead><tr><th>{H.heading("Accounts", "account")}</th>{"".join(f'<th class="n">{esc(c)}</th>' for c in cats)}<th class="n">{H.heading("Accounts", "total")}</th></tr></thead>
     <tbody>{income}</tbody></table></div>"""
 
 
