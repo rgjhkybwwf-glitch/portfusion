@@ -39,6 +39,11 @@ COLUMNS = ("account", "quarter", "opening_nav", "capital_deployed", "return_inco
 #: end has one; the open quarter, valued at today's marks, does not.
 DETAIL_COLUMNS = ("source", "quality")
 
+#: WHAT THE BOOK'S QUARTER-END NAV IS MADE OF, under a book row: each account's part of it, a line
+#: an account, with how it counts and what it rests on (`Book.quarter_nav_rows()`). The amounts add
+#: to the row's Closing NAV. A frozen quarter end has them; the open quarter does not.
+NAV_COLUMNS = ("account", "amount", "contribution", "source", "quality")
+
 #: THE YEAR SO FAR, PER ACCOUNT — `Book.by_account()`. Exposure and net asset value sit side by
 #: side and are never divided: for a spread-bet account the first is notional and the second
 #: equity.
@@ -58,10 +63,10 @@ def data() -> dict:
     b = engine.book()
     return {
         # THE OPEN QUARTER TOO: the engine's series, as it gives it.
-        "firm": [dict(r, account="The book")
-                 for r in _shape.rows(b.quarter_returns(include_open=True), COLUMNS)],
+        "firm": _made_of(b, b.quarter_returns(include_open=True)),
         "accounts": _rests_on(b, b.account_quarter_returns(include_open=True)),
         "detail": list(DETAIL_COLUMNS),
+        "nav_columns": list(NAV_COLUMNS),
         "columns": list(COLUMNS),
         # THE BOOK FIRST, as the quarter table puts it: the engine's all-accounts row
         # (`Book.totals()`, its YTD return the Dashboard's) beside the book's total market
@@ -80,6 +85,17 @@ def data() -> dict:
         "reports": [q for q in engine.reports()["quarters"][::-1] if q["closed"] and not q["gaps"]],
         "caveats": _caveats(b),
     }
+
+
+def _made_of(b, frame) -> list[dict]:
+    """The book's rows, one a quarter, each frozen one with `nav_rows`: what `NAV_COLUMNS`
+    says, from the engine."""
+    frozen = set(b.quarter_nav_total().index)
+    rows = [dict(r, account="The book") for r in _shape.rows(frame, COLUMNS)]
+    for row, end in zip(rows, frame["quarter_end"].astype(str).str[:10]):
+        if end in frozen:
+            row["nav_rows"] = _shape.rows(b.quarter_nav_rows(end), NAV_COLUMNS)
+    return rows
 
 
 def _rests_on(b, frame) -> list[dict]:

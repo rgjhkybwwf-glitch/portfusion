@@ -37,6 +37,16 @@ No figure moves, and there is no migration. Do these when the book's pin moves.
 ### Changed
 
 - **A wide table keeps its links at its right edge** and a row's detail in view, from 70rem.
+- **A row is the way into its detail** (the audit's row 47). A press anywhere on a row of
+  Holdings, Round Trips, Trades, Performance or Accounts' income opens its detail in place, and
+  a second closes it; a chevron at the row's start, where the word "detail" was at its end, is
+  the keyboard's and a screen reader's way in. Only a row that opens takes the pointer's fill
+  and its hand. A press on another control in the row, or one that selected text, opens
+  nothing. "trades" at a row's end is a button, Trades.
+- **A heading that sorts shows it** (row 53): a faint up-and-down mark until it is pressed, then
+  its arrow. A table that does not sort shows none.
+- **A book row on Performance opens** (row 44): each account's part of the quarter's closing
+  NAV, how it counts and what it rests on, adding to the row's figure.
 - **A filter box is as wide as its longest choice**, and one holding a choice is outlined.
 - **The sweep matches income already in the book by account, day and amount**; it matched by day
   and amount in any account.

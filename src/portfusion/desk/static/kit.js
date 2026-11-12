@@ -208,7 +208,11 @@ function wireFilters(name, d, again, { ids, button, ask, clear, resets = {} }) {
    where its meaning puts it, so `{after, head, cell}` names the column it follows.
 
    `afterRow` OPENS A FULL-WIDTH ROW UNDER EACH ROW, which is the only way a table can carry a
-   detail pane: a note cannot live inside a <tr> and still span the columns. The colspan is
+   detail pane: a note cannot live inside a <tr> and still span the columns. A row whose
+   `afterRow` is a detail (`detailRow()`) is the way into it: it is marked `has-detail`, for the
+   pointer and the press, and its first cell leads with the chevron (`detailToggle()`). In a
+   table where some rows open, one that does not keeps the chevron's space, so the column stays
+   straight. The colspan is
    DERIVED from what was actually rendered — declared columns, inserts, and however many cells
    the caller's own header string added. A hardcoded number would go stale the first time a
    column joined, silently, leaving the last cell of every expansion outside the table.
@@ -223,7 +227,9 @@ function wireFilters(name, d, again, { ids, button, ask, clear, resets = {} }) {
 const NO_HEAD = "<td></td>";
 /* EVERY TABLE SORTS BY ITS HEADINGS. A heading pressed sorts its column —
    figures largest first, words and dates A to Z first — pressed again reverses it, and a third
-   press puts the page's own order back. A row's detail moves with it. The sort is held per page
+   press puts the page's own order back. A row's detail moves with it. A HEADING THAT SORTS
+   SHOWS IT BEFORE IT IS PRESSED: a faint up-and-down mark, which the pressed heading's arrow
+   replaces (`sortMark()`); a table that does not sort shows none. The sort is held per page
    and table, as the filters are, so a filter redraw keeps it. It orders what the engine sent;
    nothing is worked out. A table whose order IS its layout opts out (`sort: false`): the tables
    that name the book first and then each account once (Performance's quarters and its year,
@@ -233,6 +239,8 @@ const NO_HEAD = "<td></td>";
    A SORTING TABLE NAMES ITSELF (`name`), and its sort is held under the page and that name.
    Keyed by COLUMNS, two tables alike would share one sort. */
 const SORTS = {};
+const sortMark = (state) => `<span class="arrow${state ? "" : " idle"}" aria-hidden="true">${
+  state === "up" ? "▲" : state === "down" ? "▼" : "↕"}</span>`;
 const SORTED = new Map();
 let SORTED_NEXT = 0;
 const sortKey = (name) => `${PAGE_TITLE}|${name}`;
@@ -262,16 +270,22 @@ const table = (rows, cols, extraHead = "", extraCell = () => "", opts = {}) => {
   const draw = (c, v) => v == null && num[c] ? `<td class="num">—</td>` : cell(c, v);
   const at = (c) => inserts.filter((i) => i.after === c);
   const span = cols.length + inserts.length + (extraHead.match(/<t[hd]/g) || []).length;
+  const rowKlass = (r, n) => [rowClass ? rowClass(r) : "", opens[n] ? "has-detail" : ""]
+    .filter(Boolean).join(" ");
   const key = sortKey(name);
   const id = sort ? SORTED_NEXT++ : null;
   if (sort) SORTED.set(id, { rows, key });
   const held = sort && SORTS[key];
+  const unders = rows.map((r) => afterRow ? afterRow(r, span) : "");
+  const opens = unders.map((u) => u.startsWith(DETAIL_ROW));
+  const lead = !opens.includes(true) ? () => ""
+    : (n) => opens[n] ? detailToggle() : `<span class="detail-gap"></span>`;
   const th = (c) => {
     const klass = [num[c] ? "num" : "", sort ? "sortable" : ""].filter(Boolean).join(" ");
     const state = held && held.col === c ? held.dir : "";
     return `<th${klass ? ` class="${klass}"` : ""}${sort ? ` data-col="${esc(c)}" tabindex="0"
       aria-sort="${state === "up" ? "ascending" : state === "down" ? "descending" : "none"}"` : ""}>${
-      head(c)}${state ? `<span class="arrow" aria-hidden="true">${state === "up" ? "▲" : "▼"}</span>` : ""}</th>`;
+      head(c)}${sort ? sortMark(state) : ""}</th>`;
   };
   return `
   <div class="scroll"><table${sort ? ` data-sorts="${id}"` : ""}${extraHead ? " data-links" : ""}${align
@@ -279,11 +293,12 @@ const table = (rows, cols, extraHead = "", extraCell = () => "", opts = {}) => {
     <thead><tr>${cols.map((c) => th(c) +
       at(c).map((i) => i.head).join("")).join("")}${extraHead}</tr></thead>
     <tbody>${(sort ? sortOrder(rows, key) : rows.map((r, i) => i)).map((n) => [rows[n], n]).map(([r, n]) =>
-      `<tr${sort ? ` data-i="${n}"` : ""}${rowClass && rowClass(r) ? ` class="${rowClass(r)}"` : ""}>${cols.map((c) => (cells[c] ? cells[c](r)
+      `<tr${sort ? ` data-i="${n}"` : ""}${rowKlass(r, n) ? ` class="${rowKlass(r, n)}"` : ""}>${cols.map((c) => (cells[c] ? cells[c](r)
                                : local.has(c) ? (r.stake != null ? pointsCell(r[c])
                                                  : `<td class="num">${localPrice(r[c], r.currency)}</td>`)
-                               : draw(c, r[c])) + at(c).map((i) => i.cell(r)).join("")).join("")}` +
-      `${extraCell(r)}</tr>` + (afterRow ? afterRow(r, span) : "")).join("")}</tbody>
+                               : draw(c, r[c])) + at(c).map((i) => i.cell(r)).join("")).join("")
+        .replace(/^\s*<td([^>]*)>/, (m, attrs) => `<td${attrs}>${lead(n)}`)}` +
+      `${extraCell(r)}</tr>` + unders[n]).join("")}</tbody>
   </table></div>`;
 };
 
@@ -307,16 +322,16 @@ const points = (v) => v == null ? "—"
   : (Number(v) < 0 ? "-" : "") + fixed(Number(v), 2, { group: true }).replace(/\.?0+$/, "") + " pts";
 const pointsCell = (v) => `<td class="num">${points(v)}</td>`;
 
-/* THE DETAIL UNDER A ROW: ONE LINK ACROSS THE DESK, AND ONE ORDER INSIDE IT.
-   Every table's row opens the same way, by "detail", to whatever the record holds on it, each
-   part under its own heading from house/headings.py and ALWAYS IN THIS ORDER: the judgement,
+/* THE DETAIL UNDER A ROW: ONE WAY IN ACROSS THE DESK, AND ONE ORDER INSIDE IT.
+   Every table's row opens the same way, by a press anywhere on it, to whatever the record holds
+   on it, each part under its own heading from house/headings.py and ALWAYS IN THIS ORDER: the judgement,
    then what happened, then where it came from and what it belongs to, then the marks, which are
    a table. A page names the parts it draws (its panel's DETAIL_COLUMNS, sent as `detail`); a
    heading with nothing logged under it is left out. */
 const DETAIL = ["why_entered", "why_exited", "research_notes", "note", "source", "quality",
                 "broker_ref", "trade_id", "sale_id", "realisation_id", "contract", "funding",
                 "fx_at_trade",
-                "fx_from", "life", "income", "marks", "realisations", "lines"];
+                "fx_from", "life", "income", "marks", "realisations", "lines", "nav_rows"];
 
 /* EACH WHY UNDER ITS HALF, oldest first, with the date of the trade it explains. An OWED half
    says so in words; a blank before the cut-off says nothing, because nothing is owed — the
@@ -331,6 +346,10 @@ const whyPart = (half) => (x) => {
 const listPart = (c) => (x) => !(x[c] || []).length ? "" :
   `<dt>${head(c)}</dt><dd>${x[c].map(esc).join(" · ")}</dd>`;
 const DETAIL_PART = {
+  /* WHAT THE BOOK'S CLOSING NAV IS MADE OF at a frozen quarter end: each account's part, a
+     line an account, under the figure's own heading. */
+  nav_rows: (x, cols) => !(x.nav_rows || []).length ? "" :
+    `<dt>${head("closing_nav")}</dt><dd class="wide">${table(x.nav_rows, cols, "", () => "", { sort: false })}</dd>`,
   realisations: listPart("realisations"),
   lines: listPart("lines"),
   why_entered: whyPart("why_entered"),
@@ -364,31 +383,41 @@ const detailList = (x, fields, markCols) => {
     : x[c] == null || x[c] === "" ? "" : `<dt>${head(c)}</dt><dd>${esc(x[c])}</dd>`).join("");
   return parts ? `<dl class="detail">${parts}</dl>` : "";
 };
-/* THE LINK AND THE ROW IT OPENS, both or neither: a row with nothing logged has no link. The
-   detail is the NEXT TABLE ROW, because a pane cannot live inside a <tr> and still span it. */
-const detailLink = (html) => !html ? "" :
-  ` <button class="link detail-toggle" aria-expanded="false">detail</button>`;
+/* THE ROW AND THE DETAIL IT OPENS, both or neither: a row with nothing logged does not open.
+   The detail is the NEXT TABLE ROW, because a pane cannot live inside a <tr> and still span it.
+   THE CHEVRON AT THE ROW'S START is the keyboard's and a screen reader's way in, and says which
+   way the row stands; table() draws it. */
+const DETAIL_ROW = `<tr class="detail-row"`;
+const detailToggle = () =>
+  `<button class="detail-toggle" aria-expanded="false" aria-label="Detail"><span aria-hidden="true">▸</span></button>`;
 const detailRow = (html, span) => !html ? "" :
-  `<tr class="detail-row" hidden><td colspan="${span}"><div class="detail-pane">${html}</div></td></tr>`;
+  `${DETAIL_ROW} hidden><td colspan="${span}"><div class="detail-pane">${html}</div></td></tr>`;
+/* A ROW'S WAY TO ITS COMPANY'S TRADES, at the row's end: a button, since it leaves the page. */
+const tradesButton = (company) => !company ? "" :
+  `<button class="go" data-trades="${esc(company)}">${esc(PANELS.get("trades") || "Trades")}</button>`;
 
-/* THE DETAIL LINK. Delegated from the document because a table is rebuilt on every filter
-   change, and per-button listeners would be lost or doubled each time. A plain button and a
-   hidden row rather than <details>, so the link can sit at the END OF THE ROW while the detail
-   opens at full width underneath it — which <details> cannot do, its content being trapped
-   inside the same box as its summary. The detail is the row's NEXT row (`detailRow()`). */
+/* THE ROW IS THE WAY IN. A press anywhere on a row that has a detail opens it in place, and a
+   second closes it. Delegated from the document because a table is rebuilt on every filter
+   change, and per-row listeners would be lost or doubled each time. A hidden row rather than
+   <details>, whose content is trapped inside the same box as its summary. The detail is the
+   row's NEXT row (`detailRow()`).
+   ANOTHER CONTROL ON THE ROW KEEPS ITS OWN PRESS, and A PRESS THAT SELECTED TEXT, to copy a
+   figure, opens nothing. */
 function wireDetailLinks() {
   if (document.body.dataset.detailWired) return;
   document.body.dataset.detailWired = "1";
   document.addEventListener("click", (e) => {
-    const b = e.target.closest(".detail-toggle");
-    if (!b) return;
-    const pane = (b.closest("tr") || {}).nextElementSibling;
-    if (!pane || !pane.classList.contains("detail-row")) return;
+    const row = e.target.closest("tr");
+    if (!row || !row.classList.contains("has-detail")) return;
+    const b = row.querySelector(".detail-toggle");
+    if (!e.target.closest(".detail-toggle") &&
+        (e.target.closest("button, a, input, select, textarea, label")
+         || String(window.getSelection ? window.getSelection() : ""))) return;
+    const pane = row.nextElementSibling;
+    if (!b || !pane || !pane.classList.contains("detail-row")) return;
     const open = pane.hidden;
     pane.hidden = !open;
     b.setAttribute("aria-expanded", String(open));
-    /* The label says what the link DOES next. */
-    b.textContent = open ? "hide" : "detail";
     /* A detail opened can give the box its upright bar, and so a new width. */
     markOverflow();
   });

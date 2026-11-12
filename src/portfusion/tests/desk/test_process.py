@@ -151,8 +151,10 @@ def test_every_detail_is_in_the_one_order():
     for name, parts in named.items():
         assert set(parts) <= set(order), f"{name}'s detail names {set(parts) - set(order)}, which DETAIL never draws"
         assert list(parts) == [c for c in order if c in parts], f"{name}'s detail is not in DETAIL's order"
-    assert js.count('class="link detail-toggle"') == 1 and "why-toggle" not in js, (
-        "a row opens by a second kind of link")
+    assert js.count('class="detail-toggle"') == 1 and "why-toggle" not in js, (
+        "a row opens by a second kind of control")
+    assert "detailLink" not in js and ">detail</button>" not in js, (
+        "a row's detail has a link again: the row is the way in, and its chevron")
 
 
 def test_every_filter_row_has_the_same_shape():
@@ -265,7 +267,8 @@ def test_a_table_whose_order_is_its_layout_keeps_it():
     mark history, life and income keep theirs."""
     kept = {c.split(",")[0].strip() for c in map(_own, _table_calls(desk_script()))
             if "sort: false" in c}
-    assert kept == {"x.marks", "x.life", "x.income", "quarters", "d.year", "d.income"}, kept
+    assert kept == {"x.marks", "x.life", "x.income", "x.nav_rows", "quarters", "d.year",
+                    "d.income"}, kept
 
 
 def test_every_account_dropdown_offers_individual_accounts_in_the_books_order():

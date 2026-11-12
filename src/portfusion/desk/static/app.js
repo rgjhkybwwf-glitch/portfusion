@@ -184,8 +184,7 @@ function wireSorting() {
       const s = SORTS[t.key] && SORTS[t.key].col === h.dataset.col ? SORTS[t.key].dir : "";
       h.setAttribute("aria-sort", s === "up" ? "ascending" : s === "down" ? "descending" : "none");
       h.querySelector(".arrow")?.remove();
-      if (s) h.insertAdjacentHTML("beforeend",
-        `<span class="arrow" aria-hidden="true">${s === "up" ? "▲" : "▼"}</span>`);
+      h.insertAdjacentHTML("beforeend", sortMark(s));
     });
   };
   main.addEventListener("click", (e) => {

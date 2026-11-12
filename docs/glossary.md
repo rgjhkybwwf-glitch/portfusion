@@ -141,7 +141,7 @@ not *realized*.
 | The judgement | **Why · Research notes** |
 | Who opens the hosted desk | **Reader · Level · Since · Devices · Last signed in · Now · Device · Enrolled · Last used · At · Result · Address · Named as** |
 | A currency as a category, on the Dashboard | **Currency** |
-| What happened, on a capital movement, an income row, a write or a sign-in | **Detail**; a row's detail link opens in `DETAIL`'s order (`kit.js`) |
+| What happened, on a capital movement, an income row, a write or a sign-in | **Detail**; a row's detail opens in `DETAIL`'s order (`kit.js`) |
 
 **Entry price and Traded price are different quantities**: the first is the weighted mean of the
 legs still held, the second what one fill paid.

@@ -1,7 +1,8 @@
 // THE DESK WALKED, IN CHROMIUM: the demo desk `desk_walk.py` serves, at 1440 × 900. Each page is
 // opened by its tab and must draw no error, hold no accessibility fault but the `KNOWN`, and look
-// as its baseline does; a finding is followed to its page; a wide table's links are in view, and
-// its detail opens in view. It writes nothing, and does not prove a figure is right.
+// as its baseline does; a finding is followed to its page; a wide table's button to Trades is in
+// view, a press on a row opens its detail in view, and a heading that sorts shows it. It writes
+// nothing, and does not prove a figure is right.
 //
 //     npm ci --prefix tools && npm --prefix tools run browser      # once: Playwright, its Chromium
 //     npm --prefix tools run walk
@@ -64,14 +65,25 @@ test("a finding leads to the page its work is done on", async ({ page }) => {
 });
 
 for (const name of ["holdings", "round-trips"]) {
-  test(`${name}: a row's links are in view, and its detail opens in view`, async ({ page }) => {
+  test(`${name}: a row's button is in view, and a press on the row opens its detail in view`, async ({ page }) => {
     await open(page, name);
     const row = page.locator("#main table[data-links] tbody tr:not(.detail-row)").first();
+    const chevron = row.locator(".detail-toggle");
     await expect(row.locator("[data-trades]")).toBeInViewport({ ratio: 1 });
-    await expect(row.locator(".detail-toggle")).toBeInViewport({ ratio: 1 });
-    await row.locator(".detail-toggle").click();
+    await expect(chevron).toBeInViewport({ ratio: 1 });
+    // THE ROW IS THE WAY IN: a press on a cell, not on the chevron, and a second closes it.
+    await row.locator("td").nth(1).click();
+    await expect(chevron).toHaveAttribute("aria-expanded", "true");
     await expect(page.locator("#main .detail-row:not([hidden]) .detail-pane > *").first())
       .toBeInViewport({ ratio: 1 });
+    await row.locator("td").nth(1).click();
+    await expect(chevron).toHaveAttribute("aria-expanded", "false");
+    await expect(page.locator("#main .detail-row:not([hidden])")).toHaveCount(0);
+    // A HEADING THAT SORTS SHOWS IT before it is pressed, and its arrow once it is.
+    const heading = page.locator("#main table[data-links] > thead th.sortable").first();
+    await expect(heading.locator(".arrow.idle")).toBeVisible();
+    await heading.click();
+    await expect(heading.locator(".arrow:not(.idle)")).toBeVisible();
   });
 }
 

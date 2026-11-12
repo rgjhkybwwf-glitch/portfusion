@@ -190,8 +190,7 @@ function companyLives(d) {
       viewField(d),
     ] },
     work: table(d.rows, d.columns, NO_HEAD,
-                (r) => `<td class="nowrap"><button class="link" data-trades="${esc(r.company)}">trades</button>${
-                  detailLink(detailList(r, d.detail))}</td>`,
+                (r) => `<td class="nowrap">${tradesButton(r.company)}</td>`,
                 { name: "company lives", afterRow: (r, span) => detailRow(detailList(r, d.detail), span),
                   cells: {
                     opened: (r) => `<td class="nowrap">${esc(day(r.opened))}${r.pre_baseline
@@ -237,13 +236,10 @@ Object.assign(DRAW, {
       ] },
       why: [["Securities owned and notional", d.note]],
       work: `${/* ONE CLICK TO THE WHOLE HISTORY, by COMPANY and not by ticker: one company can be a
-            share AND a spread bet, and a link that showed one leg would answer half the question while
-            looking complete. */ ""}
+            share AND a spread bet, and a button that showed one leg would answer half the question
+            while looking complete. */ ""}
       ${table(d.rows, d.columns, NO_HEAD,
-              (r) => `<td class="nowrap">` +
-                (r.company ? `<button class="link" data-trades="${esc(r.company)}">trades</button>`
-                           : "") +
-                detailLink(holdingDetail(r, d)) +
+              (r) => `<td class="nowrap">` + tradesButton(r.company) +
                 ((r.reasons || []).some((x) => x.why_entered_owed) ? ` ${owedTag()}` : "") +
                 `</td>`,
               {name: "holdings", afterRow: (r, span) => detailRow(holdingDetail(r, d), span),
@@ -280,13 +276,11 @@ Object.assign(DRAW, {
                min="${esc(d.span.first || "")}" max="${esc(d.span.last || "")}">`),
         viewField(d),
       ] },
-      /* THE SAME "trades" LINK AS HOLDINGS', by company: the sales a round trip took, and the
-         buys before them, are Trades' to show. Then the row's detail: its whys, research notes
-         and note. */
+      /* THE SAME Trades BUTTON AS HOLDINGS', by company: the sales a round trip took, and the
+         buys before them, are Trades' to show. The row opens its detail: its whys, research
+         notes and note. */
       work: table(d.rows, d.columns, NO_HEAD,
-                  (r) => `<td class="nowrap">${r.company
-                    ? `<button class="link" data-trades="${esc(r.company)}">trades</button>` : ""}${
-                    detailLink(detailList(r, d.detail))}${owes(r, d.owed)
+                  (r) => `<td class="nowrap">${tradesButton(r.company)}${owes(r, d.owed)
                     ? ` ${owedTag()}` : ""}</td>`,
                   { name: "round trips", afterRow: (r, span) => detailRow(detailList(r, d.detail), span),
                     /* A SPREAD BET IN ITS OWN TERMS, as Trades reads one: its stake per point
@@ -334,8 +328,7 @@ Object.assign(DRAW, {
       work: `<h2>Register</h2>${table(d.register, d.columns.register, "", () => "",
           { name: "register", cells: { feed_key: (r) => cell("feed_key", r.feed_key || "") } })}
         <h2>External capital</h2>${table(d.movements, d.columns.movements, "", () => "", { name: "capital" })}
-        <h2>Income and costs, ${esc(d.year)}</h2>${table(d.income, d.columns.summary, NO_HEAD,
-          (r) => `<td class="nowrap">${detailLink(r.rows.length ? "rows" : "")}</td>`,
+        <h2>Income and costs, ${esc(d.year)}</h2>${table(d.income, d.columns.summary, "", () => "",
           { sort: false, cells: asMoney,
             afterRow: (r, span) => detailRow(r.rows.length
               ? table(r.rows, r.columns, "", () => "", { name: r.account, cells: conversion }) : "", span) })}`,
@@ -378,6 +371,10 @@ Object.assign(DRAW, {
 
   performance(d) {
     const quarters = [...d.firm, ...d.accounts];
+    /* WHAT A ROW'S CLOSING NAV RESTS ON: an account's, its source and quality; the book's, each
+       account's part of it. The quarter still open has neither. */
+    const rests = (r) => r.nav_rows ? detailList(r, ["nav_rows"], d.nav_columns)
+                                    : detailList(r, d.detail);
     const opens = new Set(quarters.filter((r, n) => !n || r.account !== quarters[n - 1].account));
     /* NO BENCHMARK: an index return is TIME-WEIGHTED and this book's MONEY-WEIGHTED, and the two
        do not subtract. */
@@ -398,12 +395,11 @@ Object.assign(DRAW, {
          column's place with "Year to date", so its opening NAV, capital deployed, income,
          closing value, gain and return each sit under the quarter table's, in the same widths;
          its year-only columns follow. */
-      work: table(quarters, d.columns, NO_HEAD,
-                  (r) => `<td class="nowrap">${detailLink(detailList(r, d.detail))}</td>`,
+      work: table(quarters, d.columns, "", () => "",
                   { sort: false, align: "performance",
                     cells: { account: (r) => `<td>${opens.has(r) ? esc(r.account) : ""}</td>` },
                     rowClass: (r) => opens.has(r) && r !== quarters[0] ? "opens" : "",
-                    afterRow: (r, span) => detailRow(detailList(r, d.detail), span) }) +
+                    afterRow: (r, span) => detailRow(rests(r), span) }) +
         `<h2>The year so far, from ${esc(day(d.year_opens))}</h2>` + table(d.year, d.year_columns,
           "", () => "", { sort: false, align: "performance",
             inserts: [{ after: "account", head: NO_HEAD, cell: () => "<td>Year to date</td>" }] }),
@@ -443,8 +439,7 @@ Object.assign(DRAW, {
       /* A TABLE IN HOLDINGS' ORDER: the deal as struck on the line, and
          everything else the record holds on the trade in its detail. A spread bet reads in its
          own terms, a stake per point at a level in points, with no currency of its own. */
-      work: `<div id="q-rows">${d.rows.length ? table(d.rows, d.columns, NO_HEAD,
-        (r) => `<td class="nowrap">${detailLink(detailList(r, d.detail))}</td>`,
+      work: `<div id="q-rows">${d.rows.length ? table(d.rows, d.columns, "", () => "",
         { name: "trades", afterRow: (r, span) => detailRow(detailList(r, d.detail), span),
           cells: {
             currency: (r) => r.level_points == null ? cell("currency", r.currency) : `<td>—</td>`,
