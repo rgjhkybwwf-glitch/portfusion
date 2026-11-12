@@ -32,6 +32,7 @@ MEASURE_BASIS = {
     "capital_deployed": "capital",
     "return_income":  "capital",
     "capital_growth": "capital",
+    "gain":           "capital",
     "income":         "capital",
 }
 

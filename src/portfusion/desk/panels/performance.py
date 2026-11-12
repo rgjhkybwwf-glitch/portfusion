@@ -48,10 +48,11 @@ DETAIL_COLUMNS = ("source", "quality")
 #: and cash interest included, is the Dashboard's YTD income.
 #:
 #: IN THE QUARTER TABLE'S ORDER: what it opened at, what went in, what it earned, where it
-#: stands, and the growth and return those make — then what only the year carries: capital
-#: employed, market exposure and the account's kind.
-YEAR_COLUMNS = ("account", "opening_nav", "capital_deployed", "return_income", "nav",
-                "capital_growth", "ytd", "capital_employed", "exposure", "held_as")
+#: stands, and the gain and return those make — then what only the year carries: capital
+#: growth, which is the gain less its income, capital employed, market exposure and the
+#: account's kind.
+YEAR_COLUMNS = ("account", "opening_nav", "capital_deployed", "return_income", "nav", "gain",
+                "ytd", "capital_growth", "capital_employed", "exposure", "held_as")
 
 
 def data() -> dict:
@@ -71,7 +72,8 @@ def data() -> dict:
                    **b.totals()}.items() if c in YEAR_COLUMNS}]
                 + _shape.rows(b.by_account(), YEAR_COLUMNS),
         "year_columns": list(YEAR_COLUMNS),
-        "year_opens": b.ytd_opens(),
+        # THE FIRST DAY THE YEAR COUNTS, the engine's, as the Dashboard prints it.
+        "year_from": b.ytd_window()["first_day"],
         "measure": "net asset value",
         # SINCE THE RECORD BEGAN: the day, and the engine's linked return under its own label.
         "since": {"begins": b.baseline.date().isoformat(), "label": b.SINCE_START,

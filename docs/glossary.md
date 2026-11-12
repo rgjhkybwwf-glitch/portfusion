@@ -131,9 +131,12 @@ not *realized*.
 | What a line is | **Sector · Region · Held as · Funding** — how IG funds a contract, daily or dated |
 | A deal's own terms | **Trade ID · Broker ref · Deal ccy · Stake (£/pt) · Level (points) · Entry level (points) · Exit level (points) · Trade value (GBP)** |
 | When | **Date · As at · Exit date · Days held · Age (days) · Quarter** |
-| Money and measures | **Cost (GBP) · Value (GBP) · Proceeds (GBP) · Amount (GBP) · Weight · % of book · Market exposure · Capital employed · Capital growth · Income · Return · YTD return · Gain · Contribution** |
+| Money and measures | **Cost (GBP) · Value (GBP) · Proceeds (GBP) · Amount (GBP) · Weight · % of book · Market exposure · Capital employed · Return · YTD return · Contribution** |
+| Net asset value less capital employed: what the holdings did | **Capital growth** |
+| The income a return counts, each row once (`Book.return_income()`): not all income, which is **YTD income** and **Income and costs** | **Return income** |
+| Capital growth plus return income: what a return divides | **Gain with income** |
 | A round trip, and a company life | **Closed out · State · Dividends (GBP) · Funding interest (GBP) · Life gain (GBP) · Life gain (%) · Life cost per share · Round trips · Lines** |
-| Against the broker | **Difference · Verdict · Last broker check · Document · Cash / Funds (GBP) · Read from · FX rate as at** |
+| Against the broker | **Difference · Verdict · Last broker check · Document · Cash / Funds (GBP) · Cash read from · FX rate as at** |
 | A mark, and a window from one to the next | **Mark key** — a share's ticker, or a bet's contract · **Quality · Stale · Priced · Was priced · Value now (GBP) · Change (GBP)** |
 | The refresh grid | **Was · Was as at · New · New as at · From · Take** |
 | The journal | **Recorded · Route · Did · Table · Rows · Retrieves** |
@@ -269,7 +272,7 @@ starts to define one.
 | Return this quarter | `capital` | pct | **yes — the report only** |
 | Open positions | `count` | count | yes |
 | Accounts / positions | `count` | count | **yes — the report only** |
-| Closed round trips | `count` | count | **no — live only** |
+| Round trips closed out | `count` | count | **no — live only** |
 
 ### Vocabularies declared to the LOADER
 
@@ -316,7 +319,7 @@ asserted on import; the rest are held by the suite.
 | `income.csv` | Dividends, interest and fees | `date` Date · `account` Account · `category` Category · `detail` Detail · `amount` Amount (GBP) · `source` Source · `note` Notes · `currency` Ccy · `local_amount` Amount · `rate` Rate (per £1) · `ticker` Ticker |
 | `journal.csv` | RECORD TIME — when the book LEARNED a thing, as against when the thing HAPPENED | `at` Recorded · `route` Route · `op` Did · `table` Table · `rows` Rows · `ref` Retrieves · `detail` Detail |
 | `quarter-nav.csv` | Each account's CONTRIBUTION to net asset value at each quarter end | `as_of` As at · `account` Account · `amount` Amount (GBP) · `contribution` Contribution · `quality` Quality · `source` Source |
-| `quarter-results.csv` | Each closed quarter's six figures, for the book and for each account, as the engine gave them — what a closed quarter is HELD TO, never what a renderer shows | `as_of` As at · `account` Account · `opening_nav` Opening NAV · `capital_deployed` Capital deployed · `return_income` Income · `closing_nav` Closing NAV · `gain` Gain · `return` Return · `note` Notes |
+| `quarter-results.csv` | Each closed quarter's six figures, for the book and for each account, as the engine gave them — what a closed quarter is HELD TO, never what a renderer shows | `as_of` As at · `account` Account · `opening_nav` Opening NAV · `capital_deployed` Capital deployed · `return_income` Return income · `closing_nav` Closing NAV · `gain` Gain with income · `return` Return · `note` Notes |
 | `quarter-snapshots.csv` | Every account's HOLDINGS, line by line, at each quarter end — the working behind quarter-nav.csv's per-account totals | `as_of` As at · `account` Account · `ticker` Ticker · `qty` Quantity · `price` Price · `currency` Ccy · `value` Value (GBP) · `cost` Cost (GBP) · `quality` Quality · `source` Source |
 | `reasoning.csv` | WHY a position was taken and why it was closed — one row per DECISION: the ticker, the date of the trade or sale it explains, and the why | `ticker` Ticker · `date` Date · `why_entered` Why we entered · `why_exited` Why we exited |
 | `research-notes.csv` | WHICH RESEARCH NOTES COVER WHICH INSTRUMENT | `ticker` Ticker · `ref` · `published` · `url` |
