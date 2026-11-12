@@ -12,14 +12,7 @@ import { DAY } from "./playwright.config.mjs";
 
 // THE ACCESSIBILITY FAULTS ON FILE, each an axe rule and the pages it fires on. A fault not
 // listed fails, and so does a listed one that has gone: the list only shrinks.
-const KNOWN = {
-  "html-has-lang": ["dashboard", "bench", "price-refresh", "what-changed", "reconcile",
-                    "performance", "holdings", "round-trips", "trades", "accounts", "reports",
-                    "method", "access"],
-  "select-name": ["bench"],
-  "label": ["price-refresh"],
-  "empty-table-header": ["performance", "holdings", "round-trips", "trades", "accounts", "access"],
-};
+const KNOWN = {};
 
 let said;
 test.beforeEach(async ({ page }) => {

@@ -356,7 +356,7 @@ def test_the_desks_allocation_is_headed_as_the_reports():
     tables = re.findall(r'<table class="alloc">(.*?)</table>', render(QUARTER), re.S)
     report = [[html.unescape(h) for h in re.findall(r"<th[^>]*>([^<]*)</th>", t)] for t in tables]
     d = holdings.query()
-    desk = [[d["allocation_heads"][axis], "", d["allocation_heads"]["share"]] for axis in d["allocation"]]
+    desk = [[d["allocation_heads"][axis], d["allocation_heads"]["share"]] for axis in d["allocation"]]
     assert report and desk == report, f"the desk heads its allocation {desk}; the report {report}"
 
 
@@ -399,7 +399,7 @@ def test_every_report_heading_is_the_registrys():
     from portfusion.record import rules as D
     from portfusion.house.headings import BY_TAB, COMMON
     words = set(COMMON.values()).union(*(m.values() for m in BY_TAB.values()))
-    allowed = words | set(D.POSITION_INCOME) | set(D.ACCOUNT_INCOME) | {""}
+    allowed = words | set(D.POSITION_INCOME) | set(D.ACCOUNT_INCOME)
     heads = set(re.findall(r"<th[^>]*>([^<]*)</th>", render(QUARTER)))
     assert heads <= allowed, f"the report types {sorted(heads - allowed)}; use _head()"
 

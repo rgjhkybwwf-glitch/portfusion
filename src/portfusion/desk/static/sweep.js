@@ -34,7 +34,7 @@ async function wireActions(panelName) {
   /* THE BUTTON AND WHAT IT REACHES, and no paragraph: what it does is in the page's fold. */
   $("#acts").innerHTML = acts.map((a) =>
     `<p><button class="link" data-act="${esc(a.name)}">
-       ${esc(a.label)}</button>` + (a.name === "ig-events" ? ` <select id="lookback">${
+       ${esc(a.label)}</button>` + (a.name === "ig-events" ? ` <select id="lookback" aria-label="Look-back">${
          LOOKBACKS.map(([v, l]) => `<option value="${v}"${v === LOOKBACK ? " selected" : ""}>${
            esc(l)}</option>`).join("")}</select>`
        : "") + badges(a.name) + `</p>`).join("");
