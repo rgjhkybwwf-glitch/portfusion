@@ -62,7 +62,7 @@ def test_the_snapshot_ties_to_the_engine():
     assert figs["Unrealised gain / loss"] == money(b.unrealised())
     assert figs["Realised gain / loss to date"] == money(b.realised())
     # BLANK IS None ON THE PAGE AND NaN IN THE ENGINE, compared as the page carries it (`_blank`).
-    assert figs["YTD return (MWR)"] == _blank(b.totals()["ytd"])
+    assert figs["YTD return"] == _blank(b.totals()["ytd"])
     assert figs[b.SINCE_START] == _blank(b.since_start())
 
 
@@ -76,7 +76,7 @@ def test_a_blank_year_reaches_the_desk_as_a_blank(monkeypatch):
     data = panels.get("dashboard").data()
     json.dumps(data, allow_nan=False)
     figs = {f["label"]: f["value"] for f in data["figures"]}
-    assert figs["YTD return (MWR)"] is None
+    assert figs["YTD return"] is None
     assert figs[_engine.Book.SINCE_START] is None
     assert figs["Capital employed (opening + deployed)"] is None
 
@@ -99,7 +99,7 @@ def test_the_dashboard_says_which_year_ytd_is_and_why_it_is_blank(monkeypatch):
         figs = {f["label"]: f["value"] for f in data["figures"]}
         assert data["ytd"] == {"year": live["year"] + 1, "opens": f"{live['year']}-12-31",
                                "first_day": f"{live['year'] + 1}-01-01", "frozen": frozen}
-        assert (figs["YTD return (MWR)"] is None) is not frozen
+        assert (figs["YTD return"] is None) is not frozen
 
 
 def test_money_rounds_half_up_the_same_way_on_every_panel():

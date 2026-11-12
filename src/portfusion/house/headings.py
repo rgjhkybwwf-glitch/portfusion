@@ -119,6 +119,35 @@ COMMON = {
     "note": "Notes",
 }
 
+#: A FIGURE'S NAME, ONE PLACE FOR IT: every headline figure (`Book.HEADLINE`, keyed by these),
+#: and the names the report gives a figure it shows outside a table. A figure that is a column's
+#: field elsewhere takes that column's word, so the two cannot drift. Not a column registry:
+#: `registered()` holds columns, and `tests/test_figures.py` holds these to the glossary, the
+#: registry and the report's source. `since_start` is a template, filled with the record's first day.
+FIGURES = {
+    "nav": COMMON["nav"],
+    "total_exposure": "Total market exposure",
+    "owned": "— of which securities owned",
+    "notional": "— of which spread-bet notional",
+    "above_nav": "Exposure above net asset value",
+    "owned_cost": "Cost of securities owned",
+    "notional_at_entry": "Spread-bet notional at entry",
+    "unrealised_total": "Unrealised gain / loss",
+    "realised_total": "Realised gain / loss to date",
+    "total_gain": "Total gain",
+    "ytd_income": "YTD income",
+    "capital_employed_total": "Capital employed (opening + deployed)",
+    "ytd": COMMON["ytd"],
+    "since_start": "Return since {} (MWR)",
+    "quarter_return": "Return this quarter",
+    "open_positions": "Open positions",
+    "accounts_positions": "Accounts / positions",
+    "round_trips_closed": "Round trips closed out",
+    # ---- the report's own, outside a table ---------------------------------------------------
+    "position_income": "Position income",   # the quarter's income that names a line (§5)
+    "capital_flows": "Capital in and out",  # the quarter's capital movements
+}
+
 BY_TAB = {
     "Holdings": {},
     "Dashboard": {

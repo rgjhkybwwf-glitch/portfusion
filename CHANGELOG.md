@@ -47,6 +47,10 @@ No figure moves, and there is no migration. Do these when the book's pin moves.
 
 ### Changed
 
+- **"YTD return (MWR)" is "YTD return"**, on the Dashboard, `portfusion record` and the
+  glossary's index: the word Performance already heads the column with. Every figure's name is
+  written once, in `house/headings.py`'s `FIGURES`, and the engine, the Dashboard and the report
+  read it there.
 - **A wide table keeps its links at its right edge** and a row's detail in view, from 70rem.
 - **A row is the way into its detail** (the audit's row 47). A press anywhere on a row of
   Holdings, Round Trips, Trades, Performance or Accounts' income opens its detail in place, and

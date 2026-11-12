@@ -133,7 +133,7 @@ def test_the_report_quotes_the_quarters_own_totals(engine, report_figures):
 
 @needs("buys")
 def test_a_dated_page_cannot_quote_a_year_to_date_figure(engine):
-    """"YTD return (MWR)" and "YTD income" have no value AT A DATE — they are year-to-date by
+    """"YTD return" and "YTD income" have no value AT A DATE — they are year-to-date by
     construction. headline(date) does not return them, so a Q2 page cannot show one by
     reaching for a label that happens to exist."""
     at_quarter = engine.headline(QUARTER)
@@ -263,7 +263,6 @@ RETIRED_HEADINGS = {"GBP", "GBP proceeds", "GBP value", "GBP cost", "Gain %", "E
 GLOSSARY_NOT_HEADINGS: dict[str, str] = {
     # A FIGURE'S WORD, not a column's: Book.HEADLINE's label on the Dashboard, and no table is
     # headed with it.
-    "YTD income": "the Dashboard's figure, Book.HEADLINE's word",
     "Spread-bet notional": "the Dashboard's figure, Holdings' strip and What Changed's block",
 }
 
@@ -274,8 +273,9 @@ def test_the_glossarys_headings_are_the_registrys():
     not the other fails, and so does a heading added without a word agreed in §5.
     """
     import re
-    from portfusion.house.headings import BY_TAB, COMMON
+    from portfusion.house.headings import BY_TAB, COMMON, FIGURES
     shown = set(COMMON.values()).union(*(m.values() for m in BY_TAB.values()))
+    shown |= {name.format("…") for name in FIGURES.values()}
     text = (ROOT / "docs" / "glossary.md").read_text()
     section = text[text.index("## 5 ·"):text.index("## 5b ·")]
     agreed = {word for line in section.splitlines() if line.startswith("| ")
@@ -516,7 +516,6 @@ def _headings_used(monkeypatch) -> set[tuple[str, str]]:
     tables — caught at `heading()` itself, so a column headed outside a `*COLUMNS` constant
     still counts."""
     import portfusion.house.headings as H
-    import portfusion.report.page as RP
     from portfusion.desk import panels
     used, real = set(), H.heading
 
@@ -524,7 +523,6 @@ def _headings_used(monkeypatch) -> set[tuple[str, str]]:
         used.add((tab, field))
         return real(tab, field)
     monkeypatch.setattr(H, "heading", record)
-    monkeypatch.setattr(RP, "heading", record)
     for mod in panels.all_panels():
         used.update((mod.TITLE, f) for f in panels.heads(mod))
         mod.data()
@@ -557,4 +555,59 @@ def test_the_headings_registry_is_not_a_graveyard(monkeypatch):
         assert not gone, f"registered for {tab!r} and headed nowhere on it: {sorted(gone)}"
     assert HEADINGS_AWAITING_A_HOME <= set(H.COMMON), \
         "a field waiting for a home has left the registry: take it off the list"
+
+
+# =====================================================================================
+# A FIGURE'S NAME — house/headings.py's FIGURES, the one place it is written
+# =====================================================================================
+
+#: The names FIGURES holds that are not a headline figure: the report's own, outside a table.
+_REPORT_FIGURES = {"position_income", "capital_flows"}
+
+
+def test_a_figures_name_is_written_once():
+    """EVERY HEADLINE LABEL IS A NAME IN `FIGURES`, keyed to it, and one shared with a column
+    is that column's word: "YTD return" is one string on the Dashboard, Performance and the
+    report. The Dashboard's lead and indented figures are registered ones,
+    so a renamed figure cannot fall out of its band."""
+    from portfusion.desk.panels import dashboard
+    from portfusion.house.headings import COMMON, FIGURES
+    from portfusion.house import precision as P
+    from portfusion.record import rules as D
+    shared = set(FIGURES) & set(COMMON)
+    assert {"nav", "ytd"} <= shared
+    for k in shared:
+        assert FIGURES[k] == COMMON[k], f"{k}: the figure says {FIGURES[k]!r}, its column {COMMON[k]!r}"
+    named = {v for k, v in FIGURES.items() if k not in _REPORT_FIGURES | {"since_start"}}
+    assert Book.SINCE_START == FIGURES["since_start"].format(P.day(D.RECORD_BEGINS))
+    assert set(Book.HEADLINE) == named | {Book.SINCE_START}, \
+        set(Book.HEADLINE) ^ (named | {Book.SINCE_START})
+    assert (dashboard.LEAD | dashboard.INDENT) <= set(Book.HEADLINE), \
+        (dashboard.LEAD | dashboard.INDENT) - set(Book.HEADLINE)
+
+
+def _figure_names_typed(source: str) -> list[str]:
+    """Each FIGURES name found inside a string the source types, its docstrings aside."""
+    from portfusion.house.headings import FIGURES
+    tree = ast.parse(source)
+    docs = {id(n.body[0].value) for n in ast.walk(tree)
+            if isinstance(n, (ast.Module, ast.FunctionDef, ast.ClassDef)) and n.body
+            and isinstance(n.body[0], ast.Expr) and isinstance(n.body[0].value, ast.Constant)}
+    typed = [n.value for n in ast.walk(tree) if isinstance(n, ast.Constant)
+             and isinstance(n.value, str) and id(n) not in docs]
+    names = [v.split("{}")[0].lower() for v in FIGURES.values()]
+    # ONE SPACE FOR ANY RUN OF THEM, and one case: a name broken across the lines of a
+    # triple-quoted string, or capitalised otherwise, is still the name typed.
+    flat = [" ".join(t.split()).lower() for t in typed]
+    return sorted({name for text in flat for name in names if name in text})
+
+
+def test_the_report_types_no_figures_name():
+    """THE REPORT ASKS `FIGURES` FOR A FIGURE'S NAME, never types it: a name typed in
+    `report/page.py` would drift from the Dashboard's. A planted one is found."""
+    source = (SRC / "report" / "page.py").read_text(encoding="utf-8")
+    assert _figure_names_typed('x = "<td>Position income</td>"') == ["position income"]
+    assert _figure_names_typed('x = f"""<td>{a}Position\n      Income</td>"""') == \
+        ["position income"]
+    assert not _figure_names_typed(source), _figure_names_typed(source)
 

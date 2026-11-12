@@ -10,7 +10,7 @@ import html
 
 from portfusion import about, brand
 from portfusion.engine import Book
-from portfusion.house.headings import heading
+from portfusion.house import headings as H
 from portfusion.house.precision import (MONEY_DP, REPORT_MONEY_DP, day, local_price, money, pct,
                                         points)
 from portfusion.record import rules as D
@@ -38,7 +38,7 @@ def _head(tab: str, *cols) -> str:
     for c in cols:
         field, attrs = (c, "") if not isinstance(c, tuple) else c
         cells.append("<td></td>" if field is None
-                     else f"<th{attrs}>{html.escape(heading(tab, field))}</th>")
+                     else f"<th{attrs}>{html.escape(H.heading(tab, field))}</th>")
     return f"<thead><tr>{''.join(cells)}</tr></thead>"
 
 
@@ -111,7 +111,7 @@ def render(quarter_end: str, b: Book | None = None) -> str:
     # One call, so an amount and the basis printed beside it cannot come from different rows.
     navs = b.quarter_nav_rows(quarter_end)
     figures = {f["label"]: f["value"] for f in summary_figures(quarter_end, b)}
-    nav_total = figures["Net asset value"]
+    nav_total = figures[H.FIGURES["nav"]]
     # THE FROZEN COMPOSITION, so the holdings add to the exposure Section 1 publishes.
     lines = b.quarter_lines(quarter_end)
 
@@ -125,12 +125,12 @@ def render(quarter_end: str, b: Book | None = None) -> str:
 
     sections = [
         ("Portfolio summary",
-         _summary(nav_total, figures["Total market exposure"], figures["Return this quarter"],
-                  figures["Open positions"], figures["Accounts / positions"])),
+         _summary(nav_total, figures[H.FIGURES["total_exposure"]], figures[H.FIGURES["quarter_return"]],
+                  figures[H.FIGURES["open_positions"]], figures[H.FIGURES["accounts_positions"]])),
         ("Performance", _performance(b, qr, quarter_end)),
         ("Where the exposure sits", _allocation(b, quarter_end)),
         ("Holdings", _holdings(lines, b.quarter_lines_total(quarter_end),
-                               figures["Total market exposure"])),
+                               figures[H.FIGURES["total_exposure"]])),
         ("Contributors and detractors", _movers(b, quarter_end)),
         ("Investment activity", _activity(b, quarter_end, names)),
         # THE QUARTER'S WINDOW for money and income: after the previous quarter end, up to this
@@ -174,13 +174,13 @@ def _colophon() -> str:
 def _summary(nav_total, exposure, quarter_return, positions, accounts) -> str:
     """The headline figures."""
     return f"""  <div class="stats">
-    <div><div class="v">&pound;{_money(nav_total)}</div><div class="k">Net asset value</div>
+    <div><div class="v">&pound;{_money(nav_total)}</div><div class="k">{H.FIGURES["nav"]}</div>
       <div class="sub">Shares at market plus spread-bet equity.</div></div>
-    <div><div class="v">&pound;{_money(exposure)}</div><div class="k">Total market exposure</div>
+    <div><div class="v">&pound;{_money(exposure)}</div><div class="k">{H.FIGURES["total_exposure"]}</div>
       <div class="sub">Includes spread-bet notional.</div></div>
-    <div><div class="v">{_pct(quarter_return)}</div><div class="k">Return this quarter</div>
+    <div><div class="v">{_pct(quarter_return)}</div><div class="k">{H.FIGURES["quarter_return"]}</div>
       <div class="sub">Modified Dietz, day-weighted.</div></div>
-    <div><div class="v">{accounts:,.0f} / {positions:,.0f}</div><div class="k">Accounts / positions</div>
+    <div><div class="v">{accounts:,.0f} / {positions:,.0f}</div><div class="k">{H.FIGURES["accounts_positions"]}</div>
       <div class="sub">Frozen at the quarter end.</div></div>
   </div>"""
 
@@ -201,7 +201,7 @@ def _performance(b, qr, quarter_end) -> str:
     {_head("Performance", "quarter", *((f, ' class="n"') for f in (
         "opening_nav", "capital_deployed", "return_income", "closing_nav", "gain", "return")))}
     <tbody>{perf}</tbody></table></div>
-  <p {_NOTE}>{heading("Performance", "return_income")}: share-account dividends.
+  <p {_NOTE}>{H.heading("Performance", "return_income")}: share-account dividends.
     A spread bet&rsquo;s is inside its equity.</p>"""
 
 
@@ -271,11 +271,11 @@ def _movers(b, quarter_end) -> str:
   <div class="scroll"><table>{head}<tbody>{contrib_rows(losses)}</tbody></table></div>
   <div class="scroll"><table><tbody>
     <tr><td>Every line together</td><td class="n">{_change(attrib["lines"])}</td></tr>
-    <tr><td>Position income</td><td class="n">{_change(attrib["position_income"])}</td></tr>
+    <tr><td>{H.FIGURES["position_income"]}</td><td class="n">{_change(attrib["position_income"])}</td></tr>
     <tr><td>Not attributed to a line</td><td class="n">{_change(attrib["unattributed"])}</td></tr>
     <tr class="total"><td>The quarter&rsquo;s gain</td><td class="n">{_change(attrib["gain"])}</td></tr>
   </tbody></table></div>
-  <p {_NOTE}>{heading("Holdings", "quarter_gain")}:
+  <p {_NOTE}>{H.heading("Holdings", "quarter_gain")}:
     change in unrealised gain, plus realised.</p>"""
 
 
@@ -313,7 +313,7 @@ def _activity(b, quarter_end, names) -> str:
 
 
 def _cash_and_income(b, start, quarter_end, names) -> str:
-    """Capital in and out, then income and costs, both over the quarter's window."""
+    """The capital moved, then income and costs, both over the quarter's window."""
     moved = _rows(
         f'<tr><td class="dim">{day(r.date)}</td><td>{esc(names[r.account])}</td>'
         f'<td class="n {_sign(r.amount)}">{_money(r.amount, True, MONEY_DP)}</td></tr>'
@@ -327,13 +327,13 @@ def _cash_and_income(b, start, quarter_end, names) -> str:
         + "".join(f'<td class="n">{_money(r[c], places=MONEY_DP)}</td>' for c in cats)
         + f'<td class="n">{_money(r["total"], places=MONEY_DP)}</td></tr>'
         for i, r in enumerate(inc))
-    return f"""  <h3 style="font-size:.95rem;margin:18px 0 0">Capital in and out</h3>
+    return f"""  <h3 style="font-size:.95rem;margin:18px 0 0">{H.FIGURES["capital_flows"]}</h3>
   <div class="scroll"><table>
     {_head("Accounts", "date", "account", ("amount", ' class="n"'))}
     <tbody>{moved}</tbody></table></div>
   <h3 style="font-size:.95rem;margin:18px 0 0">Income and costs</h3>
   <div class="scroll"><table>
-    <thead><tr><th>{heading("Accounts", "account")}</th>{"".join(f'<th class="n">{esc(c)}</th>' for c in cats)}<th class="n">{heading("Accounts", "total")}</th></tr></thead>
+    <thead><tr><th>{H.heading("Accounts", "account")}</th>{"".join(f'<th class="n">{esc(c)}</th>' for c in cats)}<th class="n">{H.heading("Accounts", "total")}</th></tr></thead>
     <tbody>{income}</tbody></table></div>"""
 
 

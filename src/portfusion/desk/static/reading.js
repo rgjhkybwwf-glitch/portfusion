@@ -129,7 +129,7 @@ Object.assign(DRAW, {
       status: [{ label: "Prices", body: `${quiet(`${p.age_days} days old · ${p.marks} marks
         · newest ${esc(day(p.newest))} · oldest ${esc(day(p.oldest))} · spread ${p.spread_days}d`)}
         ${panelLink("price-refresh", "run a refresh")}` },
-        { label: "Year to date", body: quiet(`from ${esc(day(y.first_day))} · MWR on NAV${
+        { label: d.ytd_name, body: quiet(`from ${esc(day(y.first_day))} · MWR on NAV${
           y.frozen ? "" : " · not frozen"}`) },
         ...(d.report ? [{ label: "Report", body: `${reportLink(d.report)}
           ${panelLink("reports", "every report")}` }] : [])],

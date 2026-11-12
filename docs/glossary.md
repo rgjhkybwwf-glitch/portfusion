@@ -123,7 +123,9 @@ not *realized*.
 | A total row | **Total** |
 | Net asset value, as a column | **Net asset value** |
 | Spread-bet notional, on Holdings' strip | **Spread-bet notional** |
+| A headline figure, on the Dashboard and the report's first section | **Net asset value · Total market exposure · — of which securities owned · — of which spread-bet notional · Exposure above net asset value · Cost of securities owned · Spread-bet notional at entry · Unrealised gain / loss · Realised gain / loss to date · Total gain · YTD income · Capital employed (opening + deployed) · YTD return · Return since … (MWR) · Return this quarter · Open positions · Accounts / positions · Round trips closed out** — `house/headings.py`'s `FIGURES`; the since-start return carries the record's first day |
 | The year's income, fees and cash interest included | **YTD income** |
+| A figure the report names outside a table | **Position income** — the quarter's income that names a line · **Capital in and out** — the quarter's capital movements |
 | An income row's kind | **Category** |
 | Reasoning headings | **Why we entered · Why we exited** |
 | A Bench field | **Sale ID · Closes trade · Rate (per £1) · IG contract · Document kind · Reference · Also retires · Renumbers · Symbol · Quote unit · Points per unit · Shares per unit · Epic · Cash (GBP) · Amount** |
@@ -217,7 +219,7 @@ column headings.
 
 | The book says | Practice says | Note |
 |---|---|---|
-| **YTD return (MWR)** | money-weighted return | Modified Dietz, day-weighted; **not comparable to an index**, which is time-weighted |
+| **YTD return** | money-weighted return | Modified Dietz, day-weighted; **not comparable to an index**, which is time-weighted |
 | **Return since … (MWR)**, from the record's first day | linked return | each full year's return, linked with the year to date; not comparable to an index either |
 | **Total market exposure** | gross exposure | no netting: the book holds no short positions |
 | **Capital deployed** | contributions | money into positions, not across the book's boundary |
@@ -267,7 +269,7 @@ starts to define one.
 | Total gain | `capital` | gbp | **no — live only** |
 | YTD income | `capital` | gbp | **no — live only** |
 | Capital employed (opening + deployed) | `capital` | gbp | **no — live only** |
-| YTD return (MWR) | `capital` | pct | **no — live only** |
+| YTD return | `capital` | pct | **no — live only** |
 | Return since the day the record begins (MWR) | `capital` | pct | **no — live only** |
 | Return this quarter | `capital` | pct | **yes — the report only** |
 | Open positions | `count` | count | yes |

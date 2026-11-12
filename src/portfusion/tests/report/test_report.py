@@ -625,7 +625,7 @@ def test_check_is_read_wherever_it_stands(monkeypatch):
 #: table prints, its row labels, the lede and the notice, the evidence words, and the engine's one
 #: sentence it prints (`Book.OPENED_IN_PERIOD`). Headings are house/headings.py's and section
 #: titles are headings, so neither counts. DESK_CHROME_WORDS holds the desk's in the same way.
-REPORT_PROSE_WORDS = 162      # "read from IG on" its day: who a reading came from, and when
+REPORT_PROSE_WORDS = 156      # "read from IG on" its day: who a reading came from, and when
 
 #: Where the page types prose, in report/page.py's own source.
 _PROSE = (r'<p \{_NOTE\}>(.*?)</p>', r'<div class="sub">(.*?)</div>', r'<h3[^>]*>(.*?)</h3>',
