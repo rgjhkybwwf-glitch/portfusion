@@ -218,7 +218,8 @@ changes it.
     a comment counts; the agent copies it into this section before it starts.
   - **Order**: what it waits on, and what waits on it.
   An issue without them is labelled `decision`, with its questions at the end, or is evidence for
-  one that has them.
+  one that has them. An issue the agent files is the exception: it waits under To rank with its
+  questions written but not asked (Asking and answering, below).
 - **The Queue sets the order**: the open issue "Queue: what the nightly agent builds next" (#206)
   ranks the work, unblockers first, then bugs and wrong figures, small safe fixes, features and
   polish. A run takes the first line under Next whose issue is ready and has no open pull
@@ -258,6 +259,12 @@ changes it.
   Done, Not in scope and Order; the next milestone and its area labels; a line under To rank in the
   Queue; and the title made an issue's title. What only the maintainer can settle is asked, with
   `decision`. An idea that is already an open issue's is added to that issue and closed.
+- **A question is asked when its issue is next, not when it is filed.** An issue the agent files,
+  from walk finds or from a comment, carries its questions at its end and its Decisions reads
+  "Open: asked when it is planned"; it takes no `decision`, so it pings no one, and it is not ready.
+  The ready check asks them, with `decision`, when it reaches the issue under Next. An `Idea:` is
+  the exception: the maintainer is waiting on it, so its questions are asked as it is shaped. An
+  answer the maintainer gives early, in a comment, counts when the issue is reached.
 - **An issue's questions are kept few**: what only the maintainer can decide. What the agent can
   settle from the code, the record's rules or an answer already given, it settles and says so.
 
@@ -265,8 +272,8 @@ changes it.
 
 - **It first sorts "Walk finds: to sort" (#220)**: each find onto the open issue that covers it,
   or, with others like it, into a new issue that meets the Definition of Ready, in the next
-  milestone, with its questions and `decision`; a find not worth an issue is struck through with the
-  reason. Each line it handles is struck through, so the list only holds what is unsorted.
+  milestone, under To rank, with its questions written but not asked; a find not worth an issue is
+  struck through with the reason. Each line it handles is struck through, so the list only holds what is unsorted.
 - **Then it shapes each open `Idea:` issue** (Asking and answering, above).
 - **It runs the planning, by day, so the questions reach the maintainer before the night.** It
   takes the first lines under Next as the night run would, up to the routine's number, and skips an
@@ -274,7 +281,8 @@ changes it.
 - **For each, the plan and its check** (below, under Building), against today's `main`. A plan
   with no question is posted as **Plan, checked**, naming the commit of `main` it was checked
   against. A plan that finds a question, or finds the issue's cause or premise no longer holds,
-  asks it and labels the issue `decision`.
+  asks it and labels the issue `decision`; so do the questions an issue was filed with, less any
+  the maintainer has answered in a comment since.
 - **It writes no code**, opens no branch, and changes no label but `decision`.
 
 **The answer run**
@@ -313,17 +321,21 @@ changes it.
   plan or appearing mid-build, is asked at the end of a comment on the issue, the issue is labelled
   `decision`, what is built so far is pushed to its branch with no pull request, and the run moves
   on. The answer starts the issue again, whole, on that branch.
-- **Something a comment raises outside its issue** becomes a new issue labelled `decision`,
-  linked from the issue, and is not built.
+- **Something a comment raises outside its issue** becomes a new issue under To rank, its
+  questions written but not asked, linked from the issue, and is not built.
 - **The cold walk keeps to the pages the change touched**, with jobs about the change. What it
   meets there that the change did not cause goes first onto the open issue that covers it, as
   evidence, and the rest onto "Walk finds: to sort" (#220), one line a find, with no question and no
   ping; the pull request lists both. The ready check sorts that list by day.
 - **A milestone being worked only gets shorter.** An issue the agent files goes in the next
-  milestone, with the area labels of the issue it came from and `decision` until it is answered,
-  unless an issue of the current one cannot close without it.
+  milestone, with the area labels of the issue it came from, unless an issue of the current one
+  cannot close without it.
 - **A CI failure on its pull request** is the agent's to fix, and it waits for the guard's result
-  before it leaves a pull request. When the walk fails only because a page the issue meant to
+  before it leaves a pull request. **It waits by a watch it starts in the background**, polling
+  the checks and the `baselines/<branch>` ref, **never by ending its turn**: nothing on GitHub
+  wakes a run, so a run that ends its turn to wait has stopped. A retake not landed ten minutes
+  after the label is asked for again, `baselines` taken off and put back on (a label already on
+  starts nothing). When the walk fails only because a page the issue meant to
   change looks different, the agent labels the pull request `baselines`: a workflow retakes the
   walk's Linux pictures onto a branch beside it, `baselines/<branch>` (`baselines.yml`); the agent
   merges that in and pushes, which runs the guard, and the pull request lists the pages whose
