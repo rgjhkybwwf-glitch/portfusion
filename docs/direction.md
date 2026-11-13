@@ -26,8 +26,6 @@ changes slowly, and changes only at a milestone's gate, by the maintainer's answ
 
 ## Never
 
-- **Advice to anyone else.** It tells no one what to buy or sell. Analysis of your own record,
-  and your own research linked to it (#30), are in scope.
 - **A feed that writes.** An event reaches the record only through the Bench, and a price only by
   a person's tick on Price Refresh.
 - **A database.** The record is CSV files you can read and diff, unless hosting (#5) reopens it.
