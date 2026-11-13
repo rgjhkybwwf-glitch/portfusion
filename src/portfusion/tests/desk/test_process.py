@@ -4,7 +4,8 @@ from __future__ import annotations
 import pathlib
 import pytest
 from portfusion import engine as _engine
-from portfusion.desk import panels, engine
+from portfusion.desk import app, panels, engine
+from portfusion.desk.panels import _shape
 from harness import needs, desk_script, desk_style
 
 
@@ -286,10 +287,14 @@ def test_every_account_dropdown_offers_individual_accounts_in_the_books_order():
     missing: it reads as "this account holds nothing" when the truth is "that is not an account".
     """
     from portfusion.desk.panels import holdings, round_trips, trades
-    canonical = _engine.Book().account_order()
+    b = _engine.Book()
+    # NAMED BY THEIR LABELS, as every reading page names an account; each one sent back through
+    # its page's own route, which maps it to the register's.
+    canonical = [_shape.labels(b)[a] for a in b.account_order()]
 
-    for name, panel in (("holdings", holdings), ("round-trips", round_trips),
-                        ("trades", trades)):
+    for name, panel, route in (("holdings", holdings, app.holdings),
+                               ("round-trips", round_trips, app.round_trips),
+                               ("trades", trades, app.trades)):
         offered = panel.data()["accounts"]
 
         assert set(offered) <= set(canonical), (
@@ -300,8 +305,11 @@ def test_every_account_dropdown_offers_individual_accounts_in_the_books_order():
         assert ranks == sorted(ranks), (
             f"{name} is not in the book's order: {offered}")
 
+        back = {v: k for k, v in _shape.labels(b).items()}
         for account in offered:
-            assert panel.query(account=account)["rows"], (
+            assert route(account=account)["rows"] == panel.query(account=back[account])["rows"], (
+                f"{name}: {account!r} narrows otherwise than its register name")
+            assert route(account=account)["rows"], (
                 f"{name}: selecting {account!r} returns nothing — a dead option")
 
 

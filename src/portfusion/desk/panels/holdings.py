@@ -100,16 +100,18 @@ def data() -> dict:
 
 
 def query(account: str | None = None, by: str = GROUPINGS[0]) -> dict:
-    """Interrogate the holdings. Both arguments go straight to the engine."""
+    """Interrogate the holdings. Both arguments go straight to the engine; the page reads each
+    account by its label, and the route maps the one it sends back (`desk/app.py`)."""
     if by not in GROUPINGS:
         raise ValueError(f"group by {by!r}; the engine groups by {GROUPINGS}")
     b = engine.book()
     frame = b.holdings(account=account or None, by=by)
     owned, notional = _split(b, account)
     columns = _columns(by)
+    names = _shape.labels(b)
 
     return {
-        "rows": _rows(frame, columns, b, by, account or None),
+        "rows": _rows(frame, columns, b, by, account or None, names),
         "columns": columns,
         "mark_columns": list(MARK_COLUMNS),
         "life_columns": list(LIFE_COLUMNS),
@@ -118,8 +120,9 @@ def query(account: str | None = None, by: str = GROUPINGS[0]) -> dict:
         "groupings": list(GROUPINGS),
         "grouping_words": GROUPING_WORDS,
         "by": by,
-        "account": account or "",
-        "accounts": _shape.accounts(b.holdings(), "accounts", b.account_order()),
+        "account": _shape.label(account or "", names),
+        "accounts": [_shape.label(a, names)
+                     for a in _shape.accounts(b.holdings(), "accounts", b.account_order())],
         "total": int(len(frame)),
         "valued_at": b.valued_at(),
         "owned": owned,
@@ -128,7 +131,8 @@ def query(account: str | None = None, by: str = GROUPINGS[0]) -> dict:
         # editorial one. A note that grows and shrinks with the grouping moves the controls and
         # the table under it; a note that is always the same shape does not, and each grouping
         # has something true and worth saying anyway.
-        "note": ("Securities owned and spread-bet notional are shown apart and never added. A "
+        "note": ("Securities owned and spread-bet notional are shown apart above; a line's "
+                 "weight is its share of all exposure, owned and notional together. A "
                  "spread bet's value is its notional; the equity behind it is the account's. "
                  + ("Grouped by company, one held both ways is one row, held as mixed, so "
                     "the column is not a split by basis; the two figures above are the engine's."
@@ -189,8 +193,9 @@ def _columns(by: str) -> list[str]:
     return [c for c in COLUMNS if by == "ticker" or c not in BY_TICKER_ONLY]
 
 
-def _rows(frame, columns: list, b, by: str, account) -> list[dict]:
-    out = _shape.rows(frame, columns, dates=("opened", "priced_at"))
+def _rows(frame, columns: list, b, by: str, account, names: dict) -> list[dict]:
+    out = _shape.labelled(_shape.rows(frame, columns, dates=("opened", "priced_at")), names,
+                          "accounts")
     held = _shape.rows(frame, HELD_COLUMNS)
     key_col = "company" if by == "issuer" else "ticker"
     keys = list(frame[key_col])
@@ -213,11 +218,14 @@ def _rows(frame, columns: list, b, by: str, account) -> list[dict]:
         tickers = [key] if by == "ticker" else [r["ticker"] for r in row["reasons"]]
         life = lives[lives["company"] == company]
         each = split[split["company"] == company]
-        row["life"] = (_shape.rows(life, LIFE_COLUMNS, dates=("opened",))
-                       + (_shape.rows(each, LIFE_COLUMNS, dates=("opened",)) if len(each) > 1 else []))
+        row["life"] = _shape.labelled(
+            _shape.rows(life, LIFE_COLUMNS, dates=("opened",))
+            + (_shape.rows(each, LIFE_COLUMNS, dates=("opened",)) if len(each) > 1 else []),
+            names, "accounts")
         # FROM THE LIFE'S FIRST PURCHASE, so the rows are the ones its dividends are made of.
         mine = income[income["ticker"].isin(tickers) & (income["date"] >= life["opened"].min())]
         # NEWEST FIRST, across accounts: the engine's order is by account.
-        row["income"] = _shape.rows(mine.sort_values("date", ascending=False, kind="stable"),
-                                    INCOME_COLUMNS, dates=("date",))
+        row["income"] = _shape.labelled(
+            _shape.rows(mine.sort_values("date", ascending=False, kind="stable"),
+                        INCOME_COLUMNS, dates=("date",)), names)
     return out

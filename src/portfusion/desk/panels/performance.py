@@ -75,7 +75,7 @@ def data() -> dict:
         "year": [{c: _shape.plain(v) for c, v in
                   {"account": "The book", "held_as": None, "exposure": b.total_exposure(),
                    **b.totals()}.items() if c in YEAR_COLUMNS}]
-                + _shape.rows(b.by_account(), YEAR_COLUMNS),
+                + _shape.labelled(_shape.rows(b.by_account(), YEAR_COLUMNS), _shape.labels(b)),
         "year_columns": list(YEAR_COLUMNS),
         # THE FIRST DAY THE YEAR COUNTS, the engine's, as the Dashboard prints it.
         "year_from": b.ytd_window()["first_day"],
@@ -96,7 +96,8 @@ def _made_of(b, frame) -> list[dict]:
     rows = [dict(r, account="The book") for r in _shape.rows(frame, COLUMNS)]
     for row, end in zip(rows, frame["quarter_end"].astype(str).str[:10]):
         if end in frozen:
-            row["nav_rows"] = _shape.rows(b.quarter_nav_rows(end), NAV_COLUMNS)
+            row["nav_rows"] = _shape.labelled(_shape.rows(b.quarter_nav_rows(end), NAV_COLUMNS),
+                                              _shape.labels(b))
     return rows
 
 
@@ -108,7 +109,7 @@ def _rests_on(b, frame) -> list[dict]:
     for row, end in zip(rows, frame["quarter_end"].astype(str).str[:10]):
         if end in frozen and row["account"] in frozen[end].index:
             row.update({c: frozen[end].loc[row["account"], c] for c in DETAIL_COLUMNS})
-    return rows
+    return _shape.labelled(rows, _shape.labels(b))
 
 
 def _caveats(b) -> list[dict]:
@@ -125,8 +126,10 @@ def _caveats(b) -> list[dict]:
     # opens on a zero balance, and stops on its own when one opens on a real balance.
     # Column access by name, never itertuples: `return` is a Python keyword and would be renamed.
     frame = b.account_quarter_returns(include_open=True)
+    names = _shape.labels(b)
     for account in sorted({str(a) for a in frame.loc[frame["opened_in_period"], "account"]}):
-        out.append({"scope": f"{account}, its first quarter", "detail": b.OPENED_IN_PERIOD})
+        out.append({"scope": f"{_shape.label(account, names)}, its first quarter",
+                    "detail": b.OPENED_IN_PERIOD})
     return out
 
 
