@@ -46,7 +46,8 @@ Object.assign(DRAW, {
           ${panelLink("reports", "every report")}` }] : [])],
       /* THE FIGURES BESIDE WHAT NEEDS ATTENTION, so the page is one screen. */
       work: `<div class="glance">
-        ${figures(rest.map((f) => [f.label, fmt(f.value, f.kind), f.indent ? "indent" : ""]))}
+        ${figures(rest.map((f) => [f.label,
+          `${fmt(f.value, f.kind)}${f.panel ? ` ${panelLink(f.panel)}` : ""}`, f.indent ? "indent" : ""]))}
         <section><h2>Needs attention</h2><ul class="items">${items}</ul></section></div>`,
     });
   },
