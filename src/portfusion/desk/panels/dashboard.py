@@ -25,6 +25,8 @@ ORDER = 10
 #: one before. Every label, its order and its unit are `Book.HEADLINE`'s.
 LEAD = frozenset(H.FIGURES[k] for k in ("nav", "total_exposure", "ytd"))
 INDENT = frozenset(H.FIGURES[k] for k in ("owned", "notional"))
+#: A FIGURE THAT LEADS TO ITS PAGE: the page that lists what it counts.
+LEADS_TO = {H.FIGURES["round_trips_closed"]: "round-trips"}
 
 
 def data() -> dict:
@@ -47,7 +49,8 @@ def data() -> dict:
                 "kind": kind, "basis": basis,
                 "notional_basis": basis in b.NOTIONAL_BASES,
                 **({"lead": True} if label in LEAD else {}),
-                **({"indent": True} if label in INDENT else {})}
+                **({"indent": True} if label in INDENT else {}),
+                **({"panel": LEADS_TO[label]} if label in LEADS_TO else {})}
 
     # THE REGISTRY'S FIGURES IN THE REGISTRY'S ORDER: net asset value leads, as on the report, and
     # exposure follows with the two parts that make it up. A quarter's own is the report's.
