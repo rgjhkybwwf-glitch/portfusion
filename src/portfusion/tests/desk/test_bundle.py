@@ -127,7 +127,7 @@ def test_a_comment_is_still_published_and_still_scanned(monkeypatch):
     from portfusion.desk import publish
     monkeypatch.setattr(publish, "record_values", lambda: {"Jane Holder", "ZZTOP", "QQ"})
     tree = {"/static/app.js": b"/* priced for Jane Holder */ const x = 'ZZTOP';\n// QQ\nlet q = 1;",
-            "/static/app.css": b"/* QQ */ .QQ { }"}
+            "/static/kit.css": b"/* QQ */ .QQ { }"}
     said = publish.leaks(tree)
     assert any("'Jane Holder'" in s for s in said) and any("'ZZTOP'" in s for s in said), said
     assert [s for s in said if "'QQ'" in s] == [], said
