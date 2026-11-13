@@ -18,6 +18,9 @@ class Positions(Core):
         cannot disagree. THE NEWEST MARK, not today: printing today's date over marks
         struck days ago would be the more confident lie. The spread between newest and oldest is
         on the Dashboard's price line. A book with no mark yet stands where its record begins.
+
+        EVERY DAYS HELD STILL OPEN ENDS HERE, never at the clock's day, so a record reads the same
+        tomorrow; one opened after it has not begun by then, and reads 0.
         """
         return self.price_ageing()["newest"] or self.baseline.date().isoformat()
 
@@ -195,7 +198,8 @@ class Positions(Core):
         out["unrealised_pct"] = (out["unrealised"] / out["cost"]).where(out["cost"] != 0)
         total = out["value"].sum()
         out["weight"] = out["value"] / total if total else float("nan")
-        out["days_held"] = (pd.Timestamp.today().normalize() - out["opened"]).dt.days
+        # DAYS HELD END AT `valued_at()`, whose docstring says why.
+        out["days_held"] = (pd.Timestamp(self.valued_at()) - out["opened"]).dt.days.clip(lower=0)
         if by != "issuer":
             # A bet's size in its own terms: the ledger's qty on a bet IS its stake per point.
             out["stake"] = out["qty"].where(out["held_as"].eq("spread bet"))

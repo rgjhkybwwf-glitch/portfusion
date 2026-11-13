@@ -6,13 +6,15 @@
 # waiting for an approval no one gives; the author's push starts the guard as any push does.
 # Pictures are kept for Linux alone (docs/testing.md).
 #
-# Only a branch of this repository: a fork's pull request gets no token that can push.
+# Only a branch of this repository: a fork's pull request gets no token that can push. When the pull
+# request closes, merged or not, its `baselines/<branch>` is deleted: GitHub's own clean-up deletes a
+# pull request's branch, never the one beside it.
 
 name: baselines
 
 on:
   pull_request:
-    types: [labeled]
+    types: [labeled, closed]
 
 permissions:
   contents: write
@@ -21,7 +23,8 @@ permissions:
 jobs:
   retake:
     if: >-
-      github.event.label.name == 'baselines'
+      github.event.action == 'labeled'
+      && github.event.label.name == 'baselines'
       && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -59,3 +62,23 @@ jobs:
               commit -q -m "Retake the walk's Linux pictures: $pages"
           git push --force origin "HEAD:refs/heads/baselines/$BRANCH"
           gh pr comment "$PR" --body "🤖 **PortFusion agent** · the walk's Linux pictures are retaken for: $pages, on \`baselines/$BRANCH\`. Merge it into the branch (\`git fetch origin baselines/$BRANCH && git merge FETCH_HEAD\`) and push: the guard then runs as on any push."
+
+  tidy:
+    if: >-
+      github.event.action == 'closed'
+      && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Delete the pictures' branch beside it, if there is one
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          if gh api "repos/$REPO/git/refs/heads/baselines/$BRANCH" --silent 2>/dev/null; then
+            gh api -X DELETE "repos/$REPO/git/refs/heads/baselines/$BRANCH"
+            echo "Deleted baselines/$BRANCH."
+          else
+            echo "No baselines/$BRANCH to delete."
+          fi

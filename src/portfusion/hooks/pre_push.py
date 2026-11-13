@@ -35,10 +35,15 @@ AND IT WRITES UP WHAT IT CHANGES: a branch that changes the app since it left `o
 tests apart, also changes `CHANGELOG.md`, or the push is refused (`unlogged`). The version beside
 it is `test_brand.py`'s to hold.
 
+AND IT NAMES THE GUIDES IT LEAVES BEHIND, and lets the push go: a guide that names a file the
+branch changed, when the guide itself did not change (`behind`). Whether its words are still right
+is a reader's call; the release's read starts from these.
+
 Held by tests/test_hooks.py.
 """
 import os
 import pathlib
+import re
 import subprocess
 import sys
 
@@ -142,9 +147,86 @@ def written_up(lines: list[str], checkout) -> int:
     return 0
 
 
+#: The guides a push of this checkout reads for what it leaves behind: the way in, and `docs/`
+#: but the audit's evidence log, which records what was seen and is not kept current.
+GUIDES, NOT_GUIDES = ("README.md", "CONTRIBUTING.md", "CLAUDE.md", "docs/*.md"), ("docs/ux-audit.md",)
+
+
+def guide_pointers(text: str) -> list[tuple[int, str]]:
+    """(line, pointer) for every path a guide names in code or as a link target.
+
+    A fenced block is blanked line for line so the numbers stay true. A span holding a space is a
+    command and one holding `*` or `<` a pattern; a bare extension names a kind of file, not one."""
+    text = re.sub(r"```.*?```", lambda m: "\n" * m.group().count("\n"), text, flags=re.S)
+    out = []
+    for n, line in enumerate(text.splitlines(), 1):
+        for code, link in re.findall(r"`([^`\n]+)`|\]\(([^)\s]+)\)", line):
+            t = (code or link).strip()
+            if re.search(r"[\s*<]", t) or t.startswith(("~", "/", ":", "#", "http")):
+                continue
+            path = re.split(r":+", t, maxsplit=1)[0]
+            if re.fullmatch(r"\.\w+", path):
+                continue
+            if (re.search(r"\.(py|md|csv|json|css|js|html|ini|toml|txt|xlsx)$", path)
+                    or ("/" in path and re.fullmatch(r"[\w./-]+", path))):
+                out.append((n, t))
+    return out
+
+
+def behind(sha: str, checkout, base: str = "origin/main") -> dict[str, list[str]]:
+    """Each guide naming a file `sha` changes since it left `base`, when the guide is not among
+    the changes, with the files it names; empty when `base` is not here to ask. A guide names a
+    file by its path from the root or from the guide's folder, or by a tail only that file has, or
+    only the one nearest the root. A changed guide is a guide, not a file left behind."""
+    root = pathlib.Path(checkout)
+    run = subprocess.run(["git", "diff", "--name-only", f"{base}...{sha}"], cwd=root,
+                         capture_output=True, text=True)
+    if run.returncode:
+        return {}
+    changed = set(run.stdout.split())
+    # THE GUIDES AS `sha` HOLDS THEM, not as the working tree does: a draft is not pushed.
+    listed = subprocess.run(["git", "ls-tree", "-r", "--name-only", sha], cwd=root,
+                            capture_output=True, text=True).stdout.split()
+    guides = sorted({p for g in GUIDES for p in listed if pathlib.PurePosixPath(p).match(g)
+                     and p.count("/") == g.count("/")} - set(NOT_GUIDES) - changed)
+
+    def names(pointer: str, here: str) -> str | None:
+        path = re.split(r":+", pointer, maxsplit=1)[0].rstrip("/")
+        for c in (path, os.path.normpath(f"{here}/{path}")):
+            if c in listed:
+                return c
+        tails = sorted((p for p in listed if p.endswith("/" + path)), key=lambda p: p.count("/"))
+        if len(tails) == 1 or (tails and tails[0].count("/") < tails[1].count("/")):
+            return tails[0]
+        return None
+
+    out = {}
+    for guide in guides:
+        here = str(pathlib.PurePosixPath(guide).parent)
+        text = subprocess.run(["git", "show", f"{sha}:{guide}"], cwd=root, capture_output=True,
+                              text=True, encoding="utf-8", errors="replace").stdout
+        named = {names(p, here) for _, p in guide_pointers(text)}
+        left = sorted(n for n in named & changed if not n.endswith(".md"))
+        if left:
+            out[guide] = left
+    return out
+
+
+def said_behind(lines: list[str], checkout) -> None:
+    """Name the guides each branch pushed leaves behind. It never refuses."""
+    for line in lines:
+        fields = line.split()
+        if len(fields) != 4 or fields[1] == ZERO:
+            continue
+        found = behind(fields[1], checkout)
+        if found:
+            log.info(f"pre-push: these guides name files {fields[0]} changed, and did not "
+                     f"change:\n  " + "\n  ".join(f"{g}: {', '.join(fs)}" for g, fs in found.items()))
+
+
 def main(argv: list[str], lines: list[str], checkout=None) -> int:
-    """`checkout`, given only by a checkout's own hook pushing that checkout, adds `written_up`
-    and `what_leaves`."""
+    """`checkout`, given only by a checkout's own hook pushing that checkout, adds `said_behind`,
+    `written_up` and `what_leaves`."""
     remote = argv[0] if argv else "the remote"
     problems = []
     for line in lines:
@@ -156,7 +238,10 @@ def main(argv: list[str], lines: list[str], checkout=None) -> int:
         if refused and not (refused[1] and approved(remote_sha)):
             problems.append((*refused, remote_sha))
     if not problems:
-        return (written_up(lines, checkout) or what_leaves(checkout)) if checkout else 0
+        if not checkout:
+            return 0
+        said_behind(lines, checkout)
+        return written_up(lines, checkout) or what_leaves(checkout)
     log.error(f"pre-push: REFUSED. This push to {remote} would take something away from main.\n")
     for why, _, _ in problems:
         log.error(f"  {why}")

@@ -1,8 +1,19 @@
-# THE MAINTAINER'S ANSWER STARTS THE WORK. When the owner answers an issue the agent stopped on (it
-# carries `decision`) with a comment that begins "Q1:" or "All as recommended", this fires the
-# routine "PortFusion answer" on claude.ai, which works that one issue (CONTRIBUTING.md, The answer
-# run). Only the issue's number and link are sent, never the comment: the routine reads the issue
-# itself.
+# THE MAINTAINER'S ANSWERS START THE WORK, IN A BATCH. When the owner answers an issue the agent
+# stopped on (it carries `decision`) with a comment that begins "Q1:" or "All as recommended", this
+# waits ten minutes, then fires the routine "PortFusion answer" on claude.ai, which works every issue
+# answered (CONTRIBUTING.md, The answer run). Another answer within the ten minutes cancels the wait
+# and starts it again, so answers given together make one run. Nothing of a comment is sent: the
+# routine finds the answered issues itself.
+#
+# THE MAINTAINER'S CHANGE OF DIRECTION. A reply from the owner that begins "Change:", on an issue or
+# on a pull request from a `claude/` branch, holds the work first: the issue takes `decision`, the
+# pull request loses its auto-merge. Then it starts the answer run as an answer does, which reads
+# the change and rewrites the issue to match (CONTRIBUTING.md, Asking and answering). A label set by
+# this token starts no workflow, so the hold pings no one.
+#
+# THE MAINTAINER'S YES ON A PULL REQUEST. A reply from the owner that begins "yes", on a pull request
+# from a `claude/` branch, turns its auto-merge on: GitHub merges it once `guard` is green. The merge
+# is this token's own and starts no workflow, as Dependabot's does (dependabot-merge.yml).
 #
 # The routine's fire URL and token are the repository's secrets ROUTINE_ANSWER_URL and
 # ROUTINE_ANSWER_TOKEN; without them this says so in its log and does nothing. The agent writes as
@@ -16,41 +27,111 @@ on:
 
 permissions: {}
 
-concurrency:
-  group: answer-${{ github.event.issue.number }}
-  cancel-in-progress: false
-
 jobs:
-  fire:
+  # Whether this comment is an answer, outside the wait's queue: a comment that is not one never
+  # cancels a wait already running for one that is.
+  read:
     if: >-
-      !github.event.issue.pull_request
-      && github.event.comment.user.login == github.repository_owner
-      && contains(github.event.issue.labels.*.name, 'decision')
+      github.event.comment.user.login == github.repository_owner
       && !contains(github.event.comment.body, 'claude.ai/code')
     runs-on: ubuntu-24.04
-    timeout-minutes: 5
+    timeout-minutes: 3
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    outputs:
+      answer: ${{ steps.read.outputs.answer }}
     steps:
-      - name: Start the answer run, if this comment is an answer
+      # A reply taken is marked 👀 at once, so the owner sees it was taken before the quiet minutes end.
+      - name: Is this comment an answer or a change?
+        id: read
         env:
+          GH_TOKEN: ${{ github.token }}
           BODY: ${{ github.event.comment.body }}
+          REPO: ${{ github.repository }}
+          COMMENT: ${{ github.event.comment.id }}
+          NUMBER: ${{ github.event.issue.number }}
+          IS_PR: ${{ github.event.issue.pull_request && 'yes' || 'no' }}
+          DECISION: ${{ contains(github.event.issue.labels.*.name, 'decision') && 'yes' || 'no' }}
+        run: |
+          first=$(printf '%s\n' "$BODY" | sed -e 's/^[[:space:]]*//' | grep -m1 -v '^$' || true)
+          if printf '%s' "$first" | grep -qiE '^change[[:space:]]*:'; then
+            if [ "$IS_PR" = yes ]; then
+              head=$(gh pr view "$NUMBER" --repo "$REPO" --json headRefName --jq .headRefName)
+              case "$head" in claude/*) ;; *) echo "A change on a pull request not the agent's ($head): left alone."; exit 0 ;; esac
+              gh pr merge "$NUMBER" --repo "$REPO" --disable-auto || true
+            else
+              gh issue edit "$NUMBER" --repo "$REPO" --add-label decision
+            fi
+            echo "A change on #$NUMBER: held, and the answer run will read it."
+          elif [ "$IS_PR" = no ] && [ "$DECISION" = yes ] \
+               && printf '%s' "$first" | grep -qiE '^(q[0-9]+[[:space:]]*:|all as recommended)'; then
+            echo "An answer on #$NUMBER."
+          else
+            echo "Neither an answer on a decision issue nor a change: nothing to do."
+            exit 0
+          fi
+          echo "answer=yes" >> "$GITHUB_OUTPUT"
+          gh api -X POST "repos/$REPO/issues/comments/$COMMENT/reactions" -f content=eyes --silent || true
+
+  fire:
+    needs: read
+    if: needs.read.outputs.answer == 'yes'
+    concurrency:
+      group: answer
+      cancel-in-progress: true
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Wait ten quiet minutes, then start the answer run
+        env:
           NUMBER: ${{ github.event.issue.number }}
           ISSUE: ${{ github.event.issue.html_url }}
           URL: ${{ secrets.ROUTINE_ANSWER_URL }}
           TOKEN: ${{ secrets.ROUTINE_ANSWER_TOKEN }}
         run: |
-          first=$(printf '%s\n' "$BODY" | sed -e 's/^[[:space:]]*//' | grep -m1 -v '^$' || true)
-          if ! printf '%s' "$first" | grep -qiE '^(q[0-9]+[[:space:]]*:|all as recommended)'; then
-            echo "Not an answer: its first line is neither \"Q1: …\" nor \"All as recommended\"."
-            exit 0
-          fi
           if [ -z "$URL" ] || [ -z "$TOKEN" ]; then
             echo "::warning::An answer on #$NUMBER, but ROUTINE_ANSWER_URL or ROUTINE_ANSWER_TOKEN is not set."
             exit 0
           fi
-          payload=$(jq -n --arg t "Issue #$NUMBER was answered: $ISSUE" '{text: $t}')
-          curl -sS --fail-with-body -X POST "$URL" \
+          echo "A reply on #$NUMBER: the run starts in ten minutes, unless another reply comes first."
+          sleep 600
+          payload=$(jq -n --arg t "Answers were given, the last on #$NUMBER ($ISSUE)." '{text: $t}')
+          # A busy or briefly unavailable endpoint (5xx) is tried again, up to four more times.
+          curl -sS --fail-with-body --retry 4 --retry-delay 30 --retry-all-errors -X POST "$URL" \
             -H "Authorization: Bearer $TOKEN" \
             -H "anthropic-beta: experimental-cc-routine-2026-04-01" \
             -H "anthropic-version: 2023-06-01" \
             -H "Content-Type: application/json" \
             -d "$payload" | jq -r '.claude_code_session_url // .'
+
+  approve:
+    if: >-
+      github.event.issue.pull_request
+      && github.event.comment.user.login == github.repository_owner
+      && !contains(github.event.comment.body, 'claude.ai/code')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Turn auto-merge on, if this is the owner's yes on an agent's pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BODY: ${{ github.event.comment.body }}
+          PR: ${{ github.event.issue.html_url }}
+        run: |
+          first=$(printf '%s\n' "$BODY" | sed -e 's/^[[:space:]]*//' | grep -m1 -v '^$' || true)
+          if ! printf '%s' "$first" | grep -qiE '^yes\b'; then
+            echo "Not a yes: its first line does not begin \"yes\"."
+            exit 0
+          fi
+          head=$(gh pr view "$PR" --json headRefName --jq .headRefName)
+          case "$head" in
+            claude/*) ;;
+            *) echo "Not an agent's pull request ($head): left alone."; exit 0 ;;
+          esac
+          gh pr merge --auto --merge "$PR"
+          gh pr comment "$PR" --body "🤖 **PortFusion agent** · the yes is taken: auto-merge is on, and this merges once \`guard\` is green."
