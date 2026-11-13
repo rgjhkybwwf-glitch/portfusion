@@ -481,9 +481,12 @@ def test_income_rows_sum_to_the_book_income(book):
     y = book.year_attribution()
     in_bets = rows[rows["account"].map(book.is_spread_bet).astype(bool)]
     ties(in_bets["amount"].sum(), y["equity_income"], "the income inside spread-bet equity")
-    ties(y["trading_gain"] + y["equity_income"] + y["unattributed"], y["capital_growth"],
-         "the year's parts")
-    ties(y["unattributed"], _opening_apart(book), "the frozen opening against its marks")
+    # THE PARTS NEED AN OPENING TO PART FROM: with none frozen, capital growth is blank
+    # (`test_the_year_to_date_is_blank_until_its_opening_is_frozen`).
+    if book.ytd_window()["frozen"]:
+        ties(y["trading_gain"] + y["equity_income"] + y["unattributed"], y["capital_growth"],
+             "the year's parts")
+        ties(y["unattributed"], _opening_apart(book), "the frozen opening against its marks")
     ties(y["position_income"], float(book.position_income(year=book.ytd_year()).sum()),
          "the year's position income")
 
