@@ -5,6 +5,12 @@
 # and starts it again, so answers given together make one run. Nothing of a comment is sent: the
 # routine finds the answered issues itself.
 #
+# THE MAINTAINER'S CHANGE OF DIRECTION. A reply from the owner that begins "Change:", on an issue or
+# on a pull request from a `claude/` branch, holds the work first: the issue takes `decision`, the
+# pull request loses its auto-merge. Then it starts the answer run as an answer does, which reads
+# the change and rewrites the issue to match (CONTRIBUTING.md, Asking and answering). A label set by
+# this token starts no workflow, so the hold pings no one.
+#
 # THE MAINTAINER'S YES ON A PULL REQUEST. A reply from the owner that begins "yes", on a pull request
 # from a `claude/` branch, turns its auto-merge on: GitHub merges it once `guard` is green. The merge
 # is this token's own and starts no workflow, as Dependabot's does (dependabot-merge.yml).
@@ -26,33 +32,48 @@ jobs:
   # cancels a wait already running for one that is.
   read:
     if: >-
-      !github.event.issue.pull_request
-      && github.event.comment.user.login == github.repository_owner
-      && contains(github.event.issue.labels.*.name, 'decision')
+      github.event.comment.user.login == github.repository_owner
       && !contains(github.event.comment.body, 'claude.ai/code')
     runs-on: ubuntu-24.04
-    timeout-minutes: 2
+    timeout-minutes: 3
     permissions:
+      contents: write
       issues: write
+      pull-requests: write
     outputs:
       answer: ${{ steps.read.outputs.answer }}
     steps:
-      # An answer is marked 👀 at once, so the owner sees it was taken before the quiet minutes end.
-      - name: Is this comment an answer?
+      # A reply taken is marked 👀 at once, so the owner sees it was taken before the quiet minutes end.
+      - name: Is this comment an answer or a change?
         id: read
         env:
           GH_TOKEN: ${{ github.token }}
           BODY: ${{ github.event.comment.body }}
           REPO: ${{ github.repository }}
           COMMENT: ${{ github.event.comment.id }}
+          NUMBER: ${{ github.event.issue.number }}
+          IS_PR: ${{ github.event.issue.pull_request && 'yes' || 'no' }}
+          DECISION: ${{ contains(github.event.issue.labels.*.name, 'decision') && 'yes' || 'no' }}
         run: |
           first=$(printf '%s\n' "$BODY" | sed -e 's/^[[:space:]]*//' | grep -m1 -v '^$' || true)
-          if printf '%s' "$first" | grep -qiE '^(q[0-9]+[[:space:]]*:|all as recommended)'; then
-            echo "answer=yes" >> "$GITHUB_OUTPUT"
-            gh api -X POST "repos/$REPO/issues/comments/$COMMENT/reactions" -f content=eyes --silent || true
+          if printf '%s' "$first" | grep -qiE '^change[[:space:]]*:'; then
+            if [ "$IS_PR" = yes ]; then
+              head=$(gh pr view "$NUMBER" --repo "$REPO" --json headRefName --jq .headRefName)
+              case "$head" in claude/*) ;; *) echo "A change on a pull request not the agent's ($head): left alone."; exit 0 ;; esac
+              gh pr merge "$NUMBER" --repo "$REPO" --disable-auto || true
+            else
+              gh issue edit "$NUMBER" --repo "$REPO" --add-label decision
+            fi
+            echo "A change on #$NUMBER: held, and the answer run will read it."
+          elif [ "$IS_PR" = no ] && [ "$DECISION" = yes ] \
+               && printf '%s' "$first" | grep -qiE '^(q[0-9]+[[:space:]]*:|all as recommended)'; then
+            echo "An answer on #$NUMBER."
           else
-            echo "Not an answer: its first line is neither \"Q1: …\" nor \"All as recommended\"."
+            echo "Neither an answer on a decision issue nor a change: nothing to do."
+            exit 0
           fi
+          echo "answer=yes" >> "$GITHUB_OUTPUT"
+          gh api -X POST "repos/$REPO/issues/comments/$COMMENT/reactions" -f content=eyes --silent || true
 
   fire:
     needs: read
@@ -74,7 +95,7 @@ jobs:
             echo "::warning::An answer on #$NUMBER, but ROUTINE_ANSWER_URL or ROUTINE_ANSWER_TOKEN is not set."
             exit 0
           fi
-          echo "An answer on #$NUMBER: the run starts in ten minutes, unless another answer comes first."
+          echo "A reply on #$NUMBER: the run starts in ten minutes, unless another reply comes first."
           sleep 600
           payload=$(jq -n --arg t "Answers were given, the last on #$NUMBER ($ISSUE)." '{text: $t}')
           # A busy or briefly unavailable endpoint (5xx) is tried again, up to four more times.
