@@ -34,7 +34,7 @@ jobs:
           ISSUE: ${{ github.event.issue.html_url }}
           OWNER: ${{ github.repository_owner }}
         run: |
-          gh issue comment "$ISSUE" --body "🤖 **PortFusion agent** · @$OWNER, a decision is needed here: the questions are under \"Questions for you\", at the end of the issue or of the comment above. Reply with a line each, \"Q1: a\", or \"All as recommended\", then take the \`decision\` label off: that is the yes."
+          gh issue comment "$ISSUE" --body "🤖 **PortFusion agent** · @$OWNER, a decision is needed here: the questions are under \"Questions for you\", at the end of the issue or of the comment above. Reply with a line each, \"Q1: a\", or \"All as recommended\": your reply is the yes, and the agent starts on it."
 
   review:
     if: >-
