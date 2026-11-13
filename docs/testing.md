@@ -81,7 +81,8 @@ platform; on a Mac it walks the pages without comparing them, since a Mac sets t
 changed on purpose fails the guard until its baseline is taken again, in the pull request that
 changes the page: the label `baselines` on the pull request has `baselines.yml` walk the branch on
 GitHub and commit each page's `<page>-linux.png` to `baselines/<branch>`; merge that in
-(`git fetch origin baselines/<branch> && git merge FETCH_HEAD`) and push, and the guard runs. By hand, the guard's failed
+(`git fetch origin baselines/<branch> && git merge FETCH_HEAD`) and push, and the guard runs; the
+branch beside it is deleted when the pull request closes. By hand, the guard's failed
 walk uploads what it saw: `gh run download <run> -n desk-walk`, and the page's `-actual.png` is its
 new baseline. [`environment.md`](environment.md) sets the walk up.
 
