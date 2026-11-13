@@ -192,7 +192,8 @@ changes it.
   - **The ready check**, by day: plans the next issues and asks their questions before the night.
     It writes no code.
   - **The night run**, at 02:00 UK time: builds the ready issues.
-  - **The answer run**, when the maintainer answers: works the one issue answered.
+  - **The answer run**, ten quiet minutes after the maintainer's last answer: works the issues
+    answered.
 - **A run has a cap.** No more issues than the routine names, and no issue past a second attempt
   at a green guard: one that will not go green is left as a draft pull request with what blocks it
   at the top, and the run moves on. A run that is going nowhere stops and says so; it does not file
@@ -255,12 +256,16 @@ changes it.
 
 **The answer run**
 
-- **The maintainer's answer starts it.** `answer.yml` sees the owner's comment on an issue labelled
-  `decision` that begins `Q1:` or `All as recommended`, and fires the routine "PortFusion answer",
-  naming the issue; nothing of the comment is passed but the issue's number.
-- **It works that one issue alone**: reads it whole, acts on the answer (above), and builds it as
-  the night run would. If the issue is still not ready, a question open or a "waits" issue open, it
-  says which on the issue and stops; the night run takes it when it is.
+- **The maintainer's answers start it, in a batch.** `answer.yml` sees the owner's comment on an
+  issue labelled `decision` that begins `Q1:` or `All as recommended`, waits ten minutes, and fires
+  the routine "PortFusion answer"; an answer within those minutes starts the wait again, so answers
+  given together make one run. Nothing of a comment is passed.
+- **It first claims every answered issue**: each open issue labelled `decision` whose owner's
+  latest comment answers it. It acts on each answer (above), taking `decision` off, before it builds
+  any, so a run started later does not take the same issue.
+- **Then it builds them one after another, in Queue order**, those not in the Queue last, as the
+  night run would, up to the routine's number. One still not ready, a question open or a "waits"
+  issue open, it says which on the issue and leaves; the night run takes it when it is.
 - **An issue with a branch of its own continues on it**, brought level with `main`. An open pull
   request from it is completed to the whole issue, its "Part of #n" made "Closes #n", and merges
   itself if it is clean.
