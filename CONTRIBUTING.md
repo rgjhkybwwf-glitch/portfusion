@@ -330,7 +330,8 @@ changes it.
   turns its auto-merge on as it opens it, and GitHub merges it once `guard` is green. Pictures
   retaken for a page the issue meant to change keep it clean.
 - **Any other waits for the maintainer's yes**, auto-merge off, with what is needed from them at
-  the top of its description.
+  the top of its description. The yes is a reply beginning `yes` on the pull request, which turns
+  its auto-merge on (`answer.yml`), or the button itself.
 
 **Telling the maintainer**
 

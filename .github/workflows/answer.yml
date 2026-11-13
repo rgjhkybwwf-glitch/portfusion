@@ -5,6 +5,10 @@
 # and starts it again, so answers given together make one run. Nothing of a comment is sent: the
 # routine finds the answered issues itself.
 #
+# THE MAINTAINER'S YES ON A PULL REQUEST. A reply from the owner that begins "yes", on a pull request
+# from a `claude/` branch, turns its auto-merge on: GitHub merges it once `guard` is green. The merge
+# is this token's own and starts no workflow, as Dependabot's does (dependabot-merge.yml).
+#
 # The routine's fire URL and token are the repository's secrets ROUTINE_ANSWER_URL and
 # ROUTINE_ANSWER_TOKEN; without them this says so in its log and does nothing. The agent writes as
 # the owner's account too, so a comment carrying the agent's footer is never taken for an answer.
@@ -72,3 +76,33 @@ jobs:
             -H "anthropic-version: 2023-06-01" \
             -H "Content-Type: application/json" \
             -d "$payload" | jq -r '.claude_code_session_url // .'
+
+  approve:
+    if: >-
+      github.event.issue.pull_request
+      && github.event.comment.user.login == github.repository_owner
+      && !contains(github.event.comment.body, 'claude.ai/code')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Turn auto-merge on, if this is the owner's yes on an agent's pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BODY: ${{ github.event.comment.body }}
+          PR: ${{ github.event.issue.html_url }}
+        run: |
+          first=$(printf '%s\n' "$BODY" | sed -e 's/^[[:space:]]*//' | grep -m1 -v '^$' || true)
+          if ! printf '%s' "$first" | grep -qiE '^yes\b'; then
+            echo "Not a yes: its first line does not begin \"yes\"."
+            exit 0
+          fi
+          head=$(gh pr view "$PR" --json headRefName --jq .headRefName)
+          case "$head" in
+            claude/*) ;;
+            *) echo "Not an agent's pull request ($head): left alone."; exit 0 ;;
+          esac
+          gh pr merge --auto --merge "$PR"
+          gh pr comment "$PR" --body "🤖 **PortFusion agent** · the yes is taken: auto-merge is on, and this merges once \`guard\` is green."
