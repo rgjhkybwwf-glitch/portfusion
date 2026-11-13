@@ -251,32 +251,46 @@ function markOverflow() {
   const live = new Set([...document.querySelectorAll("#main table[data-sorts]")]
     .map((t) => Number(t.dataset.sorts)));
   [...SORTED.keys()].forEach((k) => { if (!live.has(k)) SORTED.delete(k); });
-  /* Every box measured, then every box told: a write between two readings lays the page out
-     again for each. THE PINNED HEAD AND COLUMNS are measured too, for the box's
-     `scroll-padding` (tables.css), so a cell reached by Tab is scrolled clear of them. */
-  const pinned = (c) => (c && getComputedStyle(c).position === "sticky" ? c : null);
-  [...document.querySelectorAll("#main .scroll")].map((b) => {
-    const t = b.querySelector(":scope > table");
-    const rows = ":scope > tbody > tr:not(.detail-row):not(.devices)";
-    return [b, b.scrollWidth, b.clientWidth, b.scrollLeft, t?.tHead?.offsetHeight || 0,
-            pinned(t?.querySelector(`${rows} > td:first-child`))?.offsetWidth || 0,
-            pinned(t?.querySelector(`${rows} > td:last-child`))?.offsetWidth || 0];
-  }).forEach(([b, full, seen, at, top, left, right]) => {
-    b.classList.toggle("overflows", full > seen + 1);
-    markEdges(b, full, seen, at);
-    b.style.setProperty("--box-width", `${seen}px`);
-    b.style.setProperty("--pin-top", `${top}px`);
-    b.style.setProperty("--pin-left", `${left}px`);
-    b.style.setProperty("--pin-right", `${right}px`);
-  });
+  /* A BOX IN A ROW'S DETAIL is marked after the box it sits in, whose width (`--box-width`) is
+     its room. */
+  const all = [...document.querySelectorAll("#main .scroll")];
+  const inner = (b) => !!b.parentElement.closest(".scroll");
+  markBoxes(all.filter((b) => !inner(b)));
+  markBoxes(all.filter(inner));
 }
 window.addEventListener("resize", markOverflow);
 
+/* Every box measured, then every box told: a write between two readings lays the page out
+   again for each. THE PINNED HEAD AND COLUMNS are measured too, for the box's `scroll-padding`
+   (tables.css), so a cell reached by Tab is scrolled clear of them. WHETHER A BOX SCROLLS is
+   judged on its room without the border its sign takes (tables.css), so the sign never holds
+   itself on; told that, every box is measured once more, as it now stands. */
+function markBoxes(list) {
+  const pinned = (c) => (c && getComputedStyle(c).position === "sticky" ? c : null);
+  const boxes = list.map((b) => {
+    const t = b.querySelector(":scope > table");
+    const rows = ":scope > tbody > tr:not(.detail-row):not(.devices)";
+    return [b, b.scrollWidth, b.clientWidth + (parseFloat(getComputedStyle(b).borderRightWidth) || 0),
+            t?.tHead?.offsetHeight || 0,
+            pinned(t?.querySelector(`${rows} > td:first-child`))?.offsetWidth || 0,
+            pinned(t?.querySelector(`${rows} > td:last-child`))?.offsetWidth || 0];
+  });
+  boxes.forEach(([b, full, room]) => b.classList.toggle("overflows", full > room + 1));
+  boxes.map(([b, , , ...pins]) => [b, b.scrollWidth, b.clientWidth, b.scrollLeft, ...pins])
+    .forEach(([b, full, seen, at, top, left, right]) => {
+      markEdges(b, full, seen, at);
+      b.style.setProperty("--box-width", `${seen}px`);
+      b.style.setProperty("--pin-top", `${top}px`);
+      b.style.setProperty("--pin-left", `${left}px`);
+      b.style.setProperty("--pin-right", `${right}px`);
+    });
+}
+
 /* AN EDGE WITH MORE THAN A PIXEL BEYOND IT is marked (`more-left`, `more-right`), and the mark
-   goes at that end once the box is scrolled there; a box that does not scroll sideways has
-   neither. */
+   goes at that end once the box is scrolled there; a box that does not scroll sideways
+   (`overflows`, above) has neither. */
 function markEdges(box, full, seen, at) {
-  const scrolls = full > seen + 1;
+  const scrolls = box.classList.contains("overflows");
   box.classList.toggle("more-left", scrolls && at > 1);
   box.classList.toggle("more-right", scrolls && at < full - seen - 1);
 }

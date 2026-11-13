@@ -162,6 +162,8 @@ for (const name of ["holdings", "round-trips"]) {
       if (at === "end") await box.evaluate((b) => { b.scrollLeft = b.scrollWidth; });
       for (const cell of pins("last")) await expect.poll(() => edge(cell), `Trades' edge at ${at}`).toBe(trades);
       for (const cell of pins("first")) await expect.poll(() => edge(cell), `the first column's edge at ${at}`).toBe(first);
+      expect(await box.evaluate((b) => parseFloat(getComputedStyle(b).borderRightWidth)),
+        `one sign at ${at}: the box's own edge carries none beside the pin`).toBe(0);
     }
     await expect(row.locator("[data-trades]")).toBeInViewport({ ratio: 1 });
     await box.evaluate((b) => { b.scrollLeft = 0; });
