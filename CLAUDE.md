@@ -29,4 +29,6 @@ Every command reads the book `PORTFUSION_BOOK` names, or the one in the folder i
 
 ## Open work
 
-The repository's issues (`gh issue list`).
+The Queue (issue #206) orders what is built next, the milestones say what each release is for, and
+[`docs/direction.md`](docs/direction.md) says who it is for and where it is going. `gh issue list`
+shows the rest.
