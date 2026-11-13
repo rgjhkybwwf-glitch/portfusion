@@ -224,7 +224,7 @@ changes it.
   ranks the work, unblockers first, then bugs and wrong figures, small safe fixes, features and
   polish. A run takes the first line under Next whose issue is ready and has no open pull
   request of its own, and whose "waits" issues are all closed; it skips the rest and never
-  reorders. Each issue is read whole, comments included, before its work starts.
+  reorders, but for a Queue review the maintainer has answered (The ready check, below). Each issue is read whole, comments included, before its work starts.
 - **The agent keeps the Queue current**: after each pull request merges it ticks the line and moves
   it to Done, and each issue it files goes under To rank, for the maintainer to place. It reads the
   Queue afresh just before each edit, since another run may have changed it.
@@ -270,6 +270,9 @@ changes it.
 
 **The ready check**
 
+- **"Covers" is by the code, not the topic.** An open issue covers a find, an idea or a bump when
+  its Cause or Done names the same file and function; the ready check reads every open issue's
+  Cause and Done for that before it files a new one.
 - **It first sorts "Walk finds: to sort" (#220)**: each find onto the open issue that covers it,
   or, with others like it, into a new issue that meets the Definition of Ready, in the next
   milestone, under To rank, with its questions written but not asked; a find not worth an issue is
@@ -291,6 +294,14 @@ changes it.
   against. A plan that finds a question, or finds the issue's cause or premise no longer holds,
   asks it and labels the issue `decision`; so do the questions an issue was filed with, less any
   the maintainer has answered in a comment since.
+- **Once a week it reviews the whole Queue**: on its first run when no Queue review is on #206 from
+  the last seven days, and on the run before the release checklist is planned. It reads every open
+  issue of the milestone being worked and the next, against today's `main`, and posts a **Queue
+  review** on #206: issues that duplicate one another, to merge; overlaps by file and function that
+  no "waits" orders; causes that no longer hold, to close with the reason; and a suggested order.
+  Each is a question, with its recommendation, and #206 takes `decision`. The answer run applies
+  what is answered (the Queue's lines, a "waits", an issue merged or closed) and builds nothing for
+  it. A review that finds nothing posts nothing.
 - **It writes no code**, opens no branch, and changes no label but `decision`.
 
 **The answer run**
@@ -318,6 +329,10 @@ changes it.
   wrong; the plan is mended before a line is written. A plan the ready check has already checked is
   used as it stands when `main` has not changed the files it names since; otherwise it is written
   and checked again.
+- **The plan names its overlaps**: every open issue and open pull request whose Cause, Done or diff
+  names a file or function the plan changes. Each is settled in the issue: a "waits" in Order when
+  one must land first, a line in Not in scope when the other owns that part, or a question when the
+  two issues' Done disagree. The plan's checker looks for one the plan missed.
 - **One issue, one branch, one pull request**: a branch claude/<name> from the latest `main`,
   worked by the conventions above (changelog, own diff reviewed, a changed desk page walked cold),
   the guard run, and the desk walk if a desk file changed. The pull request says "Closes #n", and
