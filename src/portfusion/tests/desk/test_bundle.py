@@ -45,9 +45,13 @@ def test_the_bundle_is_the_shell_and_nothing_else(files):
     `bundle.paths()` — and must then pass the scan below."""
     fonts = {p for p in files if p.startswith("/fonts/")}
     assert fonts and all(re.fullmatch(r"/fonts/[a-z0-9-]+\.woff2", p) for p in fonts)
-    scripts = {f"/static/{n}" for n in ("core.js", "kit.js", "reading.js", "access.js", "bench.js",
-                                        "sweep.js", "price-refresh.js", "app.js")}
-    assert set(files) - fonts == {"/", "/static/app.css", *scripts, "/tokens.css", "/favicon.png",
+    scripts = {f"/static/{n}" for n in ("core.js", "kit.js", "what-changed.js", "dashboard.js",
+                                        "holdings.js", "round-trips.js", "method.js", "accounts.js",
+                                        "reports.js", "performance.js", "trades.js", "reconcile.js",
+                                        "access.js", "bench.js", "sweep.js", "price-refresh.js",
+                                        "app.js")}
+    styles = {f"/static/{n}" for n in ("kit.css", "tables.css", "pages.css", "bench.css", "phone.css")}
+    assert set(files) - fonts == {"/", *styles, *scripts, "/tokens.css", "/favicon.png",
                                   "/apple-touch-icon.png", "/icon-192.png", "/icon-512.png",
                                   "/manifest.webmanifest"}
 
@@ -92,8 +96,10 @@ def test_every_stamp_is_the_content_of_the_file_it_links(files):
     import hashlib
     page = files["/"].decode()
     scripts = [f"/static/{n}" for n in bundle.SCRIPTS]
+    styles = [f"/static/{n}" for n in bundle.STYLES]
     assert re.findall(r'<script src="([^"?]+)', page) == scripts
-    for url in ("/static/app.css", *scripts, "/tokens.css"):
+    assert re.findall(r'<link rel="stylesheet" href="(/static/[^"?]+)', page) == styles
+    for url in (*styles, *scripts, "/tokens.css"):
         stamp = hashlib.sha256(files[url]).hexdigest()[:12]
         assert f'"{url}?v={stamp}"' in page, f"{url} is not linked by its content"
 
@@ -121,7 +127,7 @@ def test_a_comment_is_still_published_and_still_scanned(monkeypatch):
     from portfusion.desk import publish
     monkeypatch.setattr(publish, "record_values", lambda: {"Jane Holder", "ZZTOP", "QQ"})
     tree = {"/static/app.js": b"/* priced for Jane Holder */ const x = 'ZZTOP';\n// QQ\nlet q = 1;",
-            "/static/app.css": b"/* QQ */ .QQ { }"}
+            "/static/kit.css": b"/* QQ */ .QQ { }"}
     said = publish.leaks(tree)
     assert any("'Jane Holder'" in s for s in said) and any("'ZZTOP'" in s for s in said), said
     assert [s for s in said if "'QQ'" in s] == [], said

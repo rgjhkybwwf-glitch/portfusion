@@ -53,8 +53,14 @@ assert set(APP_ICON_SIZES) == set(brand.APP_ICONS)
 #: THE DESK'S SCRIPT, in the order it loads: ordered classic scripts sharing one global scope, so
 #: a file's top-level code may use only what the files before it declare. app.js, the entry,
 #: loads last. `index()` writes the page's script tags from this, and nowhere else states it.
-SCRIPTS = ("core.js", "kit.js", "reading.js", "access.js", "bench.js", "sweep.js",
-           "price-refresh.js", "app.js")
+SCRIPTS = ("core.js", "kit.js", "what-changed.js", "dashboard.js", "holdings.js", "round-trips.js",
+           "method.js", "accounts.js", "reports.js", "performance.js", "trades.js", "reconcile.js",
+           "access.js", "bench.js", "sweep.js", "price-refresh.js", "app.js")
+
+#: THE DESK'S STYLESHEET, in the order it is linked: a later file's rule wins a tie with an
+#: earlier one's, so the kit comes first and the phone's rules last. `index()` writes the page's
+#: link tags from this.
+STYLES = ("kit.css", "tables.css", "pages.css", "bench.css", "phone.css")
 
 #: WHAT EVERY FILE OF THE SHELL IS SENT WITH, by the Mac's door and in the hosted desk's
 #: `_headers` (`desk/publish.py`) alike: the page loads and connects to its own origin only, and
@@ -68,10 +74,10 @@ SHELL_HEADERS = {
 
 #: The files under desk/static/ the shell loads. index.html is not one: it is the page itself,
 #: filled in by `index()`, and its raw template is served nowhere.
-SHELL_STATIC = ("app.css", *SCRIPTS)
+SHELL_STATIC = (*STYLES, *SCRIPTS)
 
 #: The URLs `index.html` links and stamps, each with the asset it stands for.
-_STAMPED = ("/static/app.css", *(f"/static/{n}" for n in SCRIPTS), "/tokens.css")
+_STAMPED = (*(f"/static/{n}" for n in SHELL_STATIC), "/tokens.css")
 
 
 def _fonts() -> list[str]:
@@ -164,6 +170,8 @@ def index(assets: dict[str, bytes] | None = None) -> bytes:
     """The page: the template, its assets stamped by content, the lockup, and the version."""
     assets = assets if assets is not None else {p: asset(p) for p in paths()}
     html = (STATIC / "index.html").read_text(encoding="utf-8")
+    html = html.replace("<!-- styles -->", "\n".join(
+        f'<link rel="stylesheet" href="/static/{n}">' for n in STYLES))
     html = html.replace("<!-- scripts -->", "\n".join(
         f'<script src="/static/{n}"></script>' for n in SCRIPTS))
     for url in _STAMPED:
