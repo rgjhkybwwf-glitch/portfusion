@@ -71,6 +71,13 @@ def desk_script(name: str | None = None) -> str:
                    for n in ([name] if name else bundle.SCRIPTS))
 
 
+def desk_style() -> str:
+    """The desk's stylesheet as the page links it: every file of `desk/bundle.py`'s STYLES, the
+    later after the earlier."""
+    from portfusion.desk import bundle
+    return "".join((SRC / "desk" / "static" / n).read_text(encoding="utf-8") for n in bundle.STYLES)
+
+
 def book_classes() -> list:
     """`Book` and every class it is built from, as the engine's files define them: `ClassDef`s."""
     import ast

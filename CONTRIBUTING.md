@@ -299,7 +299,7 @@ changes it.
   is using.
 - **The renderers move together**: what changes on the desk changes on the report.
 - **The desk and the report carry as little prose as they can.**
-- **Every size on the desk is a step of the type scale** in `desk/static/app.css`.
+- **Every size on the desk is a step of the type scale** in `desk/static/kit.css`.
 - **A panel is one file with one name**, and its tab runs in the order of the work
   (`desk/panels/__init__.py`; `test_panels.py::test_a_panel_has_one_name`,
   `test_panels.py::test_the_tabs_run_in_the_order_of_the_work`).
