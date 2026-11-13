@@ -127,6 +127,32 @@ def accounts(frame: pd.DataFrame, col: str, order) -> list[str]:
     return known + sorted(seen - set(order))
 
 
+def labels(b) -> dict[str, str]:
+    """Each register account and its label, `Book.account_codes()`'s: how every reading page and
+    the report name an account. The Bench and Price refresh write the register's name, so they
+    keep it."""
+    codes = b.account_codes()
+    return dict(zip(codes["account"], codes["label"]))
+
+
+def label(value, names: dict):
+    """One account cell by its label. A cell the engine joined with " · ", a holding held in
+    several accounts, is named part by part; a value that is no account's ("The book", "Total")
+    stays as it is."""
+    if not isinstance(value, str) or value in names:
+        return names.get(value, value)
+    return " · ".join(names.get(p.strip(), p.strip()) for p in value.split("\u00b7"))
+
+
+def labelled(rows: list[dict], names: dict, col: str = "account") -> list[dict]:
+    """`rows` with the account cell `col` named by its label, in place, for the page to read once
+    the panel has joined on the register's name."""
+    for r in rows:
+        if col in r:
+            r[col] = label(r[col], names)
+    return rows
+
+
 def reading(document, day) -> str:
     """What a figure was read from, as the desk and the report name it: the document, then its
     day — "IG account read, 12 Oct 2026". Reconcile's last broker check and Accounts' cash."""

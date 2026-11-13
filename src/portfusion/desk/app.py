@@ -13,7 +13,7 @@ import time
 from fastapi import Body, FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse, Response
 
-from portfusion.desk import actions, bundle, panels, engine
+from portfusion.desk import actions, bundle, panels, engine, naming
 from portfusion.desk.intake import (bench as _bench, dropoff as _dropoff, propose as _propose,
                          withdraw as _withdraw)
 from portfusion.record import schema
@@ -450,12 +450,23 @@ def sweep_status(body: dict = Body(default={})):
     return _bench.sweep_status(body.get("refs") or [])
 
 
+def _registered(sent: str) -> str:
+    """The register's account for the one a filter sent. The reading pages name an account by its
+    label, so a label or a code is mapped back by `naming.Naming.account`, the hosted door's own
+    map; a register name, which the hosted door sends on for a reader who may not see names,
+    goes through."""
+    try:
+        return naming.of(engine.book()).account(sent)
+    except ValueError:
+        return sent
+
+
 @app.get("/api/holdings")
 def holdings(by: str = "", account: str = ""):
     """Interrogate the holdings. Both arguments go to the engine; nothing is narrowed here."""
     from portfusion.desk.panels import holdings as panel
     try:
-        return panel.query(account=account or None, by=by or panel.GROUPINGS[0])
+        return panel.query(account=_registered(account) or None, by=by or panel.GROUPINGS[0])
     except ValueError as e:
         raise HTTPException(400, str(e))
 
@@ -467,7 +478,7 @@ def round_trips(ticker: str = "", account: str = "", start: str = "", end: str =
     dates, by holding or by company life."""
     from portfusion.desk.panels import round_trips as panel
     try:
-        return panel.query(ticker=ticker or None, account=account or None,
+        return panel.query(ticker=ticker or None, account=_registered(account) or None,
                            start=start or None, end=end or None, company=company or None,
                            view=view)
     except ValueError as e:
@@ -483,4 +494,4 @@ def trades(start: str = "", end: str = "", account: str = "",
     so one click gives the shares AND the spread bet rather than half the history.
     """
     from portfusion.desk.panels import trades as panel
-    return panel.query(start, end, account, ticker, direction, company or None)
+    return panel.query(start, end, _registered(account), ticker, direction, company or None)
