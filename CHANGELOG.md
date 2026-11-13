@@ -48,8 +48,8 @@ No figure moves, and there is no migration. Do these when the book's pin moves.
 ### Changed
 
 - **"% of book" is "% of exposure", and "Weight" is "Weight of exposure"**, on Holdings and the
-  report: each is a line's share of market exposure, where a spread bet counts at its notional,
-  not a share of net asset value. **"Contribution" is "Counts as"**, on Performance's NAV detail
+  report: each is a share of market exposure, a line's or a slice's, where a spread bet counts
+  at its notional, not a share of net asset value. **"Contribution" is "Counts as"**, on Performance's NAV detail
   and the report's accounts table: how an account counts towards net asset value. No figure
   moves.
 - **A period that opens with the record is named by its first day counted**: a book begun on
