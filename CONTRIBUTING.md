@@ -245,6 +245,10 @@ changes it.
 
 **The ready check**
 
+- **It first sorts "Walk finds: to sort" (#220)**: each find onto the open issue that covers it,
+  or, with others like it, into a new issue that meets the Definition of Ready, in the next
+  milestone, with its questions and `decision`; a find not worth an issue is struck through with the
+  reason. Each line it handles is struck through, so the list only holds what is unsorted.
 - **It runs the planning, by day, so the questions reach the maintainer before the night.** It
   takes the first lines under Next as the night run would, up to the routine's number, and skips an
   issue whose checked plan is its latest comment and whose files `main` has not changed since.
@@ -282,19 +286,22 @@ changes it.
   worked by the conventions above (changelog, own diff reviewed, a changed desk page walked cold),
   the guard run, and the desk walk if a desk file changed. The pull request says "Closes #n", and
   the agent goes on to the next issue without waiting for a merge.
-- **The guard's result is read from its own exit status** before a push: never through a pipe, a
-  `tail`, or a loop that pushes whatever the result.
+- **Done means `guard` green on the last push.** No pull request is called clean, and none is
+  left, until CI's `guard` has passed on its newest commit; a local run is a quick check, not the
+  proof.
 - **A question stops the issue; nothing of it is built.** An open question, in the issue, in the
   plan or appearing mid-build, is asked at the end of a comment on the issue, the issue is labelled
   `decision`, what is built so far is pushed to its branch with no pull request, and the run moves
   on. The answer starts the issue again, whole, on that branch.
 - **Something a comment raises outside its issue** becomes a new issue labelled `decision`,
   linked from the issue, and is not built.
-- **What a cold walk finds that the change did not cause** is filed as an issue, or added to one,
-  and listed in the pull request.
+- **The cold walk keeps to the pages the change touched**, with jobs about the change. What it
+  meets there that the change did not cause goes first onto the open issue that covers it, as
+  evidence, and the rest onto "Walk finds: to sort" (#220), one line a find, with no question and no
+  ping; the pull request lists both. The ready check sorts that list by day.
 - **A milestone being worked only gets shorter.** An issue the agent files goes in the next
   milestone, with the area labels of the issue it came from and `decision` until it is answered,
-  unless an issue of the current one cannot close without it. A walk's finds are one issue a walk.
+  unless an issue of the current one cannot close without it.
 - **A CI failure on its pull request** is the agent's to fix, and it waits for the guard's result
   before it leaves a pull request. When the walk fails only because a page the issue meant to
   change looks different, the agent labels the pull request `baselines`: a workflow retakes the
