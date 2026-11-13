@@ -57,5 +57,5 @@ jobs:
           if [ -n "$(gh pr view "$PR" --json autoMergeRequest --jq '.autoMergeRequest // empty')" ]; then
             gh pr comment "$PR" --body "🤖 **PortFusion agent** · this asks nothing, so it merges itself once \`guard\` is green. What changed is above; a merge can be reverted."
           else
-            gh pr comment "$PR" --body "🤖 **PortFusion agent** · @$OWNER, this is ready for your review. If it is right, enable auto-merge, or merge it if \`guard\` is already green."
+            gh pr comment "$PR" --body "🤖 **PortFusion agent** · @$OWNER, this is ready for your review: what it needs from you is at the top. If it is right, reply \"yes\" and it merges once \`guard\` is green."
           fi
