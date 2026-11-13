@@ -339,9 +339,9 @@ changes it.
   milestone, with the area labels of the issue it came from, unless an issue of the current one
   cannot close without it.
 - **A CI failure on its pull request** is the agent's to fix, and it waits for the guard's result
-  before it leaves a pull request. **It waits by a watch it starts in the background**, polling
-  the checks and the `baselines/<branch>` ref, **never by ending its turn**: nothing on GitHub
-  wakes a run, so a run that ends its turn to wait has stopped. A retake not landed ten minutes
+  before it leaves a pull request. **It waits in the foreground**, by a command that polls the
+  checks and the `baselines/<branch>` ref, run again until they finish, **never by ending its
+  turn** (Telling the maintainer, below). A retake not landed ten minutes
   after the label is asked for again, `baselines` taken off and put back on (a label already on
   starts nothing). When the walk fails only because a page the issue meant to
   change looks different, the agent labels the pull request `baselines`: a workflow retakes the
@@ -375,6 +375,11 @@ changes it.
   merging itself gets the same note without naming them: it asks nothing, so it pings no one.
 - **A run sends no push notification of its own.** Its last message is the debrief, and the
   routine delivers it to the maintainer's phone when the run ends.
+- **A run is one turn.** The routine delivers the message that ends the run's first turn, and
+  nothing after it, and nothing on GitHub wakes a run again. So every wait is inside that turn:
+  a helper agent (the plan's checker, the reviewer) is run in the foreground and waited for, and
+  CI is polled in the foreground. A message that ends the turn is the debrief, never a note that
+  something is still running.
 - **The agent's own comments never begin `Q1:` or `All as recommended`**, the answer's shapes,
   since it writes as the maintainer's account.
 
