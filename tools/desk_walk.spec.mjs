@@ -68,6 +68,17 @@ test("a finding leads to the page its work is done on", async ({ page }) => {
   await expect(page).toHaveURL(new RegExp(`#${to}$`));
 });
 
+test("the closed-out count leads to the round trips it counts", async ({ page }) => {
+  await open(page, "dashboard");
+  const figure = page.locator("table.figures tr", { has: page.locator('button[data-panel="round-trips"]') });
+  const count = Number((await figure.locator("td.num").innerText()).match(/^\d+/)[0]);
+  await figure.locator("button[data-panel]").click();
+  await expect(page.locator('#tabs button[data-name="round-trips"]')).toHaveAttribute("aria-current", "page");
+  await expect(page.locator("#rt-closed")).toHaveValue("yes");
+  // THE PAGE DRAWS FIRST, then asks for the link's filter: the count is waited for, not read.
+  await expect(page.locator("#main .scroll > table > tbody > tr:not(.detail-row)")).toHaveCount(count);
+});
+
 for (const name of ["holdings", "round-trips"]) {
   test(`${name}: a row's button is in view, and a press on the row opens its detail in view`, async ({ page }) => {
     await open(page, name);

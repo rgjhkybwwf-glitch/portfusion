@@ -3,9 +3,10 @@
 Round trips can be narrowed to a company, a ticker, an account or a range of EXIT dates, which is
 what you actually want when asking "how has PENR gone for us" — the answer is several round trips
 across several years, and reading them together is the point. A company is every code it is held
-under, its share and its spread bet in one choice, as on Trades. THE HEADLINE FIGURES FOLLOW THE
-SELECTION: narrowing to an account and leaving the whole book's realisations, proceeds and gain on
-screen answers a question nobody asked.
+under, its share and its spread bet in one choice, as on Trades. THE CLOSED-OUT LINES ALONE are a
+filter too, the ones the Dashboard counts. THE HEADLINE FIGURES FOLLOW THE SELECTION: narrowing to
+an account and leaving the whole book's realisations, proceeds and gain on screen answers a
+question nobody asked.
 
 REALISED GAIN IS NET OF COMMISSION, and that is not an oversight to be corrected here: proceeds
 are recorded net, so the dealing cost is already inside the gain. `store/income.csv` carries
@@ -69,7 +70,7 @@ def data() -> dict:
 
 def query(ticker: str | None = None, account: str | None = None,
           start: str | None = None, end: str | None = None, company: str | None = None,
-          view: str = VIEWS[0]) -> dict:
+          view: str = VIEWS[0], closed_only: bool = False) -> dict:
     """Narrow the closed positions. SELECTION, and the ENGINE does it.
 
     THE TOTALS FOLLOW THE SELECTION: narrowing to an account must change the
@@ -77,8 +78,9 @@ def query(ticker: str | None = None, account: str | None = None,
 
     NOTHING IS SUMMED HERE. Adding up the filtered rows would be a second calculation of
     something `book.round_trip_totals()` answers, and this panel has no place on
-    `tests/test_figures.py`'s ALLOWED list. The engine takes ticker, account, start and end,
-    and both the rows and the totals come back from it.
+    `tests/test_figures.py`'s ALLOWED list. The engine takes the whole selection, and both the
+    rows and the totals come back from it. `closed_only` keeps the closed-out lines, the ones the
+    Dashboard counts; the life view has its own state and ignores it.
 
     `whole` is still carried so the screen can say what the selection is a part of.
     """
@@ -87,7 +89,8 @@ def query(ticker: str | None = None, account: str | None = None,
     if view == "life":
         return _lives(start=start, end=end, company=company)
     b = engine.book()
-    pick = dict(ticker=ticker, account=account, start=start, end=end, company=company)
+    pick = dict(ticker=ticker, account=account, start=start, end=end, company=company,
+                closed_only=closed_only)
     frame = b.with_reasoning(b.round_trips(**pick), opened="opened", closed="closed")
     selected = b.round_trip_totals(**pick)
     whole = b.round_trip_totals()
@@ -111,6 +114,7 @@ def query(ticker: str | None = None, account: str | None = None,
         "account": account or "",
         "start": start or "",
         "end": end or "",
+        "closed_only": closed_only,
         # THE TICKER LIST IS THE CHOSEN COMPANY'S, so the two boxes cannot contradict each other.
         "tickers": codes.get(company, []) if company else _shape.uniques(every, "ticker"),
         "companies": sorted(codes),

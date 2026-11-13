@@ -64,8 +64,14 @@ def test_the_snapshot_ties_to_the_engine():
     # BLANK IS None ON THE PAGE AND NaN IN THE ENGINE, compared as the page carries it (`_blank`).
     assert figs["YTD return"] == _blank(b.totals()["ytd"])
     assert figs[b.SINCE_START] == _blank(b.since_start())
-    # THE COUNT ROUND TRIPS LEADS TO is that page's own "Closed out" total.
+    # THE COUNT ROUND TRIPS LEADS TO is that page's own "Closed out" total, and the lines its link
+    # narrows the page to are the ones it counts: as many, each closed out, totalled by the engine.
     assert figs["Round trips closed out"] == panels.get("round-trips").data()["whole"]["closed_out"]
+    counted = panels.get("round-trips").query(closed_only=True)
+    assert counted["closed_only"] is True and counted["narrowed"] is True
+    assert counted["total"] == figs["Round trips closed out"] == len(counted["rows"])
+    assert all(r["fully_closed"] is True for r in counted["rows"])
+    assert counted["totals"] == b.round_trip_totals(closed_only=True)
 
 
 @needs("buys")
@@ -432,6 +438,7 @@ def test_the_query_routes_defer_to_their_panels():
     assert app.holdings(by="ticker")["by"] == "ticker"
     assert app.holdings(account=SHARES_ACCOUNT)["notional"] == 0.0
     assert app.round_trips(ticker="PENR.L")["ticker"] == "PENR.L"
+    assert app.round_trips(closed_only=True)["closed_only"] is True
     with pytest.raises(HTTPException) as e:
         app.holdings(by="nonsense")
     assert e.value.status_code == 400
@@ -926,6 +933,11 @@ def test_the_dashboard_lists_the_checks_the_audit_prints():
     leads = {f["label"]: f.get("panel") for f in data["figures"] if f.get("panel")}
     assert leads == {"Round trips closed out": "round-trips"}
     assert set(leads.values()) <= {p.NAME for p in panels.all_panels()} and "panelLink(f.panel, " in js
+    # AND OPENS IT ON WHAT IT COUNTS: boxes the page draws and asks with.
+    held = next(f for f in data["figures"] if f.get("panel"))["held"]
+    rt = desk_script()
+    assert held == {"rt-view": "holding", "rt-closed": "yes"} and "f.held)" in js
+    assert all(f'id="{box}"' in rt for box in held) and "go.dataset.held" in rt
 
 
 def test_the_footer_says_whose_it_is_and_which_release():

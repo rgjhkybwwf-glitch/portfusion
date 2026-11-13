@@ -55,9 +55,11 @@ const stepLine = (steps) => `<ol class="steps">${steps.map((s) => `
    #main delegates, so a page that redraws keeps it working without wiring its own. */
 const quiet = (text) => `<span class="muted small">${text}</span>`;
 /* A page the server does not list — Bench and Price Refresh on the hosted desk — is left out:
-   a pointer to a page the reader cannot open is an instruction they cannot follow. */
-const panelLink = (panel, label = PANELS.get(panel)) => !PANELS.has(panel) ? "" :
-  `<button class="link" data-panel="${esc(panel)}">${esc(label)}</button>`;
+   a pointer to a page the reader cannot open is an instruction they cannot follow. `held` is the
+   page's filters, by box, which the link opens it with in place of any held there. */
+const panelLink = (panel, label = PANELS.get(panel), held = null) => !PANELS.has(panel) ? "" :
+  `<button class="link" data-panel="${esc(panel)}"${held
+    ? ` data-held="${esc(JSON.stringify(held))}"` : ""}>${esc(label)}</button>`;
 /* AN OWED WHY IS WRITTEN ON THE BENCH, so its tag leads there where the Bench opens. */
 const owedTag = () => {
   const tag = `<span class="tag gap">owed</span>`;

@@ -107,6 +107,9 @@ One figure moves, on two pages, and there is no migration. Do these when the boo
 
 ### Fixed
 
+- **The Dashboard's "Round trips closed out" leads to the round trips it counts**: its link
+  opens Round Trips with a new "Closed out" filter on, so the page shows as many rows as the
+  figure says. The filter works on the hosted desk too.
 - **Days held still open count to the prices' day**, the day the live figures stand at, not
   today's clock, on Holdings and on Round Trips' company lives; a line or life opened after that
   day reads 0.

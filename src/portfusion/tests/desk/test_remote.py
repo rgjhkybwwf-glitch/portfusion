@@ -176,6 +176,10 @@ def test_the_remote_door_and_the_mac_give_the_same_figures(client, session):
         assert client.get(f"/api/panel/{name}", headers=session).json() == \
             TestClient(local.app, base_url="http://127.0.0.1:8765").get(
                 f"/api/panel/{name}").json(), f"{name} differs between the doors"
+    # AND A NARROWING THE MAC TAKES, THE DOOR PASSES ON: the Dashboard's closed-out lines.
+    ask = "/api/round-trips?closed_only=true"
+    assert client.get(ask, headers=session).json() == TestClient(
+        local.app, base_url="http://127.0.0.1:8765").get(ask).json()
 
 
 def test_a_book_that_names_no_hosted_desk_has_a_door_that_refuses_everything(

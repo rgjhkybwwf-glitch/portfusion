@@ -462,14 +462,13 @@ def holdings(by: str = "", account: str = ""):
 
 @app.get("/api/round-trips")
 def round_trips(ticker: str = "", account: str = "", start: str = "", end: str = "",
-                company: str = "", view: str = "holding"):
-    """Narrow the closed positions to one company, one name, one account, or a range of exit
-    dates, by holding or by company life."""
+                company: str = "", view: str = "holding", closed_only: bool = False):
+    """Narrow the closed positions as `round_trips.query()` does, by holding or by company life."""
     from portfusion.desk.panels import round_trips as panel
     try:
         return panel.query(ticker=ticker or None, account=account or None,
                            start=start or None, end=end or None, company=company or None,
-                           view=view)
+                           view=view, closed_only=closed_only)
     except ValueError as e:
         raise HTTPException(400, str(e))
 
