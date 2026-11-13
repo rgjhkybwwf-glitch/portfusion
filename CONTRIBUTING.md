@@ -344,8 +344,10 @@ changes it.
   today's `main`, and posts a **Queue review** on #206: issues that duplicate one another, to
   merge; overlaps by file and function that no "waits" orders; causes that no longer hold, to
   close with the reason; a place for each walk find left to sort; and a suggested order. Each is a question, with its recommendation, and #206 takes
-  `decision`. A review that finds nothing posts nothing, and none is posted while a gate review
-  stands unanswered.
+  `decision`. Below its questions it lists three ideas for improving a feature, a line each with
+  the job it serves and its cost; they are not asked, and the maintainer takes one up with an
+  `Idea:` issue. A review with nothing to ask is posted for its ideas alone, without `decision`,
+  so it pings no one. None is posted while a gate review stands unanswered.
 - **With the review it sorts "Walk finds: to sort" (#220)**, and not each run. A find goes
   onto the open issue that covers it, as evidence, or onto the decided feature that will rework
   its page; one not worth an issue is struck through with the reason. The rest stay one line
@@ -372,8 +374,9 @@ changes it.
 - **A design card asks a feature's shape.** The ready check posts it on the issue of the line
   under Design next in the Queue, or of a feature at the top of Next, and the issue takes
   `decision`. Above the fold, in at most 150 words: the outcome in one line; three
-  options, each with its cost (slices, figures that move, a migration or none); a link to a mock
-  page; a recommendation; and at most three questions. The evidence is folded under `<details>`.
+  options, each a different idea of the feature and not one idea at three sizes, each with its
+  cost (slices, figures that move, a migration or none); a link to a mock page; a
+  recommendation; and at most three questions. The evidence is folded under `<details>`.
 - **The mock page shows today's page and each option**, on the demo's names. It is a private page
   published with the Artifact tool and touches no code. A run that cannot publish without stopping
   to ask gives words and a picture of today's page instead, and says so.
