@@ -199,8 +199,8 @@ changes it.
   - **The ready check**, by day: plans the next issues and asks their questions before the night.
     It writes no code.
   - **The night run**, at 02:00 UK time: builds the ready issues.
-  - **The answer run**, ten quiet minutes after the maintainer's last answer: works the issues
-    answered.
+  - **The answer run**, ten quiet minutes after the maintainer's last answer or change: works the
+    issues answered or changed.
 - **A run has a cap.** No more issues than the routine names, and no issue past a second attempt
   at a green guard: one that will not go green is left as a draft pull request with what blocks it
   at the top, and the run moves on. A run that is going nowhere stops and says so; it does not file
@@ -247,6 +247,17 @@ changes it.
   Decisions, quoted with the date, takes `decision` off, and the issue is ready. An answer that
   leaves a question open is asked again, for that question alone, and `decision` is taken off and
   put back on, so the maintainer is told.
+- **A reply beginning `Change:` redirects an issue or one of the agent's pull requests.**
+  `answer.yml` marks it 👀 and holds the work at once: the issue takes `decision`, the pull request
+  loses its auto-merge. The answer run then reads the change and rewrites the issue's Done, Not in
+  scope and Decisions to match, quoting the change with the date. If nothing is left unclear it takes
+  `decision` off and builds; otherwise it asks what the change leaves open. A pull request already
+  open is brought to the changed issue, or closed with the reason when the change makes it moot.
+- **An issue whose title begins `Idea:` is new work in the maintainer's words.** The ready check
+  shapes it in place: the maintainer's words kept at the top, quoted; a cause found in the code;
+  Done, Not in scope and Order; the next milestone and its area labels; a line under To rank in the
+  Queue; and the title made an issue's title. What only the maintainer can settle is asked, with
+  `decision`. An idea that is already an open issue's is added to that issue and closed.
 - **An issue's questions are kept few**: what only the maintainer can decide. What the agent can
   settle from the code, the record's rules or an answer already given, it settles and says so.
 
@@ -256,6 +267,7 @@ changes it.
   or, with others like it, into a new issue that meets the Definition of Ready, in the next
   milestone, with its questions and `decision`; a find not worth an issue is struck through with the
   reason. Each line it handles is struck through, so the list only holds what is unsorted.
+- **Then it shapes each open `Idea:` issue** (Asking and answering, above).
 - **It runs the planning, by day, so the questions reach the maintainer before the night.** It
   takes the first lines under Next as the night run would, up to the routine's number, and skips an
   issue whose checked plan is its latest comment and whose files `main` has not changed since.
@@ -271,9 +283,10 @@ changes it.
   issue labelled `decision` that begins `Q1:` or `All as recommended`, waits ten minutes, and fires
   the routine "PortFusion answer"; an answer within those minutes starts the wait again, so answers
   given together make one run. Nothing of a comment is passed.
-- **It first claims every answered issue**: each open issue labelled `decision` whose owner's
-  latest comment answers it. It acts on each answer (above), taking `decision` off, before it builds
-  any, so a run started later does not take the same issue.
+- **It first claims every answered or changed issue**: each open issue labelled `decision` whose
+  owner's latest comment answers it or begins `Change:`, and each issue whose open pull request of
+  the agent's has the owner's `Change:` as its latest comment. It acts on each answer or change
+  (above) before it builds any, so a run started later does not take the same issue.
 - **Then it builds them one after another, in Queue order**, those not in the Queue last, as the
   night run would, up to the routine's number. One still not ready, a question open or a "waits"
   issue open, it says which on the issue and leaves; the night run takes it when it is.

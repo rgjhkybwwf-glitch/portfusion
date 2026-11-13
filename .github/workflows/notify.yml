@@ -35,7 +35,7 @@ jobs:
           ISSUE: ${{ github.event.issue.html_url }}
           OWNER: ${{ github.repository_owner }}
         run: |
-          gh issue comment "$ISSUE" --body "🤖 **PortFusion agent** · @$OWNER, a decision is needed here: the questions are under \"Questions for you\", at the end of the issue or of the comment above. Reply with a line each, \"Q1: a\", or \"All as recommended\": your reply is the yes, and the agent starts on it."
+          gh issue comment "$ISSUE" --body "🤖 **PortFusion agent** · @$OWNER, a decision is needed here: the questions are under \"Questions for you\", at the end of the issue or of the comment above. Reply with a line each, \"Q1: a\", or \"All as recommended\": your reply is the yes, and the agent starts on it. To take it another way, begin a reply with \"Change:\"."
 
   review:
     if: >-
@@ -57,5 +57,5 @@ jobs:
           if [ -n "$(gh pr view "$PR" --json autoMergeRequest --jq '.autoMergeRequest // empty')" ]; then
             gh pr comment "$PR" --body "🤖 **PortFusion agent** · this asks nothing, so it merges itself once \`guard\` is green. What changed is above; a merge can be reverted."
           else
-            gh pr comment "$PR" --body "🤖 **PortFusion agent** · @$OWNER, this is ready for your review: what it needs from you is at the top. If it is right, reply \"yes\" and it merges once \`guard\` is green."
+            gh pr comment "$PR" --body "🤖 **PortFusion agent** · @$OWNER, this is ready for your review: what it needs from you is at the top. If it is right, reply \"yes\" and it merges once \`guard\` is green; to change it, begin a reply with \"Change:\"."
           fi
