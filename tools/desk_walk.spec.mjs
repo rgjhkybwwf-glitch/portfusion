@@ -1,8 +1,9 @@
 // THE DESK WALKED, IN CHROMIUM: the demo desk `desk_walk.py` serves, at 1440 × 900. Each page is
 // opened by its tab and must draw no error, hold no accessibility fault but the `KNOWN`, and look
 // as its baseline does; a finding is followed to its page; a wide table's button to Trades is in
-// view, a press on a row opens its detail in view, and a heading that sorts shows it; a page chosen
-// by keyboard puts focus on its heading, one Tab from its first control, its tab buttons kept, and
+// view, a press on a row opens its detail in view, and a heading that sorts shows it; a box that
+// scrolls sideways marks each edge with more beyond it, and one that does not marks none; a page
+// chosen by keyboard puts focus on its heading, one Tab from its first control, its tab buttons kept, and
 // a reader already in the page keeps their place; a heading reached by Tab is clear of the pinned
 // columns, and a Tab between controls in view does not swing the box. It writes nothing, and does not prove a
 // figure is right.
@@ -77,6 +78,12 @@ const TABBABLE = "a[href], button:not([disabled]), input:not([disabled]):not([ty
 // WHERE A BOX STANDS once the page has had two frames to scroll it.
 const settled = (box) => box.evaluate((b) => new Promise((done) =>
   requestAnimationFrame(() => requestAnimationFrame(() => done(b.scrollLeft)))));
+// THE SIGN THAT A BOX SCROLLS, on a pinned cell's inner edge: the width of the line its
+// box-shadow draws, 2 for the sign and 1 for the hairline of a box at that end.
+const edge = (cell) => cell.evaluate((c) => {
+  const s = getComputedStyle(c).boxShadow;
+  return s === "none" ? 0 : Math.abs(parseFloat(s.match(/(-?[\d.]+)px/)[1]));
+});
 // A PAGE WITH NO CONTROL after its heading: Method reads, and asks nothing.
 const NO_CONTROL = ["method"];
 
@@ -144,6 +151,20 @@ for (const name of ["holdings", "round-trips"]) {
     const chevron = row.locator(".detail-toggle");
     await expect(row.locator("[data-trades]")).toBeInViewport({ ratio: 1 });
     await expect(chevron).toBeInViewport({ ratio: 1 });
+    // THE TABLE SAYS IT RUNS ON UNDER ITS PINS: at rest the Trades column's inner edge carries the
+    // sign, a heading cut there going on under it; at the end of the scroll the first column's
+    // does, and the button to Trades is still in view.
+    const BOX = "#main .scroll:has(> table[data-links])";
+    const box = page.locator(BOX).first();
+    const pins = (end) => [page.locator(`${BOX} > table > thead > tr > :${end}-child`).first(),
+      page.locator(`${BOX} > table > tbody > tr:not(.detail-row) > td:${end}-child`).first()];
+    for (const [at, trades, first] of [["rest", 2, 1], ["end", 1, 2]]) {
+      if (at === "end") await box.evaluate((b) => { b.scrollLeft = b.scrollWidth; });
+      for (const cell of pins("last")) await expect.poll(() => edge(cell), `Trades' edge at ${at}`).toBe(trades);
+      for (const cell of pins("first")) await expect.poll(() => edge(cell), `the first column's edge at ${at}`).toBe(first);
+    }
+    await expect(row.locator("[data-trades]")).toBeInViewport({ ratio: 1 });
+    await box.evaluate((b) => { b.scrollLeft = 0; });
     // THE ROW IS THE WAY IN: a press on a cell, not on the chevron, and a second closes it.
     await row.locator("td").nth(1).click();
     await expect(chevron).toHaveAttribute("aria-expanded", "true");
@@ -162,7 +183,6 @@ for (const name of ["holdings", "round-trips"]) {
     await expect(heading.locator(".arrow:not(.idle)")).toBeVisible();
     // A HEADING REACHED BY TAB IS CLEAR OF THE PINNED COLUMNS, and inside its box, both ways
     // across the table: the browser leaves one that is partly in view under a pin.
-    const box = page.locator("#main .scroll:has(> table[data-links])").first();
     const heads = page.locator("#main table[data-links] > thead th[tabindex]");
     const clear = () => page.evaluate(() => {
       const el = document.activeElement, b = el.closest(".scroll"), r = el.getBoundingClientRect();
@@ -204,6 +224,34 @@ for (const name of ["holdings", "round-trips"]) {
     }
   });
 }
+
+test("a box with nothing pinned at its right says so on its own edge, and a box that fits says nothing", async ({ page }) => {
+  await test.step("reconcile", async () => {
+    await open(page, "reconcile");
+    const box = page.locator("#main .scroll.overflows").first();
+    await expect(box, "Reconcile's table is wider than its box").toBeVisible();
+    const right = () => box.evaluate((b) => {
+      const s = getComputedStyle(b);
+      return s.borderRightColor === "rgba(0, 0, 0, 0)" ? 0 : parseFloat(s.borderRightWidth);
+    });
+    const first = box.locator(":scope > table > thead > tr > :first-child");
+    await expect.poll(right, "the box's right edge at rest").toBe(2);
+    await expect.poll(() => edge(first), "the first column's edge at rest").toBe(1);
+    await box.evaluate((b) => { b.scrollLeft = b.scrollWidth; });
+    await expect.poll(right, "the box's right edge at the end").toBe(0);
+    await expect.poll(() => edge(first), "the first column's edge at the end").toBe(2);
+  });
+  await test.step("accounts", async () => {
+    await open(page, "accounts");
+    const boxes = page.locator("#main .scroll");
+    expect(await boxes.count(), "Accounts draws a box").toBeGreaterThan(0);
+    expect(await boxes.evaluateAll((bs) => bs.filter((b) =>
+      parseFloat(getComputedStyle(b).borderRightWidth) > 0 ||
+      [...b.querySelectorAll(":scope > table > * > tr > *")]
+        .some((c) => getComputedStyle(c).boxShadow !== "none")).length),
+    "a box that fits carries no sign").toBe(0);
+  });
+});
 
 test("a holding's detail leads to its company's life", async ({ page }) => {
   await open(page, "holdings");

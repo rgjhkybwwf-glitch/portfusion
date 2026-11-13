@@ -243,9 +243,9 @@ function alignTables() {
   });
 }
 
-/* A BOX THAT SCROLLS SIDEWAYS SAYS SO, for the stylesheet's edge on its pinned columns, and
-   says how wide it is, for a row's detail. And a table no longer on the page lets go of its
-   rows. */
+/* A BOX THAT SCROLLS SIDEWAYS SAYS SO, and which of its edges have more beyond them, for the
+   stylesheet's sign that it scrolls; and says how wide it is, for a row's detail. And a table no
+   longer on the page lets go of its rows. */
 function markOverflow() {
   alignTables();
   const live = new Set([...document.querySelectorAll("#main table[data-sorts]")]
@@ -258,11 +258,12 @@ function markOverflow() {
   [...document.querySelectorAll("#main .scroll")].map((b) => {
     const t = b.querySelector(":scope > table");
     const rows = ":scope > tbody > tr:not(.detail-row):not(.devices)";
-    return [b, b.scrollWidth, b.clientWidth, t?.tHead?.offsetHeight || 0,
+    return [b, b.scrollWidth, b.clientWidth, b.scrollLeft, t?.tHead?.offsetHeight || 0,
             pinned(t?.querySelector(`${rows} > td:first-child`))?.offsetWidth || 0,
             pinned(t?.querySelector(`${rows} > td:last-child`))?.offsetWidth || 0];
-  }).forEach(([b, full, seen, top, left, right]) => {
+  }).forEach(([b, full, seen, at, top, left, right]) => {
     b.classList.toggle("overflows", full > seen + 1);
+    markEdges(b, full, seen, at);
     b.style.setProperty("--box-width", `${seen}px`);
     b.style.setProperty("--pin-top", `${top}px`);
     b.style.setProperty("--pin-left", `${left}px`);
@@ -270,6 +271,27 @@ function markOverflow() {
   });
 }
 window.addEventListener("resize", markOverflow);
+
+/* AN EDGE WITH MORE THAN A PIXEL BEYOND IT is marked (`more-left`, `more-right`), and the mark
+   goes at that end once the box is scrolled there; a box that does not scroll sideways has
+   neither. */
+function markEdges(box, full, seen, at) {
+  const scrolls = full > seen + 1;
+  box.classList.toggle("more-left", scrolls && at > 1);
+  box.classList.toggle("more-right", scrolls && at < full - seen - 1);
+}
+
+/* A BOX SCROLLED SIDEWAYS KEEPS ITS MARKS CURRENT: the box that moved is read, then told, and no
+   other. Delegated from #main, since a scroll does not bubble but is caught on its way down. */
+function wireEdges() {
+  const main = $("#main");
+  if (!main || main.dataset.edgesWired) return;
+  main.dataset.edgesWired = "1";
+  main.addEventListener("scroll", (e) => {
+    const b = e.target;
+    if (b.classList?.contains("scroll")) markEdges(b, b.scrollWidth, b.clientWidth, b.scrollLeft);
+  }, { capture: true, passive: true });
+}
 
 /* A CONTROL REACHED BY TAB IS SCROLLED CLEAR OF THE PINS that the box's `scroll-padding` names:
    a browser leaves a control that is partly in view where it is, half under a pinned column. A
@@ -334,6 +356,7 @@ function watchForData() {
   widenForData();
   wireTradeLinks();
   wireFocusClear();
+  wireEdges();
   wireSorting();
   wireIgEvents();
   wireCombos();
