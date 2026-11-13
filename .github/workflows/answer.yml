@@ -1,0 +1,56 @@
+# THE MAINTAINER'S ANSWER STARTS THE WORK. When the owner answers an issue the agent stopped on (it
+# carries `decision`) with a comment that begins "Q1:" or "All as recommended", this fires the
+# routine "PortFusion answer" on claude.ai, which works that one issue (CONTRIBUTING.md, The answer
+# run). Only the issue's number and link are sent, never the comment: the routine reads the issue
+# itself.
+#
+# The routine's fire URL and token are the repository's secrets ROUTINE_ANSWER_URL and
+# ROUTINE_ANSWER_TOKEN; without them this says so in its log and does nothing. The agent writes as
+# the owner's account too, so a comment carrying the agent's footer is never taken for an answer.
+
+name: answer
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions: {}
+
+concurrency:
+  group: answer-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  fire:
+    if: >-
+      !github.event.issue.pull_request
+      && github.event.comment.user.login == github.repository_owner
+      && contains(github.event.issue.labels.*.name, 'decision')
+      && !contains(github.event.comment.body, 'claude.ai/code')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Start the answer run, if this comment is an answer
+        env:
+          BODY: ${{ github.event.comment.body }}
+          NUMBER: ${{ github.event.issue.number }}
+          ISSUE: ${{ github.event.issue.html_url }}
+          URL: ${{ secrets.ROUTINE_ANSWER_URL }}
+          TOKEN: ${{ secrets.ROUTINE_ANSWER_TOKEN }}
+        run: |
+          first=$(printf '%s\n' "$BODY" | sed -e 's/^[[:space:]]*//' | grep -m1 -v '^$' || true)
+          if ! printf '%s' "$first" | grep -qiE '^(q[0-9]+[[:space:]]*:|all as recommended)'; then
+            echo "Not an answer: its first line is neither \"Q1: …\" nor \"All as recommended\"."
+            exit 0
+          fi
+          if [ -z "$URL" ] || [ -z "$TOKEN" ]; then
+            echo "::warning::An answer on #$NUMBER, but ROUTINE_ANSWER_URL or ROUTINE_ANSWER_TOKEN is not set."
+            exit 0
+          fi
+          payload=$(jq -n --arg t "Issue #$NUMBER was answered: $ISSUE" '{text: $t}')
+          curl -sS --fail-with-body -X POST "$URL" \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "anthropic-beta: experimental-cc-routine-2026-04-01" \
+            -H "anthropic-version: 2023-06-01" \
+            -H "Content-Type: application/json" \
+            -d "$payload" | jq -r '.claude_code_session_url // .'
