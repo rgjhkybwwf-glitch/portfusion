@@ -107,6 +107,10 @@ One figure moves, on two pages, and there is no migration. Do these when the boo
 
 ### Fixed
 
+- **A page chosen by keyboard puts focus on its heading**, so the next Tab is the page's first
+  control, not the top of the desk; the tab buttons are kept across a pick, the pressed one still
+  focused until the page paints. A cell reached by Tab in a wide table is scrolled clear of the
+  pinned heading and columns.
 - **Days held still open count to the prices' day**, the day the live figures stand at, not
   today's clock, on Holdings and on Round Trips' company lives; a line or life opened after that
   day reads 0.
