@@ -283,6 +283,29 @@ def test_a_checkouts_branch_that_changes_the_app_writes_it_up(pushed, capfd):
     assert unlogged("HEAD", pushed) == []
 
 
+def test_a_guide_left_behind_is_named_and_the_push_goes_on(pushed, capfd, monkeypatch):
+    """A branch that changes a file a guide names, and not the guide, names that guide and is
+    pushed; once the guide changes too, it names nothing."""
+    from portfusion.hooks import pre_push
+    (pushed / "docs").mkdir()
+    (pushed / "tools").mkdir()
+    _commit(pushed, "tools/x.py", "x = 1\n")
+    _commit(pushed, "docs/guide.md", "Run `tools/x.py`; `x.py` again, and `main` names nothing.\n")
+    assert _push(pushed, "main").returncode == 0
+    _git(pushed, "fetch", "-q", "origin")
+    _git(pushed, "switch", "-q", "-c", "side")
+    _commit(pushed, "tools/x.py", "x = 2\n")
+    assert pre_push.behind("HEAD", pushed) == {"docs/guide.md": ["tools/x.py"]}
+    monkeypatch.setattr(pre_push, "what_leaves", lambda checkout: 0)
+    tip = _tip(pushed, "side")
+    capfd.readouterr()
+    assert pre_push.main(["origin"], [f"refs/heads/side {tip} refs/heads/side {pre_push.ZERO}"],
+                         checkout=pushed) == 0
+    assert "docs/guide.md: tools/x.py" in "".join(capfd.readouterr())
+    _commit(pushed, "docs/guide.md", "Run `tools/x.py`, which now sets two.\n")
+    assert pre_push.behind("HEAD", pushed) == {}
+
+
 def test_a_main_moved_on_github_and_not_fetched_is_never_overwritten(pushed, tmp_path):
     """A merge made on GitHub that this checkout has not pulled: what a push would overwrite has
     not been seen here, so not even the override lets it through."""

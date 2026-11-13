@@ -21,6 +21,9 @@ One figure moves, on two pages, and there is no migration. Do these when the boo
 
 ### New
 
+- **A push of a checkout names the guides it leaves behind**: each guide that names a file the
+  branch changed, when the guide did not change. It never refuses the push. A release's read
+  starts from the same list (CONTRIBUTING).
 - **Reconcile says what each account was last checked against, on what day, what was compared,
   and what to do next**, in the engine's one sentence (`Book.account_checks()`), which the
   Dashboard and `portfusion record` print too. A share account's units are counted again on the

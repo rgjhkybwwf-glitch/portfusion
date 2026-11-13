@@ -15,6 +15,7 @@ from collections import Counter, defaultdict
 from datetime import date as _date
 import pytest
 from harness import needs, free_id
+from portfusion.hooks.pre_push import guide_pointers
 
 # =====================================================================================
 # Identity and referential integrity
@@ -790,27 +791,6 @@ NAMED_ON_PURPOSE = {
 }
 
 
-def _guide_pointers(text):
-    """(line, pointer) for every path a guide names in code or as a link target.
-
-    A fenced block is blanked line for line so the numbers stay true. A span holding a space is a
-    command and one holding `*` or `<` a pattern; a bare extension names a kind of file, not one."""
-    text = re.sub(r"```.*?```", lambda m: "\n" * m.group().count("\n"), text, flags=re.S)
-    out = []
-    for n, line in enumerate(text.splitlines(), 1):
-        for code, link in re.findall(r"`([^`\n]+)`|\]\(([^)\s]+)\)", line):
-            t = (code or link).strip()
-            if re.search(r"[\s*<]", t) or t.startswith(("~", "/", ":", "#", "http")):
-                continue
-            path = re.split(r":+", t, maxsplit=1)[0]
-            if re.fullmatch(r"\.\w+", path):
-                continue
-            if (re.search(r"\.(py|md|csv|json|css|js|html|ini|toml|txt|xlsx)$", path)
-                    or ("/" in path and re.fullmatch(r"[\w./-]+", path))):
-                out.append((n, t))
-    return out
-
-
 def test_every_pointer_in_a_guide_leads_somewhere(repo_root, project_files):
     """A POINTER THAT LEADS NOWHERE sends its reader nowhere and tells nobody.
 
@@ -848,7 +828,7 @@ def test_every_pointer_in_a_guide_leads_somewhere(repo_root, project_files):
     for guide in project_files(".md"):
         rel = guide.relative_to(repo_root).as_posix()
         here = guide.parent.relative_to(repo_root).as_posix()
-        for n, pointer in _guide_pointers(guide.read_text(encoding="utf-8")):
+        for n, pointer in guide_pointers(guide.read_text(encoding="utf-8")):
             if pointer in NAMED_ON_PURPOSE:
                 continue
             given, _, name = re.match(r"([^:]+)(:+)?(.*)", pointer).groups()
