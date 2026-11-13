@@ -64,6 +64,8 @@ def test_the_snapshot_ties_to_the_engine():
     # BLANK IS None ON THE PAGE AND NaN IN THE ENGINE, compared as the page carries it (`_blank`).
     assert figs["YTD return"] == _blank(b.totals()["ytd"])
     assert figs[b.SINCE_START] == _blank(b.since_start())
+    # THE COUNT ROUND TRIPS LEADS TO is that page's own "Closed out" total.
+    assert figs["Round trips closed out"] == panels.get("round-trips").data()["whole"]["closed_out"]
 
 
 @needs("buys")
@@ -909,7 +911,8 @@ def test_the_dashboard_lists_the_checks_the_audit_prints():
     engine's notes, in its words and its order.
 
     AND EACH FINDING LEADS TO ITS PAGE: the engine's, one the desk has, drawn as a link; what
-    waits on the Bench is drawn only where the Bench opens."""
+    waits on the Bench is drawn only where the Bench opens. So does the round trips count, to the
+    page that lists them."""
     data, found = panels.get("dashboard").data(), _engine.Book().findings()
     js = _renderer(desk_script(), "dashboard")
     assert data["checks"] == found["notes"]
@@ -920,6 +923,9 @@ def test_the_dashboard_lists_the_checks_the_audit_prints():
         assert sent[f] == getattr(f, "page", None), f
     assert {p for p in sent.values() if p} <= {p.NAME for p in panels.all_panels()}, sent
     assert "panelLink(a.panel)" in js and 'PANELS.has("bench") ? d.bench' in js
+    leads = {f["label"]: f.get("panel") for f in data["figures"] if f.get("panel")}
+    assert leads == {"Round trips closed out": "round-trips"}
+    assert set(leads.values()) <= {p.NAME for p in panels.all_panels()} and "panelLink(f.panel, " in js
 
 
 def test_the_footer_says_whose_it_is_and_which_release():

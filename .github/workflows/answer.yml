@@ -1,0 +1,74 @@
+# THE MAINTAINER'S ANSWERS START THE WORK, IN A BATCH. When the owner answers an issue the agent
+# stopped on (it carries `decision`) with a comment that begins "Q1:" or "All as recommended", this
+# waits ten minutes, then fires the routine "PortFusion answer" on claude.ai, which works every issue
+# answered (CONTRIBUTING.md, The answer run). Another answer within the ten minutes cancels the wait
+# and starts it again, so answers given together make one run. Nothing of a comment is sent: the
+# routine finds the answered issues itself.
+#
+# The routine's fire URL and token are the repository's secrets ROUTINE_ANSWER_URL and
+# ROUTINE_ANSWER_TOKEN; without them this says so in its log and does nothing. The agent writes as
+# the owner's account too, so a comment carrying the agent's footer is never taken for an answer.
+
+name: answer
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions: {}
+
+jobs:
+  # Whether this comment is an answer, outside the wait's queue: a comment that is not one never
+  # cancels a wait already running for one that is.
+  read:
+    if: >-
+      !github.event.issue.pull_request
+      && github.event.comment.user.login == github.repository_owner
+      && contains(github.event.issue.labels.*.name, 'decision')
+      && !contains(github.event.comment.body, 'claude.ai/code')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    outputs:
+      answer: ${{ steps.read.outputs.answer }}
+    steps:
+      - name: Is this comment an answer?
+        id: read
+        env:
+          BODY: ${{ github.event.comment.body }}
+        run: |
+          first=$(printf '%s\n' "$BODY" | sed -e 's/^[[:space:]]*//' | grep -m1 -v '^$' || true)
+          if printf '%s' "$first" | grep -qiE '^(q[0-9]+[[:space:]]*:|all as recommended)'; then
+            echo "answer=yes" >> "$GITHUB_OUTPUT"
+          else
+            echo "Not an answer: its first line is neither \"Q1: …\" nor \"All as recommended\"."
+          fi
+
+  fire:
+    needs: read
+    if: needs.read.outputs.answer == 'yes'
+    concurrency:
+      group: answer
+      cancel-in-progress: true
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Wait ten quiet minutes, then start the answer run
+        env:
+          NUMBER: ${{ github.event.issue.number }}
+          ISSUE: ${{ github.event.issue.html_url }}
+          URL: ${{ secrets.ROUTINE_ANSWER_URL }}
+          TOKEN: ${{ secrets.ROUTINE_ANSWER_TOKEN }}
+        run: |
+          if [ -z "$URL" ] || [ -z "$TOKEN" ]; then
+            echo "::warning::An answer on #$NUMBER, but ROUTINE_ANSWER_URL or ROUTINE_ANSWER_TOKEN is not set."
+            exit 0
+          fi
+          echo "An answer on #$NUMBER: the run starts in ten minutes, unless another answer comes first."
+          sleep 600
+          payload=$(jq -n --arg t "Answers were given, the last on #$NUMBER ($ISSUE)." '{text: $t}')
+          curl -sS --fail-with-body -X POST "$URL" \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "anthropic-beta: experimental-cc-routine-2026-04-01" \
+            -H "anthropic-version: 2023-06-01" \
+            -H "Content-Type: application/json" \
+            -d "$payload" | jq -r '.claude_code_session_url // .'

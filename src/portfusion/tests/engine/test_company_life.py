@@ -243,6 +243,36 @@ def test_a_full_exit_then_a_new_purchase_is_a_second_life(store_copy):
 
 
 @needs("accounts")
+def test_an_open_life_is_held_to_the_prices_day_not_the_clocks(store_copy, monkeypatch):
+    """AN OPEN LIFE'S DAYS HELD END AT `valued_at()`, the day the live figures stand at: the same
+    record reads the same days held whatever the clock says, and a life opened after that day has
+    not begun by it.
+
+    HOLDINGS READS THE SAME DAY: its row for the company, opened by the one buy still held, gives
+    the life's count."""
+    co = _Company(store_copy, "DHLD", price=1.50)
+    opened = pd.Timestamp(_on(10))
+    co.buy(_on(10), 100, 1.00)
+
+    def counts(book):
+        row = book.holdings().set_index("company").loc[co.name]
+        assert row["opened"] == opened
+        return _lives(book, co.name)[-1]["days_held"], row["days_held"]
+
+    book = _reloaded()
+    held = (pd.Timestamp(book.valued_at()) - opened).days
+    assert counts(book) == (held, held)
+
+    later = pd.Timestamp.today().normalize() + pd.Timedelta(days=400)
+    monkeypatch.setattr(pd.Timestamp, "today", classmethod(lambda cls, tz=None: later))
+    assert counts(_reloaded()) == (held, held), "the clock moved a days held"
+
+    before = (opened - pd.Timedelta(days=5)).date().isoformat()
+    monkeypatch.setattr(Book, "valued_at", lambda self: before)
+    assert counts(_reloaded()) == (0, 0)
+
+
+@needs("accounts")
 def test_a_round_trip_is_annualised_on_the_money_and_the_days_it_was_in(store_copy):
     """100 shares at 100p, 100 more at 100p twenty days on, all sold at 110p on day forty: £20
     on £200. The second £100 was in for half the trip, so the yearly rate is the one that grows

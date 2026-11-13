@@ -186,16 +186,21 @@ One line each; kept by review, and by the test named where there is one.
 
 ### The nightly agent (on trial since 12 Nov 2026)
 
-An unattended Claude session works the ready issues, and the maintainer checks in by morning.
+Unattended Claude sessions work the ready issues, and the maintainer checks in when they ask.
 This is a trial: the process is being developed as it runs, and each surprise becomes a rule here,
 a test, or a better-written issue. **This section is the agent's instructions**; the agent never
 changes it.
 
 **How it runs**
 
-- **From a routine on claude.ai** at 02:00 UK time, in the personal cloud environment
-  "PortFusion", whose setup script builds the venv on Python 3.13 and installs `tools/`. The
-  routine points here and sets how many issues a night; nothing else is kept there.
+- **Three routines on claude.ai**, each in the personal cloud environment "PortFusion", whose setup
+  script builds the venv on Python 3.13 and installs `tools/`. Each routine points at its part
+  here and sets how many issues a run takes; nothing else is kept there.
+  - **The ready check**, by day: plans the next issues and asks their questions before the night.
+    It writes no code.
+  - **The night run**, at 02:00 UK time: builds the ready issues.
+  - **The answer run**, ten quiet minutes after the maintainer's last answer: works the issues
+    answered.
 - **A run has a cap.** No more issues than the routine names, and no issue past a second attempt
   at a green guard: one that will not go green is left as a draft pull request with what blocks it
   at the top, and the run moves on. A run that is going nowhere stops and says so; it does not file
@@ -204,8 +209,7 @@ changes it.
 **Which issues, in what order**
 
 - **An issue is ready when it meets the Definition of Ready and carries no `decision` label**, so
-  it can be built unattended and merged unread: taking `decision` off is the maintainer's yes,
-  given in advance, and no other label is needed. The Definition of Ready is all five:
+  it can be built unattended and merged unread. The Definition of Ready is all five:
   - **Cause**: what in the code makes the symptom, by file and function. A symptom alone is
     evidence, not an issue.
   - **Done**: the checks that say it is done, each one a test, a walk step or a command can make.
@@ -217,14 +221,16 @@ changes it.
   one that has them.
 - **The Queue sets the order**: the open issue "Queue: what the nightly agent builds next" (#206)
   ranks the work, unblockers first, then bugs and wrong figures, small safe fixes, features and
-  polish. The agent takes the first line under Next whose issue is ready and has no open pull
+  polish. A run takes the first line under Next whose issue is ready and has no open pull
   request of its own, and whose "waits" issues are all closed; it skips the rest and never
   reorders. Each issue is read whole, comments included, before its work starts.
 - **The agent keeps the Queue current**: after each pull request merges it ticks the line and moves
-  it to Done, and each issue it files goes under To rank, for the maintainer to place.
-- **Its own open pull requests come first.** Before a new issue, each one is brought level with
-  `main` (merged in, never rebased), its pictures retaken when a page it changed moved under it,
-  and its CI made green, so none waits on the maintainer for anything but a yes it asked for.
+  it to Done, and each issue it files goes under To rank, for the maintainer to place. It reads the
+  Queue afresh just before each edit, since another run may have changed it.
+- **Its own open pull requests come first** in the night run. Before a new issue, each one is
+  brought level with `main` (merged in, never rebased), its pictures retaken when a page it changed
+  moved under it, and its CI made green, so none waits on the maintainer for anything but a yes it
+  asked for.
 - **No ready line in the Queue and nothing to tend: stop**, posting nothing.
 
 **Asking and answering**
@@ -235,34 +241,74 @@ changes it.
   costs in a few words. Tables above it are evidence, read only when wanted, and carry no column
   to fill in.
 - **The maintainer answers in one comment, a line a question**: `Q1: a`, `Q2: b, and …`, or
-  `All as recommended`. A question is settled when its answer is written so; a recommendation is
-  not an answer, and neither is a comment's tone.
+  `All as recommended`. **That comment is the yes.** A question is settled when its answer is
+  written so; a recommendation is not an answer, and neither is a comment's tone.
+- **The run that reads a full answer acts on it**: it copies the answers into the issue's
+  Decisions, quoted with the date, takes `decision` off, and the issue is ready. An answer that
+  leaves a question open is asked again, for that question alone, and `decision` is taken off and
+  put back on, so the maintainer is told.
 - **An issue's questions are kept few**: what only the maintainer can decide. What the agent can
   settle from the code, the record's rules or an answer already given, it settles and says so.
+
+**The ready check**
+
+- **It first sorts "Walk finds: to sort" (#220)**: each find onto the open issue that covers it,
+  or, with others like it, into a new issue that meets the Definition of Ready, in the next
+  milestone, with its questions and `decision`; a find not worth an issue is struck through with the
+  reason. Each line it handles is struck through, so the list only holds what is unsorted.
+- **It runs the planning, by day, so the questions reach the maintainer before the night.** It
+  takes the first lines under Next as the night run would, up to the routine's number, and skips an
+  issue whose checked plan is its latest comment and whose files `main` has not changed since.
+- **For each, the plan and its check** (below, under Building), against today's `main`. A plan
+  with no question is posted as **Plan, checked**, naming the commit of `main` it was checked
+  against. A plan that finds a question, or finds the issue's cause or premise no longer holds,
+  asks it and labels the issue `decision`.
+- **It writes no code**, opens no branch, and changes no label but `decision`.
+
+**The answer run**
+
+- **The maintainer's answers start it, in a batch.** `answer.yml` sees the owner's comment on an
+  issue labelled `decision` that begins `Q1:` or `All as recommended`, waits ten minutes, and fires
+  the routine "PortFusion answer"; an answer within those minutes starts the wait again, so answers
+  given together make one run. Nothing of a comment is passed.
+- **It first claims every answered issue**: each open issue labelled `decision` whose owner's
+  latest comment answers it. It acts on each answer (above), taking `decision` off, before it builds
+  any, so a run started later does not take the same issue.
+- **Then it builds them one after another, in Queue order**, those not in the Queue last, as the
+  night run would, up to the routine's number. One still not ready, a question open or a "waits"
+  issue open, it says which on the issue and leaves; the night run takes it when it is.
+- **An issue with a branch of its own continues on it**, brought level with `main`. An open pull
+  request from it is completed to the whole issue, its "Part of #n" made "Closes #n", and merges
+  itself if it is clean.
 
 **Building**
 
 - **A plan, checked, before code.** The agent writes its plan as a comment on the issue: the files
   it will change, how each "Done" check will be made, and what it will not touch. A fresh agent,
   given only the issue and that plan, checks the plan against the code and says what is missing or
-  wrong; the plan is mended before a line is written. A plan that finds the issue's cause is wrong
-  is a stop, asked as a decision.
+  wrong; the plan is mended before a line is written. A plan the ready check has already checked is
+  used as it stands when `main` has not changed the files it names since; otherwise it is written
+  and checked again.
 - **One issue, one branch, one pull request**: a branch claude/<name> from the latest `main`,
   worked by the conventions above (changelog, own diff reviewed, a changed desk page walked cold),
   the guard run, and the desk walk if a desk file changed. The pull request says "Closes #n", and
   the agent goes on to the next issue without waiting for a merge.
-- **Settled rows are built; open rows are asked.** When some of an issue's rows are open, the
-  settled ones are built in a pull request that says "Part of #n", auto-merge off; the open ones
-  are asked in one comment on the issue, options and a recommendation each, and the issue is
-  labelled `decision`. The maintainer answers and takes the label off.
-- **A decision that appears mid-build is a stop** for that row, asked the same way.
+- **Done means `guard` green on the last push.** No pull request is called clean, and none is
+  left, until CI's `guard` has passed on its newest commit; a local run is a quick check, not the
+  proof.
+- **A question stops the issue; nothing of it is built.** An open question, in the issue, in the
+  plan or appearing mid-build, is asked at the end of a comment on the issue, the issue is labelled
+  `decision`, what is built so far is pushed to its branch with no pull request, and the run moves
+  on. The answer starts the issue again, whole, on that branch.
 - **Something a comment raises outside its issue** becomes a new issue labelled `decision`,
   linked from the issue, and is not built.
-- **What a cold walk finds that the change did not cause** is filed as an issue, or added to one,
-  and listed in the pull request.
+- **The cold walk keeps to the pages the change touched**, with jobs about the change. What it
+  meets there that the change did not cause goes first onto the open issue that covers it, as
+  evidence, and the rest onto "Walk finds: to sort" (#220), one line a find, with no question and no
+  ping; the pull request lists both. The ready check sorts that list by day.
 - **A milestone being worked only gets shorter.** An issue the agent files goes in the next
   milestone, with the area labels of the issue it came from and `decision` until it is answered,
-  unless an issue of the current one cannot close without it. A walk's finds are one issue a walk.
+  unless an issue of the current one cannot close without it.
 - **A CI failure on its pull request** is the agent's to fix, and it waits for the guard's result
   before it leaves a pull request. When the walk fails only because a page the issue meant to
   change looks different, the agent labels the pull request `baselines`: a workflow retakes the
@@ -290,9 +336,13 @@ changes it.
 
 - **A question or pull request reaches the maintainer as a mention**: the agent works as the
   maintainer's account, so GitHub would tell them nothing; an issue labelled `decision`, and a pull
-  request from a branch whose name begins claude/, get a comment from `github-actions[bot]`, headed
-  "PortFusion agent", that names them and says whether the pull request is merging itself or
-  waiting for a yes (`notify.yml`).
+  request from a branch whose name begins claude/ that waits for a yes, get a comment from
+  `github-actions[bot]`, headed "PortFusion agent", that names them (`notify.yml`). A pull request
+  merging itself gets the same note without naming them: it asks nothing, so it pings no one.
+- **A run sends no push notification of its own.** Its last message is the debrief, and the
+  routine delivers it to the maintainer's phone when the run ends.
+- **The agent's own comments never begin `Q1:` or `All as recommended`**, the answer's shapes,
+  since it writes as the maintainer's account.
 
 **Never**
 

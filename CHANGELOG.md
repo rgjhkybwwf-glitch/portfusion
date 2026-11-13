@@ -7,8 +7,10 @@ prints it.
 
 ### Upgrading a book
 
-No figure moves, and there is no migration. Do these when the book's pin moves.
+One figure moves, on two pages, and there is no migration. Do these when the book's pin moves.
 
+- **Expect days held still open to read to the prices' day**, on Holdings and on Round Trips'
+  company lives, where they read to today: fewer days, by the age of the newest mark.
 - **Expect each account's reconciliation in new words**, the same on Reconcile, the Dashboard
   and `portfusion record`. An account never read: "<account>: no holdings export on file, so its
   units are unchecked — file a holdings export", or, for IG, "no reading from IG on
@@ -35,7 +37,8 @@ No figure moves, and there is no migration. Do these when the book's pin moves.
   rule knows is listed under Skipped, where it was dropped without a word.
 - **What needs attention leads to where it is done.** Each finding on the Dashboard ends in a
   link to the page its work is done on, and the Dashboard counts the documents waiting and the
-  items ready on the Bench. An "owed" tag on Round Trips and Holdings is the link to the Bench.
+  items ready on the Bench. An "owed" tag on Round Trips and Holdings is the link to the Bench,
+  and the Dashboard's round trips closed out leads to Round Trips.
 - **Reconcile lists an account never read**, as "No reading", and a row not judged links to where
   its reading is taken.
 - **Performance says where the record begins**: the day, the opening net asset value and the
@@ -50,6 +53,11 @@ No figure moves, and there is no migration. Do these when the book's pin moves.
 
 ### Changed
 
+- **"% of book" is "% of exposure", and "Weight" is "Weight of exposure"**, on Holdings and the
+  report: each is a share of market exposure, a line's or a slice's, where a spread bet counts
+  at its notional, not a share of net asset value. **"Contribution" is "Counts as"**, on Performance's NAV detail
+  and the report's accounts table: how an account counts towards net asset value. No figure
+  moves.
 - **A period that opens with the record is named by its first day counted**: a book begun on
   18 May reads "Q2 2026, from 18 May" and "2026 to 30 Sep, from 18 May", the day the
   Dashboard's year says it is from; it read the day before. No figure moves, and a line the
@@ -99,6 +107,9 @@ No figure moves, and there is no migration. Do these when the book's pin moves.
 
 ### Fixed
 
+- **Days held still open count to the prices' day**, the day the live figures stand at, not
+  today's clock, on Holdings and on Round Trips' company lives; a line or life opened after that
+  day reads 0.
 - **The publish test's app case uses a book outside the app**, so it passes where a checkout sits
   inside a book.
 - **The desk's four accessibility faults, as axe-core found them.** The page names its language;

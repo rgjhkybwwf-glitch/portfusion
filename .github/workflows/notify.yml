@@ -4,8 +4,9 @@
 # account, that mentions the owner, and GitHub notifies them as for anyone else's comment:
 #
 # - an issue labelled `decision`: an agent stopped at a choice the issue does not settle;
-# - a pull request opened, reopened or marked ready from a `claude/` branch: it says whether the
-#   pull request merges itself (the agent turned auto-merge on) or waits for the yes.
+# - a pull request opened, reopened or marked ready from a `claude/` branch that waits for the yes
+#   (auto-merge off). One that merges itself gets the same note without the mention: it asks
+#   nothing, so it pings no one.
 #
 # No action is used, only `gh`, which the runner carries; the token is the workflow's own, so its
 # comment starts no other workflow. Titles and links reach the shell as variables, never as script.
@@ -34,7 +35,7 @@ jobs:
           ISSUE: ${{ github.event.issue.html_url }}
           OWNER: ${{ github.repository_owner }}
         run: |
-          gh issue comment "$ISSUE" --body "🤖 **PortFusion agent** · @$OWNER, a decision is needed here: the questions are under \"Questions for you\", at the end of the issue or of the comment above. Reply with a line each, \"Q1: a\", or \"All as recommended\", then take the \`decision\` label off: that is the yes."
+          gh issue comment "$ISSUE" --body "🤖 **PortFusion agent** · @$OWNER, a decision is needed here: the questions are under \"Questions for you\", at the end of the issue or of the comment above. Reply with a line each, \"Q1: a\", or \"All as recommended\": your reply is the yes, and the agent starts on it."
 
   review:
     if: >-
@@ -54,7 +55,7 @@ jobs:
         run: |
           sleep 60
           if [ -n "$(gh pr view "$PR" --json autoMergeRequest --jq '.autoMergeRequest // empty')" ]; then
-            gh pr comment "$PR" --body "🤖 **PortFusion agent** · @$OWNER, this asks you nothing, so it merges itself once \`guard\` is green. What changed is above; a merge can be reverted."
+            gh pr comment "$PR" --body "🤖 **PortFusion agent** · this asks nothing, so it merges itself once \`guard\` is green. What changed is above; a merge can be reverted."
           else
             gh pr comment "$PR" --body "🤖 **PortFusion agent** · @$OWNER, this is ready for your review. If it is right, enable auto-merge, or merge it if \`guard\` is already green."
           fi
