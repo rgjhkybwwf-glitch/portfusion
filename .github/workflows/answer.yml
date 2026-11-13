@@ -77,7 +77,8 @@ jobs:
           echo "An answer on #$NUMBER: the run starts in ten minutes, unless another answer comes first."
           sleep 600
           payload=$(jq -n --arg t "Answers were given, the last on #$NUMBER ($ISSUE)." '{text: $t}')
-          curl -sS --fail-with-body -X POST "$URL" \
+          # A busy or briefly unavailable endpoint (5xx) is tried again, up to four more times.
+          curl -sS --fail-with-body --retry 4 --retry-delay 30 --retry-all-errors -X POST "$URL" \
             -H "Authorization: Bearer $TOKEN" \
             -H "anthropic-beta: experimental-cc-routine-2026-04-01" \
             -H "anthropic-version: 2023-06-01" \
