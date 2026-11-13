@@ -430,6 +430,39 @@ class Quarters(Core):
         return {"lines": lines, "position_income": income,
                 "unattributed": float(q["gain"]) - lines - income, "gain": float(q["gain"])}
 
+    def year_attribution(self) -> dict:
+        """The live year's capital growth taken apart, as `quarter_attribution()` takes a
+        quarter's gain, from `ytd_opens()`:
+
+          trading_gain    the year's sales' realised gain, plus the move in unrealised since the
+                          opening: `unrealised()` now less `holdings_at()` on the opening day.
+                          Income left out, as the headline trading gain leaves it out, which runs
+                          to date, each line from its purchase. Blank when that day's marks
+                          cannot value the opening.
+          equity_income   the year's income and costs in spread-bet accounts, every category: an
+                          account's equity holds them, so its net asset value moved by them; a
+                          share account's holds none.
+          unattributed    what neither explains: the frozen opening net asset value against the
+                          opening valued at that day's marks. Nothing, where one valuation froze
+                          both.
+          capital_growth  `totals()`'s, which the three add to: blank until the opening is frozen.
+          position_income the year's, beside the year's other two incomes in `totals()`.
+        """
+        opens = self.ytd_opens()
+        gains = self._sale_gains()
+        realised = sum(gains[e.sale_id] for e in self.D.sales if str(e.date)[:10] > opens)
+        try:
+            at_open = float(self.holdings_at(opens)["unrealised"].sum())
+        except (KeyError, ValueError):
+            at_open = float("nan")
+        trading = float(realised + self.unrealised() - at_open)
+        inc = self.income_by_account(start=opens)
+        equity = float(sum(v for a, v in inc.items() if self.is_spread_bet(a)))
+        growth = float(self.totals()["capital_growth"])
+        return {"trading_gain": trading, "equity_income": equity,
+                "unattributed": growth - trading - equity, "capital_growth": growth,
+                "position_income": float(self.position_income(start=opens).sum())}
+
     def year_to_quarter(self, quarter_end: str) -> dict:
         """The year to a FROZEN quarter end, measured exactly as its quarters are: `_dietz()` from
         the net asset value at `year_opens()` to the quarter end's. Unlike the live year to

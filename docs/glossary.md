@@ -123,7 +123,7 @@ not *realized*.
 | A total row | **Total** |
 | Net asset value, as a column | **Net asset value** |
 | Spread-bet notional, on Holdings' strip | **Spread-bet notional** |
-| A headline figure, on the Dashboard and the report's first section | **Net asset value · Total market exposure · — of which securities owned · — of which spread-bet notional · Exposure above net asset value · Cost of securities owned · Spread-bet notional at entry · Unrealised gain / loss · Realised gain / loss to date · Total gain · YTD income · Capital employed (opening + deployed) · YTD return · Return since … (MWR) · Return this quarter · Open positions · Accounts / positions · Round trips closed out** — `house/headings.py`'s `FIGURES`; the since-start return carries the record's first day |
+| A headline figure, on the Dashboard and the report's first section | **Net asset value · Total market exposure · — of which securities owned · — of which spread-bet notional · Exposure above net asset value · Cost of securities owned · Spread-bet notional at entry · Unrealised gain / loss · Realised gain / loss to date · Trading gain, excl. income · YTD income · Capital employed (opening + deployed) · YTD return · Return since … (MWR) · Return this quarter · Open positions · Accounts / positions · Round trips closed out** — `house/headings.py`'s `FIGURES`; the since-start return carries the record's first day |
 | The year's income, fees and cash interest included | **YTD income** |
 | A figure the report names outside a table | **Position income** — the quarter's income that names a line · **Capital in and out** — the quarter's capital movements |
 | An income row's kind | **Category** |
@@ -266,7 +266,7 @@ starts to define one.
 | Spread-bet notional at entry | `notional` | gbp | **no — live only** |
 | Unrealised gain / loss | `capital` | gbp | **no — live only** |
 | Realised gain / loss to date | `capital` | gbp | **no — live only** |
-| Total gain | `capital` | gbp | **no — live only** |
+| Trading gain, excl. income | `capital` | gbp | **no — live only** |
 | YTD income | `capital` | gbp | **no — live only** |
 | Capital employed (opening + deployed) | `capital` | gbp | **no — live only** |
 | YTD return | `capital` | pct | **no — live only** |

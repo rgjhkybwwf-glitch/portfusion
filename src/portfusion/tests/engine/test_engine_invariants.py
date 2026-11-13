@@ -26,6 +26,7 @@ import pytest
 
 from portfusion.record import rules as D
 from portfusion.engine import MEASURE_BASIS, BasisError, Book, roll_up
+from portfusion.house import headings as H
 from harness import free_id, needs, write_rows
 
 PENNY = 0.01
@@ -191,7 +192,7 @@ def test_realised_gain_is_reachable_two_ways_and_agrees(book):
 
 
 def test_total_gain_is_its_two_halves(book):
-    assert close(book.headline()["Total gain"], book.unrealised() + book.realised())
+    assert close(book.headline()[H.FIGURES["total_gain"]], book.unrealised() + book.realised())
 
 
 def test_portfolio_cost_is_the_two_bases_costs(book):

@@ -9,6 +9,8 @@ prints it.
 
 One figure moves, on two pages, and there is no migration. Do these when the book's pin moves.
 
+- **Read "Total gain" as "Trading gain, excl. income"**: the same figure, under a name that says
+  what it leaves out.
 - **Expect days held still open to read to the prices' day**, on Holdings and on Round Trips'
   company lives, where they read to today: fewer days, by the age of the newest mark.
 - **Expect each account's reconciliation in new words**, the same on Reconcile, the Dashboard
@@ -53,6 +55,14 @@ One figure moves, on two pages, and there is no migration. Do these when the boo
 
 ### Changed
 
+- **"Total gain" is "Trading gain, excl. income"**, on the Dashboard, `portfusion record` and the
+  glossary: unrealised plus realised, which leaves income out. Its value does not move. Method
+  says the year is measured as one period, not its quarters linked, and the report's one income
+  note says which income each part shows.
+- **Method sets the gains, incomes and capitals side by side**, in the book's own figures: the
+  year's trading gain (`Book.year_attribution()`: realised in the year plus the move in unrealised
+  since its opening), plus the year's income and costs in spread-bet accounts, makes capital
+  growth; and YTD income, return income and position income, each with what it holds.
 - **An account goes by its code and label on the reading pages, as in the report**: `A1 · ii ISA`
   on Holdings, Round Trips, Trades, Performance, Reconcile and Accounts, in their account cells
   and filters. The register on Accounts, and the Bench and Price refresh, which write it, keep
