@@ -1,0 +1,128 @@
+/* THE BENCH, AND THE REFRESH BAY BELOW IT: the pages that write. */
+
+/* --- THE BENCH ------------------------------------------------------------------------- */
+.row-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); }
+.row-head h2 { margin: 0; }
+
+.row-card { border: 1px solid var(--hair); border-top: var(--rule-section) solid var(--rule);
+            padding: var(--space-3); margin-bottom: var(--space-3); }
+
+/* The word count turns when it passes the cap. The cap is a rule of the record, not a
+   suggestion — a rationale that needs 60 words is usually restating figures the row carries. */
+.overcap { color: var(--warn-ink); font-weight: 600; }
+
+.gates .ok   .tag::before { background: var(--key-clear); }
+.gates .no   .tag::before { background: var(--key-problem); }
+
+pre.paste, pre.doc {
+  background: var(--band); color: var(--ink);
+  padding: var(--space-3); overflow-x: auto;
+  font-size: var(--text-note);
+  white-space: pre-wrap; word-break: break-word;
+}
+pre.doc { max-height: 22rem; overflow-y: auto; }
+
+/* THE DROP-OFF ZONE. A dashed outline is the one place in this design system that reads as
+   "put something here" rather than "here is a figure" — everything else is hairlines and
+   fills that carry meaning. It lights up on `.over` so a drag has visible feedback before
+   the release, which is the moment a drop is either aimed or abandoned. */
+.drop {
+  display: flex; flex-direction: column; gap: var(--space-2); align-items: center;
+  text-align: center;
+  padding: var(--space-5); margin: var(--space-3) 0;
+  border: 2px dashed var(--control);
+  color: var(--muted);
+}
+.drop strong { color: var(--ink); font-weight: 600; }
+.drop.over { border-color: var(--accent); border-style: solid; background: var(--band); }
+
+/* THE QUOTE UNDER A PROPOSED FIELD. Set quietly on purpose — it is evidence to be read
+   against the document, not a second figure competing with the value above it. */
+.f .quote {
+  display: block; font-style: normal; font-size: var(--text-label); color: var(--muted);
+  margin-top: 2px; padding-left: var(--space-2);
+  border-left: 2px solid var(--accent);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* THE DOCUMENT BESIDE THE FORM. Sticky, because the job is cross-referencing a quote against
+   the page it came from and a preview that scrolls away is one you stop using. The measure
+   suits prose; a page and a form beside each other need more, so the body widens only while the
+   preview is open and returns when it closes. */
+/* THE DOCUMENT BESIDE THE FORM TAKES THE WINDOW: a document needs the area. This is the one
+   screen where BOTH halves are being read at once. */
+body.wide main { max-width: none; }
+
+body.wide #item { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+                  gap: var(--space-5); align-items: start; }
+body.wide #item > #preview-pane { grid-row: 1 / 99; grid-column: 2; position: sticky; top: var(--space-3); }
+body.wide #item > *:not(#preview-pane) { grid-column: 1; }
+.docframe { width: 100%; height: 78vh; border: 1px solid var(--hair);
+            background: var(--paper); }
+
+/* Stacked on a narrow window: a side-by-side at 40rem is two unreadable columns. */
+@media (max-width: 70rem) {
+  body.wide #item { display: block; }
+  body.wide #item > #preview-pane { position: static; }
+  .docframe { height: 60vh; }
+}
+
+/* A DRAFTED CELL IS NOT EVIDENCE. Same shape as a quote so the eye reads them together, but
+   in the warning colour, because it is a reading of the document rather than a piece of it. */
+.f .quote.drafted { border-left-color: var(--warn-ink); color: var(--warn-ink); }
+
+/* FROM THE RECORD, NOT THE DOCUMENT — an allocated id, or the provenance line built from the
+   three evidence limbs. Neither quoted nor composed: the book already knew it. */
+.f .quote.derived { border-left-color: var(--hair); }
+
+/* A PROSE FIELD TAKES THE WHOLE ROW. `note` is the cell the machine wrote and the one the owner
+   most has to read before approving it; in a 15rem column it would be a box to scroll sideways. */
+.f.long { grid-column: 1 / -1; }
+.f.long textarea { min-height: 4.5rem; }
+
+/* --- THE REFRESH BAY -------------------------------------------------------------------
+   A form that writes marks. `.tick` keeps the checkbox and its word on one line so a disabled
+   row reads as one thing rather than two; `.wide-cell` lets the source take the width it needs,
+   because a source that cannot be read back is not a source. */
+.tick { white-space: nowrap; display: inline-flex; align-items: center; gap: 0.4ch; }
+label.tick:has(input[disabled]) { color: var(--muted); cursor: not-allowed; }
+td.wide-cell { min-width: 22rem; }
+td.wide-cell input { width: 100%; }
+/* A FETCHED FIGURE IS READ, NOT TYPED, so it sits in its cell as text; a rate the sweep left
+   unpriced loses `readonly` and looks like an input again. */
+td input[readonly] { border-color: transparent; background: transparent; padding-left: 0; }
+/* A FIGURE IN AN INPUT READS DOWN ITS COLUMN like one in a cell: right-set under its `th.num`,
+   and a read-only one flush to the edge the heading sits on. */
+td.num input { text-align: right; }
+td.num input[readonly] { padding-right: 0; }
+/* A FIGURE TO BE TYPED READS ON THE SAME LINE AS A FETCHED ONE: its box reaches out into the
+   cell's padding by exactly its own padding — a read-only field keeps its border, only
+   transparent — so the text inside starts where the read-only text above it does, and only the
+   box says it is waiting to be typed. The Price Refresh only: it is the one form where a typed
+   figure sits in a column of fetched ones. */
+#rb-form td input:not([readonly]):not([type="checkbox"]) {
+  padding-left: var(--space-2); padding-right: var(--space-2);
+  margin-left: calc(-1 * var(--space-2));
+}
+#rb-form td.num input:not([readonly]) {
+  margin-left: 0; margin-right: calc(-1 * var(--space-2));
+}
+
+/* THE DESCRIPTION AND THE STATUS HOLD ONE SHAPE — one left, one right, neither wrapping into the
+   other.
+
+   A SWEPT ROW TAKES THE SCREEN. `body.data #main .items li` holds a list item to the PROSE
+   measure, which is right for every other list on the desk and wrong for this one: a swept row
+   carries a generated CSV line. That is data, it is the widest thing here, and it is exactly what
+   a wide window is for. */
+/* THE SELECTOR HAS TO OUTRANK THE RULE IT IS EXCEPTING. `.items li.swept` loses to
+   `body.data #main .items li` on specificity — (0,2,1) against (1,2,2). Matched shape, one class
+   deeper. */
+body.data #main .items li.swept { max-width: none; }
+.swept-head { display: flex; align-items: baseline; gap: var(--space-5); width: 100%; }
+.swept-what { flex: 1 1 auto; min-width: 0; }
+.swept-do { flex: 0 0 auto; margin-left: auto; text-align: right; white-space: nowrap; }
+.swept-meta { margin: 2px 0 0; font-size: var(--text-note); }
+
+/* An event on the bench says what it still owes, beside it. */
+.swept-state { flex: 0 0 auto; margin-left: auto; white-space: nowrap; }

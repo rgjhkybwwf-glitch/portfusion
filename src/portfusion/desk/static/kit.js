@@ -103,7 +103,7 @@ const page = ({ scope = "", field = null, status = null, figures: strip = null, 
    run to several sentences — rendered plain they would set the row's height. Clamped to one
    line with the whole text on hover and in the title.
 
-   NOR MUST A LABEL. Every cell of a data row is one line (app.css); a company name and
+   NOR MUST A LABEL. Every cell of a data row is one line (tables.css); a company name and
    Holdings' list of accounts are read WHOLE. The table scrolls sideways instead. */
 const ONELINE = ["closed", "realisation_id", "ticker", "account"];
 /* A DATE IS READ WHOLE WHATEVER ITS COLUMN IS CALLED: an ISO date breaks at its hyphens. */
