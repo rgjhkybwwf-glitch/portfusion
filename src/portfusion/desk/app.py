@@ -164,8 +164,8 @@ def tokens():
     """The book's own colours as CSS custom properties, DERIVED not retyped.
 
     Generated rather than written down, so a colour changed in `house/palette.py` reaches the
-    desk on the next reload. `app.css` is the design system and consumes these; replacing it
-    is how a different design system drops in.
+    desk on the next reload. The desk's stylesheet (`bundle.STYLES`) is the design system and consumes these;
+    replacing it is how a different design system drops in.
     """
     return _shell("/tokens.css")
 

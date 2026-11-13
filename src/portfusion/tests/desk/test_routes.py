@@ -5,7 +5,7 @@ import re
 import pytest
 from portfusion.desk import actions, app, panels, engine
 from fastapi.testclient import TestClient
-from harness import SRC, desk_script
+from harness import SRC, desk_script, desk_style
 
 
 # =====================================================================================
@@ -59,8 +59,7 @@ def test_every_token_the_desk_is_handed_is_worn():
     so both count as a use."""
     import re
     from portfusion.desk import icon
-    used = ((SRC / "desk" / "static" / "app.css").read_text(encoding="utf-8")
-            + app.index().body.decode())
+    used = desk_style() + app.index().body.decode()
     declared = set(re.findall(r"--([a-z-]+):", app.tokens().body.decode()))
     unworn = sorted(t for t in declared
                     if f"var(--{t})" not in used and t not in icon.ROLES.values())
@@ -69,14 +68,14 @@ def test_every_token_the_desk_is_handed_is_worn():
 
 def test_every_token_the_desk_wears_is_handed_to_it():
     """THE OTHER DIRECTION: a var() naming a token nobody declares draws in the property's default,
-    with nothing on screen saying so. Every var(--x) in app.css is a token /tokens.css declares or
-    one app.css sets itself."""
+    with nothing on screen saying so. Every var(--x) in the stylesheet is a token /tokens.css declares
+    or one the stylesheet sets itself."""
     import re
-    css = (SRC / "desk" / "static" / "app.css").read_text(encoding="utf-8")
+    css = desk_style()
     declared = (set(re.findall(r"--([a-z0-9-]+):", app.tokens().body.decode()))
                 | set(re.findall(r"--([a-z0-9-]+):", css)))
     unhanded = sorted(set(re.findall(r"var\(--([a-z0-9-]+)", css)) - declared)
-    assert not unhanded, f"app.css wears {unhanded}, which nothing declares"
+    assert not unhanded, f"the stylesheet wears {unhanded}, which nothing declares"
 
 
 def test_the_desk_wears_the_books_lockup():

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from portfusion.record import schema
 
-from harness import SRC, an_account, free_id
+from harness import an_account, free_id
 
 
 #: An invented ii GBP ledger, in ii's shape, BOM and all: `test_read_rows` reads it, and
@@ -81,7 +81,3 @@ def _ready(item, **over):
                                  "cycle masks.", "why_exited": ""}
     item["rows"] = [{"table": "buys", "values": dict(GOOD_TRADE, **over)}]
     return item
-
-
-def _static(name):
-    return (SRC / "desk" / "static" / name).read_text()

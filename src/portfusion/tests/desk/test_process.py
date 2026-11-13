@@ -5,7 +5,7 @@ import pathlib
 import pytest
 from portfusion import engine as _engine
 from portfusion.desk import panels, engine
-from harness import SRC, needs, desk_script
+from harness import needs, desk_script, desk_style
 
 
 # =====================================================================================
@@ -106,12 +106,12 @@ def test_every_font_size_comes_from_the_scale():
     """EVERY SIZE IS A STEP OF THE SCALE, and every step is used: one nothing renders is a size
     the design does not have.
 
-    Nothing may state a size outside :root, the rule app.css opens with for colour and spacing
+    Nothing may state a size outside :root, the rule kit.css opens with for colour and spacing
     applied to the file itself. Two steps are display sizes: a page's title, and the figures on
     the Dashboard's band.
     """
     import re
-    css = (SRC / "desk" / "static" / "app.css").read_text()
+    css = desk_style()
 
     literals = re.findall(r"font-size:\s*([0-9.]+(?:rem|px|em))", css)
     assert not literals, (

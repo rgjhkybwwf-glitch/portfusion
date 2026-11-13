@@ -57,6 +57,10 @@ One figure moves, and there is no migration. Do these when the book's pin moves.
   glossary's index: the word Performance already heads the column with. Every figure's name is
   written once, in `house/headings.py`'s `FIGURES`, and the engine, the Dashboard and the report
   read it there.
+- **The desk's script and stylesheet are split by page and by area**, so two desk changes
+  rarely touch one file: each reading page draws from its own file (`holdings.js`, `trades.js`
+  and so on), and the stylesheet is five files linked in order, `kit.css`, `tables.css`,
+  `pages.css`, `bench.css` and `phone.css` (`desk/bundle.py`'s `STYLES`). Nothing on a page moves.
 - **A wide table keeps its links at its right edge** and a row's detail in view, from 70rem.
 - **A row is the way into its detail** (the audit's row 47). A press anywhere on a row of
   Holdings, Round Trips, Trades, Performance or Accounts' income opens its detail in place, and

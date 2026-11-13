@@ -12,7 +12,7 @@ width range, served from house/fonts/ (or the brand's folder, when it names a fa
 
 THE DESK WEARS THESE AND NO OTHERS. A token emitted and never consumed is a palette entry
 pretending to be a treatment, so `tests/desk/test_routes.py` holds every one here to a use in
-app.css or the icon, and the report's own (its page ground, its labels) stay out, except its
+the desk's stylesheet or the icon, and the report's own (its page ground, its labels) stay out, except its
 bars, which Holdings' allocation draws as the report does.
 """
 from __future__ import annotations

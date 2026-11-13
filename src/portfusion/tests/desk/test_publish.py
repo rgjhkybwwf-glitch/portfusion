@@ -73,9 +73,9 @@ def test_every_file_in_the_deploy_repository_is_generated(deploy):
     assert listed == set(json.loads((clone / "version.json").read_text())["files"])
     verify = [sys.executable, str(clone / "verify.py")]
     assert subprocess.run(verify, capture_output=True).returncode == 0
-    (clone / "bundle" / "static" / "app.css").write_text("/* edited here */")
+    (clone / "bundle" / "static" / "kit.css").write_text("/* edited here */")
     r = subprocess.run(verify, capture_output=True, text=True)
-    assert r.returncode == 1 and "bundle/static/app.css" in r.stdout
+    assert r.returncode == 1 and "bundle/static/kit.css" in r.stdout
 
 
 def test_nothing_is_published_when_nothing_moved(deploy):
