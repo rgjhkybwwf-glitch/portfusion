@@ -50,6 +50,11 @@ One figure moves, on two pages, and there is no migration. Do these when the boo
 
 ### Changed
 
+- **"% of book" is "% of exposure", and "Weight" is "Weight of exposure"**, on Holdings and the
+  report: each is a share of market exposure, a line's or a slice's, where a spread bet counts
+  at its notional, not a share of net asset value. **"Contribution" is "Counts as"**, on Performance's NAV detail
+  and the report's accounts table: how an account counts towards net asset value. No figure
+  moves.
 - **A period that opens with the record is named by its first day counted**: a book begun on
   18 May reads "Q2 2026, from 18 May" and "2026 to 30 Sep, from 18 May", the day the
   Dashboard's year says it is from; it read the day before. No figure moves, and a line the
