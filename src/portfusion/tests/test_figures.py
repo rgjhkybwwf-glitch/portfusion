@@ -256,7 +256,9 @@ RETIRED_HEADINGS = {"GBP", "GBP proceeds", "GBP value", "GBP cost", "Gain %", "E
                     # growth, a bare "Income" beside all income, and a reading with no name.
                     "Gain", "Income", "Read from",
                     # "(local)": the Ccy column names a local price's currency.
-                    "Entry price (local)", "Traded price (local)", "Price (local)"}
+                    "Entry price (local)", "Traded price (local)", "Price (local)",
+                    # A SHARE OF MARKET EXPOSURE, where a bet counts at notional, is not the book's.
+                    "% of book", "Weight"}
 
 #: Bold words in glossary §5's heading tables that name something other than a column, each with
 #: why. The sterling suffix row states a rule, so it carries code rather than a heading.

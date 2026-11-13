@@ -69,8 +69,8 @@ COMMON = {
     "realised_pct": "Realised gain (%)",
     "annualised_pct": "Annualised gain (%)",    # a round trip fully closed out, compounded
     "quarter_gain": "Quarter gain (GBP)",
-    "weight": "Weight",
-    "share": "% of book",
+    "weight": "Weight of exposure",       # a line's share of market exposure, a bet at notional
+    "share": "% of exposure",
     "total": "Total",
     "nav": "Net asset value",
     "exposure": "Market exposure",

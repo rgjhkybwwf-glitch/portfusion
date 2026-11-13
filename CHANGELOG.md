@@ -47,6 +47,9 @@ No figure moves, and there is no migration. Do these when the book's pin moves.
 
 ### Changed
 
+- **"% of book" is "% of exposure", and "Weight" is "Weight of exposure"**, on Holdings and the
+  report: each is a line's share of market exposure, where a spread bet counts at its notional,
+  not a share of net asset value. No figure moves.
 - **"YTD return (MWR)" is "YTD return"**, on the Dashboard, `portfusion record` and the
   glossary's index: the word Performance already heads the column with. Every figure's name is
   written once, in `house/headings.py`'s `FIGURES`, and the engine, the Dashboard and the report

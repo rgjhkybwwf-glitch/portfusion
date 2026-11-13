@@ -133,7 +133,7 @@ not *realized*.
 | What a line is | **Sector · Region · Held as · Funding** — how IG funds a contract, daily or dated |
 | A deal's own terms | **Trade ID · Broker ref · Deal ccy · Stake (£/pt) · Level (points) · Entry level (points) · Exit level (points) · Trade value (GBP)** |
 | When | **Date · As at · Exit date · Days held · Age (days) · Quarter** |
-| Money and measures | **Cost (GBP) · Value (GBP) · Proceeds (GBP) · Amount (GBP) · Weight · % of book · Market exposure · Capital employed · Return · YTD return · Contribution** |
+| Money and measures | **Cost (GBP) · Value (GBP) · Proceeds (GBP) · Amount (GBP) · Weight of exposure · % of exposure · Market exposure · Capital employed · Return · YTD return · Contribution** |
 | Net asset value less capital employed: what the holdings did | **Capital growth** |
 | The income a return counts, each row once (`Book.return_income()`): not all income, which is **YTD income** and **Income and costs** | **Return income** |
 | Capital growth plus return income: what a return divides | **Gain with income** |
