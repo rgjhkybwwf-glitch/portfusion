@@ -7,8 +7,10 @@ prints it.
 
 ### Upgrading a book
 
-No figure moves, and there is no migration. Do these when the book's pin moves.
+One figure moves, and there is no migration. Do these when the book's pin moves.
 
+- **Expect an open company life's days held to read to the prices' day**, on Round Trips'
+  company lives, where it read to today: fewer days, by the age of the newest mark.
 - **Expect each account's reconciliation in new words**, the same on Reconcile, the Dashboard
   and `portfusion record`. An account never read: "<account>: no holdings export on file, so its
   units are unchecked — file a holdings export", or, for IG, "no reading from IG on
