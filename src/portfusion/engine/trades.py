@@ -332,8 +332,7 @@ class Trades(Core):
         lines = self.holdings(by="ticker")
         companies = self.holdings(by="issuer").set_index("company")
         order = {a: i for i, a in enumerate(self.D.ACCOUNT_ORDER)}
-        # AN OPEN LIFE IS HELD TO THE DAY THE LIVE FIGURES STAND AT, never the clock's: a life
-        # opened after it has not begun by then.
+        # AN OPEN LIFE ENDS AT `valued_at()`, whose docstring says why.
         stands = pd.Timestamp(self.valued_at())
 
         lives = self._lives()

@@ -7,10 +7,10 @@ prints it.
 
 ### Upgrading a book
 
-One figure moves, and there is no migration. Do these when the book's pin moves.
+Two figures move, and there is no migration. Do these when the book's pin moves.
 
-- **Expect an open company life's days held to read to the prices' day**, on Round Trips'
-  company lives, where it read to today: fewer days, by the age of the newest mark.
+- **Expect days held still open to read to the prices' day**, on Holdings and on Round Trips'
+  company lives, where they read to today: fewer days, by the age of the newest mark.
 - **Expect each account's reconciliation in new words**, the same on Reconcile, the Dashboard
   and `portfusion record`. An account never read: "<account>: no holdings export on file, so its
   units are unchecked — file a holdings export", or, for IG, "no reading from IG on
@@ -98,9 +98,9 @@ One figure moves, and there is no migration. Do these when the book's pin moves.
 
 ### Fixed
 
-- **A company life still open counts its days held to the prices' day**, the day the live
-  figures stand at, not today's clock, on Round Trips' company lives; a life opened after that
-  day reads 0. Holdings' own days held still counts to today.
+- **Days held still open count to the prices' day**, the day the live figures stand at, not
+  today's clock, on Holdings and on Round Trips' company lives; a line or life opened after that
+  day reads 0.
 - **The publish test's app case uses a book outside the app**, so it passes where a checkout sits
   inside a book.
 - **The desk's four accessibility faults, as axe-core found them.** The page names its language;
