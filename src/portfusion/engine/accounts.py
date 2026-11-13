@@ -5,13 +5,14 @@ from __future__ import annotations
 import pandas as pd
 
 from portfusion.engine.bases import roll_up
-from portfusion.engine.core import Core
+from portfusion.engine.core import Core, first_day
 
 
 def quarter_opens(quarter_end: str, opens: str) -> str:
     """The day a quarter's figures measure from: the previous quarter end, but in the quarter of a
-    record that opens at `opens`, that day (`quarter_label()` names such a quarter by it). The
-    opening itself has nothing recorded before it, so its own is the quarter end before."""
+    record that opens at `opens`, that day (`quarter_label()` names such a quarter by the day after
+    it, `first_day()`). The opening itself has nothing recorded before it, so its own is the
+    quarter end before."""
     before = (pd.Timestamp(quarter_end) - pd.offsets.QuarterEnd(1)).date().isoformat()
     return max(before, opens) if quarter_end > opens else before
 
@@ -120,8 +121,7 @@ class Accounts(Core):
         `ytd_year()` rolls at a new year's first row as well as its first price.
         """
         opens = self.ytd_opens()
-        first_day = (pd.Timestamp(opens) + pd.Timedelta(days=1)).date().isoformat()
-        return {"year": self.ytd_year(), "opens": opens, "first_day": first_day,
+        return {"year": self.ytd_year(), "opens": opens, "first_day": first_day(opens),
                 "frozen": opens in self.quarter_nav_total().index}
 
     def by_account(self, as_of: str | None = None, window: int | None = None) -> pd.DataFrame:
