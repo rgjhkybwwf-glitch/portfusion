@@ -2,7 +2,7 @@
 
 A book's own record — holdings, trades, capital and what they are worth — kept as CSV files you
 can read and diff, with every figure derived from them by one engine and shown two ways: a desk
-in the browser, and a quarterly report. It records your own positions; it gives no advice.
+in the browser, and a quarterly report. It records your own positions.
 
 ## Try it
 
