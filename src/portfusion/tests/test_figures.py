@@ -252,8 +252,8 @@ def test_no_renderer_reaches_past_the_engines_methods_into_its_store():
 RETIRED_HEADINGS = {"GBP", "GBP proceeds", "GBP value", "GBP cost", "Gain %", "Entry",
                     "Exit", "Ref", "Qty", "Period", "Unrealised", "Realised", "Company (issuer)",
                     "Unrealised gain (£)", "Realised gain (£)",
-                    # ONE WORD OVER SEVERAL FIGURES: a bare "Gain" beside Total gain and Capital
-                    # growth, a bare "Income" beside all income, and a reading with no name.
+                    # ONE WORD OVER SEVERAL FIGURES: a bare "Gain" beside the trading gain and
+                    # Capital growth, a bare "Income" beside all income, and a reading with no name.
                     "Gain", "Income", "Read from",
                     # "(local)": the Ccy column names a local price's currency.
                     "Entry price (local)", "Traded price (local)", "Price (local)"}

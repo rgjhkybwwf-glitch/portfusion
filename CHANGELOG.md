@@ -9,6 +9,8 @@ prints it.
 
 No figure moves, and there is no migration. Do these when the book's pin moves.
 
+- **Read "Total gain" as "Trading gain, excl. income"**: the same figure, under a name that says
+  what it leaves out.
 - **Expect each account's reconciliation in new words**, the same on Reconcile, the Dashboard
   and `portfusion record`. An account never read: "<account>: no holdings export on file, so its
   units are unchecked — file a holdings export", or, for IG, "no reading from IG on
@@ -47,6 +49,10 @@ No figure moves, and there is no migration. Do these when the book's pin moves.
 
 ### Changed
 
+- **"Total gain" is "Trading gain, excl. income"**, on the Dashboard, `portfusion record` and the
+  glossary: unrealised plus realised, which leaves income out. Its value does not move. Method
+  says the year is measured as one period, not its quarters linked, and the report's one income
+  note says which income each part shows.
 - **"YTD return (MWR)" is "YTD return"**, on the Dashboard, `portfusion record` and the
   glossary's index: the word Performance already heads the column with. Every figure's name is
   written once, in `house/headings.py`'s `FIGURES`, and the engine, the Dashboard and the report

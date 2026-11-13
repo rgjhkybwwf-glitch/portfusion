@@ -54,7 +54,8 @@ def data() -> dict:
                 f"index.")},
             {"topic": "The year, and since the start", "text": (
                 f"The year-to-date figures run from the previous 31 December, or from the "
-                f"record's opening in the year it began, and roll at a new year's first price or "
+                f"record's opening in the year it began, as one period: the year's return is "
+                f"measured from its opening to its end at once, not as its quarters linked. They roll at a new year's first price or "
                 f"first row, whichever comes sooner. The year opens at that day's frozen net "
                 f"asset value: until it is frozen, "
                 f"the opening and what is built on it are blank, never zero, and so is the "
