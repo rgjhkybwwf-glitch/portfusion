@@ -207,8 +207,8 @@ changes it.
   at the top, and the run moves on. A run that is going nowhere stops and says so; it does not file
   issues to show work.
 - **The direction is [`docs/direction.md`](docs/direction.md)**: for whom, what never, and what
-  each milestone is for. The ready check reads it first and cites it for a milestone, a cut or an
-  idea. It changes only at a gate, by the maintainer's answer (The answer run, below).
+  each milestone is for. It changes only at a gate, by the maintainer's answer (The answer run,
+  below); a release's read checks it and changes nothing in it.
 
 **Which issues, in what order**
 
@@ -236,19 +236,24 @@ changes it.
 - **The milestone being worked is the lowest open milestone.** The Queue's Next holds only its
   lines and ends with the release checklist (#156), which stays open: each release ticks it, and
   the release's pull request links to it. The tag is the maintainer's.
-- **The gate: when the checklist is the only line left under Next, nothing of the next milestone
-  is built.** The ready check posts the gate review that day (The ready check, below). Until it
-  is answered each run's debrief says in one line what it is waiting on. The checklist is worked
-  once it is answered, ready as it stands. When the maintainer has tagged the release and closed
-  its milestone, the next run to edit the Queue moves the next milestone's lines under Next, in
+- **The gate: when only the checklist is left under Next, with any feature whose shape is not
+  decided, nothing of the next milestone is built.** The ready check posts the gate review that
+  day (The ready check, below). The gate is answered when a comment headed "Gate review" for the
+  milestone is on #206 and #206 carries no `decision`; only then is the checklist worked, ready
+  as it stands.
+- **The checklist is never closed.** Its pull request says "For #156", not "Closes", and ticks
+  its boxes.
+- **After the tag, the next milestone opens.** A night run or ready check that finds the release
+  tagged and its milestone closed first moves the Queue's lines from after the gate to Next, in
   the order answered, the checklist last.
 - **The Queue sets the order**: the open issue "Queue: what the nightly agent builds next" (#206)
   ranks the lines of the milestone being worked, unblockers first, then bugs and wrong figures,
   small safe fixes, features and polish. A run takes the first line under Next whose issue is
-  ready, is not a feature, and has no open pull request of its own, and whose "waits" issues are
-  all closed; it skips the rest and never reorders, but for a review the maintainer has answered
-  (The ready check, below). Nothing outside Next is built. Each issue is read whole, comments
-  included, before its work starts.
+  ready and has no open pull request of its own, and whose "waits" issues are all closed; it
+  skips the rest and never reorders, but for a review the maintainer has answered (The ready
+  check, below). Nothing outside Next is built: an open pull request of an issue that is not
+  under Next is kept level and green, and nothing is added to it. Each issue is read whole,
+  comments included, before its work starts.
 - **The agent keeps the Queue current**: after each pull request merges it ticks the line and moves
   it to Done, and each issue it files goes under To rank, for the maintainer to place; a decided
   feature's slices are the exception (Features, below). It reads the Queue afresh just before
@@ -299,12 +304,18 @@ changes it.
   card. An answer the maintainer gives early, in a comment, counts when the issue is reached.
 - **An issue's questions are kept few**: what only the maintainer can decide. What the agent can
   settle from the code, the record's rules or an answer already given, it settles and says so.
-- **At most five questions stand open in the milestone being worked**, not counting the
-  maintainer's own long-standing decisions (#3, #5, #6 and the like). Beyond five the ready check
-  asks only what blocks the first line under Next.
+- **At most five questions stand open on the issues of the milestone being worked**, a design
+  card's among them; #206's reviews and the maintainer's own long-standing decisions (#3, #5, #6
+  and the like) apart. Beyond five the ready check asks only what blocks the first line under
+  Next: an `Idea:`'s and a card's questions are written, and wait.
 
 **The ready check**
 
+- **It reads [`docs/direction.md`](docs/direction.md) first**, and cites it for a milestone, a
+  cut or an idea. The Definitions of Ready and the gate are under Which issues, the limits on
+  questions under Asking and answering (above), and what its debrief says under Telling the
+  maintainer (below).
+- **After a tag it opens the next milestone** (Which issues, above), before anything else.
 - **"Covers" is by the code, not the topic.** An open issue covers a find, an idea or a bump when
   its Cause or Done names the same file and function; the ready check reads every open issue's
   Cause and Done for that before it files a new one.
@@ -334,7 +345,8 @@ changes it.
   merge; overlaps by file and function that no "waits" orders; causes that no longer hold, to
   close with the reason; a place for each walk find left to sort; a line for Design next when it
   is empty; and a suggested order. Each is a question, with its recommendation, and #206 takes
-  `decision`. A review that finds nothing posts nothing.
+  `decision`. A review that finds nothing posts nothing, and none is posted while a gate review
+  stands unanswered.
 - **With the review it sorts "Walk finds: to sort" (#220)**, weekly and not each run. A find goes
   onto the open issue that covers it, as evidence, or onto the decided feature that will rework
   its page; one not worth an issue is struck through with the reason. The rest stay one line
@@ -342,14 +354,17 @@ changes it.
   with others like it, into an issue that meets the Definition of Ready, on the line answered,
   its questions written but not asked. Each line handled is struck through, so the list only
   holds what is unsorted.
-- **On the day only the release checklist is left under Next it posts the gate review** on #206,
-  once, in the Queue review's place and holding all of it for the next milestone, and:
+- **On the day the gate is reached it posts the gate review** on #206, once, headed "Gate
+  review" with the milestone's name, in the Queue review's place and holding all of it for the
+  next milestone, and:
   - what shipped, against the milestone's sentence in the direction page;
-  - keep or pull, for each feature the maintainer has trialled, and each design card unanswered;
+  - keep or pull, for each feature the maintainer has trialled;
+  - each design card unanswered, and a move for each feature left under Next with no shape;
   - the next milestone's proposed shape: its order, its cuts and its moves;
   - at most three ideas, a line each with its cost; an idea never pings on its own;
   - the rules of this section that cost a run a wrong turn, time or money, each with its run;
-  - at most five questions. #206 takes `decision`.
+  - at most five questions in all, the direction page's open ones among them. What it holds
+    beyond five is listed as proposals, and asked in the next review. #206 takes `decision`.
 - **It writes no code**, opens no branch, and changes no label but `decision` and those of an
   issue it shapes or files.
 
@@ -363,48 +378,55 @@ changes it.
 - **The mock page shows today's page and each option**, on the demo's names. It is a private page
   published with the Artifact tool and touches no code. A run that cannot publish without stopping
   to ask gives words and a picture of today's page instead, and says so.
-- **One card is open at a time, and one feature is being built.** The rest wait as lines.
-  Silence is never a yes: a card unanswered is listed in the next gate review, and meanwhile the
-  runs work what is ready.
+- **One card is open at a time, and one feature is being built.** The rest wait as lines: a
+  feature's slices are written only when no other feature's slices stand open under Next. A card
+  unanswered is listed in the next gate review, and meanwhile the runs work what is ready.
 - **A decided shape becomes slices.** The ready check completes the feature and writes its slices
   as issues, each "Part of #n", each leaving `main` green with its own changelog line. Their
   Decisions quote the card.
-  It places them under Next at the feature's line, in order; the feature closes with its last.
+  A slice takes its feature's milestone and area labels. It places them at the feature's line,
+  in order, wherever that stands in the Queue, and under To rank when it has none. The last
+  slice's pull request closes the feature too, and its line is ticked with the slice's.
 - **A slice stays hidden until the last**: nothing registers it on a page, a tab or the report.
-  The last slice turns the feature on. Its cold walk walks the whole feature, by the feature's
+  One that moves the store or a figure is the exception (Merging, below). The last slice turns
+  the feature on. Its cold walk walks the whole feature, by the feature's
   Trial jobs, and its pull request shows the maintainer each page's picture before and after.
 - **The trial is on the release.** The maintainer tries the Trial jobs on their own book, and
-  keep or pull is asked in the next gate review. Pull is a pull request that reverts, and applies
-  to display slices only: a store move is not pulled back.
+  keep or pull is asked in the next gate review. Pull applies to display slices only: a store
+  move is not pulled back. A pull answered becomes an issue, its Decisions the answer, first
+  under Next; its pull request reverts the slices and is never clean.
 
 **The answer run**
 
 - **The maintainer's answers start it, in a batch.** `answer.yml` sees the owner's comment on an
-  issue labelled `decision` that begins `Q1:` or `All as recommended`, waits ten minutes, and fires
+  issue labelled `decision` that begins `Q1:` or `All as recommended`, or one that begins
+  `Change:` on an issue or an agent's pull request, waits ten minutes, and fires
   the routine "PortFusion answer"; an answer within those minutes starts the wait again, so answers
   given together make one run. Nothing of a comment is passed.
 - **It first claims every answered or changed issue**: each open issue labelled `decision` whose
   owner's latest comment answers it or begins `Change:`, and each issue whose open pull request of
   the agent's has the owner's `Change:` as its latest comment. It records each answer or change
-  (above) before it builds any, so a run started later does not take the same issue.
+  (Asking and answering, above) before it builds any, so a run started later does not take the same issue.
 - **An answer records a decision; only lines under Next are built.** Every answer is recorded,
   wherever its issue stands. An issue not under Next, a feature, and the issue a design card was
   answered on are left there: nothing of them is built, and the maintainer's placing or the
-  ready check's slices come first.
+  ready check's slices come first. A card's answer takes its line out of Design next.
 - **An answered review is applied, not built.** The Queue (#206) is never an issue to build and
   takes no Decisions section. For a Queue review the run makes the answered changes: the Queue's
   lines, a "waits", an issue merged or closed with the reason, a find's place noted on #220. For
   a gate review it also moves issues between milestones, writes the next milestone's lines in the
-  order answered under the Queue's "After the gate", and edits `docs/direction.md` to the answer
-  in a pull request that may merge itself, the answer being its yes. Then it takes `decision` off
-  #206, and goes on.
+  order answered under the Queue's heading for after the gate, files the issue for a pull
+  (Features, above), and edits `docs/direction.md` to the answer in a pull request that links
+  #206 and may merge itself once `guard` is green, the answer being its yes. Then it takes
+  `decision` off #206, and goes on.
 - **Then it builds those under Next one after another, in Queue order**, as the night run would,
   up to the routine's number. One still not ready, a question open or a "waits" issue open, it
-  says which on the issue and leaves; the night run takes it when it is. While a gate review
-  stands unanswered its debrief says in one line what it is waiting on.
-- **An issue with a branch of its own continues on it**, brought level with `main`. An open pull
-  request from it is completed to the whole issue, its "Part of #n" made "Closes #n", and merges
-  itself if it is clean (Merging, below).
+  says which on the issue and leaves; the night run takes it when it is.
+- **Under Next, an issue with a branch of its own continues on it**, brought level with `main`.
+  An open pull request from it is completed to the whole issue, its own "Part of #n" made "Closes
+  #n", and merges itself if it is clean. A slice's "Part of" its feature stays.
+- **For the rest it follows Building, Merging, Telling the maintainer and Never**, below, and
+  keeps the Queue as the night run does (Which issues, above).
 
 **Building**
 
@@ -459,8 +481,10 @@ changes it.
   filed. The agent
   turns its auto-merge on as it opens it, and GitHub merges it once `guard` is green. Pictures
   retaken for a page the issue meant to change keep it clean.
-- **Three are never clean**: a pull request that moves the store, a slice that moves a figure,
-  and the slice that turns a feature on. The first two are never hidden either.
+- **Three are never clean**: a pull request that moves the store (a table or column of
+  `record/schema.py`, or a move in `record/migrations.py`), a slice that moves a figure (what an
+  engine method returns on the demo), and the slice that turns a feature on. The first two are
+  never hidden: each says what moves at the top of its pull request, and in the changelog.
 - **Any other waits for the maintainer's yes**, auto-merge off, with what is needed from them at
   the top of its description. The yes is a reply beginning `yes` on the pull request, which turns
   its auto-merge on (`answer.yml`), or the button itself.
@@ -477,9 +501,11 @@ changes it.
   push notification of its own, and nothing on GitHub wakes it again. So every wait is inside
   that turn: a helper agent (the plan's checker, the reviewer) is run in the foreground and
   waited for, and CI is polled in the foreground. A message that ends the turn is the debrief,
-  never a note that something is still running.
-- **The agent's own comments never begin `Q1:`, `All as recommended`, `yes` or `Change:`**, the
-  maintainer's shapes, which start a workflow, since it writes as the maintainer's account.
+  never a note that something is still running. While a gate review stands unanswered, or a
+  release untagged, the debrief says in one line what the run waits on.
+- **The agent's own comments never begin `Q` and a number, `All as recommended`, `yes` or
+  `Change:`**, in any case: the maintainer's shapes, which start a workflow, since it writes as
+  the maintainer's account.
 
 **Never**
 
