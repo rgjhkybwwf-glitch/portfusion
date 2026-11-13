@@ -32,17 +32,24 @@ jobs:
       && !contains(github.event.comment.body, 'claude.ai/code')
     runs-on: ubuntu-24.04
     timeout-minutes: 2
+    permissions:
+      issues: write
     outputs:
       answer: ${{ steps.read.outputs.answer }}
     steps:
+      # An answer is marked 👀 at once, so the owner sees it was taken before the quiet minutes end.
       - name: Is this comment an answer?
         id: read
         env:
+          GH_TOKEN: ${{ github.token }}
           BODY: ${{ github.event.comment.body }}
+          REPO: ${{ github.repository }}
+          COMMENT: ${{ github.event.comment.id }}
         run: |
           first=$(printf '%s\n' "$BODY" | sed -e 's/^[[:space:]]*//' | grep -m1 -v '^$' || true)
           if printf '%s' "$first" | grep -qiE '^(q[0-9]+[[:space:]]*:|all as recommended)'; then
             echo "answer=yes" >> "$GITHUB_OUTPUT"
+            gh api -X POST "repos/$REPO/issues/comments/$COMMENT/reactions" -f content=eyes --silent || true
           else
             echo "Not an answer: its first line is neither \"Q1: …\" nor \"All as recommended\"."
           fi
