@@ -287,8 +287,10 @@ changes it.
   the package still able to fail. Its pull request makes the bump and closes Dependabot's, which is
   never merged on its own.
 - **It runs the planning, by day, so the questions reach the maintainer before the night.** It
-  takes the first lines under Next as the night run would, up to the routine's number, and skips an
-  issue whose checked plan is its latest comment and whose files `main` has not changed since.
+  takes the first lines under Next in order, up to the routine's number, ready or not: an issue
+  whose questions are written but not asked is one it is there to ask. It skips an issue with an
+  open pull request of its own or an open "waits" issue, and one whose checked plan is its latest
+  comment and whose files `main` has not changed since.
 - **For each, the plan and its check** (below, under Building), against today's `main`. A plan
   with no question is posted as **Plan, checked**, naming the commit of `main` it was checked
   against. A plan that finds a question, or finds the issue's cause or premise no longer holds,
@@ -314,6 +316,9 @@ changes it.
   owner's latest comment answers it or begins `Change:`, and each issue whose open pull request of
   the agent's has the owner's `Change:` as its latest comment. It acts on each answer or change
   (above) before it builds any, so a run started later does not take the same issue.
+- **An answered Queue review is applied, not built.** The Queue (#206) is never an issue to build
+  and takes no Decisions section: the run makes the answered changes (the Queue's lines, a
+  "waits", an issue merged or closed with the reason), takes `decision` off #206, and goes on.
 - **Then it builds them one after another, in Queue order**, those not in the Queue last, as the
   night run would, up to the routine's number. One still not ready, a question open or a "waits"
   issue open, it says which on the issue and leaves; the night run takes it when it is.
