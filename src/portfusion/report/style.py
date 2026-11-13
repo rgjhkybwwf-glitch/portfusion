@@ -91,5 +91,5 @@ background-clip:padding-box}
 .scroll::-webkit-scrollbar-thumb:hover{background-color:var(--muted)}
 footer{margin-top:56px;padding-top:16px;border-top:var(--rule-section) solid var(--strong);
 font-size:.75rem;color:var(--faint)}
-@media print{.rule{margin-top:32px}}
+@media print{.rule{margin-top:32px}.scroll{overflow:visible}@page{size:A4 landscape;margin:10mm}}
 """)

@@ -124,6 +124,13 @@ One figure moves, on two pages, and there is no migration. Do these when the boo
 
 ### Fixed
 
+- **A table wider than its box says so on each edge with more beyond it**: a 2px rule on the
+  pinned column's inner edge, or on the box's own edge where nothing is pinned, gone at that end
+  once the table is scrolled there. On Holdings and Round Trips a heading cut by the pinned
+  Trades button reads as going on under it. It shows in Safari, on a phone and in a picture,
+  where the scrollbar did not. A box that fits is unchanged.
+- **The report prints whole on A4**: on its side, each wide table at its full width, so no
+  column's heading is cut.
 - **A page chosen by keyboard puts focus on its heading**, so the next Tab is the page's first
   control, not the top of the desk; the tab buttons are kept across a pick, the pressed one still
   focused until the page paints. A cell reached by Tab in a wide table is scrolled clear of the

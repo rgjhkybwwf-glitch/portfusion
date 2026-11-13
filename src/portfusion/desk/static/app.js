@@ -243,33 +243,69 @@ function alignTables() {
   });
 }
 
-/* A BOX THAT SCROLLS SIDEWAYS SAYS SO, for the stylesheet's edge on its pinned columns, and
-   says how wide it is, for a row's detail. And a table no longer on the page lets go of its
-   rows. */
+/* A BOX THAT SCROLLS SIDEWAYS SAYS SO, and which of its edges have more beyond them, for the
+   stylesheet's sign that it scrolls; and says how wide it is, for a row's detail. And a table no
+   longer on the page lets go of its rows. */
 function markOverflow() {
   alignTables();
   const live = new Set([...document.querySelectorAll("#main table[data-sorts]")]
     .map((t) => Number(t.dataset.sorts)));
   [...SORTED.keys()].forEach((k) => { if (!live.has(k)) SORTED.delete(k); });
-  /* Every box measured, then every box told: a write between two readings lays the page out
-     again for each. THE PINNED HEAD AND COLUMNS are measured too, for the box's
-     `scroll-padding` (tables.css), so a cell reached by Tab is scrolled clear of them. */
-  const pinned = (c) => (c && getComputedStyle(c).position === "sticky" ? c : null);
-  [...document.querySelectorAll("#main .scroll")].map((b) => {
-    const t = b.querySelector(":scope > table");
-    const rows = ":scope > tbody > tr:not(.detail-row):not(.devices)";
-    return [b, b.scrollWidth, b.clientWidth, t?.tHead?.offsetHeight || 0,
-            pinned(t?.querySelector(`${rows} > td:first-child`))?.offsetWidth || 0,
-            pinned(t?.querySelector(`${rows} > td:last-child`))?.offsetWidth || 0];
-  }).forEach(([b, full, seen, top, left, right]) => {
-    b.classList.toggle("overflows", full > seen + 1);
-    b.style.setProperty("--box-width", `${seen}px`);
-    b.style.setProperty("--pin-top", `${top}px`);
-    b.style.setProperty("--pin-left", `${left}px`);
-    b.style.setProperty("--pin-right", `${right}px`);
-  });
+  /* A BOX IN A ROW'S DETAIL is marked after the box it sits in, whose width (`--box-width`) is
+     its room. */
+  const all = [...document.querySelectorAll("#main .scroll")];
+  const inner = (b) => !!b.parentElement.closest(".scroll");
+  markBoxes(all.filter((b) => !inner(b)));
+  markBoxes(all.filter(inner));
 }
 window.addEventListener("resize", markOverflow);
+
+/* Every box measured, then every box told: a write between two readings lays the page out
+   again for each. THE PINNED HEAD AND COLUMNS are measured too, for the box's `scroll-padding`
+   (tables.css), so a cell reached by Tab is scrolled clear of them. WHETHER A BOX SCROLLS is
+   judged on its room without the border its sign takes (tables.css), so the sign never holds
+   itself on; told that, every box is measured once more, as it now stands. */
+function markBoxes(list) {
+  const pinned = (c) => (c && getComputedStyle(c).position === "sticky" ? c : null);
+  const boxes = list.map((b) => {
+    const t = b.querySelector(":scope > table");
+    const rows = ":scope > tbody > tr:not(.detail-row):not(.devices)";
+    return [b, b.scrollWidth, b.clientWidth + (parseFloat(getComputedStyle(b).borderRightWidth) || 0),
+            t?.tHead?.offsetHeight || 0,
+            pinned(t?.querySelector(`${rows} > td:first-child`))?.offsetWidth || 0,
+            pinned(t?.querySelector(`${rows} > td:last-child`))?.offsetWidth || 0];
+  });
+  boxes.forEach(([b, full, room]) => b.classList.toggle("overflows", full > room + 1));
+  boxes.map(([b, , , ...pins]) => [b, b.scrollWidth, b.clientWidth, b.scrollLeft, ...pins])
+    .forEach(([b, full, seen, at, top, left, right]) => {
+      markEdges(b, full, seen, at);
+      b.style.setProperty("--box-width", `${seen}px`);
+      b.style.setProperty("--pin-top", `${top}px`);
+      b.style.setProperty("--pin-left", `${left}px`);
+      b.style.setProperty("--pin-right", `${right}px`);
+    });
+}
+
+/* AN EDGE WITH MORE THAN A PIXEL BEYOND IT is marked (`more-left`, `more-right`), and the mark
+   goes at that end once the box is scrolled there; a box that does not scroll sideways
+   (`overflows`, above) has neither. */
+function markEdges(box, full, seen, at) {
+  const scrolls = box.classList.contains("overflows");
+  box.classList.toggle("more-left", scrolls && at > 1);
+  box.classList.toggle("more-right", scrolls && at < full - seen - 1);
+}
+
+/* A BOX SCROLLED SIDEWAYS KEEPS ITS MARKS CURRENT: the box that moved is read, then told, and no
+   other. Delegated from #main, since a scroll does not bubble but is caught on its way down. */
+function wireEdges() {
+  const main = $("#main");
+  if (!main || main.dataset.edgesWired) return;
+  main.dataset.edgesWired = "1";
+  main.addEventListener("scroll", (e) => {
+    const b = e.target;
+    if (b.classList?.contains("scroll")) markEdges(b, b.scrollWidth, b.clientWidth, b.scrollLeft);
+  }, { capture: true, passive: true });
+}
 
 /* A CONTROL REACHED BY TAB IS SCROLLED CLEAR OF THE PINS that the box's `scroll-padding` names:
    a browser leaves a control that is partly in view where it is, half under a pinned column. A
@@ -334,6 +370,7 @@ function watchForData() {
   widenForData();
   wireTradeLinks();
   wireFocusClear();
+  wireEdges();
   wireSorting();
   wireIgEvents();
   wireCombos();

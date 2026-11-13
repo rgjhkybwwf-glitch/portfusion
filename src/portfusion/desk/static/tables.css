@@ -84,9 +84,25 @@ tr.detail-row .scroll { margin: var(--space-2) 0; max-height: none; }
 }
 /* THE PINNED EDGE shows only while the box scrolls sideways (`overflows`, set by app.js). */
 .scroll.overflows > table > * > tr > :first-child { box-shadow: inset -1px 0 0 var(--hair); }
+/* AN EDGE WITH MORE BEYOND IT SAYS SO (`more-left`, `more-right`, set by app.js), and the sign
+   goes at that end once the box is scrolled there: the 2px rule, in the control's colour, the
+   scrollbar thumb's, so it shows in a picture, on a phone and where no scrollbar is drawn. ON A
+   PINNED COLUMN it is the column's inner edge, a heading cut there going on under it; drawn
+   inside the cell, as the hairline is, since a border would join the table's grid and move its
+   columns. */
+.scroll.more-left > table > thead > tr > :first-child,
+.scroll.more-left > table > tbody > tr:not(.detail-row):not(.devices) > td:first-child {
+  box-shadow: inset calc(-1 * var(--rule-section)) 0 0 var(--control);
+}
+/* A BOX WITH NOTHING PINNED AT ITS RIGHT carries it on its own right edge: a border while the
+   box scrolls, coloured while there is more beyond. A box that does not scroll takes none, so a
+   table squeezed to its box keeps its width. */
+.scroll.overflows { border-right: var(--rule-section) solid transparent; }
+.scroll.overflows.more-right { border-right-color: var(--control); }
 /* THE ROW'S LINKS STAY PUT TOO, at the other edge: the last cell of a table that has them
    (`data-links`, kit.js's table()). Not on a narrow window, where two pinned columns would
-   leave the figures no room. */
+   leave the figures no room. Where they stay put, their inner edge carries the sign, and the
+   box's own edge none. */
 @media (min-width: 70rem) {
   .scroll > table[data-links] > thead > tr > :last-child { right: 0; z-index: 3; }
   .scroll > table[data-links] > tbody > tr:not(.detail-row):not(.devices) > td:last-child {
@@ -96,6 +112,11 @@ tr.detail-row .scroll { margin: var(--space-2) 0; max-height: none; }
   .scroll.overflows > table[data-links] > tbody > tr:not(.detail-row):not(.devices) > td:last-child {
     box-shadow: inset 1px 0 0 var(--hair);
   }
+  .scroll.more-right > table[data-links] > thead > tr > :last-child,
+  .scroll.more-right > table[data-links] > tbody > tr:not(.detail-row):not(.devices) > td:last-child {
+    box-shadow: inset var(--rule-section) 0 0 var(--control);
+  }
+  .scroll.overflows:has(> table[data-links]) { border-right: 0; }
 }
 .scroll > table > tbody > tr.differs > td:first-child {
   background: color-mix(in srgb, var(--warn) 20%, var(--paper));
