@@ -135,7 +135,7 @@ def test_the_report_is_rendered_and_never_written(tmp_path, monkeypatch):
 
 def test_a_printed_report_cuts_no_column():
     """A SHEET CANNOT SCROLL: in print a wide table's box lets the table run its full width, and the
-    page is A4 on its side, since upright it cuts the right-hand headings whatever the box does."""
+    page is A4 on its side, so the widest table is printed whole at the size it is read on screen."""
     import re
     from portfusion.report.style import CSS
     block = CSS.split("@media print{", 1)[1]
