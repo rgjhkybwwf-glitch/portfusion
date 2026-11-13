@@ -71,9 +71,10 @@ def _register(b) -> list[dict]:
                            "cash_read": _shape.reading(r["document"], r["as_of"]) if r["as_of"]
                            else None}
             for r in _shape.rows(b.newest_cash(), ("account", "cash", "as_of", "document"))}
-    return _shape.labelled([dict(r, **cash.get(r["account"], {}))
-                            for r in _shape.rows(b.account_register(), REGISTER_COLUMNS)],
-                           _shape.labels(b))
+    # THE REGISTER'S OWN NAME, beside its code: the one table that holds it, which the Bench
+    # writes. Every other cell names an account by its label.
+    return [dict(r, **cash.get(r["account"], {}))
+            for r in _shape.rows(b.account_register(), REGISTER_COLUMNS)]
 
 
 def _income(b, year: int) -> dict:

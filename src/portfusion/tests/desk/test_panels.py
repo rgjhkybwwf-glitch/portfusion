@@ -328,8 +328,8 @@ def test_holdings_says_what_a_weight_is_a_share_of():
 @needs("accounts", "buys")
 def test_a_reading_page_names_each_account_by_its_label():
     """ONE NAME ON THE READING PAGES AND IN THE REPORT: every account cell and filter is the
-    account's label (`Book.account_codes()`), as the report names it; the Bench and Price
-    refresh write the register's name and keep it."""
+    account's label (`Book.account_codes()`), as the report names it; the register on Accounts,
+    and the Bench and Price refresh, which write it, keep the register's name."""
     b = engine.book()
     labels = set(_shape.labels(b).values())
     register = set(_shape.labels(b))
@@ -346,7 +346,8 @@ def test_a_reading_page_names_each_account_by_its_label():
             yield at, v
 
     for name in ("holdings", "round-trips", "trades", "performance", "reconcile", "accounts"):
-        seen = list(found(panels.get(name).data()))
+        # THE REGISTER ITSELF holds the register's name, beside the code.
+        seen = [(at, v) for at, v in found(panels.get(name).data()) if at[0] != "register"]
         assert seen, f"{name} names no account — this asserts nothing"
         for at, v in seen:
             # A HOLDING IN SEVERAL ACCOUNTS names each by its label, joined as the engine joins.
@@ -356,6 +357,8 @@ def test_a_reading_page_names_each_account_by_its_label():
             assert v == "The book" or (rest.replace("·", "").strip() == "" and rest != v), (
                 f"{name} {'.'.join(map(str, at))}: {v!r} is not an account's label")
             assert not register & {p.strip() for p in v.split("·")}, (name, at, v)
+    assert [r["account"] for r in panels.get("accounts").data()["register"]] == \
+        list(b.account_register()["account"])
     # THE BENCH WRITES THE REGISTER'S NAME, so it offers it.
     offered = {c for f in panels.get("bench").data()["forms"]["buys"] for c in f.get("choices") or []}
     assert register <= offered
@@ -1229,8 +1232,7 @@ def test_the_accounts_page_and_the_year_are_the_engines():
     from portfusion.desk.panels import accounts, performance
     b = engine.book()
     a = accounts.data()
-    assert [r["account"] for r in a["register"]] == [
-        _shape.labels(b)[x] for x in b.account_register()["account"]]
+    assert [r["account"] for r in a["register"]] == list(b.account_register()["account"])
     assert len(a["movements"]) == len(b.capital_movements())
     assert sum(len(line["rows"]) for line in a["income"]) == len(b.income_rows(b.ytd_year()))
     year = performance.data()["year"]

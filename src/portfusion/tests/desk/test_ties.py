@@ -11,7 +11,6 @@ import pytest
 
 from portfusion.desk import engine
 from portfusion.desk.panels import accounts, holdings, performance, reconcile, round_trips, trades
-from portfusion.desk.panels import _shape
 from desk_support import registered
 from harness import needs
 
@@ -129,7 +128,7 @@ def test_the_accounts_page_keeps_the_engines_order(b):
     """The register in the record's account order; external capital newest first, as a log is
     read; income in account order, then each account's rows newest first too."""
     d = accounts.data()
-    assert [registered(b)[r["account"]] for r in d["register"]] == b.account_order()
+    assert [r["account"] for r in d["register"]] == b.account_order()
     moves = [r["date"] for r in d["movements"]]
     assert moves == sorted(moves, reverse=True)
     assert [registered(b)[r["account"]] for r in d["income"][1:]] == b.account_order(), \
@@ -148,8 +147,6 @@ def test_the_register_is_the_records(b):
     shown = set(accounts.REGISTER_COLUMNS)
     assert set(reg[0]) - {"holder_names", "held_as"} <= shown, set(reg[0]) - shown
     for r, f in zip(rows, reg):
-        # THE ACCOUNT BY ITS LABEL, as every reading page names it; every other field as filed.
-        f = dict(f, account=_shape.labels(b)[f["account"]])
         assert all(r[c] == (None if f[c] != f[c] else f[c]) for c in shown & set(f)), f["account"]
 
 
@@ -158,7 +155,7 @@ def test_each_accounts_cash_is_the_engines(b):
     and on which day."""
     held = b.newest_cash().set_index("account")
     for r in accounts.data()["register"]:
-        e = held.loc[registered(b)[r["account"]]]
+        e = held.loc[r["account"]]
         assert _same(r["cash"], e["cash"]), r["account"]
         assert r["cash_read"] == (None if e["as_of"] is None
                                   else f"{e['document']}, {_day(e['as_of'])}"), r["account"]
