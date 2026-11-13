@@ -38,7 +38,7 @@ changes slowly, and changes only at a milestone's gate, by the maintainer's answ
 |---|---|---|
 | 0.4.1 Words and names | One name per figure, and findings in plain words. No figure or store change. | "price" for "mark"; "Trading gain, excl. income" |
 | 0.4.2 The Bench guides | A newcomer records a fact without leaving the Bench. Closes with the empty-book walk (#41). | a Bench item's standing line |
-| 0.5.0 What each page is for | Each page answers its job, decided by the content map (#3). One new figure (#146), and charts of progress. | as the map decides: a headline figure you can click (#154), a period chooser (#153), a send control (#155), a holding's return column (#146) |
+| 0.5.0 What each page is for | Each page answers its job, decided by the content map (#3). One new figure (#146), and charts of progress (#241). | a quarter's row on Performance that opens to what made its gain (#153), a headline figure you can click (#154), a send control (#155), a holding's return column (#146), charts (#241) |
 | 0.6.0 The record takes more | New ways for a fact to reach the record. Store changes and migrations live here. | the first edit of a row on the record (#134); opening positions (#74) |
 | 0.7.0 Look and reach | A design system, the phone, new reader levels, hosting. | dated links for recipients (#6) |
 
@@ -52,7 +52,7 @@ has changed; nothing is declined yet.
 
 | Later | Since | Why it waits |
 |---|---|---|
-| The year-end report | 13 Nov 2026 | the content map (#3) names it, and has not placed it |
+| The year-end report | 13 Nov 2026 | decided on the content map's card (#3): later |
 | A time-weighted return beside the money-weighted | 13 Nov 2026 | an open bet: the figures cannot be set against an index today |
 | Tax reporting from the section 104 pools | 13 Nov 2026 | decided: later |
 | Platforms other than the Mac | 13 Nov 2026 | decided: Mac only through 0.7.0 |
