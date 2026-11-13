@@ -45,11 +45,11 @@ def data() -> dict:
     b = engine.book()
     # The engine itself once the record has loaded, not with the module (`price_refresh.data`).
     checks = b.account_checks(observations.counted()).set_index("account")
-    rows = []
+    rows, names = [], _shape.labels(b)
     for r in b.reconciliation().itertuples(index=False):
         c = checks.loc[r.account]
         rows.append({
-            "account": r.account,
+            "account": _shape.label(r.account, names),
             "book": _num(r.book),
             "broker": _num(r.statement),
             "difference": _num(r.difference),

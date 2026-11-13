@@ -5,7 +5,7 @@ import pytest
 from portfusion import engine as _engine
 from portfusion.desk import app, panels, engine
 from portfusion.desk.panels import _shape
-from desk_support import SHARES_ACCOUNT, SPREAD_BET_ACCOUNT
+from desk_support import SHARES_ACCOUNT, SPREAD_BET_ACCOUNT, registered
 from harness import SRC, needs, desk_script, desk_style
 
 
@@ -318,6 +318,59 @@ def test_a_per_account_holdings_split_never_calls_notional_money():
 
 
 @needs("buys")
+def test_holdings_says_what_a_weight_is_a_share_of():
+    """THE TWO TOTALS ARE SHOWN APART, AND A LINE'S WEIGHT IS ITS SHARE OF BOTH TOGETHER: the
+    page says so in its note and its scope, and never that the two are never added, since the
+    weights it shows make up all exposure, owned and notional."""
+    from portfusion.desk.panels import holdings
+    for by in holdings.GROUPINGS:
+        d = holdings.query(by=by)
+        assert abs(sum(r["weight"] for r in d["rows"]) - 1) < 1e-9, by
+        assert "never added" not in d["note"] and "share of all exposure" in d["note"], by
+    scope = desk_script("holdings.js")
+    assert "never added" not in scope and "share of all exposure" in scope
+
+
+@needs("accounts", "buys")
+def test_a_reading_page_names_each_account_by_its_label():
+    """ONE NAME ON THE READING PAGES AND IN THE REPORT: every account cell and filter is the
+    account's label (`Book.account_codes()`), as the report names it; the register on Accounts,
+    and the Bench and Price refresh, which write it, keep the register's name."""
+    b = engine.book()
+    labels = set(_shape.labels(b).values())
+    register = set(_shape.labels(b))
+    cells = {"account", "accounts"}
+
+    def found(v, at=()):
+        if isinstance(v, dict):
+            for k, x in v.items():
+                yield from found(x, (*at, k))
+        elif isinstance(v, list):
+            for x in v:
+                yield from found(x, at)
+        elif at and at[-1] in cells and isinstance(v, str) and v:
+            yield at, v
+
+    for name in ("holdings", "round-trips", "trades", "performance", "reconcile", "accounts"):
+        # THE REGISTER ITSELF holds the register's name, beside the code.
+        seen = [(at, v) for at, v in found(panels.get(name).data()) if at[0] != "register"]
+        assert seen, f"{name} names no account — this asserts nothing"
+        for at, v in seen:
+            # A HOLDING IN SEVERAL ACCOUNTS names each by its label, joined as the engine joins.
+            rest = v
+            for lab in sorted(labels, key=len, reverse=True):
+                rest = rest.replace(lab, "")
+            assert v == "The book" or (rest.replace("·", "").strip() == "" and rest != v), (
+                f"{name} {'.'.join(map(str, at))}: {v!r} is not an account's label")
+            assert not register & {p.strip() for p in v.split("·")}, (name, at, v)
+    assert [r["account"] for r in panels.get("accounts").data()["register"]] == \
+        list(b.account_register()["account"])
+    # THE BENCH WRITES THE REGISTER'S NAME, so it offers it.
+    offered = {c for f in panels.get("bench").data()["forms"]["buys"] for c in f.get("choices") or []}
+    assert register <= offered
+
+
+@needs("buys")
 def test_round_trip_totals_follow_the_selection():
     """THE TOTALS FOLLOW THE SELECTION: kept whole-book while the table narrows, they would answer
     a question nobody asked.
@@ -334,8 +387,11 @@ def test_round_trip_totals_follow_the_selection():
     assert whole["totals"] == whole["whole"]
     assert whole["totals"]["realised"] == round(b.round_trip_totals()["realised"], 2)
 
-    acct = whole["accounts"][0]
-    one = round_trips.query(account=acct)
+    # THE PAGE'S OWN FILTER, through its route: the page names an account by its label.
+    label = whole["accounts"][0]
+    acct = registered(b)[label]
+    one = app.round_trips(account=label)
+    assert one["rows"], f"{label!r} narrows to nothing — this asserts nothing"
     assert one["narrowed"] is True
     assert one["totals"]["realisations"] == one["total"], (
         "the headline count must be the selection's, not the book's")
@@ -395,6 +451,9 @@ def test_the_opened_on_nothing_caveat_appears_when_the_condition_does():
     class _Fake:
         OPENED_IN_PERIOD = Book.OPENED_IN_PERIOD
 
+        def account_codes(self):
+            return pd.DataFrame(columns=["account", "code", "label"])
+
         def account_quarter_returns(self, include_open=False):
             return pd.DataFrame([{"account": "An invented account", "quarter": "Q3 2026",
                                   "opening_nav": 0.0, "return": 0.75,
@@ -411,8 +470,9 @@ def test_the_opened_on_nothing_caveat_appears_when_the_condition_does():
     flagged = sorted(set(flagged[flagged["opened_in_period"]]["account"]))
     assert flagged, "no account opened in a period — the live condition is gone"
     live = performance.data()["caveats"]
+    labels = _shape.labels(engine.book())
     for account in flagged:
-        assert any(account in c["scope"] for c in live), (
+        assert any(labels[account] in c["scope"] for c in live), (
             f"{account} opened in a period and no caveat names it")
 
 
@@ -540,7 +600,7 @@ def test_an_accounts_quarter_names_what_its_closing_nav_rests_on():
     checked = 0
     for row, end in zip(d["accounts"], series["quarter_end"].astype(str).str[:10]):
         if end in frozen:
-            q = b.quarter_nav_rows(end).set_index("account").loc[row["account"]]
+            q = b.quarter_nav_rows(end).set_index("account").loc[registered(b)[row["account"]]]
             assert (row["source"], row["quality"]) == (q["source"], q["quality"]), (
                 f"{row['account']} {row['quarter']}")
             checked += 1
@@ -555,7 +615,8 @@ def test_an_accounts_quarter_names_what_its_closing_nav_rests_on():
             assert "nav_rows" not in row, f"{row['quarter']} is not frozen"
             continue
         parts = b.quarter_nav_rows(end).to_dict("records")
-        assert [{c: p[c] for c in d["nav_columns"]} for p in parts] == row["nav_rows"], row["quarter"]
+        assert [{c: _shape.label(p[c], _shape.labels(b)) for c in d["nav_columns"]}
+                for p in parts] == row["nav_rows"], row["quarter"]
         assert abs(sum(p["amount"] for p in row["nav_rows"]) - row["closing_nav"]) < 0.005, (
             f"{row['quarter']}: the accounts' parts do not add to the book's closing NAV")
         made += 1
@@ -576,7 +637,8 @@ def test_a_year_row_rebuilds_its_own_return():
     b = engine.book()
     weighted = b.weighted_flows(b.ytd_opens(), b.valued_at())
     for r in rows:
-        wcf = float(weighted.sum() if r["account"] == "The book" else weighted[r["account"]])
+        wcf = float(weighted.sum() if r["account"] == "The book"
+                    else weighted[registered(b)[r["account"]]])
         assert abs(r["gain"] - (r["capital_growth"] + r["return_income"])) < 1e-9, r["account"]
         rebuilt = r["gain"] / (r["opening_nav"] + wcf)
         assert abs(rebuilt - r["ytd"]) < 1e-9, (
@@ -1215,8 +1277,9 @@ def test_reconcile_shows_what_each_account_was_last_checked_against():
     checks = engine.book().account_checks(observations.counted()).set_index("account")
     rows = panels.get("reconcile").data()["rows"]
     assert rows, "no account — this asserts nothing"
+    back = registered(engine.book())
     for r in rows:
-        c = checks.loc[r["account"]]
+        c = checks.loc[back[r["account"]]]
         assert (r["verdict"], r["compared"], r["state"], r["next"], r["reads"], r["sentence"]) \
             == (c["verdict"], c["compared"], c["state"], c["next"], c["page"], c["sentence"])
         assert r["last_check"] == ("no broker check" if c["on"] is None
@@ -1232,8 +1295,9 @@ def test_a_figure_an_ig_reading_lacks_is_left_out():
     names = {"funds": "funds", "running P/L": "running_pl", "deposit": "deposit",
              "available": "available"}
     assert rows, "no account — this asserts nothing"
+    back = registered(engine.book())
     for r in rows:
-        held = frame.loc[r["account"]]
+        held = frame.loc[back[r["account"]]]
         want = [k for k, col in names.items() if held[col] is not None and held[col] == held[col]]
         assert [f["label"] for f in r["ig_figures"]] == want, r["account"]
         assert all(f["value"] is not None for f in r["ig_figures"])

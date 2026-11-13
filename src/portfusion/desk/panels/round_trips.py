@@ -97,10 +97,12 @@ def query(ticker: str | None = None, account: str | None = None,
     narrowed = any(pick.values())
     every = b.round_trips()
     codes = _shape.company_codes(every)
+    names = _shape.labels(b)
 
     return {
-        "rows": _shape.rows(frame, (KEY,) + COLUMNS + BET_COLUMNS + REASON_COLUMNS + ("note",) + OWED,
-                            dates=("closed", "opened")),
+        "rows": _shape.labelled(_shape.rows(
+            frame, (KEY,) + COLUMNS + BET_COLUMNS + REASON_COLUMNS + ("note",) + OWED,
+            dates=("closed", "opened")), names),
         "columns": list(COLUMNS),
         "detail": list(DETAIL_COLUMNS),
         # THE HALVES A ROW MAY OWE: a row owing either wears the "owed" tag.
@@ -111,14 +113,15 @@ def query(ticker: str | None = None, account: str | None = None,
         "narrowed": narrowed,
         "ticker": ticker or "",
         "company": company or "",
-        "account": account or "",
+        "account": _shape.label(account or "", names),
         "start": start or "",
         "end": end or "",
         "closed_only": closed_only,
         # THE TICKER LIST IS THE CHOSEN COMPANY'S, so the two boxes cannot contradict each other.
         "tickers": codes.get(company, []) if company else _shape.uniques(every, "ticker"),
         "companies": sorted(codes),
-        "accounts": _shape.accounts(every, "account", b.account_order()),
+        "accounts": [_shape.label(a, names)
+                     for a in _shape.accounts(every, "account", b.account_order())],
         # The span the record actually covers, so the date inputs can bound themselves rather
         # than offering a range with nothing in it.
         "span": {"first": _shape.iso(every["closed"].min()),
@@ -140,8 +143,9 @@ def _lives(start=None, end=None, company=None) -> dict:
     frame = b.company_lives(**pick)
     every = b.company_lives()
     return {
-        "rows": _shape.rows(frame, ("life",) + LIFE_COLUMNS + LIFE_DETAIL_COLUMNS + ("pre_baseline",),
-                            dates=("opened", "closed")),
+        "rows": _shape.labelled(_shape.rows(
+            frame, ("life",) + LIFE_COLUMNS + LIFE_DETAIL_COLUMNS + ("pre_baseline",),
+            dates=("opened", "closed")), _shape.labels(b), "accounts"),
         "columns": list(LIFE_COLUMNS),
         "detail": list(LIFE_DETAIL_COLUMNS),
         "totals": {k: _shape.plain(v) for k, v in b.company_life_totals(**pick).items()},

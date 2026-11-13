@@ -53,6 +53,13 @@ One figure moves, on two pages, and there is no migration. Do these when the boo
 
 ### Changed
 
+- **An account goes by its code and label on the reading pages, as in the report**: `A1 · ii ISA`
+  on Holdings, Round Trips, Trades, Performance, Reconcile and Accounts, in their account cells
+  and filters. The register on Accounts, and the Bench and Price refresh, which write it, keep
+  the register's name. A sentence the engine writes about an account keeps the name as it is.
+  No figure moves.
+- **Holdings says what a weight is a share of**: the two totals are shown apart, and a line's
+  weight is its share of all exposure, owned and notional together. No figure moves.
 - **"% of book" is "% of exposure", and "Weight" is "Weight of exposure"**, on Holdings and the
   report: each is a share of market exposure, a line's or a slice's, where a spread bet counts
   at its notional, not a share of net asset value. **"Contribution" is "Counts as"**, on Performance's NAV detail

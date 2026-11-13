@@ -26,9 +26,10 @@ const allocation = (d) => !d.allocation ? "" : `<h2>Where the exposure sits</h2>
 
 Object.assign(DRAW, {
   holdings(d) {
-    /* OWNED AND NOTIONAL, APART AND NEVER ADDED. Both come from the engine. */
+    /* OWNED AND NOTIONAL, APART: both totals come from the engine. A line's weight is its share
+       of all exposure, the two together. */
     return page({
-      scope: "securities owned and spread-bet notional, shown apart and never added",
+      scope: "securities owned and spread-bet notional, shown apart; a line's weight is its share of all exposure, the two together",
       /* A SECOND DOOR TO THE BAY, because this is where you are standing when you doubt a
          value — but a LINK, never a second button. One refresh, two ways in; two buttons
          would be two places to keep telling the same story about what a refresh does. */
