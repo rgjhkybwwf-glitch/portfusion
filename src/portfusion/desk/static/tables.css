@@ -162,7 +162,14 @@ tr.has-detail:hover .detail-toggle, .detail-toggle[aria-expanded="true"] { color
    IS the next row. No display rule, so [hidden] keeps working. */
 tr.detail-row td { border-bottom: 1px solid var(--hair); }
 /* IT OPENS WHERE THE READER IS: no wider than the box (`--box-width`, set by app.js) and held
-   at its left edge however far the table is scrolled sideways. */
-.detail-pane { position: sticky; left: var(--cell-pad);
-               max-width: calc(var(--box-width) - 2 * var(--cell-pad)); }
+   at its left edge however far the table is scrolled sideways.
+   IT LEAVES ITS TABLE'S WIDTH AS IT WAS: the pane's content counts for nothing in the table's
+   width, so no column moves as it opens. Each of its parts but a paragraph takes its own width,
+   past the table's right edge if it needs to, whole as far as the box (`--pane-max`); a table
+   in it wider than the box scrolls in its own box. A paragraph wraps inside the pane. The box's
+   width is read here, on the pane: a box inside the detail carries its own. */
+.detail-pane { position: sticky; left: var(--cell-pad); contain: inline-size;
+               --pane-max: calc(var(--box-width) - 2 * var(--cell-pad));
+               max-width: var(--pane-max); }
+.detail-pane > :not(p) { width: max-content; max-width: var(--pane-max); }
 tr.detail-row p { margin: 0; max-width: var(--measure); }

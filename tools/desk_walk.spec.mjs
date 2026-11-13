@@ -1,7 +1,8 @@
 // THE DESK WALKED, IN CHROMIUM: the demo desk `desk_walk.py` serves, at 1440 × 900. Each page is
 // opened by its tab and must draw no error, hold no accessibility fault but the `KNOWN`, and look
 // as its baseline does; a finding is followed to its page; a wide table's button to Trades is in
-// view, a press on a row opens its detail in view, and a heading that sorts shows it; a page chosen
+// view, a press on a row opens its detail in view, and a heading that sorts shows it; an open
+// detail leaves its table's width as it was, and runs whole as far as the box; a page chosen
 // by keyboard puts focus on its heading, one Tab from its first control, its tab buttons kept, and
 // a reader already in the page keeps their place; a heading reached by Tab is clear of the pinned
 // columns, and a Tab between controls in view does not swing the box. It writes nothing, and does not prove a
@@ -201,6 +202,47 @@ for (const name of ["holdings", "round-trips"]) {
       await page.keyboard.press("Tab");
       await expect(pane.locator(":focus")).toHaveCount(1);
       expect(await settled(box), "the box did not move into the detail").toBe(200);
+    }
+  });
+}
+
+// AN OPEN DETAIL LEAVES ITS TABLE'S WIDTH AS IT WAS, on the pages whose tables are narrower than
+// the box, where a detail wider than its table runs past it, whole, as far as the box.
+for (const name of ["performance", "accounts"]) {
+  test(`${name}: an open detail leaves its table's width as it was, and runs whole as far as the box`, async ({ page }) => {
+    await open(page, name);
+    const rows = page.locator("#main .scroll > table > tbody > tr.has-detail:not(.detail-pane *)");
+    const count = await rows.count();
+    expect(count, `${name} has a row with a detail`).toBeGreaterThan(0);
+    // THE ROW'S TABLE: its width, and where each of its headings starts.
+    const stands = (row) => row.evaluate((r) => {
+      const t = r.closest("table");
+      return [t.getBoundingClientRect().width,
+              ...[...t.tHead.rows[0].cells].map((c) => c.getBoundingClientRect().left)].map(Math.round);
+    });
+    for (let i = 0; i < count; i++) {
+      const row = rows.nth(i), chevron = row.locator(".detail-toggle");
+      const was = await stands(row);
+      await chevron.click();
+      await expect(chevron).toHaveAttribute("aria-expanded", "true");
+      expect(await stands(row), `row ${i}: the table's width and its columns stay`).toEqual(was);
+      // EACH PART INSIDE THE BOX, and whole: neither the pane nor its cell cuts it, and each box
+      // in the detail shows its table whole, or is as wide as the box allows.
+      const parts = await row.evaluate((r) => {
+        const pane = r.nextElementSibling.querySelector(".detail-pane");
+        const box = r.closest(".scroll");
+        const edge = box.getBoundingClientRect().left + box.clientLeft + box.clientWidth;
+        const most = parseFloat(getComputedStyle(pane).maxWidth);
+        return {
+          inside: [...pane.children].every((p) => p.getBoundingClientRect().right <= edge + 1),
+          whole: [pane, pane.parentElement].every((e) => getComputedStyle(e).overflowX === "visible") &&
+            [...pane.querySelectorAll(".scroll")].every((s) =>
+              s.scrollWidth <= s.clientWidth + 1 || s.getBoundingClientRect().width >= most - 1),
+        };
+      });
+      expect(parts, `row ${i}: the detail is inside the box and whole`).toEqual({ inside: true, whole: true });
+      await chevron.click();
+      await expect(chevron).toHaveAttribute("aria-expanded", "false");
     }
   });
 }

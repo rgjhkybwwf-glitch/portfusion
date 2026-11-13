@@ -128,6 +128,9 @@ One figure moves, on two pages, and there is no migration. Do these when the boo
   control, not the top of the desk; the tab buttons are kept across a pick, the pressed one still
   focused until the page paints. A cell reached by Tab in a wide table is scrolled clear of the
   pinned heading and columns.
+- **Opening a row's detail leaves its table's width as it was**, on Performance and Accounts,
+  where it widened the table and moved every column under the pointer. A detail wider than its
+  table runs past the table's right edge, whole, as far as the page's width allows.
 - **Days held still open count to the prices' day**, the day the live figures stand at, not
   today's clock, on Holdings and on Round Trips' company lives; a line or life opened after that
   day reads 0.
