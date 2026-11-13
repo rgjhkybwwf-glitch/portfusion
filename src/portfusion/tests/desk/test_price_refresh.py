@@ -5,9 +5,9 @@ import datetime as _dt
 import pytest
 from portfusion.record import rules as _rules
 from portfusion.desk import actions
-from desk_support import SPREAD_BET_ACCOUNT, _ready, _static, all_crlf, to_crlf
+from desk_support import SPREAD_BET_ACCOUNT, _ready, all_crlf, to_crlf
 from portfusion.desk.intake import bench as _bench
-from harness import SRC, needs, require, desk_script
+from harness import SRC, needs, require, desk_script, desk_style
 
 # THE LOADED BOOK'S OWN LINES, derived once. These doors only replace rows the book has, so
 # every fixture row names whichever book is loaded rather than this one (docs/testing.md:
@@ -330,7 +330,7 @@ def test_a_typed_figure_sits_on_the_line_of_a_fetched_one():
     above it. The box reaches into the cell's padding by its own padding, on the side the column's
     text is set to."""
     import re
-    css = (SRC / "desk" / "static" / "app.css").read_text()
+    css = desk_style()
     left = re.search(r'#rb-form td input:not\(\[readonly\]\)[^{]*\{([^}]*)\}', css).group(1)
     right = re.search(r"#rb-form td\.num input:not\(\[readonly\]\) \{([^}]*)\}", css).group(1)
     assert "padding-left: var(--space-2)" in left and "margin-left: calc(-1 * var(--space-2))" in left
@@ -1034,7 +1034,7 @@ def test_the_bay_sends_what_it_draws_and_a_mark_past_the_limit_says_so():
     assert "source" in holdings.MARK_COLUMNS, "the outgoing source has lost its home"
     js = desk_script()
     assert '${r.stale ? "stale" : "muted"}' in js, "a mark past the limit no longer says so"
-    css = _static("app.css")
+    css = desk_style()
     import re
     assert re.search(r"^\.stale \{ color: var\(--warn-ink\); \}", css, re.M), \
         "the warning ink is no longer the desk's on every page"
