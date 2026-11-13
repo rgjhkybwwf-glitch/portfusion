@@ -83,7 +83,7 @@ COMMON = {
     "return_income": "Return income",       # the income a return counts, not all income (§5)
     "closing_nav": "Closing NAV",
     "return": "Return",
-    "contribution": "Contribution",         # how an account counts towards NAV (§2)
+    "contribution": "Counts as",            # how an account counts towards NAV (§2)
     # ---- against the broker -------------------------------------------------------------------
     "book": "Book",
     "broker": "Broker",                     # the broker's figure; the firm is `broker_firm`
