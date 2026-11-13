@@ -55,8 +55,8 @@ def data() -> dict:
             {"topic": "The year, and since the start", "text": (
                 f"The year-to-date figures run from the previous 31 December, or from the "
                 f"record's opening in the year it began, as one period: the year's return is "
-                f"measured from its opening to its end at once, not as its quarters linked. They roll at a new year's first price or "
-                f"first row, whichever comes sooner. The year opens at that day's frozen net "
+                f"measured from its opening to its end, not as its quarters linked. They roll at "
+                f"a new year's first price or first row, whichever comes sooner. The year opens at that day's frozen net "
                 f"asset value: until it is frozen, "
                 f"the opening and what is built on it are blank, never zero, and so is the "
                 f"return since {since}. A spread-bet account's net asset value does not roll: it "

@@ -455,6 +455,7 @@ def test_the_contributions_close_on_the_lines_and_the_sales():
             pytest.approx(parts["gain"], abs=0.01)
 
 
+@needs("quarter-nav")
 def test_the_income_table_is_the_income_the_return_counts_and_the_rest():
     """Three incomes, each its own, and ONE NOTE says which part of the report shows which."""
     import re
@@ -633,7 +634,7 @@ def test_check_is_read_wherever_it_stands(monkeypatch):
 #: table prints, its row labels, the lede and the notice, the evidence words, and the engine's one
 #: sentence it prints (`Book.OPENED_IN_PERIOD`). Headings are house/headings.py's and section
 #: titles are headings, so neither counts. DESK_CHROME_WORDS holds the desk's in the same way.
-REPORT_PROSE_WORDS = 173      # the one income note: which income each part shows, none added
+REPORT_PROSE_WORDS = 182      # the one income note: which income each part of the report shows
 
 #: Where the page types prose, in report/page.py's own source.
 _PROSE = (r'<p \{_NOTE\}>(.*?)</p>', r'<div class="sub">(.*?)</div>', r'<h3[^>]*>(.*?)</h3>',
