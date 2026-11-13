@@ -53,6 +53,8 @@ One figure moves, on two pages, and there is no migration. Do these when the boo
 
 ### Changed
 
+- **Holdings says what a weight is a share of**: the two totals are shown apart, and a line's
+  weight is its share of all exposure, owned and notional together. No figure moves.
 - **"% of book" is "% of exposure", and "Weight" is "Weight of exposure"**, on Holdings and the
   report: each is a share of market exposure, a line's or a slice's, where a spread bet counts
   at its notional, not a share of net asset value. **"Contribution" is "Counts as"**, on Performance's NAV detail

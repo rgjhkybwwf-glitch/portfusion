@@ -312,6 +312,20 @@ def test_a_per_account_holdings_split_never_calls_notional_money():
 
 
 @needs("buys")
+def test_holdings_says_what_a_weight_is_a_share_of():
+    """THE TWO TOTALS ARE SHOWN APART, AND A LINE'S WEIGHT IS ITS SHARE OF BOTH TOGETHER: the
+    page says so in its note and its scope, and never that the two are never added, since the
+    weights it shows make up all exposure, owned and notional."""
+    from portfusion.desk.panels import holdings
+    for by in holdings.GROUPINGS:
+        d = holdings.query(by=by)
+        assert abs(sum(r["weight"] for r in d["rows"]) - 1) < 1e-9, by
+        assert "never added" not in d["note"] and "share of all exposure" in d["note"], by
+    scope = desk_script("holdings.js")
+    assert "never added" not in scope and "share of all exposure" in scope
+
+
+@needs("buys")
 def test_round_trip_totals_follow_the_selection():
     """THE TOTALS FOLLOW THE SELECTION: kept whole-book while the table narrows, they would answer
     a question nobody asked.

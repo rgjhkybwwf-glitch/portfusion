@@ -128,7 +128,8 @@ def query(account: str | None = None, by: str = GROUPINGS[0]) -> dict:
         # editorial one. A note that grows and shrinks with the grouping moves the controls and
         # the table under it; a note that is always the same shape does not, and each grouping
         # has something true and worth saying anyway.
-        "note": ("Securities owned and spread-bet notional are shown apart and never added. A "
+        "note": ("Securities owned and spread-bet notional are shown apart above; a line's "
+                 "weight is its share of all exposure, owned and notional together. A "
                  "spread bet's value is its notional; the equity behind it is the account's. "
                  + ("Grouped by company, one held both ways is one row, held as mixed, so "
                     "the column is not a split by basis; the two figures above are the engine's."
