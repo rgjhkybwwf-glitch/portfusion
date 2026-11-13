@@ -332,7 +332,9 @@ class Trades(Core):
         lines = self.holdings(by="ticker")
         companies = self.holdings(by="issuer").set_index("company")
         order = {a: i for i, a in enumerate(self.D.ACCOUNT_ORDER)}
-        today = pd.Timestamp.today().normalize()
+        # AN OPEN LIFE IS HELD TO THE DAY THE LIVE FIGURES STAND AT, never the clock's: a life
+        # opened after it has not begun by then.
+        stands = pd.Timestamp(self.valued_at())
 
         lives = self._lives()
         income, _ = self._life_income()
@@ -402,8 +404,8 @@ class Trades(Core):
                 "accounts": " · ".join(accounts),
                 "opened": life["opened"],
                 "closed": life["closed"],
-                "days_held": int(((life["closed"] if not is_open else today)
-                                  - life["opened"]).days),
+                "days_held": int(((life["closed"] if not is_open
+                                   else max(stands, life["opened"])) - life["opened"]).days),
                 "state": "closed" if not is_open else "part closed" if sales else "open",
                 "sales": len(sales),
                 "realised": realised,

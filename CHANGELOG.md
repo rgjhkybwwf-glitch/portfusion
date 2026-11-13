@@ -88,6 +88,9 @@ No figure moves, and there is no migration. Do these when the book's pin moves.
 
 ### Fixed
 
+- **A company life still open counts its days held to the prices' day**, the day the live
+  figures stand at, not today's clock, on Round Trips' company lives; a life opened after that
+  day reads 0. Holdings' own days held still counts to today.
 - **The publish test's app case uses a book outside the app**, so it passes where a checkout sits
   inside a book.
 - **The desk's four accessibility faults, as axe-core found them.** The page names its language;
