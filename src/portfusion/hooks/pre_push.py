@@ -184,10 +184,11 @@ def behind(sha: str, checkout, base: str = "origin/main") -> dict[str, list[str]
     if run.returncode:
         return {}
     changed = set(run.stdout.split())
-    listed = subprocess.run(["git", "ls-files"], cwd=root, capture_output=True,
-                            text=True).stdout.split()
-    guides = sorted({p.relative_to(root).as_posix() for g in GUIDES for p in root.glob(g)}
-                    - set(NOT_GUIDES) - changed)
+    # THE GUIDES AS `sha` HOLDS THEM, not as the working tree does: a draft is not pushed.
+    listed = subprocess.run(["git", "ls-tree", "-r", "--name-only", sha], cwd=root,
+                            capture_output=True, text=True).stdout.split()
+    guides = sorted({p for g in GUIDES for p in listed if pathlib.PurePosixPath(p).match(g)
+                     and p.count("/") == g.count("/")} - set(NOT_GUIDES) - changed)
 
     def names(pointer: str, here: str) -> str | None:
         path = re.split(r":+", pointer, maxsplit=1)[0].rstrip("/")
@@ -202,7 +203,8 @@ def behind(sha: str, checkout, base: str = "origin/main") -> dict[str, list[str]
     out = {}
     for guide in guides:
         here = str(pathlib.PurePosixPath(guide).parent)
-        text = (root / guide).read_text(encoding="utf-8")
+        text = subprocess.run(["git", "show", f"{sha}:{guide}"], cwd=root, capture_output=True,
+                              text=True, encoding="utf-8", errors="replace").stdout
         named = {names(p, here) for _, p in guide_pointers(text)}
         left = sorted(n for n in named & changed if not n.endswith(".md"))
         if left:

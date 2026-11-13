@@ -168,8 +168,8 @@ One line each; kept by review, and by the test named where there is one.
   was made. The pull request says which of its rows the walk found closed.
 - **A release's guides are read whole before its tag**, one reader to a guide, each running its
   commands and opening its paths; one writer makes the changes. The read starts from the guides
-  the pre-push hook names as left behind (`behind()` in `src/portfusion/hooks/pre_push.py`, given
-  the last tag as its base), and its pull request ticks, for `README.md`, `CONTRIBUTING.md`,
+  the pre-push hook names as left behind since the last tag (`behind()` in
+  `src/portfusion/hooks/pre_push.py`, its base the tag), and its pull request ticks, for `README.md`, `CONTRIBUTING.md`,
   `CLAUDE.md` and each guide in `docs/` but the audit's log: the way in, the folder map and the
   commands hold; the glossary has every word the milestone changed and none it retired; the
   changelog's entry says what a book's owner needs before moving; the desk's Method and each
