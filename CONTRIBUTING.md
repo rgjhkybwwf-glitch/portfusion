@@ -329,9 +329,11 @@ changes it.
 
 - **A question or pull request reaches the maintainer as a mention**: the agent works as the
   maintainer's account, so GitHub would tell them nothing; an issue labelled `decision`, and a pull
-  request from a branch whose name begins claude/, get a comment from `github-actions[bot]`, headed
-  "PortFusion agent", that names them and says whether the pull request is merging itself or
-  waiting for a yes (`notify.yml`).
+  request from a branch whose name begins claude/ that waits for a yes, get a comment from
+  `github-actions[bot]`, headed "PortFusion agent", that names them (`notify.yml`). A pull request
+  merging itself gets the same note without naming them: it asks nothing, so it pings no one.
+- **A run sends no push notification of its own.** Its last message is the debrief, and the
+  routine delivers it to the maintainer's phone when the run ends.
 - **The agent's own comments never begin `Q1:` or `All as recommended`**, the answer's shapes,
   since it writes as the maintainer's account.
 
