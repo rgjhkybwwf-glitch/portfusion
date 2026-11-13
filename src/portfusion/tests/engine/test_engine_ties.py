@@ -463,6 +463,15 @@ def test_an_account_a_day_cannot_value_is_blank_and_never_zero(monkeypatch):
     assert by.loc[others, "nav"].notna().all(), "the other accounts lost their value too"
 
 
+def _opening_apart(book) -> float:
+    """The year's frozen opening net asset value less what a freeze would write for that day
+    now, at its marks: what `year_attribution()` leaves unattributed, found the other way."""
+    opens = book.ytd_opens()
+    again = sum(r["amount"] for r in book.freeze_rows(opens)["quarter_nav"]
+                if r["contribution"] in book.NAV_BASES)
+    return float(book.quarter_nav_total()[opens]) - again
+
+
 def test_income_rows_sum_to_the_book_income(book):
     """The Accounts tab's income block must still total what the book publishes, and its
     spread-bet accounts' rows are the income `year_attribution()` sets beside the year's trading
@@ -474,6 +483,7 @@ def test_income_rows_sum_to_the_book_income(book):
     ties(in_bets["amount"].sum(), y["equity_income"], "the income inside spread-bet equity")
     ties(y["trading_gain"] + y["equity_income"] + y["unattributed"], y["capital_growth"],
          "the year's parts")
+    ties(y["unattributed"], _opening_apart(book), "the frozen opening against its marks")
     ties(y["position_income"], float(book.position_income(year=book.ytd_year()).sum()),
          "the year's position income")
 
@@ -881,6 +891,7 @@ def test_a_year_end_moves_no_balance():
     ties(y["trading_gain"], 0.0, "the new year's trading gain")
     ties(y["trading_gain"] + y["equity_income"] + y["unattributed"], y["capital_growth"],
          "the new year's parts")
+    ties(y["unattributed"], _opening_apart(b), "the new year's frozen opening against its marks")
     ties(b.realised() + b.unrealised(), now.realised() + now.unrealised(), "the headline's")
 
 

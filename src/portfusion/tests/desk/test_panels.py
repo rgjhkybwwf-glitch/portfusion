@@ -1205,7 +1205,7 @@ def test_the_method_page_renders_the_records_rules(monkeypatch):
         assert re.findall(r"-?£[\d,]+\.\d\d|—", row()) == shown, row()
     leaves = {**y, "unattributed": 0.25}
     monkeypatch.setattr(b, "year_attribution", lambda: leaves)
-    assert f"{money(0.25)} of it is the frozen opening" in row()
+    assert f"{money(0.25)} of it neither explains" in row()
 
 
 # =====================================================================================

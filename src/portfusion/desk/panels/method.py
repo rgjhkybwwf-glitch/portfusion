@@ -30,8 +30,8 @@ def _gains_and_incomes(b) -> str:
     D, t, y = b.D, b.totals(), b.year_attribution()
     G, F = H.COMMON, H.FIGURES
     left = y["unattributed"]
-    apart = (f" {money(left)} of it is the frozen opening against that day's marks, which "
-             f"neither explains." if left == left and abs(left) >= 0.005 else "")
+    apart = (f" {money(left)} of it neither explains: the frozen opening against that day's "
+             f"marks." if left == left and abs(left) >= 0.005 else "")
     return (
         f"The year from {day(b.ytd_window()['first_day'])}, as one period. Its trading gain, "
         f"realised plus the move in unrealised since the year opened, is "
@@ -43,12 +43,18 @@ def _gains_and_incomes(b) -> str:
         f"{money(t['opening_nav'])} plus {G['capital_deployed']} "
         f"{money(t['capital_deployed'])}.{apart} {G['capital_growth']} plus "
         f"{G['return_income']} is {H.heading('Performance', 'gain')}, {money(t['gain'])}, "
-        f"what the {G['ytd']} divides. The Dashboard's {F['total_gain']}, "
-        f"{money(b.headline()[F['total_gain']])}, is not the year's: it runs to date, each "
-        f"line from its purchase. Three incomes, and none is added to another. "
-        f"{F['ytd_income']}, {money(t['income'])}: every income and cost row. "
-        f"{G['return_income']}, {money(t['return_income'])}: what the return counts, each row "
-        f"once. {F['position_income']}, {money(y['position_income'])}: the year's "
+        f"the gain the {G['ytd']} is taken on. The Dashboard's {F['total_gain']}, "
+        f"{money(b.headline()[F['total_gain']])}, runs to date, each line from its purchase: "
+        f"it is the year's trading gain plus whatever the lines gained before the year opened. "
+        f"Three incomes, and none is added to another. {F['ytd_income']}, "
+        f"{money(t['income'])}: every income and cost row, "
+        f"{' and '.join(D.ACCOUNT_INCOME).lower()} included. {G['return_income']}, "
+        f"{money(t['return_income'])}: a share account's "
+        f"{' and '.join(D.POSITION_INCOME).lower()}, which the return adds to the move in net "
+        f"asset value; a spread-bet "
+        f"account's income is inside its equity already, so its "
+        f"{' and '.join(D.ACCOUNT_INCOME).lower()} come back out. "
+        f"{F['position_income']}, {money(y['position_income'])}: the year's "
         f"{' and '.join(D.POSITION_INCOME).lower()} rows, the income that names a line.")
 
 
