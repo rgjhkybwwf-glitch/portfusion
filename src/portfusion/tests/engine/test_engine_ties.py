@@ -463,10 +463,32 @@ def test_an_account_a_day_cannot_value_is_blank_and_never_zero(monkeypatch):
     assert by.loc[others, "nav"].notna().all(), "the other accounts lost their value too"
 
 
+def _opening_apart(book) -> float:
+    """The year's frozen opening net asset value less what a freeze would write for that day
+    now, at its marks: what `year_attribution()` leaves unattributed, found the other way."""
+    opens = book.ytd_opens()
+    again = sum(r["amount"] for r in book.freeze_rows(opens)["quarter_nav"]
+                if r["contribution"] in book.NAV_BASES)
+    return float(book.quarter_nav_total()[opens]) - again
+
+
 def test_income_rows_sum_to_the_book_income(book):
-    """The Accounts tab's income block must still total what the book publishes."""
+    """The Accounts tab's income block must still total what the book publishes, and its
+    spread-bet accounts' rows are the income `year_attribution()` sets beside the year's trading
+    gain, which with what the frozen opening leaves add to capital growth."""
     rows = book.income_rows(book.ytd_year())
     ties(rows["amount"].sum(), book.totals()["income"], "YTD income")
+    y = book.year_attribution()
+    in_bets = rows[rows["account"].map(book.is_spread_bet).astype(bool)]
+    ties(in_bets["amount"].sum(), y["equity_income"], "the income inside spread-bet equity")
+    # THE PARTS NEED AN OPENING TO PART FROM: with none frozen, capital growth is blank
+    # (`test_the_year_to_date_is_blank_until_its_opening_is_frozen`).
+    if book.ytd_window()["frozen"]:
+        ties(y["trading_gain"] + y["equity_income"] + y["unattributed"], y["capital_growth"],
+             "the year's parts")
+        ties(y["unattributed"], _opening_apart(book), "the frozen opening against its marks")
+    ties(y["position_income"], float(book.position_income(year=book.ytd_year()).sum()),
+         "the year's position income")
 
 
 # ======================================================================================
@@ -866,6 +888,14 @@ def test_a_year_end_moves_no_balance():
             at_open.get(account, 0.0), abs=PENNY), f"{account} does not open at {opens}"
     year = b._dietz(opens, b.valued_at(), b.quarter_nav_total()[opens], b.nav())
     assert b.totals()["ytd"] == pytest.approx(year["return"], abs=RATE)
+    # NOTHING TRADED SINCE, NOTHING EARNED: the new year's trading gain opens at nothing, while
+    # the headline's, to date, does not move.
+    y = b.year_attribution()
+    ties(y["trading_gain"], 0.0, "the new year's trading gain")
+    ties(y["trading_gain"] + y["equity_income"] + y["unattributed"], y["capital_growth"],
+         "the new year's parts")
+    ties(y["unattributed"], _opening_apart(b), "the new year's frozen opening against its marks")
+    ties(b.realised() + b.unrealised(), now.realised() + now.unrealised(), "the headline's")
 
 
 @needs("buys")
@@ -884,6 +914,9 @@ def test_the_year_to_date_is_blank_until_its_opening_is_frozen():
         assert pd.isna(t[column]), f"the total {column} is {t[column]}, from nothing"
     assert not by["opened_in_period"].any(), "a blank opening read as an account opened in the year"
     assert t["nav"] == pytest.approx(now.nav(), abs=PENNY)
+    y = b.year_attribution()
+    assert pd.isna(y["capital_growth"]) and pd.isna(y["unattributed"]), y
+    assert not pd.isna(y["trading_gain"]), "the trading gain reads the marks, not the frozen opening"
 
 
 @needs("buys")

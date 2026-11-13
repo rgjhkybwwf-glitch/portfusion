@@ -134,7 +134,7 @@ FIGURES = {
     "notional_at_entry": "Spread-bet notional at entry",
     "unrealised_total": "Unrealised gain / loss",
     "realised_total": "Realised gain / loss to date",
-    "total_gain": "Total gain",
+    "total_gain": "Trading gain, excl. income",
     "ytd_income": "YTD income",
     "capital_employed_total": "Capital employed (opening + deployed)",
     "ytd": COMMON["ytd"],

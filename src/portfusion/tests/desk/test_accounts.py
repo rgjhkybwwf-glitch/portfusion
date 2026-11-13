@@ -8,6 +8,8 @@ from portfusion.record import rules as _rules
 from portfusion.desk import actions, app, panels, engine
 from portfusion.desk.intake import bench as _bench
 from portfusion.desk.intake import recorded
+from portfusion.desk.panels import _shape
+from desk_support import registered
 from harness import SRC, append_rows, needs, write_rows, desk_script
 
 
@@ -56,7 +58,8 @@ def test_the_tie_rule_has_one_implementation():
 def test_the_accounts_panel_asks_that_function_rather_than_deciding():
     """Every verdict on the panel must equal what the shared rule says for that row."""
     b = _engine.Book()
-    rows = {r["account"]: r for r in panels.get("reconcile").data()["rows"]}
+    back = registered(b)
+    rows = {back[r["account"]]: r for r in panels.get("reconcile").data()["rows"]}
     for r in b.reconciliation().itertuples(index=False):
         # THE EVIDENCE CLASS, not the date. A test that calls the shared rule must call it the
         # way the panel does, or it is pinning its own mistake.
@@ -75,7 +78,7 @@ def test_reconcile_and_the_report_give_one_last_broker_check():
     import re
     from portfusion.report import page
     b = engine.book()
-    names = {a: a for a in _rules.ACCOUNT_ORDER}
+    names = _shape.labels(b)
     drawn = re.findall(r'<tr><td>(.*?)</td><td class="dim">(.*?)</td><td class="dim">(.*?)</td>',
                        page._evidence(b, None, names))
     report = {html.unescape(a): (html.unescape(k), html.unescape(h)) for a, k, h in drawn}
@@ -90,7 +93,7 @@ def test_reconcile_and_the_report_give_one_last_broker_check():
     if q and b.quarter_evidence(q).equals(b.quarter_evidence(None)):
         assert page._evidence(b, q, names) == page._evidence(b, None, names)
         if r["verdict"] != "no-reading":
-            day = f"{_dt.date.fromisoformat(struck[r['account']]):%-d %b %Y}"
+            day = f"{_dt.date.fromisoformat(struck[registered(b)[r['account']]]):%-d %b %Y}"
             assert r["last_check"].endswith(day), (
                 f"{r['account']}: the page cites {r['last_check']!r}, and its figures are of {day}")
 

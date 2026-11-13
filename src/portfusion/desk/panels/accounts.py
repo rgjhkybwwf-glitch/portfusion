@@ -57,7 +57,8 @@ def data() -> dict:
     year = b.ytd_year()
     return {
         "register": _register(b),
-        "movements": _shape.rows(b.capital_movements(), MOVEMENT_COLUMNS, dates=("date",)),
+        "movements": _shape.labelled(_shape.rows(b.capital_movements(), MOVEMENT_COLUMNS,
+                                                 dates=("date",)), _shape.labels(b)),
         **_income(b, year),
         "year": year,
     }
@@ -70,6 +71,8 @@ def _register(b) -> list[dict]:
                            "cash_read": _shape.reading(r["document"], r["as_of"]) if r["as_of"]
                            else None}
             for r in _shape.rows(b.newest_cash(), ("account", "cash", "as_of", "document"))}
+    # THE REGISTER'S OWN NAME, beside its code: the one table that holds it, which the Bench
+    # writes. Every other cell names an account by its label.
     return [dict(r, **cash.get(r["account"], {}))
             for r in _shape.rows(b.account_register(), REGISTER_COLUMNS)]
 
@@ -88,7 +91,8 @@ def _income(b, year: int) -> dict:
                                                     if converted or c not in CONVERSION]))
     firm = [dict(line, account="The book") for line in lines if line["account"] == "Total"]
     return {
-        "income": firm + [line for line in lines if line["account"] != "Total"],
+        "income": _shape.labelled(firm + [line for line in lines if line["account"] != "Total"],
+                                  _shape.labels(b)),
         "categories": categories,
         "columns": {"register": list(REGISTER_COLUMNS), "movements": list(MOVEMENT_COLUMNS),
                     "summary": ["account", *categories, "total"]},

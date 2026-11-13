@@ -13,7 +13,7 @@ on every request.
 |---|---|---|
 | **Pages** | The eight reading pages: Dashboard, What Changed, Reconcile, Performance, Holdings, Round Trips, Trades, Reports | The same eight |
 | **Buttons** | None | None |
-| **An account is called** | Its register name | Its code and label, `A1 · ISA` |
+| **An account is called** | Its code and label, `A1 · ISA`, in its cells and filters; the engine's sentences keep its register name | Its code and label, `A1 · ISA`, in every word |
 | **Holders' names, account numbers** | Shown | `[withheld]`, in notes too |
 
 A page the renaming could not clear is refused, not sent. The quarterly report names accounts
