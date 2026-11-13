@@ -71,7 +71,7 @@ test("a finding leads to the page its work is done on", async ({ page }) => {
 test("the closed-out count leads to the round trips it counts", async ({ page }) => {
   await open(page, "dashboard");
   const figure = page.locator("table.figures tr", { has: page.locator('button[data-panel="round-trips"]') });
-  const count = Number((await figure.locator("td.num").innerText()).match(/^\d+/)[0]);
+  const count = Number((await figure.locator("td.num").innerText()).match(/^[\d,]+/)[0].replace(/,/g, ""));
   await figure.locator("button[data-panel]").click();
   await expect(page.locator('#tabs button[data-name="round-trips"]')).toHaveAttribute("aria-current", "page");
   await expect(page.locator("#rt-closed")).toHaveValue("yes");

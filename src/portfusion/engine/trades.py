@@ -128,7 +128,7 @@ class Trades(Core):
         if end:
             rt = rt[rt["closed"] <= pd.Timestamp(end)]
         if closed_only:
-            rt = rt[rt["fully_closed"]]
+            rt = rt[rt["fully_closed"].astype(bool)]
         return (rt.sort_values(["closed", "realisation_id"], ascending=False)
                   .reset_index(drop=True))
 
