@@ -196,8 +196,8 @@ changes it.
 - **Three routines on claude.ai**, each in the personal cloud environment "PortFusion", whose setup
   script builds the venv on Python 3.13 and installs `tools/`. Each routine points at its part
   here and sets how many issues a run takes; nothing else is kept there.
-  - **The ready check**, by day: plans the next issues and asks their questions before the night.
-    It writes no code.
+  - **The ready check**, by day: plans the next issues and asks their questions before the night,
+    and keeps the dependencies. It writes no code.
   - **The night run**, at 02:00 UK time: builds the ready issues.
   - **The answer run**, ten quiet minutes after the maintainer's last answer or change: works the
     issues answered or changed.
@@ -275,6 +275,14 @@ changes it.
   milestone, under To rank, with its questions written but not asked; a find not worth an issue is
   struck through with the reason. Each line it handles is struck through, so the list only holds what is unsorted.
 - **Then it shapes each open `Idea:` issue** (Asking and answering, above).
+- **Then it keeps the dependencies.** A Dependabot pull request that stays in its major version
+  merges itself (`dependabot-merge.yml`); the ready check looks after the rest. Each open
+  Dependabot pull request left for the maintainer (a major or a 0.x bump), each one red or behind
+  `main` for a week, and each open Dependabot security alert it can read becomes an issue that meets
+  the Definition of Ready, under To rank, unless an open issue covers it. Its cause is what the
+  release notes change that this repository uses, by file; its Done shows each test that leans on
+  the package still able to fail. Its pull request makes the bump and closes Dependabot's, which is
+  never merged on its own.
 - **It runs the planning, by day, so the questions reach the maintainer before the night.** It
   takes the first lines under Next as the night run would, up to the routine's number, and skips an
   issue whose checked plan is its latest comment and whose files `main` has not changed since.
