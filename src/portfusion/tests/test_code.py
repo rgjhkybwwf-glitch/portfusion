@@ -73,6 +73,25 @@ def test_the_engine_states_its_window_once():
     assert window.lineno <= opening.lineno <= window.end_lineno
 
 
+def _clocked_days_held(tree: ast.Module) -> list[int]:
+    """The lines of each function that writes a `days_held` and reads the clock's day."""
+    return [fn.lineno for fn in ast.walk(tree) if isinstance(fn, ast.FunctionDef)
+            and any(isinstance(n, ast.Constant) and n.value == "days_held" for n in ast.walk(fn))
+            and any(isinstance(n, ast.Attribute) and n.attr in ("today", "now")
+                    for n in ast.walk(fn))]
+
+
+def test_no_days_held_reads_the_clock():
+    """A DAYS HELD COUNTS TO `valued_at()`, the day the live figures stand at, so one record reads
+    one count on any day. An age, or what is owed by today, reads the clock by meaning, and writes
+    no days held. The planted function is the case this finds."""
+    planted = ast.parse('def f(out):\n    out["days_held"] = pd.Timestamp.today() - out["opened"]')
+    assert _clocked_days_held(planted) == [1]
+    clocked = [f"{path.name}:{line}" for path in engine_files()
+               for line in _clocked_days_held(_tree(path))]
+    assert not clocked, f"a days held counts to the clock's day, at {clocked}: end it at valued_at()"
+
+
 # =====================================================================================
 # WHAT THE CODE SAYS OF ITSELF IS SO
 # =====================================================================================
