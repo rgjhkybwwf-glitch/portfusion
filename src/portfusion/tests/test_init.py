@@ -148,20 +148,24 @@ def test_an_empty_book_opens(tmp_path):
 _MID_YEAR = """
 import math
 from portfusion.engine import Book
+from portfusion.house import precision as P
 from portfusion.report.gate import completeness
 from portfusion.report.page import render
 b = Book()
 assert b.ytd_opens() == b.baseline_asof == "2026-05-17", b.ytd_opens()
 assert not math.isnan(b.headline()["YTD return"]), "the year has nothing to open from"
 first = b.quarter_returns().iloc[0]
-assert (first["quarter"], first["opens"]) == ("Q2 2026, from 17 May", "2026-05-17"), first
+assert (first["quarter"], first["opens"]) == ("Q2 2026, from 18 May", "2026-05-17"), first
 year = b.year_to_quarter("2026-09-30")
-assert (year["quarter"], year["opens"]) == ("2026 to 30 Sep, from 17 May", "2026-05-17"), year
+assert (year["quarter"], year["opens"]) == ("2026 to 30 Sep, from 18 May", "2026-05-17"), year
+# EACH NAME IS THE DAY THE DASHBOARD'S YEAR SAYS IT IS FROM: the first day counted.
+counted = P.day_month(b.ytd_window()["first_day"])
+assert first["quarter"].endswith(f"from {counted}") and year["quarter"].endswith(f"from {counted}")
 assert completeness("2026-06-30") == [], completeness("2026-06-30")
 page = render("2026-06-30")
-assert "<h1>Q2 2026, from 17 May</h1>" in page and "2026 to 30 Jun, from 17 May" in page
+assert "<h1>Q2 2026, from 18 May</h1>" in page and "2026 to 30 Jun, from 18 May" in page
 from portfusion.desk import engine as desk
-assert desk.reports()["quarters"][-1]["quarter"] == "Q2 2026, from 17 May", desk.reports()
+assert desk.reports()["quarters"][-1]["quarter"] == "Q2 2026, from 18 May", desk.reports()
 # A RESTATEMENT OF THAT QUARTER JOURNALS IT BY THE SAME NAME. The engine's strike is moved £100,
 # so there is something to restate.
 from portfusion.desk.doors import freeze
@@ -176,7 +180,7 @@ Book.freeze_rows = moved
 account = next(r[1] for r in schema.load("quarter-nav") if str(r[0]) == "2026-06-30")
 freeze.restate({"2026-06-30": [account]}, "a test moved it")
 said = [r[-1] for r in schema.load("journal") if r[3] == "quarter-results"][-2:]
-assert said[0].startswith("Q2 2026, from 17 May: ") and said[1].startswith("Q3 2026: "), said
+assert said[0].startswith("Q2 2026, from 18 May: ") and said[1].startswith("Q3 2026: "), said
 """
 
 
