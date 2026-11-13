@@ -925,7 +925,7 @@ def test_the_dashboard_lists_the_checks_the_audit_prints():
     assert "panelLink(a.panel)" in js and 'PANELS.has("bench") ? d.bench' in js
     leads = {f["label"]: f.get("panel") for f in data["figures"] if f.get("panel")}
     assert leads == {"Round trips closed out": "round-trips"}
-    assert set(leads.values()) <= {p.NAME for p in panels.all_panels()} and "panelLink(f.panel)" in js
+    assert set(leads.values()) <= {p.NAME for p in panels.all_panels()} and "panelLink(f.panel, " in js
 
 
 def test_the_footer_says_whose_it_is_and_which_release():

@@ -7,7 +7,7 @@ prints it.
 
 ### Upgrading a book
 
-Two figures move, and there is no migration. Do these when the book's pin moves.
+One figure moves, on two pages, and there is no migration. Do these when the book's pin moves.
 
 - **Expect days held still open to read to the prices' day**, on Holdings and on Round Trips'
   company lives, where they read to today: fewer days, by the age of the newest mark.
