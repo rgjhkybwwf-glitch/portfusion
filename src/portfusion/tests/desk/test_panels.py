@@ -1173,15 +1173,39 @@ def test_the_accounts_page_and_the_year_are_the_engines():
     assert [r["ytd"] for r in year[1:]] == [None if v != v else v for v in b.by_account()["ytd"]]
 
 
-def test_the_method_page_renders_the_records_rules():
+def test_the_method_page_renders_the_records_rules(monkeypatch):
     """The method's rules are the record's constants, interpolated rather than retyped, so a
-    change to one reaches the page."""
+    change to one reaches the page. ITS FIGURES ARE THE ENGINE'S: the row on the gains, incomes
+    and capitals prints, in order, the year's `year_attribution()` and `totals()` and the
+    headline trading gain, in the live year and in the next, where the year's trading gain and
+    the headline's part; a gap the frozen opening leaves is said only where there is one."""
+    import re
     from portfusion.desk.panels import method
+    from portfusion.house import headings as H
+    from portfusion.house.precision import money
     from portfusion.record import rules as D
+    from quarter_support import book_in_the_next_year
     text = " ".join(r["text"] for s in method.data()["sections"] for r in s["rows"])
     for rule in (D.SPREAD_BET, D.STATEMENT_GRADE, D.SOURCE_HIERARCHY, D.SOURCE_HIERARCHY_NOTE):
         assert rule in text
     assert f"{D.REVIEW_FROM:%-d %b %Y}" in text
+
+    def row():
+        return next(r["text"] for s in method.data()["sections"] for r in s["rows"]
+                    if r["topic"] == "How the gains, incomes and capitals differ")
+
+    for b in (engine.book(), book_in_the_next_year(frozen=True)):
+        monkeypatch.setattr(engine, "book", lambda b=b: b)
+        t, y = b.totals(), b.year_attribution()
+        shown = [money(v) for v in (
+            y["trading_gain"], y["equity_income"], y["capital_growth"], t["nav"],
+            t["capital_employed"], t["opening_nav"], t["capital_deployed"], t["gain"],
+            b.headline()[H.FIGURES["total_gain"]], t["income"], t["return_income"],
+            y["position_income"])]
+        assert re.findall(r"-?£[\d,]+\.\d\d|—", row()) == shown, row()
+    leaves = {**y, "unattributed": 0.25}
+    monkeypatch.setattr(b, "year_attribution", lambda: leaves)
+    assert f"{money(0.25)} of it is the frozen opening" in row()
 
 
 # =====================================================================================

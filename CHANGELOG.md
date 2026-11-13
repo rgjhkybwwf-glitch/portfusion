@@ -53,6 +53,10 @@ No figure moves, and there is no migration. Do these when the book's pin moves.
   glossary: unrealised plus realised, which leaves income out. Its value does not move. Method
   says the year is measured as one period, not its quarters linked, and the report's one income
   note says which income each part shows.
+- **Method sets the gains, incomes and capitals side by side**, in the book's own figures: the
+  year's trading gain (`Book.year_attribution()`: realised in the year plus the move in unrealised
+  since its opening), plus the year's income and costs in spread-bet accounts, makes capital
+  growth; and YTD income, return income and position income, each with what it holds.
 - **A period that opens with the record is named by its first day counted**: a book begun on
   18 May reads "Q2 2026, from 18 May" and "2026 to 30 Sep, from 18 May", the day the
   Dashboard's year says it is from; it read the day before. No figure moves, and a line the

@@ -13,7 +13,8 @@ The Mac's desk only: it is not in `remote.REMOTE_PANELS`.
 from __future__ import annotations
 
 from portfusion.desk import engine
-from portfusion.house.precision import day, pct
+from portfusion.house import headings as H
+from portfusion.house.precision import day, money, pct
 
 NAME = "method"
 TITLE = "Method"
@@ -21,6 +22,34 @@ TITLE = "Method"
 #: on the book.
 ORDER = 80
 APART = True
+
+
+def _gains_and_incomes(b) -> str:
+    """The row that sets the year's gains, incomes and capitals side by side, in this book's
+    figures: `year_attribution()`'s and `totals()`'s, each named as `house/headings.py` names it."""
+    D, t, y = b.D, b.totals(), b.year_attribution()
+    G, F = H.COMMON, H.FIGURES
+    left = y["unattributed"]
+    apart = (f" {money(left)} of it is the frozen opening against that day's marks, which "
+             f"neither explains." if left == left and abs(left) >= 0.005 else "")
+    return (
+        f"The year from {day(b.ytd_window()['first_day'])}, as one period. Its trading gain, "
+        f"realised plus the move in unrealised since the year opened, is "
+        f"{money(y['trading_gain'])}. Add the year's income and costs in spread-bet accounts, "
+        f"{money(y['equity_income'])}: their funding interest, and any other row, since an "
+        f"account's equity holds every one. The two make {G['capital_growth']}, "
+        f"{money(y['capital_growth'])}: {G['nav']} {money(t['nav'])} less "
+        f"{G['capital_employed']} {money(t['capital_employed'])}, the year's opening "
+        f"{money(t['opening_nav'])} plus {G['capital_deployed']} "
+        f"{money(t['capital_deployed'])}.{apart} {G['capital_growth']} plus "
+        f"{G['return_income']} is {H.heading('Performance', 'gain')}, {money(t['gain'])}, "
+        f"what the {G['ytd']} divides. The Dashboard's {F['total_gain']}, "
+        f"{money(b.headline()[F['total_gain']])}, is not the year's: it runs to date, each "
+        f"line from its purchase. Three incomes, and none is added to another. "
+        f"{F['ytd_income']}, {money(t['income'])}: every income and cost row. "
+        f"{G['return_income']}, {money(t['return_income'])}: what the return counts, each row "
+        f"once. {F['position_income']}, {money(y['position_income'])}: the year's "
+        f"{' and '.join(D.POSITION_INCOME).lower()} rows, the income that names a line.")
 
 
 def data() -> dict:
@@ -64,6 +93,7 @@ def data() -> dict:
                 f"year's gains twice. The return since {since} links each full year's return "
                 f"with the year to date: (1 + one year) × (1 + the next) − 1, so each year's "
                 f"flows weigh only on that year.")},
+            {"topic": "How the gains, incomes and capitals differ", "text": _gains_and_incomes(b)},
             {"topic": "A company's life — Round Trips by company life", "text": (
                 "First purchase, in any account or instrument, to the day nothing is held. "
                 "Life gain = realised + unrealised + dividends + funding interest. Life cost per "
