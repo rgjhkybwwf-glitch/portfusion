@@ -10,6 +10,12 @@ from portfusion.engine.ledger import build_ledger, cost_released
 from portfusion.engine.valuation import value_legs
 
 
+def first_day(opens: str) -> str:
+    """The first day a period counts, which a page names it by: the day after `opens`, which is
+    the day whose closing net asset value the period measures from."""
+    return (pd.Timestamp(opens) + pd.Timedelta(days=1)).date().isoformat()
+
+
 class _Pinned:
     """The record's names as they stood when a Book was built.
 
