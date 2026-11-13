@@ -133,6 +133,22 @@ def test_the_report_is_rendered_and_never_written(tmp_path, monkeypatch):
     assert list(tmp_path.iterdir()) == []
 
 
+def test_a_printed_report_cuts_no_column():
+    """A SHEET CANNOT SCROLL: in print a wide table's box lets the table run its full width, and the
+    page is A4 on its side, since upright it cuts the right-hand headings whatever the box does."""
+    import re
+    from portfusion.report.style import CSS
+    block = CSS.split("@media print{", 1)[1]
+    depth = 1
+    for end, ch in enumerate(block):
+        depth += {"{": 1, "}": -1}.get(ch, 0)
+        if not depth:
+            break
+    printed = block[:end]
+    assert ".scroll{overflow:visible}" in printed, "a wide table's box still scrolls in print"
+    assert re.search(r"@page\{size:A4 landscape\b", printed), "the printed page is not A4 on its side"
+
+
 @needs("quarter-nav", "buys")
 def test_a_page_asks_one_engine(monkeypatch):
     """ONE PAGE, ONE `Book()`. `summary_figures()` takes the page's engine, and alone builds its
