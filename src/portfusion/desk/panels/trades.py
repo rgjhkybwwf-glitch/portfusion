@@ -45,7 +45,8 @@ def data() -> dict:
     return {
         "rows": _rows(b, frame),
         "total": int(len(frame)),
-        "accounts": _shape.accounts(frame, "account", b.account_order()),
+        "accounts": [_shape.label(a, _shape.labels(b))
+                     for a in _shape.accounts(frame, "account", b.account_order())],
         "tickers": _shape.uniques(frame, "ticker"),
         "companies": _companies(frame),
         # EACH COMPANY'S CODES IN THE LEDGER: the Ticker box lists the chosen company's alone, so
@@ -70,7 +71,8 @@ def tickers_for_company(company: str) -> list[str]:
 
 def query(start=None, end=None, account=None, ticker=None, direction=None,
           company=None) -> dict:
-    """Interrogate the ledger. Dates and account go to the engine; the rest narrow the result."""
+    """Interrogate the ledger. Dates and account go to the engine; the rest narrow the result.
+    The page reads each account by its label, and the route maps the one it sends back."""
     b = engine.book()
     frame = b.activity(start=start or None, end=end or None, account=account or None)
     if company:
@@ -93,7 +95,7 @@ def _rows(b, frame) -> list[dict]:
     on Holdings and Round Trips."""
     frame = b.with_reasoning(frame, opened="date", closed="date")
     fields = COLUMNS + BET_COLUMNS + tuple(c for c in DETAIL_COLUMNS if c in frame) + ("whys",)
-    return _shape.rows(frame, fields, dates=("date",))
+    return _shape.labelled(_shape.rows(frame, fields, dates=("date",)), _shape.labels(b))
 
 
 def _with_company(frame):

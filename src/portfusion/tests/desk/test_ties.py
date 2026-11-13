@@ -11,6 +11,8 @@ import pytest
 
 from portfusion.desk import engine
 from portfusion.desk.panels import accounts, holdings, performance, reconcile, round_trips, trades
+from portfusion.desk.panels import _shape
+from desk_support import registered
 from harness import needs
 
 PENNY = 0.01
@@ -68,7 +70,8 @@ def test_the_year_so_far_is_the_engines(b):
         if c in performance.YEAR_COLUMNS:
             assert _same(firm[c], v, RATE) if c == "ytd" else _same(firm[c], v), ("The book", c)
     assert _same(firm["exposure"], b.total_exposure()), ("The book", "exposure")
-    assert [r["account"] for r in shown] == [f["account"] for f in frame] == b.account_order()
+    assert [registered(b)[r["account"]] for r in shown] == [f["account"] for f in frame] \
+        == b.account_order()
     for r, f in zip(shown, frame):
         for c in ("exposure", "nav", "opening_nav", "capital_deployed", "return_income", "gain"):
             assert _same(r[c], f[c]), (f["account"], c)
@@ -126,10 +129,10 @@ def test_the_accounts_page_keeps_the_engines_order(b):
     """The register in the record's account order; external capital newest first, as a log is
     read; income in account order, then each account's rows newest first too."""
     d = accounts.data()
-    assert [r["account"] for r in d["register"]] == b.account_order()
+    assert [registered(b)[r["account"]] for r in d["register"]] == b.account_order()
     moves = [r["date"] for r in d["movements"]]
     assert moves == sorted(moves, reverse=True)
-    assert [r["account"] for r in d["income"][1:]] == b.account_order(), \
+    assert [registered(b)[r["account"]] for r in d["income"][1:]] == b.account_order(), \
         "the year's income is not one line per account, in the record's order, after the book"
     for line in d["income"]:
         dates = [r["date"] for r in line["rows"]]
@@ -145,6 +148,8 @@ def test_the_register_is_the_records(b):
     shown = set(accounts.REGISTER_COLUMNS)
     assert set(reg[0]) - {"holder_names", "held_as"} <= shown, set(reg[0]) - shown
     for r, f in zip(rows, reg):
+        # THE ACCOUNT BY ITS LABEL, as every reading page names it; every other field as filed.
+        f = dict(f, account=_shape.labels(b)[f["account"]])
         assert all(r[c] == (None if f[c] != f[c] else f[c]) for c in shown & set(f)), f["account"]
 
 
@@ -153,7 +158,7 @@ def test_each_accounts_cash_is_the_engines(b):
     and on which day."""
     held = b.newest_cash().set_index("account")
     for r in accounts.data()["register"]:
-        e = held.loc[r["account"]]
+        e = held.loc[registered(b)[r["account"]]]
         assert _same(r["cash"], e["cash"]), r["account"]
         assert r["cash_read"] == (None if e["as_of"] is None
                                   else f"{e['document']}, {_day(e['as_of'])}"), r["account"]
@@ -174,12 +179,13 @@ def test_the_years_income_is_the_engines_summary(b):
     firm, *lines = d["income"]
     assert firm["account"] == "The book" and not firm["rows"]
     assert _same(firm["total"], b.totals()["income"]), (firm["total"], b.totals()["income"])
+    back = {**registered(b), "Total": "Total"}
     for line in [dict(firm, account="Total"), *lines]:
         for c in [*d["categories"], "total"]:
-            assert _same(line[c], frame.loc[line["account"], c]), (line["account"], c)
+            assert _same(line[c], frame.loc[back[line["account"]], c]), (line["account"], c)
     rows = b.income_rows(year)
     for line in lines:
-        mine = rows[rows["account"] == line["account"]]
+        mine = rows[rows["account"] == back[line["account"]]]
         assert len(line["rows"]) == len(mine), line["account"]
         assert _same(sum(r["amount"] for r in line["rows"]), line["total"]), line["account"]
 
@@ -210,6 +216,6 @@ def test_a_foreign_income_row_shows_its_conversion(b):
 
 def test_reconcile_shows_the_engines_book_and_broker(b):
     rows, frame = reconcile.data()["rows"], b.reconciliation().to_dict("records")
-    assert [r["account"] for r in rows] == [f["account"] for f in frame]
+    assert [registered(b)[r["account"]] for r in rows] == [f["account"] for f in frame]
     for r, f in zip(rows, frame):
         assert _same(r["book"], f["book"]) and _same(r["broker"], f["statement"]), f["account"]

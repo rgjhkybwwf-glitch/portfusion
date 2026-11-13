@@ -6,9 +6,16 @@ is not exported by `import *`.
 """
 from __future__ import annotations
 
+from portfusion.desk.panels import _shape
 from portfusion.record import schema
 
 from harness import an_account, free_id
+
+
+def registered(b) -> dict[str, str]:
+    """Each label a reading page names an account by (`_shape.labels`), and the register's
+    account it stands for: what a test looks an engine frame up by."""
+    return {v: k for k, v in _shape.labels(b).items()}
 
 
 #: An invented ii GBP ledger, in ii's shape, BOM and all: `test_read_rows` reads it, and
