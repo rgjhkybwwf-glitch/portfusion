@@ -1,8 +1,11 @@
 // THE DESK WALKED, IN CHROMIUM: the demo desk `desk_walk.py` serves, at 1440 × 900. Each page is
 // opened by its tab and must draw no error, hold no accessibility fault but the `KNOWN`, and look
 // as its baseline does; a finding is followed to its page; a wide table's button to Trades is in
-// view, a press on a row opens its detail in view, and a heading that sorts shows it. It writes
-// nothing, and does not prove a figure is right.
+// view, a press on a row opens its detail in view, and a heading that sorts shows it; a page chosen
+// by keyboard puts focus on its heading, one Tab from its first control, its tab buttons kept, and
+// a reader already in the page keeps their place; a heading reached by Tab is clear of the pinned
+// columns, and a Tab between controls in view does not swing the box. It writes nothing, and does not prove a
+// figure is right.
 //
 //     npm ci --prefix tools && npm --prefix tools run browser      # once: Playwright, its Chromium
 //     npm --prefix tools run walk
@@ -68,6 +71,72 @@ test("a finding leads to the page its work is done on", async ({ page }) => {
   await expect(page).toHaveURL(new RegExp(`#${to}$`));
 });
 
+// THE FOCUSABLE ELEMENTS a Tab can reach, in the page: what the walk asks a Tab to land on.
+const TABBABLE = "a[href], button:not([disabled]), input:not([disabled]):not([type=hidden]), " +
+  "select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex='-1'])";
+// WHERE A BOX STANDS once the page has had two frames to scroll it.
+const settled = (box) => box.evaluate((b) => new Promise((done) =>
+  requestAnimationFrame(() => requestAnimationFrame(() => done(b.scrollLeft)))));
+// A PAGE WITH NO CONTROL after its heading: Method reads, and asks nothing.
+const NO_CONTROL = ["method"];
+
+test("a page chosen by keyboard puts focus on its heading, one Tab from its first control", async ({ page }) => {
+  const tabs = page.locator("#tabs");
+  const names = await tabs.locator("button").evaluateAll((bs) => bs.map((b) => b.dataset.name));
+  const markup = () => tabs.evaluate((t) => t.innerHTML.replaceAll(' aria-current="page"', ""));
+  const drawn = await markup();
+  const heading = page.locator("#main .page-head h1");
+  for (const name of names) {
+    await test.step(name, async () => {
+      const button = tabs.locator(`button[data-name="${name}"]`);
+      const pressed = await button.elementHandle();
+      // THE PAGE'S ANSWER IS HELD, so the rail is read between the press and the paint.
+      let release;
+      const held = new Promise((r) => { release = r; });
+      const panel = `**/api/panel/${name}`;
+      await page.route(panel, async (route) => { await held; await route.continue(); });
+      await button.focus();
+      await page.keyboard.press("Enter");
+      await expect(button).toHaveAttribute("aria-current", "page");
+      expect(await pressed.evaluate((b) => b === document.activeElement), "the pressed button keeps focus").toBe(true);
+      expect(await button.evaluate((b, was) => b === was, pressed), "the button is the same node").toBe(true);
+      expect(await markup(), "only aria-current moved").toBe(drawn);
+      release();
+      await expect(heading).toBeFocused();
+      await page.unroute(panel);
+      await page.waitForLoadState("networkidle");
+      await expect(heading).toBeFocused();
+      const first = await page.evaluateHandle((sel) => {
+        const h = document.querySelector("#main .page-head h1");
+        return [...document.querySelectorAll(`#main ${sel}`)].find((el) =>
+          (h.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING) &&
+          el.checkVisibility()) || null;
+      }, TABBABLE);
+      if (NO_CONTROL.includes(name)) {
+        expect(await first.evaluate((el) => el === null), `${name} has no control`).toBe(true);
+        return;
+      }
+      await page.keyboard.press("Tab");
+      expect(await first.evaluate((el) => el === document.activeElement),
+        `one Tab from ${name}'s heading reaches its first control`).toBe(true);
+    });
+  }
+});
+
+test("a reader already in a page keeps their place when the page's header arrives", async ({ page }) => {
+  // THE HEADER'S ANSWER IS HELD, so the reader is in the page before the pick has finished.
+  let release;
+  const held = new Promise((r) => { release = r; });
+  await page.route("**/api/state", async (route) => { await held; await route.continue(); });
+  await page.locator('#tabs button[data-name="trades"]').click();
+  await expect(page.locator("#main .page-head h1")).toHaveText("Trades");
+  const control = page.locator("#main select").first();
+  await control.focus();
+  release();
+  await page.waitForLoadState("networkidle");
+  await expect(control).toBeFocused();
+});
+
 for (const name of ["holdings", "round-trips"]) {
   test(`${name}: a row's button is in view, and a press on the row opens its detail in view`, async ({ page }) => {
     await open(page, name);
@@ -91,6 +160,48 @@ for (const name of ["holdings", "round-trips"]) {
     await expect(heading.locator(".arrow.idle")).toBeVisible();
     await heading.click();
     await expect(heading.locator(".arrow:not(.idle)")).toBeVisible();
+    // A HEADING REACHED BY TAB IS CLEAR OF THE PINNED COLUMNS, and inside its box, both ways
+    // across the table: the browser leaves one that is partly in view under a pin.
+    const box = page.locator("#main .scroll:has(> table[data-links])").first();
+    const heads = page.locator("#main table[data-links] > thead th[tabindex]");
+    const clear = () => page.evaluate(() => {
+      const el = document.activeElement, b = el.closest(".scroll"), r = el.getBoundingClientRect();
+      const cells = b.querySelector(":scope > table > tbody > tr:not(.detail-row)").children;
+      const left = cells[0].getBoundingClientRect().right;
+      const right = Math.min(cells[cells.length - 1].getBoundingClientRect().left,
+                             b.getBoundingClientRect().left + b.clientLeft + b.clientWidth);
+      return r.left >= left - 1 && r.right <= right + 1;
+    });
+    const count = await heads.count();
+    await box.evaluate((b) => { b.scrollTop = 0; b.scrollLeft = 0; });
+    await heads.nth(0).focus();
+    for (const [key, from, to] of [["Tab", 1, count], ["Shift+Tab", count - 2, 0]]) {
+      for (let i = from; key === "Tab" ? i < to : i > to; i += key === "Tab" ? 1 : -1) {
+        await page.keyboard.press(key);
+        await expect(heads.nth(i)).toBeFocused();
+        await expect.poll(clear, `${key} to heading ${i} leaves it clear of the pins`).toBe(true);
+      }
+    }
+    // A PINNED CELL IS IN VIEW ALREADY: a Tab from the chevron to Trades does not swing the box.
+    await chevron.focus();
+    await settled(box);
+    await box.evaluate((b) => { b.scrollLeft = 200; });
+    await page.keyboard.press("Tab");
+    await expect(row.locator("[data-trades]")).toBeFocused();
+    expect(await settled(box), "the box did not move").toBe(200);
+    // NOR DOES A TAB ON INTO THE ROW'S DETAIL, which is held at the box's left edge, where the
+    // detail holds a control (a holding's leads to its company's life).
+    await chevron.click();
+    await expect(chevron).toHaveAttribute("aria-expanded", "true");
+    const pane = page.locator("#main .detail-row:not([hidden]) .detail-pane");
+    if (await pane.locator("a, button").count()) {
+      await row.locator("[data-trades]").focus();
+      await settled(box);
+      await box.evaluate((b) => { b.scrollLeft = 200; });
+      await page.keyboard.press("Tab");
+      await expect(pane.locator(":focus")).toHaveCount(1);
+      expect(await settled(box), "the box did not move into the detail").toBe(200);
+    }
   });
 }
 
@@ -100,8 +211,16 @@ test("a holding's detail leads to its company's life", async ({ page }) => {
   await row.locator(".detail-toggle").click();
   const link = page.locator("#main .detail-row:not([hidden]) [data-life]");
   const company = await link.getAttribute("data-life");
-  await link.click();
+  // BY KEYBOARD, the company's answer held: the heading holds focus through the page's redraw.
+  let release;
+  const held = new Promise((r) => { release = r; });
+  await page.route("**/api/round-trips?*", async (route) => { await held; await route.continue(); });
+  await link.focus();
+  await page.keyboard.press("Enter");
+  await expect(page.locator("#main .page-head h1")).toBeFocused();
+  release();
   await expect(page.locator("#rt-view")).toHaveValue("life");
   await expect(page.locator("#rt-company")).toHaveValue(company);
   await expect(page.locator("#main .scroll > table > tbody > tr:not(.detail-row)")).toHaveCount(1);
+  await expect(page.locator("#main .page-head h1")).toBeFocused();
 });

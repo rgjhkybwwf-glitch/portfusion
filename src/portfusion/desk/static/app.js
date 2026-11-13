@@ -93,11 +93,21 @@ function drawTabs(panels, active, onPick) {
   /* THE PAGES APART FROM THE WORK sit below a rule, off the thread, with no heading: Method and
      Access on the Mac (`APART` on the panel module). The rule alone sets them apart. */
   const apart = panels.filter((p) => p.apart);
-  $("#tabs").innerHTML =
-    `<div class="thread">${panels.filter((p) => !p.apart).map(tab).join("")}</div>` +
-    (apart.length ? `<div class="apart">${apart.map(tab).join("")}</div>` : "");
-  $("#tabs").querySelectorAll("button").forEach((b) =>
-    b.addEventListener("click", () => onPick(b.dataset.name)));
+  /* THE BUTTONS ARE BUILT ONCE, and a pick only moves `aria-current`: a button rewritten under
+     the reader's focus takes the focus with it. A screen that empties the rail (the sign-in, the
+     unreachable Mac, another version) has them built again. */
+  const tabs = $("#tabs");
+  if (!tabs.querySelector("button")) {
+    tabs.innerHTML =
+      `<div class="thread">${panels.filter((p) => !p.apart).map(tab).join("")}</div>` +
+      (apart.length ? `<div class="apart">${apart.map(tab).join("")}</div>` : "");
+    tabs.querySelectorAll("button").forEach((b) =>
+      b.addEventListener("click", () => onPick(b.dataset.name)));
+  }
+  tabs.querySelectorAll("button").forEach((b) => {
+    if (b.dataset.name === active) b.setAttribute("aria-current", "page");
+    else b.removeAttribute("aria-current");
+  });
   /* ON A PHONE THE RAIL FOLDS behind one button (phone.css, `.pages-toggle`), which names the open
      page; choosing a page folds it again. The button is the shell's, so it is wired once. */
   const toggle = $("#pages-toggle");
@@ -242,14 +252,80 @@ function markOverflow() {
     .map((t) => Number(t.dataset.sorts)));
   [...SORTED.keys()].forEach((k) => { if (!live.has(k)) SORTED.delete(k); });
   /* Every box measured, then every box told: a write between two readings lays the page out
-     again for each. */
-  [...document.querySelectorAll("#main .scroll")].map((b) => [b, b.scrollWidth, b.clientWidth])
-    .forEach(([b, full, seen]) => {
-      b.classList.toggle("overflows", full > seen + 1);
-      b.style.setProperty("--box-width", `${seen}px`);
-    });
+     again for each. THE PINNED HEAD AND COLUMNS are measured too, for the box's
+     `scroll-padding` (tables.css), so a cell reached by Tab is scrolled clear of them. */
+  const pinned = (c) => (c && getComputedStyle(c).position === "sticky" ? c : null);
+  [...document.querySelectorAll("#main .scroll")].map((b) => {
+    const t = b.querySelector(":scope > table");
+    const rows = ":scope > tbody > tr:not(.detail-row):not(.devices)";
+    return [b, b.scrollWidth, b.clientWidth, t?.tHead?.offsetHeight || 0,
+            pinned(t?.querySelector(`${rows} > td:first-child`))?.offsetWidth || 0,
+            pinned(t?.querySelector(`${rows} > td:last-child`))?.offsetWidth || 0];
+  }).forEach(([b, full, seen, top, left, right]) => {
+    b.classList.toggle("overflows", full > seen + 1);
+    b.style.setProperty("--box-width", `${seen}px`);
+    b.style.setProperty("--pin-top", `${top}px`);
+    b.style.setProperty("--pin-left", `${left}px`);
+    b.style.setProperty("--pin-right", `${right}px`);
+  });
 }
 window.addEventListener("resize", markOverflow);
+
+/* A CONTROL REACHED BY TAB IS SCROLLED CLEAR OF THE PINS that the box's `scroll-padding` names:
+   a browser leaves a control that is partly in view where it is, half under a pinned column. A
+   control in a pinned cell, or in a row's detail held at the box's left edge, is in view already,
+   but a browser scrolls for it as if it were not; along that side the box is put back where it
+   stood when the key or the pointer went down, before the browser scrolled; a focus nothing
+   pressed for keeps the box as it stood when focus arrived. Delegated from #main, and set once
+   the browser has scrolled. */
+let STOOD = null;
+function wireFocusClear() {
+  const main = $("#main");
+  if (!main || main.dataset.focusWired) return;
+  main.dataset.focusWired = "1";
+  /* Noted as the key or pointer goes down, and let go once it is up: the focus it moves comes
+     between the two. */
+  const note = () => {
+    STOOD = new Map([...main.querySelectorAll(".scroll")]
+      .map((b) => [b, [b.scrollLeft, b.scrollTop]]));
+  };
+  const forget = () => setTimeout(() => { STOOD = null; });
+  document.addEventListener("keydown", (e) => { if (e.key === "Tab") note(); }, true);
+  document.addEventListener("keyup", forget, true);
+  document.addEventListener("pointerdown", note, true);
+  document.addEventListener("pointerup", forget, true);
+  main.addEventListener("focusin", (e) => {
+    const el = e.target;
+    const box = el.closest(".scroll");
+    if (!box) return;
+    const [wasLeft, wasTop] = STOOD?.get(box) || [box.scrollLeft, box.scrollTop];
+    requestAnimationFrame(() => {
+      if (document.activeElement !== el) return;
+      const cell = el.closest("td, th");
+      const pin = cell && box.contains(cell) ? getComputedStyle(cell) : null;
+      const stuck = pin?.position === "sticky";
+      const across = !el.closest(".detail-pane") &&
+        !(stuck && (pin.left !== "auto" || pin.right !== "auto"));
+      const down = !(stuck && pin.top !== "auto");
+      if (!across) box.scrollLeft = wasLeft;
+      if (!down) box.scrollTop = wasTop;
+      const pad = getComputedStyle(box), b = box.getBoundingClientRect();
+      const r = el.getBoundingClientRect();
+      const left = b.left + box.clientLeft + parseFloat(pad.scrollPaddingLeft);
+      const right = b.left + box.clientLeft + box.clientWidth - parseFloat(pad.scrollPaddingRight);
+      const top = b.top + box.clientTop + parseFloat(pad.scrollPaddingTop);
+      const bottom = b.top + box.clientTop + box.clientHeight;
+      if (across && r.left < left) box.scrollLeft -= left - r.left;
+      else if (across && r.right > right) {
+        box.scrollLeft += Math.min(r.right - right, r.left - left);
+      }
+      if (down && r.top < top) box.scrollTop -= top - r.top;
+      else if (down && r.bottom > bottom) {
+        box.scrollTop += Math.min(r.bottom - bottom, r.top - top);
+      }
+    });
+  });
+}
 
 function watchForData() {
   const main = $("#main");
@@ -257,6 +333,7 @@ function watchForData() {
   new MutationObserver(widenForData).observe(main, { childList: true, subtree: true });
   widenForData();
   wireTradeLinks();
+  wireFocusClear();
   wireSorting();
   wireIgEvents();
   wireCombos();
@@ -435,7 +512,17 @@ async function passkey(ask, answer, verb, body) {
     const pick = (n) => {
       leave(); shown = n;
       location.hash = n; drawTabs(s.panels, n, pick);
-      show(n).then(() => { if (shown === n) window.scrollTo(0, 0); });
+      /* THE READER'S PLACE MOVES TO THE PAGE'S HEADING once the page has painted, so the next Tab
+         is the page's first control: only from the rail or from nowhere, so a reader already
+         in the page keeps their place, and a screen with no heading (a failure) leaves it. */
+      show(n).then(() => {
+        if (shown !== n) return;
+        window.scrollTo(0, 0);
+        const at = document.activeElement;
+        if (!at || at === document.body || at.closest("#tabs")) {
+          $("#main .page-head h1")?.focus({ preventScroll: true });
+        }
+      });
     };
     if ("scrollRestoration" in history) history.scrollRestoration = "manual";
     window.addEventListener("hashchange", async () => {

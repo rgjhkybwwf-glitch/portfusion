@@ -84,7 +84,7 @@ const reportLink = (q) =>
    there pushes the table down. Every page fills the window; `data-wide` is what widens it. */
 const page = ({ scope = "", field = null, status = null, figures: strip = null, filters: row = null,
                 work = "", why = null }) => {
-  const head = `<header class="page-head"><h1>${esc(PAGE_TITLE)}</h1>${scope
+  const head = `<header class="page-head"><h1 tabindex="-1">${esc(PAGE_TITLE)}</h1>${scope
       ? `<span class="muted">${esc(scope)}</span>` : ""}</header>`;
   /* A FIELD CARRIES THE HEAD. The Dashboard's ultramarine band is the page's
      title band too, so its head sits inside it rather than above it. */
@@ -174,8 +174,12 @@ function wireFilters(name, d, again, { ids, button, ask, clear, resets = {} }) {
     }
     if (asked !== ASKED) return;
     const data = { ...d, ...q, chosen: HELD_FILTERS[name] || {} };
+    /* A HEADING THAT HELD THE READER'S PLACE holds it on the page redrawn: a page that arrives
+       with a held filter is drawn twice. */
+    const placed = document.activeElement?.matches("#main .page-head h1");
     $("#main").innerHTML = DRAW[name](data);
     WIRE[name](data, true);
+    if (placed) $("#main .page-head h1")?.focus({ preventScroll: true });
   };
   const go = () => {
     HELD_FILTERS[name] = Object.fromEntries(boxes.map((el) => [el.id, el.value]));

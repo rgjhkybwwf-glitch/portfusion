@@ -70,7 +70,12 @@ tr.detail-row .scroll { margin: var(--space-2) 0; max-height: none; }
    window, so its heading row stays in view down a long table (Trades) and its sideways bar is
    on screen rather than under the last row; the first column, the row's name, stays put while
    the figures scroll under it. Every row is one line; a note is still clipped, whole on hover. */
-.scroll { overflow: auto; max-height: calc(100vh - var(--space-5)); --box-width: 100%; }
+.scroll { overflow: auto; max-height: calc(100vh - var(--space-5)); --box-width: 100%;
+          --pin-top: 0px; --pin-left: 0px; --pin-right: 0px; }
+/* A CELL REACHED BY TAB IS SCROLLED CLEAR OF THE PINS: the box's padding for scrolling is the
+   pinned head's height and the pinned columns' widths (`--pin-*`, measured by app.js, which also
+   keeps a pinned cell's own focus from moving the box). */
+.scroll { scroll-padding: var(--pin-top) var(--pin-right) 0 var(--pin-left); }
 .scroll > table > thead > tr > * { position: sticky; top: 0; z-index: 2; background: var(--paper); }
 .scroll > table > thead > tr > :first-child { left: 0; z-index: 3; }
 .scroll > table > tbody > tr:not(.detail-row):not(.devices) > td { white-space: nowrap; }
