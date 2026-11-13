@@ -71,25 +71,11 @@ tr.detail-row .scroll { margin: var(--space-2) 0; max-height: none; }
    on screen rather than under the last row; the first column, the row's name, stays put while
    the figures scroll under it. Every row is one line; a note is still clipped, whole on hover. */
 .scroll { overflow: auto; max-height: calc(100vh - var(--space-5)); --box-width: 100%;
-          --pin-top: 0px; --pin-left: 0px; --pin-right: 0px; --pane-pin: 0px; }
+          --pin-top: 0px; --pin-left: 0px; --pin-right: 0px; }
 /* A CELL REACHED BY TAB IS SCROLLED CLEAR OF THE PINS: the box's padding for scrolling is the
-   pinned head's height and the pinned columns' widths (`--pin-*`, measured by app.js). A pinned
-   cell is in view already, so its own margin gives the padding back, or each Tab onto one would
-   swing the box sideways. */
+   pinned head's height and the pinned columns' widths (`--pin-*`, measured by app.js, which also
+   keeps a pinned cell's own focus from moving the box). */
 .scroll { scroll-padding: var(--pin-top) var(--pin-right) 0 var(--pin-left); }
-.scroll > table > thead > tr > *, .scroll > table > thead > tr > * * {
-  scroll-margin-top: calc(-1 * var(--pin-top));
-}
-.scroll > table > thead > tr > :first-child, .scroll > table > thead > tr > :first-child *,
-.scroll > table > tbody > tr:not(.detail-row):not(.devices) > td:first-child * {
-  scroll-margin-left: calc(-1 * var(--pin-left));
-}
-/* A ROW'S DETAIL IS HELD AT THE BOX'S LEFT EDGE, so it is in view already and its controls give
-   the left padding back too; a box inside the detail starts again from its own. */
-.scroll > table > tbody > tr.detail-row > td > .detail-pane { --pane-pin: var(--pin-left); }
-.detail-pane :is(a, button, select, input, summary, [tabindex]) {
-  scroll-margin-left: calc(-1 * var(--pane-pin));
-}
 .scroll > table > thead > tr > * { position: sticky; top: 0; z-index: 2; background: var(--paper); }
 .scroll > table > thead > tr > :first-child { left: 0; z-index: 3; }
 .scroll > table > tbody > tr:not(.detail-row):not(.devices) > td { white-space: nowrap; }
@@ -105,11 +91,6 @@ tr.detail-row .scroll { margin: var(--space-2) 0; max-height: none; }
   .scroll > table[data-links] > thead > tr > :last-child { right: 0; z-index: 3; }
   .scroll > table[data-links] > tbody > tr:not(.detail-row):not(.devices) > td:last-child {
     position: sticky; right: 0; z-index: 1; background: var(--paper);
-  }
-  .scroll > table[data-links] > thead > tr > :last-child,
-  .scroll > table[data-links] > thead > tr > :last-child *,
-  .scroll > table[data-links] > tbody > tr:not(.detail-row):not(.devices) > td:last-child * {
-    scroll-margin-right: calc(-1 * var(--pin-right));
   }
   .scroll.overflows > table[data-links] > thead > tr > :last-child,
   .scroll.overflows > table[data-links] > tbody > tr:not(.detail-row):not(.devices) > td:last-child {

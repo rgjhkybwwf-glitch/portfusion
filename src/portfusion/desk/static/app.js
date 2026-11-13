@@ -273,31 +273,58 @@ window.addEventListener("resize", markOverflow);
 
 /* A CONTROL REACHED BY TAB IS SCROLLED CLEAR OF THE PINS that the box's `scroll-padding` names:
    a browser leaves a control that is partly in view where it is, half under a pinned column. A
-   pinned cell is in view already, so it is not moved along its pinned side. Delegated from #main,
-   and run once the browser has scrolled for the focus itself. */
+   control in a pinned cell, or in a row's detail held at the box's left edge, is in view already,
+   but a browser scrolls for it as if it were not; along that side the box is put back where it
+   stood when the key or the pointer went down, before the browser scrolled; a focus nothing
+   pressed for keeps the box as it stood when focus arrived. Delegated from #main, and set once
+   the browser has scrolled. */
+let STOOD = null;
 function wireFocusClear() {
   const main = $("#main");
   if (!main || main.dataset.focusWired) return;
   main.dataset.focusWired = "1";
-  main.addEventListener("focusin", (e) => requestAnimationFrame(() => {
+  /* Noted as the key or pointer goes down, and let go once it is up: the focus it moves comes
+     between the two. */
+  const note = () => {
+    STOOD = new Map([...main.querySelectorAll(".scroll")]
+      .map((b) => [b, [b.scrollLeft, b.scrollTop]]));
+  };
+  const forget = () => setTimeout(() => { STOOD = null; });
+  document.addEventListener("keydown", (e) => { if (e.key === "Tab") note(); }, true);
+  document.addEventListener("keyup", forget, true);
+  document.addEventListener("pointerdown", note, true);
+  document.addEventListener("pointerup", forget, true);
+  main.addEventListener("focusin", (e) => {
     const el = e.target;
     const box = el.closest(".scroll");
-    if (!box || document.activeElement !== el) return;
-    const cell = el.closest("td, th");
-    const pin = cell && box.contains(cell) ? getComputedStyle(cell) : null;
-    const across = !el.closest(".detail-pane") &&
-      !(pin && pin.position === "sticky" && (pin.left !== "auto" || pin.right !== "auto"));
-    const down = !(pin && pin.position === "sticky" && pin.top !== "auto");
-    const pad = getComputedStyle(box), b = box.getBoundingClientRect(), r = el.getBoundingClientRect();
-    const left = b.left + box.clientLeft + parseFloat(pad.scrollPaddingLeft);
-    const right = b.left + box.clientLeft + box.clientWidth - parseFloat(pad.scrollPaddingRight);
-    const top = b.top + box.clientTop + parseFloat(pad.scrollPaddingTop);
-    const bottom = b.top + box.clientTop + box.clientHeight;
-    if (across && r.left < left) box.scrollLeft -= left - r.left;
-    else if (across && r.right > right) box.scrollLeft += Math.min(r.right - right, r.left - left);
-    if (down && r.top < top) box.scrollTop -= top - r.top;
-    else if (down && r.bottom > bottom) box.scrollTop += Math.min(r.bottom - bottom, r.top - top);
-  }));
+    if (!box) return;
+    const [wasLeft, wasTop] = STOOD?.get(box) || [box.scrollLeft, box.scrollTop];
+    requestAnimationFrame(() => {
+      if (document.activeElement !== el) return;
+      const cell = el.closest("td, th");
+      const pin = cell && box.contains(cell) ? getComputedStyle(cell) : null;
+      const stuck = pin?.position === "sticky";
+      const across = !el.closest(".detail-pane") &&
+        !(stuck && (pin.left !== "auto" || pin.right !== "auto"));
+      const down = !(stuck && pin.top !== "auto");
+      if (!across) box.scrollLeft = wasLeft;
+      if (!down) box.scrollTop = wasTop;
+      const pad = getComputedStyle(box), b = box.getBoundingClientRect();
+      const r = el.getBoundingClientRect();
+      const left = b.left + box.clientLeft + parseFloat(pad.scrollPaddingLeft);
+      const right = b.left + box.clientLeft + box.clientWidth - parseFloat(pad.scrollPaddingRight);
+      const top = b.top + box.clientTop + parseFloat(pad.scrollPaddingTop);
+      const bottom = b.top + box.clientTop + box.clientHeight;
+      if (across && r.left < left) box.scrollLeft -= left - r.left;
+      else if (across && r.right > right) {
+        box.scrollLeft += Math.min(r.right - right, r.left - left);
+      }
+      if (down && r.top < top) box.scrollTop -= top - r.top;
+      else if (down && r.bottom > bottom) {
+        box.scrollTop += Math.min(r.bottom - bottom, r.top - top);
+      }
+    });
+  });
 }
 
 function watchForData() {

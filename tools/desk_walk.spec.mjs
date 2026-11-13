@@ -74,6 +74,9 @@ test("a finding leads to the page its work is done on", async ({ page }) => {
 // THE FOCUSABLE ELEMENTS a Tab can reach, in the page: what the walk asks a Tab to land on.
 const TABBABLE = "a[href], button:not([disabled]), input:not([disabled]):not([type=hidden]), " +
   "select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex='-1'])";
+// WHERE A BOX STANDS once the page has had two frames to scroll it.
+const settled = (box) => box.evaluate((b) => new Promise((done) =>
+  requestAnimationFrame(() => requestAnimationFrame(() => done(b.scrollLeft)))));
 // A PAGE WITH NO CONTROL after its heading: Method reads, and asks nothing.
 const NO_CONTROL = ["method"];
 
@@ -180,11 +183,12 @@ for (const name of ["holdings", "round-trips"]) {
       }
     }
     // A PINNED CELL IS IN VIEW ALREADY: a Tab from the chevron to Trades does not swing the box.
-    await box.evaluate((b) => { b.scrollLeft = 200; });
     await chevron.focus();
+    await settled(box);
+    await box.evaluate((b) => { b.scrollLeft = 200; });
     await page.keyboard.press("Tab");
     await expect(row.locator("[data-trades]")).toBeFocused();
-    expect(await box.evaluate((b) => b.scrollLeft), "the box did not move").toBe(200);
+    expect(await settled(box), "the box did not move").toBe(200);
     // NOR DOES A TAB ON INTO THE ROW'S DETAIL, which is held at the box's left edge, where the
     // detail holds a control (a holding's leads to its company's life).
     await chevron.click();
@@ -192,9 +196,11 @@ for (const name of ["holdings", "round-trips"]) {
     const pane = page.locator("#main .detail-row:not([hidden]) .detail-pane");
     if (await pane.locator("a, button").count()) {
       await row.locator("[data-trades]").focus();
+      await settled(box);
+      await box.evaluate((b) => { b.scrollLeft = 200; });
       await page.keyboard.press("Tab");
       await expect(pane.locator(":focus")).toHaveCount(1);
-      expect(await box.evaluate((b) => b.scrollLeft), "the box did not move into the detail").toBe(200);
+      expect(await settled(box), "the box did not move into the detail").toBe(200);
     }
   });
 }
