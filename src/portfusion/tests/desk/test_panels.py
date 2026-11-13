@@ -5,8 +5,8 @@ import pytest
 from portfusion import engine as _engine
 from portfusion.desk import app, panels, engine
 from portfusion.desk.panels import _shape
-from desk_support import SHARES_ACCOUNT, SPREAD_BET_ACCOUNT, _static
-from harness import SRC, needs, desk_script
+from desk_support import SHARES_ACCOUNT, SPREAD_BET_ACCOUNT
+from harness import SRC, needs, desk_script, desk_style
 
 
 def _blank(v):
@@ -624,10 +624,10 @@ def test_movement_colour_is_used_and_scoped():
                   `difference`: money, often negative, carrying no judgement. Colouring it
                   would turn every purchase green and every sale red.
     """
-    css, js = _static("app.css"), desk_script()
+    css, js = desk_style(), desk_script()
 
     assert "var(--up)" in css and "var(--down)" in css, \
-        "app.css does not consume the movement tokens — they are generated and unused again"
+        "the stylesheet does not consume the movement tokens — they are generated and unused again"
 
     from portfusion.house.palette import MOVEMENT_FIELDS
     assert "PRECISION.movement_fields.includes(c)" in js, "the desk no longer colours house's list"
@@ -709,10 +709,10 @@ def test_no_panel_leaves_a_handler_on_the_frame():
 
 
 def test_no_call_site_puts_anything_in_a_style_attribute():
-    """Every width, colour and spacing lives in app.css, so a call site sets none of them."""
+    """Every width, colour and spacing lives in the stylesheet, so a call site sets none of them."""
     import re
     used = re.findall(r'style="([^"]*)"', desk_script())
-    assert not used, f"app.js sets style={used}; the style layer is app.css"
+    assert not used, f"app.js sets style={used}; the style layer is the stylesheet"
 
 
 # =====================================================================================
@@ -958,7 +958,7 @@ def test_the_template_has_no_note_box_and_no_pill():
     WRITTEN in sentence case, which this checks — a heading typed in capitals would hide three
     spellings."""
     import re
-    js, css = desk_script(), _static("app.css")
+    js, css = desk_script(), desk_style()
     assert 'class="caveat"' not in js and ".caveat" not in css, "a note box is back"
     assert 'class="basis"' not in js and ".basis" not in css, "a basis pill is back"
     typed = [h for h in re.findall(r"<(?:h2|th)[^>]*>([^<$]{4,})</", js) if h.isupper()]
@@ -969,7 +969,7 @@ def test_the_page_head_is_ruled_off_on_every_page():
     """A rule under the title and its scope line, on every page: it belongs to the head, which
     every page draws through `page()`, and the status line draws none beneath it."""
     import re
-    css = _static("app.css")
+    css = desk_style()
     head = re.search(r"\.page-head \{([^}]*)\}", css).group(1)
     steps = re.search(r"\.steps \{([^}]*)\}", css).group(1)
     assert "border-bottom" in head, "the page head has lost its rule"
@@ -994,7 +994,7 @@ def test_the_dashboards_glance_stacks_on_a_phone():
     be one letter wide, so at the phone's width, the 48rem the gutter narrows at, the list goes
     below them."""
     import re
-    css = _static("app.css")
+    css = desk_style()
 
     def block(at):
         depth, i = 0, css.index("{", at)

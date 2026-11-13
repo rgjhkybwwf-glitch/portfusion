@@ -1,0 +1,97 @@
+/* THE PAGES: what one page wears that no other does. */
+
+/* ACCESS: an enrol code is read off the screen and typed on another device, so it is set large,
+   spaced, in tabular figures. */
+.enrol-code { display: block; font-size: var(--text-numeral); font-weight: 800;
+              letter-spacing: 0.08em; font-variant-numeric: tabular-nums; color: var(--heading); }
+tr.devices > td { padding: 0 0 var(--space-3) var(--space-5); }
+
+/* WHAT CHANGED — the two bases, one under the other, and the windows above them.
+
+   A BLOCK IS A SECTION UNDER ITS CLOCK. Its label is a sub-heading in the column heads' ink, so
+   "Securities owned" reads as part of "Market time" and not as a third section beside it; the
+   figures table and the data table below it are the same two objects every other panel uses.
+
+   THE WINDOW CHIPS say which two dates a group of lines was compared across. There can be more
+   than one, since lines are not all marked on one date — so this is a LIST, and it has to
+   look like one rather than like a single date that happens to be wide. */
+.diff h3 { color: var(--muted); margin: var(--space-3) 0 var(--space-2); }
+.diff + .diff { margin-top: var(--space-6); }
+.win { display: inline-block; margin-right: var(--space-3); white-space: nowrap; }
+
+/* THE FIELD: the design system's ultramarine, the one strong moment on the Dashboard.
+   It carries the page's head and the figures the panel marks as leading, each with
+   the parts that sit under it, in white; everything else on the page stays on the white ground. */
+.field { background: var(--field); color: var(--on-field); padding: var(--space-6) var(--space-6)
+         var(--space-6); margin-bottom: var(--space-6); }
+.field .page-head { border-bottom-color: var(--field-rule); }
+.field .page-head h1 { color: var(--on-field); }
+.field .page-head .muted { color: var(--on-field-muted); }
+.field-figures { display: grid; grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+                 gap: var(--space-5) 0; }
+.field-figure { display: flex; flex-direction: column; gap: var(--space-2);
+                padding: 0 var(--space-5); border-left: 1px solid var(--field-rule); }
+.field-figure:first-child { padding-left: 0; border-left: 0; }
+.field-figure .label { font-size: var(--text-label); font-weight: 600; font-stretch: 75%;
+                       letter-spacing: 0.1em; text-transform: uppercase; color: var(--on-field); }
+.field-figure .numeral { font-size: var(--text-numeral); font-weight: 800; font-stretch: 125%;
+                         line-height: 1; font-variant-numeric: tabular-nums; }
+.field-figure .part { font-size: var(--text-note); color: var(--on-field-muted);
+                      font-variant-numeric: tabular-nums; }
+.field :focus-visible { outline-color: var(--on-field); }
+
+/* REPORTS: one line per report — its state, its name (a link once the gate allows it), its date —
+   and the gate's own words under a quarter it refuses. */
+.items li.report { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-2) var(--space-4);
+                   padding: var(--space-3) 0; }
+.items li.report strong { font-size: var(--text-lead); }
+/* EVERY NAME STARTS IN ONE COLUMN: each state's word takes the room of the
+   longest, "not ready", so a quarter's name sits at the same place on every line. The `.tag`
+   minimum of 9ch holds nine characters of figures, not nine of the label's spaced capitals and
+   the dot before them. */
+.items li.report .tag { min-width: 16ch; }
+.items li.report .gaps { flex-basis: 100%; margin: 0; padding-left: var(--space-5);
+                         color: var(--muted); font-size: var(--text-note); }
+
+/* SIGNING IN: the field beside the form, as the hosted desk's own front door. The field carries
+   the book's web in white; the form asks for the passkey first and the enrol code after it. */
+.signin { display: flex; flex-wrap: wrap; margin-top: var(--space-5); }
+.signin-field { flex: 1 1 20rem; display: flex; flex-direction: column; justify-content: flex-end;
+                gap: var(--space-5); min-height: 22rem; padding: var(--space-6);
+                background: var(--field); color: var(--on-field); }
+.signin-field svg { width: 6rem; height: auto; }
+.signin-field svg g { stroke: var(--on-field); }
+.signin-field svg circle { fill: var(--on-field); }
+.signin-field h1 { margin: 0; font-size: var(--text-display); font-weight: 800; font-stretch: 125%;
+                   line-height: 1.05; color: var(--on-field); }
+.signin-form { flex: 1 1 20rem; display: flex; flex-direction: column; align-items: flex-start;
+               gap: var(--space-4); padding: var(--space-6); border: 1px solid var(--hair); }
+.signin-form .f { width: 100%; max-width: 20rem; }
+.signin-form #signin { width: 100%; max-width: 20rem; }
+
+/* What Changed's earlier writes: the journal before the span its marks cover, folded. */
+.earlier { margin-top: var(--space-3); }
+.earlier summary { cursor: pointer; color: var(--muted); font-size: var(--text-note); }
+.earlier[open] summary { margin-bottom: var(--space-3); }
+
+/* WHERE THE EXPOSURE SITS: three small tables side by side under Holdings, each slice a bar on
+   the report's colours (band under chart). The bar takes the width its table leaves. */
+.allocs { display: grid; grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+          gap: var(--space-6); align-items: start; }
+.page table.alloc { width: 100%; }
+td.alloc-bar { width: 100%; }
+td.alloc-bar svg { display: block; width: 100%; min-width: 4rem; height: 10px; }
+td.alloc-bar rect { fill: var(--chart); }
+td.alloc-bar rect.track { fill: var(--band); }
+
+/* THE DASHBOARD'S GLANCE: its figures beside what needs attention; on a phone, below them, as
+   beside them the list would be one letter wide. */
+.glance { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-6);
+          align-items: start; }
+
+.glance > section > h2 { margin-top: 0; }
+
+/* THE METHOD PAGE: the methodology, read down. */
+dl.method { max-width: var(--measure); }
+dl.method dt { font-weight: 600; margin-top: var(--space-4); }
+dl.method dd { margin: var(--space-1) 0 0; }

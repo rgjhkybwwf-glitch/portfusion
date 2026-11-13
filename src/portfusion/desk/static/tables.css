@@ -1,0 +1,163 @@
+/* THE TABLES: a panel uses the classes declared here, and invents none. */
+
+/* FIGURES. No row banding — house/palette.py: a second light fill beside the accepted grey
+   would dilute the fill channel, and the fill channel carries meaning. Horizontal rules only.
+   THE ONE EXCEPTION IS THE POINTER, ON A ROW THAT OPENS: the row under it takes the band, the
+   palette's "one step off the paper", and the pointer a hand, so the fill means one thing
+   everywhere: a press here opens the row's detail. A row with nothing to open takes neither.
+   It is never a row's state, so a differing row keeps its own fill. */
+/* A ROW IS ONE LINE AT A DATA ROW'S LEADING. Body text keeps 1.45 for prose; a table is scanned,
+   not read, and at 1.3 with --row-pad a plain row is 27px against 35px. Nothing in a row is
+   bold: weight is for a headline figure (`table.figures`, `tr.lead`) and an item's label. */
+table { width: 100%; border-collapse: collapse; line-height: 1.3; }
+/* A TABLE OPENS ON THE DESIGN SYSTEM'S 2px RULE, and its heads sit on the page in the label style, with a
+   hairline under them: borders, not bands. */
+table { border-top: var(--rule-section) solid var(--rule); }
+th, thead td {
+  text-align: left; color: var(--muted); vertical-align: bottom;
+  padding: var(--space-2) var(--cell-pad); border-bottom: 1px solid var(--hair);
+}
+td { padding: var(--row-pad) var(--cell-pad); border-bottom: 1px solid var(--hair); }
+tr:last-child td { border-bottom: 0; }
+/* A CELL IN THE HEAD ROW, over a column with nothing to head (`NO_HEAD`, kit.js), sits as a
+   heading does, and keeps the head's hairline. */
+thead tr:last-child td { border-bottom: 1px solid var(--hair); }
+/* WHERE ONE ACCOUNT'S ROWS START, in a table that names the account once (Performance): a rule
+   in the ink of the table's own top, one pixel — not a title row. */
+tr.opens td { border-top: 1px solid var(--rule); }
+/* A FIGURE IS ARCHIVO'S, TABULAR, AT THE ROW'S OWN SIZE. Archivo's tabular figures are narrow,
+   so a figure reads at the size of the text beside it. */
+td.num { text-align: right; white-space: nowrap; }
+
+/* MOVEMENT — a gain's SIGN, and nothing else. house/palette.py heads the two colours these derive
+   from "movement, which is not provenance", which is the whole rule: this is a THIRD channel,
+   beside font-colour-as-origin and fill-as-state, and it must not borrow from either. So it
+   colours the figure only — no fill, no weight, no size — and only on the three gain columns
+   kit.js lists. Magnitude is not encoded at all; that is what sorting a column is for.
+   Exactly zero wears neither. */
+td.num.up   { color: var(--up); }
+td.num.down { color: var(--down); }
+tr.lead td { font-size: var(--text-lead); }
+tr.lead td.num { font-weight: 600; }
+td.indent { padding-left: var(--space-6); color: var(--muted); }
+
+/* A TABLE TAKES THE WIDTH ITS COLUMNS NEED, a data table too: stretched to the window, its gaps
+   make a line hard to follow. Wider than the window, it scrolls in its box. */
+.page table { width: auto; }
+
+/* A FIFTH OF THE FILL, NOT TWO: at 40% the muted text in a differing row scores 1.76:1 on the
+   dark ground. At 20% it is the same tint on white and legible on ink. */
+tr.differs td { background: color-mix(in srgb, var(--warn) 20%, transparent); }
+th.num { text-align: right; }
+/* A HEADING THAT SORTS ITS COLUMN: the pointer says it can be pressed, and so does its mark,
+   faint until the heading is pressed; the sorted one carries its arrow, small, in the
+   heading's own ink. */
+th.sortable { cursor: pointer; user-select: none; }
+th.sortable:hover, th.sortable:focus-visible { color: var(--heading); }
+th .arrow { margin-left: var(--space-1); font-size: var(--text-label); color: var(--heading); }
+th .arrow.idle { color: color-mix(in srgb, var(--muted) 60%, transparent); }
+th.sortable:hover .arrow.idle, th.sortable:focus-visible .arrow.idle { color: var(--heading); }
+
+/* The expansion is a table inside a cell; it must not inherit the row's padding twice, nor take
+   a box of its own height inside the box it sits in. */
+tr.detail-row .scroll { margin: var(--space-2) 0; max-height: none; }
+
+/* A WIDE TABLE SCROLLS INSIDE ITS OWN BOX. Without this the page itself scrolls sideways and the
+   tab bar goes with it.
+
+   BEST PRACTICE FOR A DESKTOP TABLE, NOT A SQUEEZE TO FIT: a table
+   wider than the window keeps its columns whole and scrolls. The box is no taller than the
+   window, so its heading row stays in view down a long table (Trades) and its sideways bar is
+   on screen rather than under the last row; the first column, the row's name, stays put while
+   the figures scroll under it. Every row is one line; a note is still clipped, whole on hover. */
+.scroll { overflow: auto; max-height: calc(100vh - var(--space-5)); --box-width: 100%; }
+.scroll > table > thead > tr > * { position: sticky; top: 0; z-index: 2; background: var(--paper); }
+.scroll > table > thead > tr > :first-child { left: 0; z-index: 3; }
+.scroll > table > tbody > tr:not(.detail-row):not(.devices) > td { white-space: nowrap; }
+.scroll > table > tbody > tr:not(.detail-row):not(.devices) > td:first-child {
+  position: sticky; left: 0; z-index: 1; background: var(--paper);
+}
+/* THE PINNED EDGE shows only while the box scrolls sideways (`overflows`, set by app.js). */
+.scroll.overflows > table > * > tr > :first-child { box-shadow: inset -1px 0 0 var(--hair); }
+/* THE ROW'S LINKS STAY PUT TOO, at the other edge: the last cell of a table that has them
+   (`data-links`, kit.js's table()). Not on a narrow window, where two pinned columns would
+   leave the figures no room. */
+@media (min-width: 70rem) {
+  .scroll > table[data-links] > thead > tr > :last-child { right: 0; z-index: 3; }
+  .scroll > table[data-links] > tbody > tr:not(.detail-row):not(.devices) > td:last-child {
+    position: sticky; right: 0; z-index: 1; background: var(--paper);
+  }
+  .scroll.overflows > table[data-links] > thead > tr > :last-child,
+  .scroll.overflows > table[data-links] > tbody > tr:not(.detail-row):not(.devices) > td:last-child {
+    box-shadow: inset 1px 0 0 var(--hair);
+  }
+}
+.scroll > table > tbody > tr.differs > td:first-child {
+  background: color-mix(in srgb, var(--warn) 20%, var(--paper));
+}
+.scroll > table > tbody > tr.has-detail { cursor: pointer; }
+.scroll > table > tbody > tr.has-detail:not(.differs):hover > td { background: var(--band); }
+/* ITS SCROLLBAR SITS UNDER THE LAST ROW, NEVER ON IT. Safari on a Mac draws an overlay bar, painted
+   over the box's last row. A styled bar is a classic one: it takes its own 10px below the table,
+   appears only while the table is wider than the window, and stays in view while it does, so the
+   hidden columns are evident. The thumb is a control, so it takes the control boundary's colour. */
+.scroll::-webkit-scrollbar { height: 10px; width: 10px; }
+.scroll::-webkit-scrollbar-thumb {
+  background: var(--control); border-radius: var(--radius-pill);
+  border: 2px solid transparent; background-clip: padding-box;
+}
+.scroll::-webkit-scrollbar-thumb:hover { background-color: var(--muted); }
+
+/* A LONG NOTE MUST NOT SET THE ROW HEIGHT. Round Trips carries the WHY, and some run to several
+   sentences. One line, ellipsis, full text on hover. The note is not lost. */
+td.clip {
+  max-width: 26rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+td.oneline { white-space: nowrap; }
+
+/* Headline figures above a table, the same shape the Dashboard uses. */
+table.figures { width: auto; margin-bottom: var(--space-3); }
+table.figures td { border-bottom: 0; padding: 2px var(--space-3) 2px 0; }
+table.figures td:first-child { color: var(--muted); }
+table.figures td.num { font-weight: 600; padding-right: 0; }
+/* A HEADLINE FIGURE KEEPS ITS LABEL'S SIZE: the note size is for a column, which is short of
+   width, and a list of figures beside their labels is not. */
+table.figures td.num { font-size: var(--text-body); }
+table.figures tr.lead td { font-size: var(--text-lead); }
+table.figures tr.lead td:first-child { color: var(--ink); }
+table.figures td.indent { padding-left: var(--space-5); }
+
+/* A LINK IN A TABLE CELL MUST NOT WRAP mid-word — a broken link makes rows uneven. */
+td.nowrap { white-space: nowrap; }
+
+/* THE DETAIL: the row opens it, at full width below. An unopened row is one line high, which is
+   what "the rows are tighter" asks for, and an opened detail gets the whole width rather than a
+   column. THE CHEVRON AT THE ROW'S START turns down while the row is open; a row that does not
+   open, among rows that do, keeps its space (`.detail-gap`).
+   Reasoning headings are sentence case (docs/glossary.md §5). */
+.detail-toggle, .detail-gap { display: inline-block; width: 1em; margin-right: var(--space-1); }
+.detail-toggle { appearance: none; background: none; border: 0; padding: 0; cursor: pointer;
+                 font: inherit; color: var(--muted); text-align: left; }
+.detail-toggle span { display: inline-block; }
+.detail-toggle[aria-expanded="true"] span { transform: rotate(90deg); }
+tr.has-detail:hover .detail-toggle, .detail-toggle[aria-expanded="true"] { color: var(--heading); }
+
+.detail-row { color: var(--muted); font-size: var(--text-note); }
+.detail-row p { margin: var(--space-2) 0 0; max-width: var(--measure); }
+
+/* WHAT A ROW'S DETAIL HOLDS, each part under its heading: prose read down, not a table scanned
+   across. The mark history is the one table, and takes the width. */
+.detail-row dl.detail { margin: var(--space-2) 0 0; }
+.detail-row dl.detail dt { font-weight: 600; margin-top: var(--space-2); }
+.detail-row dl.detail dd { margin: 0; max-width: var(--measure); }
+.detail-row dl.detail dd.wide { max-width: none; }
+
+/* A DETAIL ROW INSIDE A TABLE: a pane cannot sit inside a <tr> and still span the table, so it
+   IS the next row. No display rule, so [hidden] keeps working. */
+tr.detail-row td { border-bottom: 1px solid var(--hair); }
+/* IT OPENS WHERE THE READER IS: no wider than the box (`--box-width`, set by app.js) and held
+   at its left edge however far the table is scrolled sideways. */
+.detail-pane { position: sticky; left: var(--cell-pad);
+               max-width: calc(var(--box-width) - 2 * var(--cell-pad)); }
+tr.detail-row p { margin: 0; max-width: var(--measure); }

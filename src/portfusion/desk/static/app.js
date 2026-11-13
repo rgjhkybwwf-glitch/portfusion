@@ -98,7 +98,7 @@ function drawTabs(panels, active, onPick) {
     (apart.length ? `<div class="apart">${apart.map(tab).join("")}</div>` : "");
   $("#tabs").querySelectorAll("button").forEach((b) =>
     b.addEventListener("click", () => onPick(b.dataset.name)));
-  /* ON A PHONE THE RAIL FOLDS behind one button (app.css, `.pages-toggle`), which names the open
+  /* ON A PHONE THE RAIL FOLDS behind one button (phone.css, `.pages-toggle`), which names the open
      page; choosing a page folds it again. The button is the shell's, so it is wired once. */
   const toggle = $("#pages-toggle");
   if (!toggle) return;

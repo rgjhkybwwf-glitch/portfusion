@@ -19,7 +19,7 @@ from desk_support import (GOOD_CLASS, GOOD_DOCUMENT, GOOD_TRADE, GOOD_EVIDENCE, 
 from portfusion.desk.intake import bench as _bench
 from portfusion.desk.panels import bench as bench_panel
 from portfusion.feeds import ig as _ig
-from harness import SRC, needs, holds, free_id, desk_script
+from harness import SRC, needs, holds, free_id, desk_script, desk_style
 
 #: The ids a test's own sale takes: the book's next free ones, never typed (a book that has reached
 #: E-099 holds one).
@@ -1561,7 +1561,7 @@ def test_an_empty_list_says_nothing_and_the_page_explains_itself_once():
 def test_a_swept_event_row_is_not_held_to_the_prose_measure():
     """A swept row carries a generated CSV line. `body.data #main .items li` caps a list item at
     the PROSE measure, which is right for every other list here and wrong for this one."""
-    css = (SRC / "desk" / "static" / "app.css").read_text()
+    css = desk_style()
     assert ".items li.swept { max-width: none; }" in css
     assert ".swept-do" in css and "white-space: nowrap" in css
 
