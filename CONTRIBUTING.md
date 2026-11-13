@@ -261,7 +261,7 @@ changes it.
 - **A milestone being worked only gets shorter**, except for the slices of a feature already in
   it: nothing else joins Next but by the maintainer's placing. An issue the agent files takes
   the area labels of the issue it came from, and a milestone only when it fits the theme of the
-  one being worked (the direction page's arc); the weekly review proposes a place for the rest.
+  one being worked (the direction page's arc); the Queue review proposes a place for the rest.
 - **Its own open pull requests come first** in the night run. Before a new issue, each one is
   brought level with `main` (merged in, never rebased), its pictures retaken when a page it changed
   moved under it, and its CI made green, so none waits on the maintainer for anything but a yes it
@@ -339,15 +339,14 @@ changes it.
   against. A plan that finds a question, or finds the issue's cause or premise no longer holds,
   asks it and labels the issue `decision`; so do the questions an issue was filed with, less any
   the maintainer has answered in a comment since.
-- **Once a week it reviews the whole Queue**: on its first run when no review is on #206 from the
-  last seven days. It reads every open issue of the milestone being worked and the next, against
+- **Twice a week it reviews the whole Queue**: on its first run when no review is on #206 from the
+  last three days. It reads every open issue of the milestone being worked and the next, against
   today's `main`, and posts a **Queue review** on #206: issues that duplicate one another, to
   merge; overlaps by file and function that no "waits" orders; causes that no longer hold, to
-  close with the reason; a place for each walk find left to sort; a line for Design next when it
-  is empty; and a suggested order. Each is a question, with its recommendation, and #206 takes
+  close with the reason; a place for each walk find left to sort; and a suggested order. Each is a question, with its recommendation, and #206 takes
   `decision`. A review that finds nothing posts nothing, and none is posted while a gate review
   stands unanswered.
-- **With the review it sorts "Walk finds: to sort" (#220)**, weekly and not each run. A find goes
+- **With the review it sorts "Walk finds: to sort" (#220)**, and not each run. A find goes
   onto the open issue that covers it, as evidence, or onto the decided feature that will rework
   its page; one not worth an issue is struck through with the reason. The rest stay one line
   each, and the review proposes their place. A find the maintainer has placed is shaped then,
@@ -372,12 +371,16 @@ changes it.
 
 - **A design card asks a feature's shape.** The ready check posts it on the issue of the line
   under Design next in the Queue, or of a feature at the top of Next, and the issue takes
-  `decision`. Above the fold, in at most 150 words: the outcome in one line; two or three
+  `decision`. Above the fold, in at most 150 words: the outcome in one line; three
   options, each with its cost (slices, figures that move, a migration or none); a link to a mock
   page; a recommendation; and at most three questions. The evidence is folded under `<details>`.
 - **The mock page shows today's page and each option**, on the demo's names. It is a private page
   published with the Artifact tool and touches no code. A run that cannot publish without stopping
   to ask gives words and a picture of today's page instead, and says so.
+- **Two cards a week, at most.** When Design next is empty the ready check fills it itself, with
+  the first feature that has no decided shape, lowest milestone first and in the order its
+  milestone's description gives. It posts a card when none stands unanswered and fewer than two
+  went up in the last seven days.
 - **One card is open at a time, and one feature is being built.** The rest wait as lines: a
   feature's slices are written only when no other feature's slices stand open under Next. A card
   unanswered is listed in the next gate review, and meanwhile the runs work what is ready.
