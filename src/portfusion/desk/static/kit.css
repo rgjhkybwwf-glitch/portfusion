@@ -264,11 +264,30 @@ button.link {
   font: inherit; color: var(--link); text-decoration: underline; text-underline-offset: 2px;
 }
 button.link.danger { color: var(--warn-ink); }
-/* A TAG THAT LEADS SOMEWHERE reads as the link it is, and takes no column's width. */
-button.link .tag { min-width: 0; margin-right: 0; color: inherit; text-decoration: inherit; }
 /* A LINK DARKENS TO INK UNDER THE POINTER, as the website's do. A destructive one keeps its
    warning ink, and a disabled one does not answer. */
 button.link:not(.danger):not([disabled]):hover { color: var(--heading); }
+
+/* GO, ACT AND OPEN — `goButton()`, `actButton()` and `detailToggle()` in kit.js; the chevron's
+   rules are tables.css's. A GO leads to another page: its name and an arrow, in the link's colour
+   at its line's own size, with no underline and no outline, darkening to ink under the pointer. */
+button.go {
+  appearance: none; background: none; border: 0; padding: 0; cursor: pointer;
+  font: inherit; color: var(--link); text-decoration: none;
+}
+button.go:hover { color: var(--heading); }
+button.go .mark { margin-left: var(--space-1); }
+/* A TAG THAT LEADS SOMEWHERE reads as the go it is, and takes no column's width. */
+button.go .tag { min-width: 0; margin-right: 0; color: inherit; }
+/* AN ACT does something where it stands: outlined in the control's colour and no taller than
+   its line, so a row with one is the height of a row without. A disabled one does not answer. */
+button.act {
+  appearance: none; background: none; cursor: pointer; font: inherit;
+  font-size: var(--text-note); line-height: 1.2; color: var(--heading);
+  padding: 0 var(--space-2); border: 1px solid var(--control); border-radius: var(--radius-none);
+}
+button.act:not([disabled]):hover { border-color: var(--heading); }
+button.act[disabled] { color: var(--muted); cursor: not-allowed; }
 
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
         gap: var(--space-3); margin-bottom: var(--space-5); }
@@ -372,14 +391,6 @@ button.link[disabled] { color: var(--muted); cursor: not-allowed; text-decoratio
 /* `.on` IS KEYBOARD POSITION, hover is the mouse. Both look the same on purpose: there is one
    highlighted row and Enter takes it, however you got there. */
 .combo-list li.on, .combo-list li:hover { background: var(--band); color: var(--ink); }
-
-/* A ROW'S BUTTON TO ANOTHER PAGE, at its end: outlined in the control's colour and no taller
-   than the row's own line, so a row with one is the height of a row without. */
-button.go { appearance: none; background: none; cursor: pointer; font: inherit;
-            font-size: var(--text-note); line-height: 1.2; color: var(--heading);
-            padding: 0 var(--space-2); border: 1px solid var(--control);
-            border-radius: var(--radius-none); }
-button.go:hover { border-color: var(--heading); }
 
 /* THE THREE EVIDENCE BOXES LINE UP. The three statement-grade limbs carry help text of different
    lengths. As a grid with a flexible label row and an auto input row, the label area absorbs the

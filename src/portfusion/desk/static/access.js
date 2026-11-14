@@ -25,8 +25,7 @@ Object.assign(DRAW, {
         <h2>Readers</h2>
         ${table(d.readers,
           cols.readers.filter((c) => c !== "level" && c !== "now"), NO_HEAD,
-          (r) => `<td class="oneline"><button class="link" data-revoke-reader="${esc(r.who)}">` +
-                 `revoke</button></td>`,
+          (r) => `<td class="oneline">${actButton(`data-revoke-reader="${esc(r.who)}"`, "revoke")}</td>`,
           { name: "readers", inserts: [
               { after: "who", head: `<th>${head("level")}</th>`, cell: (r) => `<td class="oneline">
                   <select data-level-for="${esc(r.who)}" aria-label="Level for ${esc(r.who)}">
@@ -37,10 +36,10 @@ Object.assign(DRAW, {
             /* EACH READER'S DEVICES UNDER THEIR ROW, each with its own revoke. */
             afterRow: (r, span) => r.device_list.length ? `<tr class="devices"><td colspan="${span}">
               ${table(r.device_list, cols.devices, NO_HEAD, (v) => `<td class="oneline">
-                <button class="link" data-revoke-device="${esc(v.key)}"
-                        data-device="${esc(v.device)}">revoke</button></td>`, { name: `devices ${r.who}` })}
+                ${actButton(`data-revoke-device="${esc(v.key)}" data-device="${esc(v.device)}"`,
+                            "revoke")}</td>`, { name: `devices ${r.who}` })}
               </td></tr>` : "" })}
-        <p><button class="link" id="sign-everyone-out">sign everyone out</button></p>
+        <p>${actButton(`id="sign-everyone-out"`, "sign everyone out")}</p>
 
         <h2>Enrol a device</h2>
         <div class="grid">

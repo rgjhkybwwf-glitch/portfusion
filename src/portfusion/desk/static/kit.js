@@ -51,6 +51,15 @@ const stepLine = (steps) => `<ol class="steps">${steps.map((s) => `
     ? `<span class="tag">${esc(s.tag || s.state)}</span>` : ""}<strong>${esc(s.label)}</strong>
     ${s.body || ""}</li>`).join("")}</ol>`;
 
+/* THREE KINDS OF CONTROL, EACH IN ITS OWN SHAPE, so a word says what it will do before it is
+   pressed: a GO leads to another page, its name and an arrow (`goButton()`); an ACT does
+   something here, a small outlined button (`actButton()`); an OPEN opens in place, a row's
+   chevron (`detailToggle()`). Each class is written here and nowhere else. `attrs` and `html`
+   are markup, escaped by the caller. The Bench's own controls are its own. */
+const goButton = (attrs, html) =>
+  `<button class="go" ${attrs}>${html}<span class="mark" aria-hidden="true">→</span></button>`;
+const actButton = (attrs, html) => `<button class="act" ${attrs}>${html}</button>`;
+
 /* A step's qualifier, and a link to another tab. One of each: the link is `data-panel`, which
    #main delegates, so a page that redraws keeps it working without wiring its own. */
 const quiet = (text) => `<span class="muted small">${text}</span>`;
@@ -58,12 +67,12 @@ const quiet = (text) => `<span class="muted small">${text}</span>`;
    a pointer to a page the reader cannot open is an instruction they cannot follow. `held` is the
    page's filters, by box, which the link opens it with in place of any held there. */
 const panelLink = (panel, label = PANELS.get(panel), held = null) => !PANELS.has(panel) ? "" :
-  `<button class="link" data-panel="${esc(panel)}"${held
-    ? ` data-held="${esc(JSON.stringify(held))}"` : ""}>${esc(label)}</button>`;
+  goButton(`data-panel="${esc(panel)}"${held
+    ? ` data-held="${esc(JSON.stringify(held))}"` : ""}`, esc(label));
 /* AN OWED WHY IS WRITTEN ON THE BENCH, so its tag leads there where the Bench opens. */
 const owedTag = () => {
   const tag = `<span class="tag gap">owed</span>`;
-  return PANELS.has("bench") ? `<button class="link" data-panel="bench">${tag}</button>` : tag;
+  return PANELS.has("bench") ? goButton(`data-panel="bench"`, tag) : tag;
 };
 
 /* ONE QUARTER'S REPORT, opened beside the desk: the report's page, rendered by
@@ -149,7 +158,7 @@ const filterField = (label, control) =>
 
 const filters = (fields, clearId) => `
   <div class="grid filters">${fields.filter(Boolean).join("")}</div>
-  ${clearId ? `<p class="filter-clear"><button class="link" id="${clearId}">clear filters</button></p>` : ""}`;
+  ${clearId ? `<p class="filter-clear">${actButton(`id="${clearId}"`, "clear filters")}</p>` : ""}`;
 
 /* THE FILTERS, WIRED ONE WAY. Each box re-asks the SERVER — the narrowing is the engine's, and
    re-filtering an already-fetched array in the browser would be a second answer to a question
@@ -374,8 +383,7 @@ const DETAIL_PART = {
      round trips and lines; then the income rows that name the holding's own lines. */
   life: (x, cols) => !(x.life || []).length ? "" :
     `<dt>${head("life")}</dt><dd class="wide">${table(x.life, cols, "", () => "", { sort: false })}
-      ${PANELS.has("round-trips")
-        ? `<button class="link" data-life="${esc(x.company)}">company life</button>` : ""}</dd>`,
+      ${PANELS.has("round-trips") ? goButton(`data-life="${esc(x.company)}"`, "company life") : ""}</dd>`,
   income: (x, cols) => !(x.income || []).length ? "" :
     `<dt>${head("income")}</dt><dd class="wide">${table(x.income, cols, "", () => "", { sort: false })}</dd>`,
   marks: (x, markCols) => !(x.marks || []).length ? "" :
@@ -395,15 +403,16 @@ const detailList = (x, fields, markCols) => {
 /* THE ROW AND THE DETAIL IT OPENS, both or neither: a row with nothing logged does not open.
    The detail is the NEXT TABLE ROW, because a pane cannot live inside a <tr> and still span it.
    THE CHEVRON AT THE ROW'S START is the keyboard's and a screen reader's way in, and says which
-   way the row stands; table() draws it. */
+   way the row stands; table() draws it. It is the OPEN shape, the third beside `goButton()` and
+   `actButton()`. */
 const DETAIL_ROW = `<tr class="detail-row"`;
 const detailToggle = () =>
   `<button class="detail-toggle" aria-expanded="false" aria-label="Detail"><span aria-hidden="true">▸</span></button>`;
 const detailRow = (html, span) => !html ? "" :
   `${DETAIL_ROW} hidden><td colspan="${span}"><div class="detail-pane">${html}</div></td></tr>`;
-/* A ROW'S WAY TO ITS COMPANY'S TRADES, at the row's end: a button, since it leaves the page. */
+/* A ROW'S WAY TO ITS COMPANY'S TRADES, at the row's end: a go, since it leaves the page. */
 const tradesButton = (company) => !company ? "" :
-  `<button class="go" data-trades="${esc(company)}">${esc(PANELS.get("trades") || "Trades")}</button>`;
+  goButton(`data-trades="${esc(company)}"`, esc(PANELS.get("trades") || "Trades"));
 
 /* THE ROW IS THE WAY IN. A press anywhere on a row that has a detail opens it in place, and a
    second closes it. Delegated from the document because a table is rebuilt on every filter

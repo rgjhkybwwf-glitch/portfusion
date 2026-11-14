@@ -55,6 +55,11 @@ One figure moves, on two pages, and there is no migration. Do these when the boo
 
 ### Changed
 
+- **A control is drawn in the shape of what it does** (D4, audit row 1): a way to another page
+  is its name and an arrow, "run a refresh →", in the link's colour with no underline, the
+  Trades button at a row's end among them; an action is a small outlined button, "clear
+  filters", "restart the desk", "sign out", Access's revokes and Price Refresh's four among them;
+  a row's detail opens by its chevron, as before. The Bench's controls are as they were.
 - **"Total gain" is "Trading gain, excl. income"**, on the Dashboard, `portfusion record` and the
   glossary: unrealised plus realised, which leaves income out. Its value does not move. Method
   says the year is measured as one period, not its quarters linked, and the report's one income
