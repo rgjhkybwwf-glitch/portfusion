@@ -1,8 +1,8 @@
 // THE DESK WALKED, IN CHROMIUM: the demo desk `desk_walk.py` serves, at 1440 × 900. Each page is
 // opened by its tab and must draw no error, draw each control in the shape of what it does, hold
 // no accessibility fault but the `KNOWN`, and look as its baseline does; a finding is followed to
-// its page; a wide table's button to Trades is in
-// view, a press on a row opens its detail in view, and a heading that sorts shows it; a box that
+// its page; a wide table's button to Trades is in view, a press on a row opens its detail in
+// view, and a heading that sorts shows it; a box that
 // scrolls sideways marks each edge with more beyond it, and one that does not marks none; an open
 // detail leaves its table's width as it was, and runs whole as far as the box; a page chosen
 // by keyboard puts focus on its heading, one Tab from its first control, its tab buttons kept, and
@@ -43,14 +43,16 @@ const open = async (page, name) => {
 
 // GO, ACT AND OPEN, AS DRAWN (`goButton()`, `actButton()` and `detailToggle()` in kit.js), each
 // control found by its hook and read by its drawn style: a go has no underline and no border and
-// ends in its arrow; an act has a border; a row's way in is the chevron.
+// ends in its arrow; an act has a border; a row that opens leads with the chevron. A row's first
+// cell is read by what it leads with, so a row that opens by anything else is found.
 const SHAPES = {
   go: "#main [data-panel], #main [data-trades], #main [data-life]",
   act: "#main .filter-clear button, #restart",
-  open: "#main tr.has-detail > td:first-child > button:first-child",
+  open: "#main tr.has-detail > td:first-child",
 };
 const shapes = (page) => page.evaluate((found) => Object.fromEntries(Object.entries(found).map(([k, sel]) =>
-  [k, [...document.querySelectorAll(sel)].map((el) => {
+  [k, [...document.querySelectorAll(sel)].map((at) => {
+    const el = at.matches("td") ? at.firstElementChild ?? at : at;
     const s = getComputedStyle(el);
     return {
       shape: el.className,

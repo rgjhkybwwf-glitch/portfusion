@@ -287,7 +287,7 @@ button.act {
   padding: 0 var(--space-2); border: 1px solid var(--control); border-radius: var(--radius-none);
 }
 button.act:not([disabled]):hover { border-color: var(--heading); }
-button.act[disabled] { color: var(--muted); cursor: not-allowed; }
+button.act[disabled] { color: var(--muted); border-color: var(--hair); cursor: not-allowed; }
 
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
         gap: var(--space-3); margin-bottom: var(--space-5); }
