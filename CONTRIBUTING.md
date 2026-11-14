@@ -450,6 +450,12 @@ changes it.
   worked by the conventions above (changelog, own diff reviewed, a changed desk page walked cold),
   the guard run, and the desk walk if a desk file changed. The pull request says "Closes #n", and
   the agent goes on to the next issue without waiting for a merge.
+- **A run's branch is its own.** Before its pull request merges, a run may rewrite its own
+  commits since the branch last took in `main` or `baselines/<branch>`: a fix folded in, a
+  message corrected. It pushes the rewrite with `--force-with-lease`, which refuses if anyone
+  pushed since it fetched. It brings a branch level with `main` by merging, never by rebasing.
+  `main` and the release tags are GitHub's to guard: their rulesets refuse a rewrite or a
+  deletion from anyone.
 - **Done means `guard` green on the last push.** No pull request is called clean, and none is
   left, until CI's `guard` has passed on its newest commit; a local run is a quick check, not the
   proof.
