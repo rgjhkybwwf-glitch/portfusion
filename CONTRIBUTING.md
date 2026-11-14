@@ -522,9 +522,10 @@ changes it.
   `Change:`**, in any case: the maintainer's shapes, which start a workflow, since it writes as
   the maintainer's account.
 - **Everything the agent writes on GitHub opens with the run that wrote it**, since every run
-  writes as the maintainer's account: `🤖 **Ready check** ·`, `🤖 **Night run** ·` or
-  `🤖 **Answer run** ·`, at the start of each comment, of each issue it files, and of each pull
-  request's description. A run woken again after its debrief keeps its own name.
+  writes as the maintainer's account: `📋 **Ready check** ·`, `🌙 **Night run** ·` or
+  `💬 **Answer run** ·`, at the start of each comment, of each issue it files, and of each pull
+  request's description. A run woken again after its debrief keeps its own name. 🤖 is the
+  bot's, on its pings (`notify.yml`), and no run uses it.
 
 **Never**
 
