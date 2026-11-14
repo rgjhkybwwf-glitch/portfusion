@@ -73,6 +73,17 @@ test("a finding leads to the page its work is done on", async ({ page }) => {
   await expect(page).toHaveURL(new RegExp(`#${to}$`));
 });
 
+test("the closed-out count leads to the round trips it counts", async ({ page }) => {
+  await open(page, "dashboard");
+  const figure = page.locator("table.figures tr", { has: page.locator('button[data-panel="round-trips"]') });
+  const count = Number((await figure.locator("td.num").innerText()).match(/^[\d,]+/)[0].replace(/,/g, ""));
+  await figure.locator("button[data-panel]").click();
+  await expect(page.locator('#tabs button[data-name="round-trips"]')).toHaveAttribute("aria-current", "page");
+  await expect(page.locator("#rt-closed")).toHaveValue("yes");
+  // THE PAGE DRAWS FIRST, then asks for the link's filter: the count is waited for, not read.
+  await expect(page.locator("#main .scroll > table > tbody > tr:not(.detail-row)")).toHaveCount(count);
+});
+
 // THE FOCUSABLE ELEMENTS a Tab can reach, in the page: what the walk asks a Tab to land on.
 const TABBABLE = "a[href], button:not([disabled]), input:not([disabled]):not([type=hidden]), " +
   "select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex='-1'])";

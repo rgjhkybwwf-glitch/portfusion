@@ -27,6 +27,10 @@ LEAD = frozenset(H.FIGURES[k] for k in ("nav", "total_exposure", "ytd"))
 INDENT = frozenset(H.FIGURES[k] for k in ("owned", "notional"))
 #: A FIGURE THAT LEADS TO ITS PAGE: the page that lists what it counts.
 LEADS_TO = {H.FIGURES["round_trips_closed"]: "round-trips"}
+#: AND NARROWS IT TO WHAT IT COUNTS, by the page's boxes, under the heading of the field it narrows
+#: by: Round Trips by holding, the closed-out lines alone.
+LEADS_WITH = {H.FIGURES["round_trips_closed"]: ({"rt-view": "holding", "rt-closed": "yes"},
+                                                H.COMMON["fully_closed"])}
 
 
 def data() -> dict:
@@ -50,7 +54,9 @@ def data() -> dict:
                 "notional_basis": basis in b.NOTIONAL_BASES,
                 **({"lead": True} if label in LEAD else {}),
                 **({"indent": True} if label in INDENT else {}),
-                **({"panel": LEADS_TO[label]} if label in LEADS_TO else {})}
+                **({"panel": LEADS_TO[label]} if label in LEADS_TO else {}),
+                **(dict(zip(("held", "held_words"), LEADS_WITH[label])) if label in LEADS_WITH
+                   else {})}
 
     # THE REGISTRY'S FIGURES IN THE REGISTRY'S ORDER: net asset value leads, as on the report, and
     # exposure follows with the two parts that make it up. A quarter's own is the report's.

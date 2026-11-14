@@ -133,7 +133,9 @@ function wireTradeLinks() {
      link is: a panel that re-renders on a filter change would lose a per-element listener. */
   main.addEventListener("click", (e) => {
     const go = e.target.closest("[data-panel]");
-    if (go) { openPanel(go.dataset.panel); return; }
+    if (!go) return;
+    if (go.dataset.held) HELD_FILTERS[go.dataset.panel] = JSON.parse(go.dataset.held);
+    openPanel(go.dataset.panel);
   });
   main.addEventListener("click", (e) => {
     const b = e.target.closest("[data-trades]");

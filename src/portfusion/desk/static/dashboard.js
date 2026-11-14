@@ -47,7 +47,8 @@ Object.assign(DRAW, {
       /* THE FIGURES BESIDE WHAT NEEDS ATTENTION, so the page is one screen. */
       work: `<div class="glance">
         ${figures(rest.map((f) => [f.label, `${fmt(f.value, f.kind)}${f.panel
-          ? ` ${panelLink(f.panel, `see ${PANELS.get(f.panel)}`)}` : ""}`, f.indent ? "indent" : ""]))}
+          ? ` ${panelLink(f.panel, `see ${PANELS.get(f.panel)}${f.held_words
+            ? `, ${f.held_words.toLowerCase()}` : ""}`, f.held)}` : ""}`, f.indent ? "indent" : ""]))}
         <section><h2>Needs attention</h2><ul class="items">${items}</ul></section></div>`,
     });
   },

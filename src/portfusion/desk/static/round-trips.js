@@ -64,6 +64,9 @@ Object.assign(DRAW, {
                min="${esc(d.span.first || "")}" max="${esc(d.span.last || "")}">`),
         filterField("closed to", `<input type="date" id="rt-to" value="${esc(d.end)}"
                min="${esc(d.span.first || "")}" max="${esc(d.span.last || "")}">`),
+        /* THE CLOSED-OUT LINES ALONE, under the column's own heading and in its cells' word. */
+        filterField(HEADS.fully_closed, `<select id="rt-closed"><option value="">all</option>
+          <option value="yes"${d.closed_only ? " selected" : ""}>yes</option></select>`),
         viewField(d),
       ] },
       /* THE SAME Trades BUTTON AS HOLDINGS', by company: the sales a round trip took, and the
@@ -104,13 +107,15 @@ Object.assign(WIRE, {
     /* A COMPANY CHOSEN STARTS ITS TICKER AFRESH, and the page comes back with that company's
        codes in the Ticker box. */
     wireFilters("round-trips", d, again, {
-      ids: ["rt-view", "rt-acct", "rt-company", "rt-ticker", "rt-from", "rt-to"], button: "rt-clear",
+      ids: ["rt-view", "rt-acct", "rt-company", "rt-ticker", "rt-from", "rt-to", "rt-closed"],
+      button: "rt-clear",
       resets: { "rt-company": "rt-ticker" },
       ask: (v) => view(v) + `&ticker=${encodeURIComponent(v["rt-ticker"])}`
         + `&company=${encodeURIComponent(v["rt-company"])}`
         + `&account=${encodeURIComponent(v["rt-acct"])}`
         + `&start=${encodeURIComponent(v["rt-from"])}`
-        + `&end=${encodeURIComponent(v["rt-to"])}`,
+        + `&end=${encodeURIComponent(v["rt-to"])}`
+        + (v["rt-closed"] === "yes" ? "&closed_only=true" : ""),
       clear: view });
   },
 });

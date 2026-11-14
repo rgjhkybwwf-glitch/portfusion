@@ -110,7 +110,8 @@ if "empty" in sys.argv:                     # a new book's every figure is nough
 b.findings()
 completeness(rules.SETTINGS["first_report"])
 desk = TestClient(app.app, base_url="http://127.0.0.1:8765", raise_server_exceptions=False)
-paths = ["/", "/api/state", "/api/holdings", "/api/round-trips", "/api/trades",
+paths = ["/", "/api/state", "/api/holdings", "/api/round-trips", "/api/round-trips?closed_only=true",
+         "/api/trades",
          *[f"/api/panel/{m.NAME}" for m in panels.all_panels()]]
 failed = [(p, r.status_code) for p in paths if (r := desk.get(p)).status_code != 200]
 assert not failed, failed

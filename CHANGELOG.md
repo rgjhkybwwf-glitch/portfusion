@@ -124,6 +124,9 @@ One figure moves, on two pages, and there is no migration. Do these when the boo
 
 ### Fixed
 
+- **The Dashboard's "Round trips closed out" leads to the round trips it counts**: its link
+  opens Round Trips with a new "Closed out" filter on, so the page shows as many rows as the
+  figure says. The filter works on the hosted desk too.
 - **A table wider than its box says so on each edge with more beyond it**: a 2px rule on the
   pinned column's inner edge, or on the box's own edge where nothing is pinned, gone at that end
   once the table is scrolled there. On Holdings and Round Trips a heading cut by the pinned

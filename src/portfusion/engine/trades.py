@@ -19,7 +19,7 @@ class Trades(Core):
 
     def round_trips(self, ticker: str | None = None, account: str | None = None,
                     start: str | None = None, end: str | None = None,
-                    company: str | None = None) -> pd.DataFrame:
+                    company: str | None = None, closed_only: bool = False) -> pd.DataFrame:
         """Closed round trips, per realisation. THE JOIN -- three tables, one key.
 
         Carries the ENTRY DATE and PRICE PAID as well as the exit, because those show the return
@@ -27,7 +27,8 @@ class Trades(Core):
         round trip. Entry and exit prices are in the share's own currency (`currency`), each a
         quantity-weighted mean of its deals' own prices (`deal_prices()`); the money is sterling.
         `start` and `end` bound the day a trip closed, and `start` counts its day, as the Round
-        Trips page's From asks.
+        Trips page's From asks. `closed_only` keeps the closed-out round trips, the population the
+        Dashboard counts.
         """
         ex = pd.DataFrame([{"sale_id": e.sale_id, "date": e.date, "account": e.acct,
                             "ticker": e.ticker, "qty": e.size, "traded_price": e.traded_price,
@@ -126,6 +127,8 @@ class Trades(Core):
             rt = rt[rt["closed"] >= pd.Timestamp(start)]
         if end:
             rt = rt[rt["closed"] <= pd.Timestamp(end)]
+        if closed_only:
+            rt = rt[rt["fully_closed"].astype(bool)]
         return (rt.sort_values(["closed", "realisation_id"], ascending=False)
                   .reset_index(drop=True))
 
@@ -170,7 +173,7 @@ class Trades(Core):
 
     def round_trip_totals(self, ticker: str | None = None, account: str | None = None,
                           start: str | None = None, end: str | None = None,
-                          company: str | None = None) -> dict[str, float]:
+                          company: str | None = None, closed_only: bool = False) -> dict[str, float]:
         """Totals over every realisation, or over a selection of them.
 
         `gain` here and realised() are one figure reached two ways — per realisation, and over the
@@ -178,7 +181,8 @@ class Trades(Core):
         the UNFILTERED call. A renderer narrowing by account asks here rather than summing its own
         rows.
         """
-        rt = self.round_trips(ticker=ticker, account=account, start=start, end=end, company=company)
+        rt = self.round_trips(ticker=ticker, account=account, start=start, end=end, company=company,
+                              closed_only=closed_only)
         return {"realisations": int(len(rt)),
                 # CLOSED OUT, the Dashboard's count, so the two pages read one population.
                 "closed_out": int(rt["fully_closed"].sum()),
