@@ -110,6 +110,9 @@ One figure moves, on two pages, and there is no migration. Do these when the boo
   tools only: a book installs none of them.
 - **A push that changes the app and not this changelog is refused** by the checkout's `pre-push`
   hook, which names the files. Tests alone owe no line. A book's own push is not checked.
+- **A Claude session in a checkout may correct its own branch** with `git push
+  --force-with-lease`, which refuses when the branch has moved; a plain force push is still
+  refused it. The `pre-push` hook still refuses any rewrite of `main`. A book's hook is unchanged.
 - **One figure has one name** (the audit's rows 8, 9, 10, 45 and 60). No figure moves.
   - The Dashboard's "Closed round trips" is "Round trips closed out", in `portfusion record` too,
     and Round Trips' strip reads "Round trips" where it read "Realisations": every position
