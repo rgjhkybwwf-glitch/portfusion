@@ -502,13 +502,16 @@ changes it.
   request from a branch whose name begins claude/ that waits for a yes, get a comment from
   `github-actions[bot]`, headed "PortFusion agent", that names them (`notify.yml`). A pull request
   merging itself gets the same note without naming them: it asks nothing, so it pings no one.
-- **A run is one turn, and its last message is the debrief.** The routine delivers the message
-  that ends the run's first turn to the maintainer's phone, and nothing after it; a run sends no
-  push notification of its own, and nothing on GitHub wakes it again. So every wait is inside
-  that turn: a helper agent (the plan's checker, the reviewer) is run in the foreground and
-  waited for, and CI is polled in the foreground. A message that ends the turn is the debrief,
-  never a note that something is still running. While a gate review stands unanswered, or a
-  release untagged, the debrief says in one line what the run waits on.
+- **A run is one turn, and it ends by sending its debrief.** Every wait is inside that turn: a
+  helper agent (the plan's checker, the reviewer) is run in the foreground and waited for, and CI
+  is polled in the foreground. When nothing is left to wait for, the run's last step sends the
+  debrief to the maintainer's phone as a push notification (the `PushNotification` tool), a few
+  lines: what merged, what waits on the maintainer, or that the run had nothing to do. The
+  message that ends the turn is the debrief in full. Neither is ever sent while something is
+  still running. While a gate review stands unanswered, or a release untagged, both say in one
+  line what the run waits on.
+- **A run woken again after its debrief**, by its own pull request's events, sends no second push
+  and ends in one line.
 - **The agent's own comments never begin `Q` and a number, `All as recommended`, `yes` or
   `Change:`**, in any case: the maintainer's shapes, which start a workflow, since it writes as
   the maintainer's account.
