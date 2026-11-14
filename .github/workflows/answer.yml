@@ -1,7 +1,7 @@
 # THE MAINTAINER'S ANSWERS START THE WORK, IN A BATCH. When the owner answers an issue the agent
 # stopped on (it carries `decision`) with a comment that begins "Q1:" or "All as recommended", this
-# waits ten minutes, then fires the routine "PortFusion answer" on claude.ai, which works every issue
-# answered (CONTRIBUTING.md, The answer run). Another answer within the ten minutes cancels the wait
+# waits thirty minutes, then fires the routine "PortFusion answer" on claude.ai, which works every issue
+# answered (CONTRIBUTING.md, The answer run). Another answer within the thirty minutes cancels the wait
 # and starts it again, so answers given together make one run. Nothing of a comment is sent: the
 # routine finds the answered issues itself.
 #
@@ -11,9 +11,9 @@
 # the change and rewrites the issue to match (CONTRIBUTING.md, Asking and answering). A label set by
 # this token starts no workflow, so the hold pings no one.
 #
-# THE MAINTAINER'S YES ON A PULL REQUEST. A reply from the owner that begins "yes", on a pull request
-# from a `claude/` branch, turns its auto-merge on: GitHub merges it once `guard` is green. The merge
-# is this token's own and starts no workflow, as Dependabot's does (dependabot-merge.yml).
+# THE MAINTAINER'S YES is their own press of Enable auto-merge, never a reply: a merge by this
+# workflow's token would start no workflow, so `guard` would not run on `main` after it and the
+# branches beside it would be left (#239, #240, #243).
 #
 # The routine's fire URL and token are the repository's secrets ROUTINE_ANSWER_URL and
 # ROUTINE_ANSWER_TOKEN; without them this says so in its log and does nothing. The agent writes as
@@ -82,9 +82,9 @@ jobs:
       group: answer
       cancel-in-progress: true
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 35
     steps:
-      - name: Wait ten quiet minutes, then start the answer run
+      - name: Wait thirty quiet minutes, then start the answer run
         env:
           NUMBER: ${{ github.event.issue.number }}
           ISSUE: ${{ github.event.issue.html_url }}
@@ -95,8 +95,8 @@ jobs:
             echo "::warning::An answer on #$NUMBER, but ROUTINE_ANSWER_URL or ROUTINE_ANSWER_TOKEN is not set."
             exit 0
           fi
-          echo "A reply on #$NUMBER: the run starts in ten minutes, unless another reply comes first."
-          sleep 600
+          echo "A reply on #$NUMBER: the run starts in thirty minutes, unless another reply comes first."
+          sleep 1800
           payload=$(jq -n --arg t "Answers were given, the last on #$NUMBER ($ISSUE)." '{text: $t}')
           # A busy or briefly unavailable endpoint (5xx) is tried again, up to four more times.
           curl -sS --fail-with-body --retry 4 --retry-delay 30 --retry-all-errors -X POST "$URL" \
@@ -105,33 +105,3 @@ jobs:
             -H "anthropic-version: 2023-06-01" \
             -H "Content-Type: application/json" \
             -d "$payload" | jq -r '.claude_code_session_url // .'
-
-  approve:
-    if: >-
-      github.event.issue.pull_request
-      && github.event.comment.user.login == github.repository_owner
-      && !contains(github.event.comment.body, 'claude.ai/code')
-    runs-on: ubuntu-24.04
-    timeout-minutes: 5
-    permissions:
-      contents: write
-      pull-requests: write
-    steps:
-      - name: Turn auto-merge on, if this is the owner's yes on an agent's pull request
-        env:
-          GH_TOKEN: ${{ github.token }}
-          BODY: ${{ github.event.comment.body }}
-          PR: ${{ github.event.issue.html_url }}
-        run: |
-          first=$(printf '%s\n' "$BODY" | sed -e 's/^[[:space:]]*//' | grep -m1 -v '^$' || true)
-          if ! printf '%s' "$first" | grep -qiE '^yes\b'; then
-            echo "Not a yes: its first line does not begin \"yes\"."
-            exit 0
-          fi
-          head=$(gh pr view "$PR" --json headRefName --jq .headRefName)
-          case "$head" in
-            claude/*) ;;
-            *) echo "Not an agent's pull request ($head): left alone."; exit 0 ;;
-          esac
-          gh pr merge --auto --merge "$PR"
-          gh pr comment "$PR" --body "🤖 **PortFusion agent** · the yes is taken: auto-merge is on, and this merges once \`guard\` is green."

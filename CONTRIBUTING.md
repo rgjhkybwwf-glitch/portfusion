@@ -202,7 +202,7 @@ changes it.
     answered, then shapes and plans the next work, asks its questions, and keeps the
     dependencies. It is the one run that reasons about what to build.
   - **The night run**, at 02:00 UK time: builds the lines the ready check has planned.
-  - **The answer run**, ten quiet minutes after the maintainer's last answer or change: records
+  - **The answer run**, thirty quiet minutes after the maintainer's last answer or change: records
     what was answered or changed, and builds what of it stands under Next on a plan that still
     stands.
 - **An issue's state is on its labels**, so a run reads it without reading the issue:
@@ -440,7 +440,7 @@ changes it.
 
 - **The maintainer's answers start it, in a batch.** `answer.yml` sees the owner's comment on an
   issue labelled `decision` that begins `Q1:` or `All as recommended`, or one that begins
-  `Change:` on an issue or an agent's pull request, waits ten minutes, and fires
+  `Change:` on an issue or an agent's pull request, waits thirty minutes, and fires
   the routine "PortFusion answer"; an answer within those minutes starts the wait again, so answers
   given together make one run. Nothing of a comment is passed.
 - **It first claims every answered or changed issue**: each open issue labelled `decision` whose
@@ -557,8 +557,8 @@ changes it.
   engine method returns on the demo), and the slice that turns a feature on. The first two are
   never hidden: each says what moves at the top of its pull request, and in the changelog.
 - **Any other waits for the maintainer's yes**, auto-merge off, with what is needed from them at
-  the top of its description. The yes is a reply beginning `yes` on the pull request, which turns
-  its auto-merge on (`answer.yml`), or the button itself.
+  the top of its description. The yes is the maintainer pressing Enable
+  auto-merge, so the merge is theirs and everything after it runs.
 
 **Telling the maintainer**
 
