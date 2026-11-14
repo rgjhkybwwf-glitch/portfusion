@@ -246,7 +246,7 @@ changes it.
   - **Trial**: three jobs for the maintainer to try on their own book after the release.
 - **The milestone being worked is the lowest open milestone.** The Queue's Next holds only its
   lines and ends with the release checklist (#156), which stays open: each release ticks it, and
-  the release's pull request links to it. The tag is the maintainer's.
+  the release's pull request links to it.
 - **The gate: when only the checklist is left under Next, with any feature whose shape is not
   decided, nothing of the next milestone is built.** The ready check posts the gate review that
   day (The ready check, below). The gate is answered when a comment headed "Gate review" for the
@@ -254,9 +254,19 @@ changes it.
   next ready check, and worked.
 - **The checklist is never closed.** Its pull request says "For #156", not "Closes", and ticks
   its boxes.
+- **The release's pull request names the release.** `__version__` in
+  `src/portfusion/__init__.py` loses its `.dev0`; `CHANGELOG.md`'s Unreleased becomes the
+  release's entry, `## N.N.N — beta, D Mon YYYY`, dated the day it merges; and the README installs
+  `vN.N.N`. `test_brand.py` holds the three together. It waits for the maintainer's yes, since a
+  tag follows it.
+- **The tag and the milestone are the maintainer's.** They tag `vN.N.N` on the release's merge
+  (in the GitHub app: Releases, Draft a new release) and close the milestone; no cloud session
+  can push a tag.
 - **After the tag, the next milestone opens.** A night run or ready check that finds the release
   tagged and its milestone closed first moves the Queue's lines from after the gate to Next, in
-  the order answered, the checklist last.
+  the order answered, the checklist last. A night run also opens the next version: a pull request
+  that sets `__version__` to the next milestone's number with `.dev0` and puts an empty
+  Unreleased above the release's entry, which merges itself once `guard` is green.
 - **The Queue sets the order**: the open issue "Queue: what the nightly agent builds next" (#206)
   ranks the lines of the milestone being worked, unblockers first, then bugs and wrong figures,
   small safe fixes, features and polish. A run builds the first line under Next whose issue
