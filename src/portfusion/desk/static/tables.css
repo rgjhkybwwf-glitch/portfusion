@@ -70,7 +70,12 @@ tr.detail-row .scroll { margin: var(--space-2) 0; max-height: none; }
    window, so its heading row stays in view down a long table (Trades) and its sideways bar is
    on screen rather than under the last row; the first column, the row's name, stays put while
    the figures scroll under it. Every row is one line; a note is still clipped, whole on hover. */
-.scroll { overflow: auto; max-height: calc(100vh - var(--space-5)); --box-width: 100%; }
+.scroll { overflow: auto; max-height: calc(100vh - var(--space-5)); --box-width: 100%;
+          --pin-top: 0px; --pin-left: 0px; --pin-right: 0px; }
+/* A CELL REACHED BY TAB IS SCROLLED CLEAR OF THE PINS: the box's padding for scrolling is the
+   pinned head's height and the pinned columns' widths (`--pin-*`, measured by app.js, which also
+   keeps a pinned cell's own focus from moving the box). */
+.scroll { scroll-padding: var(--pin-top) var(--pin-right) 0 var(--pin-left); }
 .scroll > table > thead > tr > * { position: sticky; top: 0; z-index: 2; background: var(--paper); }
 .scroll > table > thead > tr > :first-child { left: 0; z-index: 3; }
 .scroll > table > tbody > tr:not(.detail-row):not(.devices) > td { white-space: nowrap; }
@@ -79,9 +84,25 @@ tr.detail-row .scroll { margin: var(--space-2) 0; max-height: none; }
 }
 /* THE PINNED EDGE shows only while the box scrolls sideways (`overflows`, set by app.js). */
 .scroll.overflows > table > * > tr > :first-child { box-shadow: inset -1px 0 0 var(--hair); }
+/* AN EDGE WITH MORE BEYOND IT SAYS SO (`more-left`, `more-right`, set by app.js), and the sign
+   goes at that end once the box is scrolled there: the 2px rule, in the control's colour, the
+   scrollbar thumb's, so it shows in a picture, on a phone and where no scrollbar is drawn. ON A
+   PINNED COLUMN it is the column's inner edge, a heading cut there going on under it; drawn
+   inside the cell, as the hairline is, since a border would join the table's grid and move its
+   columns. */
+.scroll.more-left > table > thead > tr > :first-child,
+.scroll.more-left > table > tbody > tr:not(.detail-row):not(.devices) > td:first-child {
+  box-shadow: inset calc(-1 * var(--rule-section)) 0 0 var(--control);
+}
+/* A BOX WITH NOTHING PINNED AT ITS RIGHT carries it on its own right edge: a border while the
+   box scrolls, coloured while there is more beyond. A box that does not scroll takes none, so a
+   table squeezed to its box keeps its width. */
+.scroll.overflows { border-right: var(--rule-section) solid transparent; }
+.scroll.overflows.more-right { border-right-color: var(--control); }
 /* THE ROW'S LINKS STAY PUT TOO, at the other edge: the last cell of a table that has them
    (`data-links`, kit.js's table()). Not on a narrow window, where two pinned columns would
-   leave the figures no room. */
+   leave the figures no room. Where they stay put, their inner edge carries the sign, and the
+   box's own edge none. */
 @media (min-width: 70rem) {
   .scroll > table[data-links] > thead > tr > :last-child { right: 0; z-index: 3; }
   .scroll > table[data-links] > tbody > tr:not(.detail-row):not(.devices) > td:last-child {
@@ -91,6 +112,11 @@ tr.detail-row .scroll { margin: var(--space-2) 0; max-height: none; }
   .scroll.overflows > table[data-links] > tbody > tr:not(.detail-row):not(.devices) > td:last-child {
     box-shadow: inset 1px 0 0 var(--hair);
   }
+  .scroll.more-right > table[data-links] > thead > tr > :last-child,
+  .scroll.more-right > table[data-links] > tbody > tr:not(.detail-row):not(.devices) > td:last-child {
+    box-shadow: inset var(--rule-section) 0 0 var(--control);
+  }
+  .scroll.overflows:has(> table[data-links]) { border-right: 0; }
 }
 .scroll > table > tbody > tr.differs > td:first-child {
   background: color-mix(in srgb, var(--warn) 20%, var(--paper));
@@ -157,7 +183,14 @@ tr.has-detail:hover .detail-toggle, .detail-toggle[aria-expanded="true"] { color
    IS the next row. No display rule, so [hidden] keeps working. */
 tr.detail-row td { border-bottom: 1px solid var(--hair); }
 /* IT OPENS WHERE THE READER IS: no wider than the box (`--box-width`, set by app.js) and held
-   at its left edge however far the table is scrolled sideways. */
-.detail-pane { position: sticky; left: var(--cell-pad);
-               max-width: calc(var(--box-width) - 2 * var(--cell-pad)); }
+   at its left edge however far the table is scrolled sideways.
+   IT LEAVES ITS TABLE'S WIDTH AS IT WAS: the pane's content counts for nothing in the table's
+   width, so no column moves as it opens. Each of its parts but a paragraph takes its own width,
+   past the table's right edge if it needs to, whole as far as the box (`--pane-max`); a table
+   in it wider than the box scrolls in its own box. A paragraph wraps inside the pane. The box's
+   width is read here, on the pane: a box inside the detail carries its own. */
+.detail-pane { position: sticky; left: var(--cell-pad); contain: inline-size;
+               --pane-max: calc(var(--box-width) - 2 * var(--cell-pad));
+               max-width: var(--pane-max); }
+.detail-pane > :not(p) { width: max-content; max-width: var(--pane-max); }
 tr.detail-row p { margin: 0; max-width: var(--measure); }

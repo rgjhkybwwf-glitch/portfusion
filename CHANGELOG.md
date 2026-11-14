@@ -9,6 +9,8 @@ prints it.
 
 One figure moves, on two pages, and there is no migration. Do these when the book's pin moves.
 
+- **Read "Total gain" as "Trading gain, excl. income"**: the same figure, under a name that says
+  what it leaves out.
 - **Expect days held still open to read to the prices' day**, on Holdings and on Round Trips'
   company lives, where they read to today: fewer days, by the age of the newest mark.
 - **Expect each account's reconciliation in new words**, the same on Reconcile, the Dashboard
@@ -53,6 +55,14 @@ One figure moves, on two pages, and there is no migration. Do these when the boo
 
 ### Changed
 
+- **"Total gain" is "Trading gain, excl. income"**, on the Dashboard, `portfusion record` and the
+  glossary: unrealised plus realised, which leaves income out. Its value does not move. Method
+  says the year is measured as one period, not its quarters linked, and the report's one income
+  note says which income each part shows.
+- **Method sets the gains, incomes and capitals side by side**, in the book's own figures: the
+  year's trading gain (`Book.year_attribution()`: realised in the year plus the move in unrealised
+  since its opening), plus the year's income and costs in spread-bet accounts, makes capital
+  growth; and YTD income, return income and position income, each with what it holds.
 - **An account goes by its code and label on the reading pages, as in the report**: `A1 · ii ISA`
   on Holdings, Round Trips, Trades, Performance, Reconcile and Accounts, in their account cells
   and filters. The register on Accounts, and the Bench and Price refresh, which write it, keep
@@ -117,6 +127,20 @@ One figure moves, on two pages, and there is no migration. Do these when the boo
 - **The Dashboard's "Round trips closed out" leads to the round trips it counts**: its link
   opens Round Trips with a new "Closed out" filter on, so the page shows as many rows as the
   figure says. The filter works on the hosted desk too.
+- **A table wider than its box says so on each edge with more beyond it**: a 2px rule on the
+  pinned column's inner edge, or on the box's own edge where nothing is pinned, gone at that end
+  once the table is scrolled there. On Holdings and Round Trips a heading cut by the pinned
+  Trades button reads as going on under it. It shows in Safari, on a phone and in a picture,
+  where the scrollbar did not. A box that fits is unchanged.
+- **The report prints whole on A4**: on its side, each wide table at its full width, so no
+  column's heading is cut.
+- **A page chosen by keyboard puts focus on its heading**, so the next Tab is the page's first
+  control, not the top of the desk; the tab buttons are kept across a pick, the pressed one still
+  focused until the page paints. A cell reached by Tab in a wide table is scrolled clear of the
+  pinned heading and columns.
+- **Opening a row's detail leaves its table's width as it was**, on Performance and Accounts,
+  where it widened the table and moved every column under the pointer. A detail wider than its
+  table runs past the table's right edge, whole, as far as the page's width allows.
 - **Days held still open count to the prices' day**, the day the live figures stand at, not
   today's clock, on Holdings and on Round Trips' company lives; a line or life opened after that
   day reads 0.

@@ -133,6 +133,22 @@ def test_the_report_is_rendered_and_never_written(tmp_path, monkeypatch):
     assert list(tmp_path.iterdir()) == []
 
 
+def test_a_printed_report_cuts_no_column():
+    """A SHEET CANNOT SCROLL: in print a wide table's box lets the table run its full width, and the
+    page is A4 on its side, so the widest table is printed whole at the size it is read on screen."""
+    import re
+    from portfusion.report.style import CSS
+    block = CSS.split("@media print{", 1)[1]
+    depth = 1
+    for end, ch in enumerate(block):
+        depth += {"{": 1, "}": -1}.get(ch, 0)
+        if not depth:
+            break
+    printed = block[:end]
+    assert ".scroll{overflow:visible}" in printed, "a wide table's box still scrolls in print"
+    assert re.search(r"@page\{size:A4 landscape\b", printed), "the printed page is not A4 on its side"
+
+
 @needs("quarter-nav", "buys")
 def test_a_page_asks_one_engine(monkeypatch):
     """ONE PAGE, ONE `Book()`. `summary_figures()` takes the page's engine, and alone builds its
@@ -455,7 +471,11 @@ def test_the_contributions_close_on_the_lines_and_the_sales():
             pytest.approx(parts["gain"], abs=0.01)
 
 
+@needs("quarter-nav")
 def test_the_income_table_is_the_income_the_return_counts_and_the_rest():
+    """Three incomes, each its own, and ONE NOTE says which part of the report shows which."""
+    import re
+    from portfusion.house import headings as H
     b = Book()
     for d in _engine_frozen():
         prev = b.quarter_returns().set_index("quarter_end").loc[d, "opens"]
@@ -463,6 +483,11 @@ def test_the_income_table_is_the_income_the_return_counts_and_the_rest():
         assert t.loc["Total", list(D.POSITION_INCOME)].sum() == pytest.approx(
             float(b.position_income(start=prev, end=d).sum()), abs=0.01), d
         assert list(t.index) == b.accounts_open(d) + ["Total"]
+        notes = [n for n in re.findall(r"<p [^>]*>(.*?)</p>", render(d), re.S)
+                 if "income" in n.lower()]
+        assert len(notes) == 1, (d, notes)
+        assert all(w in notes[0] for w in (H.heading("Performance", "return_income"),
+                                           H.FIGURES["position_income"], "Income and costs")), notes
 
 
 @needs("quarter-nav", "income")
@@ -625,7 +650,7 @@ def test_check_is_read_wherever_it_stands(monkeypatch):
 #: table prints, its row labels, the lede and the notice, the evidence words, and the engine's one
 #: sentence it prints (`Book.OPENED_IN_PERIOD`). Headings are house/headings.py's and section
 #: titles are headings, so neither counts. DESK_CHROME_WORDS holds the desk's in the same way.
-REPORT_PROSE_WORDS = 156      # "read from IG on" its day: who a reading came from, and when
+REPORT_PROSE_WORDS = 182      # the one income note: which income each part of the report shows
 
 #: Where the page types prose, in report/page.py's own source.
 _PROSE = (r'<p \{_NOTE\}>(.*?)</p>', r'<div class="sub">(.*?)</div>', r'<h3[^>]*>(.*?)</h3>',
