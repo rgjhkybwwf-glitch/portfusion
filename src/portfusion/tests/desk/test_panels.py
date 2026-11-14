@@ -1094,7 +1094,30 @@ def test_every_filter_row_can_be_cleared():
     js = desk_script()
     rows = re.findall(r"filters: \{([^\[]*)fields:", js)
     assert rows and all("clear:" in r for r in rows), \
-        "a page's filters band has no clear link"
+        "a page's filters band has no \"clear filters\""
+
+
+#: THE BENCH'S OWN SCRIPTS, whose controls are still the underlined link.
+BENCH_SCRIPTS = ("bench.js", "sweep.js")
+
+
+def test_a_control_is_drawn_in_the_shape_of_what_it_does():
+    """GO, ACT AND OPEN, each written once in kit.js: a way to another page is `goButton()`, an
+    action `actButton()`, and a row's detail `detailToggle()`. No script but the Bench's draws
+    the underlined link, so a reader can tell what a word does before pressing it."""
+    import re
+    from portfusion.desk import bundle
+    def shape(name):
+        """The class, alone or first among others."""
+        return re.compile(rf'class="{name}[\s"]')
+    for name in bundle.SCRIPTS:
+        assert name in BENCH_SCRIPTS or not shape("link").search(desk_script(name)), (
+            f"{name} draws a control as an underlined link: draw it through goButton() or "
+            "actButton() in kit.js")
+    js, kit = desk_script(), desk_script("kit.js")
+    for name in ("go", "act"):
+        assert len(shape(name).findall(js)) == 1 and shape(name).search(kit), (
+            f"the {name} shape is written somewhere other than kit.js, or twice")
 
 
 # =====================================================================================

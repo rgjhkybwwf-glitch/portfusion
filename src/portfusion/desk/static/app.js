@@ -77,8 +77,8 @@ function drawFreshness(f) {
      shows the line and neither button. */
   $("#fresh").innerHTML =
     `store changed ${esc(f.store_changed || "—")}${source}${prices}${hosted}` +
-    (ACTIONS["restart-desk"] ? ` · <button class="link" id="restart">restart the desk</button>` : "") +
-    (REMOTE ? ` · <button class="link" id="leave">sign out</button>` : "");
+    (ACTIONS["restart-desk"] ? ` · ${actButton(`id="restart"`, "restart the desk")}` : "") +
+    (REMOTE ? ` · ${actButton(`id="leave"`, "sign out")}` : "");
   wireRestart();
   $("#leave")?.addEventListener("click", async () => {
     await fetch("/auth/sign-out", { method: "POST" }).catch(() => null);

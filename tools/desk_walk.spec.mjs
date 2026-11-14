@@ -1,7 +1,8 @@
 // THE DESK WALKED, IN CHROMIUM: the demo desk `desk_walk.py` serves, at 1440 × 900. Each page is
-// opened by its tab and must draw no error, hold no accessibility fault but the `KNOWN`, and look
-// as its baseline does; a finding is followed to its page; a wide table's button to Trades is in
-// view, a press on a row opens its detail in view, and a heading that sorts shows it; a box that
+// opened by its tab and must draw no error, draw each control in the shape of what it does, hold
+// no accessibility fault but the `KNOWN`, and look as its baseline does; a finding is followed to
+// its page; a wide table's button to Trades is in view, a press on a row opens its detail in
+// view, and a heading that sorts shows it; a box that
 // scrolls sideways marks each edge with more beyond it, and one that does not marks none; an open
 // detail leaves its table's width as it was, and runs whole as far as the box; a page chosen
 // by keyboard puts focus on its heading, one Tab from its first control, its tab buttons kept, and
@@ -40,6 +41,34 @@ const open = async (page, name) => {
   await page.waitForLoadState("networkidle");      // a page may ask again once it has drawn
 };
 
+// GO, ACT AND OPEN, AS DRAWN (`goButton()`, `actButton()` and `detailToggle()` in kit.js), each
+// control found by its hook and read by its drawn style: a go has no underline and no border and
+// ends in its arrow; an act has a border; a row that opens leads with the chevron. A row's first
+// cell is read by what it leads with, so a row that opens by anything else is found.
+const SHAPES = {
+  go: "#main [data-panel], #main [data-trades], #main [data-life]",
+  act: "#main .filter-clear button, #restart",
+  open: "#main tr.has-detail > td:first-child",
+};
+const shapes = (page) => page.evaluate((found) => Object.fromEntries(Object.entries(found).map(([k, sel]) =>
+  [k, [...document.querySelectorAll(sel)].map((at) => {
+    const el = at.matches("td") ? at.firstElementChild ?? at : at;
+    const s = getComputedStyle(el);
+    return {
+      shape: el.className,
+      underlined: s.textDecorationLine.includes("underline"),
+      bordered: ["Top", "Right", "Bottom", "Left"].some((e) =>
+        s[`border${e}Style`] !== "none" && parseFloat(s[`border${e}Width`]) > 0),
+      marked: el.textContent.trim().endsWith("→"),
+      inPage: el.closest("#main") !== null,
+    };
+  })])), SHAPES);
+const SHAPE = {
+  go: { shape: "go", underlined: false, bordered: false, marked: true },
+  act: { shape: "act", bordered: true },
+  open: { shape: "detail-toggle" },
+};
+
 test("each page opens, holds no new accessibility fault and looks as it did", async ({ page }) => {
   const names = await page.locator("#tabs button").evaluateAll((bs) => bs.map((b) => b.dataset.name));
   const faults = {};
@@ -47,6 +76,14 @@ test("each page opens, holds no new accessibility fault and looks as it did", as
     await test.step(name, async () => {
       await open(page, name);
       await expect.soft(page.locator("pre.error:visible"), `${name} drew an error`).toHaveCount(0);
+      const drawn = await shapes(page);
+      for (const [kind, controls] of Object.entries(drawn)) {
+        controls.forEach((c, i) => expect.soft(c, `${name}: control ${i} of its ${kind}s`).toMatchObject(SHAPE[kind]));
+      }
+      if (name === "holdings") {
+        expect.soft(Object.fromEntries(Object.entries(drawn).map(([k, cs]) => [k, cs.some((c) => c.inPage)])),
+          "Holdings draws a go, an act and an open").toEqual({ go: true, act: true, open: true });
+      }
       // The screenshot waits for the page to stop moving, so it comes before axe reads it. Pictures
       // are compared on Linux alone, the guard's platform: a Mac sets type apart, and its pictures
       // would be one more set for a person to keep.
@@ -313,6 +350,7 @@ test("a holding's detail leads to its company's life", async ({ page }) => {
   const row = page.locator("#main table[data-links] tbody tr:not(.detail-row)").first();
   await row.locator(".detail-toggle").click();
   const link = page.locator("#main .detail-row:not([hidden]) [data-life]");
+  await expect(link).toHaveClass("go");
   const company = await link.getAttribute("data-life");
   // BY KEYBOARD, the company's answer held: the heading holds focus through the page's redraw.
   let release;

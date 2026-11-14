@@ -114,14 +114,14 @@ Object.assign(DRAW, {
       status: [
         ...bank,
         { label: d.steps[1].label, state: null, body: `
-          <button class="link" id="rb-fetch">fetch everything</button>
-          ${d.lacking.length ? `<button class="link" id="rb-lacking">${d.lacking.length} rate(s) the record lacks</button>` : ""}
+          ${actButton(`id="rb-fetch"`, "fetch everything")}
+          ${d.lacking.length ? actButton(`id="rb-lacking"`, `${d.lacking.length} rate(s) the record lacks`) : ""}
           <label for="rb-on"><span class="muted small">or closes of</span></label> <input type="date" id="rb-on">
-          <button class="link" id="rb-discard" hidden></button>` },
+          ${actButton(`id="rb-discard" hidden`, "")}` },
         { label: d.steps[2].label, state: stale ? "gap" : null, tag: `${stale} past the limit`,
           body: quiet(`${d.age_days} days old · limit ${d.age_limit} days`) },
         { label: d.steps[3].label, state: null, body: `
-          <button class="link" id="rb-write" disabled>write the ticked marks</button>
+          ${actButton(`id="rb-write" disabled`, "write the ticked marks")}
           <span class="muted small" id="rb-count">nothing ticked</span>` },
       ],
       why: [["Nothing happens until asked", "Nothing here leaves the machine or touches the "
