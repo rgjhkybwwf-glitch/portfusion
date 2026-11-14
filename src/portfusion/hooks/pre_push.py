@@ -20,8 +20,9 @@ THE OVERRIDE NAMES WHAT IT OVERWRITES. The owner approves a rewrite by naming th
     MAIN_REWRITE=<sha> git push --force-with-lease origin main
 
 so an approval covers that one rewrite and cannot be carried to the next. `git push --no-verify`
-skips this hook, as it is git's own; `.claude/settings.json` denies both, and every force push,
-to a Claude session, which leaves them to the owner's own terminal.
+skips this hook, as it is git's own. `.claude/settings.json` denies both to a Claude session, which
+leaves them to the owner's own terminal, and every force push but one with a lease, which refuses
+when the branch has moved since it was fetched.
 
 THE GUARD IS THE APP'S, as the secret gate is: this checkout's `.githooks/pre-push` runs it from
 `src/`, and a book's, which `portfusion init` writes (`init.PUSH_HOOK`), runs it from the
