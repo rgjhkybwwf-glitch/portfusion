@@ -1,15 +1,24 @@
-name: A proposal
-description: Something PortFusion should do. Proposed and agreed before it is built (CONTRIBUTING.md).
+name: Something to add or change
+description: New work, in your own words. The next ready check shapes it into an issue and asks only what needs you.
+title: "Idea: "
 body:
-  - type: textarea
-    id: need
+  - type: markdown
     attributes:
-      label: What it would let you do
-      description: The record, figure or page it is for, and what you do today without it.
+      value: >-
+        Keep the title's "Idea: " and finish it in a few words. Write as you would say it: the
+        ready check keeps your words at the top, quoted, finds the cause in the code, and places it
+        under To rank on the Queue (#206). Nothing is built until you move it into Next. Leave the
+        labels and milestone empty: the ready check sets them. An issue is public: use the demo's
+        names, never a real book's.
+  - type: textarea
+    id: want
+    attributes:
+      label: What you want
+      description: What you would do, on which page or command, and what gets in the way today.
     validations:
       required: true
   - type: textarea
-    id: shape
+    id: where
     attributes:
-      label: How it might work
-      description: Optional. Which part it touches, if you know.
+      label: Where you met it
+      description: Optional. The page, the issue or pull request, or a picture.
