@@ -1,0 +1,84 @@
+# A RE-PLAN STARTS THE READY CHECK AT ONCE. When a run leaves a re-plan on an issue (its comment's
+# first line after the run's name is "Re-plan:"), this waits ten quiet minutes, then fires the
+# routine "Portfusion ready check" on claude.ai, which plans only the issues under Next marked
+# "Re-plan" since their last "Plan, checked" (CONTRIBUTING.md, The ready check). Another re-plan
+# within the ten minutes starts the wait again, so re-plans left together make one run. A routine
+# run cannot start another routine itself, so this does it. Nothing of a comment is sent.
+#
+# The runs write as the owner's account, so a comment is read as a run's only when it opens with a
+# run's own mark: the night run's or the answer run's. The ready check never writes "Re-plan:", so
+# nothing here starts itself. The routine's fire URL and token are the repository's secrets
+# ROUTINE_READY_URL and ROUTINE_READY_TOKEN; without them this says so in its log and does nothing.
+
+name: replan
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions: {}
+
+jobs:
+  # Whether this comment is a run's re-plan, outside the wait's queue: any other comment never
+  # cancels a wait already running.
+  read:
+    if: >-
+      github.event.comment.user.login == github.repository_owner
+      && !github.event.issue.pull_request
+      && github.event.issue.state == 'open'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    outputs:
+      replan: ${{ steps.read.outputs.replan }}
+    steps:
+      - name: Is this comment a run's re-plan?
+        id: read
+        env:
+          BODY: ${{ github.event.comment.body }}
+          NUMBER: ${{ github.event.issue.number }}
+        run: |
+          # The first two lines that hold text: the run's mark, then (on the same line or the next)
+          # "Re-plan:".
+          head=$(printf '%s\n' "$BODY" | sed -e 's/^[[:space:]]*//' | grep -v '^$' | head -n 2 | tr '\n' ' ')
+          case "$head" in
+            "🌙 **Night run** ·"*|"💬 **Answer run** ·"*) ;;
+            *) echo "Not a run's comment: nothing to do."; exit 0 ;;
+          esac
+          rest=$(printf '%s' "$head" | sed -e 's/^[^·]*·[[:space:]]*//')
+          if ! printf '%s' "$rest" | grep -qE '^(\*\*)?Re-plan:'; then
+            echo "A run's comment, not a re-plan: nothing to do."
+            exit 0
+          fi
+          echo "A re-plan on #$NUMBER."
+          echo "replan=yes" >> "$GITHUB_OUTPUT"
+
+  fire:
+    needs: read
+    if: needs.read.outputs.replan == 'yes'
+    concurrency:
+      group: replan
+      cancel-in-progress: true
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Wait ten quiet minutes, then start the ready check
+        env:
+          NUMBER: ${{ github.event.issue.number }}
+          ISSUE: ${{ github.event.issue.html_url }}
+          URL: ${{ secrets.ROUTINE_READY_URL }}
+          TOKEN: ${{ secrets.ROUTINE_READY_TOKEN }}
+        run: |
+          if [ -z "$URL" ] || [ -z "$TOKEN" ]; then
+            echo "::warning::A re-plan on #$NUMBER, but ROUTINE_READY_URL or ROUTINE_READY_TOKEN is not set."
+            exit 0
+          fi
+          echo "A re-plan on #$NUMBER: the ready check starts in ten minutes, unless another comes first."
+          sleep 600
+          payload=$(jq -n --arg t "Re-plan only: plan the issues under Next marked \"Re-plan\" since their last \"Plan, checked\", and nothing else. The last was #$NUMBER ($ISSUE)." '{text: $t}')
+          # A busy or briefly unavailable endpoint (5xx) is tried again, up to four more times.
+          curl -sS --fail-with-body --retry 4 --retry-delay 30 --retry-all-errors -X POST "$URL" \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "anthropic-beta: experimental-cc-routine-2026-04-01" \
+            -H "anthropic-version: 2023-06-01" \
+            -H "Content-Type: application/json" \
+            -d "$payload" | jq -r '.claude_code_session_url // .'
