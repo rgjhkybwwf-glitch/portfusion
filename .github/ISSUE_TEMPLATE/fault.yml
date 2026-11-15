@@ -1,33 +1,30 @@
-name: A fault
-description: Something PortFusion does that it should not, or a figure that is wrong.
+name: Something wrong
+description: A page, figure or command that does what it should not. The next ready check finds its cause in the code.
+title: "Idea: "
 body:
   - type: markdown
     attributes:
       value: >-
-        Use the demo book or an invented one. Never paste a real book's rows, figures, statements
-        or credentials: an issue is public.
+        Keep the title's "Idea: " and finish it with what goes wrong, in a few words. The ready
+        check keeps your words at the top, quoted, finds the cause by file and function, and places
+        it under To rank on the Queue (#206). Leave the labels and
+        milestone empty. An issue is public: show it on the demo book, never with a real book's
+        rows, figures, statements or credentials.
+  - type: textarea
+    id: did
+    attributes:
+      label: What you did
+      description: The page and what you pressed, or the command you ran.
+    validations:
+      required: true
+  - type: textarea
+    id: saw
+    attributes:
+      label: What you expected, and what happened
+    validations:
+      required: true
   - type: input
     id: version
     attributes:
       label: Release
-      description: What `portfusion --version` prints.
-    validations:
-      required: true
-  - type: textarea
-    id: ran
-    attributes:
-      label: What you ran
-      description: The command, or the page and what you pressed, on which book.
-    validations:
-      required: true
-  - type: textarea
-    id: expected
-    attributes:
-      label: What you expected, and what happened instead
-    validations:
-      required: true
-  - type: textarea
-    id: check
-    attributes:
-      label: What `portfusion check` says
-      description: The guard on the same book, if it fails.
+      description: Optional. What `portfusion --version` prints, or the desk's footer.
