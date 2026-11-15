@@ -197,8 +197,8 @@ changes it.
   script builds the venv on Python 3.13 and installs `tools/`. A routine names what it follows
   here, the ready check and the answer run their own part and the night run the whole section,
   and sets how many issues a run takes; nothing else is kept there.
-  - **The ready check**, each day at 12:30 UK time, and when an answer run starts it for a
-    re-plan (The answer run, below): reads what the night built and what the maintainer
+  - **The ready check**, each day at 12:30 UK time, and when a run's "Re-plan" starts it
+    (`replan.yml`; The answer run, below): reads what the night built and what the maintainer
     answered, then shapes and plans the next work, asks its questions, and keeps the
     dependencies. It is the one run that reasons about what to build.
   - **The night run**, at 02:00 UK time: builds the lines the ready check has planned.
@@ -349,8 +349,9 @@ changes it.
 - **Nothing changed: stop.** When nothing has merged, closed, been answered, changed or filed
   since its last run, and Next holds as many `planned` lines as the routine's number or no line
   it could plan, it ends with a one-line debrief and posts nothing.
-- **Started for a re-plan, it plans only the issues named** in the text it was started with, and
-  does nothing else of this part; its debrief is a line an issue.
+- **Started for a re-plan** (`replan.yml`, its text beginning "Re-plan only"), it plans only the
+  issues under Next marked "Re-plan" since their last **Plan, checked**, and does nothing else of
+  this part; its debrief is a line an issue.
 - **Then, after a tag, it opens the next milestone** (Which issues, above).
 - **"Covers" is by the code, not the topic.** An open issue covers a find, an idea or a bump when
   its Cause or Done names the same file and function; the ready check reads every open issue's
@@ -476,11 +477,10 @@ changes it.
   standing: the run writes a comment whose first line after its name is "Re-plan:" and why, takes
   `planned` off, and leaves the issue for the ready check. One still not ready, a question open or
   a "waits" issue open, it names in its debrief and leaves.
-- **A re-plan under Next starts the ready check at once.** Before its debrief, a run that left a
-  "Re-plan" on an issue under Next whose "waits" have closed starts the routine "PortFusion ready
-  check" once (`fire_trigger`), with the text "Re-plan only #n" naming each such issue, so the
-  plan is ready for the night. A run that has no `fire_trigger` says so in its debrief, and the
-  re-plan waits for the 12:30 ready check. No other run starts a routine.
+- **A re-plan starts the ready check at once, by its comment.** A comment whose first line after
+  the run's name is "Re-plan:" is all it takes: `replan.yml` sees it and, ten quiet minutes after
+  the last, starts the ready check for the re-plans alone, so the plan is ready for the night. No
+  run starts a routine itself.
 - **A decision issue closes once it is decided.** An issue that only records a decision, such as
   the content map (#3), is closed when every question on it is answered and recorded and each
   part of what it settles is filed or written into the issue it settles, the closing comment
