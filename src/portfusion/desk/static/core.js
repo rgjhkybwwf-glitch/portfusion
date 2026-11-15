@@ -9,6 +9,10 @@ const $ = (s) => document.querySelector(s);
    the same places, so a figure reads the same on all three. */
 let PRECISION = {};
 
+/* A HOUSE WORD AS THE PAGE SAYS IT, house/words.py's, which each panel answer carries beside its
+   precision (paintPanel takes it). */
+let WORDS = {};
+
 /* ONE ROUNDING, house/precision.py's fixed(): an exact half rounds away from zero, from the
    figure's own decimal digits (its shortest spelling), never from the binary float under them.
    Unsigned; `shift` moves the point first, `group` writes the thousands. */

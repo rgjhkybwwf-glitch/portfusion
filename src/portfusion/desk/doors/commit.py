@@ -293,7 +293,7 @@ def commit(item_id: str) -> dict:
         try:
             marked = marks.first(marking, "bench", item["id"], written_at) if marking else []
         except marks.Refused as e:
-            raise Refused(f"the contract could not be marked, so nothing was written — {e}") from e
+            raise Refused(f"the contract could not be priced, so nothing was written — {e}") from e
 
         # FILED, THEN THE READING, AND BOTH OR NEITHER. The readings door checks the document is in
         # _archive/statements/, so it is moved first; if the reading is refused it goes back to the

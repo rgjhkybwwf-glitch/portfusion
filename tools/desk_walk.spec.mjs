@@ -1,8 +1,10 @@
 // THE DESK WALKED, IN CHROMIUM: the demo desk `desk_walk.py` serves, at 1440 × 900. Each page is
 // opened by its tab and must draw no error, draw each control in the shape of what it does, hold
-// no accessibility fault but the `KNOWN`, and look as its baseline does; a finding is followed to
-// its page; a wide table's button to Trades is in view, a press on a row opens its detail in
-// view, and a heading that sorts shows it; a box that
+// no accessibility fault but the `KNOWN`, and look as its baseline does; the Dashboard, Holdings
+// and the Bench say "price", never "mark", and so do a holding's detail's headings; a finding is
+// followed to its page, and the Dashboard's "add a fact on the Bench" to the Bench; a wide
+// table's button to Trades is in view, a press on a row opens its detail in view, and a heading
+// that sorts shows it; a box that
 // scrolls sideways marks each edge with more beyond it, and one that does not marks none; an open
 // detail leaves its table's width as it was, and runs whole as far as the box; a page chosen
 // by keyboard puts focus on its heading, one Tab from its first control, its tab buttons kept, and
@@ -69,6 +71,10 @@ const SHAPE = {
   open: { shape: "detail-toggle" },
 };
 
+// ON SCREEN A MARK IS A PRICE (house/words.py): the pages that show one say so, in any case.
+const MARK = /\bmarks?\b/i;
+const SAYS_PRICE = ["dashboard", "holdings", "bench"];
+
 test("each page opens, holds no new accessibility fault and looks as it did", async ({ page }) => {
   const names = await page.locator("#tabs button").evaluateAll((bs) => bs.map((b) => b.dataset.name));
   const faults = {};
@@ -79,6 +85,9 @@ test("each page opens, holds no new accessibility fault and looks as it did", as
       const drawn = await shapes(page);
       for (const [kind, controls] of Object.entries(drawn)) {
         controls.forEach((c, i) => expect.soft(c, `${name}: control ${i} of its ${kind}s`).toMatchObject(SHAPE[kind]));
+      }
+      if (SAYS_PRICE.includes(name)) {
+        expect.soft(await page.locator("#main").innerText(), `${name} says "mark"`).not.toMatch(MARK);
       }
       if (name === "holdings") {
         expect.soft(Object.fromEntries(Object.entries(drawn).map(([k, cs]) => [k, cs.some((c) => c.inPage)])),
@@ -108,6 +117,13 @@ test("a finding leads to the page its work is done on", async ({ page }) => {
   await link.click();
   await expect(page.locator(`#tabs button[data-name="${to}"]`)).toHaveAttribute("aria-current", "page");
   await expect(page).toHaveURL(new RegExp(`#${to}$`));
+});
+
+test("the Dashboard leads to the Bench, where a fact is added", async ({ page }) => {
+  await open(page, "dashboard");
+  await page.locator('#main .steps button[data-panel="bench"]', { hasText: "add a fact on the Bench" }).click();
+  await expect(page.locator('#tabs button[data-name="bench"]')).toHaveAttribute("aria-current", "page");
+  await expect(page).toHaveURL(/#bench$/);
 });
 
 test("the closed-out count leads to the round trips it counts", async ({ page }) => {
@@ -351,6 +367,8 @@ test("a holding's detail leads to its company's life", async ({ page }) => {
   await row.locator(".detail-toggle").click();
   const link = page.locator("#main .detail-row:not([hidden]) [data-life]");
   await expect(link).toHaveClass("go");
+  expect(await page.locator("#main .detail-row:not([hidden]) dt").allInnerTexts()).not.toContainEqual(
+    expect.stringMatching(MARK));
   const company = await link.getAttribute("data-life");
   // BY KEYBOARD, the company's answer held: the heading holds focus through the page's redraw.
   let release;

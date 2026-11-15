@@ -33,8 +33,12 @@ Object.assign(DRAW, {
       /* A SECOND DOOR TO THE BAY, because this is where you are standing when you doubt a
          value — but a LINK, never a second button. One refresh, two ways in; two buttons
          would be two places to keep telling the same story about what a refresh does. */
-      status: [{ label: "Marks", body: `${quiet(`as at ${esc(day(d.valued_at))}`)}
-        ${panelLink("price-refresh", "run a refresh")}` }],
+      status: [{ label: "Prices", body: `${quiet(`as at ${esc(day(d.valued_at))}`)}
+        ${panelLink("price-refresh", "run a refresh")}` },
+        /* BY COMPANY, A ROW'S UNITS ARE SAID: a bet counts as the shares it stands for, and its
+           price is per share in the listing's price. */
+        ...(d.by === "issuer" ? [{ label: "By company",
+          body: quiet(`quantity in ${esc(WORDS.share_equivalents)} · prices per share`) }] : [])],
       figures: [["Securities owned", money(d.owned)],
                 ["Spread-bet notional", money(d.notional)]],
       filters: { clear: "h-clear", fields: [

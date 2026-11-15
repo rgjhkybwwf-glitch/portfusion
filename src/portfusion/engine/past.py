@@ -140,7 +140,7 @@ class PastDates(Core):
             return [(ticker, px[ticker][1], qty)]
         missing = sorted(k for k in lots if k not in px) or [ticker]
         raise MissingMark(missing,
-            f"no price for {missing[0]} on or before {as_of}: nothing is valued from a mark "
+            f"no price for {missing[0]} on or before {as_of}: nothing is valued from a price "
             f"that does not exist.")
 
     @staticmethod
@@ -479,7 +479,7 @@ class PastDates(Core):
                 # "another day's price" here — `rules.STATEMENT_PRICED`, `rules.RATE_CARRIED`.
                 for k in keys:
                     if outside(px[k][0]) and r.ticker not in self.D.STATEMENT_PRICED:
-                        off.append(f"{account} {r.ticker}: {k}'s nearest mark is {px[k][0]}")
+                        off.append(f"{account} {r.ticker}: {k}'s nearest price is {px[k][0]}")
                         off_keys.add(k)
                 if (r.held_as != "spread bet" and r.currency != "GBP"
                         and outside(fx[r.currency][0])

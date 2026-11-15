@@ -66,7 +66,7 @@ portfusion record                    # the audit
 | `engine/` | every derived figure, once |
 | `desk/` | the browser, and its doors to the record |
 | `report/` | the quarterly report |
-| `house/` | what both renderers share: headings, precision, PortFusion's palette |
+| `house/` | what both renderers share: headings, on-screen words, precision, PortFusion's palette |
 | `feeds/` | the market feeds (IG, TradingView), read-only |
 | `history/` | the histories: prices, FX rates and account values over time |
 | `tests/` | the guard, shipped with the app: `portfusion check` runs it; a folder per package it tests |

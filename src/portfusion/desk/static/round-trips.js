@@ -31,7 +31,7 @@ function companyLives(d) {
                 { name: "company lives", afterRow: (r, span) => detailRow(detailList(r, d.detail), span),
                   cells: {
                     opened: (r) => `<td class="nowrap">${esc(day(r.opened))}${r.pre_baseline
-                      ? ` <span class="tag">before the record</span>` : ""}</td>`,
+                      ? ` <span class="tag">${esc(WORDS.pre_baseline)}</span>` : ""}</td>`,
                     qty: (r) => `<td class="num">${r.qty == null ? "—"
                       : r.qty.toLocaleString("en-GB")}</td>`,
                     currency: (r) => r.currency == null ? `<td>—</td>` : cell("currency", r.currency) } }),

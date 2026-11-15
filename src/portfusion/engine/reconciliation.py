@@ -198,11 +198,11 @@ class Reconciliation(Core):
         newest = max(str(d)[:10] for d in held["priced_at"])
         stalest = min(str(d)[:10] for d in held["priced_at"])
         if "" in kinds:
-            return False, "a mark on this account does not say which instant it describes"
+            return False, "a price on this account does not say which instant it describes"
         if kinds != {"live"}:
-            return False, "a live read compares only with live marks, and these are closes"
+            return False, "a live read compares only with live prices, and these are closes"
         if not (stalest == newest == day):
-            return False, (f"the equity was read on {day} and the marks are from "
+            return False, (f"the equity was read on {day} and the prices are from "
                            f"{stalest if stalest == newest else stalest + ' to ' + newest}"
                            f" — not one pass")
         if at:
@@ -297,7 +297,7 @@ class Reconciliation(Core):
         if comparable is False:
             return {"checkable": False, "live": True, "band": None, "ties": None,
                     "verdict": "struck-apart",
-                    "rule": why or "the equity and the marks were not read in one pass"}
+                    "rule": why or "the equity and the prices were not read in one pass"}
         band = abs(statement) * D.RECON_LIVE_TOLERANCE_PCT
         ties = abs(difference or 0) < band
         return {"checkable": True, "live": True, "band": band, "ties": ties,

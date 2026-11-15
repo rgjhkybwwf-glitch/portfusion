@@ -63,7 +63,7 @@ Object.assign(DRAW, {
     const receipt = !wrote ? [] : [{ state: "clear", tag: "written", label: "Refresh",
       body: quiet(`${n(wrote.prices, "price")}, ${n(wrote.rates, "rate")} and
         ${n(wrote.readings || 0, "IG reading")} replaced ·
-        ${n(wrote.banked_before.prices + wrote.banked_before.rates, "outgoing mark")} banked
+        ${n(wrote.banked_before.prices + wrote.banked_before.rates, "outgoing price")} banked
         first, ${wrote.banked_after.prices + wrote.banked_after.rates || "none"} after`) }];
 
     /* RECORD TIME OVER THE SPAN MARKET TIME COVERS, the rest folded under it: the journal grows
@@ -72,10 +72,10 @@ Object.assign(DRAW, {
     const since = r.since ? esc(day(r.since)) : opened;
     const earlier = r.earlier || [];
     return page({
-      scope: "what the marks did, then what the book learned",
+      scope: "what the prices did, then what the book learned",
       status: [...receipt, { label: "Compared", body: quiet(windows || "—") }],
       work: `
-        <h2>Market time &mdash; what the marks did</h2>
+        <h2>Market time &mdash; what the prices did</h2>
         ${d.blocks.map(block).join("")}
         <h2>Record time &mdash; every write since ${since}</h2>
         ${gap ? `<ul class="items">${gap}</ul>` : ""}

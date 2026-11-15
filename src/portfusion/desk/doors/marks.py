@@ -114,8 +114,8 @@ def _require(row: dict, fields: tuple, what: str) -> None:
     missing = [f for f in fields if not str(row.get(f) or "").strip()]
     if missing:
         raise Refused(
-            f"{what}: no {', '.join(missing)}. A mark needs its price, its date and a source "
-            f"that retrieves it again — update a price and its date together, or the freshness "
+            f"{what}: no {', '.join(missing)}. A price needs its value, its date and a source "
+            f"that retrieves it again — update a value and its date together, or the freshness "
             f"indicator agrees everything is fine when it is not.")
 
 
@@ -151,7 +151,7 @@ def _require_instant(row: dict, what: str) -> None:
     """
     struck, at = str(row.get("struck") or ""), str(row.get("at") or "")
     if struck not in schema.STRUCK_KINDS:
-        raise Refused(f"{what}: `struck` is {struck!r}; a mark says whether it is one of "
+        raise Refused(f"{what}: `struck` is {struck!r}; a price says whether it is one of "
                       f"{schema.STRUCK_KINDS}, and only the feed that fetched it can.")
     if struck == "close" and at:
         raise Refused(f"{what}: a close is a date and carries no instant, but `at` is {at!r}.")
@@ -215,13 +215,13 @@ def write(prices: list[dict] | None = None, rates: list[dict] | None = None) -> 
             archived = {"prices": len(PH.archive(verbose=False)),
                         "rates": len(FX.archive(verbose=False))}
         except Exception as e:                      # noqa: BLE001 — reported, never swallowed
-            raise Refused(f"the outgoing marks could not be banked, so nothing was replaced: {e}")
+            raise Refused(f"the outgoing prices could not be banked, so nothing was replaced: {e}")
 
         still = banked()
         if not still["ok"]:
             raise Refused(
-                f"{len(still['prices_unbanked'])} mark(s) and {len(still['rates_unbanked'])} "
-                f"rate(s) are still unbanked after archiving. Refusing to replace a mark whose "
+                f"{len(still['prices_unbanked'])} price(s) and {len(still['rates_unbanked'])} "
+                f"rate(s) are still unbanked after archiving. Refusing to replace a price whose "
                 f"outgoing value is not on file.")
 
         # EVERY LINE NOT REPLACED COMES THROUGH AS THE BYTES IT WAS READ AS (`envelope.rewrite()`):
@@ -233,7 +233,7 @@ def write(prices: list[dict] | None = None, rates: list[dict] | None = None) -> 
             unknown = set(rows) - {r[key] for r in on_file[table]}
             if unknown:
                 raise Refused(
-                    f"{table}.csv has no row for {sorted(unknown)}. This door REPLACES a mark; it "
+                    f"{table}.csv has no row for {sorted(unknown)}. This door REPLACES a price; it "
                     f"does not add a line. A new instrument is an event and goes to the bench.")
             envelope.rewrite(schema.TABLES[table].path, lambda cells: rows.get(cells[key], cells))
         # VERIFY BY READING IT BACK, through the loader the build uses — the same check the
@@ -354,13 +354,13 @@ def first(prices: list[dict], route: str, ref: str, at: str) -> list[str]:
     named = [r["mark_key"] for r in prices]
     priced = sorted(set(named) & {r[0] for r in schema.load("current-prices")})
     if priced:
-        raise Refused(f"{', '.join(priced)} has a mark already: the Price Refresh replaces it")
+        raise Refused(f"{', '.join(priced)} has a price already: the Price Refresh replaces it")
     path = schema.TABLES["current-prices"].path
     was = len(schema.load("current-prices"))
     envelope.append_lines(path, path.read_bytes(),
                           [envelope.csv_line(_cells("current-prices", r)) for r in prices])
     if len(schema.load("current-prices")) != was + len(prices):
-        raise Refused("current-prices.csv did not gain exactly the new marks")
+        raise Refused("current-prices.csv did not gain exactly the new prices")
     envelope.journal([(route, "append", "current-prices", len(prices), ref,
                        f"{', '.join(named)}: first mark")], at=at)
     return named
@@ -470,7 +470,7 @@ def bank_closes(day: str, prices: list[dict] | None = None,
     except ValueError:
         raise Refused(f"{day!r} is not a date.")
     if when >= _dt.date.today():
-        raise Refused(f"{day} is not a past day. Today's marks are written by the ordinary "
+        raise Refused(f"{day} is not a past day. Today's prices are written by the ordinary "
                       f"refresh, which replaces them.")
     day = when.isoformat()
     held = carried()

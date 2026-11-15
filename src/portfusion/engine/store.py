@@ -48,7 +48,7 @@ def load_store() -> dict[str, pd.DataFrame]:
         if not (D.store_dir() / name).is_file():
             raise SystemExit(f"{name} is missing from {D.store_dir()}: a new book is given it by "
                              f"`portfusion init`, so restore this book's copy rather than start "
-                             f"an empty one — a history is the only copy of every mark it holds")
+                             f"an empty one — a history is the only copy of every price it holds")
     store = {
         "income":    pd.DataFrame(D.ci_rows, columns=D.CostIncomeRow._fields),
         "movements": pd.DataFrame(D.movements,

@@ -144,17 +144,17 @@ class Findings(Core):
         newest, oldest = pd.Timestamp(p["newest"]), pd.Timestamp(p["oldest"])
         age, spread = p["age_days"], p["spread_days"]
         prices = ([f"newest {P.day(newest)}, oldest {P.day(oldest)}",
-                   f"{age} days (oldest of {p['marks']} marks) · spread {spread}d"]
-                  if p["marks"] else ["no marks yet", "nothing to age"])
+                   f"{age} days (oldest of {p['marks']} prices) · spread {spread}d"]
+                  if p["marks"] else ["no prices yet", "nothing to age"])
         if age > self.D.PRICE_AGE_LIMIT:
             problems.append(Finding(
                 f"prices are {age} days old — past the {self.D.PRICE_AGE_LIMIT}-day limit, refresh "
                 f"before relying on them", "price-refresh"))
         if spread > self.D.PRICE_SPREAD_LIMIT:
             problems.append(Finding(
-                f"price marks span {spread} days ({P.day(oldest)} to {P.day(newest)}) — past the "
+                f"prices span {spread} days ({P.day(oldest)} to {P.day(newest)}) — past the "
                 f"{self.D.PRICE_SPREAD_LIMIT}-day spread limit. A ticker was probably missed in "
-                f"the last sweep; the newest mark being fresh hides it", "price-refresh"))
+                f"the last sweep; the newest price being fresh hides it", "price-refresh"))
         unheld = self.priced_unheld()
         if unheld:
             problems.append(Finding(

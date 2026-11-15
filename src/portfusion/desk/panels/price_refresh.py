@@ -42,15 +42,15 @@ ORDER = 25
 #: it is why `feeds/refresh.py` is one command rather than two: two commands are two chances to
 #: forget one.
 STEPS = (
-    ("bank", "Bank", "The outgoing marks go to their histories before anything replaces them. "
+    ("bank", "Bank", "The outgoing prices go to their histories before anything replaces them. "
                      "A refresh done without this is a data point that cannot be recovered."),
     ("fetch", "Fetch", "One sweep: IG's contract levels and each account's equity, read back "
                        "to back, then TradingView's shares and rates, each at its own instant. "
                        "Nothing is ticked for you. With a date, that day's closes instead: the "
-                       "write banks them into the histories and leaves the live marks alone."),
+                       "write banks them into the histories and leaves the live prices alone."),
     ("review", "Review", "Every line ticked, and no line accepted without a source and a date "
                          "together."),
-    ("write", "Write", "Marks and IG readings replaced, then banked, in one operation. Refused "
+    ("write", "Write", "Prices and IG readings replaced, then banked, in one operation. Refused "
                        "entirely if any line is incomplete or is one the book carries."),
 )
 
@@ -74,7 +74,7 @@ def data() -> dict:
         "prices": sorted(_shape.rows(_frame(can["replaceable"]), PRICE_COLUMNS),
                          key=lambda r: str(r["mark_key"]).upper()),
         # THE OUTGOING MARK'S SOURCE STAYS HOME: a line's banked marks, sources and all, are its
-        # Holdings detail's Mark history. A carried rate is left off, so `carried` says nothing.
+        # Holdings detail's Price history. A carried rate is left off, so `carried` says nothing.
         "rates": sorted(({k: v for k, v in r.items() if k not in ("source", "carried", "why")}
                          for r in can["fx"] if not r["carried"]), key=lambda r: r["currency"]),
         "readings": sorted(can["readings"], key=lambda r: r["account"]),
@@ -134,13 +134,13 @@ register(Action(
 
 
 register(Action(
-    name="refresh-write-marks", label="Write the ticked marks", panel=NAME,
+    name="refresh-write-marks", label="Write the ticked prices", panel=NAME,
     writes="marks", reaches=None,
     gate=("The owner ticks each line. Nothing is written until they have, and a line without a "
           "source and a date cannot be ticked at all."),
-    summary=("Bank the outgoing marks and IG readings, replace them with the ticked ones, then "
+    summary=("Bank the outgoing prices and IG readings, replace them with the ticked ones, then "
              "bank those. One operation: if any part of it is refused, every file is left exactly "
-             "as it was. A feed may write a mark — a price, a rate, live "
-             "equity — on the owner's tick, and never an event."),
+             "as it was. A feed may write a price, a rate or live equity on the "
+             "owner's tick, and never an event."),
     run=marks.refresh,
 ))

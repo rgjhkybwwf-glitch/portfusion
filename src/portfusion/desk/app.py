@@ -229,7 +229,7 @@ def panel(name: str):
     except KeyError:
         raise HTTPException(404, f"no panel named {name!r}")
     return {"name": mod.NAME, "title": mod.TITLE, "heads": panels.heads(mod),
-            "precision": engine.precision(), "data": mod.data()}
+            "precision": engine.precision(), "words": engine.words(), "data": mod.data()}
 
 
 # =================================================================================================

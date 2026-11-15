@@ -418,6 +418,90 @@ def test_no_renderer_heads_a_column_with_a_retired_word():
     assert not words & RETIRED_HEADINGS, sorted(words & RETIRED_HEADINGS)
 
 
+#: THE SCRIPT'S OWN NAMES that hold a word retired for display, each with what it names: none is
+#: drawn on a page.
+_SCRIPT_NAMES_KEPT = {
+    ".marks": "the field an item, a row and the prices answer carry",
+    "marks:": "that field's part of a detail",
+    '"marks"': "that field in a list of a detail's parts",
+    'class="mark"': "a go button's arrow",
+    '"refresh-write-marks"': "the Price Refresh's write action",
+}
+
+#: A PROSE STRING OF THE DESK OR THE ENGINE THAT KEEPS THE STORE'S WORD, by the words that hold
+#: it, each with why no page shows it.
+_STORE_WORDS_KEPT = {
+    "from the engine at the marks nearest":
+        "engine/past.py FROM_THE_ENGINE: the source a freeze writes, which the store's rows hold",
+    ": first mark": "desk/doors/marks.py: a journal note, the store's",
+    "desk.doors.marks.bank_closes(":
+        "desk/doors/freeze.py: a call for a session to type, by its module's name",
+    "the marks rule did not settle":
+        "desk/actions.py: the rule's name, in an error raised when an Action is built",
+}
+
+
+def _retired_for_display(text: str) -> list[str]:
+    """Each word retired for display (house/words.py) that `text` holds, whole, in any case."""
+    from portfusion.house.words import RETIRED_FOR_DISPLAY
+    return re.findall(r"\b(?:" + "|".join(RETIRED_FOR_DISPLAY) + r")\b", text, re.I)
+
+
+def _desk_prose(source: str) -> list[str]:
+    """Each prose string the source types, its docstrings aside: a string constant holding a
+    space, with the store's words this file keeps taken out."""
+    tree = ast.parse(source)
+    docs = {id(n.body[0].value) for n in ast.walk(tree)
+            if isinstance(n, (ast.Module, ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))
+            and n.body and isinstance(n.body[0], ast.Expr) and isinstance(n.body[0].value, ast.Constant)}
+    prose = [n.value for n in ast.walk(tree) if isinstance(n, ast.Constant)
+             and isinstance(n.value, str) and id(n) not in docs and " " in n.value]
+    for kept in _STORE_WORDS_KEPT:
+        prose = [p.replace(kept, "") for p in prose]
+    return prose
+
+
+def _desk_script_shown(js: str) -> str:
+    """The desk's script as far as a page can show it: its `/* */` comments and its own names out."""
+    js = re.sub(r"/\*[\s\S]*?\*/", "", js)
+    for name in _SCRIPT_NAMES_KEPT:
+        js = js.replace(name, "")
+    return js
+
+
+def test_the_desk_shows_no_word_retired_for_display():
+    """ON SCREEN A MARK IS A PRICE: house/words.py's RETIRED_FOR_DISPLAY says what the desk says
+    instead, and the store and the guides keep the house's word. None is in a heading, a word of
+    the table, the desk's script, or a prose string the desk or the engine types, since a refusal,
+    a gate and a finding are all drawn on a page. The command line's own modules and the loader's
+    errors are not the desk's. A planted word in a script and in a refusal is found.
+
+    Method states no retired term (the glossary keeps them), and the pages that show the three
+    house words say them from the table."""
+    from portfusion.desk.panels import method
+    from portfusion.house.headings import BY_TAB, COMMON, FIGURES
+    from portfusion.house.words import WORDS
+    assert _retired_for_display(_desk_script_shown('x = `the marks stand at ${d}`')) == ["marks"]
+    assert _retired_for_display(" ".join(_desk_prose('raise Refused("no mark")'))) == ["mark"]
+
+    labels = [*COMMON.values(), *FIGURES.values(), *WORDS.values(),
+              *(h for m in BY_TAB.values() for h in m.values())]
+    assert not [w for w in labels if _retired_for_display(w)], \
+        [w for w in labels if _retired_for_display(w)]
+    shown = _desk_script_shown(desk_script())
+    assert not _retired_for_display(shown), \
+        [line.strip() for line in shown.splitlines() if _retired_for_display(line)]
+    files = sorted((SRC / "desk").rglob("*.py")) + engine_files()
+    typed = {f"{p.relative_to(SRC)}: {s!r}" for p in files
+             for s in _desk_prose(p.read_text(encoding="utf-8")) if _retired_for_display(s)}
+    assert not typed, sorted(typed)
+
+    assert "Retired" not in str(method.data())
+    for name in ("performance.js", "round-trips.js", "holdings.js"):
+        js = re.sub(r"/\*[\s\S]*?\*/", "", desk_script(name))
+        assert not re.search(r"modified Dietz|share-equivalents|before the record", js, re.I), name
+
+
 def test_a_table_with_a_local_price_marks_its_sterling():
     """A LOCAL PRICE IS IN ITS LINE'S OWN CURRENCY, which the Ccy column beside it names:
     house/precision.py's LOCAL_PRICE_FIELDS say which fields are one. On a table that shows one,

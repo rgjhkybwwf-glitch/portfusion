@@ -73,7 +73,7 @@ on `not-on-file`.
 ## IG
 
 **The reading is taken on Price Refresh**: *fetch everything*, tick the accounts, *write the
-ticked marks*. Equity and contract levels are read in one pass and written together, which is
+ticked prices*. Equity and contract levels are read in one pass and written together, which is
 what lets the pair compare at all. A level struck later the same day ends the pass: the reading
 reads `struck-apart` until it is read again. A reading moves the book ([prices.md](prices.md)).
 
