@@ -479,7 +479,8 @@ changes it.
 - **A re-plan under Next starts the ready check at once.** Before its debrief, a run that left a
   "Re-plan" on an issue under Next whose "waits" have closed starts the routine "PortFusion ready
   check" once (`fire_trigger`), with the text "Re-plan only #n" naming each such issue, so the
-  plan is ready for the night. No other run starts a routine.
+  plan is ready for the night. A run that has no `fire_trigger` says so in its debrief, and the
+  re-plan waits for the 12:30 ready check. No other run starts a routine.
 - **A decision issue closes once it is decided.** An issue that only records a decision, such as
   the content map (#3), is closed when every question on it is answered and recorded and each
   part of what it settles is filed or written into the issue it settles, the closing comment
@@ -579,18 +580,21 @@ changes it.
   merging itself gets the same note without naming them: it asks nothing, so it pings no one.
 - **A run is one turn, and it ends by sending its debrief.** Every wait is inside that turn: a
   helper agent (the plan's checker, the reviewer) is run in the foreground and waited for, and CI
-  is polled in the foreground. When nothing is left to wait for, the run's last step sends the
-  debrief to the maintainer's phone as a push notification (the `PushNotification` tool), a few
-  lines: what merged, what waits on the maintainer, or that the run had nothing to do, and a last
-  line, "Next:", naming who acts next, on what, and when. When no line under Next can be built,
+  is polled in the foreground. When nothing is left to wait for, the run's last two steps are, in
+  order: it stops watching each pull request it leaves (below), then sends the debrief to the
+  maintainer's phone as a push notification (the `PushNotification` tool), a few lines: what
+  merged, what waits on the maintainer, or that the run had nothing to do. **Its last line begins
+  with the word `Next:`**, then who acts next, on what, and when, as in "Next: the night run, at
+  02:00, builds #250." When no line under Next can be built,
   it names each line and what holds it: a question (whose), no plan yet or a "Re-plan" (the ready
   check's), `building` (which run), an open pull request, a "waits" or the gate. The
   message that ends the turn is the debrief in full. Neither is ever sent while something is
   still running. While a gate review stands unanswered, or a release untagged, both say in one
   line what the run waits on.
-- **Before its debrief, a run stops watching** each pull request it leaves
-  (`unsubscribe_pr_activity`), merged or waiting, so no event wakes it after. One woken all the
-  same sends no second push and ends in one line.
+- **A run stops watching** each pull request it leaves, merged or waiting, by
+  `unsubscribe_pr_activity` for each one it subscribed to, just before its debrief: a run woken
+  after it reloads its whole context for nothing. One woken all the same sends no second push and
+  ends in one line.
 - **The agent's own comments never begin `Q` and a number, `All as recommended`, `yes` or
   `Change:`**, in any case: the maintainer's shapes, which start a workflow, since it writes as
   the maintainer's account.
