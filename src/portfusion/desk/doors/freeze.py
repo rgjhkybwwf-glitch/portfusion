@@ -64,7 +64,7 @@ def plan(as_of: str) -> dict:
         except KeyError as e:
             why.append(_unvalued(as_of, e))
     if rows["off_date"]:
-        why.append(f"{len(rows['off_date'])} line(s) have no mark within "
+        why.append(f"{len(rows['off_date'])} line(s) have no price within "
                    f"{D.CLOSE_CHECK_WINDOW_DAYS} days of {as_of} — {_way_in(rows['off_keys'], as_of)}")
     return {"as_of": as_of, "due": due, "ready": not why, "why": why, **rows}
 
@@ -145,7 +145,7 @@ def restate(changes: dict[str, list[str]], why: str, lines_only: bool = False) -
         except ValueError as e:
             raise Refused(f"the book cannot strike {as_of} again: {e}")
         if rows["off_date"]:
-            raise Refused(f"{len(rows['off_date'])} line(s) have no mark within "
+            raise Refused(f"{len(rows['off_date'])} line(s) have no price within "
                           f"{D.CLOSE_CHECK_WINDOW_DAYS} days of {as_of}: "
                           + "; ".join(rows["off_date"]) + f". {_way_in(rows['off_keys'], as_of)}")
         was_snap = [r for r in on_snap if str(r["as_of"]) == as_of]
@@ -234,7 +234,7 @@ def _unvalued(as_of: str, e: KeyError) -> str:
     gaps = Book().valuation_gaps(as_of)
     said = []
     if gaps["prices"]:
-        said.append(f"no mark on or before {as_of} for {_way_in(gaps['prices'], as_of)}")
+        said.append(f"no price on or before {as_of} for {_way_in(gaps['prices'], as_of)}")
     if gaps["rates"]:
         said.append(f"no {', '.join(gaps['rates'])} rate on or before {as_of}: the Price Refresh")
     said += gaps["other"]

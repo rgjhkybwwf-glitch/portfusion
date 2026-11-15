@@ -110,7 +110,7 @@ Object.assign(DRAW, {
       <tbody><tr><th colspan="7">${label}</th><th>${takeAll(kind)}</th></tr>${rows.join("")}</tbody>`;
 
     return page({
-      scope: `the marks stand at ${day(d.valued_at)}`,
+      scope: `the prices stand at ${day(d.valued_at)}`,
       status: [
         ...bank,
         { label: d.steps[1].label, state: null, body: `
@@ -121,7 +121,7 @@ Object.assign(DRAW, {
         { label: d.steps[2].label, state: stale ? "gap" : null, tag: `${stale} past the limit`,
           body: quiet(`${d.age_days} days old · limit ${d.age_limit} days`) },
         { label: d.steps[3].label, state: null, body: `
-          ${actButton(`id="rb-write" disabled`, "write the ticked marks")}
+          ${actButton(`id="rb-write" disabled`, "write the ticked prices")}
           <span class="muted small" id="rb-count">nothing ticked</span>` },
       ],
       why: [["Nothing happens until asked", "Nothing here leaves the machine or touches the "
@@ -300,7 +300,7 @@ Object.assign(WIRE, {
       const notes = lacking ? [`<strong>closes of the dates the record lacks</strong>`]
         : closeOf
         ? [`<strong>closes of ${esc(closeOf)}</strong> — writing banks them into the history; `
-           + `the live marks stay as they are`] : [];
+           + `the live prices stay as they are`] : [];
       const why = {};
 
       /* EACH VENDOR REPORTS SEPARATELY, so one that is down is NAMED and the rest still
@@ -449,7 +449,7 @@ Object.assign(WIRE, {
       button.disabled = true;
       out.hidden = false;
       out.textContent = closeOf ? `banking the closes of ${closeOf}…`
-                                : "banking the outgoing marks, then writing…";
+                                : "banking the outgoing prices, then writing…";
       try {
         const { result: res, error, refused } = await runAction("refresh-write-marks", payload);
         /* A REFUSAL IS SHOWN IN FULL. Those messages name the rule that stopped the write —

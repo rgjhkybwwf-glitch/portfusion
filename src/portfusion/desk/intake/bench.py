@@ -680,7 +680,7 @@ def gates(item: dict) -> list[dict]:
             for p in adjustment_cells(item, row)[1]:
                 row_problems.append(f"row {i} (split or consolidation) — {p}")
     row_problems += _repeated_ids(rows) + _register_problems(rows) + [
-        f"{c}: a new contract needs its first mark" for c in _unmarked(item)]
+        f"{c}: a new contract needs its first price" for c in _unmarked(item)]
     # NONE PROPOSED AND NONE LEFT ARE NOT THE SAME STATE. A document can be read in full and
     # yield nothing to enter: HL's Capital-side transaction list is every dealing line on the
     # account, and when every one is already in the record that document is not unfinished work

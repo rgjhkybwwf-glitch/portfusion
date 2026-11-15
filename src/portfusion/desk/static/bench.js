@@ -211,7 +211,7 @@ function field(spec, value, quote, drafted) {
    so shown with it. */
 function firstMarks(it) {
   return (it.marks || []).map((m) => `<div class="row-card"><div class="row-head">
-      <strong>First mark</strong></div><dl class="detail">${["mark_key", "price", "currency", "as_of",
+      <strong>First price</strong></div><dl class="detail">${["mark_key", "price", "currency", "as_of",
       "source"].map((k) => `<dt>${head(k)}</dt><dd>${esc(m[k] ?? "")}</dd>`).join("")}</dl></div>`)
     .join("");
 }
@@ -567,14 +567,14 @@ async function reviewItems() {
       <dl class="detail">${Object.entries(r.values).filter(([, v]) => v !== "" && v != null)
         .map(([k, v]) => `<dt>${head(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl>`).join("");
     const said = it.why || {};
-    const marked = firstMarks(it);
+    const priced = firstMarks(it);
     const whys = ["why_entered", "why_exited"].filter((w) => (said[w] || "").trim())
       .map((w) => `<dt>${head(w)}</dt><dd>${esc(said[w])}</dd>`).join("")
       + ((d.retires || []).length ? `<dt>${head("retires")}</dt><dd>${esc(d.retires.join(", "))}</dd>` : "")
       + ((d.renumbers || []).length ? `<dt>${head("renumbers")}</dt><dd>${esc(d.renumbers.join("; "))}</dd>` : "");
     return `<section class="review-item" data-item="${esc(it.id)}">
       <div class="row-head"><h2>${esc(it.title)}</h2></div>
-      ${rows}${marked}${whys ? `<dl class="detail">${whys}</dl>` : ""}
+      ${rows}${priced}${whys ? `<dl class="detail">${whys}</dl>` : ""}
       <ul class="items gates">${d.gates.map((g) =>
         `<li class="ok"><span class="tag">ok</span><strong>${esc(g.label || g.name)}</strong></li>`).join("")}</ul>
       <p><button class="link" data-write="${esc(it.id)}">${rdg

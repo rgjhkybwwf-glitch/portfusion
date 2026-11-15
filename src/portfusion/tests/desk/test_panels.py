@@ -252,16 +252,21 @@ def test_price_precision_is_the_houses_not_reinvented():
     """GBP is 4dp because LSE prices are quoted in pence and stored /100 — a line at 12.35p is
     0.1235, which 2dp would round to 0.12. One rule, house/precision.py's: every panel answer
     carries it beside its heads — the places per currency and which fields are local prices —
-    and the report reads the same module, so no two renderers can differ. app.js types neither."""
+    and the report reads the same module, so no two renderers can differ. app.js types neither.
+    The house's on-screen words travel the same way: every panel answer carries house/words.py's."""
     import re
     from portfusion.desk import app as desk_app
+    from portfusion.desk import panels
     from portfusion.house import precision as P
+    from portfusion.house import words as W
     assert P.LOCAL_PRICE_DP["GBP"] == 4 and P.LOCAL_PRICE_DP["USD"] == 2
     for name in ("holdings", "trades"):
         got = desk_app.panel(name)["precision"]
         assert got["local_price_dp"] == P.LOCAL_PRICE_DP, name
         assert got["local_price_default"] == P.DEFAULT_LOCAL_PRICE_DP, name
         assert got["local_price_fields"] == list(P.LOCAL_PRICE_FIELDS), name
+    for mod in panels.all_panels():
+        assert desk_app.panel(mod.NAME)["words"] == W.WORDS, mod.NAME
     js = desk_script()
     lp = re.search(r"const localPrice = [\s\S]*?;\n", js).group(0)
     assert not re.search(r"toFixed\(\d|\?\?\s*\d", lp), f"app.js types a local price's places: {lp}"

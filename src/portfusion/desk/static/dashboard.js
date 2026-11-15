@@ -37,13 +37,16 @@ Object.assign(DRAW, {
     return page({
       scope: `where the book stands, as at ${day(d.valued_at)}`,
       field,
-      status: [{ label: "Prices", body: `${quiet(`${p.age_days} days old · ${p.marks} marks
+      status: [{ label: "Prices", body: `${quiet(`${p.age_days} days old · ${p.marks} prices
         · newest ${esc(day(p.newest))} · oldest ${esc(day(p.oldest))} · spread ${p.spread_days}d`)}
         ${panelLink("price-refresh", "run a refresh")}` },
         { label: d.ytd_name, body: quiet(`from ${esc(day(y.first_day))} · MWR on NAV${
           y.frozen ? "" : " · not frozen"}`) },
         ...(d.report ? [{ label: "Report", body: `${reportLink(d.report)}
-          ${panelLink("reports", "every report")}` }] : [])],
+          ${panelLink("reports", "every report")}` }] : []),
+        /* WHERE A FACT IS ADDED, where the Bench is served. */
+        ...(PANELS.has("bench") ? [{ label: "Record",
+          body: panelLink("bench", "add a fact on the Bench") }] : [])],
       /* THE FIGURES BESIDE WHAT NEEDS ATTENTION, so the page is one screen. */
       work: `<div class="glance">
         ${figures(rest.map((f) => [f.label, `${fmt(f.value, f.kind)}${f.panel

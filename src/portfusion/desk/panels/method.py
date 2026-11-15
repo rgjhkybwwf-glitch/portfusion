@@ -14,6 +14,7 @@ from __future__ import annotations
 
 from portfusion.desk import engine
 from portfusion.house import headings as H
+from portfusion.house import words as W
 from portfusion.house.precision import day, money, pct
 
 NAME = "method"
@@ -31,7 +32,7 @@ def _gains_and_incomes(b) -> str:
     G, F = H.COMMON, H.FIGURES
     left = y["unattributed"]
     apart = (f" {money(left)} of it neither explains: the frozen opening against that day's "
-             f"marks." if left == left and abs(left) >= 0.005 else "")
+             f"prices." if left == left and abs(left) >= 0.005 else "")
     return (
         f"The year from {day(b.ytd_window()['first_day'])}, as one period. Its trading gain, "
         f"realised plus the move in unrealised since the year opened, is "
@@ -67,9 +68,7 @@ def data() -> dict:
             {"topic": "What a spread bet is", "text": (
                 f"{D.SPREAD_BET} Total market exposure = securities owned at market value plus "
                 f"spread-bet notional. Net asset value = securities owned at market value plus "
-                f"spread-bet equity. The gap between them is leverage. Retired terms, do not "
-                f"reintroduce: economic interest · contract value · portfolio value · positions "
-                f"basis · economic basis · economic value.")},
+                f"spread-bet equity. The gap between them is leverage.")},
             {"topic": "Return — the headline figure", "text": (
                 f"On net asset value against capital deployed into positions. A flow is money "
                 f"buying a position, less the proceeds of one sold, for a share account; and "
@@ -101,10 +100,10 @@ def data() -> dict:
                 f"flows weigh only on that year.")},
             {"topic": "How the gains, incomes and capitals differ", "text": _gains_and_incomes(b)},
             {"topic": "A company's life — Round Trips by company life", "text": (
-                "First purchase, in any account or instrument, to the day nothing is held. "
-                "Life gain = realised + unrealised + dividends + funding interest. Life cost per "
-                "share = (cost of what is held − realised − dividends − funding interest) ÷ "
-                "quantity, open bets as share-equivalents: the break-even price.")},
+                f"First purchase, in any account or instrument, to the day nothing is held. "
+                f"Life gain = realised + unrealised + dividends + funding interest. Life cost per "
+                f"share = (cost of what is held − realised − dividends − funding interest) ÷ "
+                f"quantity in {W.WORDS['share_equivalents']}: the break-even price.")},
             {"topic": "Gain %", "text": (
                 "Every gain % is over exposure at entry: shares at cost, bets at notional at "
                 "entry. Holdings divides by what is still held, Round Trips by holding by what "
@@ -120,14 +119,14 @@ def data() -> dict:
                 "as the headline YTD return. Each quarter end's value says what it rests on: sourced "
                 "or derived. A quarter whose opening net asset value does not exist gets no "
                 "return — never zero, which would be a claim. The open quarter is shown to "
-                "date, ends at the newest price mark, and moves with every refresh until it is "
+                "date, ends at the newest price, and moves with every refresh until it is "
                 "frozen.")},
             {"topic": "Reconciling to the brokers", "text": (
                 f"Two checks, one per kind of account, on Reconcile. A spread-bet account: the "
                 f"book's figure is its derived equity — capital in, plus realised, plus "
                 f"unrealised, plus income, never its notional — against IG's own reading, which "
                 f"nothing in the book can influence. The pair is judged only when it was struck "
-                f"in one pass with the marks; a judged pair is held to a band of "
+                f"in one pass with the prices; a judged pair is held to a band of "
                 f"{pct(D.RECON_LIVE_TOLERANCE_PCT)} of the broker's figure — FX, rounding, bid "
                 f"against last, never the market. A share account is checked on its units "
                 f"against the broker's holdings export, at the door that takes it: what that "
@@ -136,14 +135,14 @@ def data() -> dict:
                 f"struck in one pass, is not judged: a gap under Needs attention, never a pass "
                 f"and never a failure.")},
             {"topic": "Spread-bet valuation", "text": (
-                "Marked at IG contract levels, at both ends — entry and mark — never at the "
-                "underlying share price: marking the entry at the contract level and the mark at "
-                "spot would subtract across two bases. Different legs of one underlying can sit "
-                "on different IG contracts at different prices, so marks are keyed by contract, "
-                "not by ticker. A sweep reads a contract's level live, and a past day's close can "
-                "be dated too: IG's hour bar ending 22:00 UK for a near contract, and for a far "
-                "one the level its filed IG statement prints. Between refreshes a mark ages like "
-                "any other.")},
+                "Priced at IG contract levels, at both ends — entry and current price — never at "
+                "the underlying share price: pricing the entry at the contract level and the "
+                "current price at spot would subtract across two bases. Different legs of one "
+                "underlying can sit on different IG contracts at different prices, so prices are "
+                "keyed by contract, not by ticker. A sweep reads a contract's level live, and a "
+                "past day's close can be dated too: IG's hour bar ending 22:00 UK for a near "
+                "contract, and for a far one the level its filed IG statement prints. Between "
+                "refreshes a price ages like any other.")},
             {"topic": "Cash", "text": (
                 "Recorded like a price: a balance, the date it was true, a named source. Cash is "
                 "never in net asset value: a share account's is its positions at market, and a "
@@ -161,9 +160,9 @@ def data() -> dict:
                 "exposure, not of entry cost: a spread bet contributes its exposure, so a weight "
                 "is a share of what the book is exposed to, not of what it is worth.")},
             {"topic": "Prices, and how fresh they must be", "text": (
-                f"Each line's mark is sourced and dated on its own; Holdings opens to every mark "
+                f"Each line's price is sourced and dated on its own; Holdings opens to every price "
                 f"behind a line. Two limits, and they catch different things: a problem when the "
-                f"oldest mark passes {D.PRICE_AGE_LIMIT} days — nobody has refreshed lately — and "
+                f"oldest price passes {D.PRICE_AGE_LIMIT} days — nobody has refreshed lately — and "
                 f"another when the oldest lags the newest by more than {D.PRICE_SPREAD_LIMIT} "
                 f"days — a sweep missed a line, which the age limit cannot see. A deal's local "
                 f"price is its document's; one priced in sterling on a foreign share takes its "
@@ -174,7 +173,7 @@ def data() -> dict:
                 f"Everything enters through the door — an authenticated feed read, or a broker "
                 f"document filed in the archive — and a row that cites a document has it there. "
                 f"No figure on file changes: a correction is a new row that supersedes the old "
-                f"one, and a mark read again the same day replaces that day's. "
+                f"one, and a price read again the same day replaces that day's. "
                 f"{D.STATEMENT_GRADE}")},
             {"topic": "Source hierarchy", "text": (
                 f"When two sources disagree: {D.SOURCE_HIERARCHY}. {D.SOURCE_HIERARCHY_NOTE} A "
@@ -195,7 +194,7 @@ def data() -> dict:
                 f"closes, beside the research note if one stands behind it, with the reason for "
                 f"closing. Each half is owed from {day(D.REVIEW_FROM)} — the thesis if the "
                 f"position opened on or after it, the exit reason if it closed on or after it — "
-                f"and is marked owed while blank. One dated before then is blank on purpose, "
+                f"and shows as owed while blank. One dated before then is blank on purpose, "
                 f"and is not owed.")},
             {"topic": "If a field is missing", "text": (
                 "Do not put a figure of your own into the ledger to fill the gap. Wait for the "

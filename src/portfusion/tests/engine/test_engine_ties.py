@@ -1050,7 +1050,7 @@ def test_a_pair_is_judged_when_it_is_comparable_and_not_when_it_is_not(book, sto
     week = (pd.Timestamp(day) + pd.Timedelta(days=7)).date().isoformat()
     apart, why = book.comparability(account, week, evidence)
     assert apart is False, why
-    assert why.startswith(f"the equity was read on {week} and the marks are from"), why
+    assert why.startswith(f"the equity was read on {week} and the prices are from"), why
     import csv
     path = store_copy / "price-history.csv"
     marks = list(csv.DictReader(path.open(newline="", encoding="utf-8")))
@@ -1060,7 +1060,7 @@ def test_a_pair_is_judged_when_it_is_comparable_and_not_when_it_is_not(book, sto
         w.writerows({**m, "struck": "close"} if m["date"] == day else m for m in marks)
     D.reload_store()
     assert Book().comparability(account, day, evidence) == (
-        False, "a live read compares only with live marks, and these are closes")
+        False, "a live read compares only with live prices, and these are closes")
 
 
 # =====================================================================================

@@ -11,7 +11,7 @@ Object.assign(DRAW, {
     /* NO BENCHMARK: an index return is TIME-WEIGHTED and this book's MONEY-WEIGHTED, and the two
        do not subtract. */
     return page({
-      scope: `every return on ${d.measure}, modified Dietz (day-weighted)`,
+      scope: `every return on ${d.measure}: ${WORDS.modified_dietz}`,
       status: d.reports.length ? [{ label: "Reports",
         body: d.reports.map(reportLink).join(" · ") }] : null,
       /* SINCE THE RECORD BEGAN: the day, what the book stood at, and the engine's return from

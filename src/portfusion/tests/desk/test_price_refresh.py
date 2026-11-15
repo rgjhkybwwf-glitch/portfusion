@@ -1024,7 +1024,7 @@ def test_an_ig_accounts_source_is_the_line_its_reading_is_filed_under(monkeypatc
 
 def test_the_bay_sends_what_it_draws_and_a_mark_past_the_limit_says_so():
     """The key is `mark_key`, as the grid heads it; the outgoing source is not sent and stays at
-    its home, Holdings' Mark history; and the age of a mark past the limit is drawn in the warning
+    its home, Holdings' Price history; and the age of a mark past the limit is drawn in the warning
     ink, which is the desk's on every page."""
     from portfusion.desk.panels import holdings, price_refresh
     q = price_refresh.data()

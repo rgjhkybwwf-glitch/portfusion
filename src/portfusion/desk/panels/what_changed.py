@@ -58,7 +58,7 @@ NOTIONAL_COLUMNS = tuple(c for c in COLUMNS if c != "fx_effect")
 BLOCKS = (("shares", "Shares", COLUMNS),
           ("spread bet", "Spread bets", NOTIONAL_COLUMNS))
 
-CAVEAT = ("Market time runs from each line's own previous banked mark to its live one, or to its "
+CAVEAT = ("Market time runs from each line's own previous banked price to its live one, or to its "
           "close if it closed in between.")
 
 #: What a journal row shows. `at` is RECORD TIME and leads, because that is the axis this block

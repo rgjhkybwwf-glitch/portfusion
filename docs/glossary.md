@@ -29,6 +29,9 @@ file and the code disagree, the code is right.
 | What unit is a listing quoted in? | **`quote_unit`**, shown as **Quote unit** | [the store](store.md) | `securities.csv` |
 | The accounting sense | **cost basis** | — | — |
 
+Retired, and not to come back: economic interest · contract value · portfolio value · positions
+basis · economic basis · economic value.
+
 `basis` pairs with *measure*, a column you can total, in `MEASURE_BASIS` and `roll_up()`.
 
 ## 2b · `movement` and `reading`
@@ -139,7 +142,7 @@ not *realized*.
 | Capital growth plus return income: what a return divides | **Gain with income** |
 | A round trip, and a company life | **Closed out · State · Dividends (GBP) · Funding interest (GBP) · Life gain (GBP) · Life gain (%) · Life cost per share · Round trips · Lines** |
 | Against the broker | **Difference · Verdict · Last broker check · Document · Cash / Funds (GBP) · Cash read from · FX rate as at** |
-| A mark, and a window from one to the next | **Mark key** — a share's ticker, or a bet's contract · **Quality · Stale · Priced · Was priced · Value now (GBP) · Change (GBP)** |
+| A mark, and a window from one to the next | **Price key** — a share's ticker, or a bet's contract · **Quality · Stale · Priced · Was priced · Value now (GBP) · Change (GBP)** |
 | The refresh grid | **Was · Was as at · New · New as at · From · Take** |
 | The journal | **Recorded · Route · Did · Table · Rows · Retrieves** |
 | Where a figure came from | **Source · FX at trade · FX from · Notes** |
@@ -164,10 +167,13 @@ The three sum exactly to **Change (GBP)**; the order they are taken in is
 
 ### What a position row says about its last mark
 
+On screen a mark is a "price": `house/words.py` keeps what a house word is called there, and the
+store and the guides keep "mark".
+
 | Concept | Canonical | Note |
 |---|---|---|
-| How far a line's mark moved, against its own previous mark | **Mark move (%)** | not the change in value |
-| Every banked mark behind one line | **Mark history** | the end of a Holdings row's detail |
+| How far a line's mark moved, against its own previous mark | **Price move (%)** | not the change in value |
+| Every banked mark behind one line | **Price history** | the end of a Holdings row's detail |
 | A holding's company, first purchase to now | **Company life** | in a Holdings row's detail; the concept is §5b's |
 | The income rows that name one line | **Income and costs** | in a Holdings row's detail, as Accounts heads the year's |
 
@@ -316,7 +322,7 @@ asserted on import; the rest are held by the suite.
 | `cash-readings.csv` | HOW MUCH CASH A SHARE ACCOUNT HELD, AND WHEN: THE RECORD'S ONE PLACE FOR CASH | `account` Account · `as_of` As at · `cash` Cash (GBP) · `evidence` Document kind · `reference` Reference |
 | `companies.csv` | One row per ISSUER — the company, not the holding | `company` Company · `sector` Sector · `region` Region |
 | `contracts.csv` | One row per IG contract a spread-bet leg names, with the epic that prices it, how IG funds it, and the ticker of the line it is on | `contract` IG contract · `epic` Epic · `funding` Funding · `ticker` Ticker |
-| `current-prices.csv` | What things are worth NOW — never what was paid, which is the ledger | `mark_key` Mark key · `price` Price · `currency` Ccy · `as_of` As at · `source` Source · `struck` · `at` |
+| `current-prices.csv` | What things are worth NOW — never what was paid, which is the ledger | `mark_key` Price key · `price` Price · `currency` Ccy · `as_of` As at · `source` Source · `struck` · `at` |
 | `fx.csv` | The rate each currency is converted at NOW, one row per currency, as current-prices.csv holds what each line is worth now: replaced at every refresh, banked into fx-history.csv first | `currency` Ccy · `rate` Rate (per £1) · `as_of` As at · `source` Source · `struck` |
 | `income.csv` | Dividends, interest and fees | `date` Date · `account` Account · `category` Category · `detail` Detail · `amount` Amount (GBP) · `source` Source · `note` Notes · `currency` Ccy · `local_amount` Amount · `rate` Rate (per £1) · `ticker` Ticker |
 | `journal.csv` | RECORD TIME — when the book LEARNED a thing, as against when the thing HAPPENED | `at` Recorded · `route` Route · `op` Did · `table` Table · `rows` Rows · `ref` Retrieves · `detail` Detail |

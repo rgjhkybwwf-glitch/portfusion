@@ -384,6 +384,7 @@ function paintPanel(p) {
   PAGE_TITLE = p.title;
   HEADS = p.heads || {};
   PRECISION = p.precision || PRECISION;
+  WORDS = p.words || WORDS;
   $("#main").innerHTML = DRAW[p.name]
     ? DRAW[p.name](p.data)
     : `<h2>${esc(p.title)}</h2><pre class="error">${esc(JSON.stringify(p.data, null, 2))}</pre>`;

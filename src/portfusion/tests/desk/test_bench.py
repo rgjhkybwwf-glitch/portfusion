@@ -1346,7 +1346,7 @@ def test_a_set_up_writes_its_line_company_contract_and_trade_together(swept, sto
     (dict(_set_up(), **{"with": _set_up()["with"][:1] + _set_up()["with"][2:]}),
      "NEWCO SB: Newco Inc. has no company row"),
     (dict(_set_up(), **{"with": _set_up()["with"][1:]}), "NEWCO-JUN27: NEWCO SB is not a line"),
-    (_set_up(), "a new contract needs its first mark"),
+    (_set_up(), "a new contract needs its first price"),
 ])
 def test_a_set_up_that_does_not_stand_with_its_trade_is_refused(swept, event, says):
     """A line, company or contract is written only with the trade that first needs it, and

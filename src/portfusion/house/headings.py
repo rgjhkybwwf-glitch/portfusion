@@ -95,7 +95,7 @@ COMMON = {
     # ---- a round trip -------------------------------------------------------------------------
     "fully_closed": "Closed out",
     # ---- a mark -------------------------------------------------------------------------------
-    "mark_key": "Mark key",
+    "mark_key": "Price key",
     "quality": "Quality",
     "stale": "Stale",
     # A COMPANY LIFE'S FIGURES (Book.company_lives()), on Round Trips and in a holding's detail.
@@ -105,7 +105,7 @@ COMMON = {
     "life_pct": "Life gain (%)",
     "life": "Company life",                 # a holding's company, first purchase to now
     "income": "Income and costs",           # the income rows that name a holding's line
-    "marks": "Mark history",                # a line's banked marks, the last part of its detail
+    "marks": "Price history",               # a line's banked marks, the last part of its detail
     # ---- the judgement ------------------------------------------------------------------------
     "whys": "Why",
     "why_entered": "Why we entered",
@@ -180,7 +180,7 @@ BY_TAB = {
     },
     # A WINDOW, from one mark to the next: its own pair of times.
     "What Changed": {
-        "price_move_pct": "Mark move (%)",
+        "price_move_pct": "Price move (%)",
         "price_effect": "From price (GBP)",
         "fx_effect": "From FX (GBP)",
         "transacted": "From dealing (GBP)",

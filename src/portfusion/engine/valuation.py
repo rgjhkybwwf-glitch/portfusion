@@ -82,7 +82,7 @@ def value_legs(ledger: pd.DataFrame) -> pd.DataFrame:
             if contract not in px:
                 raise MissingMark([contract],
                                   f"{r['event_id']} is open on {contract}, which has no "
-                                  f"mark: take one on the Price Refresh first.")
+                                  f"price: take one on the Price Refresh first.")
             return r["qty"] * px[contract]
         if r["held_as"] == "shares":
             sign = -1 if r["direction"] == "Sell" else 1

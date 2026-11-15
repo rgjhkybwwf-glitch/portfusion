@@ -18,6 +18,7 @@ from __future__ import annotations
 
 from portfusion.desk import engine
 from portfusion.desk.panels import _shape
+from portfusion.house import words as W
 
 NAME = "performance"
 TITLE = "Performance"
@@ -114,12 +115,13 @@ def _rests_on(b, frame) -> list[dict]:
 
 def _caveats(b) -> list[dict]:
     """What a reader must know before quoting one of these numbers. Stated, not implied."""
+    said = W.WORDS["modified_dietz"]
     out = [{
         # ONE STATEMENT OF THE RETURN: the renderer adds none of its own.
         "scope": "The return",
-        "detail": ("Modified Dietz on net asset value against capital deployed, money-weighted; "
-                   "Method says what a flow is. Never divide one of these gains by market "
-                   "exposure."),
+        "detail": (f"{said[:1].upper()}{said[1:]}, on net asset value against capital deployed; "
+                   f"Method gives the formula and says what a flow is. Never divide one of "
+                   f"these gains by market exposure."),
     }]
 
     # THE ENGINE'S FLAG, so an account wears this caveat only while a quarter of its actually

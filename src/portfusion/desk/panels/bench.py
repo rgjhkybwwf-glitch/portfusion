@@ -60,7 +60,7 @@ WHY = [
      "Drop a contract note, statement or broker download onto the page, or choose one; it "
      "waits under Documents until you work it. Say what kind of document it is, which fills "
      "in who issued it and what its reference looks like, then check each figure read from it "
-     "against the page. A download marked as a snapshot comes straight from the broker and can "
+     "against the page. A download labelled as a snapshot comes straight from the broker and can "
      "be pulled again, but it is not the dated statement a quarter is checked against. When "
      "the item is written the document is filed with it; one you don't need can be withdrawn."),
     ("A swept event",

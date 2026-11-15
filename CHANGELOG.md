@@ -20,6 +20,9 @@ One figure moves, on two pages, and there is no migration. Do these when the boo
   reading is a holdings export is checked on its units even with no cash reading of its day: it
   is no longer "NO STATEMENT".
 - **Reinstall against `requirements.lock`**: pypdf is 7 and python-dateutil 4.
+- **Read "price" for "mark" on screen**: "Mark key" is "Price key", "Mark history" is "Price
+  history" and "Mark move (%)" is "Price move (%)", and Price Refresh's button is "write the
+  ticked prices". The store's columns and the guides keep "mark".
 
 ### New
 
@@ -55,6 +58,13 @@ One figure moves, on two pages, and there is no migration. Do these when the boo
 
 ### Changed
 
+- **A house word has one home, `house/words.py`**, which every panel answer carries beside its
+  precision: the desk says "price" where the store says "mark", Performance's return is "a
+  day-weighted return on money", Holdings by company says its quantity is in "shares, a bet
+  counted as the shares it stands for" and its prices per share, and Round Trips tags a life
+  "entered before the record began". The retired terms leave Method for the glossary.
+- **The Dashboard leads to where a fact is added**: "add a fact on the Bench", where the Bench
+  is served.
 - **A control is drawn in the shape of what it does** (D4, audit row 1): a way to another page
   is its name and an arrow, "run a refresh →", in the link's colour with no underline, the
   Trades button at a row's end among them; an action is a small outlined button, "clear

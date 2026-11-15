@@ -169,6 +169,12 @@ def precision() -> dict:
             "months": list(P.MONTHS)}
 
 
+def words() -> dict:
+    """The plain word for each house term, as house/words.py keeps it, for the page to say."""
+    from portfusion.house import words as W
+    return dict(W.WORDS)
+
+
 # --- is this desk running the code that is on disk? ----------------------------------------
 #
 # A RUNNING SERVER SERVES WHAT IT IMPORTED, and without this the page has no way to say so.
