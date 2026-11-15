@@ -2,14 +2,17 @@
 # tools/package-lock.json pins jsdom, Playwright, axe-core and what they bring; this keeps both
 # current, as a pull request
 # the guard then runs on. The Python packages are not here: the exact set the suite was proved on
-# is requirements.lock, moved on purpose by an upgrade.
+# is requirements.lock, moved on purpose by an upgrade. Each pull request takes `dependencies` alone:
+# Dependabot's own labels per ecosystem would come back however often they are deleted.
 version: 2
 updates:
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: monthly
+    labels: [dependencies]
   - package-ecosystem: npm
     directory: /tools
     schedule:
       interval: monthly
+    labels: [dependencies]
