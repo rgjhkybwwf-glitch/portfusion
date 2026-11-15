@@ -137,12 +137,12 @@ def data() -> dict:
             {"topic": "Spread-bet valuation", "text": (
                 "Priced at IG contract levels, at both ends — entry and current price — never at "
                 "the underlying share price: pricing the entry at the contract level and the "
-                "current price at spot would subtract across two bases. Different legs of one underlying can sit "
-                "on different IG contracts at different prices, so prices are keyed by contract, "
-                "not by ticker. A sweep reads a contract's level live, and a past day's close can "
-                "be dated too: IG's hour bar ending 22:00 UK for a near contract, and for a far "
-                "one the level its filed IG statement prints. Between refreshes a price ages like "
-                "any other.")},
+                "current price at spot would subtract across two bases. Different legs of one "
+                "underlying can sit on different IG contracts at different prices, so prices are "
+                "keyed by contract, not by ticker. A sweep reads a contract's level live, and a "
+                "past day's close can be dated too: IG's hour bar ending 22:00 UK for a near "
+                "contract, and for a far one the level its filed IG statement prints. Between "
+                "refreshes a price ages like any other.")},
             {"topic": "Cash", "text": (
                 "Recorded like a price: a balance, the date it was true, a named source. Cash is "
                 "never in net asset value: a share account's is its positions at market, and a "

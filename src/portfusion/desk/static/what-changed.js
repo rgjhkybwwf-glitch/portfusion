@@ -63,8 +63,8 @@ Object.assign(DRAW, {
     const receipt = !wrote ? [] : [{ state: "clear", tag: "written", label: "Refresh",
       body: quiet(`${n(wrote.prices, "price")}, ${n(wrote.rates, "rate")} and
         ${n(wrote.readings || 0, "IG reading")} replaced ·
-        ${n(wrote.banked_before.prices + wrote.banked_before.rates, "outgoing price")} banked
-        first, ${wrote.banked_after.prices + wrote.banked_after.rates || "none"} after`) }];
+        ${n(wrote.banked_before.prices, "outgoing price")} and ${n(wrote.banked_before.rates, "rate")}
+        banked first, ${wrote.banked_after.prices + wrote.banked_after.rates || "none"} after`) }];
 
     /* RECORD TIME OVER THE SPAN MARKET TIME COVERS, the rest folded under it: the journal grows
        with every write, and what the book learned since the last refresh is this page's half. */

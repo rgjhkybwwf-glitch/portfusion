@@ -422,7 +422,7 @@ def test_no_renderer_heads_a_column_with_a_retired_word():
 #: drawn on a page.
 _SCRIPT_NAMES_KEPT = {
     ".marks": "the field an item, a row and the prices answer carry",
-    "marks:": "that field's part of a detail",
+    "marks: (": "that field's part of a detail",
     '"marks"': "that field in a list of a detail's parts",
     'class="mark"': "a go button's arrow",
     '"refresh-write-marks"': "the Price Refresh's write action",
@@ -476,8 +476,9 @@ def test_the_desk_shows_no_word_retired_for_display():
     a gate and a finding are all drawn on a page. The command line's own modules and the loader's
     errors are not the desk's. A planted word in a script and in a refusal is found.
 
-    Method states no retired term (the glossary keeps them), and the pages that show the three
-    house words say them from the table."""
+    Method states no retired term (the glossary keeps them) and, with the record's rules it
+    quotes, no word retired for display; the pages that show the three house words say them from
+    the table."""
     from portfusion.desk.panels import method
     from portfusion.house.headings import BY_TAB, COMMON, FIGURES
     from portfusion.house.words import WORDS
@@ -496,7 +497,8 @@ def test_the_desk_shows_no_word_retired_for_display():
              for s in _desk_prose(p.read_text(encoding="utf-8")) if _retired_for_display(s)}
     assert not typed, sorted(typed)
 
-    assert "Retired" not in str(method.data())
+    said = str(method.data())
+    assert "Retired" not in said and not _retired_for_display(said), _retired_for_display(said)
     for name in ("performance.js", "round-trips.js", "holdings.js"):
         js = re.sub(r"/\*[\s\S]*?\*/", "", desk_script(name))
         assert not re.search(r"modified Dietz|share-equivalents|before the record", js, re.I), name

@@ -72,7 +72,7 @@ const SHAPE = {
 };
 
 // ON SCREEN A MARK IS A PRICE (house/words.py): the pages that show one say so, in any case.
-const MARK = /\bmarks?\b/i;
+const MARK = /\bmark(s|ed|ing)?\b/i;
 const SAYS_PRICE = ["dashboard", "holdings", "bench"];
 
 test("each page opens, holds no new accessibility fault and looks as it did", async ({ page }) => {
