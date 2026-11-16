@@ -21,7 +21,7 @@ import sys
 
 from portfusion.log import log
 
-LINE = re.compile(r"^[\s*_]*pictures[\s*_]*:(.*)$", re.IGNORECASE | re.MULTILINE)
+LINE = re.compile(r"^[\s*_>-]*pictures[\s*_]*:(.*)$", re.IGNORECASE | re.MULTILINE)
 PAGE = re.compile(r"[a-z][a-z-]*")
 PICTURES = pathlib.Path(__file__).resolve().parent / "desk_walk"
 

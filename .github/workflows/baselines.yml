@@ -29,9 +29,6 @@ on:
   pull_request:
     types: [labeled, closed]
 
-concurrency:
-  group: baselines-${{ github.event.pull_request.head.ref }}   # one retake a branch at a time
-
 permissions:
   contents: write
   pull-requests: write
@@ -44,6 +41,9 @@ jobs:
       && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-24.04
     timeout-minutes: 20
+    concurrency:                    # one retake a branch at a time, the newest waiting next
+      group: baselines-${{ github.event.pull_request.head.ref }}
+      cancel-in-progress: false
     steps:
       - name: The label off, so adding it again asks again
         env:

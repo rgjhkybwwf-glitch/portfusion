@@ -26,6 +26,7 @@ def _png(*pages):
 def test_the_line_is_read_however_it_is_written(pictures):
     assert pictures.named("What\n\nPictures: bench, what-changed\n") == {"bench", "what-changed"}
     assert pictures.named("**Pictures:** `Bench`, `Dashboard`.") == {"bench", "dashboard"}
+    assert pictures.named("- Pictures: bench") == {"bench"}
     assert pictures.named("Pictures: none") == set()
     assert pictures.named("no line here") is None
     assert pictures.named("") is None
@@ -44,7 +45,7 @@ def test_a_page_not_named_fails_the_retake_by_name(pictures, monkeypatch, caplog
     assert pictures.judge({"bench"}, _png("bench", "trades", "access")) == (["bench"], ["access", "trades"])
     with caplog.at_level("INFO", logger="portfusion"):
         assert pictures.main(_png("bench", "trades")) == 1
-    assert "trades" in caplog.text and "bench" not in caplog.text.split(":")[-1]
+    assert "for pages the pull request does not name: trades." in caplog.text
     monkeypatch.setenv("PR_BODY", "Pictures: none")
     assert pictures.main(_png("bench")) == 1
 
