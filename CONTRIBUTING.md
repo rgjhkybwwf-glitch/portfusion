@@ -364,9 +364,10 @@ changes it.
 **The ready check**
 
 - **It reads [`docs/direction.md`](docs/direction.md) first**, and cites it for a milestone, a
-  cut or an idea. The Definitions of Ready and the gate are under Which issues, the limits on
-  questions under Asking and answering (above), and what its debrief says under Telling the
-  maintainer (below).
+  cut or an idea, and [`docs/content-map.md`](docs/content-map.md) beside it, which it cites for a
+  design card and for a plan that changes which page or section answers a job. The Definitions
+  of Ready and the gate are under Which issues, the limits on questions under Asking and answering
+  (above), and what its debrief says under Telling the maintainer (below).
 - **Before anything else, it reads what changed since its last run**: the pull requests merged or
   stopped, each run's comments on the issues, and every answer and `Change:` the maintainer gave,
   with each "Re-plan" an answer run left, and every other comment of the maintainer's, which it
@@ -447,8 +448,9 @@ changes it.
   under Design next in the Queue, or of a feature at the top of Next, and the issue takes
   `decision`. Above the fold, in at most 150 words: the outcome in one line; three
   options, each a different idea of the feature and not one idea at three sizes, each with its
-  cost (slices, figures that move, a migration or none); a link to a mock page; a
-  recommendation; and at most three questions. The evidence is folded under `<details>`.
+  cost (slices, figures that move, a migration or none) and the jobs whose home it moves, by the
+  map's numbers, or "no job moves"; a link to a mock page; a recommendation; and at most three
+  questions. The evidence is folded under `<details>`.
 - **The mock page shows today's page and each option**, on the demo's names. It is a private page
   published with the Artifact tool and touches no code. A run that cannot publish without stopping
   to ask gives words and a picture of today's page instead, and says so.
@@ -550,6 +552,9 @@ changes it.
   names a file or function the plan changes. Each is settled in the issue: a "waits" in Order when
   one must land first, a line in Not in scope when the other owns that part, or a question when the
   two issues' Done disagree. The plan's checker looks for one the plan missed.
+- **The plan names the content map** when the change adds or removes a page or a report section,
+  or moves a job, or part of one, between them: `docs/content-map.md` is among its files, with the
+  table that changes. The plan's checker holds it to that.
 - **One issue, one branch, one pull request**: a branch claude/<name> from the latest `main`,
   worked by the conventions above (changelog, own diff reviewed, a changed desk page walked cold),
   the guard run, and the desk walk if a desk file changed. The pull request says "Closes #n", and
