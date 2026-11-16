@@ -25,6 +25,7 @@ Every command reads the book `PORTFUSION_BOOK` names, or the one in the folder i
 | `record/rules.py` | the record's rules; the desk's Method page renders them |
 | `engine/` | every derived figure, once; `Book.HEADLINE`, in `engine/book.py`, registers the headline ones |
 | [`docs/testing.md`](docs/testing.md) | what each layer of the guard proves, and what to do when a test fails |
+| [`docs/content-map.md`](docs/content-map.md) | which page and report section answers each job; a page's work is designed against it |
 | [`docs/`](docs) | the component guides; [`docs/glossary.md`](docs/glossary.md) is the agreed nomenclature |
 
 ## Open work
