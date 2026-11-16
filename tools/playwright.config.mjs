@@ -1,6 +1,7 @@
 // THE WALK'S BROWSER: Chromium at the audit's 1440 × 900, one desk served by `desk_walk.py`, and a
 // baseline per page in `desk_walk/`, taken on Linux, the guard's platform (`desk_walk.spec.mjs`).
 import { defineConfig } from "@playwright/test";
+import { fileURLToPath } from "node:url";
 
 const PORT = 8771;
 // THE DAY THE DESK IS DRAWN ON, held in the server and in the page: the day of the audit.
@@ -21,6 +22,11 @@ export default defineConfig({
     colorScheme: "light",
     locale: "en-GB",
     timezoneId: "Europe/London",
+    // THE WALK'S OWN FONTS AND SETTINGS (`desk_walk_fonts/fonts.conf`), never the machine's: with
+    // Playwright's one Chromium, a picture taken on GitHub matches one taken in the cloud.
+    launchOptions: {
+      env: { ...process.env, FONTCONFIG_FILE: fileURLToPath(new URL("desk_walk_fonts/fonts.conf", import.meta.url)) },
+    },
   },
   webServer: {
     command: `python3 desk_walk.py ${PORT} ${DAY}`,
