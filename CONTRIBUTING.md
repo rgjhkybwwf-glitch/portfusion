@@ -208,7 +208,8 @@ changes it.
 - **An issue's state is on its labels**, so a run reads it without reading the issue:
   `decision`, a question waits on the maintainer; `planned`, its latest **Plan, checked** stands;
   `building`, a run is at work on it, planning or building. Only the run that changes a state
-  changes its label, and a comment says why.
+  changes its label, and a comment says why. `loop` is not a state but whose the work is: the
+  maintainer's, in a session (Which issues, below).
 - **A run reads narrow.** It reads the Queue and the labels, then whole only the issues it acts
   on. A wide read, every open issue for a review or for "covers", goes to a helper agent that
   returns a short list, so the run's own context stays small.
@@ -244,6 +245,12 @@ changes it.
   - **Slices**: two to six, in order. More than six makes it two features.
   - **Introduction**: how it stays hidden until its last slice, and what that slice turns on.
   - **Trial**: three jobs for the maintainer to try on their own book after the release.
+- **An issue labelled `loop` is the loop's own, and the maintainer's to build.** Its fix changes
+  what the agent never changes (Never, below): this section, a workflow, or a routine. A run may
+  shape it, research it with a read-only helper agent, ask its questions and record their answers,
+  as for any issue; it is never under Next, and no run plans or builds it. Its line is under the
+  Queue's heading "Loop", and the change is made in a session the maintainer is part of. An issue
+  the agent files whose fix is one of those takes `loop`.
 - **The milestone being worked is the lowest open milestone.** The Queue's Next holds only its
   lines and ends with the release checklist (#156), which stays open: each release ticks it, and
   the release's pull request links to it.
@@ -300,7 +307,12 @@ changes it.
   to fill in.
 - **The maintainer answers in one comment, a line a question**: `Q1: a`, `Q2: b, and …`, or
   `All as recommended`. **That comment is the yes.** A question is settled when its answer is
-  written so; a recommendation is not an answer, and neither is a comment's tone or silence.
+  written so; a recommendation is not an answer, and neither is a comment's tone or silence. A slip
+  in its first words, as "All as recomemded", is read as meant.
+- **Any other comment of the maintainer's is read, not acted on at once.** `answer.yml` marks it
+  👀 and the bot replies in one line that it starts no run, and, on an issue labelled `decision`,
+  that it was not read as an answer. The next ready check reads it (The ready check, below); a
+  reply beginning `Change:` holds the work and is read sooner.
 - **The run that reads a full answer records it**: it copies the answers into the issue's
   Decisions, quoted with the date, and takes `decision` off. An answer that leaves a question
   open is asked again, for that question alone, and `decision` is taken off and put back on, so
@@ -344,7 +356,9 @@ changes it.
   maintainer (below).
 - **Before anything else, it reads what changed since its last run**: the pull requests merged or
   stopped, each run's comments on the issues, and every answer and `Change:` the maintainer gave,
-  with each "Re-plan" an answer run left. Its plans start from there. It clears a `building`
+  with each "Re-plan" an answer run left, and every other comment of the maintainer's, which it
+  applies where it shapes or plans that issue and otherwise names in its debrief. Its plans start
+  from there. It clears a `building`
   label more than three hours old: a run that long has died.
 - **Nothing changed: stop.** When nothing has merged, closed, been answered, changed or filed
   since its last run, and Next holds as many `planned` lines as the routine's number or no line
@@ -450,14 +464,18 @@ changes it.
 **The answer run**
 
 - **The maintainer's answers start it, in a batch.** `answer.yml` sees the owner's comment on an
-  issue labelled `decision` that begins `Q1:` or `All as recommended`, or one that begins
+  issue that begins `Q1:` or `All as recommended`, whatever its labels, or one that begins
   `Change:` on an issue or an agent's pull request, waits thirty minutes, and fires
   the routine "PortFusion answer"; an answer within those minutes starts the wait again, so answers
-  given together make one run. Nothing of a comment is passed.
-- **It first claims every answered or changed issue**: each open issue labelled `decision` whose
-  owner's latest comment answers it or begins `Change:`, and each issue whose open pull request of
-  the agent's has the owner's `Change:` as its latest comment. It records each answer or change
-  (Asking and answering, above) before it builds any, so a run started later does not take the same issue.
+  given together make one run. Nothing of a comment is passed, and the issue it names is only the
+  last.
+- **It first claims every answered or changed issue, found by the comments, not the labels.** It
+  lists the owner's comments on issues and pull requests since its own last run began (its last
+  `💬 **Answer run**` comment; the last three days when it finds none), leaves out each that
+  carries the agent's footer, and takes each whose first words answer or begin `Change:`. A
+  `decision` label taken off by hand, and a trigger that names one issue, hide nothing; an answer
+  already in its issue's Decisions is skipped. It records each answer or change (Asking and
+  answering, above) before it builds any, so a run started later does not take the same issue.
 - **An answer records a decision; only lines under Next are built.** Every answer is recorded,
   wherever its issue stands. An issue not under Next, a feature, and the issue a design card was
   answered on are left there: nothing of them is built, and the maintainer's placing or the
