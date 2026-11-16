@@ -367,12 +367,12 @@ changes it.
   cut or an idea. The Definitions of Ready and the gate are under Which issues, the limits on
   questions under Asking and answering (above), and what its debrief says under Telling the
   maintainer (below).
-- **Before anything else, it reads what changed since its last run began**, by the start on its
-  own last line in the run log (#289), whose lines it never acts on, or the last three days when
-  it finds none: the pull requests merged or
+- **Before anything else, it reads what changed since its last run**: the pull requests merged or
   stopped, each run's comments on the issues, and every answer and `Change:` the maintainer gave,
   with each "Re-plan" an answer run left, and every other comment of the maintainer's, which it
-  applies where it shapes or plans that issue and otherwise names in its debrief. Its plans start
+  applies where it shapes or plans that issue and otherwise names in its debrief. Its last run
+  began at the start on its own last line in the run log (#289), whose lines it never acts on, or
+  three days ago when it finds none. Its plans start
   from there. It clears a `building`
   label more than three hours old: a run that long has died.
 - **Nothing changed: stop.** When nothing has merged, closed, been answered, changed or filed
