@@ -206,7 +206,9 @@ changes it.
     what was answered or changed, and builds what of it stands under Next on a plan that still
     stands.
 - **An issue's state is on its labels**, so a run reads it without reading the issue:
-  `decision`, a question waits on the maintainer; `planned`, its latest **Plan, checked** stands;
+  `decision`, a one-line question (Asking and answering, below) waits on the maintainer, or a
+  `Change:` holds the issue, and only while one does: an open point with no such question is
+  written in the issue's body, with no label; `planned`, its latest **Plan, checked** stands;
   `building`, a run is at work on it, planning or building. Only the run that changes a state
   changes its label, and a comment says why. `loop` is not a state but whose the work is: the
   maintainer's, in a session (Which issues, below).
@@ -257,8 +259,9 @@ changes it.
 - **The gate: when only the checklist is left under Next, with any feature whose shape is not
   decided, nothing of the next milestone is built.** The ready check posts the gate review that
   day (The ready check, below). The gate is answered when a comment headed "Gate review" for the
-  milestone is on #206 and #206 carries no `decision`; only then is the checklist planned, by the
-  next ready check, and worked.
+  milestone is on #206 and #206 carries no `decision`; only then is the checklist planned and
+  worked: the answer run that applies the gate review re-plans it (The answer run, below), or
+  else the next ready check plans it.
 - **The checklist is never closed.** Its pull request says "For #156", not "Closes", and ticks
   its boxes.
 - **The release's pull request names the release.** `__version__` in
@@ -350,23 +353,25 @@ changes it.
   them, with `decision`, once the issue is under Next, whether or not its "waits" have closed, so
   its answer is in before its turn comes. Two are asked sooner, within the limit
   below: an `Idea:`, as it is shaped, since the maintainer is waiting on it, and a feature's
-  shape, on its design card. An answer the maintainer gives early, in a comment, counts when its
-  line is planned.
+  shape, on its design card. A question written in a session the maintainer is part of keeps
+  `decision` wherever its issue stands, and is not asked again. An answer the maintainer gives
+  early, in a comment, counts when its line is planned.
 - **An issue's questions are kept few**: what only the maintainer can decide. What the agent can
   settle from the code, the record's rules or an answer already given, it settles and says so.
 - **At most five questions stand open at once**, counting the milestone being worked's issues, a
-  design card's and #206's reviews; the maintainer's own long-standing decisions (#5, #6 and the
-  like) apart. Beyond five it asks nothing new but what blocks the first line under Next: an
-  `Idea:`'s, a card's and a review's questions are written, and wait. While a review or a card of
-  its own stands unanswered it posts no new one; the gate review is the exception (The ready
-  check, below).
+  design card's and #206's reviews; questions on issues of a later milestone, written in a session
+  the maintainer is part of, apart. Beyond five it asks nothing new but what blocks the first
+  line under Next: an `Idea:`'s, a card's and a review's questions are written, and wait. While a
+  review or a card of its own stands unanswered it posts no new one; the gate review is the
+  exception (The ready check, below).
 
 **The ready check**
 
 - **It reads [`docs/direction.md`](docs/direction.md) first**, and cites it for a milestone, a
-  cut or an idea. The Definitions of Ready and the gate are under Which issues, the limits on
-  questions under Asking and answering (above), and what its debrief says under Telling the
-  maintainer (below).
+  cut or an idea, and [`docs/content-map.md`](docs/content-map.md) beside it, which it cites for a
+  design card and for a plan that changes which page or section answers a job. The Definitions
+  of Ready and the gate are under Which issues, the limits on questions under Asking and answering
+  (above), and what its debrief says under Telling the maintainer (below).
 - **Before anything else, it reads what changed since its last run**: the pull requests merged or
   stopped, each run's comments on the issues, and every answer and `Change:` the maintainer gave,
   with each "Re-plan" an answer run left, and every other comment of the maintainer's, which it
@@ -432,6 +437,10 @@ changes it.
   review stands unanswered, whose questions it folds in; headed "Gate review" with the
   milestone's name, in the Queue review's place and holding all of it for the next milestone,
   and:
+  - what a helper's read of every open issue, and of the Decisions of the issues closed since the
+    last gate, finds: decisions that conflict or were never carried over, answers not recorded,
+    issues with no line in the Queue, and a `decision` with no question waiting, each folded into
+    its questions or its proposals;
   - what shipped, against the milestone's sentence in the direction page;
   - keep or pull, for each feature the maintainer has trialled;
   - each design card unanswered, and a move for each feature left under Next with no shape;
@@ -449,8 +458,9 @@ changes it.
   under Design next in the Queue, or of a feature at the top of Next, and the issue takes
   `decision`. Above the fold, in at most 150 words: the outcome in one line; three
   options, each a different idea of the feature and not one idea at three sizes, each with its
-  cost (slices, figures that move, a migration or none); a link to a mock page; a
-  recommendation; and at most three questions. The evidence is folded under `<details>`.
+  cost (slices, figures that move, a migration or none) and the jobs whose home it moves, by the
+  map's numbers, or "no job moves"; a link to a mock page; a recommendation; and at most three
+  questions. The evidence is folded under `<details>`.
 - **The mock page shows today's page and each option**, on the demo's names. It is a private page
   published with the Artifact tool and touches no code. A run that cannot publish without stopping
   to ask gives words and a picture of today's page instead, and says so.
@@ -503,7 +513,9 @@ changes it.
   order answered under the Queue's heading for after the gate, files the issue for a pull
   (Features, above), and edits `docs/direction.md` to the answer in a pull request that links
   #206 and may merge itself once `guard` is green, the answer being its yes. Then it takes
-  `decision` off #206, and goes on.
+  `decision` off #206. For a gate review it then leaves a comment on the checklist (#156) whose
+  first line after its name is "Re-plan: the gate review for <milestone> is answered", and takes
+  `planned` off it. Then it goes on.
 - **Then it builds the answered issues under Next whose plan still stands**, one after another,
   in Queue order, as the night run would, up to the routine's number, and no other line. A plan
   posted "if answered as recommended" stands when every answer is the recommended one. Any other
@@ -552,6 +564,9 @@ changes it.
   names a file or function the plan changes. Each is settled in the issue: a "waits" in Order when
   one must land first, a line in Not in scope when the other owns that part, or a question when the
   two issues' Done disagree. The plan's checker looks for one the plan missed.
+- **The plan names the content map** when the change adds or removes a page or a report section,
+  or moves a job, or part of one, between them: `docs/content-map.md` is among its files, with the
+  table that changes. The plan's checker holds it to that.
 - **One issue, one branch, one pull request**: a branch claude/<name> from the latest `main`,
   worked by the conventions above (changelog, own diff reviewed, a changed desk page walked cold),
   the guard run, and the desk walk if a desk file changed. The pull request says "Closes #n", and
