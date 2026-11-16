@@ -119,6 +119,27 @@ test("a finding leads to the page its work is done on", async ({ page }) => {
   await expect(page).toHaveURL(new RegExp(`#${to}$`));
 });
 
+// WORK APART FROM STATE: each row under Needs attention carries its tag and a link reads its step;
+// a row under What was checked leads nowhere, and none counts what a gap beside it already says.
+test("the Dashboard shows what was checked apart from what needs attention", async ({ page }) => {
+  await open(page, "dashboard");
+  const work = page.locator("#main ul.items li:not(.check)");
+  const checks = page.locator("#main ul.items li.check");
+  await expect(page.locator("#main h2", { hasText: "What was checked" })).toBeVisible();
+  for (const tag of await work.locator(".tag").allInnerTexts()) expect(tag.trim()).not.toBe("");
+  expect(await work.count()).toBe(await work.locator(".tag").count());
+  await expect(work.filter({ hasText: "days old, past the" }).locator("button[data-panel]"))
+    .toHaveText(/refresh the prices/);
+  await expect(checks.locator("button, a")).toHaveCount(0);
+  const rows = [...await work.allInnerTexts(), ...await checks.allInnerTexts()].map((t) => t.trim());
+  for (const [note, gap] of [["reasoning:", "reasoning owed"], ["dated rates:", "rate owed"],
+    ["funding interest:", "funding interest missing"]]) {
+    if (rows.some((r) => r.replace(/^\w+\s*/, "").startsWith(gap))) {
+      expect(rows.filter((r) => r.startsWith(note)), `"${note}" beside a gap it counts`).toEqual([]);
+    }
+  }
+});
+
 test("the Dashboard leads to the Bench, where a fact is added", async ({ page }) => {
   await open(page, "dashboard");
   await page.locator('#main .steps button[data-panel="bench"]', { hasText: "add a fact on the Bench" }).click();

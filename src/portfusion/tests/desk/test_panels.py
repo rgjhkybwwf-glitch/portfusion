@@ -981,22 +981,26 @@ def test_the_dashboards_status_line_draws_what_it_is_sent():
 
 
 def test_the_dashboard_lists_the_checks_the_audit_prints():
-    """WHAT WAS CHECKED, under what needs attention: what is captured has a display home. The
-    engine's notes, in its words and its order.
+    """WHAT WAS CHECKED, apart from what needs attention: what is captured has a display home.
+    The engine's notes, in its words and its order, and none counting what a gap already says.
 
-    AND EACH FINDING LEADS TO ITS PAGE: the engine's, one the desk has, drawn as a link; what
-    waits on the Bench is drawn only where the Bench opens. So does the round trips count, to the
-    page that lists them."""
+    AND EACH FINDING LEADS TO ITS PAGE: the engine's, one the desk has, drawn as a link in the
+    words of its step; what waits on the Bench is drawn only where the Bench opens. So does the
+    round trips count, to the page that lists them."""
     data, found = panels.get("dashboard").data(), _engine.Book().findings()
     js = _renderer(desk_script(), "dashboard")
     assert data["checks"] == found["notes"]
     assert any(c.startswith("evidence:") for c in data["checks"])
-    assert "d.checks" in js
-    sent = {a["text"]: a.get("panel") for a in data["attention"] + data["bench"]}
+    assert "d.checks" in js and "What was checked" in js
+    for note, gap in (("reasoning:", "reasoning owed"), ("funding interest:", "funding interest"),
+                      ("dated rates:", "rate owed")):
+        if any(a["text"].startswith(gap) for a in data["attention"]):
+            assert not [c for c in data["checks"] if c.startswith(note)], note
+    sent = {a["text"]: (a.get("panel"), a.get("action")) for a in data["attention"] + data["bench"]}
     for f in found["problems"] + found["gaps"]:
-        assert sent[f] == getattr(f, "page", None), f
-    assert {p for p in sent.values() if p} <= {p.NAME for p in panels.all_panels()}, sent
-    assert "panelLink(a.panel)" in js and 'PANELS.has("bench") ? d.bench' in js
+        assert sent[f] == (f.page, f.action), f
+    assert {p for p, _ in sent.values() if p} <= {p.NAME for p in panels.all_panels()}, sent
+    assert "panelLink(a.panel, a.action" in js and 'PANELS.has("bench") ? d.bench' in js
     leads = {f["label"]: f.get("panel") for f in data["figures"] if f.get("panel")}
     assert leads == {"Round trips closed out": "round-trips"}
     assert set(leads.values()) <= {p.NAME for p in panels.all_panels()} and "panelLink(f.panel, " in js

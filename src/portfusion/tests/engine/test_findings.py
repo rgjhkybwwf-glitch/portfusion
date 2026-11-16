@@ -91,12 +91,15 @@ def test_the_reasoning_is_the_records(book):
 @needs("buys", "current-prices")
 def test_theses_owed_names_each_missing_half(book, monkeypatch):
     """Moving the cut-off back puts every position in scope, and every blank half then owes; each
-    is a finding that names the Bench, where a why is written."""
+    is a finding that names no page, since none writes a why on its own, and no state line counts
+    them beside it."""
     monkeypatch.setattr(book.D, "REVIEW_FROM", dt.date(2000, 1, 1))
     owed = book.theses_owed()
     assert owed and all(o["half"] in ("why we entered", "why we exited") for o in owed)
-    gaps = [g for g in book.findings()["gaps"] if g.startswith("reasoning owed")]
-    assert len(gaps) == len(owed) and all(g.page == "bench" for g in gaps)
+    f = book.findings()
+    gaps = [g for g in f["gaps"] if g.startswith("reasoning owed")]
+    assert len(gaps) == len(owed) and all(g.page is None and g.action is None for g in gaps)
+    assert not [n for n in f["notes"] if n.startswith("reasoning:")]
     blank_open = [t for t in book.holdings(by="ticker")["ticker"]
                   if not any(r.why_entered for r in D.REASONING.get(t, []))]
     assert {o["ticker"] for o in owed if o["account"] is None} == set(blank_open)
@@ -104,12 +107,51 @@ def test_theses_owed_names_each_missing_half(book, monkeypatch):
 
 # ---- the findings ----------------------------------------------------------------------------
 
-def test_findings_are_data_and_hardcode_no_figure(book):
+#: The work no desk page does yet, whose finding names no page and no action.
+_NO_PAGE = ("reasoning owed", "a live price nothing holds", "dividend not assigned",
+            "points per unit owed")
+
+
+def _kinds_hold(f: dict) -> None:
+    """Every finding a `Finding`: problems and gaps work, notes state. A work finding names a page
+    and an action, or neither only where no desk page does its work, and no sentence says a word a
+    reader needs the guides for."""
+    import re
+    from portfusion.engine.findings import Finding
+    for key, kind in (("problems", "work"), ("gaps", "work"), ("notes", "state")):
+        for x in f[key]:
+            assert isinstance(x, Finding) and x.kind == kind, (key, x)
+            assert (x.page is None) == (x.action is None), x
+            if kind == "work" and x.page is None:
+                assert x.startswith(_NO_PAGE) or "could not be checked" in x, x
+            assert not re.search(r"_archive|LIVE|\bband\b|\(typed\)|leg\(s\)|night\(s\)", x), x
+
+
+def test_findings_are_data_and_hardcode_no_figure(book, monkeypatch):
+    """And each kind of finding holds its shape: the book's own, and each sort `findings()` gives
+    no page, forced here."""
+    from portfusion.engine.findings import Finding
     f = book.findings()
     assert set(f) == {"problems", "gaps", "notes", "prices"}
-    assert any(n.endswith("account(s) checked against the broker") for n in f["notes"])
+    assert any("checked against the broker" in n for n in f["notes"])
     assert any(n.startswith("journal:") for n in f["notes"])
     assert any(n.startswith("evidence:") for n in f["notes"])
+    _kinds_hold(f)
+    monkeypatch.setattr(book.D, "REVIEW_FROM", dt.date(2000, 1, 1))
+    monkeypatch.setattr(book, "priced_unheld", lambda: ["ZZZ"])
+    monkeypatch.setattr(book.D, "ci_rows", [*book.D.ci_rows, D.CostIncomeRow(
+        dt.date.today().isoformat(), "Test account", "Dividend", "a test dividend", 1.0, "test", "")])
+    ident = book._identity()
+    monkeypatch.setattr(book, "_identity", lambda: ident.assign(points_per_unit=float("nan")))
+    forced = book.findings()
+    _kinds_hold(forced)
+    assert [x for x in forced["gaps"] if x.startswith("dividend not assigned")]
+    assert [x for x in forced["problems"] if x.startswith("a live price nothing holds")]
+    for text, page, action in (("x", "bench", None), ("x", None, "a step")):
+        with pytest.raises(ValueError):
+            Finding(text, page, action)
+    with pytest.raises(ValueError):
+        Finding("x", "bench", "a step", kind="state")
 
 
 @needs("buys", "current-prices")
@@ -178,8 +220,8 @@ def test_an_account_with_no_statement_is_a_gap_not_a_problem(book, monkeypatch):
                for g in f["gaps"])
     assert not any(rec.loc[row, "account"] in p for p in f["problems"])
     said = book.account_checks().set_index("account")["sentence"]
-    for account in rec.loc[~read, "account"]:
-        gap = next(g for g in f["gaps"] if g == said[account])
+    for account in [rec.loc[row, "account"], *rec.loc[~read, "account"]]:
+        gap = next(g for g in f["gaps"] if f"{g} — {g.action}" == said[account])
         assert gap.page == book.reading_page(account)
 
 
@@ -188,7 +230,7 @@ def test_the_evidence_line_survives_an_absent_archive(book, monkeypatch, tmp_pat
     A check that cannot run is a problem, never good order: the audit's status counts them."""
     monkeypatch.setattr(D.schema, "BOOK", tmp_path)
     note, problem = book._evidence_chain()
-    assert "unverifiable" in note and problem is None
+    assert "no broker document is on file" in note and problem is None
 
     def broken():
         raise OSError("unreadable")
@@ -198,8 +240,9 @@ def test_the_evidence_line_survives_an_absent_archive(book, monkeypatch, tmp_pat
         with monkeypatch.context() as m:
             m.setattr(owner, name, broken)
             m.setattr(book, "journal_opened", lambda: "2026-01-01")
-            assert any(f"{check} could not be checked" in p
-                       for p in book.findings()["problems"]), check
+            f = book.findings()
+            assert any(f"{check} could not be checked" in p for p in f["problems"]), check
+            _kinds_hold(f)
 
 
 @needs("buys", "current-prices")
@@ -211,14 +254,17 @@ def test_owed_reasoning_is_a_gap(book, monkeypatch):
 # ---- portfusion record -----------------------------------------------------------------------
 
 def test_the_record_command_prints_every_finding(capsys):
-    """The command computes nothing: each line it prints is the engine's or about.py's."""
+    """The command computes nothing: each line it prints is the engine's or about.py's, a
+    finding's step after its sentence."""
     from portfusion.record.__main__ import findings
     problems = findings()
     out = capsys.readouterr().out
     f = Book().findings()
     assert problems == len(f["problems"])
-    for line in f["notes"] + f["gaps"] + f["problems"] + f["prices"]:
+    for line in f["notes"] + f["prices"]:
         assert line in out, line
+    for x in f["gaps"] + f["problems"]:
+        assert (f"{x} — {x.action}" if x.action else x) in out, x
     assert "backup:" in out and "python:" in out
 
 
@@ -239,9 +285,9 @@ _IG_CASES = {
 @pytest.mark.parametrize("case", sorted(_IG_CASES))
 def test_reconcile_the_dashboard_and_the_command_say_one_sentence(case, monkeypatch, capsys):
     """ONE SENTENCE-MAKER, `Book.account_checks()`: what an account was last checked against,
-    on what day, what was compared and the next step. The findings carry its sentence and page,
-    the Dashboard lists them and `portfusion record` prints them, word for word — for an IG
-    reading inside its tolerance, past it, and struck apart, whatever the loaded book holds.
+    on what day, what was compared and the next step. The findings carry its state, its page and
+    its step, the Dashboard lists them and `portfusion record` prints them, word for word — for an
+    IG reading inside its tolerance, past it, and struck apart, whatever the loaded book holds.
     None of them says "band", "LIVE" or "reconcile to statement" of an IG account."""
     import re
     from portfusion.desk.panels import dashboard
@@ -261,12 +307,17 @@ def test_reconcile_the_dashboard_and_the_command_say_one_sentence(case, monkeypa
     assert c["against"] and c["on"], "the last broker check is not said"
     f = b.findings()
     said = [x for x in f["problems"] + f["gaps"] + f["notes"] if account in x]
-    assert c["sentence"] in said, (c["sentence"], said)
+    found = next((x for x in said if (f"{x} — {x.action}" if x.action else x) == c["sentence"]),
+                 None)
+    assert found is not None, (c["sentence"], said)
+    kept = {"within-band": "notes", "struck-apart": "gaps", "differs": "problems"}[case]
+    assert any(x is found for x in f[kept]), (case, kept)
     if case == "differs":
-        found = next(x for x in f["problems"] if x == c["sentence"])
         assert found.page == "reconcile", found.page
-        items = [i for i in dashboard._attention(f) if i["text"] == c["sentence"]]
-        assert [i["panel"] for i in items] == ["reconcile"], "the Dashboard does not list it"
+    if found.kind == "work":
+        items = [i for i in dashboard._attention(f) if i["text"] == found]
+        assert [(i["panel"], i["action"]) for i in items] == [(found.page, found.action)], \
+            "the Dashboard does not list it"
     findings()
     assert c["sentence"] in capsys.readouterr().out, "portfusion record does not print it"
     for line in said:
@@ -315,8 +366,11 @@ def test_price_freshness_flags_a_stale_and_a_straggling_set(book, monkeypatch):
         marks = fed.head(len(days_old)).copy()
         marks["as_of"] = [(today - dt.timedelta(days=d)).isoformat() for d in days_old]
         monkeypatch.setitem(book.store, "prices", marks)
-        said = book.findings(today=today.isoformat())["problems"]
+        found = book.findings(today=today.isoformat())
+        said = found["problems"]
         monkeypatch.setitem(book.store, "prices", real)
+        _kinds_hold(found)
+        assert all(p.action == "refresh the prices" for p in said if "limit" in p), said
         return (any("days old" in p for p in said), any("spread limit" in p for p in said))
 
     assert verdict([0, 3]) == (False, False), "a normal Friday/Monday sweep must pass"
@@ -337,15 +391,17 @@ def test_the_findings_judge_every_judgeable_account_and_name_the_rest(book):
     never passed over."""
     import re
     f = book.findings()
-    line = next(n for n in f["notes"] if n.endswith("account(s) checked against the broker"))
+    line = next(n for n in f["notes"] if "checked against the broker" in n)
     rec = book.reconciliation()
     judged = sum(1 for _, r in rec.iterrows()
                  if book.reconciliation_verdict(r["statement"], r["difference"], r["evidence"],
                                                 r["comparable"], r["comparability"])["checkable"])
     assert int(re.match(r"(\d+)", line).group(1)) == judged
+    assert f" of {len(rec)} account" in line, line
     for c in book.account_checks().to_dict("records"):
         if not c["checkable"]:
-            assert c["sentence"] in f["notes"] + f["gaps"], f"{c['account']} is not named"
+            assert c["sentence"] in [f"{g} — {g.action}" for g in f["gaps"]], \
+                f"{c['account']} is not named"
 
 
 def test_each_action_of_the_command_answers_help_and_runs_nothing():
@@ -453,7 +509,9 @@ def test_a_foreign_income_row_with_no_rate_on_file_is_a_problem(store_copy):
         write_rows("income", *(dict(zip(header, f"{d},{account},Dividend,test dividend,7.50,test,,"
                                                  f"{cur},10.00,,".split(","))) for d in days))
         D.reload_store()
-        return Book().findings()["problems"]
+        found = Book().findings()
+        _kinds_hold(found)
+        return found["problems"]
 
     for days in (("1999-01-04",), ("1999-01-04", rated)):
         said = [p for p in with_rows(*days) if "1999-01-04" in p and "no close on file" in p]

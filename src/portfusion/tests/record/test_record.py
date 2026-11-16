@@ -343,7 +343,10 @@ def test_the_audit_names_a_night_a_daily_funded_leg_was_held_uncharged(store_cop
     gaps = engine.Book().funding_gaps()
     named = {leg for _a, leg, _n in gaps}
     assert named and named <= its_legs, (named, its_legs)
-    assert any("funding interest missing" in g for g in engine.Book().findings()["gaps"])
+    f = engine.Book().findings()
+    assert any("funding interest missing" in g for g in f["gaps"])
+    assert not [n for n in f["notes"] if n.startswith("funding interest:")], \
+        "a state line says every night has its row beside the gap"
 
 
 # =====================================================================================

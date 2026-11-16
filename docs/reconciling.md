@@ -17,8 +17,10 @@ derived from the ledger and the marks, against IG's own reading, struck in the s
 check agree with itself.
 
 **One sentence per account**, `Book.account_checks()`'s: what it was checked on, what was found,
-and the step that clears it. Reconcile shows it on the account's row, and the Dashboard and
-`portfusion record` print it. `portfusion record` cannot read a document, so its findings take the
+and the step that clears it. Reconcile shows it on the account's row, and `portfusion record`
+prints it; the Dashboard shows a step as its link's words, an account within its tolerance under
+What was checked, and an account whose units agree only in the count. `portfusion record` cannot
+read a document, so its findings take the
 check made when the export was filed; its audit counts the export again.
 
 **The last broker check** is the account history's newest broker document or reading, on

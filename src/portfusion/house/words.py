@@ -6,7 +6,8 @@ two cannot drift.
 
 RETIRED_FOR_DISPLAY holds the words the desk never shows, each with what it says instead:
 `tests/test_figures.py` refuses one in any desk string. WORDS holds the plain words for a house
-term, each with its unit; the desk sends them to the page with every panel answer.
+term, each with its unit; the desk sends them to the page with every panel answer. RATE_OWED_FOR
+is a finding's reason for each kind of dated rate.
 
 Imports nothing.
 """
@@ -25,4 +26,14 @@ WORDS = {
     "modified_dietz": "a day-weighted return on money",
     "share_equivalents": "shares, a bet counted as the shares it stands for",
     "pre_baseline": "entered before the record began",
+}
+
+#: Why a dated rate is owed, by `Book.rate_gaps()`'s `why`, as `Book.findings()` says it.
+RATE_OWED_FOR = {
+    "quarter end": "a quarter's end",
+    "income": "income paid that day",
+    "typed": "a rate typed by hand",
+    "deal": "a deal that day",
+    "life": "a company life's event that day",
+    "bet": "a bet opened that day",
 }

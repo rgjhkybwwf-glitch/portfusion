@@ -81,10 +81,10 @@ def findings() -> int:
     log.info("-" * 66)
     for n in f["notes"] + [about.backup_state()]:
         log.info(f"  {n}")
-    for g in f["gaps"]:
-        log.info(f"  ○ {g}")
-    for p in f["problems"]:
-        log.info(f"  ✗ {p}")
+    # A FINDING'S STEP FOLLOWS ITS SENTENCE (`Finding`).
+    for mark, key in (("○", "gaps"), ("✗", "problems")):
+        for x in f[key]:
+            log.info(f"  {mark} {x}" + (f" — {x.action}" if x.action else ""))
     reminder = close_reminder()
     if reminder:
         log.info(reminder)
