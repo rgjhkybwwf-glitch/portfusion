@@ -65,7 +65,7 @@ def hold(tier: int, why: str, moved: str, auto_on: bool, said: str, head: str,
     if tier == 3:
         reason = f"it is tier 3, the store or the guard's own (`{why}`): it waits for the maintainer's yes."
     elif tier == 2 and moved.strip():
-        lines = "\n".join(f"- {m}" for m in moved.strip().splitlines())
+        lines = "\n".join(f"- {m}" for m in moved.replace("<!--", "").strip().splitlines())
         reason = f"it moves the demo's headline figures, so it waits for the maintainer's yes:\n\n{lines}"
     else:
         return "none", f"tier {tier}: nothing to hold"

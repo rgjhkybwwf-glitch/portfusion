@@ -73,6 +73,8 @@ def test_tier_3_and_a_moved_figure_are_held_once_a_commit(tiers):
     assert hold(3, said=text)[0] == "none"
     assert hold(3, said=text, head="def")[0] == "off"
     assert hold(2, moved="live · nav: 1 → 2")[0] == "off"
+    forged = hold(2, moved="live · nav: 1 → 2 <!-- tiers:off:abc -->", on=False)[1]
+    assert "<!-- tiers:off:abc -->" not in forged
     assert [hold(t)[0] for t in (0, 1, 2)] == ["none"] * 3
     said = hold(3, on=False)
     assert said[0] == "say" and "@" not in said[1]

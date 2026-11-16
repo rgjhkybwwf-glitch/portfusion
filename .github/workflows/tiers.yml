@@ -5,9 +5,11 @@
 # THE BASE JUDGES THE BRANCH. The tier is worked by the base's own `tools/tiers.py`, before anything
 # of the branch runs, so a branch cannot choose its tier; a branch that changes the tier's own files
 # is tier 3. Only the figures run the branch's code, in `sort`, with a token that can only read.
-# `act` checks out the base alone, runs nothing of the branch, and holds the write token. A `sort`
-# that fails holds the pull request as tier 3. `guard` is the one required check, so a hold that
-# came after a merge is too late: a clean pull request's `guard` takes minutes, the tier seconds.
+# The base's figures are worked before the branch's code is installed, and compared in `act` by the
+# base's `tools/figures.py`. `act` checks out the base alone, runs nothing of the branch, and holds
+# the write token. A `sort` that fails holds the pull request as tier 3, and an `act` that fails
+# turns auto-merge off. `guard` is the one required check, so a hold that comes after a merge is
+# too late: the tier takes under a minute; tier 2's figures a few, against `guard`'s eight or so.
 #
 # Dependabot's pull requests are left to `dependabot-merge.yml`: a lock bump is tier 3 by path, and
 # merges itself by rule. A fork's pull request gets no token that can write.
@@ -24,6 +26,10 @@ concurrency:
 
 permissions: {}
 
+defaults:
+  run:
+    shell: bash                     # -e and pipefail: a step that fails holds the pull request
+
 jobs:
   sort:
     if: >-
@@ -36,7 +42,8 @@ jobs:
     outputs:
       tier: ${{ steps.tier.outputs.tier }}
       why: ${{ steps.tier.outputs.why }}
-      moved: ${{ steps.figures.outputs.moved }}
+      base: ${{ steps.base.outputs.figures }}
+      branch: ${{ steps.branch.outputs.figures }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1    # v7.0.1
         with:
@@ -65,19 +72,26 @@ jobs:
             | PYTHONPATH="$judge/src" xargs -0 python3 "$judge/tools/tiers.py")
           { echo "tier=$(sed -n 1p <<< "$said")"; echo "why=$(sed -n 2p <<< "$said")"; } >> "$GITHUB_OUTPUT"
           echo "tier $said"
-      - name: The demo's headline figures, on the base and on the branch
-        id: figures
+      - name: The demo's headline figures, on the base, before the branch's code is installed
+        id: base
+        if: steps.tier.outputs.tier == '2'
+        env:
+          PORTFUSION_BOOK: demo
+        run: |
+          base="$RUNNER_TEMP/base"
+          tool="$base/tools/figures.py"; [ -f "$tool" ] || tool="$GITHUB_WORKSPACE/tools/figures.py"
+          python3 -m pip install -q -e "$base" -c "$base/requirements.lock"
+          figures=$(cd "$base" && python3 "$tool")
+          { echo "figures<<FIGURES_END"; echo "$figures"; echo "FIGURES_END"; } >> "$GITHUB_OUTPUT"
+      - name: The demo's headline figures, on the branch
+        id: branch
         if: steps.tier.outputs.tier == '2'
         env:
           PORTFUSION_BOOK: demo
         run: |
           python3 -m pip install -q -e . -c requirements.lock
-          python3 tools/figures.py > "$RUNNER_TEMP/branch.json"
-          (cd "$RUNNER_TEMP/base" && PYTHONPATH="$RUNNER_TEMP/base/src" \
-            python3 "$GITHUB_WORKSPACE/tools/figures.py" > "$RUNNER_TEMP/base.json")
-          moved=$(python3 tools/figures.py "$RUNNER_TEMP/base.json" "$RUNNER_TEMP/branch.json" || true)
-          { echo "moved<<MOVED_END"; echo "$moved"; echo "MOVED_END"; } >> "$GITHUB_OUTPUT"
-          echo "${moved:-no figure moved}"
+          figures=$(python3 tools/figures.py)
+          { echo "figures<<FIGURES_END"; echo "$figures"; echo "FIGURES_END"; } >> "$GITHUB_OUTPUT"
 
   act:
     needs: sort
@@ -104,7 +118,8 @@ jobs:
           SORTED: ${{ needs.sort.result }}
           TIER: ${{ needs.sort.outputs.tier }}
           WHY: ${{ needs.sort.outputs.why }}
-          MOVED: ${{ needs.sort.outputs.moved }}
+          BASE_FIGURES: ${{ needs.sort.outputs.base }}
+          BRANCH_FIGURES: ${{ needs.sort.outputs.branch }}
         run: |
           if [ "$SORTED" != success ] || ! [[ "$TIER" =~ ^[0-3]$ ]]; then
             TIER=3; WHY="the tier could not be worked: sort $SORTED"
@@ -121,9 +136,18 @@ jobs:
           fi
           gh api "repos/$REPO/issues/$NUMBER/comments" --paginate \
             --jq '.[] | select(.user.login == "github-actions[bot]") | .body' > "$RUNNER_TEMP/said"
-          export TIER WHY
-          AUTO_ON=$(gh pr view "$PR" --json autoMergeRequest --jq '.autoMergeRequest != null') \
-            PYTHONPATH=src python3 tools/tiers.py --hold "$RUNNER_TEMP/said" > "$RUNNER_TEMP/hold"
+          MOVED=""
+          if [ "$TIER" = 2 ]; then
+            [ -n "$BASE_FIGURES" ] && [ -n "$BRANCH_FIGURES" ] || { echo "::error::no figures"; exit 1; }
+            printf '%s' "$BASE_FIGURES" > "$RUNNER_TEMP/base.json"
+            printf '%s' "$BRANCH_FIGURES" > "$RUNNER_TEMP/branch.json"
+            status=0
+            MOVED=$(PYTHONPATH=src python3 tools/figures.py "$RUNNER_TEMP/base.json" "$RUNNER_TEMP/branch.json") || status=$?
+            [ "$status" = 0 ] || [ -n "$MOVED" ] || { echo "::error::the figures could not be compared"; exit 1; }
+          fi
+          AUTO_ON=$(gh pr view "$PR" --json autoMergeRequest --jq '.autoMergeRequest != null')
+          export TIER WHY MOVED AUTO_ON
+          PYTHONPATH=src python3 tools/tiers.py --hold "$RUNNER_TEMP/said" > "$RUNNER_TEMP/hold"
           action=$(head -1 "$RUNNER_TEMP/hold")
           tail -n +2 "$RUNNER_TEMP/hold" > "$RUNNER_TEMP/body"
           case "$action" in
@@ -131,3 +155,9 @@ jobs:
             say) gh pr comment "$PR" --body-file "$RUNNER_TEMP/body" ;;
             *)   cat "$RUNNER_TEMP/body" ;;
           esac
+      - name: A hold that could not be worked turns auto-merge off
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.html_url }}
+        run: gh pr merge "$PR" --disable-auto || true
