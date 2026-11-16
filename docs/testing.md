@@ -30,6 +30,7 @@ the audit, never in a book's `checks/`.
 | `portfusion check` | the code passes on the demo, and the loaded book opens: figures, findings, every page | that the code is right on your book's rows |
 | `portfusion record` | whether the record is in good order: the findings, then the audit tests | anything about the code |
 | `tools/clean_room.py` | the tracked files install fresh and pass on the demo and on a new, empty book, and the wheel built from them passes `portfusion check` | that nothing of a book is named in what leaves |
+| `tiers.yml`, by `tools/tiers.py` and `tools/figures.py` | a pull request's risk tier, by the paths it changes, and for tier 2 whether the demo's headline figures moved between the base and the branch | that a figure is right, or that a change no path shows (the slice that turns a feature on) is held |
 | `ruff check` | the code holds none of the faults `pyproject.toml` selects: an undefined or unused name, a blind `except`, a stray `print` | layout: there is no formatter |
 | the secret scan, `.githooks/pre-commit --history` | no commit holds a secret's shape or a file that reaches a broker or a reader | a secret in a shape it does not know |
 | `lint-imports` | each part of the app imports only what `pyproject.toml`'s contracts allow, the build no desk, feed or history | an import made by name at run time (`importlib`) |

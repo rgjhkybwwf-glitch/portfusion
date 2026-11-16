@@ -605,6 +605,20 @@ changes it.
   only the issue's "Done" checks and the diff reviews it, as a skeptic: does each check hold, did
   a test's expectation move without the issue saying so, did anything outside the issue change. Its
   findings are fixed, or said at the top of the pull request.
+- **A pull request's risk tier is set by the paths it changes**, the highest of them, and
+  `tiers.yml` labels it so (`tools/tiers.py` holds the paths):
+
+  | Tier | Paths | Needs |
+  |---|---|---|
+  | 0 · words | `docs/`, `README.md`, `CHANGELOG.md` | `guard` and the builder's own review of its diff; no reviewer agent and no walk. Merges itself. |
+  | 1 · a page | anything not named in another tier, `CLAUDE.md` and the guard's other tools among them | the clean path below |
+  | 2 · the engine | `engine/`, `house/`, `record/rules*.py`, `feeds/`, `history/`, the demo and `tools/make_demo.py` | tier 1, and the demo's headline figures worked on the base and on the branch (`tools/figures.py`): a figure that moved makes it never clean |
+  | 3 · the store and the guard's own | `record/schema.py`, `record/migrations.py`, `migrate/`, the release's `__version__`, `.github/`, `.githooks/`, `hooks/`, `.claude/`, `pyproject.toml`, `requirements.lock`, the tools' `package.json` and lock, `tools/clean_room.py`, the tiers' and the pictures' own tools and tests, `pytest.ini`, `CONTRIBUTING.md`, each test a stability rule names | always the maintainer's yes |
+
+  The base's `tools/tiers.py` judges the branch. For tier 3, and tier 2 with a figure moved,
+  `tiers.yml` turns auto-merge off once a commit, and says why; turned on again on that commit, it
+  is the maintainer's yes, so the agent never turns it on again. A new commit, a merge of `main`
+  included, is asked again. A Dependabot pull request is left to `dependabot-merge.yml`.
 - **A clean pull request merges itself**: one that asks the maintainer nothing, made no choice
   its issue did not, passes the guard, the walk and the reviewer, and has its cold walk's finds
   filed. The agent
@@ -612,8 +626,9 @@ changes it.
   retaken for a page the issue meant to change keep it clean.
 - **Three are never clean**: a pull request that moves the store (a table or column of
   `record/schema.py`, or a move in `record/migrations.py`), a slice that moves a figure (what an
-  engine method returns on the demo), and the slice that turns a feature on. The first two are
-  never hidden: each says what moves at the top of its pull request, and in the changelog.
+  engine method returns on the demo), and the slice that turns a feature on. `tiers.yml` holds the
+  first two; the third, which no path shows, is the builder's to say. The first two are never
+  hidden: each says what moves at the top of its pull request, and in the changelog.
 - **Any other waits for the maintainer's yes**, auto-merge off, with what is needed from them at
   the top of its description. The yes is the maintainer pressing Enable
   auto-merge, so the merge is theirs and everything after it runs.

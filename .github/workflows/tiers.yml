@@ -1,0 +1,133 @@
+# A PULL REQUEST'S RISK TIER, BY THE PATHS IT CHANGES (CONTRIBUTING.md, Merging). Each pull request
+# is labelled `tier 0` to `tier 3`; tier 3, and tier 2 when the demo's headline figures move, does
+# not merge itself. `tools/tiers.py` holds the paths and the decision, `tools/figures.py` the figures.
+#
+# THE BASE JUDGES THE BRANCH. The tier is worked by the base's own `tools/tiers.py`, before anything
+# of the branch runs, so a branch cannot choose its tier; a branch that changes the tier's own files
+# is tier 3. Only the figures run the branch's code, in `sort`, with a token that can only read.
+# `act` checks out the base alone, runs nothing of the branch, and holds the write token. A `sort`
+# that fails holds the pull request as tier 3. `guard` is the one required check, so a hold that
+# came after a merge is too late: a clean pull request's `guard` takes minutes, the tier seconds.
+#
+# Dependabot's pull requests are left to `dependabot-merge.yml`: a lock bump is tier 3 by path, and
+# merges itself by rule. A fork's pull request gets no token that can write.
+
+name: tiers
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, auto_merge_enabled]
+
+concurrency:
+  group: tiers-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  sort:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository
+      && github.event.pull_request.user.login != 'dependabot[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    outputs:
+      tier: ${{ steps.tier.outputs.tier }}
+      why: ${{ steps.tier.outputs.why }}
+      moved: ${{ steps.figures.outputs.moved }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1    # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: requirements.lock
+      - name: The tier, by the base's judge, from the paths the pull request changes
+        id: tier
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          base="$RUNNER_TEMP/base"
+          git worktree add -q "$base" "$(git merge-base "$BASE" "$HEAD")"
+          judge="$base"
+          if [ ! -f "$judge/tools/tiers.py" ]; then
+            echo "::warning::the base has no tools/tiers.py yet: the branch's own judges it"
+            judge="$GITHUB_WORKSPACE"
+          fi
+          said=$(git diff --no-renames --name-only -z "$BASE...$HEAD" \
+            | PYTHONPATH="$judge/src" xargs -0 python3 "$judge/tools/tiers.py")
+          { echo "tier=$(sed -n 1p <<< "$said")"; echo "why=$(sed -n 2p <<< "$said")"; } >> "$GITHUB_OUTPUT"
+          echo "tier $said"
+      - name: The demo's headline figures, on the base and on the branch
+        id: figures
+        if: steps.tier.outputs.tier == '2'
+        env:
+          PORTFUSION_BOOK: demo
+        run: |
+          python3 -m pip install -q -e . -c requirements.lock
+          python3 tools/figures.py > "$RUNNER_TEMP/branch.json"
+          (cd "$RUNNER_TEMP/base" && PYTHONPATH="$RUNNER_TEMP/base/src" \
+            python3 "$GITHUB_WORKSPACE/tools/figures.py" > "$RUNNER_TEMP/base.json")
+          moved=$(python3 tools/figures.py "$RUNNER_TEMP/base.json" "$RUNNER_TEMP/branch.json" || true)
+          { echo "moved<<MOVED_END"; echo "$moved"; echo "MOVED_END"; } >> "$GITHUB_OUTPUT"
+          echo "${moved:-no figure moved}"
+
+  act:
+    needs: sort
+    if: always() && needs.sort.result != 'skipped'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1    # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          persist-credentials: false
+      - name: Label the tier, and hold tier 3 or a moved figure for the maintainer's yes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          OWNER: ${{ github.repository_owner }}
+          PR: ${{ github.event.pull_request.html_url }}
+          NUMBER: ${{ github.event.pull_request.number }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+          SORTED: ${{ needs.sort.result }}
+          TIER: ${{ needs.sort.outputs.tier }}
+          WHY: ${{ needs.sort.outputs.why }}
+          MOVED: ${{ needs.sort.outputs.moved }}
+        run: |
+          if [ "$SORTED" != success ] || ! [[ "$TIER" =~ ^[0-3]$ ]]; then
+            TIER=3; WHY="the tier could not be worked: sort $SORTED"
+          fi
+          what=("words" "a page" "the engine" "the store and the guard's own")
+          for n in 0 1 2 3; do
+            gh label create "tier $n" -R "$REPO" --force --color ededed \
+              --description "Risk tier $n, ${what[$n]}, by the paths it changes (CONTRIBUTING.md, Merging)" > /dev/null
+            [ "$n" = "$TIER" ] || gh pr edit "$PR" --remove-label "tier $n" > /dev/null 2>&1 || true
+          done
+          gh pr edit "$PR" --add-label "tier $TIER"
+          if [ ! -f tools/tiers.py ]; then
+            echo "::warning::the base has no tools/tiers.py yet: labelled only"; exit 0
+          fi
+          gh api "repos/$REPO/issues/$NUMBER/comments" --paginate \
+            --jq '.[] | select(.user.login == "github-actions[bot]") | .body' > "$RUNNER_TEMP/said"
+          export TIER WHY
+          AUTO_ON=$(gh pr view "$PR" --json autoMergeRequest --jq '.autoMergeRequest != null') \
+            PYTHONPATH=src python3 tools/tiers.py --hold "$RUNNER_TEMP/said" > "$RUNNER_TEMP/hold"
+          action=$(head -1 "$RUNNER_TEMP/hold")
+          tail -n +2 "$RUNNER_TEMP/hold" > "$RUNNER_TEMP/body"
+          case "$action" in
+            off) gh pr merge "$PR" --disable-auto; gh pr comment "$PR" --body-file "$RUNNER_TEMP/body" ;;
+            say) gh pr comment "$PR" --body-file "$RUNNER_TEMP/body" ;;
+            *)   cat "$RUNNER_TEMP/body" ;;
+          esac
