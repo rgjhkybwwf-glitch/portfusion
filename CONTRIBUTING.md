@@ -663,10 +663,15 @@ changes it.
   and that message, is ever sent while something is still running. While a gate review stands
   unanswered, or a release untagged, the push and the debrief say in one line what the run waits
   on.
+- **The Stop hook holds both** (`tools/stop_hook.py`, run by `.claude/settings.json`): a run
+  cannot end while an open pull request of a branch it pushed has `guard` running, for up to an
+  hour a wait, nor, asked twice, with a last message whose last line does not begin `Next:`, a
+  one-line ending included. It holds only a session started by a routine's prompt, never one with the
+  maintainer.
 - **A run stops watching** each pull request it leaves, merged or waiting, by
   `unsubscribe_pr_activity` for each one it subscribed to, just before its debrief: a run woken
   after it reloads its whole context for nothing. One woken all the same sends no second push,
-  adds no second line to the run log, and ends in one line.
+  adds no second line to the run log, and ends in one line, which begins `Next:`.
 - **Each run adds one line to the run log** (#289), a comment: its mark, then the date and when
   it began and ended, UK time, what it did in a line, and its `Next:` line, as in
   `🌙 **Night run** · 17 Nov 02:00–02:47 · built #250, merged · Next: …`. The time stays first

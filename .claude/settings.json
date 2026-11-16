@@ -28,5 +28,18 @@
       "Bash(git push * :main*)",
       "Bash(*MAIN_REWRITE*)"
     ]
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/tools/stop_hook.py\"",
+            "timeout": 300
+          }
+        ]
+      }
+    ]
   }
 }
