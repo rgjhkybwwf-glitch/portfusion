@@ -1,7 +1,7 @@
 # THE MAINTAINER'S ANSWERS START THE WORK, IN A BATCH. When the owner answers an issue with a
 # comment that begins "Q1:" or "All as recommended", whatever its labels (a `decision` taken off by
-# hand hides nothing), this waits thirty minutes, then fires the routine "PortFusion answer" on
-# claude.ai, which finds every issue answered by the comments (CONTRIBUTING.md, The answer run).
+# hand hides nothing), this waits thirty minutes, then fires the routine "PortFusion · Answer run"
+# on claude.ai, which finds every issue answered by the comments (CONTRIBUTING.md, The answer run).
 # Another answer within the thirty minutes cancels the wait and starts it again, so answers given
 # together make one run. Nothing of a comment is sent: the routine finds the answers itself. A slip
 # in the first words ("All as recomemded") is read as meant.

@@ -193,15 +193,18 @@ changes it.
 
 **How it runs**
 
-- **Three routines on claude.ai**, each in the personal cloud environment "PortFusion", whose setup
-  script builds the venv on Python 3.13 and installs `tools/`. A routine names what it follows
-  here, the ready check and the answer run their own part and the night run the whole section,
-  and sets how many issues a run takes; nothing else is kept there.
-  - **The ready check**, each day at 12:30 UK time, and when a run's "Re-plan" starts it
-    (`replan.yml`; The answer run, below): reads what the night built and what the maintainer
-    answered, then shapes and plans the next work, asks its questions, and keeps the
+- **Three routines on claude.ai**, named as the runs sign: "PortFusion · Ready check",
+  "PortFusion · Night run" and "PortFusion · Answer run". Each is in the personal cloud
+  environment "PortFusion", whose setup script builds the venv on Python 3.13 and installs
+  `tools/`. A routine names what it follows here, the ready check and the answer run their own
+  part and the night run the whole section, and sets how many issues a run takes; nothing else is
+  kept there.
+  - **The ready check**, at about 07:00 UK time, Monday to Friday, and when a run's "Re-plan"
+    starts it (`replan.yml`; The answer run, below): reads what the night built and what the
+    maintainer answered, then shapes and plans the next work, asks its questions, and keeps the
     dependencies. It is the one run that reasons about what to build.
-  - **The night run**, at 02:00 UK time: builds the lines the ready check has planned.
+  - **The night run**, at 02:00 UK time each day, the one routine scheduled at weekends: builds
+    the lines the ready check has planned.
   - **The answer run**, thirty quiet minutes after the maintainer's last answer or change: records
     what was answered or changed, and builds what of it stands under Next on a plan that still
     stands.
@@ -307,8 +310,8 @@ changes it.
   brought level with `main` (merged in, never rebased), its pictures retaken when a page it changed
   moved under it, and its CI made green, so none waits on the maintainer for anything but a yes it
   asked for.
-- **No line it can build and nothing to tend: stop**, posting nothing on GitHub; the debrief
-  says what holds each line (Telling the maintainer, below).
+- **No line it can build and nothing to tend: stop**, posting nothing on GitHub but its line in
+  the run log; the debrief says what holds each line (Telling the maintainer, below).
 
 **Asking and answering**
 
@@ -375,12 +378,14 @@ changes it.
 - **Before anything else, it reads what changed since its last run**: the pull requests merged or
   stopped, each run's comments on the issues, and every answer and `Change:` the maintainer gave,
   with each "Re-plan" an answer run left, and every other comment of the maintainer's, which it
-  applies where it shapes or plans that issue and otherwise names in its debrief. Its plans start
+  applies where it shapes or plans that issue and otherwise names in its debrief. Its last run
+  began at the start on its own last line in the run log (#289), whose lines it never acts on, or
+  three days ago when it finds none. Its plans start
   from there. It clears a `building`
   label more than three hours old: a run that long has died.
 - **Nothing changed: stop.** When nothing has merged, closed, been answered, changed or filed
   since its last run, and Next holds as many `planned` lines as the routine's number or no line
-  it could plan, it ends with a one-line debrief and posts nothing.
+  it could plan, it ends with a one-line debrief and posts nothing but its line in the run log.
 - **Started for a re-plan** (`replan.yml`, its text beginning "Re-plan only"), it plans only the
   issues under Next marked "Re-plan" since their last **Plan, checked**, and does nothing else of
   this part; its debrief is a line an issue.
@@ -488,15 +493,15 @@ changes it.
 
 - **The maintainer's answers start it, in a batch.** `answer.yml` sees the owner's comment on an
   issue that begins `Q1:` or `All as recommended`, whatever its labels, or one that begins
-  `Change:` on an issue or an agent's pull request, waits thirty minutes, and fires
-  the routine "PortFusion answer"; an answer within those minutes starts the wait again, so answers
+  `Change:` on an issue or an agent's pull request, waits thirty minutes, and fires the routine
+  "PortFusion · Answer run"; an answer within those minutes starts the wait again, so answers
   given together make one run. Nothing of a comment is passed, and the issue it names is only the
   last.
 - **It first claims every answered or changed issue, found by the comments, not the labels.** It
-  lists the owner's comments on issues and pull requests since its own last run began (its last
-  `💬 **Answer run**` comment; the last three days when it finds none), leaves out each that
-  opens with a run's mark or a session's note, and takes each whose first words answer or begin
-  `Change:`. A
+  lists the owner's comments on issues and pull requests since its own last run began (the start
+  on its last line in the run log, #289; the last three days when it finds none), leaves out
+  each that opens with a run's mark or a session's note, and takes each whose first words answer
+  or begin `Change:`. A
   `decision` label taken off by hand, and a trigger that names one issue, hide nothing; an answer
   already in its issue's Decisions is skipped. It records each answer or change (Asking and
   answering, above) before it builds any, so a run started later does not take the same issue.
@@ -528,8 +533,8 @@ changes it.
 - **A decision issue closes once it is decided.** An issue that only records a decision, such as
   the content map (#3), is closed when every question on it is answered and recorded and each
   part of what it settles is filed or written into the issue it settles, the closing comment
-  naming where each went. The Queue (#206), the checklist (#156), the walk finds (#220) and a
-  feature are never closed so.
+  naming where each went. The Queue (#206), the checklist (#156), the walk finds (#220), the run
+  log (#289) and a feature are never closed so.
 - **Under Next, an issue with a branch of its own continues on it**, once its plan stands again,
   brought level with `main`.
   An open pull request from it is completed to the whole issue, its own "Part of #n" made "Closes
@@ -630,21 +635,28 @@ changes it.
   merging itself gets the same note without naming them: it asks nothing, so it pings no one.
 - **A run is one turn, and it ends by sending its debrief.** Every wait is inside that turn: a
   helper agent (the plan's checker, the reviewer) is run in the foreground and waited for, and CI
-  is polled in the foreground. When nothing is left to wait for, the run's last two steps are, in
-  order: it stops watching each pull request it leaves (below), then sends the debrief to the
+  is polled in the foreground. When nothing is left to wait for, the run's last three steps are,
+  in order: it stops watching each pull request it leaves (below), adds its line to the run log
+  (below), then sends the debrief to the
   maintainer's phone as a push notification (the `PushNotification` tool), a few lines: what
   merged, what waits on the maintainer, or that the run had nothing to do. **Its last line begins
   with the word `Next:`**, then who acts next, on what, and when, as in "Next: the night run, at
   02:00, builds #250." When no line under Next can be built,
   it names each line and what holds it: a question (whose), no plan yet or a "Re-plan" (the ready
   check's), `building` (which run), an open pull request, a "waits" or the gate. The
-  message that ends the turn is the debrief in full. Neither is ever sent while something is
-  still running. While a gate review stands unanswered, or a release untagged, both say in one
-  line what the run waits on.
+  message that ends the turn is the debrief in full. None of the three, the log line, the push
+  and that message, is ever sent while something is still running. While a gate review stands
+  unanswered, or a release untagged, the push and the debrief say in one line what the run waits
+  on.
 - **A run stops watching** each pull request it leaves, merged or waiting, by
   `unsubscribe_pr_activity` for each one it subscribed to, just before its debrief: a run woken
-  after it reloads its whole context for nothing. One woken all the same sends no second push and
-  ends in one line.
+  after it reloads its whole context for nothing. One woken all the same sends no second push,
+  adds no second line to the run log, and ends in one line.
+- **Each run adds one line to the run log** (#289), a comment: its mark, then the date and when
+  it began and ended, UK time, what it did in a line, and its `Next:` line, as in
+  `🌙 **Night run** · 17 Nov 02:00–02:47 · built #250, merged · Next: …`. The time stays first
+  after the mark; a ready check started for a re-plan says so after its time. It is the source
+  for a run's length, its stops and which run was at work; it asks nothing and pings no one.
 - **The agent's own comments never begin `Q` and a number, `All as recommended` or `Change:`**,
   in any case: the maintainer's shapes, which start a workflow, since it writes as the
   maintainer's account.
