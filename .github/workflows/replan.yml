@@ -9,12 +9,17 @@
 # run's own mark: the night run's or the answer run's. The ready check never writes "Re-plan:", so
 # nothing here starts itself. The routine's fire URL and token are the repository's secrets
 # ROUTINE_READY_URL and ROUTINE_READY_TOKEN; without them this says so in its log and does nothing.
+# It prints the routine's HTTP status alone, never the session's address, since this log is public.
+#
+# STARTED BY HAND (Actions, replan, Run workflow), it fires the ready check at once with no issue
+# named: the way to test this path end to end, and to confirm both secrets are set.
 
 name: replan
 
 on:
   issue_comment:
     types: [created]
+  workflow_dispatch:
 
 permissions: {}
 
@@ -23,7 +28,8 @@ jobs:
   # cancels a wait already running.
   read:
     if: >-
-      github.event.comment.user.login == github.repository_owner
+      github.event_name == 'issue_comment'
+      && github.event.comment.user.login == github.repository_owner
       && !github.event.issue.pull_request
       && github.event.issue.state == 'open'
     runs-on: ubuntu-24.04
@@ -54,7 +60,9 @@ jobs:
 
   fire:
     needs: read
-    if: needs.read.outputs.replan == 'yes'
+    if: >-
+      always()
+      && (github.event_name == 'workflow_dispatch' || needs.read.outputs.replan == 'yes')
     concurrency:
       group: replan
       cancel-in-progress: true
@@ -69,16 +77,26 @@ jobs:
           TOKEN: ${{ secrets.ROUTINE_READY_TOKEN }}
         run: |
           if [ -z "$URL" ] || [ -z "$TOKEN" ]; then
-            echo "::warning::A re-plan on #$NUMBER, but ROUTINE_READY_URL or ROUTINE_READY_TOKEN is not set."
+            echo "::warning::ROUTINE_READY_URL or ROUTINE_READY_TOKEN is not set: the ready check cannot be started."
             exit 0
           fi
-          echo "A re-plan on #$NUMBER: the ready check starts in ten minutes, unless another comes first."
-          sleep 600
-          payload=$(jq -n --arg t "Re-plan only: plan the issues under Next marked \"Re-plan\" since their last \"Plan, checked\", and nothing else. The last was #$NUMBER ($ISSUE)." '{text: $t}')
+          if [ -n "$NUMBER" ]; then
+            echo "A re-plan on #$NUMBER: the ready check starts in ten minutes, unless another comes first."
+            sleep 600
+            last="The last was #$NUMBER ($ISSUE)."
+          else
+            echo "Started by hand: the ready check starts now."
+            last="Started by hand to test this path: if no issue is marked \"Re-plan\", end in one line."
+          fi
+          payload=$(jq -n --arg t "Re-plan only: plan the issues under Next marked \"Re-plan\" since their last \"Plan, checked\", and nothing else. $last" '{text: $t}')
           # A busy or briefly unavailable endpoint (5xx) is tried again, up to four more times.
-          curl -sS --fail-with-body --retry 4 --retry-delay 30 --retry-all-errors -X POST "$URL" \
+          # Only the status is printed: the answer names the session, and this log is public.
+          status=$(curl -sS -o /dev/null -w '%{http_code}' --retry 4 --retry-delay 30 --retry-all-errors \
+            -X POST "$URL" \
             -H "Authorization: Bearer $TOKEN" \
             -H "anthropic-beta: experimental-cc-routine-2026-04-01" \
             -H "anthropic-version: 2023-06-01" \
             -H "Content-Type: application/json" \
-            -d "$payload" | jq -r '.claude_code_session_url // .'
+            -d "$payload")
+          echo "The ready check was asked to start: HTTP $status."
+          case "$status" in 2*) ;; *) exit 1 ;; esac

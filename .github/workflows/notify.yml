@@ -34,8 +34,16 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           ISSUE: ${{ github.event.issue.html_url }}
           OWNER: ${{ github.repository_owner }}
+          LOOP: ${{ contains(github.event.issue.labels.*.name, 'loop') && 'yes' || 'no' }}
         run: |
-          gh issue comment "$ISSUE" --body "🤖 **PortFusion agent** · @$OWNER, a decision is needed here: the questions are under \"Questions for you\", at the end of the issue or of the comment above. Reply with a line each, \"Q1: a\", or \"All as recommended\": an answer as recommended is built, and any other is re-planned first. To take it another way, begin a reply with \"Change:\"."
+          # A `loop` issue is never built by a run: its answer is recorded, and the change is made in
+          # a session with the owner (CONTRIBUTING.md, Which issues).
+          if [ "$LOOP" = yes ]; then
+            then_what="the answer is recorded, and the change is made in a session with you: no run builds a \`loop\` issue."
+          else
+            then_what="an answer as recommended is built, and any other is re-planned first."
+          fi
+          gh issue comment "$ISSUE" --body "🤖 **PortFusion agent** · @$OWNER, a decision is needed here: the questions are under \"Questions for you\", at the end of the issue or of the comment above. Reply with a line each, \"Q1: a\", or \"All as recommended\": $then_what To take it another way, begin a reply with \"Change:\"."
 
   review:
     if: >-
