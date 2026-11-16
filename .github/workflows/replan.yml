@@ -1,6 +1,6 @@
 # A RE-PLAN STARTS THE READY CHECK AT ONCE. When a run leaves a re-plan on an issue (its comment's
 # first line after the run's name is "Re-plan:"), this waits ten quiet minutes, then fires the
-# routine "Portfusion ready check" on claude.ai, which plans only the issues under Next marked
+# routine "PortFusion · Ready check" on claude.ai, which plans only the issues under Next marked
 # "Re-plan" since their last "Plan, checked" (CONTRIBUTING.md, The ready check). Another re-plan
 # within the ten minutes starts the wait again, so re-plans left together make one run. A routine
 # run cannot start another routine itself, so this does it. Nothing of a comment is sent.

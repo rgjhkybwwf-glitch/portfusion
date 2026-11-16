@@ -193,15 +193,18 @@ changes it.
 
 **How it runs**
 
-- **Three routines on claude.ai**, each in the personal cloud environment "PortFusion", whose setup
-  script builds the venv on Python 3.13 and installs `tools/`. A routine names what it follows
-  here, the ready check and the answer run their own part and the night run the whole section,
-  and sets how many issues a run takes; nothing else is kept there.
-  - **The ready check**, each day at 12:30 UK time, and when a run's "Re-plan" starts it
-    (`replan.yml`; The answer run, below): reads what the night built and what the maintainer
-    answered, then shapes and plans the next work, asks its questions, and keeps the
+- **Three routines on claude.ai**, named as the runs sign: "PortFusion · Ready check",
+  "PortFusion · Night run" and "PortFusion · Answer run". Each is in the personal cloud
+  environment "PortFusion", whose setup script builds the venv on Python 3.13 and installs
+  `tools/`. A routine names what it follows here, the ready check and the answer run their own
+  part and the night run the whole section, and sets how many issues a run takes; nothing else is
+  kept there.
+  - **The ready check**, at about 07:00 UK time, Monday to Friday, and when a run's "Re-plan"
+    starts it (`replan.yml`; The answer run, below): reads what the night built and what the
+    maintainer answered, then shapes and plans the next work, asks its questions, and keeps the
     dependencies. It is the one run that reasons about what to build.
-  - **The night run**, at 02:00 UK time: builds the lines the ready check has planned.
+  - **The night run**, at 02:00 UK time each day, the one routine scheduled at weekends: builds
+    the lines the ready check has planned.
   - **The answer run**, thirty quiet minutes after the maintainer's last answer or change: records
     what was answered or changed, and builds what of it stands under Next on a plan that still
     stands.
@@ -490,8 +493,8 @@ changes it.
 
 - **The maintainer's answers start it, in a batch.** `answer.yml` sees the owner's comment on an
   issue that begins `Q1:` or `All as recommended`, whatever its labels, or one that begins
-  `Change:` on an issue or an agent's pull request, waits thirty minutes, and fires
-  the routine "PortFusion answer"; an answer within those minutes starts the wait again, so answers
+  `Change:` on an issue or an agent's pull request, waits thirty minutes, and fires the routine
+  "PortFusion · Answer run"; an answer within those minutes starts the wait again, so answers
   given together make one run. Nothing of a comment is passed, and the issue it names is only the
   last.
 - **It first claims every answered or changed issue, found by the comments, not the labels.** It
