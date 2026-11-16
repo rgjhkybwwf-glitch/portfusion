@@ -206,7 +206,9 @@ changes it.
     what was answered or changed, and builds what of it stands under Next on a plan that still
     stands.
 - **An issue's state is on its labels**, so a run reads it without reading the issue:
-  `decision`, a question waits on the maintainer; `planned`, its latest **Plan, checked** stands;
+  `decision`, a one-line question (Asking and answering, below) waits on the maintainer, or a
+  `Change:` holds the issue, and only while one does: an open point with no such question is
+  written in the issue's body, with no label; `planned`, its latest **Plan, checked** stands;
   `building`, a run is at work on it, planning or building. Only the run that changes a state
   changes its label, and a comment says why. `loop` is not a state but whose the work is: the
   maintainer's, in a session (Which issues, below).
@@ -351,16 +353,17 @@ changes it.
   them, with `decision`, once the issue is under Next, whether or not its "waits" have closed, so
   its answer is in before its turn comes. Two are asked sooner, within the limit
   below: an `Idea:`, as it is shaped, since the maintainer is waiting on it, and a feature's
-  shape, on its design card. An answer the maintainer gives early, in a comment, counts when its
-  line is planned.
+  shape, on its design card. A question written in a session the maintainer is part of keeps
+  `decision` wherever its issue stands, and is not asked again. An answer the maintainer gives
+  early, in a comment, counts when its line is planned.
 - **An issue's questions are kept few**: what only the maintainer can decide. What the agent can
   settle from the code, the record's rules or an answer already given, it settles and says so.
 - **At most five questions stand open at once**, counting the milestone being worked's issues, a
-  design card's and #206's reviews; the maintainer's own long-standing decisions (#5, #6 and the
-  like) apart. Beyond five it asks nothing new but what blocks the first line under Next: an
-  `Idea:`'s, a card's and a review's questions are written, and wait. While a review or a card of
-  its own stands unanswered it posts no new one; the gate review is the exception (The ready
-  check, below).
+  design card's and #206's reviews; questions on issues of a later milestone, written in a session
+  the maintainer is part of, apart. Beyond five it asks nothing new but what blocks the first
+  line under Next: an `Idea:`'s, a card's and a review's questions are written, and wait. While a
+  review or a card of its own stands unanswered it posts no new one; the gate review is the
+  exception (The ready check, below).
 
 **The ready check**
 
@@ -432,6 +435,10 @@ changes it.
   review stands unanswered, whose questions it folds in; headed "Gate review" with the
   milestone's name, in the Queue review's place and holding all of it for the next milestone,
   and:
+  - what a helper's read of every open issue, and of the Decisions of the issues closed since the
+    last gate, finds: decisions that conflict or were never carried over, answers not recorded,
+    issues with no line in the Queue, and a `decision` with no question waiting, each folded into
+    its questions or its proposals;
   - what shipped, against the milestone's sentence in the direction page;
   - keep or pull, for each feature the maintainer has trialled;
   - each design card unanswered, and a move for each feature left under Next with no shape;
