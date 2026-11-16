@@ -41,7 +41,12 @@ npm --prefix tools run walk        # the walk; it starts its own desk, so the ve
 ```
 
 Each Playwright version brings its own Chromium, and the walk's baselines are that Chromium's: a
-move of the pin may need them taken again.
+move of the pin may need them taken again. The walk draws with its own fonts and font settings,
+`tools/desk_walk_fonts/fonts.conf`, which `playwright.config.mjs` hands the browser in place of the
+machine's, so the same Chromium on GitHub and in a cloud session takes the same picture. A cloud
+session's setup installs that Chromium with `npm --prefix tools run browser`, which needs
+`cdn.playwright.dev` among the environment's allowed hosts; never point the walk at another
+browser.
 
 ## Moving the lock
 
