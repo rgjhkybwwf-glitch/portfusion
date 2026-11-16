@@ -326,11 +326,10 @@ class Findings(Core):
             line = (f"evidence: {cites - len(gaps)} of {cites} rows that cite a broker document "
                     f"have it on file · {absent} more row{'s are' if absent != 1 else ' is'} "
                     f"recorded as having none")
-            if not gaps:
-                return Finding(line, kind="state"), None
-            return (Finding(f"{line} · {len(gaps)} cannot", kind="state"),
-                    Finding(f"{len(gaps)} row(s) cite a document that is not on file: "
-                            f"{', '.join(sorted(gaps))}", "bench", "file the document"))
+            # THE ROWS WITHOUT ONE ARE THE PROBLEM'S TO NAME: the line's count already says how many.
+            return Finding(line, kind="state"), (Finding(
+                f"{len(gaps)} row(s) cite a document that is not on file: "
+                f"{', '.join(sorted(gaps))}", "bench", "file the document") if gaps else None)
         except Exception as e:                       # noqa: BLE001 — never fail over provenance
             # NOT CHECKED IS A PROBLEM, as the conversions' is.
             return (Finding(f"evidence: unknown ({type(e).__name__})", kind="state"),

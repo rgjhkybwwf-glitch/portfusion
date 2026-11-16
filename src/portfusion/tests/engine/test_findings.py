@@ -398,6 +398,8 @@ def test_the_findings_judge_every_judgeable_account_and_name_the_rest(book):
                                                 r["comparable"], r["comparability"])["checkable"])
     assert int(re.match(r"(\d+)", line).group(1)) == judged
     assert f" of {len(rec)} account" in line, line
+    named = [c["account"] for c in book.account_checks().to_dict("records") if c["checkable"]]
+    assert line.endswith(f": {', '.join(named)}" if named else "the broker"), line
     for c in book.account_checks().to_dict("records"):
         if not c["checkable"]:
             assert c["sentence"] in [f"{g} — {g.action}" for g in f["gaps"]], \

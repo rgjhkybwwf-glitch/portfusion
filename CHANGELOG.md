@@ -22,7 +22,9 @@ One figure moves, on two pages, and there is no migration. Do these when the boo
   is no longer "NO STATEMENT".
 - **Read the Dashboard's checks under "What was checked"**, apart from what needs attention. A
   check that only counts what a gap already lists (reasoning, funding interest, dated rates) is
-  written only when nothing is owed. The record's findings no longer name a folder.
+  written only when nothing is owed. An IG reading struck apart, and a reading that lists no
+  units, are gaps with their step, as an account never read is. The record's findings no longer
+  name a folder.
 - **Reinstall against `requirements.lock`**: pypdf is 7 and python-dateutil 4.
 - **Read "price" for "mark" on screen**: "Mark key" is "Price key", "Mark history" is "Price
   history" and "Mark move (%)" is "Price move (%)", and Price Refresh's button is "write the
