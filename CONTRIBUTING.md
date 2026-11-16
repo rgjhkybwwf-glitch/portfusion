@@ -284,9 +284,18 @@ changes it.
   green, and nothing is added to it. Each issue is read whole, comments included, before its work
   starts.
 - **The agent keeps the Queue current**: after each pull request merges it ticks the line and moves
-  it to Done, and each issue it files goes under To rank, for the maintainer to place; a decided
-  feature's slices are the exception (Features, below). It reads the Queue afresh just before
-  each edit, since another run may have changed it.
+  it to Done. It reads the Queue afresh just before each edit, since another run may have changed
+  it. Where each issue it files goes:
+  - **One for the next milestone** is placed by the ready check among that milestone's lines,
+    in the order of the work: first what changes how the work is made, so what follows is built
+    and tested on it (a split, a guard, a tool: `architecture` and the like), then unblockers, bugs
+    and wrong figures, small safe fixes, features and polish, each after every line it waits on.
+    Lines already there keep their order. Its debrief names each placement and why, and the
+    maintainer moves a line by editing the Queue, or with `Change:` on #206; the gate review
+    proposes the whole order again.
+  - **One for the milestone being worked, a later one, or none** goes under To rank, for the
+    maintainer to place: nothing joins Next but by their placing (below).
+  - **A decided feature's slices** go where Features (below) says.
 - **A milestone being worked only gets shorter**, except for the slices of a feature already in
   it: nothing else joins Next but by the maintainer's placing. An issue the agent files takes
   the area labels of the issue it came from, and a milestone only when it fits the theme of the
@@ -325,8 +334,8 @@ changes it.
   held for the ready check's new plan, or closed with the reason when the change makes it moot.
 - **An issue whose title begins `Idea:` is new work in the maintainer's words.** The ready check
   shapes it in place: the maintainer's words kept at the top, quoted; the title made an issue's
-  title; its area labels; the milestone whose theme it fits; and a line under To rank in the
-  Queue. One that adds function is shaped as a feature and labelled `feature`, its Shape left
+  title; its area labels; the milestone whose theme it fits; and its line in the Queue, placed
+  as an issue the agent files is (Which issues, above). One that adds function is shaped as a feature and labelled `feature`, its Shape left
   for its design card; any other gets a cause found in the code, Done, Not in scope and Order.
   What only the maintainer can settle is asked, with `decision`. An idea that is already an open
   issue's is added to that issue and closed.
