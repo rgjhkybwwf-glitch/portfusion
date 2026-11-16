@@ -78,13 +78,22 @@ warning that fires on a successful build is furniture, not a check. The feeds' a
 ## A page that looks different on purpose
 
 The walk compares each page with a baseline in `tools/desk_walk/`, taken on Linux, the guard's
-platform; on a Mac it walks the pages without comparing them, since a Mac sets type apart. A page
-changed on purpose fails the guard until its baseline is taken again, in the pull request that
-changes the page: the label `baselines` on the pull request has `baselines.yml` walk the branch on
-GitHub and commit each page's `<page>-linux.png` to `baselines/<branch>`; merge that in
-(`git fetch origin baselines/<branch> && git merge FETCH_HEAD`) and push, and the guard runs; the
-branch beside it is deleted when the pull request closes. By hand, the guard's failed
-walk uploads what it saw: `gh run download <run> -n desk-walk`, and the page's `-actual.png` is its
-new baseline. [`environment.md`](environment.md) sets the walk up.
+platform; on a Mac it walks the pages without comparing them, since a Mac sets type apart. On
+Linux a picture taken in the cloud matches one taken on GitHub: both draw in the Chromium
+`tools/package-lock.json` pins, and with the walk's own fonts and font settings
+(`tools/desk_walk_fonts/`), never the machine's. A page changed on purpose fails the guard until its
+baseline is taken again, in the pull request that changes the page:
+
+- **The pull request names the pages** on a line of its description, `Pictures: bench, dashboard`
+  (or `Pictures: none`), copied from its plan.
+- **The label `baselines`** has `baselines.yml` take the label off, walk the branch on GitHub and
+  retake every page; a picture that changed for a page not named fails it, by name, with nothing
+  pushed. Otherwise it commits the named pages' `<page>-linux.png` to `baselines/<branch>`.
+- **Merge that in** (`git fetch origin baselines/<branch> && git merge FETCH_HEAD`) and push, and
+  the guard runs; the branch beside it is deleted when the pull request closes. The label is never
+  left on, so adding it again always asks again.
+
+By hand, the guard's failed walk uploads what it saw: `gh run download <run> -n desk-walk`, and the
+page's `-actual.png` is its new baseline. [`environment.md`](environment.md) sets the walk up.
 
 A table that scrolls in its box changes no baseline when a column is added beyond its edge.

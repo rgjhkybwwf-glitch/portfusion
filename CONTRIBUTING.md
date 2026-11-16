@@ -545,9 +545,10 @@ changes it.
 **Building**
 
 - **A plan, checked, before code, and the ready check's.** The ready check writes each plan as a
-  comment on its issue: the files it will change, how each "Done" check will be made, and what it
-  will not touch. A fresh agent, given only the issue and that plan, checks it against the code
-  and says what is missing or wrong; the plan is mended and posted as **Plan, checked**, naming
+  comment on its issue: the files it will change, how each "Done" check will be made, the desk
+  pages whose walk pictures it means to move (or none), and what it will not touch. A fresh
+  agent, given only the issue and that plan, checks it against the code and says what is missing
+  or wrong; the plan is mended and posted as **Plan, checked**, naming
   the commit of `main` it was checked against. The plan is the issue's latest **Plan, checked**.
   It stands while `main` has not changed what it relies on since that commit, no answer recorded
   since changes what it assumed, and no "Re-plan" comment follows it. A builder builds only on a
@@ -594,15 +595,17 @@ changes it.
 - **A CI failure on its pull request** is the agent's to fix, and it waits for the guard's result
   before it leaves a pull request. **It waits in the foreground**, by a command that polls the
   checks and the `baselines/<branch>` ref, run again until they finish, **never by ending its
-  turn** (Telling the maintainer, below). A retake not landed ten minutes
-  after the label is asked for again, `baselines` taken off and put back on (a label already on
-  starts nothing). When the walk fails only because a page the issue meant to
-  change looks different, the agent labels the pull request `baselines`: a workflow retakes the
-  walk's Linux pictures onto a branch beside it, `baselines/<branch>` (`baselines.yml`); the agent
-  merges that in and pushes, which runs the guard, and the pull request lists the pages whose
-  pictures changed. The pictures are the agent's to keep, compared on Linux alone; the
-  maintainer never takes them, and reads them only for a feature's last slice (Features, above).
-  A failure the agent cannot fix is said at the top of the pull request, with what would fix it.
+  turn** (Telling the maintainer, below). When the walk fails only because a page the issue meant
+  to change looks different, the agent labels the pull request `baselines`, its description's
+  `Pictures:` line naming the plan's pages: a workflow retakes those pages' Linux pictures onto a
+  branch beside it, `baselines/<branch>` (`baselines.yml`); the agent merges that in and pushes,
+  which runs the guard. A page whose picture changed and is not named fails the retake, by name:
+  the change moved a page its plan did not, which is a fault to find, not a picture to add. The
+  workflow takes the label off as it starts, so a retake not landed ten minutes after the label is
+  asked for again by putting it back on. The pictures are the agent's to keep, compared on Linux
+  alone; the maintainer never takes them, and reads them only for a feature's last slice
+  (Features, above). A failure the agent cannot fix is said at the top of the pull request, with
+  what would fix it.
 
 **Merging**
 
