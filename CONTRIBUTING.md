@@ -209,7 +209,9 @@ changes it.
     what was answered or changed, and builds what of it stands under Next on a plan that still
     stands.
 - **An issue's state is on its labels**, so a run reads it without reading the issue:
-  `decision`, a question waits on the maintainer; `planned`, its latest **Plan, checked** stands;
+  `decision`, a one-line question (Asking and answering, below) waits on the maintainer, or a
+  `Change:` holds the issue, and only while one does: an open point with no such question is
+  written in the issue's body, with no label; `planned`, its latest **Plan, checked** stands;
   `building`, a run is at work on it, planning or building. Only the run that changes a state
   changes its label, and a comment says why. `loop` is not a state but whose the work is: the
   maintainer's, in a session (Which issues, below).
@@ -260,8 +262,9 @@ changes it.
 - **The gate: when only the checklist is left under Next, with any feature whose shape is not
   decided, nothing of the next milestone is built.** The ready check posts the gate review that
   day (The ready check, below). The gate is answered when a comment headed "Gate review" for the
-  milestone is on #206 and #206 carries no `decision`; only then is the checklist planned, by the
-  next ready check, and worked.
+  milestone is on #206 and #206 carries no `decision`; only then is the checklist planned and
+  worked: the answer run that applies the gate review re-plans it (The answer run, below), or
+  else the next ready check plans it.
 - **The checklist is never closed.** Its pull request says "For #156", not "Closes", and ticks
   its boxes.
 - **The release's pull request names the release.** `__version__` in
@@ -307,8 +310,8 @@ changes it.
   brought level with `main` (merged in, never rebased), its pictures retaken when a page it changed
   moved under it, and its CI made green, so none waits on the maintainer for anything but a yes it
   asked for.
-- **No line it can build and nothing to tend: stop**, posting nothing on GitHub; the debrief
-  says what holds each line (Telling the maintainer, below).
+- **No line it can build and nothing to tend: stop**, posting nothing on GitHub but its line in
+  the run log; the debrief says what holds each line (Telling the maintainer, below).
 
 **Asking and answering**
 
@@ -353,32 +356,36 @@ changes it.
   them, with `decision`, once the issue is under Next, whether or not its "waits" have closed, so
   its answer is in before its turn comes. Two are asked sooner, within the limit
   below: an `Idea:`, as it is shaped, since the maintainer is waiting on it, and a feature's
-  shape, on its design card. An answer the maintainer gives early, in a comment, counts when its
-  line is planned.
+  shape, on its design card. A question written in a session the maintainer is part of keeps
+  `decision` wherever its issue stands, and is not asked again. An answer the maintainer gives
+  early, in a comment, counts when its line is planned.
 - **An issue's questions are kept few**: what only the maintainer can decide. What the agent can
   settle from the code, the record's rules or an answer already given, it settles and says so.
 - **At most five questions stand open at once**, counting the milestone being worked's issues, a
-  design card's and #206's reviews; the maintainer's own long-standing decisions (#5, #6 and the
-  like) apart. Beyond five it asks nothing new but what blocks the first line under Next: an
-  `Idea:`'s, a card's and a review's questions are written, and wait. While a review or a card of
-  its own stands unanswered it posts no new one; the gate review is the exception (The ready
-  check, below).
+  design card's and #206's reviews; questions on issues of a later milestone, written in a session
+  the maintainer is part of, apart. Beyond five it asks nothing new but what blocks the first
+  line under Next: an `Idea:`'s, a card's and a review's questions are written, and wait. While a
+  review or a card of its own stands unanswered it posts no new one; the gate review is the
+  exception (The ready check, below).
 
 **The ready check**
 
 - **It reads [`docs/direction.md`](docs/direction.md) first**, and cites it for a milestone, a
-  cut or an idea. The Definitions of Ready and the gate are under Which issues, the limits on
-  questions under Asking and answering (above), and what its debrief says under Telling the
-  maintainer (below).
+  cut or an idea, and [`docs/content-map.md`](docs/content-map.md) beside it, which it cites for a
+  design card and for a plan that changes which page or section answers a job. The Definitions
+  of Ready and the gate are under Which issues, the limits on questions under Asking and answering
+  (above), and what its debrief says under Telling the maintainer (below).
 - **Before anything else, it reads what changed since its last run**: the pull requests merged or
   stopped, each run's comments on the issues, and every answer and `Change:` the maintainer gave,
   with each "Re-plan" an answer run left, and every other comment of the maintainer's, which it
-  applies where it shapes or plans that issue and otherwise names in its debrief. Its plans start
+  applies where it shapes or plans that issue and otherwise names in its debrief. Its last run
+  began at the start on its own last line in the run log (#289), whose lines it never acts on, or
+  three days ago when it finds none. Its plans start
   from there. It clears a `building`
   label more than three hours old: a run that long has died.
 - **Nothing changed: stop.** When nothing has merged, closed, been answered, changed or filed
   since its last run, and Next holds as many `planned` lines as the routine's number or no line
-  it could plan, it ends with a one-line debrief and posts nothing.
+  it could plan, it ends with a one-line debrief and posts nothing but its line in the run log.
 - **Started for a re-plan** (`replan.yml`, its text beginning "Re-plan only"), it plans only the
   issues under Next marked "Re-plan" since their last **Plan, checked**, and does nothing else of
   this part; its debrief is a line an issue.
@@ -433,6 +440,10 @@ changes it.
   review stands unanswered, whose questions it folds in; headed "Gate review" with the
   milestone's name, in the Queue review's place and holding all of it for the next milestone,
   and:
+  - what a helper's read of every open issue, and of the Decisions of the issues closed since the
+    last gate, finds: decisions that conflict or were never carried over, answers not recorded,
+    issues with no line in the Queue, and a `decision` with no question waiting, each folded into
+    its questions or its proposals;
   - what shipped, against the milestone's sentence in the direction page;
   - keep or pull, for each feature the maintainer has trialled;
   - each design card unanswered, and a move for each feature left under Next with no shape;
@@ -450,8 +461,9 @@ changes it.
   under Design next in the Queue, or of a feature at the top of Next, and the issue takes
   `decision`. Above the fold, in at most 150 words: the outcome in one line; three
   options, each a different idea of the feature and not one idea at three sizes, each with its
-  cost (slices, figures that move, a migration or none); a link to a mock page; a
-  recommendation; and at most three questions. The evidence is folded under `<details>`.
+  cost (slices, figures that move, a migration or none) and the jobs whose home it moves, by the
+  map's numbers, or "no job moves"; a link to a mock page; a recommendation; and at most three
+  questions. The evidence is folded under `<details>`.
 - **The mock page shows today's page and each option**, on the demo's names. It is a private page
   published with the Artifact tool and touches no code. A run that cannot publish without stopping
   to ask gives words and a picture of today's page instead, and says so.
@@ -486,10 +498,10 @@ changes it.
   given together make one run. Nothing of a comment is passed, and the issue it names is only the
   last.
 - **It first claims every answered or changed issue, found by the comments, not the labels.** It
-  lists the owner's comments on issues and pull requests since its own last run began (its last
-  `💬 **Answer run**` comment; the last three days when it finds none), leaves out each that
-  opens with a run's mark or a session's note, and takes each whose first words answer or begin
-  `Change:`. A
+  lists the owner's comments on issues and pull requests since its own last run began (the start
+  on its last line in the run log, #289; the last three days when it finds none), leaves out
+  each that opens with a run's mark or a session's note, and takes each whose first words answer
+  or begin `Change:`. A
   `decision` label taken off by hand, and a trigger that names one issue, hide nothing; an answer
   already in its issue's Decisions is skipped. It records each answer or change (Asking and
   answering, above) before it builds any, so a run started later does not take the same issue.
@@ -504,7 +516,9 @@ changes it.
   order answered under the Queue's heading for after the gate, files the issue for a pull
   (Features, above), and edits `docs/direction.md` to the answer in a pull request that links
   #206 and may merge itself once `guard` is green, the answer being its yes. Then it takes
-  `decision` off #206, and goes on.
+  `decision` off #206. For a gate review it then leaves a comment on the checklist (#156) whose
+  first line after its name is "Re-plan: the gate review for <milestone> is answered", and takes
+  `planned` off it. Then it goes on.
 - **Then it builds the answered issues under Next whose plan still stands**, one after another,
   in Queue order, as the night run would, up to the routine's number, and no other line. A plan
   posted "if answered as recommended" stands when every answer is the recommended one. Any other
@@ -519,8 +533,8 @@ changes it.
 - **A decision issue closes once it is decided.** An issue that only records a decision, such as
   the content map (#3), is closed when every question on it is answered and recorded and each
   part of what it settles is filed or written into the issue it settles, the closing comment
-  naming where each went. The Queue (#206), the checklist (#156), the walk finds (#220) and a
-  feature are never closed so.
+  naming where each went. The Queue (#206), the checklist (#156), the walk finds (#220), the run
+  log (#289) and a feature are never closed so.
 - **Under Next, an issue with a branch of its own continues on it**, once its plan stands again,
   brought level with `main`.
   An open pull request from it is completed to the whole issue, its own "Part of #n" made "Closes
@@ -553,6 +567,9 @@ changes it.
   names a file or function the plan changes. Each is settled in the issue: a "waits" in Order when
   one must land first, a line in Not in scope when the other owns that part, or a question when the
   two issues' Done disagree. The plan's checker looks for one the plan missed.
+- **The plan names the content map** when the change adds or removes a page or a report section,
+  or moves a job, or part of one, between them: `docs/content-map.md` is among its files, with the
+  table that changes. The plan's checker holds it to that.
 - **One issue, one branch, one pull request**: a branch claude/<name> from the latest `main`,
   worked by the conventions above (changelog, own diff reviewed, a changed desk page walked cold),
   the guard run, and the desk walk if a desk file changed. The pull request says "Closes #n", and
@@ -615,21 +632,28 @@ changes it.
   merging itself gets the same note without naming them: it asks nothing, so it pings no one.
 - **A run is one turn, and it ends by sending its debrief.** Every wait is inside that turn: a
   helper agent (the plan's checker, the reviewer) is run in the foreground and waited for, and CI
-  is polled in the foreground. When nothing is left to wait for, the run's last two steps are, in
-  order: it stops watching each pull request it leaves (below), then sends the debrief to the
+  is polled in the foreground. When nothing is left to wait for, the run's last three steps are,
+  in order: it stops watching each pull request it leaves (below), adds its line to the run log
+  (below), then sends the debrief to the
   maintainer's phone as a push notification (the `PushNotification` tool), a few lines: what
   merged, what waits on the maintainer, or that the run had nothing to do. **Its last line begins
   with the word `Next:`**, then who acts next, on what, and when, as in "Next: the night run, at
   02:00, builds #250." When no line under Next can be built,
   it names each line and what holds it: a question (whose), no plan yet or a "Re-plan" (the ready
   check's), `building` (which run), an open pull request, a "waits" or the gate. The
-  message that ends the turn is the debrief in full. Neither is ever sent while something is
-  still running. While a gate review stands unanswered, or a release untagged, both say in one
-  line what the run waits on.
+  message that ends the turn is the debrief in full. None of the three, the log line, the push
+  and that message, is ever sent while something is still running. While a gate review stands
+  unanswered, or a release untagged, the push and the debrief say in one line what the run waits
+  on.
 - **A run stops watching** each pull request it leaves, merged or waiting, by
   `unsubscribe_pr_activity` for each one it subscribed to, just before its debrief: a run woken
-  after it reloads its whole context for nothing. One woken all the same sends no second push and
-  ends in one line.
+  after it reloads its whole context for nothing. One woken all the same sends no second push,
+  adds no second line to the run log, and ends in one line.
+- **Each run adds one line to the run log** (#289), a comment: its mark, then the date and when
+  it began and ended, UK time, what it did in a line, and its `Next:` line, as in
+  `🌙 **Night run** · 17 Nov 02:00–02:47 · built #250, merged · Next: …`. The time stays first
+  after the mark; a ready check started for a re-plan says so after its time. It is the source
+  for a run's length, its stops and which run was at work; it asks nothing and pings no one.
 - **The agent's own comments never begin `Q` and a number, `All as recommended` or `Change:`**,
   in any case: the maintainer's shapes, which start a workflow, since it writes as the
   maintainer's account.
