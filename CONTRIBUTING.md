@@ -257,8 +257,9 @@ changes it.
 - **The gate: when only the checklist is left under Next, with any feature whose shape is not
   decided, nothing of the next milestone is built.** The ready check posts the gate review that
   day (The ready check, below). The gate is answered when a comment headed "Gate review" for the
-  milestone is on #206 and #206 carries no `decision`; only then is the checklist planned, by the
-  next ready check, and worked.
+  milestone is on #206 and #206 carries no `decision`; only then is the checklist planned and
+  worked: the answer run that applies the gate review re-plans it (The answer run, below), or
+  else the next ready check plans it.
 - **The checklist is never closed.** Its pull request says "For #156", not "Closes", and ticks
   its boxes.
 - **The release's pull request names the release.** `__version__` in
@@ -501,7 +502,9 @@ changes it.
   order answered under the Queue's heading for after the gate, files the issue for a pull
   (Features, above), and edits `docs/direction.md` to the answer in a pull request that links
   #206 and may merge itself once `guard` is green, the answer being its yes. Then it takes
-  `decision` off #206, and goes on.
+  `decision` off #206. For a gate review it then leaves a comment on the checklist (#156) whose
+  first line after its name is "Re-plan: the gate review for <milestone> is answered", and takes
+  `planned` off it. Then it goes on.
 - **Then it builds the answered issues under Next whose plan still stands**, one after another,
   in Queue order, as the night run would, up to the routine's number, and no other line. A plan
   posted "if answered as recommended" stands when every answer is the recommended one. Any other
