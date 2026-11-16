@@ -13,12 +13,18 @@ One figure moves, on two pages, and there is no migration. Do these when the boo
   what it leaves out.
 - **Expect days held still open to read to the prices' day**, on Holdings and on Round Trips'
   company lives, where they read to today: fewer days, by the age of the newest mark.
-- **Expect each account's reconciliation in new words**, the same on Reconcile, the Dashboard
-  and `portfusion record`. An account never read: "<account>: no holdings export on file, so its
+- **Expect each account's reconciliation in new words**, the same on Reconcile and
+  `portfusion record`. An account never read: "<account>: no holdings export on file, so its
   units are unchecked — file a holdings export", or, for IG, "no reading from IG on
-  file". The count note reads "N account(s) checked against the broker". A share account whose
+  file"; the Dashboard shows the step as its link's words. The count note reads "1 of 3 accounts
+  checked against the broker", naming those checked. A share account whose
   reading is a holdings export is checked on its units even with no cash reading of its day: it
   is no longer "NO STATEMENT".
+- **Read the Dashboard's checks under "What was checked"**, apart from what needs attention. A
+  check that only counts what a gap already lists (reasoning, funding interest, dated rates) is
+  written only when nothing is owed. An IG reading struck apart, and a reading that lists no
+  units, are gaps with their step, as an account never read is. The record's findings no longer
+  name a folder.
 - **Reinstall against `requirements.lock`**: pypdf is 7 and python-dateutil 4.
 - **Read "price" for "mark" on screen**: "Mark key" is "Price key", "Mark history" is "Price
   history" and "Mark move (%)" is "Price move (%)", and Price Refresh's button is "write the
@@ -30,8 +36,9 @@ One figure moves, on two pages, and there is no migration. Do these when the boo
   branch changed, when the guide did not change. It never refuses the push. A release's read
   starts from the same list (CONTRIBUTING).
 - **Reconcile says what each account was last checked against, on what day, what was compared,
-  and what to do next**, in the engine's one sentence (`Book.account_checks()`), which the
-  Dashboard and `portfusion record` print too. A share account's units are counted again on the
+  and what to do next**, in the engine's one sentence (`Book.account_checks()`), which
+  `portfusion record` prints too, and the Dashboard with the step as its link's words. A share
+  account's units are counted again on the
   page from its filed holdings export, and its value in the book is set beside the broker's, for
   information only. The last broker check is read from the account history, as the report reads
   it, for every account. An IG reading's figures it does not hold are left out. The page leads
@@ -58,6 +65,13 @@ One figure moves, on two pages, and there is no migration. Do these when the boo
 
 ### Changed
 
+- **A finding says what is so, and its link says the step**: each finding carries its kind, work
+  or state, and the words of its step (`Finding` in `engine/findings.py`). The Dashboard lists the
+  work under Needs attention, each link named for its step, and the state apart, under What was
+  checked; `portfusion record` prints the step after the sentence. Work no desk page does yet
+  (reasoning owed on a trade already written, a live price nothing holds, a dividend with no
+  line, points per unit owed) has no link. A rate owed says why in words, and the evidence line
+  names no folder.
 - **A house word has one home, `house/words.py`**, which every panel answer carries beside its
   precision: the desk says "price" where the store says "mark", Performance's return is "a
   day-weighted return on money", Holdings by company says its quantity is in "shares, a bet

@@ -2,13 +2,16 @@
 
 Object.assign(DRAW, {
   dashboard(d) {
-    /* WHAT NEEDS ATTENTION, THEN WHAT WAS CHECKED: the record's notes, in the engine's words and
-       in the order `portfusion record` prints them, under the problems and gaps. A tag's space
-       and no dot, so the text lines up with the items above it. */
+    /* WHAT NEEDS ATTENTION: the problems and gaps, each leading to its page by the words of its
+       step, or by the page's name where it has none. THEN, APART, WHAT WAS CHECKED: the record's
+       state, in the engine's words and in the order `portfusion record` prints it, under its own
+       heading where there is any. A tag's space and no dot, so the text lines up with the items
+       above it. */
     const items = [...d.attention, ...(PANELS.has("bench") ? d.bench || [] : [])].map((a) =>
       `<li class="${esc(a.level)}"><span class="tag">${esc(a.level)}</span>${esc(a.text)}
-        ${a.panel ? panelLink(a.panel) : ""}</li>`
-    ).join("") + (d.checks || []).map((c) =>
+        ${a.panel ? panelLink(a.panel, a.action || undefined) : ""}</li>`
+    ).join("");
+    const checks = (d.checks || []).map((c) =>
       `<li class="check"><span class="tag"></span>${esc(c)}</li>`).join("");
 
     const p = d.prices, y = d.ytd;
@@ -52,7 +55,8 @@ Object.assign(DRAW, {
         ${figures(rest.map((f) => [f.label, `${fmt(f.value, f.kind)}${f.panel
           ? ` ${panelLink(f.panel, `see ${PANELS.get(f.panel)}${f.held_words
             ? `, ${f.held_words.toLowerCase()}` : ""}`, f.held)}` : ""}`, f.indent ? "indent" : ""]))}
-        <section><h2>Needs attention</h2><ul class="items">${items}</ul></section></div>`,
+        <section><h2>Needs attention</h2><ul class="items">${items}</ul>${checks
+          ? `<h2>What was checked</h2><ul class="items">${checks}</ul>` : ""}</section></div>`,
     });
   },
 });

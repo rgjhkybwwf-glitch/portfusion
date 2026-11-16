@@ -7,16 +7,33 @@ import pandas as pd
 from portfusion.engine.store import utc_of
 from portfusion.engine.core import Core
 from portfusion.house import precision as P
+from portfusion.house import words as W
+
+#: A finding's kinds: WORK the record is owed, and the STATE a check found.
+KINDS = ("work", "state")
 
 
 class Finding(str):
-    """A finding's sentence, and the desk page its work is done on: `page` is a panel's name, None
-    where the work is not the desk's."""
-    page: str | None
+    """A finding's sentence, which says what is so, and its kind (`KINDS`).
 
-    def __new__(cls, text: str, page: str | None = None):
+    A work finding names `page`, the panel its work is done on, and `action`, the words of the step
+    taken there; or neither, where no desk page does the work. A state finding names neither. The
+    step is never in the sentence: the desk draws it as the link's words, and the command prints
+    it after the sentence."""
+    page: str | None
+    action: str | None
+    kind: str
+
+    def __new__(cls, text: str, page: str | None = None, action: str | None = None,
+                kind: str = "work"):
+        if kind not in KINDS:
+            raise ValueError(f"a finding's kind is one of {KINDS}, not {kind!r}")
+        if (page is None) != (action is None):
+            raise ValueError(f"a finding names its page and its action together: {text!r}")
+        if kind == "state" and page is not None:
+            raise ValueError(f"a state finding leads nowhere: {text!r}")
         self = super().__new__(cls, text)
-        self.page = page
+        self.page, self.action, self.kind = page, action, kind
         return self
 
 
@@ -101,18 +118,22 @@ class Findings(Core):
 
     def findings(self, today: str | None = None,
                  counted: dict[str, dict[str, float]] | None = None) -> dict:
-        """The record's state as data: {problems, gaps, notes, prices}.
+        """The record's state as data: {problems, gaps, notes, prices}, each finding a `Finding`.
 
         A PROBLEM is a defect until explained: an account the broker does not agree with, prices
         past their age or spread limit, a conversion at a stale rate, a row entered since the line
-        whose document is not on file. A GAP is work owed: an account with no statement or never
-        read, a judgement owed. A NOTE is the state, stated, so a working check is visible as working.
+        whose document is not on file. A GAP is work owed: an account with nothing checked against
+        it, a judgement owed. Both are work. A NOTE is the state, stated, so a working check is
+        visible as working; a count note is written only when its check is clean, since the gaps
+        say what is owed.
+
+        WORK NO DESK PAGE DOES names no page: reasoning owed on a trade already written, a live
+        price nothing holds, a dividend with no line, points per unit owed, and a check that could
+        not run.
 
         No expected figure is written in: every finding is a relationship in today's record. Each
         part that reads machinery outside the ledger — the journal, the conversions, the archive —
         reports that it could not look rather than raising.
-
-        A problem or gap worked on a desk page is a `Finding` and names it.
 
         `today` is an ISO date for the price-age test; today's date if omitted. `counted` is
         `account_checks()`'s.
@@ -120,24 +141,23 @@ class Findings(Core):
         problems, gaps, notes = [], [], []
 
         # ---- the book against the BROKERS' STATEMENTS -------------------------------------
-        # EACH ACCOUNT IN `account_checks()`'s WORDS, which Reconcile shows: an account never
-        # read owes a reading, and one with nothing to check against a figure, each a gap; a
-        # difference is a problem, worked from Reconcile; the rest, the state stated.
-        checked = 0
-        for c in self.account_checks(counted).to_dict("records"):
-            if c["verdict"] == "no-reading":
-                gaps.append(Finding(c["sentence"], c["page"]))
-            elif c["verdict"] == "no-statement":
-                gaps.append(Finding(c["sentence"], "reconcile"))
-            elif not c["checkable"]:
-                notes.append(c["sentence"])
-            else:
-                checked += 1
-                if c["verdict"] == "differs":
-                    problems.append(Finding(c["sentence"], "reconcile"))
-                elif c["verdict"] == "within-band":
-                    notes.append(c["sentence"])
-        notes.append(f"{checked} account(s) checked against the broker")
+        # EACH ACCOUNT IN `account_checks()`'s WORDS, which Reconcile shows. A check with a step
+        # is work: a difference a problem, led to Reconcile, which shows what differs; any other a
+        # gap, led to where its step is taken. One within its tolerance is the state, stated; one
+        # whose units agree is counted, and named in the accounts line.
+        checks = self.account_checks(counted).to_dict("records")
+        for c in checks:
+            said = f"{c['account']}: {c['state']}"
+            if c["verdict"] == "differs":
+                problems.append(Finding(said, "reconcile", c["next"]))
+            elif c["next"]:
+                gaps.append(Finding(said, c["page"], c["next"]))
+            elif c["verdict"] == "within-band":
+                notes.append(Finding(c["sentence"], kind="state"))
+        checked = [c["account"] for c in checks if c["checkable"]]
+        notes.append(Finding(f"{len(checked)} of {len(checks)} account{'s' * (len(checks) != 1)} "
+                             f"checked against the broker"
+                             + (f": {', '.join(checked)}" if checked else ""), kind="state"))
 
         # ---- PRICE FRESHNESS ------------------------------------------------------------
         p = self.price_ageing(today)
@@ -146,44 +166,50 @@ class Findings(Core):
         prices = ([f"newest {P.day(newest)}, oldest {P.day(oldest)}",
                    f"{age} days (oldest of {p['marks']} prices) · spread {spread}d"]
                   if p["marks"] else ["no prices yet", "nothing to age"])
+        refresh = ("price-refresh", "refresh the prices")
         if age > self.D.PRICE_AGE_LIMIT:
             problems.append(Finding(
-                f"prices are {age} days old — past the {self.D.PRICE_AGE_LIMIT}-day limit, refresh "
-                f"before relying on them", "price-refresh"))
+                f"prices are {age} days old, past the {self.D.PRICE_AGE_LIMIT}-day limit", *refresh))
         if spread > self.D.PRICE_SPREAD_LIMIT:
             problems.append(Finding(
                 f"prices span {spread} days ({P.day(oldest)} to {P.day(newest)}) — past the "
                 f"{self.D.PRICE_SPREAD_LIMIT}-day spread limit. A ticker was probably missed in "
-                f"the last sweep; the newest price being fresh hides it", "price-refresh"))
+                f"the last sweep; the newest price being fresh hides it", *refresh))
         unheld = self.priced_unheld()
         if unheld:
             problems.append(Finding(
                 f"a live price nothing holds — {', '.join(unheld)}: every refresh fetches it, and "
-                f"its age counts against the prices' freshness", "price-refresh"))
+                f"its age counts against the prices' freshness"))
 
         # ---- JUDGEMENTS OWED ------------------------------------------------------------
         owed = self.theses_owed()
-        notes.append(f"reasoning: {len(owed)} owed (from "
-                     f"{P.day(self.D.REVIEW_FROM)}, on entry and on exit)")
+        if not owed:
+            notes.append(Finding(f"reasoning: none owed since {P.day(self.D.REVIEW_FROM)}, on "
+                                 f"entry or on exit", kind="state"))
         gaps.extend(Finding(f"reasoning owed — {o['ticker']}"
                             + (f" in {o['account']}" if o["account"] else "")
-                            + f": {o['half']}, since {P.day(o['since'])}", "bench") for o in owed)
+                            + f": {o['half']}, since {P.day(o['since'])}") for o in owed)
 
         # ---- FUNDING: every night a daily funded leg was held has its row -----------------
         unfunded = self.funding_gaps()
-        notes.append(f"funding: {len(self.D.DAILY_FUNDED_LEGS)} daily funded leg(s), "
-                     f"{len(unfunded)} night(s) with no funding-interest row")
+        if self.D.DAILY_FUNDED_LEGS and not unfunded:
+            notes.append(Finding("funding interest: every night a daily funded bet was held has "
+                                 "its row", kind="state"))
         gaps.extend(Finding(f"funding interest missing — {a}: {leg} held overnight {night} with "
-                            f"no row", "bench") for a, leg, night in unfunded)
+                            f"no row", "bench", "enter the funding interest")
+                    for a, leg, night in unfunded)
 
         # ---- DATED RATES: every date a figure converts at has that day's close ----------
         owed = self.rate_gaps(today)
-        notes.append(f"dated rates: {len(owed)} owed a TradingView close")
-        gaps.extend(Finding(f"rate owed — {g['currency']} {P.day(g['date'])} ({g['why']}): no "
-                            f"TradingView close on file for it", "price-refresh") for g in owed)
+        if not owed:
+            notes.append(Finding("dated rates: every date a figure converts at has its close",
+                                 kind="state"))
+        gaps.extend(Finding(f"rate owed — {g['currency']} on {P.day(g['date'])}, for "
+                            f"{W.RATE_OWED_FOR[g['why']]}: no TradingView close on file for it",
+                            "price-refresh", "fetch the close") for g in owed)
 
         # ---- A DIVIDEND'S LINE: what lets a company's life count it ---------------------
-        gaps.extend(f"dividend not assigned to a line — {r.date} {r.account}: {r.detail}"
+        gaps.extend(Finding(f"dividend not assigned to a line — {r.date} {r.account}: {r.detail}")
                     for r in self.D.ci_rows if r.category == "Dividend" and not r.ticker
                     and pd.Timestamp(r.date) >= self.baseline)
 
@@ -191,8 +217,8 @@ class Findings(Core):
         L = self.ledger
         held_bets = sorted(set(L.loc[L["open_leg"] & L["held_as"].eq("spread bet"), "ticker"]))
         ident = self._identity().set_index("ticker")
-        gaps.extend(f"points per unit owed — {code}: held, and securities.csv does not say how "
-                    f"many points make one unit of its price"
+        gaps.extend(Finding(f"points per unit owed — {code}: held, and securities.csv does not "
+                            f"say how many points make one unit of its price")
                     for code in held_bets
                     if code not in ident.index or pd.isna(pd.to_numeric(
                         ident.at[code, "points_per_unit"], errors="coerce")))
@@ -245,14 +271,14 @@ class Findings(Core):
                 night += pd.Timedelta(days=1)
         return out
 
-    def _conversion_state(self) -> tuple[str, list[str]]:
+    def _conversion_state(self) -> tuple[Finding | None, list[Finding]]:
         """Foreign-currency income, and how far its rate sat from the event: (note, problems).
         A PROBLEM past `rules.FX_RATE_AGE_LIMIT_DAYS`: the book would add a figure computed at a
         rate nobody fetched for the day, and the fix is to fetch one."""
         try:
             conv = self.conversions()
             if conv.empty:
-                return "", []
+                return None, []
             limit = self.D.FX_RATE_AGE_LIMIT_DAYS
             # THE ROWS WITH A RATE, for the furthest: a row with none has no distance, and the max
             # over it would raise, putting "could not be checked" in place of every problem below.
@@ -260,28 +286,29 @@ class Findings(Core):
             note = (f"conversions: {len(conv)} foreign-currency income row(s) · "
                     + (f"rate up to {max(apart)}d before the event, limit {limit}d" if apart
                        else "none with a rate on file"))
-            return note, [Finding(
+            return Finding(note, kind="state"), [Finding(
                 (f"{r.account} {str(r.date)[:10]}: {r.currency} {r.local_amount} converted at "
                  f"the close of {r.rate_date} — {r.days_apart} days before the event, past the "
-                 f"{limit}-day limit. Fetch the rate for the day.") if pd.notna(r.days_apart)
+                 f"{limit}-day limit") if pd.notna(r.days_apart)
                 else (f"{r.account} {str(r.date)[:10]}: {r.currency} {r.local_amount} has no "
-                      f"close on file on or before its date. Fetch the rate for the day."),
-                "price-refresh") for r in conv[conv["stale"]].itertuples()]
+                      f"close on file on or before its date"),
+                "price-refresh", "fetch the close") for r in conv[conv["stale"]].itertuples()]
         except Exception as e:                       # noqa: BLE001 — never fail over this check
             # NOT CHECKED IS A PROBLEM, not a note: a check that cannot run must not read as good
             # order.
-            return (f"conversions: unknown ({type(e).__name__})",
-                    [f"conversions could not be checked: {type(e).__name__}: {e}"])
+            return (Finding(f"conversions: unknown ({type(e).__name__})", kind="state"),
+                    [Finding(f"conversions could not be checked: {type(e).__name__}: {e}")])
 
-    def _evidence_chain(self) -> tuple[str, str | None]:
-        """How many rows citing a broker document can reach it, in one line, and a problem if any
-        cannot, whatever its date. A row that cites no document is not counted and is not a gap:
-        an IG read is retrieved by the dealId it stores. The rows labelled `not-on-file` are
+    def _evidence_chain(self) -> tuple[Finding, Finding | None]:
+        """How many rows citing a broker document have it on file, in one line, and a problem if
+        any has not, whatever its date. A row that cites no document is not counted and is not a
+        gap: an IG read is retrieved by the dealId it stores. The rows labelled `not-on-file` are
         counted beside it, so the line says how much of the record no document holds."""
         try:
             names = self.D.schema.filed_statements()
             if not names:
-                return "evidence: _archive/statements/ is empty or absent — limb 3 unverifiable", None
+                return Finding("evidence: no broker document is on file, so no row's document can "
+                               "be checked", kind="state"), None
             # THE ROW'S ACCOUNT TRAVELS WITH IT: a trade's source names the document's kind and
             # date only, and a date is not a document until the account narrows it.
             rows = ([(t.trade_id, t.source, t.broker_ref, t.acct) for t in self.D.buys]
@@ -296,36 +323,38 @@ class Findings(Core):
                 cites += 1
                 if not ok:
                     gaps.append(rid)
-            line = (f"evidence: {cites - len(gaps)} of {cites} rows citing a document reach it "
-                    f"in _archive/statements/ · {absent} not on file")
-            if not gaps:
-                return line, None
-            return (f"{line} · {len(gaps)} cannot",
-                    Finding(f"{len(gaps)} row(s) cite a document that is in no archived filename: "
-                            f"{', '.join(sorted(gaps))} — file it, or correct the row's source",
-                            "bench"))
+            line = (f"evidence: {cites - len(gaps)} of {cites} rows that cite a broker document "
+                    f"have it on file · {absent} more row{'s are' if absent != 1 else ' is'} "
+                    f"recorded as having none")
+            # THE ROWS WITHOUT ONE ARE THE PROBLEM'S TO NAME: the line's count already says how many.
+            return Finding(line, kind="state"), (Finding(
+                f"{len(gaps)} row(s) cite a document that is not on file: "
+                f"{', '.join(sorted(gaps))}", "bench", "file the document") if gaps else None)
         except Exception as e:                       # noqa: BLE001 — never fail over provenance
             # NOT CHECKED IS A PROBLEM, as the conversions' is.
-            return (f"evidence: unknown ({type(e).__name__})",
-                    f"the evidence chain could not be checked: {type(e).__name__}: {e}")
+            return (Finding(f"evidence: unknown ({type(e).__name__})", kind="state"),
+                    Finding(f"the evidence chain could not be checked: {type(e).__name__}: {e}"))
 
-    def _journal_state(self) -> tuple[str, str | None]:
+    def _journal_state(self) -> tuple[Finding, Finding | None]:
         """What the journal accounts for, in one line, and a problem if it could not be read. A
         difference is a FINDING, not a problem: a hand edit with a commit message is a correction
         the store allows."""
         try:
             opened = self.journal_opened()
             if opened is None:
-                return "journal: no opening count — nothing to reconcile against", None
+                return Finding("journal: no opening count — nothing to reconcile against",
+                               kind="state"), None
             off = self.journal_unaccounted()
             wrote = self.journal(since=opened)
             if off.empty:
-                return (f"journal: every row accounted for since {P.day(pd.Timestamp(opened))} · "
-                        f"{len(wrote)} write(s) recorded"), None
+                return Finding(f"journal: every row accounted for since "
+                               f"{P.day(pd.Timestamp(opened))} · {len(wrote)} write(s) recorded",
+                               kind="state"), None
             parts = "; ".join(f"{r['table']} {r['unaccounted']:+d}"
                               for r in off.to_dict("records"))
-            return (f"journal: {len(off)} table(s) hold rows no route accounts for — {parts}. "
-                    f"That is a hand edit; git log will say which."), None
+            return Finding(f"journal: {len(off)} table(s) hold rows no route accounts for — "
+                           f"{parts}. That is a hand edit; git log will say which.",
+                           kind="state"), None
         except Exception as e:                       # noqa: BLE001 — never fail over the journal
-            return (f"journal: unknown ({type(e).__name__})",
-                    f"the journal could not be checked: {type(e).__name__}: {e}")
+            return (Finding(f"journal: unknown ({type(e).__name__})", kind="state"),
+                    Finding(f"the journal could not be checked: {type(e).__name__}: {e}"))

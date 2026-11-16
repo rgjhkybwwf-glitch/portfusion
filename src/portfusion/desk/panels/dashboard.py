@@ -76,8 +76,8 @@ def data() -> dict:
         "attention": _attention(found),
         # WHAT WAITS ON THE BENCH, drawn where the Bench opens: staging, so never a finding.
         "bench": _bench(),
-        # THE CHECKS BEHIND IT, in the engine's words: the lines `portfusion record` prints under
-        # the figures, so a clean list shows what was checked as well as that nothing failed.
+        # WHAT WAS CHECKED, in the engine's words: the state lines `portfusion record` prints
+        # under the figures, so a clean list shows what was checked as well as that nothing failed.
         "checks": found["notes"],
         # THE LATEST REPORT THE GATE ALLOWS, for the step line: the Reports page has the rest.
         "report": next((q for q in engine.reports()["quarters"] if q["closed"] and not q["gaps"]),
@@ -88,10 +88,11 @@ def data() -> dict:
 def _attention(f: dict) -> list[dict]:
     """What is stale, missing or owed. The half the report must never carry.
 
-    `Book.findings()`'s, the same list `portfusion record` prints, so the desk and the command
-    line cannot disagree about whether something is a problem.
+    `Book.findings()`'s work, the same list `portfusion record` prints, so the desk and the command
+    line cannot disagree about whether something is a problem. Each leads to its page by the words
+    of its step, or names none where no desk page does its work.
     """
-    items = [{"level": level, "text": text, "panel": getattr(text, "page", None)}
+    items = [{"level": level, "text": text, "panel": text.page, "action": text.action}
              for level, key in (("problem", "problems"), ("gap", "gaps")) for text in f[key]]
 
     fresh = engine.freshness()

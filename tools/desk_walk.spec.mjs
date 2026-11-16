@@ -2,7 +2,8 @@
 // opened by its tab and must draw no error, draw each control in the shape of what it does, hold
 // no accessibility fault but the `KNOWN`, and look as its baseline does; the Dashboard, Holdings
 // and the Bench say "price", never "mark", and so do a holding's detail's headings; a finding is
-// followed to its page, and the Dashboard's "add a fact on the Bench" to the Bench; a wide
+// followed to its page, what was checked stands apart from what needs attention, and the
+// Dashboard's "add a fact on the Bench" leads to the Bench; a wide
 // table's button to Trades is in view, a press on a row opens its detail in view, and a heading
 // that sorts shows it; a box that
 // scrolls sideways marks each edge with more beyond it, and one that does not marks none; an open
@@ -117,6 +118,27 @@ test("a finding leads to the page its work is done on", async ({ page }) => {
   await link.click();
   await expect(page.locator(`#tabs button[data-name="${to}"]`)).toHaveAttribute("aria-current", "page");
   await expect(page).toHaveURL(new RegExp(`#${to}$`));
+});
+
+// WORK APART FROM STATE: each row under Needs attention carries its tag and a link reads its step;
+// a row under What was checked leads nowhere, and none counts what a gap beside it already says.
+test("the Dashboard shows what was checked apart from what needs attention", async ({ page }) => {
+  await open(page, "dashboard");
+  const work = page.locator("#main ul.items li:not(.check)");
+  const checks = page.locator("#main ul.items li.check");
+  await expect(page.locator("#main h2", { hasText: "What was checked" })).toBeVisible();
+  for (const tag of await work.locator(".tag").allInnerTexts()) expect(tag.trim()).not.toBe("");
+  expect(await work.count()).toBe(await work.locator(".tag").count());
+  await expect(work.filter({ hasText: "days old, past the" }).locator("button[data-panel]"))
+    .toHaveText(/refresh the prices/);
+  await expect(checks.locator("button, a")).toHaveCount(0);
+  const rows = [...await work.allInnerTexts(), ...await checks.allInnerTexts()].map((t) => t.trim());
+  for (const [note, gap] of [["reasoning:", "reasoning owed"], ["dated rates:", "rate owed"],
+    ["funding interest:", "funding interest missing"]]) {
+    if (rows.some((r) => r.replace(/^\w+\s*/, "").startsWith(gap))) {
+      expect(rows.filter((r) => r.startsWith(note)), `"${note}" beside a gap it counts`).toEqual([]);
+    }
+  }
 });
 
 test("the Dashboard leads to the Bench, where a fact is added", async ({ page }) => {

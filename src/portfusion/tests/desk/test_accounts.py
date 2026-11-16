@@ -897,12 +897,13 @@ def test_a_share_account_is_counted_again_and_its_value_set_beside_the_brokers(s
     assert counted.get(account) == {t: float(q) for t, q in _book_units(account).items()}, counted
     agree = b.account_checks(counted).set_index("account").loc[account]
     assert (agree["verdict"], agree["compared"], agree["next"]) == ("units-agree", "units", None)
+    assert not [n for n in b.findings(counted=counted)["notes"] if n.startswith(f"{account}: ")]
     ticker, units = next(iter(counted[account].items()))
     moved = {account: {**counted[account], ticker: units + 7}}
     c = b.account_checks(moved).set_index("account").loc[account]
     assert (c["verdict"], c["page"]) == ("differs", "bench"), c.to_dict()
     assert f"{ticker} book {units:,.0f}, broker {units + 7:,.0f}" in c["sentence"], c["sentence"]
-    assert c["sentence"] in b.findings(counted=moved)["problems"]
+    assert c["sentence"] in [f"{p} — {p.action}" for p in b.findings(counted=moved)["problems"]]
 
 
 @needs("accounts", "account-readings", "buys")
