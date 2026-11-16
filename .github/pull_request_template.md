@@ -4,6 +4,10 @@
 
 Agreed in: #
 
+Pictures: none
+<!-- The desk pages whose walk pictures this change means to move, from its plan, as
+     `Pictures: bench, dashboard`; `baselines.yml` retakes those and refuses any other. -->
+
 ## Checks
 
 - [ ] The change was agreed first, in an issue or with the maintainer
