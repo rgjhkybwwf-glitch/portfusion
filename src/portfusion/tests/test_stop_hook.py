@@ -32,14 +32,19 @@ def test_a_run_waits_for_guard_then_for_its_debrief(hook):
     assert reason and "Next:" in reason
     assert hook.decide(RUN, DEBRIEF, [], {}, now=1000.0)[0] is None
     assert hook.decide(RUN, "**Next:** the ready check, at 06:50.", [], {}, now=0)[0] is None
+    assert hook.decide(RUN, "- Next: the night run.", [], {}, now=0)[0] is None
 
 
 def test_no_run_is_held_forever_and_no_other_session_at_all(hook):
     state = {"guard_since": 0.0}
     assert hook.decide(RUN, DEBRIEF, ["#292"], state, now=hook.WAIT_GUARD * 60 + 1)[0] is None
     state = {}
-    asked = [hook.decide(RUN, "done", [], state, now=0)[0] for _ in range(hook.ASK_DEBRIEF + 1)]
+    asked = [hook.decide(RUN, "done", [], state, now=0, held=n > 0)[0] for n in range(hook.ASK_DEBRIEF + 1)]
     assert all(asked[:-1]) and asked[-1] is None
+    assert hook.decide(RUN, "done", [], state, now=0, held=False)[0]   # a new attempt to end asks again
+    state = {"guard_since": 0.0}
+    hook.decide(RUN, DEBRIEF, [], state, now=10.0)                      # the wait is over
+    assert hook.decide(RUN, DEBRIEF, ["#293"], state, now=hook.WAIT_GUARD * 60 + 20)[0]
     assert hook.decide("Fix the walk on #292, please.", "done", ["#292"], {}, now=0)[0] is None
     asked = 'Read CONTRIBUTING.md (especially the section "The nightly agent") and build #284.'
     assert hook.decide(asked, "done", ["#292"], {}, now=0)[0] is None
@@ -56,6 +61,12 @@ def test_the_transcript_gives_the_first_prompt_and_the_last_words(hook, tmp_path
     path = tmp_path / "t.jsonl"
     path.write_text("\n".join(json.dumps(x) for x in lines) + "\nnot json\n", encoding="utf-8")
     assert hook.transcript(str(path)) == (RUN, DEBRIEF)
+
+
+def test_a_hook_that_fails_holds_nothing_and_says_so(hook, monkeypatch, capsys):
+    monkeypatch.setattr(hook.sys, "stdin", __import__("io").StringIO("not json"))
+    assert hook.main() == 0
+    assert "held nothing" in capsys.readouterr().out
 
 
 def test_settings_run_the_hook_on_stop(repo_root):
