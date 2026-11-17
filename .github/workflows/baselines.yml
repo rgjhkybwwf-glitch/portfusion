@@ -14,10 +14,15 @@
 # THE LABEL COMES OFF FIRST, before anything else runs, so it is never left on: GitHub starts this on
 # a label being added, and a label already on starts nothing. Adding it again always asks again.
 #
-# THE WRITE TOKEN STAYS OUT OF THE BRANCH'S CODE. The checkout keeps no credential in git's config,
-# so `npm ci` and the walk, which run the branch's own code, find none; the token is given to the
-# first step, before the checkout, and to the last, which comments, commits and pushes. The pull
-# request's description reaches the judging step by the environment, never in the shell's text.
+# THE WRITE TOKEN NEVER MEETS THE BRANCH'S CODE. `npm ci`, the walk and the judge run the branch's own
+# code, and code can plant a git hook in `.git/hooks/` or append to `$GITHUB_ENV` or `$GITHUB_PATH`,
+# which every later step of its job inherits; a hooks setting alone closes the first and not the
+# second. So the retake is three jobs, as `tiers.yml` is: `unlabel` takes the label off and checks out
+# nothing; `walk` runs the branch's code with a token that can only read, and hands on the pictures
+# as an artifact and the judge's word as outputs; `push` alone holds the write token, checks out the
+# commit `walk` walked without running any of it, takes across only files named as a page's Linux
+# picture, and runs its git with hooks off. The pull request's description reaches the judging step
+# by the environment, never in the shell's text.
 #
 # Only a branch of this repository: a fork's pull request gets no token that can push. When the pull
 # request closes, merged or not, its `baselines/<branch>` is deleted: GitHub's own clean-up deletes a
@@ -29,31 +34,50 @@ on:
   pull_request:
     types: [labeled, closed]
 
-permissions:
-  contents: write
-  pull-requests: write
+concurrency:                        # one retake a branch at a time, the newest waiting next; any
+  group: >-                         # other label is a run of its own, so it never displaces a retake
+    baselines-${{ (github.event.action == 'closed' || github.event.label.name == 'baselines')
+    && github.event.pull_request.head.ref || github.run_id }}
+  cancel-in-progress: false
+
+permissions: {}
 
 jobs:
-  retake:
+  unlabel:
     if: >-
       github.event.action == 'labeled'
       && github.event.label.name == 'baselines'
       && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
-    concurrency:                    # one retake a branch at a time, the newest waiting next
-      group: baselines-${{ github.event.pull_request.head.ref }}
-      cancel-in-progress: false
+    timeout-minutes: 5
+    permissions:
+      pull-requests: write
     steps:
       - name: The label off, so adding it again asks again
         env:
           GH_TOKEN: ${{ github.token }}
           PR: ${{ github.event.pull_request.html_url }}
         run: gh pr edit "$PR" --remove-label baselines
+
+  walk:
+    needs: unlabel
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    outputs:
+      sha: ${{ steps.sha.outputs.sha }}
+      said: ${{ steps.judge.outputs.said }}
+      status: ${{ steps.judge.outputs.status }}
+      changed: ${{ steps.judge.outputs.changed }}
+    steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1    # v7.0.1
         with:
           ref: ${{ github.event.pull_request.head.ref }}
           persist-credentials: false
+      - name: The commit walked, before anything of it runs
+        id: sha
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
         with:
           python-version: "3.13"
@@ -71,25 +95,78 @@ jobs:
         env:
           PR_BODY: ${{ github.event.pull_request.body }}
         run: |
+          changed=$(git ls-files -m -o --exclude-standard -- 'tools/desk_walk/*-linux.png')
           set +e
-          said=$(python3 tools/pictures.py $(git ls-files -m -o --exclude-standard -- 'tools/desk_walk/*-linux.png') 2>&1)
+          said=$(python3 tools/pictures.py $changed 2>&1)
           status=$?
           set -e
-          { echo "said<<SAID_END"; echo "$said"; echo "SAID_END"; echo "status=$status"; } >> "$GITHUB_OUTPUT"
+          mkdir -p "$RUNNER_TEMP/pictures"
+          [ -z "$changed" ] || cp $changed "$RUNNER_TEMP/pictures/"
+          { echo "said<<SAID_END"; echo "$said"; echo "SAID_END"; echo "status=$status";
+            echo "changed=$(wc -w <<< "$changed")"; } >> "$GITHUB_OUTPUT"
           echo "$said"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9   # v7.0.2
+        with:
+          name: pictures
+          path: ${{ runner.temp }}/pictures
+          if-no-files-found: ignore
+          retention-days: 1
+
+  push:
+    needs: walk
+    if: ${{ !cancelled() && needs.walk.result != 'skipped' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Said on the pull request, when the walk itself fails
+        if: needs.walk.result != 'success' || needs.walk.outputs.status == ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.html_url }}
+          RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh pr comment "$PR" --body "🤖 **PortFusion agent** · the pictures were not retaken: the walk failed before they could be judged ($RUN). Mend it, then label the pull request again."
+          exit 1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1    # v7.0.1
+        with:
+          ref: ${{ needs.walk.outputs.sha }}
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        if: needs.walk.outputs.status == '0' && needs.walk.outputs.changed != '0'
+        with:
+          name: pictures
+          path: ${{ runner.temp }}/pictures
       - name: Push the pictures beside the branch, for the branch's author to merge in
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
           PR: ${{ github.event.pull_request.html_url }}
           BRANCH: ${{ github.event.pull_request.head.ref }}
-          SAID: ${{ steps.judge.outputs.said }}
-          STATUS: ${{ steps.judge.outputs.status }}
+          SAID: ${{ needs.walk.outputs.said }}
+          STATUS: ${{ needs.walk.outputs.status }}
+          CHANGED: ${{ needs.walk.outputs.changed }}
         run: |
           if [ "$STATUS" != 0 ]; then
             gh pr comment "$PR" --body "🤖 **PortFusion agent** · the pictures were not retaken: $SAID"
             exit 1
           fi
+          if [ "$CHANGED" = 0 ]; then
+            gh pr comment "$PR" --body "🤖 **PortFusion agent** · the walk's Linux pictures already match every page; nothing to commit."
+            exit 0
+          fi
+          # The walk's artifact is data: only a file named as a page's Linux picture is taken across.
+          for f in "$RUNNER_TEMP"/pictures/*; do
+            name=$(basename "$f")
+            [[ -f "$f" && ! -L "$f" && "$name" =~ ^[a-z][a-z-]*-linux\.png$ ]] \
+              || { echo "::error::not a page's picture: $name"; exit 1; }
+            cp "$f" "tools/desk_walk/$name"
+          done
+          # No hook runs where the token is: a checkout the branch's code never ran in has none to
+          # find, and hooks are off besides.
+          git() { command git -c core.hooksPath=/dev/null "$@"; }
           git add tools/desk_walk/*-linux.png
           if git diff --cached --quiet; then
             gh pr comment "$PR" --body "🤖 **PortFusion agent** · the walk's Linux pictures already match every page; nothing to commit."
@@ -101,13 +178,6 @@ jobs:
               commit -q -m "Retake the walk's Linux pictures: $pages"
           git push --force "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git" "HEAD:refs/heads/baselines/$BRANCH"
           gh pr comment "$PR" --body "🤖 **PortFusion agent** · the walk's Linux pictures are retaken for: $pages, on \`baselines/$BRANCH\`. Merge it into the branch (\`git fetch origin baselines/$BRANCH && git merge FETCH_HEAD\`) and push: the guard then runs as on any push."
-      - name: Said on the pull request, when the walk itself fails
-        if: failure() && steps.judge.outcome != 'success'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR: ${{ github.event.pull_request.html_url }}
-          RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        run: gh pr comment "$PR" --body "🤖 **PortFusion agent** · the pictures were not retaken: the walk failed before they could be judged ($RUN). Mend it, then label the pull request again."
 
   tidy:
     if: >-
@@ -115,6 +185,8 @@ jobs:
       && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-24.04
     timeout-minutes: 5
+    permissions:
+      contents: write
     steps:
       - name: Delete the pictures' branch beside it, if there is one
         env:
