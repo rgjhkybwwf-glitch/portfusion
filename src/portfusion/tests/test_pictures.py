@@ -86,15 +86,17 @@ def _holds_the_write_token(job: str) -> bool:
 
 def _runs_the_branch(job: str) -> list[str]:
     """What in a job runs code of the branch it checks out: an install, the walk, a tool of `tools/`."""
-    return [w for w in ("npm ", "npx ", "node ", "pip ", "python3 ", "tools/pictures.py", "walk --")
-            if w in job]
+    return [w for w in ("npm ", "npx ", "node ", "pip ", "python3 ", "bash ", "make ", "./",
+                        "tools/pictures.py", "walk --") if w in job]
 
 
 def test_the_job_that_holds_the_write_token_runs_nothing_of_the_branch():
     """Code of the branch can plant a git hook or set `$GITHUB_ENV` for every later step of its
     job, so the job that can push runs none of it and its git runs with hooks off. THE CASE THAT MAKES
     IT FAIL: the retake as one job, the walk and the push side by side."""
-    jobs = _jobs((ROOT / ".github" / "workflows" / "baselines.yml").read_text())
+    workflow = (ROOT / ".github" / "workflows" / "baselines.yml").read_text()
+    assert "\npermissions: {}\n" in workflow, "a job's grant is its own, never the workflow's"
+    jobs = _jobs(workflow)
     writers = {n: j for n, j in jobs.items() if _holds_the_write_token(j)}
     assert {"unlabel", "push", "tidy"} <= writers.keys()
     for name, job in writers.items():
