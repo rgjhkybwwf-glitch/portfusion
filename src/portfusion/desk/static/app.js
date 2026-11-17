@@ -428,8 +428,10 @@ async function show(name) {
     if (asked === ASKED) await paintPanel(p);
   } catch (e) {
     clearTimeout(slow);
-    LINKED = null;
-    if (asked === ASKED) drawFailure(e);
+    if (asked === ASKED) {
+      LINKED = null;
+      drawFailure(e);
+    }
   }
   const s = await fresh;
   if (s) { takeState(s); drawFreshness(s.freshness); otherVersion(s); }

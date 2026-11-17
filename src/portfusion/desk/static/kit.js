@@ -194,7 +194,9 @@ function wireFilters(name, d, again, { ids, views = [], button, ask, clear, rese
     (!el.options || [...el.options].some((o) => o.value === ""))));
   const values = () => Object.fromEntries(ids.map((id) => [id, box(id)?.value ?? d.chosen?.[id] ?? ""]));
   const reload = async (path, shown) => {
+    /* A LINK STILL ON ITS WAY IS DROPPED: this ask takes the turn its page would have painted on. */
     const asked = ++ASKED;
+    LINKED = null;
     let q;
     try { q = await get(path); } catch (e) {
       if (asked === ASKED) drawFailure(e);
