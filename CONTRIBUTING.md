@@ -570,10 +570,10 @@ changes it.
 - **The plan names its overlaps**: every open issue and open pull request whose Cause, Done or diff
   names a file or function the plan changes. Each is settled in the issue: a "waits" in Order when
   one must land first, a line in Not in scope when the other owns that part, or a question when the
-  two issues' Done disagree.
+  two issues' Done disagree. The plan checker looks for one the plan missed.
 - **The plan names the content map** when the change adds or removes a page or a report section,
   or moves a job, or part of one, between them: `docs/content-map.md` is among its files, with the
-  table that changes.
+  table that changes. The plan checker holds it to that.
 - **One issue, one branch, one pull request**: a branch claude/<name> from the latest `main`,
   worked by the conventions above (changelog, own diff reviewed, a changed desk page walked cold),
   the guard run, and the desk walk if a desk file changed. The pull request says "Closes #n", and
@@ -652,10 +652,11 @@ changes it.
   `github-actions[bot]`, headed "PortFusion agent", that names them (`notify.yml`). A pull request
   merging itself gets the same note without naming them: it asks nothing, so it pings no one.
 - **A run is one turn, and it ends by sending its debrief.** Every wait is inside that turn. A
-  helper agent (the plan checker, the reviewer, a walker) starts in the background whatever is
-  asked: the run starts it, goes on with what does not depend on it, and waits for its completion
-  notification before acting on its result, never on a guess of it. CI is polled in the
-  foreground. When nothing is left to wait for, the run's last three steps are,
+  helper agent (the plan checker, the reviewer, a walker) runs in the background, whatever the run
+  asks: the run starts it, goes on with what does not depend on it, and waits for its completion
+  notification before acting on its result, never on a guess of it. With nothing else left, it
+  waits by a command in the foreground, as for CI, which the notification comes back with, never
+  by ending its turn. CI is polled in the foreground. When nothing is left to wait for, the run's last three steps are,
   in order: it stops watching each pull request it leaves (below), adds its line to the run log
   (below), then sends the debrief to the
   maintainer's phone as a push notification (the `PushNotification` tool), a few lines: what

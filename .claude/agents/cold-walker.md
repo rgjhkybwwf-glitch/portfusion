@@ -12,7 +12,7 @@ driving the browser and Read for looking at your own screenshots, nothing else.
 
 - **Drive Chromium with Playwright** (`require('playwright')` from `tools/`, `chromium.launch()`), at
   1440 × 900, and screenshot each step into the scratch folder the run names.
-- **Keep to the pages the change touched**, and the jobs you were given.
+- **Keep to the jobs you were given.**
 - **Press nothing that leaves the machine** ("Fetch everything", "Sweep IG events", "Set up this
   bet"), and **complete no write**: cancel the desk's "Write this to the record?" dialog.
 - **For each job**: done or not, and each place you stalled, in a line: what you looked for, what
