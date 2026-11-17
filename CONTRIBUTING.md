@@ -163,9 +163,10 @@ One line each; kept by review, and by the test named where there is one.
 
 - **One logical change per commit**, its message written for a reader who was not there.
 - **Review the branch's diff before its pull request opens**, and settle what the review finds.
-- **A changed desk page is walked cold before its pull request opens**: a reader with the desk's
-  address and the issue's jobs, and no code or guides, as [`docs/ux-audit.md`](docs/ux-audit.md)
-  was made. The pull request says which of its rows the walk found closed.
+- **A changed desk page is walked cold before its pull request opens**, by the cold walker
+  ([`.claude/agents/cold-walker.md`](.claude/agents/cold-walker.md)), as
+  [`docs/ux-audit.md`](docs/ux-audit.md) was made. The pull request says which of its rows the walk
+  found closed.
 - **A release's guides are read whole before its tag**, one reader to a guide, each running its
   commands and opening its paths; one writer makes the changes. The read starts from the guides
   the pre-push hook names as left behind since the last tag (`behind()` in
@@ -482,8 +483,9 @@ changes it.
   slice's pull request closes the feature too, and its line is ticked with the slice's.
 - **A slice stays hidden until the last**: nothing registers it on a page, a tab or the report.
   One that moves the store or a figure is the exception (Merging, below). The last slice turns
-  the feature on. Its cold walk walks the whole feature, by the feature's
-  Trial jobs, and its pull request shows the maintainer each page's picture before and after.
+  the feature on. Its walk is the trial walker's, over the whole feature by its Trial jobs
+  ([`.claude/agents/trial-walker.md`](.claude/agents/trial-walker.md)), and its pull request
+  shows the maintainer each page's picture before and after.
 - **The trial is on the release.** The maintainer tries the Trial jobs on their own book, and
   keep or pull is asked in the next gate review. Pull applies to display slices only: a store
   move is not pulled back. A pull answered becomes an issue, its Decisions the answer, first
@@ -546,9 +548,10 @@ changes it.
 
 - **A plan, checked, before code, and the ready check's.** The ready check writes each plan as a
   comment on its issue: the files it will change, how each "Done" check will be made, the desk
-  pages whose walk pictures it means to move (or none), and what it will not touch. A fresh
-  agent, given only the issue and that plan, checks it against the code and says what is missing
-  or wrong; the plan is mended and posted as **Plan, checked**, naming
+  pages whose walk pictures it means to move (or none), and what it will not touch. The plan
+  checker ([`.claude/agents/plan-checker.md`](.claude/agents/plan-checker.md)), given only the
+  issue and that plan, checks it against the code; the plan is mended and posted as
+  **Plan, checked**, naming
   the commit of `main` it was checked against. The plan is the issue's latest **Plan, checked**.
   It stands while `main` has not changed what it relies on since that commit, no answer recorded
   since changes what it assumed, and no "Re-plan" comment follows it. A builder builds only on a
@@ -567,10 +570,10 @@ changes it.
 - **The plan names its overlaps**: every open issue and open pull request whose Cause, Done or diff
   names a file or function the plan changes. Each is settled in the issue: a "waits" in Order when
   one must land first, a line in Not in scope when the other owns that part, or a question when the
-  two issues' Done disagree. The plan's checker looks for one the plan missed.
+  two issues' Done disagree.
 - **The plan names the content map** when the change adds or removes a page or a report section,
   or moves a job, or part of one, between them: `docs/content-map.md` is among its files, with the
-  table that changes. The plan's checker holds it to that.
+  table that changes.
 - **One issue, one branch, one pull request**: a branch claude/<name> from the latest `main`,
   worked by the conventions above (changelog, own diff reviewed, a changed desk page walked cold),
   the guard run, and the desk walk if a desk file changed. The pull request says "Closes #n", and
@@ -609,10 +612,10 @@ changes it.
 
 **Merging**
 
-- **A reviewer who did not build it.** Before a pull request of tier 1 or above is called clean, a
-  fresh agent given only the issue's "Done" checks and the diff reviews it, as a skeptic: does each
-  check hold, did a test's expectation move without the issue saying so, did anything outside the
-  issue change. Its findings are fixed, or said at the top of the pull request.
+- **A reviewer who did not build it.** Before a pull request of tier 1 or above is called clean,
+  the skeptic reviewer ([`.claude/agents/skeptic-reviewer.md`](.claude/agents/skeptic-reviewer.md)),
+  given only the issue's "Done" checks and the diff, reviews it. Its findings are fixed, or said at
+  the top of the pull request.
 - **A pull request's risk tier is set by the paths it changes**, the highest of them, and
   `tiers.yml` labels it so (`tools/tiers.py` holds the paths):
 
@@ -648,9 +651,11 @@ changes it.
   request from a branch whose name begins claude/ that waits for a yes, get a comment from
   `github-actions[bot]`, headed "PortFusion agent", that names them (`notify.yml`). A pull request
   merging itself gets the same note without naming them: it asks nothing, so it pings no one.
-- **A run is one turn, and it ends by sending its debrief.** Every wait is inside that turn: a
-  helper agent (the plan's checker, the reviewer) is run in the foreground and waited for, and CI
-  is polled in the foreground. When nothing is left to wait for, the run's last three steps are,
+- **A run is one turn, and it ends by sending its debrief.** Every wait is inside that turn. A
+  helper agent (the plan checker, the reviewer, a walker) starts in the background whatever is
+  asked: the run starts it, goes on with what does not depend on it, and waits for its completion
+  notification before acting on its result, never on a guess of it. CI is polled in the
+  foreground. When nothing is left to wait for, the run's last three steps are,
   in order: it stops watching each pull request it leaves (below), adds its line to the run log
   (below), then sends the debrief to the
   maintainer's phone as a push notification (the `PushNotification` tool), a few lines: what
@@ -692,7 +697,7 @@ changes it.
 
 - **The agent never pushes to `main`, bypasses a hook, or changes** a workflow, a ruleset, a test
   that holds a stability rule, this section, a routine (its prompt, model, effort, cap or
-  schedule), or the guard's own files: `.claude/settings.json`, `.githooks/`,
+  schedule), or the guard's own files: `.claude/settings.json`, `.claude/agents/`, `.githooks/`,
   `src/portfusion/hooks/`, `pyproject.toml`, `requirements.lock` and `tools/clean_room.py`. Those
   are changed in a session the maintainer is part of. `.claude/settings.json` refuses a forced
   push, a push or commit with `--no-verify`, and a rewrite of `main`.
