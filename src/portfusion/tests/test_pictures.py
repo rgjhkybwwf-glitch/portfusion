@@ -66,3 +66,41 @@ def test_no_line_and_a_name_that_is_no_page_are_refused(pictures, monkeypatch, c
     assert "@" not in caplog.text
     monkeypatch.setenv("PR_BODY", "Pictures: a-new-page")
     assert pictures.main(_png("a-new-page")) == 0
+
+
+def _jobs(workflow: str) -> dict[str, str]:
+    """Each job of a workflow, by name, as its text: the lines from `  name:` to the next job."""
+    jobs, name = {}, None
+    for line in workflow.split("\njobs:\n", 1)[1].splitlines():
+        if line[:2] == "  " and line[2:3] not in (" ", "") and line.rstrip().endswith(":"):
+            name = line.strip()[:-1]
+            jobs[name] = ""
+        elif name:
+            jobs[name] += line + "\n"
+    return jobs
+
+
+def _holds_the_write_token(job: str) -> bool:
+    return any(f"{grant}: write" in job for grant in ("contents", "pull-requests"))
+
+
+def _runs_the_branch(job: str) -> list[str]:
+    """What in a job runs code of the branch it checks out: an install, the walk, a tool of `tools/`."""
+    return [w for w in ("npm ", "npx ", "node ", "pip ", "python3 ", "tools/pictures.py", "walk --")
+            if w in job]
+
+
+def test_the_job_that_holds_the_write_token_runs_nothing_of_the_branch():
+    """Code of the branch can plant a git hook or set `$GITHUB_ENV` for every later step of its
+    job, so the job that can push runs none of it and its git runs with hooks off. THE CASE THAT MAKES
+    IT FAIL: the retake as one job, the walk and the push side by side."""
+    jobs = _jobs((ROOT / ".github" / "workflows" / "baselines.yml").read_text())
+    writers = {n: j for n, j in jobs.items() if _holds_the_write_token(j)}
+    assert {"unlabel", "push", "tidy"} <= writers.keys()
+    for name, job in writers.items():
+        assert _runs_the_branch(job) == [], name
+    assert not _holds_the_write_token(jobs["walk"]) and _runs_the_branch(jobs["walk"])
+    assert "git() { command git -c core.hooksPath=/dev/null" in jobs["push"]
+    planted = _jobs("\njobs:\n  retake:\n    permissions:\n      contents: write\n"
+                    "    steps:\n      - run: npm ci --prefix tools\n")
+    assert _runs_the_branch(planted["retake"]) and _holds_the_write_token(planted["retake"])
