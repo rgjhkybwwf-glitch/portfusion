@@ -48,12 +48,6 @@ Object.assign(WIRE, {
   /* Dates and account go to book.activity(); ticker and direction narrow the result. Its answer
      is the rows, drawn over the page's own data. */
   trades(d, again) {
-    /* ARRIVED FROM A "trades" LINK: the link's company is taken once, as the filter held, and
-       asked for below; from then on it is held as any filter here is. */
-    if (PENDING_COMPANY && !again) {
-      HELD_FILTERS.trades = { "q-company": PENDING_COMPANY };
-      PENDING_COMPANY = null;
-    }
     wireFilters("trades", d, again, {
       ids: ["q-account", "q-company", "q-ticker", "q-start", "q-end", "q-direction"], button: "q-clear",
       resets: { "q-company": "q-ticker" },

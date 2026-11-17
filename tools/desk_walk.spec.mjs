@@ -10,8 +10,11 @@
 // detail leaves its table's width as it was, and runs whole as far as the box; a page chosen
 // by keyboard puts focus on its heading, one Tab from its first control, its tab buttons kept, and
 // a reader already in the page keeps their place; a heading reached by Tab is clear of the pinned
-// columns, and a Tab between controls in view does not swing the box. It writes nothing, and does not prove a
-// figure is right.
+// columns, and a Tab between controls in view does not swing the box. A page's filters keep the
+// rule `wireFilters()` states, a line a test: what a hand sets is held through a tab and Back; a
+// link's filter lasts its visit; a hand during that visit makes it the reader's own; a company
+// the box does not list is added to it; a view keeps the boxes it does not draw; and "clear
+// filters" leaves a view and a sort. It writes nothing, and does not prove a figure is right.
 //
 //     npm ci --prefix tools && npm --prefix tools run browser      # once: Playwright, its Chromium
 //     npm --prefix tools run walk
@@ -42,6 +45,29 @@ const open = async (page, name) => {
   await answered;
   await expect(page.locator(`#tabs button[data-name="${name}"]`)).toHaveAttribute("aria-current", "page");
   await page.waitForLoadState("networkidle");      // a page may ask again once it has drawn
+};
+// THE PAGE LEFT BY ANOTHER TAB AND OPENED AGAIN BY ITS OWN: a visit by the tab.
+const away = async (page, name) => {
+  await open(page, name === "dashboard" ? "holdings" : "dashboard");
+  await open(page, name);
+};
+// A BOX'S FIRST VALUE THAT NARROWS, the demo's own.
+const first = (page, box) => page.locator(box).evaluate((s) => [...s.options].find((o) => o.value).value);
+// A FILTER'S ANSWER, from a box set or "clear filters" pressed by hand, waited for.
+const FILTERED = /\/api\/(holdings|round-trips|trades)(\?|$)/;
+const byHand = async (page, act) => {
+  const answered = page.waitForResponse((r) => FILTERED.test(r.url()));
+  await act();
+  await answered;
+};
+// FROM HOLDINGS BY A ROW'S TRADES, to the company it names.
+const toTrades = async (page) => {
+  await open(page, "holdings");
+  const button = page.locator("#main [data-trades]").first();
+  const company = await button.getAttribute("data-trades");
+  await button.click();
+  await expect(page.locator('#tabs button[data-name="trades"]')).toHaveAttribute("aria-current", "page");
+  return company;
 };
 
 // GO, ACT AND OPEN, AS DRAWN (`goButton()`, `actButton()` and `detailToggle()` in kit.js), each
@@ -149,6 +175,9 @@ test("the Dashboard leads to the Bench, where a fact is added", async ({ page })
 });
 
 test("the closed-out count leads to the round trips it counts", async ({ page }) => {
+  await open(page, "round-trips");
+  const account = await first(page, "#rt-acct");
+  await byHand(page, () => page.locator("#rt-acct").selectOption(account));
   await open(page, "dashboard");
   const figure = page.locator("table.figures tr", { has: page.locator('button[data-panel="round-trips"]') });
   const count = Number((await figure.locator("td.num").innerText()).match(/^[\d,]+/)[0].replace(/,/g, ""));
@@ -157,6 +186,10 @@ test("the closed-out count leads to the round trips it counts", async ({ page })
   await expect(page.locator("#rt-closed")).toHaveValue("yes");
   // THE PAGE DRAWS FIRST, then asks for the link's filter: the count is waited for, not read.
   await expect(page.locator("#main .scroll > table > tbody > tr:not(.detail-row)")).toHaveCount(count);
+  await expect(page.locator("#rt-acct")).toHaveValue("");
+  await away(page, "round-trips");
+  await expect(page.locator("#rt-acct")).toHaveValue(account);
+  await expect(page.locator("#rt-closed")).toHaveValue("");
 });
 
 // THE FOCUSABLE ELEMENTS a Tab can reach, in the page: what the walk asks a Tab to land on.
@@ -384,6 +417,9 @@ for (const name of ["performance", "accounts"]) {
 }
 
 test("a holding's detail leads to its company's life", async ({ page }) => {
+  await open(page, "round-trips");
+  const account = await first(page, "#rt-acct");
+  await byHand(page, () => page.locator("#rt-acct").selectOption(account));
   await open(page, "holdings");
   const row = page.locator("#main table[data-links] tbody tr:not(.detail-row)").first();
   await row.locator(".detail-toggle").click();
@@ -404,4 +440,143 @@ test("a holding's detail leads to its company's life", async ({ page }) => {
   await expect(page.locator("#rt-company")).toHaveValue(company);
   await expect(page.locator("#main .scroll > table > tbody > tr:not(.detail-row)")).toHaveCount(1);
   await expect(page.locator("#main .page-head h1")).toBeFocused();
+  await away(page, "round-trips");
+  await expect(page.locator("#rt-acct")).toHaveValue(account);
+  await expect(page.locator("#rt-view")).toHaveValue("holding");
+  await expect(page.locator("#rt-company")).toHaveValue("");
+});
+
+// A PAGE'S FILTERS, A TEST TO A LINE OF `wireFilters()`'S RULE. A page that arrives with a filter
+// draws twice, so each test waits for a value only the second draw shows before it reads the rest.
+test("a box set by hand is as left after a tab away and back, and after Back", async ({ page }) => {
+  for (const [name, box] of [["holdings", "#h-acct"], ["round-trips", "#rt-acct"], ["trades", "#q-direction"]]) {
+    await test.step(name, async () => {
+      await open(page, name);
+      const value = await first(page, box);
+      await byHand(page, () => page.locator(box).selectOption(value));
+      await away(page, name);
+      await expect(page.locator(box)).toHaveValue(value);
+      await open(page, "dashboard");
+      await page.goBack();
+      await expect(page.locator(`#tabs button[data-name="${name}"]`)).toHaveAttribute("aria-current", "page");
+      await expect(page.locator(box)).toHaveValue(value);
+    });
+  }
+});
+
+test("a row's Trades narrows Trades for that visit alone", async ({ page }) => {
+  await open(page, "trades");
+  const direction = await first(page, "#q-direction");
+  await byHand(page, () => page.locator("#q-direction").selectOption(direction));
+  const company = await toTrades(page);
+  await expect(page.locator("#q-company")).toHaveValue(company);
+  await expect(page.locator("#q-direction")).toHaveValue("");
+  await away(page, "trades");
+  await expect(page.locator("#q-direction")).toHaveValue(direction);
+  await expect(page.locator("#q-company")).toHaveValue("");
+});
+
+test("a box changed during a link's visit makes what is on screen the reader's own", async ({ page }) => {
+  const company = await toTrades(page);
+  await expect(page.locator("#q-company")).toHaveValue(company);
+  const direction = await first(page, "#q-direction");
+  await byHand(page, () => page.locator("#q-direction").selectOption(direction));
+  await away(page, "trades");
+  await expect(page.locator("#q-direction")).toHaveValue(direction);
+  await expect(page.locator("#q-company")).toHaveValue(company);
+});
+
+test("a company the box does not list is added to it, and never dropped", async ({ page }) => {
+  await open(page, "round-trips");
+  const listed = await page.locator("#rt-company option").evaluateAll((os) => os.map((o) => o.value));
+  await open(page, "holdings");
+  const held = await page.locator("#main [data-trades]").evaluateAll((bs) => bs.map((b) => b.dataset.trades));
+  const company = held.find((c) => !listed.includes(c));
+  expect(company, "the demo holds a company with no round trip").toBeTruthy();
+  const row = page.locator("#main table[data-links] tbody tr:not(.detail-row)",
+    { has: page.locator(`[data-trades=${JSON.stringify(company)}]`) }).first();
+  await row.locator(".detail-toggle").click();
+  await page.locator("#main .detail-row:not([hidden]) [data-life]").click();
+  const box = page.locator("#rt-company");
+  await expect(page.locator("#rt-view")).toHaveValue("life");
+  await expect(box).toHaveValue(company);
+  // THE VIEW WHOSE BOX DOES NOT LIST IT, by hand, so the company is the reader's own.
+  const from = await page.locator("#rt-from").getAttribute("min");
+  await byHand(page, () => page.locator("#rt-from").fill(from));
+  await byHand(page, () => page.locator("#rt-view").selectOption("holding"));
+  await expect(page.locator("#rt-acct")).toBeVisible();
+  await expect(box).toHaveValue(company);
+  await expect(box.locator("option", { hasText: company })).toHaveCount(1);
+  await away(page, "round-trips");
+  await expect(page.locator("#rt-from")).toHaveValue(from);
+  await expect(box).toHaveValue(company);
+  await expect(box.locator("option", { hasText: company })).toHaveCount(1);
+});
+
+test("a view that draws fewer boxes keeps the ones it does not draw", async ({ page }) => {
+  await open(page, "round-trips");
+  const rows = page.locator("#main .scroll > table > tbody > tr:not(.detail-row)");
+  const whole = await rows.count();
+  const companies = await page.locator("#rt-company option").evaluateAll((os) => os.map((o) => o.value).filter(Boolean));
+  const set = {};
+  for (const id of ["rt-acct", "rt-ticker", "rt-closed"]) {
+    set[id] = await first(page, `#${id}`);
+    await byHand(page, () => page.locator(`#${id}`).selectOption(set[id]));
+  }
+  const view = async (v) => {
+    await byHand(page, () => page.locator("#rt-view").selectOption(v));
+    await expect(page.locator("#rt-acct")).toHaveCount(v === "life" ? 0 : 1);
+  };
+  await view("life");
+  await view("holding");
+  for (const [id, v] of Object.entries(set)) await expect(page.locator(`#${id}`), id).toHaveValue(v);
+  // A COMPANY CHOSEN WHERE THE TICKER IS NOT DRAWN still starts the ticker afresh.
+  await view("life");
+  const company = companies.at(-1);
+  await byHand(page, () => page.locator("#rt-company").selectOption(company));
+  await view("holding");
+  await expect(page.locator("#rt-company")).toHaveValue(company);
+  await expect(page.locator("#rt-ticker")).toHaveValue("");
+  const codes = (await (await page.request.get(`/api/round-trips?company=${encodeURIComponent(company)}`)).json()).tickers;
+  expect(await page.locator("#rt-ticker option").evaluateAll((os) => os.map((o) => o.value).filter(Boolean))).toEqual(codes);
+  // CLEARED WHERE THREE BOXES ARE NOT DRAWN, all three are empty where they are.
+  await view("life");
+  await byHand(page, () => page.locator("#rt-clear").click());
+  await expect(page.locator("#rt-company")).toHaveValue("");
+  await view("holding");
+  await expect(page.locator("#main .f.narrows")).toHaveCount(0);
+  await expect(rows).toHaveCount(whole);
+});
+
+test('"clear filters" empties every box that narrows, and leaves a view and a sort', async ({ page }) => {
+  await test.step("holdings", async () => {
+    await open(page, "holdings");
+    const account = await first(page, "#h-acct");
+    await byHand(page, () => page.locator("#h-acct").selectOption(account));
+    await byHand(page, () => page.locator("#h-by").selectOption("issuer"));
+    const col = await page.locator("#main table[data-links] > thead th.sortable").first().getAttribute("data-col");
+    const heading = page.locator(`#main table[data-links] > thead th[data-col="${col}"]`);
+    await heading.click();
+    await expect(heading).not.toHaveAttribute("aria-sort", "none");
+    const sorted = await heading.getAttribute("aria-sort");
+    await byHand(page, () => page.locator("#h-clear").click());
+    await expect(page.locator("#h-acct")).toHaveValue("");
+    await expect(page.locator("#h-by")).toHaveValue("issuer");
+    await expect(heading).toHaveAttribute("aria-sort", sorted);
+    await away(page, "holdings");
+    await expect(page.locator("#h-by")).toHaveValue("issuer");
+    await expect(page.locator("#h-acct")).toHaveValue("");
+  });
+  await test.step("round-trips", async () => {
+    await open(page, "round-trips");
+    await byHand(page, () => page.locator("#rt-view").selectOption("life"));
+    const company = await first(page, "#rt-company");
+    await byHand(page, () => page.locator("#rt-company").selectOption(company));
+    await byHand(page, () => page.locator("#rt-clear").click());
+    await expect(page.locator("#rt-company")).toHaveValue("");
+    await expect(page.locator("#rt-view")).toHaveValue("life");
+    await away(page, "round-trips");
+    await expect(page.locator("#rt-view")).toHaveValue("life");
+    await expect(page.locator("#rt-company")).toHaveValue("");
+  });
 });

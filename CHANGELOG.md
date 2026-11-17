@@ -65,6 +65,13 @@ One figure moves, on two pages, and there is no migration. Do these when the boo
 
 ### Changed
 
+- **A page's filters keep one rule**: what you set on Holdings, Round Trips or Trades is held for
+  that page while the desk is open, through its tab, Back and Forward; a link that narrows (a
+  row's Trades, "company life", the Dashboard's closed-out count) lasts that visit alone, and what
+  you had set there is on again at the next. A company the box does not list is added to it, not
+  dropped; Round Trips keeps Account, Ticker and Closed out through a switch to "company life";
+  and "clear filters" empties only what narrows, leaving Holdings' "group by" and Round Trips'
+  view as set. No figure moves.
 - **A finding says what is so, and its link says the step**: each finding carries its kind, work
   or state, and the words of its step (`Finding` in `engine/findings.py`). The Dashboard lists the
   work under Needs attention, each link named for its step, and the state apart, under What was
