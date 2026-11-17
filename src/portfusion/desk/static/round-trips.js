@@ -95,20 +95,12 @@ Object.assign(DRAW, {
 
 Object.assign(WIRE, {
   "round-trips"(d, again) {
-    /* ARRIVED FROM A "company life" LINK: the life view, narrowed to the link's company. The
-       Company box lists the companies with a round trip, so one with none yet is added to it. */
-    if (PENDING_COMPANY && !again) {
-      const box = $("#rt-company");
-      if (box && ![...box.options].some((o) => o.value === PENDING_COMPANY)) box.add(new Option(PENDING_COMPANY));
-      HELD_FILTERS["round-trips"] = { "rt-view": "life", "rt-company": PENDING_COMPANY };
-      PENDING_COMPANY = null;
-    }
     const view = (v) => `/api/round-trips?view=${encodeURIComponent(v["rt-view"] || "holding")}`;
     /* A COMPANY CHOSEN STARTS ITS TICKER AFRESH, and the page comes back with that company's
        codes in the Ticker box. */
     wireFilters("round-trips", d, again, {
       ids: ["rt-view", "rt-acct", "rt-company", "rt-ticker", "rt-from", "rt-to", "rt-closed"],
-      button: "rt-clear",
+      views: ["rt-view"], button: "rt-clear",
       resets: { "rt-company": "rt-ticker" },
       ask: (v) => view(v) + `&ticker=${encodeURIComponent(v["rt-ticker"])}`
         + `&company=${encodeURIComponent(v["rt-company"])}`

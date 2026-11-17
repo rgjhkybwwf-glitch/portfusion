@@ -181,21 +181,18 @@ const badges = (name) => {
   const a = ACTIONS[name] || {};
   return badge("writes", a.writes) + badge("reaches", a.reaches);
 };
-/* Set by a "trades" link (Holdings, Round Trips) and taken once by Trades, or by a holding's
-   "company life" link and taken once by Round Trips; the page that takes it then HOLDS the
-   company as a filter chosen there: the box shows it and "clear filters" sits beside it, so it
-   narrows nothing out of sight. */
-let PENDING_COMPANY = null;
+/* A LINK'S FILTER ON ITS WAY TO THE PAGE IT OPENS, `{ page, values }`, values by box id, taken
+   once. What it does there is wireFilters()'s rule. */
+let LINKED = null;
 /* THE RECEIPT FOR A REFRESH JUST WRITTEN, carried from the Price Refresh to What Changed and shown
-   once. Same idiom and same reason as PENDING_COMPANY above: a completed write moves you to the
+   once. Same idiom and same reason as LINKED above: a completed write moves you to the
    panel that says what it did, and its own one-line summary would otherwise be lost on the way.
    What the destination cannot state for itself is the BANKING — how many outgoing marks went to
    their histories — so that is the half worth carrying. CONSUMED ONCE: a receipt that stuck
    would still be claiming a refresh a week later. */
 let LAST_REFRESH = null;
 
-/* EACH PAGE'S FILTERS, kept while the desk is open: a switch redraws a panel from the record,
-   and its filters would reset with it. By panel, then by the control's id. */
+/* EACH PAGE'S FILTERS, by page, then by box id. Who writes them is wireFilters()'s to say. */
 const HELD_FILTERS = {};
 
 /* LOCAL TIME, because it is read against a wall clock. The desk's other timestamps come from

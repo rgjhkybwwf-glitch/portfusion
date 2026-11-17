@@ -130,23 +130,24 @@ function wireTradeLinks() {
   if (!main || main.dataset.tradesWired) return;
   main.dataset.tradesWired = "1";
   /* ANY PANEL MAY SEND YOU TO ANOTHER, delegated from #main for the same reason the trades
-     link is: a panel that re-renders on a filter change would lose a per-element listener. */
+     link is: a panel that re-renders on a filter change would lose a per-element listener. A
+     link that narrows sends its filter as LINKED, for that visit alone (wireFilters()). */
   main.addEventListener("click", (e) => {
     const go = e.target.closest("[data-panel]");
     if (!go) return;
-    if (go.dataset.held) HELD_FILTERS[go.dataset.panel] = JSON.parse(go.dataset.held);
+    LINKED = go.dataset.held ? { page: go.dataset.panel, values: JSON.parse(go.dataset.held) } : null;
     openPanel(go.dataset.panel);
   });
   main.addEventListener("click", (e) => {
     const b = e.target.closest("[data-trades]");
     if (!b) return;
-    PENDING_COMPANY = b.dataset.trades;
+    LINKED = { page: "trades", values: { "q-company": b.dataset.trades } };
     openPanel("trades");
   });
   main.addEventListener("click", (e) => {
     const b = e.target.closest("[data-life]");
     if (!b) return;
-    PENDING_COMPANY = b.dataset.life;
+    LINKED = { page: "round-trips", values: { "rt-view": "life", "rt-company": b.dataset.life } };
     openPanel("round-trips");
   });
 }
@@ -385,6 +386,9 @@ function paintPanel(p) {
   HEADS = p.heads || {};
   PRECISION = p.precision || PRECISION;
   WORDS = p.words || WORDS;
+  /* A LINK IS TAKEN BY ITS OWN PAGE OR DROPPED, so one whose page did not open narrows nothing
+     later. */
+  if (LINKED?.page !== p.name) LINKED = null;
   $("#main").innerHTML = DRAW[p.name]
     ? DRAW[p.name](p.data)
     : `<h2>${esc(p.title)}</h2><pre class="error">${esc(JSON.stringify(p.data, null, 2))}</pre>`;
@@ -424,7 +428,10 @@ async function show(name) {
     if (asked === ASKED) await paintPanel(p);
   } catch (e) {
     clearTimeout(slow);
-    if (asked === ASKED) drawFailure(e);
+    if (asked === ASKED) {
+      LINKED = null;
+      drawFailure(e);
+    }
   }
   const s = await fresh;
   if (s) { takeState(s); drawFreshness(s.freshness); otherVersion(s); }
@@ -542,8 +549,8 @@ async function passkey(ask, answer, verb, body) {
     if (!s.panels.some((p) => p.name === active)) active = s.panels[0]?.name;
     /* THE ADDRESS NAMES THE PAGE, AND THE BROWSER'S BACK AND FORWARD MOVE IT.
        A tab writes its name into the address, so every page visited is a step in the browser's
-       history, and a step of history shows the page it names, its filters as they were left
-       (HELD_FILTERS) and where it was scrolled to; a page opened by a tab or a link starts at its
+       history, and a step of history shows the page it names, with the filters it holds
+       (wireFilters()) and where it was scrolled to; a page opened by a tab or a link starts at its
        top. `shown` is the page on screen, so the address change a tab makes itself is recognised
        and not shown twice. */
     let shown = active;

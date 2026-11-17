@@ -64,8 +64,8 @@ const actButton = (attrs, html) => `<button class="act" ${attrs}>${html}</button
    #main delegates, so a page that redraws keeps it working without wiring its own. */
 const quiet = (text) => `<span class="muted small">${text}</span>`;
 /* A page the server does not list — Bench and Price Refresh on the hosted desk — is left out:
-   a pointer to a page the reader cannot open is an instruction they cannot follow. `held` is the
-   page's filters, by box, which the link opens it with in place of any held there. */
+   a pointer to a page the reader cannot open is an instruction they cannot follow. `held` is
+   what the link opens the page with, by box; how long it lasts is wireFilters()'s rule. */
 const panelLink = (panel, label = PANELS.get(panel), held = null) => !PANELS.has(panel) ? "" :
   goButton(`data-panel="${esc(panel)}"${held
     ? ` data-held="${esc(JSON.stringify(held))}"` : ""}`, esc(label));
@@ -162,29 +162,48 @@ const filters = (fields, clearId) => `
 
 /* THE FILTERS, WIRED ONE WAY. Each box re-asks the SERVER — the narrowing is the engine's, and
    re-filtering an already-fetched array in the browser would be a second answer to a question
-   the engine answers. `ask(v)` is the route for the boxes' values, and its answer is drawn over
-   the page's own data, its values as `chosen`; `clear(v)` is the route with none; `resets` names
-   the box a change empties first.
-   THE FILTERS HELD FOR THIS PAGE are asked for again on arrival — only then, and only when they
-   differ from what was drawn, so the redraw that answers them cannot ask again. A VIEW MAY DRAW
-   FEWER BOXES (Round Trips by company life has no account or ticker), so only the boxes on the
-   page are read.
+   the engine answers. `ask(v)` is the route for the boxes' values, by id, and its answer is drawn
+   over the page's own data with what the page shows as `chosen`, every box by id; `clear(v)` is
+   the route "clear filters" asks; `views` names the boxes that choose a view and narrow nothing;
+   `resets` names the box a change empties first.
+   WHAT A PAGE HOLDS, AND FOR HOW LONG:
+   1 A page's filters are its own. What a hand sets is held for that page while the desk is open,
+     and is on again when the page is opened by its tab, by Back or by Forward.
+   2 A link that narrows (LINKED) sets the page it opens for that visit alone: its values and no
+     others, and nothing of them is held.
+   3 A box changed by hand, or "clear filters" pressed, during a link's visit makes what is on
+     screen the reader's own, and it is held.
+   4 A value asked for that a box does not list is added to the box, so what narrows the page is
+     never out of sight and never dropped.
+   5 A view that draws fewer boxes keeps the values of the boxes it does not draw.
+   6 "clear filters" empties every box that narrows and nothing else: a view stays as set, then
+     and on the next visit, and a sort is not a filter's to touch.
+   What a page arrives with is asked for once, and only when it differs from what was drawn, so
+   the redraw that answers it cannot ask again.
    A BOX THAT NARROWS IS MARKED (`narrows`, the stylesheet's): one holding a value it could have
    been left without, so a filter held from an earlier visit is seen. */
-function wireFilters(name, d, again, { ids, button, ask, clear, resets = {} }) {
-  const boxes = ids.map((id) => $(`#${id}`)).filter(Boolean);
+function wireFilters(name, d, again, { ids, views = [], button, ask, clear, resets = {} }) {
+  const box = (id) => $(`#${id}`);
+  const boxes = ids.map(box).filter(Boolean);
+  const listed = (el, v) => {
+    if (!v || !el.options || [...el.options].some((o) => o.value === v)) return;
+    el.add(new Option(v, v, true, true));
+  };
+  boxes.forEach((el) => listed(el, d.chosen?.[el.id]));
   boxes.forEach((el) => el.closest(".f").classList.toggle("narrows", el.value !== "" &&
     (!el.options || [...el.options].some((o) => o.value === ""))));
-  const values = () => Object.fromEntries(ids.map((id) => [id, $(`#${id}`)?.value ?? ""]));
-  const reload = async (path) => {
+  const values = () => Object.fromEntries(ids.map((id) => [id, box(id)?.value ?? d.chosen?.[id] ?? ""]));
+  const reload = async (path, shown) => {
+    /* A LINK STILL ON ITS WAY IS DROPPED: this ask takes the turn its page would have painted on. */
     const asked = ++ASKED;
+    LINKED = null;
     let q;
     try { q = await get(path); } catch (e) {
       if (asked === ASKED) drawFailure(e);
       return;
     }
     if (asked !== ASKED) return;
-    const data = { ...d, ...q, chosen: HELD_FILTERS[name] || {} };
+    const data = { ...d, ...q, chosen: shown };
     /* A HEADING THAT HELD THE READER'S PLACE holds it on the page redrawn: a page that arrives
        with a held filter is drawn twice. */
     const placed = document.activeElement?.matches("#main .page-head h1");
@@ -192,27 +211,37 @@ function wireFilters(name, d, again, { ids, button, ask, clear, resets = {} }) {
     WIRE[name](data, true);
     if (placed) $("#main .page-head h1")?.focus({ preventScroll: true });
   };
-  const go = () => {
-    HELD_FILTERS[name] = Object.fromEntries(boxes.map((el) => [el.id, el.value]));
-    reload(ask(values()));
-  };
   /* `change` and not `input`: a date input fires on every keystroke while a year is being
      typed, and each one would be a request for a range nobody meant. */
   boxes.forEach((el) => el.addEventListener("change", () => {
-    const reset = resets[el.id] && $(`#${resets[el.id]}`);
-    if (reset) reset.value = "";
-    go();
+    const v = values(), reset = resets[el.id];
+    if (reset) {
+      v[reset] = "";
+      if (box(reset)) box(reset).value = "";
+    }
+    HELD_FILTERS[name] = v;
+    reload(ask(v), v);
   }));
   $(`#${button}`)?.addEventListener("click", () => {
-    const v = values();
-    delete HELD_FILTERS[name];
-    reload(clear(v));
+    const kept = Object.fromEntries(Object.entries(values()).map(([id, v]) =>
+      [id, views.includes(id) ? v : ""]));
+    if (views.length) HELD_FILTERS[name] = kept;
+    else delete HELD_FILTERS[name];
+    reload(clear(kept), kept);
   });
-  const held = HELD_FILTERS[name];
-  if (again || !held || !boxes.length) return;
-  if (boxes.every((el) => el.value === (held[el.id] ?? ""))) return;
-  boxes.forEach((el) => { el.value = held[el.id] ?? ""; });
-  go();
+  if (again) return;
+  const link = LINKED?.page === name ? LINKED.values : null;
+  LINKED = null;
+  const wanted = link || HELD_FILTERS[name];
+  if (!wanted || !boxes.length) return;
+  const shown = Object.fromEntries(ids.map((id) =>
+    [id, wanted[id] ?? (views.includes(id) ? box(id)?.value ?? "" : "")]));
+  if (boxes.every((el) => el.value === shown[el.id])) return;
+  boxes.forEach((el) => {
+    listed(el, shown[el.id]);
+    el.value = shown[el.id];
+  });
+  reload(ask(shown), shown);
 }
 
 /* TWO THINGS A COLUMN OF FIGURES CANNOT DO ON ITS OWN, both in `opts` so the other call sites

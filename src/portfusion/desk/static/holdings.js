@@ -66,9 +66,9 @@ Object.assign(DRAW, {
 
 Object.assign(WIRE, {
   holdings(d, again) {
-    wireFilters("holdings", d, again, { ids: ["h-by", "h-acct"], button: "h-clear",
-      ask: (v) => `/api/holdings?by=${encodeURIComponent(v["h-by"])}`
-        + `&account=${encodeURIComponent(v["h-acct"])}`,
-      clear: () => "/api/holdings" });
+    const by = (v) => `/api/holdings?by=${encodeURIComponent(v["h-by"])}`;
+    wireFilters("holdings", d, again, { ids: ["h-by", "h-acct"], views: ["h-by"], button: "h-clear",
+      ask: (v) => by(v) + `&account=${encodeURIComponent(v["h-acct"])}`,
+      clear: by });
   },
 });
