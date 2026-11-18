@@ -17,24 +17,28 @@ any process that reaches the port is answered as the owner ([`SECURITY.md`](../S
 ## At login, and in the Dock
 
 `--install-agent` writes a LaunchAgent (`desk/agent.py`) that runs the desk on the venv that typed
-the command, for the book it was typed in, logging to `~/Library/Logs/portfusion-desk.log`. One
-desk agent per Mac user. It starts at login and is not restarted if it stops. A book that moves
-needs `--uninstall-agent`, then `--install-agent` in its new folder.
+the command, for the book it reads (`PORTFUSION_BOOK`, else the folder it is typed in), logging
+to `~/Library/Logs/portfusion-desk.log`. One desk agent per Mac user. It starts at login and is
+not restarted if it stops. A book that moves needs `--uninstall-agent`, then `--install-agent` in
+its new folder.
 
 To put it in the Dock: Safari → `http://127.0.0.1:8765/` → **File → Add to Dock**. The web app
 only opens the page; if the desk is not running, Safari shows a blank error. It copies the icon
-and name when added, so a new brand reaches the Dock only by removing it and adding it again.
+and name when added, so a new brand reaches the Dock only after a restart, by removing it and
+adding it again.
 
 ## Restart, reload, or nothing
 
 | Changed | What to do |
 |---|---|
-| any `.py` the desk imports | restart: the desk's **Restart** button, or `launchctl kickstart -k gui/$UID/org.portfusion.desk` |
+| any `.py` the desk imports | restart: *restart the desk* on the freshness line, under the pages, or `launchctl kickstart -k gui/$UID/org.portfusion.desk` |
+| the book's `brand/` | restart: it is read once, and the desk does not say it changed |
 | `desk/static/` | reload the page |
 | `store/` | nothing: the next request reads it |
 
 The desk says when it is running older code than is on disk, names the files, and offers the
-restart. A rebuilt venv or an upgraded package is not noticed: restart after either.
+restart. It watches PortFusion's own files only: an upgraded dependency is not noticed, so restart
+after one.
 
 ## The hosted desk
 
@@ -64,5 +68,5 @@ Until both hold the same value, every request is refused, and the Access page sa
 |---|---|
 | Publish | `portfusion desk --publish`, from the book's `main`, clean and pushed, with the deploy clone on a clean `main`; restart the Mac's desk first if its code changed |
 | Manage readers | [`access-levels.md`](access-levels.md) |
-| See whether it is up | the desk's header says *hosted:* then *live*, *tunnel off*, *not published*, *behind, publish* or *restart first*; nothing while the remote door is shut |
+| See whether it is up | the freshness line says *hosted:* then *live*, *tunnel off*, *not published*, *behind, publish* or *restart first*; nothing while the remote door is shut |
 | Turn it off | `tailscale funnel --https=443 off` |

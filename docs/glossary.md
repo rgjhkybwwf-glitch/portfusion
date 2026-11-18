@@ -15,7 +15,7 @@ file and the code disagree, the code is right.
 | Statement-grade | `rules.STATEMENT_GRADE` | the Method page |
 | The source hierarchy | `rules.SOURCE_HIERARCHY`, `rules.SOURCE_HIERARCHY_NOTE` | the Method page |
 | What a spread bet is | `rules.SPREAD_BET` | the Method page |
-| What a document is | `rules.EVIDENCE_CLASSES`, `rules.RETRIEVAL_KINDS` | §9 |
+| What a document is | `rules.EVIDENCE_CLASSES`, `rules.RETRIEVAL_KINDS` | §9; what retrieves one, §8 |
 
 ## 2 · `basis`, and the words used instead of it
 
@@ -140,6 +140,7 @@ not *realized*.
 | Net asset value less capital employed: what the holdings did | **Capital growth** |
 | The income a return counts, each row once (`Book.return_income()`): not all income, which is **YTD income** and **Income and costs** | **Return income** |
 | Capital growth plus return income: what a return divides | **Gain with income** |
+| Unrealised plus realised gain to date, with no income | **Trading gain, excl. income** |
 | A round trip, and a company life | **Closed out · State · Dividends (GBP) · Funding interest (GBP) · Life gain (GBP) · Life gain (%) · Life cost per share · Round trips · Lines** |
 | Against the broker | **Difference · Verdict · Last broker check · Document · Cash / Funds (GBP) · Cash read from · FX rate as at** |
 | A mark, and a window from one to the next | **Price key** — a share's ticker, or a bet's contract · **Quality · Stale · Priced · Was priced · Value now (GBP) · Change (GBP)** |
@@ -159,16 +160,16 @@ legs still held, the second what one fill paid.
 | Concept | Canonical | Note |
 |---|---|---|
 | What the price alone did to a line's value | **From price (GBP)** | never a share price |
-| What the exchange rate alone did | **From FX (GBP)** | measured to the live rate; zero on a spread bet |
+| What the exchange rate alone did | **From FX (GBP)** | measured to the live rate; a spread bet has none, shown as a dash |
 | What buying or selling did, at what was transacted | **From dealing (GBP)** | |
 
 The three sum exactly to **Change (GBP)**; the order they are taken in is
 `Book.changes_since()`'s.
 
-### What a position row says about its last mark
+### A position row's price, and its detail
 
-On screen a mark is a "price": `house/words.py` keeps what a house word is called there, and the
-store and the guides keep "mark".
+On screen a house word is said plainly: a mark is a "price", and `house/words.py`'s `WORDS` holds
+the rest; the store and the guides keep the house's word.
 
 | Concept | Canonical | Note |
 |---|---|---|
@@ -228,18 +229,18 @@ column headings.
 | **YTD return** | money-weighted return | Modified Dietz, day-weighted; **not comparable to an index**, which is time-weighted |
 | **Return since … (MWR)**, from the record's first day | linked return | each full year's return, linked with the year to date; not comparable to an index either |
 | **Total market exposure** | gross exposure | no netting: the book holds no short positions |
-| **Capital deployed** | contributions | money into positions, not across the book's boundary |
+| **Capital deployed** | contributions | money into positions: a share account's purchases less its sales, a spread-bet account's funds in and out |
 | **Capital employed** | invested capital | opening NAV plus capital deployed |
 | **Pool** | section 104 holding | |
 
 **Capital movements** cross the book's boundary; **capital deployed** is committed to
-positions. `roll_up()` and `MEASURE_BASIS` keep them apart.
+positions, and a spread-bet account's is its capital movements (`Book.capital_deployed()`).
 
 ## 8 · Other closed lists, and where each is declared
 
 | List | Declared in |
 |---|---|
-| The accounts, in order, and the code each is shown by to anyone but the owner | `rules.ACCOUNT_ORDER`, the register's `code` |
+| The accounts, in order, and the code and label each is named by on the reading pages and the report | `rules.ACCOUNT_ORDER`, the register's `code`; `Book.account_codes()` |
 | What retrieves a document | `rules.RETRIEVAL_KINDS` |
 | How a document is recognised | `rules.Evidence.fingerprint` |
 | How an archived document is named | `rules.ARCHIVE_CONVENTION` |

@@ -14,15 +14,15 @@ python3 tools/clean_room.py               # the app on its own: a copy, a new bo
 portfusion desk --port 8769               # the desk, in a browser, beside any book's
 ```
 
-Every command reads the book `PORTFUSION_BOOK` names, or the one in the folder it is typed in
-([`CONTRIBUTING.md`](CONTRIBUTING.md), Setting up).
+Every command and the suite read the book `PORTFUSION_BOOK` names, or the one in the folder they
+are typed in ([`docs/environment.md`](docs/environment.md), Which book).
 
 ## Pointers
 
 | Where | What it holds |
 |---|---|
 | [`docs/store.md`](docs/store.md) | which table a fact goes in, and what each column may hold |
-| `record/rules.py` | the record's rules; the desk's Method page renders them |
+| `record/rules.py` | the record's rules; the desk's Method page (`desk/panels/method.py`) shows them |
 | `engine/` | every derived figure, once; `Book.HEADLINE`, in `engine/book.py`, registers the headline ones |
 | [`docs/testing.md`](docs/testing.md) | what each layer of the guard proves, and what to do when a test fails |
 | [`docs/content-map.md`](docs/content-map.md) | which page and report section answers each job; a page's work is designed against it |
@@ -32,4 +32,5 @@ Every command reads the book `PORTFUSION_BOOK` names, or the one in the folder i
 
 The Queue (issue #206) orders what is built next, the milestones say what each release is for, and
 [`docs/direction.md`](docs/direction.md) says who it is for and where it is going. `gh issue list`
-shows the rest.
+shows the rest; in a cloud session, where `gh`'s GraphQL is refused, the GitHub tools'
+`list_issues`.

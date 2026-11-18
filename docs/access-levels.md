@@ -13,11 +13,11 @@ on every request.
 |---|---|---|
 | **Pages** | The eight reading pages: Dashboard, What Changed, Reconcile, Performance, Holdings, Round Trips, Trades, Reports | The same eight |
 | **Buttons** | None | None |
-| **An account is called** | Its code and label, `A1 · ISA`, in its cells and filters; the engine's sentences keep its register name | Its code and label, `A1 · ISA`, in every word |
+| **An account is called** | Its code and label, `A1 · ii ISA`, in its cells and filters; the engine's sentences keep its register name | Its code and label, `A1 · ii ISA`, in every word |
 | **Holders' names, account numbers** | Shown | `[withheld]`, in notes too |
 
 A page the renaming could not clear is refused, not sent. The quarterly report names accounts
-by code at every level. What a level opens is `OPENS` in `desk/remote.py`.
+by code and label at every level. What a level opens is `OPENS` in `desk/remote.py`.
 
 ## Adding a reader
 
@@ -42,7 +42,8 @@ On Access; each holds from the reader's next request.
 | Revoke a reader | *revoke* on the reader's row | Every passkey and the level go; back only as new |
 | End every session | *sign everyone out* | All sign in again; passkeys and levels stay |
 
-A session also ends after 12 hours unused, after 7 days, and at every restart of the desk.
+A session also ends when its reader presses *sign out*, after 12 hours unused, after 7 days, and
+at every restart of the desk.
 
 ## The log
 
@@ -52,7 +53,8 @@ Access shows the last 30 days of sign-ins, enrolments, refusals and limits. Wort
 - **Refusals from an unknown address**: noise, unless it grows.
 - **One address on every line, yours included**: Netlify is not naming the caller, so the
   sign-in limit is shared by everyone.
-- **A run of *not through the hosted desk***: the proxy secrets differ, or someone found the
-  tunnel, which buys them nothing.
+- **A line a minute of *not through the hosted desk***: its detail says why. A secret that does
+  not verify or is missing is the two proxy secrets differing ([`desk-app.md`](desk-app.md));
+  *unsigned* is someone who found the tunnel, which buys them nothing.
 
 The readers, passkeys and log are three files in the book's folder, which git ignores.

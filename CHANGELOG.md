@@ -1,7 +1,7 @@
 # Changelog
 
-Each release, newest first. The version is `portfusion/__init__.py`'s, and `portfusion --version`
-prints it.
+Each release, newest first. The version is `src/portfusion/__init__.py`'s, and
+`portfusion --version` prints it.
 
 ## Unreleased
 
@@ -12,23 +12,34 @@ One figure moves, on two pages, and there is no migration. Do these when the boo
 - **Read "Total gain" as "Trading gain, excl. income"**: the same figure, under a name that says
   what it leaves out.
 - **Expect days held still open to read to the prices' day**, on Holdings and on Round Trips'
-  company lives, where they read to today: fewer days, by the age of the newest mark.
+  company lives, where they read to today: fewer days, by the days since the prices' day.
+- **Rename a headline figure a book's `checks/` reads by name**, since `Book.headline()` is keyed
+  by it (`house/headings.py`'s `FIGURES`): "Total gain", "YTD return (MWR)" and "Closed round
+  trips" are "Trading gain, excl. income", "YTD return" and "Round trips closed out".
 - **Expect each account's reconciliation in new words**, the same on Reconcile and
   `portfusion record`. An account never read: "<account>: no holdings export on file, so its
   units are unchecked — file a holdings export", or, for IG, "no reading from IG on
   file"; the Dashboard shows the step as its link's words. The count note reads "1 of 3 accounts
   checked against the broker", naming those checked. A share account whose
-  reading is a holdings export is checked on its units even with no cash reading of its day: it
-  is no longer "NO STATEMENT".
+  reading is a holdings export is checked on its units even with no cash reading on or before
+  its day: it is no longer "NO STATEMENT".
 - **Read the Dashboard's checks under "What was checked"**, apart from what needs attention. A
   check that only counts what a gap already lists (reasoning, funding interest, dated rates) is
   written only when nothing is owed. An IG reading struck apart, and a reading that lists no
   units, are gaps with their step, as an account never read is. The record's findings no longer
   name a folder.
-- **Reinstall against `requirements.lock`**: pypdf is 7 and python-dateutil 4.
+- **Reinstall against `requirements.lock`**, its `-c` line moved with the release (README, Taking a
+  new release): pypdf is 7, python-dateutil 4 (six is dropped), pandas 3.1.1, fastapi 0.162.2
+  with starlette 1.10.0, uvicorn 0.54.0, pydantic 2.14.3, and pytest 9.2.0, which a book's
+  `checks/` run on.
 - **Read "price" for "mark" on screen**: "Mark key" is "Price key", "Mark history" is "Price
   history" and "Mark move (%)" is "Price move (%)", and Price Refresh's button is "write the
-  ticked prices". The store's columns and the guides keep "mark".
+  ticked prices". The store's columns, the text its rows hold (a frozen quarter's source, a
+  journal note) and the guides keep "mark".
+- **Read the other new names as Changed gives them**: "Round trips", "% of exposure", "Weight of
+  exposure", "Counts as", "Gain with income", "Return income", "Cash read from", "read from IG
+  on" its day, an account's code and label on the reading pages, and a period named by its first
+  day counted.
 
 ### New
 
@@ -43,14 +54,13 @@ One figure moves, on two pages, and there is no migration. Do these when the boo
   information only. The last broker check is read from the account history, as the report reads
   it, for every account. An IG reading's figures it does not hold are left out. The page leads
   with what disagrees; the "Reading" band is gone, each account's next step on its own row.
-- **"read live" is "read from IG on" its day**, on Reconcile and the report.
 - **The IG sweep brings a bet line's dividend adjustment** as an income row, category Dividend,
   with the line whose market IG names; blank where no one line has that name. A ledger type no
   rule knows is listed under Skipped, where it was dropped without a word.
-- **What needs attention leads to where it is done.** Each finding on the Dashboard ends in a
-  link to the page its work is done on, and the Dashboard counts the documents waiting and the
-  items ready on the Bench. An "owed" tag on Round Trips and Holdings is the link to the Bench,
-  and the Dashboard's round trips closed out leads to Round Trips.
+- **What needs attention leads to where it is done.** Each finding on the Dashboard whose work a
+  desk page does ends in a link to that page, and the Dashboard counts the documents waiting and
+  the items ready on the Bench. An "owed" tag on Round Trips and Holdings is the link to the
+  Bench.
 - **Reconcile lists an account never read**, as "No reading", and a row not judged links to where
   its reading is taken.
 - **Performance says where the record begins**: the day, the opening net asset value and the
@@ -79,11 +89,13 @@ One figure moves, on two pages, and there is no migration. Do these when the boo
   (reasoning owed on a trade already written, a live price nothing holds, a dividend with no
   line, points per unit owed) has no link. A rate owed says why in words, and the evidence line
   names no folder.
-- **A house word has one home, `house/words.py`**, which every panel answer carries beside its
-  precision: the desk says "price" where the store says "mark", Performance's return is "a
+- **A house word has one home, `house/words.py`**: the desk says "price" where the store says
+  "mark", and every panel answer carries, beside its precision, the plain words for a house term:
+  Performance's return is "a
   day-weighted return on money", Holdings by company says its quantity is in "shares, a bet
   counted as the shares it stands for" and its prices per share, and Round Trips tags a life
   "entered before the record began". The retired terms leave Method for the glossary.
+- **"read live" is "read from IG on" its day**, on Reconcile and the report.
 - **The Dashboard leads to where a fact is added**: "add a fact on the Bench", where the Bench
   is served.
 - **A control is drawn in the shape of what it does** (D4, audit row 1): a way to another page
@@ -146,7 +158,7 @@ One figure moves, on two pages, and there is no migration. Do these when the boo
   tools only: a book installs none of them.
 - **A push that changes the app and not this changelog is refused** by the checkout's `pre-push`
   hook, which names the files. Tests alone owe no line. A book's own push is not checked.
-- **A Claude session in a checkout never rewrites a pushed commit**: a fix, or a corrected
+- **A Claude session in a checkout never rewrites a pushed commit** (CONTRIBUTING): a fix, or a corrected
   message, is a new commit. The `pre-push` hook still refuses any rewrite of `main`. A book's hook
   is unchanged.
 - **One figure has one name** (the audit's rows 8, 9, 10, 45 and 60). No figure moves.
@@ -157,7 +169,7 @@ One figure moves, on two pages, and there is no migration. Do these when the boo
     income", the income a return counts. Performance's year table shows Gain with income beside
     Capital growth, which is that gain less its income.
   - The year reads "from 1 Jan 2026" on the Dashboard and on Performance, the first day it
-    counts, and the Dashboard's Year to date line says "MWR on NAV".
+    counts, and the Dashboard's YTD return line, which read "Year to date", says "MWR on NAV".
   - Accounts' "Read from" is "Cash read from": the document an account's cash was read from.
 - **The demo's ISA cash of 30 Sep 2026 cites its ii statement**, which the archive holds.
 

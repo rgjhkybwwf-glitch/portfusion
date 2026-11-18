@@ -27,7 +27,7 @@ On a Mac, `portfusion desk --install-agent` starts the desk at login for the boo
 
 | A book's folder | Holds |
 |---|---|
-| `store/` | the facts: one CSV per kind of event |
+| `store/` | the facts: a CSV per table, and the three histories ([`docs/store.md`](docs/store.md)) |
 | `_inbox/` | documents waiting to be read onto the record |
 | `_archive/` | the documents behind the rows |
 | `brand/` | its name and look (optional) |
@@ -39,10 +39,11 @@ On a Mac, `portfusion desk --install-agent` starts the desk at login for the boo
 ## Taking a new release
 
 A book names the release it runs in its own `requirements.txt`, and moves only when its owner
-changes that line. Read the release's entry in [`CHANGELOG.md`](CHANGELOG.md), change the line,
-then in the book's folder:
+changes it. Read the release's entry in [`CHANGELOG.md`](CHANGELOG.md), change its two lines, the
+release and its lock, to the new tag, then in the book's folder:
 
 ```bash
+source .venv/bin/activate
 .venv/bin/python3 -m pip install --force-reinstall --no-deps -r requirements.txt   # the pinned code
 .venv/bin/python3 -m pip install -r requirements.txt                               # what it needs
 portfusion migrate                   # what the release moves in the store; --write moves it
@@ -56,7 +57,7 @@ portfusion record                    # the audit
 | `migrate --write` | until the release's store moves are made the book will not load, and the loader names the table; it opens and audits the book, and puts every file back if either fails |
 | moves the entry gives as by hand, and the lines of `checks/` it lists | made first, and committed as the book's own change |
 | a hook or `.gitignore` the audit names | copied from a book `portfusion init` makes in a scratch folder |
-| restart the desk | it does not notice an upgraded package ([`docs/desk-app.md`](docs/desk-app.md)) |
+| restart the desk | it runs the code it started with until it restarts ([`docs/desk-app.md`](docs/desk-app.md)) |
 
 ## Where everything is
 
@@ -69,16 +70,20 @@ portfusion record                    # the audit
 | `house/` | what both renderers share: headings, on-screen words, precision, PortFusion's palette |
 | `feeds/` | the market feeds (IG, TradingView), read-only |
 | `history/` | the histories: prices, FX rates and account values over time |
-| `tests/` | the guard, shipped with the app: `portfusion check` runs it; a folder per package it tests |
+| `init/`, `migrate/` | a new book, and a book moved to this release's store |
+| `hooks/` | the git hooks the app ships: what a repository's hook file runs |
+| `check/`, `tests/` | the guard, shipped with the app: `portfusion check` runs `tests/` |
 | `demo/` | the invented book; `tools/make_demo.py` writes it |
+| the `.py` files beside them | the `portfusion` command, a book's `brand/`, the release, the log and the secret scan |
 
 A document becomes a row only on the desk's Bench, by a person's approval
 ([`docs/intake.md`](docs/intake.md)). The engine derives every figure from the record; the desk and
 the report show it and compute none.
 
-A book holds no code, so a change to PortFusion is made here: [`CONTRIBUTING.md`](CONTRIBUTING.md)
-sets up a checkout and says where each kind of change goes, [`docs/`](docs) holds the component
-guides, and [`docs/glossary.md`](docs/glossary.md) what each word means here.
+A book holds none of PortFusion's code, so a change to PortFusion is made here:
+[`CONTRIBUTING.md`](CONTRIBUTING.md) sets up a checkout and says where each kind of change goes,
+[`docs/`](docs) holds the component guides, and [`docs/glossary.md`](docs/glossary.md) what each
+word means here.
 
 PortFusion is open source under the Apache License 2.0 ([`LICENSE`](LICENSE)). A security fault
 is reported privately, as [`SECURITY.md`](SECURITY.md) says.

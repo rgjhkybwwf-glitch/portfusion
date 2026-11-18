@@ -11,11 +11,11 @@ portfusion migrate             # a book carried to this release's store; --write
 python3 -m pytest -m audit     # the audit set alone
 ```
 
-**One suite, any book.** `python3 -m pytest` runs on whichever book is loaded, and its last line
-names that book. A check of one book's own facts lives in **that book's `checks/` folder**,
-collected when that book is loaded (`tests/harness.py`). Everything in `tests/` must pass on any
-book, which the demo run proves. A check another book could pass or fail belongs in `tests/` or
-the audit, never in a book's `checks/`.
+**One suite, any book.** `python3 -m pytest` runs on whichever book is loaded, and the line above
+its count names that book. A check of one book's own facts lives in **that book's `checks/`
+folder**, collected when that book is loaded (`tests/harness.py`). Everything in `tests/` must
+pass on any book, which the demo run and the clean room's new, empty book prove. A check another
+book could pass or fail belongs in `tests/` or the audit, never in a book's `checks/`.
 
 **Read a test's docstring before changing it.** It says why the check exists.
 
@@ -27,19 +27,19 @@ the audit, never in a book's `checks/`.
 |---|---|---|
 | `python3 -m pytest` | the code, on the loaded book's rows | that the record is in good order |
 | the suite on the demo | the code runs on a book that is not yours | that the demo's figures are right |
-| `portfusion check` | the code passes on the demo, and the loaded book opens: figures, findings, every page | that the code is right on your book's rows |
+| `portfusion check` | the code passes on the demo, and the loaded book opens: figures, findings, every page and the report's gate | that the code is right on your book's rows |
 | `portfusion record` | whether the record is in good order: the findings, then the audit tests | anything about the code |
 | `tools/clean_room.py` | the tracked files install fresh and pass on the demo and on a new, empty book, and the wheel built from them passes `portfusion check` | that nothing of a book is named in what leaves |
 | `tiers.yml`, by `tools/tiers.py` and `tools/figures.py` | a pull request's risk tier, by the paths it changes, and for tier 2 whether the demo's headline figures moved between the base and the branch | that a figure is right, or that a change no path shows (the slice that turns a feature on) is held |
 | `ruff check` | the code holds none of the faults `pyproject.toml` selects: an undefined or unused name, a blind `except`, a stray `print` | layout: there is no formatter |
 | the secret scan, `.githooks/pre-commit --history` | no commit holds a secret's shape or a file that reaches a broker or a reader | a secret in a shape it does not know |
 | `lint-imports` | each part of the app imports only what `pyproject.toml`'s contracts allow, the build no desk, feed or history | an import made by name at run time (`importlib`) |
-| `pyright` | the packages `pyproject.toml` lists type-check | anything of the packages it does not yet list, or the names `rules._build()` binds |
+| `pyright` | the packages `pyproject.toml` lists type-check | anything of the packages it does not list, or the names `rules._build()` binds |
 | CI's `newest` job | the suite passes on the newest packages the floors allow, without `requirements.lock`; not a required check | that the lock's own set passes: the guard proves that |
 | `tools/advisories.py` | no package `requirements.lock` or `tools/package-lock.json` pins has an advisory OSV knows of | that the floors' older versions have none |
 | `node --check` on each of `src/portfusion/desk/static/*.js` | the desk's script parses: a syntax error there blanks every page | that it runs |
 | `tools/desk_smoke.py`, then `tools/desk_smoke.mjs` | every desk page draws on the demo, at start-up and from its tab: no error, rejected promise, error box or unanswered fetch | that a figure is right, or that anything inside a page works when clicked |
-| `tools/desk_walk.spec.mjs`, on the desk `tools/desk_walk.py` serves | in Chromium at 1440 × 900, on the demo with the date held: each page opens, draws each control in the shape of what it does, holds no accessibility fault axe-core knows but those listed, and looks as its baseline in `tools/desk_walk/` does; the Dashboard, Holdings, the Bench and a holding's detail's headings say "price", never "mark"; a finding leads to its page, what was checked stands apart from what needs attention, the closed-out count to as many round trips, and the Dashboard's "add a fact on the Bench" to the Bench; a wide table's links are in view, a box that scrolls sideways marks each edge with more beyond it and one that fits marks none, and a cell reached by Tab is clear of its pinned columns; an open detail leaves its table's width as it was, and runs whole as far as the box; a page chosen by keyboard puts focus on its heading, one Tab from its first control, and a reader already in the page keeps their place; a holding's detail leads to its company's life; a page's filters are held by hand and a link's last one visit | that a figure is right, that a write works, or anything on a phone |
+| `tools/desk_walk.spec.mjs`, on the desk `tools/desk_walk.py` serves | in Chromium at 1440 × 900, on the demo with the date held: each page opens, draws each control in the shape of what it does, holds no accessibility fault axe-core knows but those listed, and looks as its baseline in `tools/desk_walk/` does; the Dashboard, Holdings, the Bench and a holding's detail's headings say "price", never "mark"; a finding leads to its page, what was checked stands apart from what needs attention, the closed-out count to as many round trips, and the Dashboard's "add a fact on the Bench" to the Bench; a wide table's links are in view, a box that scrolls sideways marks each edge with more beyond it and one that fits marks none, and a heading reached by Tab is clear of its pinned columns; an open detail leaves its table's width as it was, and runs whole as far as the box; a page chosen by keyboard puts focus on its heading, one Tab from its first control, and a reader already in the page keeps their place; a holding's detail leads to its company's life; a page's filters are held by hand and a link's last one visit | that a figure is right, that a write works, or anything on a phone |
 | `test_engine_ties`, `desk/test_ties.py` | the engine's figures agree seen from more than one side, and each page shows what the engine computed | that the engine is right |
 | `test_engine_invariants` | the engine's arithmetic agrees with itself, assuming nothing | that a figure is the right answer |
 | `test_demo` | `tools/make_demo.py` writes the demo exactly | that the demo's invented figures agree beyond the suite |
@@ -87,13 +87,16 @@ baseline is taken again, in the pull request that changes the page:
 - **The pull request names the pages** on a line of its description, `Pictures: bench, dashboard`
   (or `Pictures: none`), copied from its plan.
 - **The label `baselines`** has `baselines.yml` take the label off, walk the branch on GitHub and
-  retake every page; a picture that changed for a page not named fails it, by name, with nothing
-  pushed. Otherwise it commits the named pages' `<page>-linux.png` to `baselines/<branch>`.
+  retake each page whose picture no longer matches. A picture that changed for a page not named
+  fails it, by name, with nothing pushed, and so does a description with no `Pictures:` line or a
+  name that is no page's. Otherwise it commits the pictures that changed to `baselines/<branch>`,
+  and says on the pull request what it did.
 - **Merge that in** (`git fetch origin baselines/<branch> && git merge FETCH_HEAD`) and push, and
   the guard runs; the branch beside it is deleted when the pull request closes. The label is never
   left on, so adding it again always asks again.
 
-By hand, the guard's failed walk uploads what it saw: `gh run download <run> -n desk-walk`, and the
-page's `-actual.png` is its new baseline. [`environment.md`](environment.md) sets the walk up.
+By hand, the guard's failed walk uploads what it saw (`gh run download <run> -n desk-walk`): a
+page's `<page>-actual.png`, copied over `tools/desk_walk/<page>-linux.png`, is its new baseline.
+[`environment.md`](environment.md) sets the walk up.
 
 A table that scrolls in its box changes no baseline when a column is added beyond its edge.
