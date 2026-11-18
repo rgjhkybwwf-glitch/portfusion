@@ -264,7 +264,9 @@ is. A run changes neither.
   start of its level: another within them takes the wait's place, so what comes together makes
   one run. So a coordinator's run the gate starts takes all that waits, each by its own playbook:
   an answer or a `Change:` not yet recorded, a release whose lines are not moved, an open `Idea:`
-  not shaped, a "Re-plan" not planned.
+  not shaped, a "Re-plan" not planned. **One run of a level at a time**: while the run log shows
+  a run of that level at work, its start line with no end line yet, the start waits for it to end,
+  up to ninety minutes.
 - **The maintainer's day is 08:00 to 17:00 UK time, Monday to Friday.** What the maintainer
   starts, by an answer, a `Change:`, an `Idea:`, a release or a `Resume:`, starts at any hour, and
   a run's own line ("Build:", "Re-plan:") carries on what its run began. No clock starts a run

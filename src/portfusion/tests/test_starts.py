@@ -93,6 +93,31 @@ def test_each_runs_mark_is_one_the_gate_knows_for_its_level(starts, rows):
 def test_the_queue_is_the_one_contributing_names(starts, contributing):
     named = re.search(r"\*\*the Queue\*\*,[^()]*\(#(\d+)\)", contributing)
     assert named and int(named.group(1)) == starts.QUEUE
+    log = re.search(r"\*\*the run log\*\* \(#(\d+)\)", contributing)
+    assert log and int(log.group(1)) == starts.RUN_LOG
+
+
+def test_a_start_waits_while_a_run_of_its_level_is_at_work(starts):
+    """THE CASE THAT MAKES IT FAIL: the morning run writes "Re-plan:" early, and ten minutes later
+    a second coordinator plans and writes the Queue beside it."""
+    from datetime import datetime, timezone
+    now = datetime(2026, 11, 19, 7, 0, tzinfo=timezone.utc)
+
+    def line(body, at):
+        return {"body": body, "created_at": f"2026-11-19T{at}:00Z"}
+    began = line("📋 **Ready check** · start · 19 Nov 06:30 · the morning", "06:30")
+    ended = line("📋 **Ready check** · 19 Nov 06:30–06:58 · planned #250 · Next: …", "06:58")
+    night = line("🌙 **Night run** · start · 19 Nov 06:40 · building #251", "06:40")
+    assert starts.at_work("coordinator", [began], now)
+    assert not starts.at_work("coordinator", [began, ended], now)
+    assert starts.at_work("builder", [began, ended, night], now)
+    assert not starts.at_work("coordinator", [night], now)
+    died = line("📋 **Ready check** · start · 19 Nov 02:30 · the answer", "02:30")
+    assert not starts.at_work("coordinator", [died], now), "a run that died holds nothing"
+    seen = [line("**Session note** · start · nothing", "06:50"), line("start: Q1: a", "06:55")]
+    assert starts.at_work("coordinator", [began, *seen], now), "only a run's lines count"
+    gate = (FLOWS / "start.yml").read_text(encoding="utf-8").partition("\n  fire:")[2]
+    assert "starts.py --at-work" in gate and gate.index("--at-work") < gate.index("grep -qx paused")
 
 
 @pytest.mark.parametrize("body, start, acts", [

@@ -13,6 +13,11 @@
 # another within them takes the wait's place, so what comes together makes one run. The run is told
 # only what started it last, and finds the rest itself. Nothing of a comment is ever sent.
 #
+# ONE RUN OF A LEVEL AT A TIME. After the quiet minutes, while the run log shows a run of that
+# level at work (its start line with no end line yet, `tools/starts.py --at-work`), the start
+# waits for it, up to AT_WORK_WAIT minutes, then starts anyway: a coordinator's "Re-plan:" written
+# mid-run starts the next coordinator only once that run has ended.
+#
 # WHAT IS DONE AT ONCE, before any wait. The maintainer's words are marked: 🚀 when a run will
 # start, 👀 when they were only seen (any other comment starts no run, and the next morning run
 # reads it). "Change:" holds the work: the issue takes `decision`, the agent's pull request loses
@@ -158,11 +163,16 @@ jobs:
       group: start-${{ needs.read.outputs.level }}${{ needs.read.outputs.start == 'hand' && '-hand' || '' }}
       cancel-in-progress: true
     runs-on: ubuntu-24.04
-    timeout-minutes: 40
+    timeout-minutes: 150
     permissions:
+      contents: read
       issues: read
     steps:
-      - name: Wait the quiet minutes, then start the run
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1    # v7.0.1
+        with:
+          ref: ${{ github.event.repository.default_branch || 'main' }}
+          persist-credentials: false
+      - name: Wait the quiet minutes, and for a run of the level at work, then start the run
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
@@ -190,6 +200,18 @@ jobs:
             echo "The $LEVEL starts in $WAIT minutes, unless another start of its level comes first."
             sleep $((WAIT * 60))
           fi
+          AT_WORK_WAIT=90
+          log=$(PYTHONPATH=src python3 tools/starts.py --log)
+          for ((waited = 0; waited < AT_WORK_WAIT; waited += 5)); do
+            [ "$START" != hand ] || break
+            since=$(date -u -d '-4 hours' +%Y-%m-%dT%H:%M:%SZ)
+            # The run log out of reach waits for nothing: the start goes ahead.
+            { gh api "repos/$REPO/issues/$log/comments?since=$since&per_page=100" --paginate \
+                --jq '.[] | {body, created_at}' || true; } | jq -s . > "$RUNNER_TEMP/log.json"
+            [ "$(PYTHONPATH=src python3 tools/starts.py --at-work "$LEVEL" "$RUNNER_TEMP/log.json")" = yes ] || break
+            echo "A $LEVEL run is at work (its start line on #$log has no end line yet): waiting for it."
+            sleep 300
+          done
           labels=$(gh issue view "$QUEUE" --repo "$REPO" --json labels --jq '.labels[].name')
           if [ "$START" != hand ] && grep -qx paused <<< "$labels"; then
             echo "The loop was paused during the wait: nothing is started. Resuming it starts the coordinator." | tee -a "$GITHUB_STEP_SUMMARY"

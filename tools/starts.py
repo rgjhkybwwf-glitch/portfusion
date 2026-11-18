@@ -8,6 +8,10 @@ never a pull request's.
     python3 tools/starts.py --read      what an event is, from the environment: one line of JSON
     python3 tools/starts.py --working   "yes" in the maintainer's working hours, "no" outside them
     python3 tools/starts.py --queue     the Queue's number
+    python3 tools/starts.py --log       the run log's number
+    python3 tools/starts.py --at-work <level> <comments file>
+                                        "yes" while a run of that level is at work, read from the
+                                        run log's comments, a JSON list of {body, created_at}
 
 THE RUNS WRITE AS THE MAINTAINER'S ACCOUNT, so whose a comment is is told by its first words: a
 run's mark, a session's note, or else the maintainer's own.
@@ -26,6 +30,10 @@ from portfusion.log import log
 
 #: The Queue. Its `paused` label stops every start.
 QUEUE = 206
+#: The run log, where each run writes its start line and its end line (the skill `beat`).
+RUN_LOG = 289
+#: A start line with no end line after it this long is a run that died, not one at work.
+AT_WORK_FOR = timedelta(hours=3)
 #: The maintainer's working day, Monday to Friday, by this clock.
 ZONE = ZoneInfo("Europe/London")
 OPENS, CLOSES = time(8), time(17)
@@ -245,6 +253,21 @@ def _comment(e: dict[str, str], number: str, queue: bool,
         True, paused
 
 
+def at_work(level: str, comments: list[dict], now: datetime) -> bool:
+    """Whether a run of `level` is at work: the newest line its marks wrote on the run log is a
+    start line ("<mark> · start · …"), written less than AT_WORK_FOR ago. The gate waits for it
+    to end before it starts another of the level, so two never write the same things at once."""
+    lines = [c for c in comments if whose(c.get("body", "")) == "run"
+             and next((lv for mark, lv in MARKS.items()
+                       if _lines(c["body"])[0].startswith(mark)), "") == level]
+    if not lines:
+        return False
+    newest = max(lines, key=lambda c: c.get("created_at", ""))
+    said = _lines(newest["body"])[0].partition("·")[2].strip()
+    written = datetime.fromisoformat(newest["created_at"].replace("Z", "+00:00"))
+    return said.split("·")[0].strip() == "start" and now - written < AT_WORK_FOR
+
+
 def main(args: list[str]) -> int:
     now = datetime.now(timezone.utc)
     if args[:1] == ["--working"]:
@@ -252,6 +275,13 @@ def main(args: list[str]) -> int:
         return 0
     if args[:1] == ["--queue"]:
         log.info(str(QUEUE))
+        return 0
+    if args[:1] == ["--log"]:
+        log.info(str(RUN_LOG))
+        return 0
+    if args[:1] == ["--at-work"] and len(args) == 3:
+        comments = json.loads(open(args[2], encoding="utf-8").read() or "[]")
+        log.info("yes" if at_work(args[1], comments, now) else "no")
         return 0
     if args[:1] == ["--read"]:
         log.info(json.dumps(read(dict(os.environ), now), ensure_ascii=False))
