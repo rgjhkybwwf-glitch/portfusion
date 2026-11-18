@@ -4,7 +4,8 @@ The Python a checkout runs on, the JavaScript tools beside it, and which book ea
 
 ## The venv
 
-Python 3.13 or newer, and one venv per checkout. `pyproject.toml` names the packages and
+Python 3.13 or newer as `python3` (where `python3 --version` is older, name the newer one:
+`python3.13 -m venv .venv`), and one venv per checkout. `pyproject.toml` names the packages and
 `requirements.lock` the exact set the suite was proved on.
 
 ```bash
@@ -16,8 +17,9 @@ source .venv/bin/activate          # once per terminal: `python3` is then the ve
 its `python:` line, so a report can still be built the day a venv breaks.
 
 **A venv does not survive its folder being moved.** It records its own absolute path, so after a
-move `python3` falls back to the system's, and the first sign is the tests refusing to run.
-Rebuild it with the first line above, after `rm -rf .venv`; do the same after changing Python.
+move `python3` falls back to the system's, and the first sign is the tests not starting
+(`No module named pytest`) or refusing to run. Rebuild it with the first line above, after
+`rm -rf .venv`; do the same after changing Python.
 
 **A second checkout needs a venv of its own**: the tests refuse unless the app comes from their
 own `src/`.
@@ -36,7 +38,7 @@ packages and `tools/package-lock.json` the exact set; a book installs none of th
 
 ```bash
 npm ci --prefix tools              # once per checkout: into tools/node_modules
-npm --prefix tools run browser     # once per Mac: Playwright's Chromium, into ~/Library/Caches/ms-playwright
+npm --prefix tools run browser     # once per machine: Playwright's Chromium, into its cache
 npm --prefix tools run walk        # the walk; it starts its own desk, so the venv must be active
 ```
 
@@ -52,7 +54,8 @@ browser.
 
 The newest each floor allows, frozen under the lock's own header, then the venv rebuilt on it and
 the guard and the clean room run; the commit names each version that moved. CI's `newest` job
-runs the suite on that set without the lock, and a red there is the signal to do this.
+runs the suite on that set without the lock, and a red there is the signal to do this, as is an
+advisory `tools/advisories.py` finds in the lock.
 
 ```bash
 v=$(mktemp -d)/venv && python3 -m venv "$v" && "$v/bin/python3" -m pip install -q -e '.[dev]'
@@ -62,9 +65,9 @@ mv lock.new requirements.lock && rm -rf .venv     # then the venv above, the gua
 
 ## Which book
 
-Every command reads the book in the folder it is typed in, and refuses in a folder that holds
-none. `PORTFUSION_BOOK` names another, absolute or relative; `--book` does the same for one run
-of any `portfusion` action; `demo` is the invented book the app ships:
+Every command but `init` reads the book in the folder it is typed in, and refuses in a folder
+that holds none. `PORTFUSION_BOOK` names another, absolute or relative; `--book` does the same for
+one run of any `portfusion` action; `demo` is the invented book the app ships:
 
 ```bash
 portfusion desk --book demo --port 8769
@@ -77,6 +80,6 @@ a green.
 
 | Variable | Read by | Means |
 |---|---|---|
-| `PORTFUSION_BOOK` | every command and the suite | the book to read, as above |
+| `PORTFUSION_BOOK` | every command, the suite and the `pre-push` hook | the book to read, as above |
 | `MAIN_REWRITE` | the `pre-push` hook | the first seven or more characters of the remote `main` a push may replace |
 | `DESK_PROXY_SECRET` | Netlify, not the Mac | the proxy secret ([`desk-app.md`](desk-app.md)) |

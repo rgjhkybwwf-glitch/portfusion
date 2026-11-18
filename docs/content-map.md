@@ -6,16 +6,13 @@ the same figure. It is the reference a page's work is designed against: a design
 and a change that adds a page or a section, removes one, or moves a job between them changes this
 page in the same pull request.
 
-Decided on the content map's design card (#3, the maintainer, 13 Nov 2026: "All as
-recommended"):
+The map holds to the content map's decisions (#3):
 
 - **Thirteen pages, one job each.** No page is removed. Accounts and Access answer no job of their
   own and stay: Accounts holds the register and the money in and out, Access who may read.
-- **"Why the value moved" is answered on Performance**: a quarter's row opens to what made its
-  gain (#153, slices #251 and #252). What Changed stays, after Price Refresh, as what the last
-  refresh moved and what was recorded, and points to Performance. No period chooser.
-- **Charts of progress are a feature of their own** (#241), in 0.5.0. The year-end report stays
-  Later.
+- **"Why the value moved" is to be answered on Performance**: a quarter's row will open to what
+  made its gain (#153, slices #251 and #252). What Changed stays, after Price Refresh, as what the
+  last refresh moved and what was recorded, and will point to Performance. No period chooser.
 - Asked on their own cards: how a figure leads to its working (#154, slices #256 to #258), the
   report's format and how it is sent (#155), and which pages the hosted desk carries (#6). Until
   then the working stays on Method, the report stays one page the desk renders, and the hosted
@@ -28,18 +25,18 @@ In tab order (each panel's `ORDER`, `desk/panels/`). Hosted: the page is in `REM
 
 | Page | Jobs | What it shows | Hosted |
 |---|---|---|---|
-| Dashboard | 4, part of 8 | net asset value, exposure and its two parts, the year's return, and the other headline figures; "Needs attention", what the record needs, each leading to its page; "What was checked" | yes |
+| Dashboard | 4, part of 8 | net asset value, exposure and its two parts, the year's return, and the other headline figures; "Needs attention", what the record needs, each leading to the page that does its work, where a desk page does; "What was checked" | yes |
 | Bench | 2, 3 | documents waiting, and an item's evidence, proposed rows, reasoning and gates | no |
 | Price Refresh | 1 | bank, fetch, review, write | no |
 | What Changed | part of 6 | what the prices did, for shares and for spread bets, each line against its own previous price; every write to the record since | yes |
 | Reconcile | 5 | what disagrees; every account against its broker | yes |
 | Performance | 8, part of 6 | each quarter, for the book and for each account; the year so far | yes |
 | Holdings | 7, part of 10 | every line; a row's reasoning, research notes, company life, income and price history; where the exposure sits | yes |
-| Round Trips | 9, parts of 7 and 10 | closed positions, by holding or by company life | yes |
+| Round Trips | 9, parts of 7 and 10 | every position sold, in part or whole, by holding or by company life | yes |
 | Trades | 10, part of 7 | every buy and sale, with no totals | yes |
 | Accounts | part of 5 | the register, external capital, income and costs for the year | no |
 | Reports | 11 | each quarter's report and whether it is ready; the year end, not built | yes |
-| Method | 12 | how the numbers are made, in eighteen topics; no figure leads to it yet (#154) | no |
+| Method | 12 | how the numbers are made and what enters the record, in eighteen topics; no figure leads to it yet (#154) | no |
 | Access | none | levels, readers, devices, sign-ins | no |
 
 ## The report's sections
@@ -58,15 +55,15 @@ In the order `report/page.py` lists them; the number is the place in that list.
 | 08 By account | Performance's account rows |
 | 09 What these figures rest on | Reconcile's last two columns |
 
-The report prints whole on A4 landscape (`report/style.py`, #195).
+The report prints whole on A4 landscape (`report/style.py`).
 
 ## The jobs and their homes
 
 | Job | Where it is answered today | Homes | Work that changes it |
 |---|---|---|---|
 | 1 prices | Price Refresh | one | |
-| 2 a dividend, 3 a broker document | Bench | one | the Bench lines of 0.4.2 |
-| 4 what the record needs | Dashboard, each line leading to its page | one | |
+| 2 a dividend, 3 a broker document | Bench | one | the Bench lines of 0.4.2: #185 to #187, #189 |
+| 4 what the record needs | Dashboard, each line leading to the page that does its work; an owed why leads nowhere | one | #303 |
 | 5 reconcile an account | Reconcile reads; the work is on Price Refresh or the Bench; cash is on Accounts | three pages | |
 | 6 why the value moved | What Changed, a quarter's row on Performance, the report's section 05 | **three places, none whole** | #153: Performance becomes its home |
 | 7 one holding's history | a Holdings row's detail, then Trades, then Round Trips by company life | two or three pages | #199 brings the trades into the detail |
@@ -78,13 +75,14 @@ The report prints whole on A4 landscape (`report/style.py`, #195).
 
 ## One figure under more than one name
 
-Each name is in `house/headings.py`; Method's topic "How the gains, incomes and capitals differ"
-sets the gains side by side.
+Each name but two is in `house/headings.py`: "MWR on NAV" is `dashboard.js`'s and "The quarter's
+gain" `report/page.py`'s. Method's topic "How the gains, incomes and capitals differ" sets the
+gains side by side.
 
 | Figure | Its names |
 |---|---|
 | The year's return | "YTD return" and "Return since … (MWR)", the record's first day filled in, both on the Dashboard and again on Performance; "MWR on NAV" under the Dashboard's figure |
-| Net asset value | "Net asset value" on the Dashboard and in the report; "Closing NAV" on Performance and in the report's tables |
+| Net asset value | "Net asset value" on the Dashboard, in the report and in Performance's year table; "Closing NAV" in Performance's quarter table and the report's tables |
 | Exposure | "Total market exposure" on the Dashboard; "Market exposure" on Performance |
 | The gains | "Trading gain, excl. income" on the Dashboard; "Capital growth" and "Gain with income" on Performance; "The quarter's gain" in the report's section 05 |
 

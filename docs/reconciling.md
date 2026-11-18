@@ -9,19 +9,20 @@ broker's accounts need.
 units at the export's date. The Bench files an export only if they agree, and Reconcile and the
 Dashboard count them again from the filed export, so an event entered since shows as a
 difference. The book's value is set beside the broker's, with the same cash on both sides; it is
-information, never the verdict, so a holdings export with no cash reading of its day is still
-checked on its units. **An IG account is checked on equity**: the book's figure,
+information, never the verdict, so a holdings export with no cash reading on or before its day
+is still checked on its units. **An IG account is checked on equity**: the book's figure,
 derived from the ledger and the marks, against IG's own reading, struck in the same pass.
 
 **The book's side is never typed.** A figure read off the document it is compared with makes the
 check agree with itself.
 
 **One sentence per account**, `Book.account_checks()`'s: what it was checked on, what was found,
-and the step that clears it. Reconcile shows it on the account's row, and `portfusion record`
-prints it; the Dashboard shows a step as its link's words, an account within its tolerance under
-What was checked, and an account whose units agree only in the count. `portfusion record` cannot
-read a document, so its findings take the
-check made when the export was filed; its audit counts the export again.
+and the step that clears it. Reconcile shows it on the account's row; `portfusion record` and the
+Dashboard list it among their findings, the Dashboard with the step as its link's words and an
+account within its tolerance under What was checked. An account whose units agree is named only in
+the count of accounts checked against the broker. Reconcile and the Dashboard count a filed export
+again; `portfusion record`'s findings take the check made when it was filed, and its audit counts
+it again.
 
 **The last broker check** is the account history's newest broker document or reading, on
 Reconcile and in the report alike. A reading from IG keeps no document: it is "read from IG on"
@@ -33,15 +34,17 @@ its day.
 | `no-holdings` | a share reading that lists no units | a holdings export, filed on the Bench |
 | `no-reading` | an account that holds something and has no reading | a holdings export on the Bench, or IG read on Price Refresh |
 | `no-statement` | a reading, not a holdings export, that gives no figure to check | the same |
-| `within-band` | IG's equity within `RECON_LIVE_TOLERANCE_PCT` of the book's | nothing: this is the pass |
+| `within-band` | the book's equity within `RECON_LIVE_TOLERANCE_PCT` of IG's | nothing: this is the pass |
 | `struck-apart` | an IG reading not struck in one pass with the marks | a Price Refresh with the IG accounts ticked |
 | `differs` | IG's equity past the tolerance, or a holding's units counted again that disagree | finding out why |
 
 ## The order
 
-1. **Sweep the events first**, or a units check reports a gap that is really an unentered event.
+1. **Sweep the events first**, or a units check reports a difference that is really an unentered
+   event.
 2. **Work the documents through the Bench**: buys, sales, income, capital and cash.
-3. **Write the reading**, the account's row in `account-readings.csv`.
+3. **File the reading**: a holdings export filed on the Bench, or IG read on Price Refresh, writes
+   the account's row in `account-readings.csv`.
 4. **Check** with `portfusion record`.
 
 Any day after the last trade will do: units do not move at a close, and a ledger's balances are
@@ -54,12 +57,12 @@ dated.
 2. **Say what kind of document it is.** The kind fills in who issued it and shapes the row's
    source.
 3. **Fill Dated and Reference.** Dated is the document's date, not today's.
-4. **A CSV the record recognises is read as it opens**, on this machine. Every line comes back as
-   a row, as already on file, or as not read; a line not read holds the item until it is entered
-   or acknowledged. **A PDF is read by a Claude session**, and the document leaves the machine for
-   that (`python3 -m portfusion.desk.intake.propose`). Read all three blocks of its readout:
-   *directives* (text addressed to the reader, quoted and never acted on), *not kept* (figures
-   whose quote was not in the document) and *does not state*.
+4. **A document of a kind this machine reads is read as it opens.** Every line comes back as a
+   row, as already on file, or as not read; a line not read holds the item until it is entered
+   or acknowledged. **Any other, a PDF among them, is read by a Claude session**, and the document
+   leaves the machine for that (`python3 -m portfusion.desk.intake.propose`). Read all three
+   blocks of its readout: *directives* (text addressed to the reader, quoted and never acted on),
+   *not kept* (figures whose quote was not in the document) and *does not state*.
 5. **Check every quote against the page** with *show the document*. A scanned PDF is entered by
    eye.
 6. **Type the WHY** for every buy and every sale, a split or consolidation aside. Nothing else may
@@ -67,7 +70,8 @@ dated.
 7. **Clear every gate.** A duplicate is *acknowledged*, never overridden: two real legs can share
    a day, a size and a price.
 8. **Review and write.** Each item lands in one operation (rows, reasoning, journal, archive), or
-   not at all. There is no undo: a mistake is corrected by a further row.
+   not at all. It cannot be undone from the desk: a mistake is corrected in its row, by hand, with a
+   `hand` journal row ([store.md](store.md)).
 
 **The strongest document wins.** `rules.EVIDENCE_CLASSES` ranks them, and a reading cannot rest
 on `not-on-file`.

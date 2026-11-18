@@ -10,10 +10,11 @@ python3 -m portfusion.history.prices --check # is the outgoing set banked? .fx a
 ```
 
 The terminal sweep banks the current marks, then prints; it replaces no mark. On the desk, the
-write banks the outgoing marks first, then lands the ticked marks and IG readings together. A
-history keeps every close, each line's mark at every quarter end, opening and account reading,
-and its two newest; a live read between them leaves at the next bank, and git keeps it. What the
-sweep does, step by step, is `feeds/refresh.py`'s docstring.
+write banks the outgoing marks first, then lands the ticked marks and IG readings together. The
+price history keeps every close and, of its live reads, each line's mark at every quarter end,
+opening and account reading, the one before the live mark, and its two newest; any other live
+read leaves at the next bank, and git keeps it. The FX and account histories keep every row. What
+the sweep does, step by step, is `feeds/refresh.py`'s docstring.
 
 **Each feed's allowlist refuses anything that is not a read**, before a request is built. IG's
 API deals, and TradingView's edits alerts and watchlists. The tests stop a change to either, and
@@ -62,7 +63,7 @@ A line comes back as one of three things:
 |---|---|
 | trading | the quote screen's live read, struck at the instant it describes |
 | shut | the latest session's close, from the daily bars |
-| quote screen refused or unreachable | *unpriced*, with the reason, and a plain "TradingView failed" notice |
+| quote screen refused, left it out or did not answer | *unpriced*, with the reason, and a plain "TradingView failed" notice |
 
 A day bar for a session in progress and a minute bar are never a live read: either can run behind
 the quote. The next sweep asks again.
@@ -79,7 +80,7 @@ The spread-bet contract levels, and each account's equity.
 ```bash
 python3 -m portfusion.feeds.ig --ig-search "NAME"   # find an epic, first
 python3 -m portfusion.feeds.ig --ig-verify          # live levels against the record
-python3 -m portfusion.feeds.ig --ig-events          # buys, sales, costs, capital against the book
+python3 -m portfusion.feeds.ig --ig-events          # trades, income, costs, capital against the book
 ```
 
 - **Never guess an epic.** A wrong one returns a plausible price for the wrong contract and

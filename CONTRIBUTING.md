@@ -5,8 +5,10 @@ How a change to PortFusion is worked, for a collaborator or a Claude session arr
 
 ## Setting up
 
+Python 3.13 or newer, as [`docs/environment.md`](docs/environment.md) says.
+
 ```bash
-git config core.hooksPath .githooks       # the gate that keeps credentials out of git
+git config core.hooksPath .githooks       # the hooks: no secret or book leaves, main kept whole
 python3 -m venv .venv && .venv/bin/python3 -m pip install -e '.[dev]' -c requirements.lock
 source .venv/bin/activate                 # once per terminal
 export PORTFUSION_BOOK=demo               # once per terminal: a checkout holds no book
@@ -80,7 +82,7 @@ once, here, beside that test.
 
 ## The conventions
 
-One line each; kept by review, and by the test named where there is one.
+Kept by review, and by the test named where there is one.
 
 ### Agreeing a change
 
@@ -170,20 +172,20 @@ One line each; kept by review, and by the test named where there is one.
 - **A release's guides are read whole before its tag**, one reader to a guide, each running its
   commands and opening its paths; one writer makes the changes. The read starts from the guides
   the pre-push hook names as left behind since the last tag (`behind()` in
-  `src/portfusion/hooks/pre_push.py`, its base the tag), and its pull request ticks, for `README.md`, `CONTRIBUTING.md`,
-  `CLAUDE.md` and each guide in `docs/` but the audit's log: the way in, the folder map and the
-  commands hold; the glossary has every word the milestone changed and none it retired; the
-  changelog's entry says what a book's owner needs before moving; the desk's Method and each
-  page's help agree; history, finished plans and decided questions are gone; and each
-  document's lines before and after.
+  `src/portfusion/hooks/pre_push.py`, its base the tag), and its pull request ticks, for
+  `README.md`, `CONTRIBUTING.md`, `CLAUDE.md` and each guide in `docs/` but the audit's log: the
+  way in, the folder map and the commands hold; the glossary has every word the milestone changed
+  and none it retired; the changelog's entry says what a book's owner needs before moving; the
+  desk's Method and each page's help agree; history, finished plans and decided questions are
+  gone; and each document's lines before and after.
 - **A change to the app is written up in [`CHANGELOG.md`](CHANGELOG.md)**, under Unreleased, a
   store move by name; a push that changes the app and not the changelog is refused
   (`test_hooks.py::test_a_checkouts_branch_that_changes_the_app_writes_it_up`).
 - **Never bypass a hook.** A branch reaches `main` as a pull request. The maintainer's yes turns
   its auto-merge on, and GitHub merges it once CI's `guard` is green; it runs on every pull
-  request and on `main`. A Dependabot bump within its major version merges the same way, unasked
-  (`dependabot-merge.yml`), and so does the nightly agent's clean pull request, whose yes was
-  given in advance by a ready issue (below).
+  request and on `main`. A Dependabot bump within a major version of 1 or more merges the same
+  way, unasked (`dependabot-merge.yml`), and so does the nightly agent's clean pull request, whose
+  yes was given in advance by a ready issue (below).
 
 ### The nightly agent (on trial since 12 Nov 2026)
 

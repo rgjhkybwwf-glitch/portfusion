@@ -15,22 +15,26 @@ row, is [reconciling.md](reconciling.md).
 document is still in the inbox, or was deleted, has lost what made it statement-grade. The Bench
 does all three and will not skip the last.
 
-**A document not used is withdrawn**, not archived: it is not evidence. One read in full with
-nothing new is filed, since it proves the record.
+**A document not used is withdrawn**, not archived: it is not evidence. One read on this machine
+in full with nothing new is filed, since it proves the record. **A swept IG event has no
+document**: its item's evidence is the IG read that found it, and only its note is archived.
 
-**A PDF is read by a Claude session**, starting from `python3 -m portfusion.desk.intake.propose`,
-which prints everything the session needs and checks every quote it returns against the file.
+**A document this machine does not read as it opens**, a PDF among them, is read by a Claude
+session, starting from `python3 -m portfusion.desk.intake.propose`, which prints everything the
+session needs and checks every quote it returns against the file.
 `python3 -m portfusion.desk.intake.read_document "<document>"` prints its text as the Bench reads
 it.
 
 **The Bench's gates all clear before a row is approved.** An income row whose sign is not its
 category's usual one (a dividend out, a fee in) holds the item until the sign is confirmed.
 
-Where the code lives:
+Where the code lives; `desk/intake/__init__.py` names every module:
 
 | Module | Does |
 |---|---|
 | `desk/intake/dropoff.py` | the one door into `_inbox/` |
+| `desk/intake/read_rows.py` | reads a document the record recognises, as it opens |
+| `desk/intake/propose.py` | a Claude session's reading, each quote checked by `verify.py` |
 | `desk/intake/bench.py` | the item, its gates and its approval |
 | `desk/intake/recorded.py` | asks what the record already holds: a row, a reference, an account |
 | `desk/intake/filing.py` | names a document and the date it is filed under |
@@ -41,9 +45,9 @@ Where the code lives:
 
 | Folder | Holds |
 |---|---|
-| `_inbox/` | nothing, once the work is done. `test_inbox.py` fails while a document rests there. Its contents are never committed |
-| `_inbox/.bench/` | one note per item being worked: about a document, not evidence |
-| `_archive/statements/` | the documents behind every row. A row's reference leads here |
+| `_inbox/` | nothing, once the work is done. `test_inbox.py`, in the audit, fails while a document rests there. Its contents are never committed |
+| `_inbox/.bench/` | one note per item being worked: about a document or an event, not evidence |
+| `_archive/statements/` | the documents behind the rows that cite one. A row's reference leads here |
 | `_archive/bench/` | one note per item written or withdrawn: what was proposed, what was written. `test_journal.py` ties each write to the journal |
 
 **Evidence is never edited and never deleted.** A new document is filed beside the old one,

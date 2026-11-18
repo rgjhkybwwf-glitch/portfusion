@@ -1,15 +1,16 @@
 # The store
 
 Which table a fact goes in, and what each column may hold. A book's `store/` folder is its
-record: every sourced fact, one row per event, in a file for each table `record/schema.py`
+record: every fact the book keeps, one row each, in a file for each table `record/schema.py`
 registers, and the three histories, `price-history.csv`, `fx-history.csv` and
 `account-statements.csv`.
 
 **A buy goes in `buys.csv`, a sale in `sales.csv`, a dividend in `income.csv`**, never in a
 Python literal.
 
-**A new column or table is a `record/schema.py` change**, not a CSV one: the schema checks every
-row on load, and a bad cell fails naming its table, row and column.
+**A new column or table is a `record/schema.py` change, and its move in `record/migrations.py`**,
+not a CSV one: the schema checks every row on load, and a bad cell fails naming its table, row
+and column.
 
 **Every event table reads as it happened**: by date, then the account's place in the register,
 then ticker (`record/order.py`). A door writes a row where its date puts it; the loader refuses a
@@ -30,21 +31,21 @@ One idea, one column name, in every table.
 
 | Column | Values |
 |---|---|
-| `account` | one of the register's, `accounts.csv`, and the loader refuses any other; on `quarter-results.csv` a blank is the book |
+| `account` | one of the register's, `accounts.csv`; on the record's tables the loader refuses any other; on `quarter-results.csv` a blank is the book |
 | `record_begins` | on `accounts.csv`: the day an account opened after the book did; blank for one held from the opening. The loader refuses a quarter-end row before it |
-| `held_as` · `category` · `funding` · `contribution` | closed lists in `record/schema.py`, printed in [the glossary](glossary.md)'s §9. A line's `held_as` sits once, on its ticker's `securities.csv` row |
+| `held_as` · `category` · `funding` · `contribution`, and every other closed list | `record/schema.py`'s, printed in [the glossary](glossary.md)'s §9. A line's `held_as` sits once, on its ticker's `securities.csv` row |
 | `ticker` on income | the line a dividend was paid on; blank on interest, fees and funding |
 | `symbol` · `quote_unit` | a listing as its market names it: the market's ISO code and its ticker (`XLON:BRYC`, `XNYS:VELD`), and the unit it quotes in (`GBX` is pence). The price feed translates the symbol into its own form |
 | `points_per_unit` · `shares_per_unit` | on a spread-bet line: how many points make one unit of its listing's price (100 where IG quotes in cents or pence), and how many shares one unit of the listing stands for (blank is one; a depositary receipt's ratio). With the stake they make a bet's share-equivalents |
 | `traded_price` | a deal's price as its document states it: never sterling ÷ quantity, which carries the dealing charge |
-| `rate` | units of the other currency per £1, and only the broker's, where its document states one |
+| `rate` | units of the other currency per £1: on buys, sales and income only the broker's, where its document states one; on `fx.csv` and `fx-history.csv` the feed's, or one typed by hand (a blank `struck`) |
 | `cur` | on buys and sales, the currency the document states `traded_price` in: `GBP` or the share's own |
-| `currency` | an instrument's currency |
-| `cost` · `level_points` | on a buy: a share's settled sterling, or a spread bet's entry level in points; the other is blank |
-| `amount` · `value` | a sterling amount on an event; a frozen line's value |
+| `currency` | an instrument's; on `income.csv` the currency it was paid in, blank on a sterling row; on `fx.csv` the currency the rate converts |
+| `cost` · `level_points` | on a buy: a share's settled sterling, or a spread bet's entry level in points; the other is blank; on `quarter-snapshots.csv`, a frozen line's cost |
+| `amount` · `value` | a sterling amount on an event, or, on `quarter-nav.csv`, an account's quarter-end figure in the measure its `contribution` names; a frozen line's value |
 | `mark_key` · `price` | a mark, what a line is worth, filed under a share's ticker or a bet's contract |
 | `trade_id` · `sale_id` | `T-NNN` and `E-NNN`, the row's place in date order: given when the row is written, and moved, with every `closes` and every buy or sale `note` that names it, when an earlier-dated row is written before it |
-| `source` | the provenance line; on buys and sales the document's kind and date only, as `trade_source()` writes them |
+| `source` | the provenance line; on buys and sales the document's kind and date only, as `trade_source()` writes them; a row whose document is not on file reads `Not on file: …`, a split's `Derived: …` |
 | `broker_ref` | the deal's own reference (a contract number, a deal id), never a SEDOL; blank where no document prints one |
 | `evidence` | on the two readings tables, a key of `rules.EVIDENCE_CLASSES`, printed in the glossary's §9 |
 | `at` | an instant, as [the glossary](glossary.md)'s §4 says |
@@ -77,6 +78,7 @@ One idea, one column name, in every table.
 - **A correction replaces its row.** A mark read again on its own day takes its row's place, and
   `restate()` replaces a frozen quarter end's rows and results, the journal saying why; git keeps
   what each row said. One row per fact, so no reader filters.
-- **Every file is LF.** Another line ending turns a two-row append into a whole-file diff.
+- **Every file is LF.** Every writer keeps a file's own ending, so an editor that saves another
+  turns the next diff into the whole file.
 
 **After any change here, check that the headline figures moved only in ways you can explain.**
