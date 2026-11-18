@@ -167,17 +167,10 @@ Kept by review, and by the test named where there is one.
 - **Review the branch's diff before its pull request opens**, and settle what the review finds.
 - **A changed desk page is walked cold before its pull request opens**, by the cold walker
   ([`.claude/agents/cold-walker.md`](.claude/agents/cold-walker.md)), as
-  [`docs/ux-audit.md`](docs/ux-audit.md) was made. The pull request says which of its rows the walk
-  found closed.
-- **A release's guides are read whole before its tag**, one reader to a guide, each running its
-  commands and opening its paths; one writer makes the changes. The read starts from the guides
-  the pre-push hook names as left behind since the last tag (`behind()` in
-  `src/portfusion/hooks/pre_push.py`, its base the tag), and its pull request ticks, for
-  `README.md`, `CONTRIBUTING.md`, `CLAUDE.md` and each guide in `docs/` but the audit's log: the
-  way in, the folder map and the commands hold; the glossary has every word the milestone changed
-  and none it retired; the changelog's entry says what a book's owner needs before moving; the
-  desk's Method and each page's help agree; history, finished plans and decided questions are
-  gone; and each document's lines before and after.
+  [`docs/ux-audit.md`](docs/ux-audit.md) was made, by the skill
+  [`cold-walk`](.claude/skills/cold-walk/SKILL.md).
+- **A release's guides are read whole before its tag**, by the skill
+  [`release-read`](.claude/skills/release-read/SKILL.md).
 - **A change to the app is written up in [`CHANGELOG.md`](CHANGELOG.md)**, under Unreleased, a
   store move by name; a push that changes the app and not the changelog is refused
   (`test_hooks.py::test_a_checkouts_branch_that_changes_the_app_writes_it_up`).
@@ -191,8 +184,9 @@ Kept by review, and by the test named where there is one.
 
 Unattended Claude sessions work the ready issues, and the maintainer checks in when they ask.
 This is a trial: the process is being developed as it runs, and each surprise becomes a rule here,
-a test, or a better-written issue. **This section is the agent's instructions**; the agent never
-changes it.
+a test, or a better-written issue. **This section is the agent's instructions**, and the skills it
+names under [`.claude/skills/`](.claude/skills) are their procedures; the agent never changes
+either.
 
 **How it runs**
 
@@ -270,19 +264,12 @@ changes it.
   else the next ready check plans it.
 - **The checklist is never closed.** Its pull request says "For #156", not "Closes", and ticks
   its boxes.
-- **The release's pull request names the release.** `__version__` in
-  `src/portfusion/__init__.py` loses its `.dev0`; `CHANGELOG.md`'s Unreleased becomes the
-  release's entry, `## N.N.N — beta, D Mon YYYY`, dated the day it merges; and the README installs
-  `vN.N.N`. `test_brand.py` holds the three together. It waits for the maintainer's yes, since a
-  tag follows it.
-- **The tag and the milestone are the maintainer's.** They tag `vN.N.N` on the release's merge
-  (in the GitHub app: Releases, Draft a new release) and close the milestone; no cloud session
-  can push a tag.
-- **After the tag, the next milestone opens.** A night run or ready check that finds the release
-  tagged and its milestone closed first moves the Queue's lines from after the gate to Next, in
-  the order answered, the checklist last. A night run also opens the next version: a pull request
-  that sets `__version__` to the next milestone's number with `.dev0` and puts an empty
-  Unreleased above the release's entry, which merges itself once `guard` is green.
+- **The release's pull request names the release**, by the skill
+  [`release`](.claude/skills/release/SKILL.md). It waits for the maintainer's yes, since a tag
+  follows it.
+- **The tag and the milestone are the maintainer's**; no cloud session can push a tag.
+- **After the tag, the next milestone opens**, and a night run opens the next version, by the
+  skill [`release`](.claude/skills/release/SKILL.md).
 - **The Queue sets the order**: the open issue "Queue: what the nightly agent builds next" (#206)
   ranks the lines of the milestone being worked, unblockers first, then bugs and wrong figures,
   small safe fixes, features and polish. A run builds the first line under Next whose issue
@@ -413,63 +400,24 @@ changes it.
   unanswered. An issue
   with an open pull request of its own it plans only when it is marked "Re-plan", against that
   pull request's branch.
-- **For each, the plan and its check** (below, under Building), against today's `main` and the
-  issue's branch if it has one. A plan with no question is posted as **Plan, checked**, naming
-  the commit of `main` it was checked against, and the issue takes `planned`. A plan whose only
-  open points are its questions is posted as **Plan, checked, if answered as recommended**, and
-  asks them; the issue takes `planned` and `decision`. So are asked the questions an issue was
-  filed with, less any the maintainer has answered in a comment since. A plan that finds the
-  issue's cause or premise no longer holds asks that, and posts no plan.
+- **For each, the plan and its check**, by the skill [`plan`](.claude/skills/plan/SKILL.md).
 - **Then one long job, at most, a run**, after its plans: the gate review, else a Queue review
   that is due, else the design card or a decided feature's slices (Features, below). The rest
   wait for the next run, and its debrief says which.
 - **Twice a week it reviews the whole Queue**: on its first run when no review is on #206 from the
-  last three days. It reads every open issue of the milestone being worked and the next, against
-  today's `main`, and posts a **Queue review** on #206: issues that duplicate one another, to
-  merge; overlaps by file and function that no "waits" orders; causes that no longer hold, to
-  close with the reason; a place for each walk find left to sort; and a suggested order. Each is a question, with its recommendation, and #206 takes
-  `decision`. Below its questions it lists three ideas for improving a feature, a line each with
-  the job it serves and its cost; they are not asked, and the maintainer takes one up with an
-  `Idea:` issue. A review with nothing to ask is posted for its ideas alone, without `decision`,
-  so it pings no one. None is posted while a gate review stands unanswered.
-- **With the review it sorts "Walk finds: to sort" (#220)**, and not each run. A find goes
-  onto the open issue that covers it, as evidence, or onto the decided feature that will rework
-  its page; one not worth an issue is struck through with the reason. The rest stay one line
-  each, and the review proposes their place. A find the maintainer has placed is shaped then,
-  with others like it, into an issue that meets the Definition of Ready, on the line answered,
-  its questions written but not asked. Each line handled is struck through, so the list only
-  holds what is unsorted.
+  last three days, by the skill [`queue-review`](.claude/skills/queue-review/SKILL.md), which
+  sorts "Walk finds: to sort" (#220) with it, and not each run. None is posted while a gate review
+  stands unanswered.
 - **On the day the gate is reached it posts the gate review** on #206, once, even while a Queue
-  review stands unanswered, whose questions it folds in; headed "Gate review" with the
-  milestone's name, in the Queue review's place and holding all of it for the next milestone,
-  and:
-  - what a helper's read of every open issue, and of the Decisions of the issues closed since the
-    last gate, finds: decisions that conflict or were never carried over, answers not recorded,
-    issues with no line in the Queue, and a `decision` with no question waiting, each folded into
-    its questions or its proposals;
-  - what shipped, against the milestone's sentence in the direction page;
-  - keep or pull, for each feature the maintainer has trialled;
-  - each design card unanswered, and a move for each feature left under Next with no shape;
-  - the next milestone's proposed shape: its order, its cuts and its moves;
-  - at most three ideas, a line each with its cost; an idea never pings on its own;
-  - the rules of this section that cost a run a wrong turn, time or money, each with its run;
-  - at most five questions in all, the direction page's open ones among them. What it holds
-    beyond five is listed as proposals, and asked in the next review. #206 takes `decision`.
+  review stands unanswered, by the skill [`gate-review`](.claude/skills/gate-review/SKILL.md).
 - **It writes no code**, opens no branch, and changes no label but `decision`, `planned`,
   `building`, and those of an issue it shapes or files.
 
 **Features**
 
 - **A design card asks a feature's shape.** The ready check posts it on the issue of the line
-  under Design next in the Queue, or of a feature at the top of Next, and the issue takes
-  `decision`. Above the fold, in at most 150 words: the outcome in one line; three
-  options, each a different idea of the feature and not one idea at three sizes, each with its
-  cost (slices, figures that move, a migration or none) and the jobs whose home it moves, by the
-  map's numbers, or "no job moves"; a link to a mock page; a recommendation; and at most three
-  questions. The evidence is folded under `<details>`.
-- **The mock page shows today's page and each option**, on the demo's names. It is a private page
-  published with the Artifact tool and touches no code. A run that cannot publish without stopping
-  to ask gives words and a picture of today's page instead, and says so.
+  under Design next in the Queue, or of a feature at the top of Next, by the skill
+  [`design-card`](.claude/skills/design-card/SKILL.md).
 - **Two cards a week, at most.** When Design next is empty the ready check fills it itself, with
   the first feature that has no decided shape, lowest milestone first and in the order its
   milestone's description gives. It posts a card when none stands unanswered and fewer than two
@@ -513,16 +461,9 @@ changes it.
   wherever its issue stands. An issue not under Next, a feature, and the issue a design card was
   answered on are left there: nothing of them is built, and the maintainer's placing or the
   ready check's slices come first. A card's answer takes its line out of Design next.
-- **An answered review is applied, not built.** The Queue (#206) is never an issue to build and
-  takes no Decisions section. For a Queue review the run makes the answered changes: the Queue's
-  lines, a "waits", an issue merged or closed with the reason, a find's place noted on #220. For
-  a gate review it also moves issues between milestones, writes the next milestone's lines in the
-  order answered under the Queue's heading for after the gate, files the issue for a pull
-  (Features, above), and edits `docs/direction.md` to the answer in a pull request that links
-  #206 and may merge itself once `guard` is green, the answer being its yes. Then it takes
-  `decision` off #206. For a gate review it then leaves a comment on the checklist (#156) whose
-  first line after its name is "Re-plan: the gate review for <milestone> is answered", and takes
-  `planned` off it. Then it goes on.
+- **An answered review is applied, not built**, by the skill
+  [`apply-review`](.claude/skills/apply-review/SKILL.md). The Queue (#206) is never an issue to
+  build and takes no Decisions section.
 - **Then it builds the answered issues under Next whose plan still stands**, one after another,
   in Queue order, as the night run would, up to the routine's number, and no other line. A plan
   posted "if answered as recommended" stands when every answer is the recommended one. Any other
@@ -548,13 +489,10 @@ changes it.
 
 **Building**
 
-- **A plan, checked, before code, and the ready check's.** The ready check writes each plan as a
-  comment on its issue: the files it will change, how each "Done" check will be made, the desk
-  pages whose walk pictures it means to move (or none), and what it will not touch. The plan
-  checker ([`.claude/agents/plan-checker.md`](.claude/agents/plan-checker.md)), given only the
-  issue and that plan, checks it against the code; the plan is mended and posted as
-  **Plan, checked**, naming
-  the commit of `main` it was checked against. The plan is the issue's latest **Plan, checked**.
+- **A plan, checked, before code, and the ready check's**, by the skill
+  [`plan`](.claude/skills/plan/SKILL.md): it names the plan's overlaps and the content map, and
+  the plan checker ([`.claude/agents/plan-checker.md`](.claude/agents/plan-checker.md)) holds it
+  to them. The plan is the issue's latest **Plan, checked**.
   It stands while `main` has not changed what it relies on since that commit, no answer recorded
   since changes what it assumed, and no "Re-plan" comment follows it. A builder builds only on a
   plan that stands, and never writes its own: a line without one it leaves for the ready check,
@@ -569,13 +507,6 @@ changes it.
   the issue: its pull request clean or left for the maintainer, or the issue stopped. Every other
   run leaves an issue that carries it alone. A `building` label more than three hours old is a
   run that died: the next run takes it off and says so.
-- **The plan names its overlaps**: every open issue and open pull request whose Cause, Done or diff
-  names a file or function the plan changes. Each is settled in the issue: a "waits" in Order when
-  one must land first, a line in Not in scope when the other owns that part, or a question when the
-  two issues' Done disagree. The plan checker looks for one the plan missed.
-- **The plan names the content map** when the change adds or removes a page or a report section,
-  or moves a job, or part of one, between them: `docs/content-map.md` is among its files, with the
-  table that changes. The plan checker holds it to that.
 - **One issue, one branch, one pull request**: a branch claude/<name> from the latest `main`,
   worked by the conventions above (changelog, own diff reviewed, a changed desk page walked cold),
   the guard run, and the desk walk if a desk file changed. The pull request says "Closes #n", and
@@ -593,24 +524,15 @@ changes it.
   again, whole, on that branch.
 - **Something a comment raises outside its issue** becomes a new issue under To rank, its
   questions written but not asked, linked from the issue, and is not built.
-- **The cold walk keeps to the pages the change touched**, with jobs about the change. What it
-  meets there that the change did not cause goes first onto the open issue that covers it, as
-  evidence, and the rest onto "Walk finds: to sort" (#220), one line a find, with no question and no
-  ping; the pull request lists both.
+- **The cold walk keeps to the pages the change touched**, and its finds are placed, by the skill
+  [`cold-walk`](.claude/skills/cold-walk/SKILL.md).
 - **A CI failure on its pull request** is the agent's to fix, and it waits for the guard's result
   before it leaves a pull request. **It waits in the foreground**, by a command that polls the
   checks and the `baselines/<branch>` ref, run again until they finish, **never by ending its
   turn** (Telling the maintainer, below). When the walk fails only because a page the issue meant
-  to change looks different, the agent labels the pull request `baselines`, its description's
-  `Pictures:` line naming the plan's pages: a workflow retakes those pages' Linux pictures onto a
-  branch beside it, `baselines/<branch>` (`baselines.yml`); the agent merges that in and pushes,
-  which runs the guard. A page whose picture changed and is not named fails the retake, by name:
-  the change moved a page its plan did not, which is a fault to find, not a picture to add. The
-  workflow takes the label off as it starts, so a retake not landed ten minutes after the label is
-  asked for again by putting it back on. The pictures are the agent's to keep, compared on Linux
-  alone; the maintainer never takes them, and reads them only for a feature's last slice
-  (Features, above). A failure the agent cannot fix is said at the top of the pull request, with
-  what would fix it.
+  to change looks different, the agent retakes its pictures by the skill
+  [`pictures`](.claude/skills/pictures/SKILL.md). A failure the agent cannot fix is said at the
+  top of the pull request, with what would fix it.
 
 **Merging**
 
@@ -658,33 +580,16 @@ changes it.
   asks: the run starts it, goes on with what does not depend on it, and waits for its completion
   notification before acting on its result, never on a guess of it. With nothing else left, it
   waits by a command in the foreground, as for CI, which the notification comes back with, never
-  by ending its turn. CI is polled in the foreground. When nothing is left to wait for, the run's last three steps are,
-  in order: it stops watching each pull request it leaves (below), adds its line to the run log
-  (below), then sends the debrief to the
-  maintainer's phone as a push notification (the `PushNotification` tool), a few lines: what
-  merged, what waits on the maintainer, or that the run had nothing to do. **Its last line begins
-  with the word `Next:`**, then who acts next, on what, and when, as in "Next: the night run, at
-  02:00, builds #250." When no line under Next can be built,
-  it names each line and what holds it: a question (whose), no plan yet or a "Re-plan" (the ready
-  check's), `building` (which run), an open pull request, a "waits" or the gate. The
-  message that ends the turn is the debrief in full. None of the three, the log line, the push
-  and that message, is ever sent while something is still running. While a gate review stands
-  unanswered, or a release untagged, the push and the debrief say in one line what the run waits
-  on.
+  by ending its turn. CI is polled in the foreground. When nothing is left to wait for, the run
+  takes its last three steps by the skill [`end-of-run`](.claude/skills/end-of-run/SKILL.md): it
+  stops watching each pull request it leaves, adds one line to the run log (#289), then sends the
+  debrief, **whose last line begins with the word `Next:`**. None of the three is ever sent while
+  something is still running.
 - **The Stop hook holds both** (`tools/stop_hook.py`, run by `.claude/settings.json`): a run
   cannot end while an open pull request of a branch it pushed has `guard` running, for up to an
   hour a wait, nor, asked twice, with a last message whose last line does not begin `Next:`, a
   one-line ending included. It holds only a session started by a routine's prompt, never one with the
   maintainer.
-- **A run stops watching** each pull request it leaves, merged or waiting, by
-  `unsubscribe_pr_activity` for each one it subscribed to, just before its debrief: a run woken
-  after it reloads its whole context for nothing. One woken all the same sends no second push,
-  adds no second line to the run log, and ends in one line, which begins `Next:`.
-- **Each run adds one line to the run log** (#289), a comment: its mark, then the date and when
-  it began and ended, UK time, what it did in a line, and its `Next:` line, as in
-  `🌙 **Night run** · 17 Nov 02:00–02:47 · built #250, merged · Next: …`. The time stays first
-  after the mark; a ready check started for a re-plan says so after its time. It is the source
-  for a run's length, its stops and which run was at work; it asks nothing and pings no one.
 - **The agent's own comments never begin `Q` and a number, `All as recommended` or `Change:`**,
   in any case: the maintainer's shapes, which start a workflow, since it writes as the
   maintainer's account.
@@ -700,9 +605,9 @@ changes it.
 
 - **The agent never pushes to `main`, bypasses a hook, or changes** a workflow, a ruleset, a test
   that holds a stability rule, this section, a routine (its prompt, model, effort, cap or
-  schedule), or the guard's own files: `.claude/settings.json`, `.claude/agents/`, `.githooks/`,
-  `src/portfusion/hooks/`, `pyproject.toml`, `requirements.lock` and `tools/clean_room.py`. Those
-  are changed in a session the maintainer is part of. `.claude/settings.json` refuses a forced
+  schedule), or the guard's own files: `.claude/settings.json`, `.claude/agents/`,
+  `.claude/skills/`, `.githooks/`, `src/portfusion/hooks/`, `pyproject.toml`, `requirements.lock`
+  and `tools/clean_room.py`. Those are changed in a session the maintainer is part of. `.claude/settings.json` refuses a forced
   push, a push or commit with `--no-verify`, and a rewrite of `main`.
 
 ### The desk and the report

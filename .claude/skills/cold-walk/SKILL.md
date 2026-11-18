@@ -1,0 +1,21 @@
+---
+name: cold-walk
+description: Walks a changed desk page cold by the cold walker before its pull request opens, and places what it finds (CONTRIBUTING.md, Commits and pull requests, and Building).
+---
+
+# The cold walk
+
+The rule is in `CONTRIBUTING.md`, Commits and pull requests: a changed desk page is walked cold
+before its pull request opens.
+
+1. Serve the demo's desk on this machine (`portfusion desk --book demo --port 8769`).
+2. Give the cold walker ([`.claude/agents/cold-walker.md`](../../agents/cold-walker.md)) the
+   desk's address, a scratch folder for its pictures, the rows of
+   [`docs/ux-audit.md`](../../../docs/ux-audit.md) the change means to close, and jobs about the
+   change, in the owner's words. The walk keeps to the pages the change touched.
+3. Place each find:
+   - one the change caused is the change's to fix;
+   - one it did not cause goes first onto the open issue that covers it, as evidence;
+   - the rest go onto "Walk finds: to sort" (#220), one line a find, with no question and no ping.
+4. The pull request lists the finds and where each went, and says which of the audit's rows the
+   walk found closed.
