@@ -31,9 +31,11 @@ ZONE = ZoneInfo("Europe/London")
 OPENS, CLOSES = time(8), time(17)
 WEEK = range(5)
 
-#: Each run's mark, as the runs table gives it, and the level that signs with it. The answer run's
-#: is kept though no row has it: a comment that opens with it is still a run's, not the maintainer's.
-MARKS = {"📋 **Ready check**": "coordinator", "🌙 **Night run**": "builder",
+#: Each run's mark, as the runs table gives it, and the level that signs with it. The marks of
+#: before the restart are kept though no row has them: a comment that opens with one is still a
+#: run's, not the maintainer's.
+MARKS = {"📋 **Coordinator**": "coordinator", "🌙 **Builder**": "builder",
+         "📋 **Ready check**": "coordinator", "🌙 **Night run**": "builder",
          "💬 **Answer run**": ""}
 NOTE = "**Session note**"
 
