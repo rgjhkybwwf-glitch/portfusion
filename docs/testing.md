@@ -90,7 +90,7 @@ baseline is taken again, in the pull request that changes the page:
   retake each page whose picture no longer matches. A picture that changed for a page not named
   fails it, by name, with nothing pushed, and so does a description with no `Pictures:` line or a
   name that is no page's. Otherwise it commits the pictures that changed to `baselines/<branch>`,
-  and says on the pull request what it did.
+  and says in its run's summary what it did.
 - **Merge that in** (`git fetch origin baselines/<branch> && git merge FETCH_HEAD`) and push, and
   the guard runs; the branch beside it is deleted when the pull request closes. The label is never
   left on, so adding it again always asks again.

@@ -5,8 +5,9 @@
 #
 # - an issue labelled `decision`: an agent stopped at a choice the issue does not settle;
 # - a pull request opened, reopened or marked ready from a `claude/` branch that waits for the yes
-#   (auto-merge off). One that merges itself gets the same note without the mention: it asks
-#   nothing, so it pings no one.
+#   (auto-merge off). One that merges itself gets no comment: every thread is under the
+#   maintainer's account, so a comment of the bot's reaches them whether it names them or not, and
+#   a note that asks nothing is written in this run's summary instead.
 #
 # No action is used, only `gh`, which the runner carries; the token is the workflow's own, so its
 # comment starts no other workflow. Titles and links reach the shell as variables, never as script.
@@ -34,16 +35,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           ISSUE: ${{ github.event.issue.html_url }}
           OWNER: ${{ github.repository_owner }}
-          LOOP: ${{ contains(github.event.issue.labels.*.name, 'loop') && 'yes' || 'no' }}
         run: |
-          # A `loop` issue is never built by a run: its answer is recorded, and the change is made in
-          # a session with the owner (CONTRIBUTING.md, Which issues).
-          if [ "$LOOP" = yes ]; then
-            then_what="the answer is recorded, and the change is made in a session with you: no run builds a \`loop\` issue."
-          else
-            then_what="an answer as recommended is built, and any other is re-planned first."
-          fi
-          gh issue comment "$ISSUE" --body "🤖 **PortFusion agent** · @$OWNER, a decision is needed here: the questions are under \"Questions for you\", at the end of the issue or of the comment above. Reply with a line each, \"Q1: a\", or \"All as recommended\": $then_what To take it another way, begin a reply with \"Change:\"."
+          gh issue comment "$ISSUE" --body "🤖 **PortFusion agent** · @$OWNER, a decision is needed here: the questions are under \"Questions for you\", at the end of the issue or of the comment above. Reply with a line each, \"Q1: a\", or \"All as recommended\": an answer as recommended is built, and any other is re-planned first. To take it another way, begin a reply with \"Change:\"."
 
   review:
     if: >-
@@ -53,9 +46,9 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
-      # The nightly agent turns auto-merge on just after it opens a clean pull request, so the
-      # comment waits a minute and says which it is: merging itself, or waiting for the yes.
-      - name: Tell the owner it merges itself, or ask for the yes
+      # A builder turns auto-merge on just after it opens a clean pull request, so this waits a
+      # minute to see which it is. One merging itself asks nothing, so nothing is posted.
+      - name: Ask the owner for the yes, unless it merges itself
         env:
           GH_TOKEN: ${{ github.token }}
           PR: ${{ github.event.pull_request.html_url }}
@@ -63,7 +56,7 @@ jobs:
         run: |
           sleep 60
           if [ -n "$(gh pr view "$PR" --json autoMergeRequest --jq '.autoMergeRequest // empty')" ]; then
-            gh pr comment "$PR" --body "🤖 **PortFusion agent** · this asks nothing, so it merges itself once \`guard\` is green. What changed is above; a merge can be reverted."
+            echo "Auto-merge is on: it asks nothing and merges itself once guard is green. Nothing posted." | tee -a "$GITHUB_STEP_SUMMARY"
           else
-            gh pr comment "$PR" --body "🤖 **PortFusion agent** · @$OWNER, this is ready for your review: what it needs from you is at the top. If it is right, press Enable auto-merge and it merges once \`guard\` is green; to change it, begin a reply with \"Change:\"."
+            gh pr comment "$PR" --body "🤖 **PortFusion agent** · @$OWNER, this waits for you: what it needs is at the top. If it is right, press Enable auto-merge, once, and it merges when \`guard\` is green; to change it, begin a reply with \"Change:\"."
           fi

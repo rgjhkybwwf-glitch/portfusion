@@ -535,10 +535,12 @@ How a pull request is taken to its end is the skill
   | 2 · the engine | `engine/`, `house/`, `record/rules*.py`, `feeds/`, `history/`, the demo and `tools/make_demo.py` | tier 1, and the demo's headline figures worked on the base and on the branch (`tools/figures.py`) |
   | 3 · the keel: the store, the release and the guard's own | `record/schema.py`, `record/migrations.py`, `migrate/`, the release's `__version__`, `.github/`, `.githooks/`, `hooks/`, `.claude/settings.json`, the Stop hook, `pyproject.toml`, `requirements.lock`, the tools' `package.json` and lock, `tools/clean_room.py`, the tiers' and the pictures' own tools, their tests, the Stop hook's and the runs', `pytest.ini`, `CONTRIBUTING.md`, each test a stability rule names | always the maintainer's yes |
 
-  The base's `tools/tiers.py` judges the branch. For tier 3, and tier 2 with a figure moved,
-  `tiers.yml` turns auto-merge off once a commit, and says why; turned on again on that commit, it
-  is the maintainer's yes, so the agent never turns it on again. A new commit, a merge of `main`
-  included, is asked again. A Dependabot pull request is left to `dependabot-merge.yml`.
+  The base's `tools/tiers.py` judges the branch. For tier 3, and tier 2 with a figure moved, the
+  maintainer's press of Enable auto-merge is the yes, and one press is enough. The runs write as
+  the maintainer's account, so a press is told by when it came: auto-merge found on as a commit
+  arrives was turned on before that commit's tier was judged, and `tiers.yml` turns it off, once
+  a commit, and says why. So the agent never turns it on for these. A new commit, a merge of
+  `main` included, is asked again. A Dependabot pull request is left to `dependabot-merge.yml`.
 - **A clean pull request merges itself**: one that asks the maintainer nothing, passes the guard,
   the walk and the reviewer (tier 0: the guard alone), and has its finds placed. A choice the run
   decided, said at its top, keeps it clean. The agent turns its auto-merge on as it opens it, and
@@ -562,8 +564,11 @@ How a pull request is taken to its end is the skill
 - **A question or pull request reaches the maintainer as a mention**: the agent works as the
   maintainer's account, so GitHub would tell them nothing; an issue labelled `decision`, and a pull
   request from a branch whose name begins claude/ that waits for a yes, get a comment from
-  `github-actions[bot]`, headed "PortFusion agent", that names them (`notify.yml`). A pull request
-  merging itself gets the same note without naming them: it asks nothing, so it pings no one.
+  `github-actions[bot]`, headed "PortFusion agent", that names them (`notify.yml`).
+- **The bot comments only to ask, or when it turned auto-merge off.** Every issue and pull request
+  is under the maintainer's account, so GitHub tells them of each comment the bot makes, whether
+  it names them or not. A note that asks nothing (a pull request merging itself, a tier that
+  holds, the pictures retaken) is written in its workflow run's summary, where a run reads it.
 - **A run is one turn, and it ends by sending its debrief.** Every wait is inside that turn. A
   helper agent (the plan checker, the reviewer, a walker) runs in the background, whatever the run
   asks: the run starts it, goes on with what does not depend on it, and waits for its completion

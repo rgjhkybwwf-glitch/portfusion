@@ -18,4 +18,7 @@ When the walk fails only because a page the issue meant to change looks differen
    label is asked for again by putting it back on.
 4. Merge `baselines/<branch>` in and push, which runs the guard.
 
+The retake leaves no comment. What it did, or why it refused, is its `push` job's result, that
+job's log and the run's summary.
+
 The pictures are compared on Linux alone.
