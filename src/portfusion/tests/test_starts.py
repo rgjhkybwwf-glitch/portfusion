@@ -130,13 +130,13 @@ def test_a_start_waits_while_a_run_of_its_level_is_at_work(starts):
     ("Looks good to me", "", ["eyes"]),
     ("Question: why this one?", "", ["eyes"]),
     ("**Session note** · Q1: a", "", []),
-    ("📋 **Ready check** · Q1 is asked below", "", []),
-    ("🌙 **Night run** · **Re-plan:** the answer changed the plan", "replan", []),
+    ("📋 **Coordinator** · Q1 is asked below", "", []),
+    ("🌙 **Builder** · **Re-plan:** the answer changed the plan", "replan", []),
     ("💬 **Answer run** ·\n\nRe-plan: #250 was answered b", "replan", []),
     ("📋 **Ready check** · Re-plan: answered b", "replan", []),
-    ("📋 **Ready check** · Build: answered as recommended, and the plan stands", "build", []),
-    ("🌙 **Night run** · Build: me too", "", []),
-    ("🌙 **Night run** · 17 Nov 00:30–01:17 · built #250 · Next: Re-plan: nothing", "", []),
+    ("📋 **Coordinator** · Build: answered as recommended, and the plan stands", "build", []),
+    ("🌙 **Builder** · Build: me too", "", []),
+    ("🌙 **Builder** · 17 Nov 00:30–01:17 · built #250 · Next: Re-plan: nothing", "", []),
 ])
 def test_a_comment_is_read_by_its_first_words(starts, body, start, acts):
     seen = comment(starts, body)
@@ -161,7 +161,7 @@ def test_a_pull_request_takes_a_change_and_a_hold_only_when_it_is_the_agents(sta
         seen = comment(starts, body, **theirs)
         assert (seen["start"], seen["acts"]) == ("", []), body
     # A run's line on a pull request, or on a closed issue, starts nothing.
-    line = "🌙 **Night run** · Re-plan: again"
+    line = "🌙 **Builder** · Re-plan: again"
     assert comment(starts, line, **ours)["start"] == ""
     assert comment(starts, line, STATE="closed")["start"] == ""
 
@@ -174,7 +174,7 @@ def test_an_idea_and_a_release_start_the_coordinator(starts):
     assert (idea["start"], idea["acts"], idea["wait"]) == ("idea", ["rocket"], 10)
     assert opened("idea : lower case too")["start"] == "idea"
     assert opened("Dividends by month")["start"] == ""
-    assert opened("Idea: from a run", "📋 **Ready check** · filed from a find")["acts"] == []
+    assert opened("Idea: from a run", "📋 **Coordinator** · filed from a find")["acts"] == []
     assert opened("Idea: from a session", "**Session note** · filed with the maintainer")["start"] == ""
 
     def published(tag):

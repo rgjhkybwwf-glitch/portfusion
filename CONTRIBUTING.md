@@ -204,14 +204,14 @@ is. A run changes neither.
 
   | Level | Run | What starts it | Routine | Mark | Cap | Playbook |
   |---|---|---|---|---|---|---|
-  | Coordinator | Morning | 06:30 UK time, Monday to Friday, by its routine's clock | PortFusion · Ready check | `📋 **Ready check** ·` | 2 plans | [`run-coordinator-morning`](.claude/skills/run-coordinator-morning/SKILL.md) |
-  | Coordinator | Answer | the maintainer's answer or `Change:`, thirty quiet minutes after the last | PortFusion · Ready check | `📋 **Ready check** ·` | the answers | [`run-coordinator-answer`](.claude/skills/run-coordinator-answer/SKILL.md) |
-  | Coordinator | Idea | an issue the maintainer opens titled `Idea:`, ten quiet minutes after the last | PortFusion · Ready check | `📋 **Ready check** ·` | the ideas | [`run-coordinator-idea`](.claude/skills/run-coordinator-idea/SKILL.md) |
-  | Coordinator | Release | a release the maintainer publishes, ten quiet minutes after | PortFusion · Ready check | `📋 **Ready check** ·` | 2 plans | [`run-coordinator-release`](.claude/skills/run-coordinator-release/SKILL.md) |
-  | Coordinator | Re-plan | a run's "Re-plan:" or the maintainer's `Resume:`, ten quiet minutes after the last | PortFusion · Ready check | `📋 **Ready check** ·` | the re-plans | [`run-coordinator-replan`](.claude/skills/run-coordinator-replan/SKILL.md) |
-  | Builder | Night build | 00:30 UK time, every day, by its routine's clock | PortFusion · Night run | `🌙 **Night run** ·` | 1 issue | [`run-builder-build`](.claude/skills/run-builder-build/SKILL.md) |
-  | Builder | Evening build | 18:30 UK time, Monday to Friday, by the gate's clock | PortFusion · Night run | `🌙 **Night run** ·` | 1 issue | [`run-builder-build`](.claude/skills/run-builder-build/SKILL.md) |
-  | Builder | Answer build | the coordinator's "Build:", two quiet minutes after the last | PortFusion · Night run | `🌙 **Night run** ·` | 1 issue | [`run-builder-build`](.claude/skills/run-builder-build/SKILL.md) |
+  | Coordinator | Morning | 06:30 UK time, Monday to Friday, by its routine's clock | PortFusion · Coordinator | `📋 **Coordinator** ·` | 2 plans | [`run-coordinator-morning`](.claude/skills/run-coordinator-morning/SKILL.md) |
+  | Coordinator | Answer | the maintainer's answer or `Change:`, thirty quiet minutes after the last | PortFusion · Coordinator | `📋 **Coordinator** ·` | the answers | [`run-coordinator-answer`](.claude/skills/run-coordinator-answer/SKILL.md) |
+  | Coordinator | Idea | an issue the maintainer opens titled `Idea:`, ten quiet minutes after the last | PortFusion · Coordinator | `📋 **Coordinator** ·` | the ideas | [`run-coordinator-idea`](.claude/skills/run-coordinator-idea/SKILL.md) |
+  | Coordinator | Release | a release the maintainer publishes, ten quiet minutes after | PortFusion · Coordinator | `📋 **Coordinator** ·` | 2 plans | [`run-coordinator-release`](.claude/skills/run-coordinator-release/SKILL.md) |
+  | Coordinator | Re-plan | a run's "Re-plan:" or the maintainer's `Resume:`, ten quiet minutes after the last | PortFusion · Coordinator | `📋 **Coordinator** ·` | the re-plans | [`run-coordinator-replan`](.claude/skills/run-coordinator-replan/SKILL.md) |
+  | Builder | Night build | 00:30 UK time, every day, by its routine's clock | PortFusion · Builder | `🌙 **Builder** ·` | 1 issue | [`run-builder-build`](.claude/skills/run-builder-build/SKILL.md) |
+  | Builder | Evening build | 18:30 UK time, Monday to Friday, by the gate's clock | PortFusion · Builder | `🌙 **Builder** ·` | 1 issue | [`run-builder-build`](.claude/skills/run-builder-build/SKILL.md) |
+  | Builder | Answer build | the coordinator's "Build:", two quiet minutes after the last | PortFusion · Builder | `🌙 **Builder** ·` | 1 issue | [`run-builder-build`](.claude/skills/run-builder-build/SKILL.md) |
 
   A run the gate starts (When a run starts, below) finds its row by the first words of the text it
   was started with, the row's name and a colon; one started by its routine's own clock is the row
@@ -225,7 +225,7 @@ is. A run changes neither.
   `test_runs.py` holds the pointers: every playbook the table names exists, every skill a playbook
   or this file names exists, and none is left that nothing names.
 - **The loop works from four open issues**, which the skills call by name: **the Queue**, "Queue:
-  what the nightly agent builds next" (#206); **the run log** (#289); **the walk finds**, "Walk
+  what the loop builds next" (#206); **the run log** (#289); **the walk finds**, "Walk
   finds: to sort" (#220); and **the release checklist** (#156).
 - **An issue's state is on its labels**, so a run reads it without reading the issue:
   `decision`, a one-line question (Asking and answering, below) waits on the maintainer, or a
@@ -639,7 +639,7 @@ How a pull request is taken to its end is the skill
   leaves, writes its end line on the run log, then ends its turn with the debrief: what merged,
   what waits on the maintainer, what it decided for them, or that it had nothing to do. **Its
   last line begins with the word `Next:`**, then who acts next, on what, and when, as in "Next:
-  the night run, at 00:30, builds #250." When no line under Next can be built, it names each
+  the night build, at 00:30, builds #250." When no line under Next can be built, it names each
   line and what holds it: a question (whose), no plan yet or a "Re-plan" (the coordinator's),
   `building` (which run), an open pull request, a "waits" or the gate. None of the three is ever
   done while something is still running. While a gate review stands unanswered, or a release

@@ -15,7 +15,7 @@ a date and a time, UK time. Neither asks anything, and neither pings anyone.
 
 The run's first act, before it reads anything else:
 
-`🌙 **Night run** · start · 17 Nov 00:30 · building the first planned line`
+`🌙 **Builder** · start · 17 Nov 00:30 · building the first planned line`
 
 After the word `start`: the date, the minute the run began, and in a few words what it sets out
 to do. A run the gate started says there what started it: an answer, an idea, a release, a
@@ -31,7 +31,7 @@ and says the loop is paused. The gate starts no run in a pause, so only a clock'
 
 Written by the skill `end-of-run`, once nothing is left to wait for:
 
-`🌙 **Night run** · 17 Nov 00:30–01:17 · built #250, merged · Decided for you: #250 · Next: …`
+`🌙 **Builder** · 17 Nov 00:30–01:17 · built #250, merged · Decided for you: #250 · Next: …`
 
 The mark, the date, when the run began and ended, what it did in a line, then "Decided for you:"
 and each issue the run decided a choice on (left out when it decided nothing), and its `Next:`
