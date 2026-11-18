@@ -247,7 +247,8 @@ def test_the_gate_fires_by_the_table_makes_no_comment_and_sends_nothing_of_one(s
 
 def test_the_bot_asks_only_in_the_working_day_and_holds_the_rest_to_eight(starts):
     notify = (FLOWS / "notify.yml").read_text(encoding="utf-8")
-    assert "tools/starts.py --working" in notify
+    assert "tools/starts.py --working" in notify and 'if [ "$day" != no ]; then' in notify, \
+        "only a clear no holds a question: a fault in reading the hours asks now"
     at = starts.OPENS
     for cron in (f"{at.minute} {at.hour} * * 1-5", f"{at.minute} {at.hour - 1} * * 1-5"):
         assert f'cron: "{cron}"' in notify, cron

@@ -6,7 +6,7 @@ standard library and `portfusion.log`, and both workflows run the default branch
 never a pull request's.
 
     python3 tools/starts.py --read      what an event is, from the environment: one line of JSON
-    python3 tools/starts.py --working   exits 0 in the maintainer's working hours, 1 outside them
+    python3 tools/starts.py --working   "yes" in the maintainer's working hours, "no" outside them
     python3 tools/starts.py --queue     the Queue's number
 
 THE RUNS WRITE AS THE MAINTAINER'S ACCOUNT, so whose a comment is is told by its first words: a
@@ -248,7 +248,8 @@ def _comment(e: dict[str, str], number: str, queue: bool,
 def main(args: list[str]) -> int:
     now = datetime.now(timezone.utc)
     if args[:1] == ["--working"]:
-        return 0 if working(now) else 1
+        log.info("yes" if working(now) else "no")
+        return 0
     if args[:1] == ["--queue"]:
         log.info(str(QUEUE))
         return 0

@@ -89,8 +89,12 @@ jobs:
             say "#$1: outside the maintainer's working day, so it is asked at 08:00 on the next one."
           }
 
-          day=no
-          if PYTHONPATH=src python3 tools/starts.py --working; then day=yes; fi
+          # Only a clear "no" holds a question: a fault in reading the hours asks now.
+          day=$(PYTHONPATH=src python3 tools/starts.py --working) || day=fault
+          if [ "$day" != no ]; then
+            [ "$day" = yes ] || echo "::warning::the working day could not be read ($day): asking now"
+            day=yes
+          fi
 
           case "$EVENT" in
             issues)
