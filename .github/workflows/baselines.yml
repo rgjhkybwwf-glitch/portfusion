@@ -119,16 +119,14 @@ jobs:
     timeout-minutes: 5
     permissions:
       contents: write
-      pull-requests: write
     steps:
-      - name: Said on the pull request, when the walk itself fails
+      # What the retake did is for the builder that asked for it, which reads this job's result,
+      # its log and the run's summary: a comment would reach the maintainer, and asks them nothing.
+      - name: Said in the run's summary, when the walk itself fails
         if: needs.walk.result != 'success' || needs.walk.outputs.status == ''
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR: ${{ github.event.pull_request.html_url }}
-          RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          gh pr comment "$PR" --body "🤖 **PortFusion agent** · the pictures were not retaken: the walk failed before they could be judged ($RUN). Mend it, then label the pull request again."
+          said="The pictures were not retaken: the walk failed before they could be judged. Mend it, then label the pull request again."
+          echo "::error::$said"; echo "$said" >> "$GITHUB_STEP_SUMMARY"
           exit 1
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1    # v7.0.1
         with:
@@ -143,18 +141,21 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
-          PR: ${{ github.event.pull_request.html_url }}
           BRANCH: ${{ github.event.pull_request.head.ref }}
           SAID: ${{ needs.walk.outputs.said }}
           STATUS: ${{ needs.walk.outputs.status }}
           CHANGED: ${{ needs.walk.outputs.changed }}
         run: |
+          # The judge's word comes from the branch's code: it is said on one line, so no line of it
+          # can begin a workflow command.
+          said=$(printf '%s' "$SAID" | tr '\r\n' '  ')
+          say() { echo "$1"; echo "$1" >> "$GITHUB_STEP_SUMMARY"; }
           if [ "$STATUS" != 0 ]; then
-            gh pr comment "$PR" --body "🤖 **PortFusion agent** · the pictures were not retaken: $SAID"
+            say "The pictures were not retaken: $said"
             exit 1
           fi
           if [ "$CHANGED" = 0 ]; then
-            gh pr comment "$PR" --body "🤖 **PortFusion agent** · the walk's Linux pictures already match every page; nothing to commit."
+            say "The walk's Linux pictures already match every page; nothing to commit."
             exit 0
           fi
           # The walk's artifact is data: only a file named as a page's Linux picture is taken across.
@@ -169,7 +170,7 @@ jobs:
           git() { command git -c core.hooksPath=/dev/null "$@"; }
           git add tools/desk_walk/*-linux.png
           if git diff --cached --quiet; then
-            gh pr comment "$PR" --body "🤖 **PortFusion agent** · the walk's Linux pictures already match every page; nothing to commit."
+            say "The walk's Linux pictures already match every page; nothing to commit."
             exit 0
           fi
           pages=$SAID
@@ -177,7 +178,7 @@ jobs:
               -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
               commit -q -m "Retake the walk's Linux pictures: $pages"
           git push --force "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git" "HEAD:refs/heads/baselines/$BRANCH"
-          gh pr comment "$PR" --body "🤖 **PortFusion agent** · the walk's Linux pictures are retaken for: $pages, on \`baselines/$BRANCH\`. Merge it into the branch (\`git fetch origin baselines/$BRANCH && git merge FETCH_HEAD\`) and push: the guard then runs as on any push."
+          say "The walk's Linux pictures are retaken for: $said, on baselines/$BRANCH. Merge it into the branch (git fetch origin baselines/$BRANCH && git merge FETCH_HEAD) and push: the guard then runs as on any push."
 
   tidy:
     if: >-

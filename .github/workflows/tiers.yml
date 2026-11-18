@@ -11,6 +11,14 @@
 # turns auto-merge off. `guard` is the one required check, so a hold that comes after a merge is
 # too late: the tier takes under a minute; tier 2's figures a few, against `guard`'s eight or so.
 #
+# ONE PRESS IS THE YES. The runs write as the maintainer's account, so a press is told by when it
+# came, never by whose it was. Auto-merge found on as a commit arrives was turned on before that
+# commit's tier was judged, by a builder as it opened the pull request or for the commit before:
+# `act` turns it off, once a commit, and says so, naming the maintainer. Their press after that
+# (`auto_merge_enabled`) stands. That is the one comment `act` makes: what else it finds, a pull
+# request that waits among it, is in the run's summary, since a comment of the bot's reaches the
+# maintainer whether it names them or not.
+#
 # Dependabot's pull requests are left to `dependabot-merge.yml`: a lock bump is tier 3 by path, and
 # merges itself by rule. A fork's pull request gets no token that can write.
 
@@ -115,6 +123,7 @@ jobs:
           PR: ${{ github.event.pull_request.html_url }}
           NUMBER: ${{ github.event.pull_request.number }}
           HEAD: ${{ github.event.pull_request.head.sha }}
+          EVENT: ${{ github.event.action }}
           SORTED: ${{ needs.sort.result }}
           TIER: ${{ needs.sort.outputs.tier }}
           WHY: ${{ needs.sort.outputs.why }}
@@ -146,15 +155,16 @@ jobs:
             [ "$status" = 0 ] || [ -n "$MOVED" ] || { echo "::error::the figures could not be compared"; exit 1; }
           fi
           AUTO_ON=$(gh pr view "$PR" --json autoMergeRequest --jq '.autoMergeRequest != null')
-          export TIER WHY MOVED AUTO_ON
+          export TIER WHY MOVED AUTO_ON EVENT
           PYTHONPATH=src python3 tools/tiers.py --hold "$RUNNER_TEMP/said" > "$RUNNER_TEMP/hold"
           action=$(head -1 "$RUNNER_TEMP/hold")
           tail -n +2 "$RUNNER_TEMP/hold" > "$RUNNER_TEMP/body"
-          case "$action" in
-            off) gh pr merge "$PR" --disable-auto; gh pr comment "$PR" --body-file "$RUNNER_TEMP/body" ;;
-            say) gh pr comment "$PR" --body-file "$RUNNER_TEMP/body" ;;
-            *)   cat "$RUNNER_TEMP/body" ;;
-          esac
+          if [ "$action" = off ]; then
+            gh pr merge "$PR" --disable-auto
+            gh pr comment "$PR" --body-file "$RUNNER_TEMP/body"
+          fi
+          # Said in the log and the run's summary, whatever was done: only "off" is a comment.
+          { echo "tier $TIER on $EVENT: $action"; echo; cat "$RUNNER_TEMP/body"; } | tee -a "$GITHUB_STEP_SUMMARY"
       - name: A hold that could not be worked turns auto-merge off
         if: failure()
         env:

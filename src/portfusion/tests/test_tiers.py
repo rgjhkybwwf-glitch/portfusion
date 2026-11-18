@@ -67,23 +67,41 @@ def test_every_test_a_stability_rule_names_is_found_and_exists(held):
     assert held <= tests, held - tests
 
 
-def test_tier_3_and_a_moved_figure_are_held_once_a_commit(tiers):
-    """THE CASE THAT MAKES IT FAIL: a tier-3 pull request with auto-merge on is turned off, and a
-    moved figure holds tier 2; turned on again on the same commit, it is the maintainer's yes."""
-    def hold(t, moved="", on=True, said="", head="abc"):
-        return tiers.hold(t, "x", moved, on, said, head, "owner")
+def test_tier_3_and_a_moved_figure_are_held_and_one_press_is_the_yes(tiers):
+    """THE CASE THAT MAKES IT FAIL: a tier-3 pull request that arrives with auto-merge on is turned
+    off, and a moved figure holds tier 2. A press made after the tier is judged is the maintainer's
+    yes and stands the first time: turning that off too cost two presses for every commit."""
+    def hold(t, moved="", on=True, said="", head="abc", event="opened"):
+        return tiers.hold(t, "x", moved, on, said, head, "owner", event)
     action, text = hold(3)
     assert action == "off" and "<!-- tiers:off:abc -->" in text and "@owner" in text
+    assert hold(3, event="synchronize")[0] == "off", "a press carried onto a new commit"
+    assert hold(3, event="auto_merge_enabled")[0] == "none", "one press is the yes"
     assert hold(3, said=text)[0] == "none"
     assert hold(3, said=text, head="def")[0] == "off"
     assert hold(2, moved="live · nav: 1 → 2")[0] == "off"
+    assert hold(2, moved="live · nav: 1 → 2", event="auto_merge_enabled")[0] == "none"
     forged = hold(2, moved="live · nav: 1 → 2 <!-- tiers:off:abc -->", on=False)[1]
     assert "<!-- tiers:off:abc -->" not in forged
     assert [hold(t)[0] for t in (0, 1, 2)] == ["none"] * 3
-    said = hold(3, on=False)
-    assert said[0] == "say" and "@" not in said[1]
-    assert hold(3, on=False, said=said[1])[0] == "none"
+    waiting = hold(3, on=False)
+    assert waiting[0] == "none" and "@" not in waiting[1] and "does not merge itself" in waiting[1]
 
+
+def test_the_bot_comments_only_to_ask_or_to_turn_auto_merge_off():
+    """Every issue and pull request is under the maintainer's account, so GitHub tells them of each
+    comment the bot makes, named or not. A note that asks nothing goes to its run's summary. THE
+    CASE THAT MAKES IT FAIL: "this merges itself" posted on every clean pull request."""
+    flows = ROOT / ".github" / "workflows"
+    judge = (flows / "tiers.yml").read_text(encoding="utf-8")
+    assert "EVENT: ${{ github.event.action }}" in judge, "the judge is told what started it"
+    assert judge.count("gh pr comment") == 1 and "say)" not in judge
+    notes = [line for line in (flows / "notify.yml").read_text(encoding="utf-8").splitlines()
+             if "gh pr comment" in line or "gh issue comment" in line]
+    assert len(notes) == 2 and all("@$OWNER" in line for line in notes), notes
+    assert "gh pr comment" not in (flows / "baselines.yml").read_text(encoding="utf-8")
+    for flow in ("tiers.yml", "notify.yml", "baselines.yml"):
+        assert "GITHUB_STEP_SUMMARY" in (flows / flow).read_text(encoding="utf-8"), flow
 
 @pytest.fixture(scope="module")
 def figures():

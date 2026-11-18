@@ -5,7 +5,7 @@ of it, never the branch's, without installing anything.
 
     python3 tools/tiers.py <changed path> …       says the tier, then the path that set it
     python3 tools/tiers.py --hold <comments file>  what to do with auto-merge, from the environment
-                                                   TIER, WHY, MOVED, AUTO_ON, HEAD and OWNER
+                                                   TIER, WHY, MOVED, AUTO_ON, HEAD, OWNER and EVENT
 
 A pull request takes the highest tier of its paths; one that changes nothing is tier 0. The
 stability rules' tests are read from CONTRIBUTING.md's tables, where each rule names what holds it.
@@ -60,12 +60,17 @@ def sort(paths: list[str], held: set[str]) -> tuple[int, str | None]:
 
 
 def hold(tier: int, why: str, moved: str, auto_on: bool, said: str, head: str,
-         owner: str) -> tuple[str, str]:
-    """What `tiers.yml` does with auto-merge, and the comment it posts: ("off", text) turns it off,
-    ("say", text) says once that the pull request does not merge itself, ("none", why) does
-    nothing. Tier 3, and tier 2 with a figure moved, are held. Auto-merge found on is turned off
-    ONCE A COMMIT, marked in the bot's comments `said`: turned on again on that commit, it is the
-    maintainer's yes, and stands. A new commit is asked again."""
+         owner: str, event: str = "") -> tuple[str, str]:
+    """What `tiers.yml` does with auto-merge: ("off", text) turns it off and posts the text, which
+    names the maintainer; ("none", text) does nothing, and the text is for the run's summary. Tier
+    3, and tier 2 with a figure moved, are held.
+
+    ONE PRESS IS THE YES. The runs write as the maintainer's account, so a press is told by when it
+    came, never by whose it was. Auto-merge found on as a commit arrives (the pull request opened,
+    pushed to, reopened) was turned on before that commit's tier was judged, by a builder as it
+    opened the pull request or for the commit before: it is turned off, once a commit, marked in
+    the bot's comments `said`. A press that comes after the judging (`event` is
+    "auto_merge_enabled") is the maintainer's yes, and stands. A new commit is asked again."""
     if tier == 3:
         reason = f"it is tier 3, the store or the guard's own (`{why}`): it waits for the maintainer's yes."
     elif tier == 2 and moved.strip():
@@ -73,24 +78,23 @@ def hold(tier: int, why: str, moved: str, auto_on: bool, said: str, head: str,
         reason = f"it moves the demo's headline figures, so it waits for the maintainer's yes:\n\n{lines}"
     else:
         return "none", f"tier {tier}: nothing to hold"
-    off, told = f"<!-- tiers:off:{head} -->", f"<!-- tiers:said:{head} -->"
+    off = f"<!-- tiers:off:{head} -->"
+    if not auto_on:
+        return "none", f"this does not merge itself: {reason}"
+    if event == "auto_merge_enabled":
+        return "none", f"auto-merge was turned on after the tier was judged on {head}: it is the yes"
     if off in said:
         return "none", f"auto-merge was turned off once on {head}: turned on again, it is the yes"
-    if auto_on:
-        return "off", (f"🤖 **PortFusion agent** · @{owner}, auto-merge is turned off: {reason}\n\n"
-                       f"Pressing Enable auto-merge again on this commit is the yes; a new commit, "
-                       f"a merge of `main` included, is asked again.\n{off}")
-    if told in said:
-        return "none", f"already said on {head}"
-    return "say", f"🤖 **PortFusion agent** · this does not merge itself: {reason}\n{told}"
-
+    return "off", (f"🤖 **PortFusion agent** · @{owner}, auto-merge is turned off: {reason}\n\n"
+                   f"It was on before this commit's tier was judged. Press Enable auto-merge again "
+                   f"and it stands; a new commit, a merge of `main` included, is asked again.\n{off}")
 
 def main(args: list[str]) -> int:
     if args[:1] == ["--hold"]:
         e = os.environ
         action, text = hold(int(e["TIER"]), e.get("WHY", ""), e.get("MOVED", ""),
                             e.get("AUTO_ON") == "true", Path(args[1]).read_text(encoding="utf-8"),
-                            e["HEAD"], e["OWNER"])
+                            e["HEAD"], e["OWNER"], e.get("EVENT", ""))
         log.info(action)
         log.info(text)
         return 0

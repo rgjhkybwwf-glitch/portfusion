@@ -20,8 +20,9 @@ request. Tier 0 takes the builder's own review of its diff, and no walk.
 - **Clean**: turn auto-merge on as the pull request opens. GitHub merges it once `guard` is green.
 - **Not clean**: leave auto-merge off, with what is needed from the maintainer at the top of the
   description. A pull request that moves the store or a figure says what moves there, and in the
-  changelog. `tiers.yml` turns auto-merge off for tier 3 and for a moved headline figure; the
-  agent never turns it on again.
+  changelog. A pull request of tier 3, or of tier 2 with a headline figure moved, is never the
+  agent's to turn on, at any moment: `tiers.yml` turns off what it finds on as a commit arrives,
+  and a press made after the tier is judged stands as the maintainer's yes.
 
 ## 3. The guard
 
