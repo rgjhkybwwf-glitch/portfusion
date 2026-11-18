@@ -40,7 +40,6 @@ from portfusion.log import log      # the hook runs without the venv: src/ is pu
 ROOT = Path(__file__).resolve().parents[1]
 FOLLOW = 'Follow CONTRIBUTING\'s section "{}"'
 TABLE = "| Level | Run |"
-LEGACY = ("The nightly agent",)     # the routines' prompts until the restart switches them
 WAIT_GUARD = 60
 WAIT_HELPER = 60
 ASK_DEBRIEF = 2
@@ -70,17 +69,14 @@ def section(contributing: str) -> str:
     return re.sub(r"\s*\(.*\)\s*$", "", heading[4:]).strip()
 
 
-def names() -> tuple[str, ...]:
-    """The section names a routine's prompt may say: the one in CONTRIBUTING.md, and the old."""
-    try:
-        now = section((ROOT / "CONTRIBUTING.md").read_text(encoding="utf-8"))
-    except OSError:
-        now = ""
-    return tuple(name for name in (now, *LEGACY) if name)
-
-
 def is_run(first: str) -> bool:
-    return any(FOLLOW.format(name) in first for name in names())
+    """Whether the session's first message is a routine's prompt: it names the section the runs
+    table is under. No session is a run when CONTRIBUTING.md cannot be read or names none."""
+    try:
+        name = section((ROOT / "CONTRIBUTING.md").read_text(encoding="utf-8"))
+    except (OSError, ValueError):       # missing, or not UTF-8
+        name = ""
+    return bool(name) and FOLLOW.format(name) in first
 
 
 def _texts(content) -> str:
