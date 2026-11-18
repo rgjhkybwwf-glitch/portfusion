@@ -1,7 +1,8 @@
-# THE MAINTAINER IS TOLD WHEN AN AGENT NEEDS THEM. A Claude session works as the maintainer's own
-# account, and GitHub tells no one of their own comment or pull request, so a session's question or
-# finished work would arrive silently. This posts a comment as `github-actions[bot]`, a different
-# account, that mentions the owner, and GitHub notifies them as for anyone else's comment:
+# THE MAINTAINER IS TOLD WHEN AN AGENT NEEDS THEM, IN THEIR WORKING DAY. A Claude session works as
+# the maintainer's own account, and GitHub tells no one of their own comment or pull request, so a
+# session's question or finished work would arrive silently. This posts a comment as
+# `github-actions[bot]`, a different account, that mentions the owner, and GitHub notifies them as
+# for anyone else's comment:
 #
 # - an issue labelled `decision`: an agent stopped at a choice the issue does not settle;
 # - a pull request opened, reopened or marked ready from a `claude/` branch that waits for the yes
@@ -9,8 +10,17 @@
 #   maintainer's account, so a comment of the bot's reaches them whether it names them or not, and
 #   a note that asks nothing is written in this run's summary instead.
 #
-# No action is used, only `gh`, which the runner carries; the token is the workflow's own, so its
-# comment starts no other workflow. Titles and links reach the shell as variables, never as script.
+# ONLY IN THE WORKING DAY (08:00 to 17:00 UK time, Monday to Friday; `tools/starts.py` holds the
+# hours). Outside it the comment is not posted: the issue or pull request takes the label
+# `ask-held`, which tells no one. At 08:00 on the next working day, by this file's own clock, and
+# whenever it runs inside the working day, each one so labelled that still waits (the issue still
+# `decision`, the pull request still open with auto-merge off) gets its comment, and the label
+# comes off. A run the maintainer started tells them itself, in its debrief, at any hour.
+#
+# The one action used is the checkout of the default branch's `tools/starts.py`, never a pull
+# request's; the rest is `gh`, which the runner carries. The token is the workflow's own, so its
+# comment and its label start no other workflow. Titles and links reach the shell as variables,
+# never as script.
 
 name: notify
 
@@ -19,44 +29,91 @@ on:
     types: [labeled]
   pull_request:
     types: [opened, reopened, ready_for_review]
+  schedule:
+    - cron: "0 7 * * 1-5"           # 08:00 in London's summer
+    - cron: "0 8 * * 1-5"           # 08:00 in London's winter
 
-permissions:
-  issues: write
-  pull-requests: write
+# One at a time, so two that run together never ask twice.
+concurrency:
+  group: notify
+  cancel-in-progress: false
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
 
 jobs:
-  decision:
-    if: github.event_name == 'issues' && github.event.label.name == 'decision'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 5
-    steps:
-      - name: Ask the owner for the decision
-        env:
-          GH_TOKEN: ${{ github.token }}
-          ISSUE: ${{ github.event.issue.html_url }}
-          OWNER: ${{ github.repository_owner }}
-        run: |
-          gh issue comment "$ISSUE" --body "🤖 **PortFusion agent** · @$OWNER, a decision is needed here: the questions are under \"Questions for you\", at the end of the issue or of the comment above. Reply with a line each, \"Q1: a\", or \"All as recommended\": an answer as recommended is built, and any other is re-planned first. To take it another way, begin a reply with \"Change:\"."
-
-  review:
+  ask:
     if: >-
-      github.event_name == 'pull_request'
-      && startsWith(github.event.pull_request.head.ref, 'claude/')
-      && !github.event.pull_request.draft
+      github.event_name == 'schedule'
+      || (github.event_name == 'issues' && github.event.label.name == 'decision')
+      || (github.event_name == 'pull_request'
+          && startsWith(github.event.pull_request.head.ref, 'claude/')
+          && !github.event.pull_request.draft)
     runs-on: ubuntu-24.04
-    timeout-minutes: 5
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
     steps:
-      # A builder turns auto-merge on just after it opens a clean pull request, so this waits a
-      # minute to see which it is. One merging itself asks nothing, so nothing is posted.
-      - name: Ask the owner for the yes, unless it merges itself
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1    # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.base.sha || github.sha }}
+          persist-credentials: false
+      - name: Ask the owner now, or hold the question for their working day
         env:
           GH_TOKEN: ${{ github.token }}
-          PR: ${{ github.event.pull_request.html_url }}
+          REPO: ${{ github.repository }}
           OWNER: ${{ github.repository_owner }}
+          EVENT: ${{ github.event_name }}
+          NUMBER: ${{ github.event.issue.number || github.event.pull_request.number }}
         run: |
-          sleep 60
-          if [ -n "$(gh pr view "$PR" --json autoMergeRequest --jq '.autoMergeRequest // empty')" ]; then
-            echo "Auto-merge is on: it asks nothing and merges itself once guard is green. Nothing posted." | tee -a "$GITHUB_STEP_SUMMARY"
-          else
-            gh pr comment "$PR" --body "🤖 **PortFusion agent** · @$OWNER, this waits for you: what it needs is at the top. If it is right, press Enable auto-merge, once, and it merges when \`guard\` is green; to change it, begin a reply with \"Change:\"."
-          fi
+          say() { echo "$1" | tee -a "$GITHUB_STEP_SUMMARY"; }
+          ask_issue() {
+            gh issue comment "$1" --repo "$REPO" --body "🤖 **PortFusion agent** · @$OWNER, a decision is needed here: the questions are under \"Questions for you\", at the end of the issue or of the comment above. Reply with a line each, \"Q1: a\", or \"All as recommended\": an answer as recommended is built, and any other is re-planned first. To take it another way, begin a reply with \"Change:\"."
+          }
+          ask_pr() {
+            gh pr comment "$1" --repo "$REPO" --body "🤖 **PortFusion agent** · @$OWNER, this waits for you: what it needs is at the top. If it is right, press Enable auto-merge, once, and it merges when \`guard\` is green; to change it, begin a reply with \"Change:\"."
+          }
+          waits() {     # whether pull request $1 is open, ready, and not merging itself
+            [ "$(gh pr view "$1" --repo "$REPO" --json state,isDraft,autoMergeRequest \
+                 --jq '.state == "OPEN" and (.isDraft | not) and .autoMergeRequest == null')" = true ]
+          }
+          hold() {      # the question on $1 waits for the working day
+            gh label create ask-held --repo "$REPO" --color ededed \
+              --description "The bot's question here is asked at 08:00 on the next working day (notify.yml)" > /dev/null 2>&1 || true
+            gh api -X POST "repos/$REPO/issues/$1/labels" -f "labels[]=ask-held" --silent
+            say "#$1: outside the maintainer's working day, so it is asked at 08:00 on the next one."
+          }
+
+          day=no
+          if PYTHONPATH=src python3 tools/starts.py --working; then day=yes; fi
+
+          case "$EVENT" in
+            issues)
+              if [ "$day" = yes ]; then ask_issue "$NUMBER"; else hold "$NUMBER"; fi ;;
+            pull_request)
+              # A builder turns auto-merge on just after it opens a clean pull request, so this
+              # waits a minute to see which it is. One merging itself asks nothing.
+              sleep 60
+              if ! waits "$NUMBER"; then
+                say "#$NUMBER: auto-merge is on, or it is closed: it asks nothing. Nothing posted."
+              elif [ "$day" = yes ]; then ask_pr "$NUMBER"; else hold "$NUMBER"; fi ;;
+          esac
+
+          [ "$day" = yes ] || exit 0
+          # What was held, and still waits, is asked now; the label comes off either way.
+          gh api "repos/$REPO/issues?labels=ask-held&state=all&per_page=100" --paginate \
+            --jq '.[] | "\(.number) \(if .pull_request then "pr" else "issue" end) \(.state) \([.labels[].name] | index("decision") != null)"' \
+            > "$RUNNER_TEMP/held"
+          while read -r n kind state decision; do
+            if [ "$kind" = pr ]; then
+              if waits "$n" < /dev/null; then ask_pr "$n" < /dev/null; say "#$n: asked for the yes, held from before."; fi
+            elif [ "$state" = open ] && [ "$decision" = true ]; then
+              ask_issue "$n" < /dev/null; say "#$n: asked, held from before."
+            fi
+            gh api -X DELETE "repos/$REPO/issues/$n/labels/ask-held" --silent < /dev/null || true
+          done < "$RUNNER_TEMP/held"

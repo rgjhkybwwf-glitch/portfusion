@@ -30,10 +30,12 @@ ENGINE = tuple(PKG + p for p in ("engine/", "house/", "record/rules", "feeds/", 
 OWN = (".github/", ".githooks/", ".claude/settings.json", PKG + "hooks/", "pyproject.toml",
        "requirements.lock", "tools/clean_room.py", "tools/package.json", "tools/package-lock.json",
        "tools/tiers.py", "tools/figures.py", "tools/pictures.py", "tools/stop_hook.py",
+       "tools/starts.py",
        "CONTRIBUTING.md", PKG + "__init__.py", PKG + "record/schema.py",
        PKG + "record/migrations.py", PKG + "migrate/", "pytest.ini", PKG + "tests/pytest.ini",
        PKG + "tests/test_tiers.py", PKG + "tests/test_pictures.py",
-       PKG + "tests/test_stop_hook.py", PKG + "tests/test_runs.py")
+       PKG + "tests/test_stop_hook.py", PKG + "tests/test_runs.py",
+       PKG + "tests/test_starts.py")
 
 
 def stability_tests(contributing: str) -> set[str]:

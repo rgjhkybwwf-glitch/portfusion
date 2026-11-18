@@ -46,6 +46,7 @@ def held(tiers):
     ("src/portfusion/tests/record/test_schema.py", 3), ("src/portfusion/tests/harness.py", 3),
     ("tools/stop_hook.py", 3), ("src/portfusion/tests/test_stop_hook.py", 3),
     ("src/portfusion/tests/test_runs.py", 3),
+    ("tools/starts.py", 3), ("src/portfusion/tests/test_starts.py", 3),
 ])
 def test_each_path_takes_its_tier(tiers, held, path, tier):
     assert tiers.tier(path, held) == tier

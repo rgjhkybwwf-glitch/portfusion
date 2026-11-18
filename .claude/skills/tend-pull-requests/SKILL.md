@@ -15,6 +15,8 @@ Before a new issue, for each open pull request from a branch whose name begins c
 3. **Its CI**: made green, waited for in the foreground. One that will not go green at a second
    attempt is left as a draft, with what blocks it at the top.
 4. **A `Change:` on it**: left for the coordinator, which records it and plans again.
+5. **A `hold` on it**: kept level and green, nothing added to it, and its auto-merge left off
+   until the maintainer's `Resume:` takes the label off.
 
 So none waits on the maintainer for anything but what it asked of them. An open pull request of an
 issue that is not under Next is kept level and green, and nothing is added to it.

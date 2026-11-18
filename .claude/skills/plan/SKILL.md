@@ -16,8 +16,8 @@ Every line under Next, in order, so each build has a plan:
   `planned` as the run's cap, those already standing included.
 - Each line's questions are settled as it is reached, a line whose "waits" are still open
   included, so an answer is in before its turn comes (the skill `ask-or-decide`).
-- Skipped: a feature, an issue labelled `planned` or `building`, and one whose questions stand
-  asked and unanswered. An issue with an open pull request of its own is planned only when it is
+- Skipped: a feature, an issue labelled `planned`, `building` or `hold`, and one whose questions
+  stand asked and unanswered. An issue with an open pull request of its own is planned only when it is
   marked "Re-plan", against that pull request's branch.
 
 The issue carries `building` while it is planned.

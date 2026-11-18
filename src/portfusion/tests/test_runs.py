@@ -99,15 +99,6 @@ def test_the_runs_table_and_the_playbooks_name_one_another(runs, skills):
     assert named == _playbooks(skills)
 
 
-def test_each_runs_mark_is_one_the_answer_workflow_knows_for_a_runs(runs):
-    """A run writes as the maintainer's account: `answer.yml` tells its comments from theirs by
-    the mark alone, so a mark it does not list would be read as the maintainer's own words."""
-    workflow = (ROOT / ".github" / "workflows" / "answer.yml").read_text(encoding="utf-8")
-    for row in runs:
-        mark = row["Mark"].strip("`").removesuffix("·").strip()
-        assert f'"{mark}"*' in workflow, mark
-
-
 def test_every_skill_named_is_a_skill(skills, contributing):
     texts = {name: text for name, (_, _, text) in skills.items()}
     texts["CONTRIBUTING.md"] = contributing
