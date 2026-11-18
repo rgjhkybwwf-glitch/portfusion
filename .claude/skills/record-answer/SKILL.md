@@ -26,8 +26,8 @@ already in its issue's Decisions is skipped.
 3. An answer that leaves a question open: ask that question again, alone, and take `decision` off
    and put it back on, so the maintainer is told.
 
-A card's answer also takes its line out of Design next. An answer to a review of the Queue is
-applied by the skill `keep-the-queue`, and one to a gate review by `gate-review`.
+A card's answer also takes its line out of Design next. An answer to a gate review is applied
+by the skill `gate-review`, and a `Change:` on the Queue by `keep-the-queue`.
 
 ## A `Change:`
 

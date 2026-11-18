@@ -10,8 +10,9 @@ The order of the run's work. Each step's procedure is in the skill named; the ru
 
 1. **The start line**: the skill `beat`. A run that follows the answer run's first half has
    written it already.
-2. **After a tag**: the skill `open-milestone` if the Queue's lines are not yet moved, then the
-   next version's pull request (the skill `release`, After the tag).
+2. **After a tag**: the next version's pull request (the skill `release`, After the tag). The
+   Queue's lines are the coordinator's to move (`open-milestone`): until it has, Next holds
+   nothing of the new milestone to build.
 3. **Its own open pull requests first**: the skill `tend-pull-requests`.
 4. **Take a line**: the first under Next whose issue carries `planned` and neither `decision` nor
    `building`, has no open pull request of its own, and whose "waits" are all closed. Skip the

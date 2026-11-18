@@ -18,19 +18,21 @@ The order of the run's work. Each step's procedure is in the skill named; the ru
    last line in the run log, whose lines are never acted on, or three days ago when there is none.
    Clear a `building` label more than three hours old: a run that long has died.
 4. **Nothing changed: stop.** When nothing has merged, closed, been answered, changed or filed
-   since, and Next holds as many `planned` lines as the cap or no line that could be planned, go
-   to the last step with a one-line debrief.
+   since, Next holds as many `planned` lines as the cap or no line that could be planned, and no
+   review of the Queue is due, go to the last step with a one-line debrief.
 5. **Record**: the skill `record-answer`, for each answer or `Change:` not yet recorded. Any other
    comment of the maintainer's is applied where its issue is shaped or planned, and otherwise
    named in the debrief.
-6. **After a tag**: the skill `open-milestone`.
-7. **Each open `Idea:` issue**: the skill `shape-an-issue`.
-8. **The dependencies**: the skill `dependencies`.
-9. **Plan** the lines under Next, in order, to the cap: the skill `plan`.
-10. **One long job, at most**: the skill `gate-review` on the day the gate is reached; else
-    `keep-the-queue` when a review is due; else `design-card`, or `slice-a-feature` for a feature
+6. **The Queue**: the skill `keep-the-queue`, Each run: tick what merged, and sort what the
+   builders reported.
+7. **After a tag**: the skill `open-milestone`.
+8. **Each open `Idea:` issue**: the skill `shape-an-issue`.
+9. **The dependencies**: the skill `dependencies`.
+10. **Plan** the lines under Next, in order, to the cap: the skill `plan`.
+11. **One long job, at most**: the skill `gate-review` on the day the gate is reached; else
+    `keep-the-queue`, The review, on a Monday or a Thursday; else `design-card`, or `slice-a-feature` for a feature
     whose shape is decided. The rest wait for the next run, and the debrief says which.
-11. **The end**: the skill `end-of-run`.
+12. **The end**: the skill `end-of-run`.
 
 Whatever it files or shapes on the way takes its place by the skill `place-an-issue`, and every
 choice goes through `ask-or-decide`.

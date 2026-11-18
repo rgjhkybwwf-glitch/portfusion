@@ -1,47 +1,63 @@
 ---
 name: keep-the-queue
-description: "Coordinator: reviews the whole Queue twice a week, sorts the walk finds with it, and applies a review the maintainer has answered (CONTRIBUTING.md, The ready check, and The answer run)."
+description: "Coordinator: keeps the Queue. Each run it ticks what merged and sorts what the builders reported; on Monday and Thursday it reviews the whole Queue, acts, and posts what it did (CONTRIBUTING.md, Which issues, and The ready check)."
 ---
 
 # Keeping the Queue
 
-When a review is due, and that an answered review is applied and never built, are in
-`CONTRIBUTING.md`, The nightly agent. Its questions follow the skill `ask-or-decide`.
+The rules are in `CONTRIBUTING.md`, The nightly agent: only the coordinator writes the Queue and
+the walk finds, and only it files an issue. What it does here is decided and told, not asked
+(the skill `ask-or-decide`): each act is listed, and the maintainer reverses one with `Change:`.
 
-Read the Queue afresh just before each edit.
+Read the Queue afresh just before each edit: the maintainer may have changed it. A line the
+maintainer placed, by hand or by an answer, is never moved.
 
-## The review
+## Each run
 
-It reads every open issue of the milestone being worked and the next, against today's `main`, by
-a helper agent that returns a short list, and posts a **Queue review** on the Queue:
+1. **Tick what merged.** For each pull request merged since the run's last, tick its issue's
+   line and move it to Done, with the pull request's number. Clear each "waits" now met.
+2. **Sort what was reported.** Read the **Reported** list of each of the agent's pull requests
+   opened or merged since the run's last (the skill `fix-fold-report`), and give each find one of
+   four ends, the first that fits:
+   - **Folded** onto the open issue that covers it, as evidence, or onto the decided feature that
+     will rework its page. "Covers" is by the code (the skill `shape-an-issue`).
+   - **Filed**, when it earns an issue: a wrong figure, or a fault the owner of a book would
+     meet; a break of a stability rule or of what a guide promises; or something that blocks or
+     changes a line in the Queue. Finds of one cause make one issue. It is shaped to the
+     Definition of Ready (`shape-an-issue`) and placed (`place-an-issue`).
+   - **Held** on the walk finds, one line: how a page reads or looks, and too small for an issue
+     of its own. The review gathers these.
+   - **Dropped**, with the reason: by design, or not worth the change.
+3. **Say so**, in one comment on that pull request, headed "Reported finds, sorted", a line a
+   find with its end. A pull request that carries the comment is not sorted again. The debrief
+   gives the counts: filed, folded, held and dropped.
 
-- issues that duplicate one another, to merge;
-- overlaps by file and function that no "waits" orders;
-- causes that no longer hold, to close with the reason;
-- a place for each walk find left to sort;
-- a suggested order.
+## The review, on Monday and Thursday
 
-Each is a question, with its recommendation, and the Queue takes `decision`. Below its questions
-it lists three ideas for improving a feature, a line each with the job it serves and its cost.
-They are not asked: the maintainer takes one up with an `Idea:` issue.
+On the morning run of a Monday and of a Thursday, and not while a gate review stands unanswered.
+It reads every open issue against today's `main`, by a helper agent that returns a short list,
+and then acts:
 
-A review with nothing to ask is posted for its ideas alone, without `decision`.
+- **Duplicates are merged**: the later issue is closed as a duplicate, and its evidence and
+  Decisions are carried to the one kept.
+- **Overlaps by file and function** that no "waits" orders get their "waits".
+- **A cause that no longer holds** closes its issue, with what on `main` ended it.
+- **An issue with no line** is placed (`place-an-issue`).
+- **The walk finds are gathered**: three or more held for one page, or any for a page the next
+  milestone works, become one issue or join the feature that reworks the page. Each line handled
+  is struck through with where it went, so the list holds only what waits.
+- **The order is kept**: a line a run placed is moved when the order of the work asks it. A line
+  the maintainer placed is not.
 
-## The walk finds
+What it never does unasked: cut a line from a milestone, add a feature the arc does not name, or
+change what a milestone is for. Those are the gate review's questions (the skill `gate-review`).
 
-With the review, and not each run, it sorts the walk finds:
+It then posts a **Queue review** on the Queue: what it merged, ordered, closed, placed and
+gathered, a line each with the reason, and the count of open issues beside the last review's.
+The Queue takes no `decision` for it, and it lists no ideas.
 
-- A find goes onto the open issue that covers it, as evidence, or onto the decided feature that
-  will rework its page.
-- One not worth an issue is struck through with the reason.
-- The rest stay one line each, and the review proposes their place.
-- A find the maintainer has placed is shaped then, with others like it, into an issue that meets
-  the Definition of Ready, on the line answered (the skill `shape-an-issue`).
+## A `Change:` on the Queue
 
-Each line handled is struck through, so the list holds only what is unsorted.
-
-## Applying an answered review
-
-The run makes the answered changes: the Queue's lines, a "waits", an issue merged or closed with
-the reason, a find's place noted on the walk finds. Then it takes `decision` off the Queue. The
-Queue takes no Decisions section.
+The maintainer's `Change:` under a review, or on an issue the review closed or moved, is recorded
+(the skill `record-answer`) and applied here: the issue is reopened, the line put back, the
+"waits" taken off. The Queue takes no Decisions section: the line's brackets say who placed it.

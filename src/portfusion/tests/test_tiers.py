@@ -38,7 +38,7 @@ def held(tiers):
     ("src/portfusion/record/rules_evidence.py", 2), ("src/portfusion/feeds/ig.py", 2),
     ("src/portfusion/history/files.py", 2), ("src/portfusion/demo/store/trades.csv", 2),
     ("tools/make_demo.py", 2), ("src/portfusion/migrate/__init__.py", 3),
-    ("src/portfusion/tests/pytest.ini", 3), ("tools/package-lock.json", 3), ("tools/tiers.py", 3),
+    ("pytest.ini", 3), ("src/portfusion/tests/pytest.ini", 3), ("tools/package-lock.json", 3), ("tools/tiers.py", 3),
     ("src/portfusion/record/schema.py", 3), ("src/portfusion/record/migrations.py", 3),
     ("src/portfusion/__init__.py", 3), (".github/workflows/guard.yml", 3), (".githooks/pre-push", 3),
     ("src/portfusion/hooks/pre_push.py", 3), (".claude/settings.json", 3), ("pyproject.toml", 3),

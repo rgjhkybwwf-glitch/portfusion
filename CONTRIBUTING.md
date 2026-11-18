@@ -196,6 +196,9 @@ is. A run changes neither.
   `decision`, `planned`, `building`, and those of an issue it shapes or files. A **builder** builds
   the lines the coordinator has planned, tends the agent's pull requests and says what it met. It
   never writes a plan.
+- **Only the coordinator writes the Queue and the walk finds, and only it files an issue.** So one
+  level owns the list, and it grows only by what earns a place on it. A builder files nothing and
+  edits neither: what it meets outside its issue it fixes, folds or reports (Building, below).
 - **The runs table lists every run.** A run is one row: what starts it, the routine on claude.ai
   that carries it, the mark it signs with, its cap, and its playbook.
 
@@ -287,27 +290,32 @@ is. A run changes neither.
   tag follows it.
 - **The tag and the milestone are the maintainer's.** They tag the release's merge and close the
   milestone; no cloud session can push a tag.
-- **After the tag, the next milestone opens.** A run that finds the release tagged and its
-  milestone closed first moves the Queue's lines from after the gate to Next
+- **After the tag, the next milestone opens.** The coordinator, finding the release tagged and
+  its milestone closed, first moves the Queue's lines from after the gate to Next
   ([`open-milestone`](.claude/skills/open-milestone/SKILL.md)), and a builder opens the next
   version (`release`).
 - **The Queue sets the order.** It ranks the lines of the milestone being worked, unblockers
   first, then bugs and wrong figures, small safe fixes, features and polish. A run builds the
   first line under Next whose issue carries `planned` and neither `decision` nor `building`, has
   no open pull request of its own, and whose "waits" issues are all closed; it skips the rest and
-  never reorders, but for a review the maintainer has answered (The ready check, below). Nothing
+  never reorders. Nothing
   outside Next is built: an open pull request of an issue that is not under Next is kept level and
   green, and nothing is added to it. Each issue is read whole, comments included, before its work
   starts.
-- **The agent keeps the Queue current**: after each pull request merges it ticks the line and moves
-  it to Done. It reads the Queue afresh just before each edit, since another run may have changed
-  it. Each issue it files is given its labels, its milestone and its line by the skill
-  [`place-an-issue`](.claude/skills/place-an-issue/SKILL.md), and the debrief names each placement
-  and why. The maintainer moves a line by editing the Queue, or with `Change:` on it; the gate
-  review proposes the whole order again.
+- **The coordinator keeps the Queue current**, by the skill
+  [`keep-the-queue`](.claude/skills/keep-the-queue/SKILL.md): each run it ticks the line of each
+  pull request merged since its last and moves it to Done, and sorts what the builders reported.
+  It reads the Queue afresh just before each edit, since the maintainer may have changed it.
+- **Every issue has a place.** Each issue the coordinator files or shapes is given its labels, its
+  milestone and its line by the skill
+  [`place-an-issue`](.claude/skills/place-an-issue/SKILL.md): the first milestone whose purpose it
+  serves, by the direction's arc, among that milestone's lines in the order of the work. The
+  placement is decided, not asked, and the debrief names each and why. The maintainer moves a
+  line by editing the Queue, or with `Change:` on it, and a line they placed is never moved by a
+  run. Only a feature the arc does not name is left unplaced, for the gate review to ask.
 - **A milestone being worked only gets shorter**, except for the slices of a feature already in
-  it: nothing else joins Next but by the maintainer's placing. What the agent files for it, for a
-  later milestone or for none goes under To rank.
+  it: nothing else joins Next but by the maintainer's placing. What is filed while it is worked,
+  a bug included, is placed in the next milestone at the earliest.
 - **Its own open pull requests come first** in a builder's run, by the skill
   [`tend-pull-requests`](.claude/skills/tend-pull-requests/SKILL.md), so none waits on the
   maintainer for anything but what it asked of them.
@@ -366,11 +374,11 @@ is. A run changes neither.
   stands, and is not asked again. An answer the maintainer gives early, in a comment, counts when
   its line is planned.
 - **At most five questions stand open at once**, counting the milestone being worked's issues, a
-  design card's and the Queue's reviews; questions on issues of a later milestone, written in a
+  design card's and a gate review's; questions on issues of a later milestone, written in a
   session the maintainer is part of, apart. Beyond five it asks nothing new but what blocks the
-  first line under Next: an `Idea:`'s, a card's and a review's questions are written, and wait.
-  While a review or a card of its own stands unanswered it posts no new one; the gate review is
-  the exception (The ready check, below).
+  first line under Next: an `Idea:`'s and a card's questions are written, and wait. While a card
+  of its own stands unanswered it posts no new one; the gate review is the exception (The ready
+  check, below).
 
 **The ready check**
 
@@ -388,13 +396,16 @@ The coordinator's morning run, whose order is its playbook.
 - **One long job, at most, a run**, after its plans: the gate review, else a Queue review that is
   due, else the design card or a decided feature's slices (Features, below). The rest wait for the
   next run, and its debrief says which.
-- **Twice a week it reviews the whole Queue**: on its first run when no review is on the Queue from
-  the last three days, by the skill [`keep-the-queue`](.claude/skills/keep-the-queue/SKILL.md),
-  which sorts the walk finds with it, and not each run. A review with nothing to ask is posted for
-  its ideas alone, without `decision`, so it pings no one; its ideas are never asked. None is
-  posted while a gate review stands unanswered.
-- **On the day the gate is reached it posts the gate review** on the Queue, once, even while a
-  Queue review stands unanswered, by the skill
+- **On Monday and Thursday it reviews the whole Queue, and acts**, by the skill
+  [`keep-the-queue`](.claude/skills/keep-the-queue/SKILL.md): it merges issues that duplicate one
+  another, writes the "waits" an overlap lacks, closes an issue whose cause no longer holds,
+  places any issue with no line, and gathers the walk finds into issues. None of it is asked: it
+  posts a **Queue review** on the Queue that lists what it did, each line with its reason, and
+  the maintainer reverses one with `Change:`. The Queue takes no `decision` for it, so it pings
+  no one. What it never does unasked is cut a line from a milestone, add a feature the arc does
+  not name, or change what a milestone is for: those are the gate review's. None is posted while
+  a gate review stands unanswered.
+- **On the day the gate is reached it posts the gate review** on the Queue, once, by the skill
   [`gate-review`](.claude/skills/gate-review/SKILL.md). It asks at most five questions in all,
   and only of three kinds: what shipped against the direction, keep or pull, and the next
   milestone's shape. Its housekeeping is done and listed, not asked, and an idea never pings on
@@ -442,7 +453,8 @@ The coordinator's morning run, whose order is its playbook.
   wherever its issue stands. An issue not under Next, a feature, and the issue a design card was
   answered on are left there: nothing of them is built, and the maintainer's placing or the
   coordinator's slices come first. A card's answer takes its line out of Design next.
-- **An answered review is applied, not built** (`keep-the-queue`, `gate-review`). The Queue is
+- **An answered gate review is applied, not built** (`gate-review`), and so is a `Change:` on
+  the Queue, which undoes what a review did (`keep-the-queue`). The Queue is
   never an issue to build and takes no Decisions section. A gate review's edit of
   `docs/direction.md` may merge itself once `guard` is green, the answer being its yes.
 - **Then it builds the answered issues under Next whose plan still stands**, one after another,
@@ -488,10 +500,13 @@ The coordinator's morning run, whose order is its playbook.
   the issue takes `decision` and loses `planned`, what is built so far is pushed to its branch
   with no pull request, and the run moves on. Its answer leaves the plan to the coordinator, which
   plans it again; then the issue starts again, whole, on that branch.
-- **A find outside the change is not built there.** It goes onto the open issue that covers it,
-  onto the walk finds, or into a new issue under To rank, by the skill
-  [`fix-fold-report`](.claude/skills/fix-fold-report/SKILL.md), and the pull request lists each.
-  The cold walk keeps to the pages the change touched.
+- **A find outside the change is fixed, folded or reported, in that order**, by the skill
+  [`fix-fold-report`](.claude/skills/fix-fold-report/SKILL.md): a small one in a file the change
+  already touches is fixed in the same pull request; otherwise it is folded onto the open issue
+  that covers it, as evidence; the rest are reported in the pull request, which lists all three.
+  A builder files no issue for a find: the coordinator sorts what is reported at its next run,
+  files what earns an issue, and says what it dropped. The cold walk keeps to the pages the
+  change touched.
 - **A CI failure on its pull request** is the agent's to fix, and it waits for the guard's result
   before it leaves a pull request. **It waits in the foreground**, by a command that polls the
   checks, run again until they finish, **never by ending its turn** (Telling the maintainer,
