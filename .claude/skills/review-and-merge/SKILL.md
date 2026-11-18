@@ -37,8 +37,7 @@ Never by ending the turn.
 
 ## 4. After it merges
 
-Tick the issue's line in the Queue and move it to Done, reading the Queue afresh just before the
-edit. A run that finds one of the agent's pull requests merged since, by the maintainer's hand,
-ticks its line the same way.
+Nothing on the Queue: the coordinator ticks the issue's line at its next run (the skill
+`keep-the-queue`). A builder chooses its next line by the issues' state, not by the ticks.
 
 The agent goes on to the next issue without waiting for a merge that waits on the maintainer.

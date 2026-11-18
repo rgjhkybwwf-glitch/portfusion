@@ -1,21 +1,39 @@
 ---
 name: fix-fold-report
-description: "Builder: what to do with a find the change did not cause. It goes onto the issue that covers it, onto the walk finds, or into a new issue under To rank (CONTRIBUTING.md, Building)."
+description: "Builder: what to do with a find the change did not cause. Fix it there when it is small and in a file the change touches, else fold it onto the issue that covers it, else report it (CONTRIBUTING.md, Building)."
 ---
 
-# A find outside the change
+# A find outside the change: fix, fold, then report
 
-The rule is in `CONTRIBUTING.md`, The nightly agent, Building: one issue, one branch, one pull
-request, so what a run meets outside its issue is not built there.
+The rule is in `CONTRIBUTING.md`, The nightly agent, Building: a builder files no issue and
+writes neither the Queue nor the walk finds. What it meets outside its issue takes the first of
+these three that fits.
 
-- **One the change caused** is the change's to fix, in this pull request.
-- **One the change did not cause** goes first onto the open issue that covers it, as evidence.
-  "Covers" is by the code: its Cause or Done names the same file and function.
-- **A walk's find that nothing covers** goes onto the walk finds, one line a find, with no
-  question and no ping.
-- **Something a comment raises outside its issue** becomes a new issue under To rank, its
-  questions written but not asked, linked from the issue (the skill `place-an-issue`). It is not
-  built.
+A find **the change caused** is not one of these: it is the change's to fix, in this pull request.
 
-The pull request lists each find and where it went. A run that is going nowhere stops and says
-so: it does not file issues to show work.
+## 1. Fix
+
+A small find in a file the change already touches is fixed in this pull request, in a commit of
+its own. Small is a few lines that need no plan: no new function, no figure moved, no store
+change, nothing that would change the pull request's tier. The pull request lists it under
+**Also fixed**, a line each with the file.
+
+## 2. Fold
+
+Otherwise it goes onto the open issue that covers it, as a comment of evidence: what was met,
+where, and the pull request it was met in. "Covers" is by the code: the issue's Cause or Done
+names the same file and function. The pull request lists it under **Folded**, with the issue.
+
+## 3. Report
+
+The rest go in the pull request's description, under **Reported**, a line each, written so the
+coordinator can act on it without opening the code again:
+
+`- <page or file, and function>: <what was met, and what was expected> (<how it was met: the walk, the review, the build>)`
+
+A cold walk's finds are reported the same way. So is something a comment of the maintainer's
+raises outside the issue, quoted. The coordinator sorts what is reported at its next run (the
+skill `keep-the-queue`): it files what earns an issue, and says what it dropped.
+
+A pull request with nothing under a heading leaves the heading out. A run that is going nowhere
+stops and says so: it reports no finds to show work.

@@ -14,8 +14,8 @@ a slice stays hidden until the last, and one feature is being built at a time.
    `main` green with its own changelog line. Its Decisions quote the card. Its Cause is what the
    code lacks, by file and function.
 3. **Its labels and milestone** are the feature's.
-4. **Place them** at the feature's line, in order, wherever that stands in the Queue, and under
-   To rank when it has none (the skill `place-an-issue`).
+4. **Place them** at the feature's line, in order, wherever that stands in the Queue (the skill
+   `place-an-issue`).
 5. **The last slice** turns the feature on: its pull request closes the feature too, and its line
    is ticked with the slice's.
 

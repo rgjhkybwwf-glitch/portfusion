@@ -11,7 +11,7 @@ agent: Which issues, in what order, and The ready check.
 ## The review
 
 Posted on the Queue, once, headed "Gate review" with the milestone's name. It takes the Queue
-review's place, with the questions of any Queue review standing unanswered folded in.
+review's place that day, and asks each line waiting under the Queue's heading for it.
 
 **What it asks**, under "Questions for you", is of three kinds only, up to CONTRIBUTING's limit:
 
@@ -37,7 +37,8 @@ The Queue takes `decision`.
 
 ## Applying its answer
 
-1. Make the answered changes to the Queue, as the skill `keep-the-queue` does for a review.
+1. Make the answered changes to the Queue: its lines, a "waits", an issue merged or closed with
+   the reason.
 2. Move issues between milestones.
 3. Write the next milestone's lines, in the order answered, under the Queue's heading for after
    the gate.
