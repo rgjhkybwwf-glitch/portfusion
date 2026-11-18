@@ -154,7 +154,8 @@ jobs:
     needs: read
     if: needs.read.outputs.level != ''
     concurrency:
-      group: start-${{ needs.read.outputs.level }}
+      # A start by hand has its own group, so a test never cancels a real start's wait.
+      group: start-${{ needs.read.outputs.level }}${{ needs.read.outputs.start == 'hand' && '-hand' || '' }}
       cancel-in-progress: true
     runs-on: ubuntu-24.04
     timeout-minutes: 40

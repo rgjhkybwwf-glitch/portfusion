@@ -33,11 +33,6 @@ on:
     - cron: "0 7 * * 1-5"           # 08:00 in London's summer
     - cron: "0 8 * * 1-5"           # 08:00 in London's winter
 
-# One at a time, so two that run together never ask twice.
-concurrency:
-  group: notify
-  cancel-in-progress: false
-
 permissions: {}
 
 defaults:
@@ -52,6 +47,12 @@ jobs:
       || (github.event_name == 'pull_request'
           && startsWith(github.event.pull_request.head.ref, 'claude/')
           && !github.event.pull_request.draft)
+    # One run at a time for each issue or pull request, and one for the clock. A group keeps one
+    # run waiting and cancels any it replaces, so a group shared by all would drop a question that
+    # came while another run slept its minute; a held question is claimed before it is asked.
+    concurrency:
+      group: notify-${{ github.event.issue.number || github.event.pull_request.number || 'clock' }}
+      cancel-in-progress: false
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -109,15 +110,16 @@ jobs:
           esac
 
           [ "$day" = yes ] || exit 0
-          # What was held, and still waits, is asked now; the label comes off either way.
+          # What was held, and still waits, is asked now. The label comes off first, either way: a
+          # run that cannot take it off finds another run has, and leaves that question to it.
           gh api "repos/$REPO/issues?labels=ask-held&state=all&per_page=100" --paginate \
             --jq '.[] | "\(.number) \(if .pull_request then "pr" else "issue" end) \(.state) \([.labels[].name] | index("decision") != null)"' \
             > "$RUNNER_TEMP/held"
           while read -r n kind state decision; do
+            gh api -X DELETE "repos/$REPO/issues/$n/labels/ask-held" --silent < /dev/null || continue
             if [ "$kind" = pr ]; then
               if waits "$n" < /dev/null; then ask_pr "$n" < /dev/null; say "#$n: asked for the yes, held from before."; fi
             elif [ "$state" = open ] && [ "$decision" = true ]; then
               ask_issue "$n" < /dev/null; say "#$n: asked, held from before."
             fi
-            gh api -X DELETE "repos/$REPO/issues/$n/labels/ask-held" --silent < /dev/null || true
           done < "$RUNNER_TEMP/held"

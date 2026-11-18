@@ -17,7 +17,8 @@
 # `act` turns it off, once a commit, and says so, naming the maintainer. Their press after that
 # (`auto_merge_enabled`) stands. That is the one comment `act` makes: what else it finds, a pull
 # request that waits among it, is in the run's summary, since a comment of the bot's reaches the
-# maintainer whether it names them or not.
+# maintainer whether it names them or not. Outside their working day (`tools/starts.py`) it says
+# nothing: the pull request takes `ask-held`, and `notify.yml` asks at 08:00.
 #
 # Dependabot's pull requests are left to `dependabot-merge.yml`: a lock bump is tier 3 by path, and
 # merges itself by rule. A fork's pull request gets no token that can write.
@@ -155,13 +156,21 @@ jobs:
             [ "$status" = 0 ] || [ -n "$MOVED" ] || { echo "::error::the figures could not be compared"; exit 1; }
           fi
           AUTO_ON=$(gh pr view "$PR" --json autoMergeRequest --jq '.autoMergeRequest != null')
-          export TIER WHY MOVED AUTO_ON EVENT
+          WORKING=yes
+          if [ -f tools/starts.py ]; then WORKING=$(PYTHONPATH=src python3 tools/starts.py --working) || WORKING=yes; fi
+          export TIER WHY MOVED AUTO_ON EVENT WORKING
           PYTHONPATH=src python3 tools/tiers.py --hold "$RUNNER_TEMP/said" > "$RUNNER_TEMP/hold"
           action=$(head -1 "$RUNNER_TEMP/hold")
           tail -n +2 "$RUNNER_TEMP/hold" > "$RUNNER_TEMP/body"
-          if [ "$action" = off ]; then
+          if [ "$action" = off ] || [ "$action" = quiet ]; then
             gh pr merge "$PR" --disable-auto
+          fi
+          if [ "$action" = off ]; then
             gh pr comment "$PR" --body-file "$RUNNER_TEMP/body"
+          elif [ "$action" = quiet ]; then
+            gh label create ask-held -R "$REPO" --color ededed \
+              --description "The bot's question here is asked at 08:00 on the next working day (notify.yml)" > /dev/null 2>&1 || true
+            gh api -X POST "repos/$REPO/issues/$NUMBER/labels" -f "labels[]=ask-held" --silent
           fi
           # Said in the log and the run's summary, whatever was done: only "off" is a comment.
           { echo "tier $TIER on $EVENT: $action"; echo; cat "$RUNNER_TEMP/body"; } | tee -a "$GITHUB_STEP_SUMMARY"

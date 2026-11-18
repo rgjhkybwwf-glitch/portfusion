@@ -5,7 +5,8 @@ of it, never the branch's, without installing anything.
 
     python3 tools/tiers.py <changed path> …       says the tier, then the path that set it
     python3 tools/tiers.py --hold <comments file>  what to do with auto-merge, from the environment
-                                                   TIER, WHY, MOVED, AUTO_ON, HEAD, OWNER and EVENT
+                                                   TIER, WHY, MOVED, AUTO_ON, HEAD, OWNER, EVENT
+                                                   and WORKING
 
 A pull request takes the highest tier of its paths; one that changes nothing is tier 0. The
 stability rules' tests are read from CONTRIBUTING.md's tables, where each rule names what holds it.
@@ -36,6 +37,8 @@ OWN = (".github/", ".githooks/", ".claude/settings.json", PKG + "hooks/", "pypro
        PKG + "tests/test_tiers.py", PKG + "tests/test_pictures.py",
        PKG + "tests/test_stop_hook.py", PKG + "tests/test_runs.py",
        PKG + "tests/test_starts.py")
+# Files pytest reads wherever they are: each can skip or deselect the guard's tests.
+GUARD_CONFIG = ("conftest.py", "setup.cfg", "tox.ini", "sitecustomize.py", "usercustomize.py")
 
 
 def stability_tests(contributing: str) -> set[str]:
@@ -46,7 +49,8 @@ def stability_tests(contributing: str) -> set[str]:
 
 
 def tier(path: str, held: set[str]) -> int:
-    if path.startswith(OWN) or (path.startswith(PKG + "tests/") and Path(path).name in held):
+    name = Path(path).name
+    if path.startswith(OWN) or name in GUARD_CONFIG or (path.startswith(PKG + "tests/") and name in held):
         return 3
     if path.startswith(ENGINE):
         return 2
@@ -62,10 +66,12 @@ def sort(paths: list[str], held: set[str]) -> tuple[int, str | None]:
 
 
 def hold(tier: int, why: str, moved: str, auto_on: bool, said: str, head: str,
-         owner: str, event: str = "") -> tuple[str, str]:
+         owner: str, event: str = "", working: bool = True) -> tuple[str, str]:
     """What `tiers.yml` does with auto-merge: ("off", text) turns it off and posts the text, which
-    names the maintainer; ("none", text) does nothing, and the text is for the run's summary. Tier
-    3, and tier 2 with a figure moved, are held.
+    names the maintainer; ("quiet", text) turns it off outside their working day, posts nothing and
+    labels the pull request `ask-held`, for `notify.yml` to ask at 08:00; ("none", text) does
+    nothing. The text is for the run's summary too. Tier 3, and tier 2 with a figure moved, are
+    held.
 
     ONE PRESS IS THE YES. The runs write as the maintainer's account, so a press is told by when it
     came, never by whose it was. Auto-merge found on as a commit arrives (the pull request opened,
@@ -87,6 +93,9 @@ def hold(tier: int, why: str, moved: str, auto_on: bool, said: str, head: str,
         return "none", f"auto-merge was turned on after the tier was judged on {head}: it is the yes"
     if off in said:
         return "none", f"auto-merge was turned off once on {head}: turned on again, it is the yes"
+    if not working:
+        return "quiet", (f"auto-merge is turned off, and asked at 08:00 on the next working day: "
+                         f"{reason}")
     return "off", (f"🤖 **PortFusion agent** · @{owner}, auto-merge is turned off: {reason}\n\n"
                    f"It was on before this commit's tier was judged. Press Enable auto-merge again "
                    f"and it stands; a new commit, a merge of `main` included, is asked again.\n{off}")
@@ -96,7 +105,7 @@ def main(args: list[str]) -> int:
         e = os.environ
         action, text = hold(int(e["TIER"]), e.get("WHY", ""), e.get("MOVED", ""),
                             e.get("AUTO_ON") == "true", Path(args[1]).read_text(encoding="utf-8"),
-                            e["HEAD"], e["OWNER"], e.get("EVENT", ""))
+                            e["HEAD"], e["OWNER"], e.get("EVENT", ""), e.get("WORKING") != "no")
         log.info(action)
         log.info(text)
         return 0
