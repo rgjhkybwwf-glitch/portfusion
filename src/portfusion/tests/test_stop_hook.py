@@ -14,7 +14,6 @@ if ROOT is None:
     pytest.skip(NO_CHECKOUT, allow_module_level=True)
 
 RUN = "Read CLAUDE.md and CONTRIBUTING.md. Follow CONTRIBUTING's section \"The loop\" as the builder, exactly."
-OLD = "Read CLAUDE.md and CONTRIBUTING.md. Follow CONTRIBUTING's section \"The nightly agent\" as the night run."
 DEBRIEF = "Merged #250.\nNothing waits on you.\nNext: the night build, at 00:30, builds #251."
 
 
@@ -40,17 +39,15 @@ def test_a_run_waits_for_guard_for_its_helper_then_for_its_debrief(hook):
 
 
 def test_a_run_is_told_by_the_section_the_runs_table_is_under(hook, repo_root):
-    """A renamed section, or a new row, needs no change to the hook: it reads the heading. The
-    routines' old prompts hold until the restart switches them."""
+    """A renamed section, or a new row, needs no change to the hook: it reads the heading, and a
+    prompt that names any other section is not a run's."""
     contributing = (repo_root / "CONTRIBUTING.md").read_text(encoding="utf-8")
     name = hook.section(contributing)
     assert f"\n### {name} (" in contributing or f"\n### {name}\n" in contributing
-    assert name in hook.names() and name not in hook.LEGACY
     assert hook.section(contributing.replace(f"### {name}", "### The works")) == "The works"
     assert hook.section("# A guide\n\nNo table here.\n") == ""
     assert hook.decide(f"Follow CONTRIBUTING's section \"{name}\" as the coordinator, exactly.\n"
                        "Idea: the maintainer opened an idea, the last #9.", "done", [], {}, now=0)[0]
-    assert hook.decide(OLD, "done", [], {}, now=0)[0]
     assert hook.decide(RUN.replace("The loop", "The works"), "done", [], {}, now=0)[0] is None
 
 

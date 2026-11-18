@@ -5,8 +5,8 @@ description: "Any run: the run's last three steps, in order, once nothing is lef
 
 # Ending a run
 
-The rules, what the debrief's last line must say among them, are in `CONTRIBUTING.md`, The nightly
-agent, Telling the maintainer. None of the three steps is taken while something is still running.
+The rules, what the debrief's last line must say among them, are in `CONTRIBUTING.md`, The loop,
+Telling the maintainer. None of the three steps is taken while something is still running.
 
 ## 1. Stop watching
 

@@ -5,8 +5,8 @@ description: "Coordinator: posts the gate review on the Queue on the day a miles
 
 # The gate review
 
-The gate, when the review is posted and what it may ask are in `CONTRIBUTING.md`, The nightly
-agent: Which issues, in what order, and The ready check.
+The gate, when the review is posted and what it may ask are in `CONTRIBUTING.md`, The loop:
+Which issues, in what order, and The ready check.
 
 ## The review
 

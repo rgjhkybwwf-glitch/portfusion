@@ -87,7 +87,9 @@ jobs:
             gh label create ask-held --repo "$REPO" --color ededed \
               --description "The bot's question here is asked at 08:00 on the next working day (notify.yml)" > /dev/null 2>&1 || true
             gh api -X POST "repos/$REPO/issues/$1/labels" -f "labels[]=ask-held" --silent
-            say "${2:-#$1: outside the maintainer's working day, so it is asked at 08:00 on the next one.}"
+            # The words stand outside the braces: an apostrophe inside "${2:-…}" opens a quote.
+            held="#$1: outside the maintainer's working day, so it is asked at 08:00 on the next one."
+            say "${2:-$held}"
           }
 
           # Only a clear "no" holds a question: a fault in reading the hours asks now.
