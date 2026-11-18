@@ -5,7 +5,7 @@ description: "Builder: makes a release's pull request, says what the maintainer 
 
 # The release, the tag and the next version
 
-The rules that call for each step are in `CONTRIBUTING.md`, The nightly agent, Which issues, in
+The rules that call for each step are in `CONTRIBUTING.md`, The loop, Which issues, in
 what order.
 
 ## The release's pull request

@@ -5,7 +5,7 @@ description: "Builder: builds one planned issue on a plan that stands. It claims
 
 # Building an issue
 
-The rules are in `CONTRIBUTING.md`, The nightly agent, Building, and the conventions above it. A
+The rules are in `CONTRIBUTING.md`, The loop, Building, and the conventions above it. A
 builder builds only on a plan that stands, and never writes its own.
 
 ## 1. Read it whole

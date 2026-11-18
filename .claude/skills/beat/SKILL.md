@@ -5,7 +5,7 @@ description: "Any run: writes the run's start line and its end line on the run l
 
 # The beat
 
-The rule is in `CONTRIBUTING.md`, The nightly agent, Telling the maintainer: each run writes two
+The rule is in `CONTRIBUTING.md`, The loop, Telling the maintainer: each run writes two
 lines on the run log, one as it starts and one as it ends.
 
 Both are comments on the run log. Each opens with the run's mark, as the runs table gives it, then
@@ -36,6 +36,10 @@ Written by the skill `end-of-run`, once nothing is left to wait for:
 The mark, the date, when the run began and ended, what it did in a line, then "Decided for you:"
 and each issue the run decided a choice on (left out when it decided nothing), and its `Next:`
 line. The morning's digest is put together from these lines.
+
+A run the Stop hook held says so after what it did, in the hook's own words, as in
+"· built #250, merged · held 1× for `guard`, 12 min · Next: …". The skill `end-of-run` says where
+the words come from; a run that was never held leaves the part out.
 The time it began is the start line's, to the minute: the two lines are paired by it. The time
 stays first after the mark; a run started for a re-plan says so after its time.
 

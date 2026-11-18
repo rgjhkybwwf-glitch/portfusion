@@ -6,7 +6,7 @@ description: "Playbook: the coordinator's morning run. It reads what changed, re
 # The coordinator's morning run
 
 The order of the run's work. Each step's procedure is in the skill named; the rules are in
-`CONTRIBUTING.md`, The nightly agent. The coordinator writes no code and opens no branch.
+`CONTRIBUTING.md`, The loop. The coordinator writes no code and opens no branch.
 
 1. **The start line**: the skill `beat`.
 2. **Read the direction**: `docs/direction.md` first, cited for a milestone, a cut or an idea, and

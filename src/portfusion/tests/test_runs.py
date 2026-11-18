@@ -13,7 +13,7 @@ if ROOT is None:
 
 SKILLS = ROOT / ".claude" / "skills"
 AGENTS = ROOT / ".claude" / "agents"
-SECTION = "### The nightly agent"
+SECTION = "### The loop"
 WHO = ("Any run:", "Any session:", "Coordinator:", "Builder:", "Playbook:")
 TICKED = re.compile(r"`([^`\n]+)`")
 LINKED = re.compile(r"\]\((?:\.\./)?\.claude/skills/([^/)]+)/SKILL\.md\)")

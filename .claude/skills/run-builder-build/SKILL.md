@@ -6,7 +6,7 @@ description: "Playbook: a builder's run, by night, in the evening or after an an
 # A builder's run
 
 The order of the run's work. Each step's procedure is in the skill named; the rules are in
-`CONTRIBUTING.md`, The nightly agent. A builder never writes a plan.
+`CONTRIBUTING.md`, The loop. A builder never writes a plan.
 
 1. **The start line**: the skill `beat`, saying which build it is: the night's, the evening's,
    or an answer build, whose starting text begins "Answer build:".

@@ -5,7 +5,7 @@ description: "Coordinator: turns a feature's decided shape into two to six slice
 
 # Slicing a feature
 
-The rules are in `CONTRIBUTING.md`, The nightly agent, Features: a decided shape becomes slices,
+The rules are in `CONTRIBUTING.md`, The loop, Features: a decided shape becomes slices,
 a slice stays hidden until the last, and one feature is being built at a time.
 
 1. **Complete the feature**: its Shape is the option chosen on its design card, quoted with the

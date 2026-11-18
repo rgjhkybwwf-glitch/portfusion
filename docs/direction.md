@@ -1,7 +1,7 @@
 # Direction
 
 Who PortFusion is for, what it never does, and what each milestone is for. The agents read it
-before they plan ([`CONTRIBUTING.md`](../CONTRIBUTING.md), The nightly agent). It holds only what
+before they plan ([`CONTRIBUTING.md`](../CONTRIBUTING.md), The loop). It holds only what
 changes slowly, and changes only at a milestone's gate, by the maintainer's answer.
 
 ## For whom

@@ -6,7 +6,7 @@ description: "Builder: takes an open pull request to its end. The skeptic review
 # Review and merge
 
 The tiers, what makes a pull request clean and the three that never are, are in `CONTRIBUTING.md`,
-The nightly agent, Merging.
+The loop, Merging.
 
 ## 1. The reviewer
 

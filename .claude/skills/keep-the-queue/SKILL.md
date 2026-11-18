@@ -5,7 +5,7 @@ description: "Coordinator: keeps the Queue. Each run it ticks what merged and so
 
 # Keeping the Queue
 
-The rules are in `CONTRIBUTING.md`, The nightly agent: only the coordinator writes the Queue and
+The rules are in `CONTRIBUTING.md`, The loop: only the coordinator writes the Queue and
 the walk finds, and only it files an issue. What it does here is decided and told, not asked
 (the skill `ask-or-decide`): each act is listed, and the maintainer reverses one with `Change:`.
 

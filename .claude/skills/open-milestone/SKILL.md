@@ -5,7 +5,7 @@ description: "Coordinator: after a release is tagged and its milestone closed, m
 
 # Opening the next milestone
 
-The rule is in `CONTRIBUTING.md`, The nightly agent, Which issues, in what order: after the tag,
+The rule is in `CONTRIBUTING.md`, The loop, Which issues, in what order: after the tag,
 the next milestone opens.
 
 A run that finds the release tagged and its milestone closed does this first:

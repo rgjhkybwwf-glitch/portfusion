@@ -5,7 +5,7 @@ description: "Coordinator: turns each Dependabot bump that does not merge itself
 
 # Keeping the dependencies
 
-The rule is in `CONTRIBUTING.md`, The nightly agent, The ready check. A Dependabot pull request
+The rule is in `CONTRIBUTING.md`, The loop, The ready check. A Dependabot pull request
 that stays in its major version merges itself (`dependabot-merge.yml`); this looks after the rest.
 
 Each of these becomes an issue, unless an open issue covers it (the skill `shape-an-issue`):

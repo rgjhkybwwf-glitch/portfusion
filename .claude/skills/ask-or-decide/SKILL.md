@@ -5,7 +5,7 @@ description: "Any run: when a choice comes up, applies the test for asking. It e
 
 # Ask, or decide and tell
 
-The test, and the limits on questions, are in `CONTRIBUTING.md`, The nightly agent, Asking and
+The test, and the limits on questions, are in `CONTRIBUTING.md`, The loop, Asking and
 answering.
 
 ## First, settle what can be settled

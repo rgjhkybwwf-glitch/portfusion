@@ -5,7 +5,7 @@ description: "Builder: what to do with a find the change did not cause. Fix it t
 
 # A find outside the change: fix, fold, then report
 
-The rule is in `CONTRIBUTING.md`, The nightly agent, Building: a builder files no issue and
+The rule is in `CONTRIBUTING.md`, The loop, Building: a builder files no issue and
 writes neither the Queue nor the walk finds. What it meets outside its issue takes the first of
 these three that fits.
 
