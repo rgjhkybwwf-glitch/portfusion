@@ -17,7 +17,7 @@ woken after it reloads its whole context for nothing.
 
 One comment on the run log, as the skill `beat` gives it:
 
-`🌙 **Night run** · 17 Nov 00:30–01:17 · built #250, merged · Decided for you: #250 · Next: …`
+`🌙 **Builder** · 17 Nov 00:30–01:17 · built #250, merged · Decided for you: #250 · Next: …`
 
 It is the source for a run's length, its stops and which run was at work, and the morning's
 digest is put together from it.
@@ -36,7 +36,7 @@ A few lines, the message that ends the turn:
   `ask-or-decide`), a line each with its issue, so the maintainer can reverse one with `Change:`.
   Left out when the run decided nothing;
 - or that the run had nothing to do;
-- last, its `Next:` line, as CONTRIBUTING.md says, as in "Next: the night run, at 00:30, builds
+- last, its `Next:` line, as CONTRIBUTING.md says, as in "Next: the night build, at 00:30, builds
   #250."
 
 ## Which runs also send it to the phone
