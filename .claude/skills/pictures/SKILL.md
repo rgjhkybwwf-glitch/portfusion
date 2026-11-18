@@ -18,5 +18,4 @@ When the walk fails only because a page the issue meant to change looks differen
    label is asked for again by putting it back on.
 4. Merge `baselines/<branch>` in and push, which runs the guard.
 
-The pictures are the agent's to keep, compared on Linux alone; the maintainer never takes them,
-and reads them only for a feature's last slice (Features).
+The pictures are compared on Linux alone.

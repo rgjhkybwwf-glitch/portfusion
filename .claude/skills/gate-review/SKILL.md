@@ -20,9 +20,9 @@ any Queue review standing unanswered folded in, and:
 - keep or pull, for each feature the maintainer has trialled;
 - each design card unanswered, and a move for each feature left under Next with no shape;
 - the next milestone's proposed shape: its order, its cuts and its moves;
-- at most three ideas, a line each with its cost; an idea never pings on its own;
+- at most three ideas, a line each with its cost;
 - the rules of The nightly agent that cost a run a wrong turn, time or money, each with its run;
-- at most five questions in all, the direction page's open ones among them. What it holds beyond
-  five is listed as proposals, and asked in the next review.
+- its questions, the direction page's open ones among them, up to CONTRIBUTING's limit. What it
+  holds beyond that is listed as proposals, and asked in the next review.
 
 #206 takes `decision`.

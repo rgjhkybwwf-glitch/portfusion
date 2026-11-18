@@ -20,8 +20,7 @@ As for a Queue review, and it also:
 2. writes the next milestone's lines, in the order answered, under the Queue's heading for after
    the gate;
 3. files the issue for a pull (Features);
-4. edits `docs/direction.md` to the answer in a pull request that links #206 and may merge itself
-   once `guard` is green, the answer being its yes.
+4. edits `docs/direction.md` to the answer in a pull request that links #206.
 
 Then it takes `decision` off #206, leaves a comment on the checklist (#156) whose first line after
 its name is "Re-plan: the gate review for <milestone> is answered", and takes `planned` off it.

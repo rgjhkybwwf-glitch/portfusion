@@ -1,6 +1,6 @@
 ---
 name: queue-review
-description: Posts the ready check's Queue review on #206 and sorts the walk finds (#220) with it (CONTRIBUTING.md, The ready check). Twice a week, and never while a gate review stands unanswered.
+description: Posts the ready check's Queue review on #206 and sorts the walk finds (#220) with it (CONTRIBUTING.md, The ready check).
 ---
 
 # The Queue review
@@ -21,8 +21,7 @@ a helper agent (A run reads narrow), and posts a **Queue review** on #206:
 
 Each is a question, with its recommendation, and #206 takes `decision`. Below its questions it
 lists three ideas for improving a feature, a line each with the job it serves and its cost; they
-are not asked, and the maintainer takes one up with an `Idea:` issue. A review with nothing to ask
-is posted for its ideas alone, without `decision`, so it pings no one.
+are not asked, and the maintainer takes one up with an `Idea:` issue.
 
 ## The walk finds (#220)
 

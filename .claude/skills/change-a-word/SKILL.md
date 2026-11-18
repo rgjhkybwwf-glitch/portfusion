@@ -13,7 +13,7 @@ the glossary and in its declaration in the same commit.
 2. **The glossary**: the word in its section, §5 for what a reader is shown.
 3. **The retired word**: a heading that is retired joins `RETIRED_HEADINGS` in
    `src/portfusion/tests/test_figures.py`, so it cannot come back.
-4. **The changelog**: a line under Unreleased in `CHANGELOG.md`, when a reader sees the change.
+4. **The changelog**: a line under Unreleased in `CHANGELOG.md`.
 5. **§9 regenerated**:
 
    ```bash

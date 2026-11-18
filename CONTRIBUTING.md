@@ -248,7 +248,7 @@ either.
   - **Introduction**: how it stays hidden until its last slice, and what that slice turns on.
   - **Trial**: three jobs for the maintainer to try on their own book after the release.
 - **An issue labelled `loop` is the loop's own, and the maintainer's to build.** Its fix changes
-  what the agent never changes (Never, below): this section, a workflow, or a routine. A run may
+  what the agent never changes (Never, below): this section or its skills, a workflow, or a routine. A run may
   shape it, research it with a read-only helper agent, ask its questions and record their answers,
   as for any issue; it is never under Next, and no run plans or builds it. Its line is under the
   Queue's heading "Loop", and the change is made in a session the maintainer is part of. An issue
@@ -267,7 +267,8 @@ either.
 - **The release's pull request names the release**, by the skill
   [`release`](.claude/skills/release/SKILL.md). It waits for the maintainer's yes, since a tag
   follows it.
-- **The tag and the milestone are the maintainer's**; no cloud session can push a tag.
+- **The tag and the milestone are the maintainer's**, as the skill
+  [`release`](.claude/skills/release/SKILL.md) says; no cloud session can push a tag.
 - **After the tag, the next milestone opens**, and a night run opens the next version, by the
   skill [`release`](.claude/skills/release/SKILL.md).
 - **The Queue sets the order**: the open issue "Queue: what the nightly agent builds next" (#206)
@@ -406,10 +407,12 @@ either.
   wait for the next run, and its debrief says which.
 - **Twice a week it reviews the whole Queue**: on its first run when no review is on #206 from the
   last three days, by the skill [`queue-review`](.claude/skills/queue-review/SKILL.md), which
-  sorts "Walk finds: to sort" (#220) with it, and not each run. None is posted while a gate review
-  stands unanswered.
+  sorts "Walk finds: to sort" (#220) with it, and not each run. A review with nothing to ask is
+  posted for its ideas alone, without `decision`, so it pings no one; its ideas are never asked.
+  None is posted while a gate review stands unanswered.
 - **On the day the gate is reached it posts the gate review** on #206, once, even while a Queue
-  review stands unanswered, by the skill [`gate-review`](.claude/skills/gate-review/SKILL.md).
+  review stands unanswered, by the skill [`gate-review`](.claude/skills/gate-review/SKILL.md). It
+  asks at most five questions in all; an idea never pings on its own.
 - **It writes no code**, opens no branch, and changes no label but `decision`, `planned`,
   `building`, and those of an issue it shapes or files.
 
@@ -417,7 +420,8 @@ either.
 
 - **A design card asks a feature's shape.** The ready check posts it on the issue of the line
   under Design next in the Queue, or of a feature at the top of Next, by the skill
-  [`design-card`](.claude/skills/design-card/SKILL.md).
+  [`design-card`](.claude/skills/design-card/SKILL.md): above the fold, at most 150 words and
+  three questions.
 - **Two cards a week, at most.** When Design next is empty the ready check fills it itself, with
   the first feature that has no decided shape, lowest milestone first and in the order its
   milestone's description gives. It posts a card when none stands unanswered and fewer than two
@@ -463,10 +467,11 @@ either.
   ready check's slices come first. A card's answer takes its line out of Design next.
 - **An answered review is applied, not built**, by the skill
   [`apply-review`](.claude/skills/apply-review/SKILL.md). The Queue (#206) is never an issue to
-  build and takes no Decisions section.
+  build and takes no Decisions section. A gate review's edit of `docs/direction.md` may merge
+  itself once `guard` is green, the answer being its yes.
 - **Then it builds the answered issues under Next whose plan still stands**, one after another,
   in Queue order, as the night run would, up to the routine's number, and no other line. A plan
-  posted "if answered as recommended" stands when every answer is the recommended one. Any other
+  posted "if answered as recommended" (the skill [`plan`](.claude/skills/plan/SKILL.md)) stands when every answer is the recommended one. Any other
   answer, an answer to a question raised mid-build, and a `Change:` leave the plan no longer
   standing: the run writes a comment whose first line after its name is "Re-plan:" and why, takes
   `planned` off, and leaves the issue for the ready check. One still not ready, a question open or
@@ -531,7 +536,8 @@ either.
   checks and the `baselines/<branch>` ref, run again until they finish, **never by ending its
   turn** (Telling the maintainer, below). When the walk fails only because a page the issue meant
   to change looks different, the agent retakes its pictures by the skill
-  [`pictures`](.claude/skills/pictures/SKILL.md). A failure the agent cannot fix is said at the
+  [`pictures`](.claude/skills/pictures/SKILL.md). The pictures are the agent's to keep; the
+  maintainer never takes them, and reads them only for a feature's last slice. A failure the agent cannot fix is said at the
   top of the pull request, with what would fix it.
 
 **Merging**
@@ -583,8 +589,14 @@ either.
   by ending its turn. CI is polled in the foreground. When nothing is left to wait for, the run
   takes its last three steps by the skill [`end-of-run`](.claude/skills/end-of-run/SKILL.md): it
   stops watching each pull request it leaves, adds one line to the run log (#289), then sends the
-  debrief, **whose last line begins with the word `Next:`**. None of the three is ever sent while
-  something is still running.
+  debrief. **Its last line begins with the word `Next:`**, then who acts next, on what, and when.
+  When no line under Next can be built, it names each line and what holds it: a question (whose),
+  no plan yet or a "Re-plan" (the ready check's), `building` (which run), an open pull request, a
+  "waits" or the gate. The message that ends the turn is the debrief in full. None of the three is
+  ever sent while something is still running. While a gate review stands unanswered, or a release
+  untagged, the push and the debrief say in one line what the run waits on. A run woken after its
+  debrief sends no second push, adds no second line to the run log, and ends in one line, which
+  begins `Next:`.
 - **The Stop hook holds both** (`tools/stop_hook.py`, run by `.claude/settings.json`): a run
   cannot end while an open pull request of a branch it pushed has `guard` running, for up to an
   hour a wait, nor, asked twice, with a last message whose last line does not begin `Next:`, a

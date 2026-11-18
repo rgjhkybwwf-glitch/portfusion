@@ -5,15 +5,14 @@ description: The run's last three steps, in order, once nothing is left to wait 
 
 # Ending a run
 
-The rules are in `CONTRIBUTING.md`, The nightly agent, Telling the maintainer: a run is one turn,
-it ends by sending its debrief, and nothing of these three is sent while something is still
-running.
+The rules, what the debrief must say among them, are in `CONTRIBUTING.md`, The nightly agent,
+Telling the maintainer.
 
 ## 1. Stop watching
 
 `unsubscribe_pr_activity` for each pull request the run subscribed to, merged or waiting: a run
-woken after it reloads its whole context for nothing. One woken all the same sends no second push,
-adds no second line to the run log, and ends in one line, which begins `Next:`.
+woken after it reloads its whole context for nothing. A run woken all the same follows
+CONTRIBUTING.md, Telling the maintainer.
 
 ## 2. The run log's line
 
@@ -29,14 +28,6 @@ pings no one.
 ## 3. The debrief
 
 Sent to the maintainer's phone as a push notification (the `PushNotification` tool), a few lines:
-what merged, what waits on the maintainer, or that the run had nothing to do.
-
-- **Its last line begins with the word `Next:`**, then who acts next, on what, and when, as in
-  "Next: the night run, at 02:00, builds #250."
-- When no line under Next can be built, it names each line and what holds it: a question (whose),
-  no plan yet or a "Re-plan" (the ready check's), `building` (which run), an open pull request, a
-  "waits" or the gate.
-- While a gate review stands unanswered, or a release untagged, the push and the debrief say in
-  one line what the run waits on.
-
-The message that ends the turn is the debrief in full.
+what merged, what waits on the maintainer, or that the run had nothing to do, and its `Next:`
+line as CONTRIBUTING.md says, as in "Next: the night run, at 02:00, builds #250." Then the same
+debrief is the message that ends the turn.

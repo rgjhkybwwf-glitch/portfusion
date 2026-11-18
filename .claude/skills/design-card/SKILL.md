@@ -1,6 +1,6 @@
 ---
 name: design-card
-description: Posts a feature's design card, with its mock page, on the feature's issue (CONTRIBUTING.md, Features). The ready check's, at most two a week and one open at a time.
+description: Posts a feature's design card, with its mock page, on the feature's issue (CONTRIBUTING.md, Features).
 ---
 
 # The design card
@@ -10,7 +10,7 @@ card cites `docs/content-map.md` by its numbers.
 
 ## The card
 
-Posted on the feature's issue, which takes `decision`. Above the fold, in at most 150 words:
+Posted on the feature's issue, which takes `decision`. Above the fold, within CONTRIBUTING's limit:
 
 - the outcome in one line;
 - three options, each a different idea of the feature and not one idea at three sizes, each with
@@ -18,7 +18,7 @@ Posted on the feature's issue, which takes `decision`. Above the fold, in at mos
   the map's numbers, or "no job moves";
 - a link to a mock page;
 - a recommendation;
-- at most three questions, as Asking and answering says.
+- its questions, as Asking and answering says.
 
 The evidence is folded under `<details>`.
 
