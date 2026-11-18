@@ -5,7 +5,7 @@ description: "Coordinator: gives every issue it files or shapes its labels, its 
 
 # Placing an issue
 
-The rules are in `CONTRIBUTING.md`, The nightly agent, Which issues, in what order: the
+The rules are in `CONTRIBUTING.md`, The loop, Which issues, in what order: the
 coordinator places every issue, the Queue sets the order, and a milestone being worked only gets
 shorter. A placement is decided, not asked (the skill `ask-or-decide`): the maintainer moves a
 line by editing the Queue, or with `Change:` on it.

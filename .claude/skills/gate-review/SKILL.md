@@ -31,7 +31,7 @@ carried over is written where it belongs. Decisions that conflict are settled as
 **What it only lists**:
 
 - at most three ideas, a line each with its cost;
-- the rules of The nightly agent that cost a run a wrong turn, time or money, each with its run.
+- the rules of The loop that cost a run a wrong turn, time or money, each with its run.
 
 The Queue takes `decision`.
 

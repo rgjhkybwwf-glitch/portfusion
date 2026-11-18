@@ -5,7 +5,7 @@ description: "Coordinator: finds the maintainer's answers and changes, copies ea
 
 # Recording an answer
 
-What counts as an answer, and what a `Change:` does, are in `CONTRIBUTING.md`, The nightly agent,
+What counts as an answer, and what a `Change:` does, are in `CONTRIBUTING.md`, The loop,
 Asking and answering. Every answer is recorded, wherever its issue stands, and each is recorded
 before anything is built on it, so a run started later does not take the same issue.
 

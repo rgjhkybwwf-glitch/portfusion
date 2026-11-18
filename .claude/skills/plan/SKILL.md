@@ -5,7 +5,7 @@ description: "Coordinator: writes an issue's plan, has the plan checker check it
 
 # The plan and its check
 
-The rules are in `CONTRIBUTING.md`, The nightly agent, Building: a plan, checked, before code, and
+The rules are in `CONTRIBUTING.md`, The loop, Building: a plan, checked, before code, and
 when a plan stands.
 
 ## Which lines

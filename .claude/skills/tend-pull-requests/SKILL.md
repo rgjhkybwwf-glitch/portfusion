@@ -5,7 +5,7 @@ description: "Builder: before a new issue, brings each of the agent's own open p
 
 # Tending its own pull requests
 
-The rule is in `CONTRIBUTING.md`, The nightly agent, Which issues, in what order: its own open
+The rule is in `CONTRIBUTING.md`, The loop, Which issues, in what order: its own open
 pull requests come first.
 
 Before a new issue, for each open pull request from a branch whose name begins claude/:

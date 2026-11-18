@@ -6,7 +6,7 @@ description: "Coordinator: brings an issue, or the maintainer's Idea, to its Def
 # Shaping an issue
 
 The Definitions of Ready, for a fix or a slice and for a feature, are in `CONTRIBUTING.md`, The
-nightly agent, Which issues, in what order. What an `Idea:` is, and whose words start work, are
+loop, Which issues, in what order. What an `Idea:` is, and whose words start work, are
 under Asking and answering.
 
 ## Does an open issue cover it?

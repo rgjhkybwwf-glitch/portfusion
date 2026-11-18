@@ -22,6 +22,10 @@ One comment on the run log, as the skill `beat` gives it:
 It is the source for a run's length, its stops and which run was at work, and the morning's
 digest is put together from it.
 
+Before writing it, run `python3 tools/stop_hook.py --holds`. It prints the Stop hook's holds of
+this run in the words the line takes, as in "held 1× for `guard`, 12 min", or nothing for a run
+that was never held. What it prints goes after what the run did, between two `·`.
+
 ## 3. The debrief
 
 A few lines, the message that ends the turn:
@@ -49,6 +53,13 @@ pushes anything.
 - **A run of the coordinator's that the maintainer started**, by an answer, a `Change:`, an
   `Idea:`, a release or a `Resume:`, sends its own debrief: they wait for it. A builder's run
   sends none, an answer build included.
+
+## A run the hook holds after its end line
+
+The Stop hook holds a run that would end with `guard` running, a helper agent out, or no `Next:`
+line, and logs each hold. A run held after it wrote its end line does what the hook asks, runs
+`python3 tools/stop_hook.py --holds` again, and edits its end line to carry what that prints, with
+the time it now ends. It edits the one line: it never adds a second.
 
 ## A run woken after its debrief
 

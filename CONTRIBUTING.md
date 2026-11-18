@@ -177,10 +177,10 @@ Kept by review, and by the test named where there is one.
 - **Never bypass a hook.** A branch reaches `main` as a pull request. The maintainer's yes turns
   its auto-merge on, and GitHub merges it once CI's `guard` is green; it runs on every pull
   request and on `main`. A Dependabot bump within a major version of 1 or more merges the same
-  way, unasked (`dependabot-merge.yml`), and so does the nightly agent's clean pull request, whose
+  way, unasked (`dependabot-merge.yml`), and so does a run's clean pull request, whose
   yes was given in advance by a ready issue (below).
 
-### The nightly agent (on trial since 12 Nov 2026)
+### The loop (on trial since 12 Nov 2026)
 
 Unattended Claude sessions work the ready issues, and the maintainer checks in when they ask.
 This is a trial: the process is being developed as it runs, and each surprise becomes a rule here,
@@ -650,11 +650,15 @@ How a pull request is taken to its end is the skill
   a `Change:`, an `Idea:`, a release or a `Resume:`, sends its debrief, since they wait for it. A
   builder's run and a re-plan a run began send none: what they did is in the run log, and in the
   next morning's digest.
-- **The Stop hook holds both** (`tools/stop_hook.py`, run by `.claude/settings.json`): a run
-  cannot end while an open pull request of a branch it pushed has `guard` running, for up to an
-  hour a wait, nor, asked twice, with a last message whose last line does not begin `Next:`, a
-  one-line ending included. It holds only a session started by a routine's prompt, never one with the
-  maintainer.
+- **The Stop hook holds all three** (`tools/stop_hook.py`, run by `.claude/settings.json`): a run
+  cannot end while an open pull request of a branch it pushed has `guard` running, nor while a
+  helper agent it started has not returned, each for up to an hour a wait, nor, asked twice, with a
+  last message whose last line does not begin `Next:`, a one-line ending included. It holds only a
+  session started by a routine's prompt, which names this section, never one with the maintainer;
+  it reads the section's name from the heading the runs table is under, so a new run needs no
+  change to it. **Each hold is logged, and the run's end line says it**, as in "held 1× for
+  `guard`, 12 min": the hook writes it in a file in the session, and
+  `python3 tools/stop_hook.py --holds` prints it (the skill `end-of-run`).
 - **The agent's own comments never begin `Q` and a number, `All as recommended`, `Change:`,
   `Hold:` or `Resume:`**, in any case, and no issue it files is titled `Idea:`: the maintainer's
   shapes, which the gate acts on, since it writes as the maintainer's account.

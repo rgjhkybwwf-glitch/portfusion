@@ -5,7 +5,7 @@ description: "Builder: retakes the walk's pictures when CI's walk fails only bec
 
 # Retaking the pictures
 
-The rule is in `CONTRIBUTING.md`, The nightly agent, Building: a CI failure on the agent's pull
+The rule is in `CONTRIBUTING.md`, The loop, Building: a CI failure on the agent's pull
 request is the agent's to fix, waited for in the foreground.
 
 When the walk fails only because a page the issue meant to change looks different:

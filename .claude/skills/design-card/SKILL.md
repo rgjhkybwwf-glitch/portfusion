@@ -5,7 +5,7 @@ description: "Coordinator: posts a feature's design card, with its mock page, on
 
 # The design card
 
-When a card is posted, and how many, are in `CONTRIBUTING.md`, The nightly agent, Features. The
+When a card is posted, and how many, are in `CONTRIBUTING.md`, The loop, Features. The
 card cites `docs/content-map.md` by its numbers.
 
 ## The card
