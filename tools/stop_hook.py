@@ -62,8 +62,8 @@ SAID = (("guard", "`guard`"), ("helper", "a helper"), ("debrief", "the debrief")
 
 
 def section(contributing: str) -> str:
-    """The name of the section the runs table is under: its heading, without what follows in
-    brackets. Empty when the table or its heading is not found."""
+    """The heading above the runs table, without what follows it in brackets: the name a
+    routine's prompt says. Empty when the table or its heading is not found."""
     lines = contributing.splitlines()
     at = next((i for i, line in enumerate(lines) if line.strip().startswith(TABLE)), None)
     heading = next((line for line in reversed(lines[:at or 0]) if line.startswith("### ")), "")
@@ -175,8 +175,8 @@ def said(holds: list[dict], now: float) -> str:
 
 
 def helpers(hook: dict) -> list[str] | None:
-    """The helper agents Claude Code lists as still in flight, each by its agent's name; None when
-    it sent no list."""
+    """The helpers still out, each by its agent's name, read from the Stop's `background_tasks`;
+    None when Claude Code sent no list."""
     tasks = hook.get("background_tasks")
     if not isinstance(tasks, list):
         return None
