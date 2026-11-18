@@ -96,10 +96,10 @@ One figure moves, on two pages, and there is no migration. Do these when the boo
   names no folder.
 - **A house word has one home, `house/words.py`**: the desk says "price" where the store says
   "mark", and every panel answer carries, beside its precision, the plain words for a house term:
-  Performance's return is "a
-  day-weighted return on money", Holdings by company says its quantity is in "shares, a bet
-  counted as the shares it stands for" and its prices per share, and Round Trips tags a life
-  "entered before the record began". The retired terms leave Method for the glossary.
+  Performance's return is "a day-weighted return on money", Holdings by company says its
+  quantity is in "shares, a bet counted as the shares it stands for" and its prices per share, and
+  Round Trips tags a life "entered before the record began". The retired terms leave Method for
+  the glossary.
 - **"read live" is "read from IG on" its day**, on Reconcile and the report.
 - **The Dashboard leads to where a fact is added**: "add a fact on the Bench", where the Bench
   is served.
@@ -163,9 +163,9 @@ One figure moves, on two pages, and there is no migration. Do these when the boo
   tools only: a book installs none of them.
 - **A push that changes the app and not this changelog is refused** by the checkout's `pre-push`
   hook, which names the files. Tests alone owe no line. A book's own push is not checked.
-- **A Claude session in a checkout never rewrites a pushed commit** (CONTRIBUTING): a fix, or a corrected
-  message, is a new commit. The `pre-push` hook still refuses any rewrite of `main`. A book's hook
-  is unchanged.
+- **A Claude session in a checkout never rewrites a pushed commit** (CONTRIBUTING): a fix, or a
+  corrected message, is a new commit. The `pre-push` hook still refuses any rewrite of `main`. A
+  book's hook is unchanged.
 - **One figure has one name** (the audit's rows 8, 9, 10, 45 and 60). No figure moves.
   - The Dashboard's "Closed round trips" is "Round trips closed out", in `portfusion record` too,
     and Round Trips' strip reads "Round trips" where it read "Realisations": every position

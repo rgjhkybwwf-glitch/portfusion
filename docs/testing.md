@@ -11,8 +11,8 @@ portfusion migrate             # a book carried to this release's store; --write
 python3 -m pytest -m audit     # the audit set alone
 ```
 
-**One suite, any book.** `python3 -m pytest` runs on whichever book is loaded, and the line above
-its count names that book. A check of one book's own facts lives in **that book's `checks/`
+**One suite, any book.** `python3 -m pytest` runs on whichever book is loaded, and its `book:`
+line names that book. A check of one book's own facts lives in **that book's `checks/`
 folder**, collected when that book is loaded (`tests/harness.py`). Everything in `tests/` must
 pass on any book, which the demo run and the clean room's new, empty book prove. A check another
 book could pass or fail belongs in `tests/` or the audit, never in a book's `checks/`.

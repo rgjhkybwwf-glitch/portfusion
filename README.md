@@ -80,7 +80,7 @@ A document becomes a row only on the desk's Bench, by a person's approval
 ([`docs/intake.md`](docs/intake.md)). The engine derives every figure from the record; the desk and
 the report show it and compute none.
 
-A book holds none of PortFusion's code, so a change to PortFusion is made here:
+A book's history holds none of PortFusion's code, so a change to PortFusion is made here:
 [`CONTRIBUTING.md`](CONTRIBUTING.md) sets up a checkout and says where each kind of change goes,
 [`docs/`](docs) holds the component guides, and [`docs/glossary.md`](docs/glossary.md) what each
 word means here.

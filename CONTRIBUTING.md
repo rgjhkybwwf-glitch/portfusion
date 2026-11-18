@@ -103,7 +103,7 @@ Kept by review, and by the test named where there is one.
 
 ### Where a change goes
 
-| To add | Write it in (under `src/portfusion/`) | Held by |
+| To add | Write it in | Held by |
 |---|---|---|
 | a table, or a value in a vocabulary | `record/schema.py` | `tests/record/test_schema.py` |
 | a change the loader would refuse an older book for | its move in `record/migrations.py` | `tests/record/test_migrations.py` |

@@ -234,7 +234,7 @@ column headings.
 | **Pool** | section 104 holding | |
 
 **Capital movements** cross the book's boundary; **capital deployed** is committed to
-positions, and a spread-bet account's is its capital movements (`Book.capital_deployed()`).
+positions (`Book.capital_deployed()`).
 
 ## 8 · Other closed lists, and where each is declared
 

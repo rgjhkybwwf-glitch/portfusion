@@ -32,7 +32,7 @@ adding it again.
 | Changed | What to do |
 |---|---|
 | any `.py` the desk imports | restart: *restart the desk* on the freshness line, under the pages, or `launchctl kickstart -k gui/$UID/org.portfusion.desk` |
-| the book's `brand/` | restart: it is read once, and the desk does not say it changed |
+| the book's `brand/` | restart: its name, colours and lockup are read once, and the desk does not say they changed |
 | `desk/static/` | reload the page |
 | `store/` | nothing: the next request reads it |
 

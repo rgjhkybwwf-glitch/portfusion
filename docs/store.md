@@ -38,11 +38,11 @@ One idea, one column name, in every table.
 | `symbol` · `quote_unit` | a listing as its market names it: the market's ISO code and its ticker (`XLON:BRYC`, `XNYS:VELD`), and the unit it quotes in (`GBX` is pence). The price feed translates the symbol into its own form |
 | `points_per_unit` · `shares_per_unit` | on a spread-bet line: how many points make one unit of its listing's price (100 where IG quotes in cents or pence), and how many shares one unit of the listing stands for (blank is one; a depositary receipt's ratio). With the stake they make a bet's share-equivalents |
 | `traded_price` | a deal's price as its document states it: never sterling ÷ quantity, which carries the dealing charge |
-| `rate` | units of the other currency per £1: on buys, sales and income only the broker's, where its document states one; on `fx.csv` and `fx-history.csv` the feed's |
+| `rate` | units of the other currency per £1: on buys, sales and income only the broker's, where its document states one; on `fx.csv` and `fx-history.csv` the feed's, or one typed by hand (a blank `struck`) |
 | `cur` | on buys and sales, the currency the document states `traded_price` in: `GBP` or the share's own |
 | `currency` | an instrument's; on `income.csv` the currency it was paid in, blank on a sterling row; on `fx.csv` the currency the rate converts |
 | `cost` · `level_points` | on a buy: a share's settled sterling, or a spread bet's entry level in points; the other is blank; on `quarter-snapshots.csv`, a frozen line's cost |
-| `amount` · `value` | a sterling amount on an event, or, on `quarter-nav.csv`, an account's part of net asset value at a quarter end; a frozen line's value |
+| `amount` · `value` | a sterling amount on an event, or, on `quarter-nav.csv`, an account's quarter-end figure in the measure its `contribution` names; a frozen line's value |
 | `mark_key` · `price` | a mark, what a line is worth, filed under a share's ticker or a bet's contract |
 | `trade_id` · `sale_id` | `T-NNN` and `E-NNN`, the row's place in date order: given when the row is written, and moved, with every `closes` and every buy or sale `note` that names it, when an earlier-dated row is written before it |
 | `source` | the provenance line; on buys and sales the document's kind and date only, as `trade_source()` writes them; a row whose document is not on file reads `Not on file: …`, a split's `Derived: …` |

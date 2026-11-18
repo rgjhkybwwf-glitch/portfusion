@@ -14,8 +14,8 @@ python3 tools/clean_room.py               # the app on its own: a copy, a new bo
 portfusion desk --port 8769               # the desk, in a browser, beside any book's
 ```
 
-Every command and the suite read the book `PORTFUSION_BOOK` names, or the one in the folder they
-are typed in ([`docs/environment.md`](docs/environment.md), Which book).
+Every command but `init`, and the suite, read the book `PORTFUSION_BOOK` names, or the one in the
+folder they are typed in ([`docs/environment.md`](docs/environment.md), Which book).
 
 ## Pointers
 
