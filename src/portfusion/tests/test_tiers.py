@@ -32,6 +32,8 @@ def held(tiers):
     ("docs/testing.md", 0), ("README.md", 0), ("CHANGELOG.md", 0),
     ("src/portfusion/desk/panels/holdings.py", 1), ("tools/desk_walk/bench-linux.png", 1),
     ("src/portfusion/tests/desk/test_panels.py", 1), ("CLAUDE.md", 1),
+    (".claude/skills/plan/SKILL.md", 1), (".claude/agents/plan-checker.md", 1),
+    (".claude/launch.json", 1),
     ("src/portfusion/engine/book.py", 2), ("src/portfusion/house/headings.py", 2),
     ("src/portfusion/record/rules_evidence.py", 2), ("src/portfusion/feeds/ig.py", 2),
     ("src/portfusion/history/files.py", 2), ("src/portfusion/demo/store/trades.csv", 2),
@@ -42,6 +44,8 @@ def held(tiers):
     ("src/portfusion/hooks/pre_push.py", 3), (".claude/settings.json", 3), ("pyproject.toml", 3),
     ("requirements.lock", 3), ("tools/clean_room.py", 3), ("CONTRIBUTING.md", 3),
     ("src/portfusion/tests/record/test_schema.py", 3), ("src/portfusion/tests/harness.py", 3),
+    ("tools/stop_hook.py", 3), ("src/portfusion/tests/test_stop_hook.py", 3),
+    ("src/portfusion/tests/test_runs.py", 3),
 ])
 def test_each_path_takes_its_tier(tiers, held, path, tier):
     assert tiers.tier(path, held) == tier

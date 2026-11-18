@@ -25,11 +25,15 @@ PKG = "src/portfusion/"
 WORDS = ("docs/", "README.md", "CHANGELOG.md")
 ENGINE = tuple(PKG + p for p in ("engine/", "house/", "record/rules", "feeds/", "history/",
                                  "demo/")) + ("tools/make_demo.py",)
-OWN = (".github/", ".githooks/", ".claude/", PKG + "hooks/", "pyproject.toml", "requirements.lock",
-       "tools/clean_room.py", "tools/package.json", "tools/package-lock.json", "tools/tiers.py",
-       "tools/figures.py", "tools/pictures.py", "CONTRIBUTING.md", PKG + "__init__.py",
-       PKG + "record/schema.py", PKG + "record/migrations.py", PKG + "migrate/",
-       PKG + "tests/pytest.ini", PKG + "tests/test_tiers.py", PKG + "tests/test_pictures.py")
+# The keel: the store, the release, and what guards the guard. Of `.claude/` only the settings are
+# here: the helper agents and the skills are procedures, which merge on green (tier 1).
+OWN = (".github/", ".githooks/", ".claude/settings.json", PKG + "hooks/", "pyproject.toml",
+       "requirements.lock", "tools/clean_room.py", "tools/package.json", "tools/package-lock.json",
+       "tools/tiers.py", "tools/figures.py", "tools/pictures.py", "tools/stop_hook.py",
+       "CONTRIBUTING.md", PKG + "__init__.py", PKG + "record/schema.py",
+       PKG + "record/migrations.py", PKG + "migrate/", PKG + "tests/pytest.ini",
+       PKG + "tests/test_tiers.py", PKG + "tests/test_pictures.py",
+       PKG + "tests/test_stop_hook.py", PKG + "tests/test_runs.py")
 
 
 def stability_tests(contributing: str) -> set[str]:
