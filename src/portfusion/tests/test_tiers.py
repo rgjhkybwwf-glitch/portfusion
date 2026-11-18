@@ -47,6 +47,8 @@ def held(tiers):
     ("tools/stop_hook.py", 3), ("src/portfusion/tests/test_stop_hook.py", 3),
     ("src/portfusion/tests/test_runs.py", 3),
     ("tools/starts.py", 3), ("src/portfusion/tests/test_starts.py", 3),
+    ("conftest.py", 3), ("src/portfusion/tests/conftest.py", 3), ("setup.cfg", 3),
+    ("src/portfusion/tests/desk/conftest.py", 3), ("tox.ini", 3),
 ])
 def test_each_path_takes_its_tier(tiers, held, path, tier):
     assert tiers.tier(path, held) == tier
@@ -87,6 +89,24 @@ def test_tier_3_and_a_moved_figure_are_held_and_one_press_is_the_yes(tiers):
     assert [hold(t)[0] for t in (0, 1, 2)] == ["none"] * 3
     waiting = hold(3, on=False)
     assert waiting[0] == "none" and "@" not in waiting[1] and "does not merge itself" in waiting[1]
+
+
+def test_a_press_turned_off_at_night_is_held_to_the_working_day_not_said(tiers):
+    """THE CASE THAT MAKES IT FAIL: the night build merges `main` into a tier-3 pull request the
+    maintainer pressed, and the bot names them at 00:35 (pings.md's rule 3)."""
+    def hold(event="synchronize", said="", working=False):
+        return tiers.hold(3, "x", "", True, said, "abc", "owner", event, working)
+    action, text = hold()
+    assert action == "quiet" and "@" not in text and "<!--" not in text
+    assert hold(working=True)[0] == "off"
+    assert hold(event="auto_merge_enabled")[0] == "none", "a press at night still stands"
+    assert tiers.hold(3, "x", "", False, "", "abc", "owner", "opened", False)[0] == "none"
+    flows = ROOT / ".github" / "workflows"
+    judge = (flows / "tiers.yml").read_text(encoding="utf-8")
+    assert "starts.py --working" in judge and "labels[]=ask-held" in judge
+    assert '--add-label "figures moved"' in judge, "a moved figure is on a label a builder reads"
+    for name in ("pytest.ini", ".pytest.ini", "conftest.py"):
+        assert tiers.tier(f"src/portfusion/tests/desk/{name}", set()) == 3, name
 
 
 def test_the_bot_comments_only_to_ask_or_to_turn_auto_merge_off():

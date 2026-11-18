@@ -150,3 +150,17 @@ def test_every_helper_agent_is_named_by_a_step_skill(skills):
     steps = "".join(text for name, (_, _, text) in skills.items() if not name.startswith("run-"))
     for agent in sorted(AGENTS.glob("*.md")):
         assert f".claude/agents/{agent.name}" in steps or f"`{agent.stem}`" in steps, agent.name
+
+
+def test_every_commit_is_reviewed_before_it_is_pushed(contributing):
+    """The maintainer's rule: every commit's diff, by a run or a session, goes through
+    the `code-review` skill before it is pushed. THE CASE THAT MAKES IT FAIL: a day of the loop's
+    own rebuild merged unreviewed, since the only reviewer named was a run's, after the pull
+    request opened."""
+    assert "Every commit's diff is reviewed by the `code-review` skill before it is pushed" \
+        in contributing
+    build = (SKILLS / "build-an-issue" / "SKILL.md").read_text(encoding="utf-8")
+    assert build.index("`code-review`") < build.index("Run the guard"), "reviewed before it opens"
+    template = (ROOT / ".github" / "pull_request_template.md").read_text(encoding="utf-8")
+    assert "reviewed by the `code-review` skill" in template
+    assert "`code-review` skill" in (ROOT / "CLAUDE.md").read_text(encoding="utf-8")

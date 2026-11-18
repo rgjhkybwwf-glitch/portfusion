@@ -37,8 +37,8 @@ issue, its own "Part of #n" made "Closes #n"; a slice's "Part of" its feature st
 
 ## 5. The work
 
-By the conventions: one logical change a commit, a line under Unreleased in `CHANGELOG.md`, the
-branch's own diff reviewed.
+By the conventions: one logical change a commit, a line under Unreleased in `CHANGELOG.md`,
+each commit's diff reviewed before it is pushed (step 6).
 
 - **A choice the issue did not make**: decided or asked by the skill `ask-or-decide`.
 - **A find outside the change**: the skill `fix-fold-report`.
@@ -48,7 +48,14 @@ branch's own diff reviewed.
   Trial jobs, and its pull request shows each page's picture before and after.
 - **The release checklist**: the skills `release-read` and `release`.
 
-## 6. The guard, then one pull request
+## 6. The review, the guard, then one pull request
+
+Before each push, the `code-review` skill reviews the commits not yet pushed, at the level the
+branch's tier takes (`python3 tools/tiers.py $(git diff --name-only origin/main...)`): `low` for
+tier 0, `medium` for tiers 1 and 2, `high` for tier 3 (`CONTRIBUTING.md`, Commits and pull
+requests). Fix each finding in a new commit, reviewed in turn, or say it at the top of the pull
+request with why it stands. The skeptic reviewer still reads the Done checks once it opens
+(`review-and-merge`).
 
 Run the guard, and the desk walk if a desk file changed. Open one pull request that says
 "Closes #n" ("For" the release checklist, which is never closed), with any choice the run decided

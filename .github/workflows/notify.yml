@@ -33,11 +33,6 @@ on:
     - cron: "0 7 * * 1-5"           # 08:00 in London's summer
     - cron: "0 8 * * 1-5"           # 08:00 in London's winter
 
-# One at a time, so two that run together never ask twice.
-concurrency:
-  group: notify
-  cancel-in-progress: false
-
 permissions: {}
 
 defaults:
@@ -52,6 +47,12 @@ jobs:
       || (github.event_name == 'pull_request'
           && startsWith(github.event.pull_request.head.ref, 'claude/')
           && !github.event.pull_request.draft)
+    # One run at a time for each issue or pull request, and one for the clock. A group keeps one
+    # run waiting and cancels any it replaces, so a group shared by all would drop a question that
+    # came while another run slept its minute; a held question is claimed before it is asked.
+    concurrency:
+      group: notify-${{ github.event.issue.number || github.event.pull_request.number || 'clock' }}
+      cancel-in-progress: false
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -86,15 +87,18 @@ jobs:
             gh label create ask-held --repo "$REPO" --color ededed \
               --description "The bot's question here is asked at 08:00 on the next working day (notify.yml)" > /dev/null 2>&1 || true
             gh api -X POST "repos/$REPO/issues/$1/labels" -f "labels[]=ask-held" --silent
-            say "#$1: outside the maintainer's working day, so it is asked at 08:00 on the next one."
+            say "${2:-#$1: outside the maintainer's working day, so it is asked at 08:00 on the next one.}"
           }
 
           # Only a clear "no" holds a question: a fault in reading the hours asks now.
-          day=$(PYTHONPATH=src python3 tools/starts.py --working) || day=fault
-          if [ "$day" != no ]; then
-            [ "$day" = yes ] || echo "::warning::the working day could not be read ($day): asking now"
-            day=yes
-          fi
+          today() {
+            day=$(PYTHONPATH=src python3 tools/starts.py --working) || day=fault
+            if [ "$day" != no ]; then
+              [ "$day" = yes ] || echo "::warning::the working day could not be read ($day): asking now"
+              day=yes
+            fi
+          }
+          today
 
           case "$EVENT" in
             issues)
@@ -103,21 +107,31 @@ jobs:
               # A builder turns auto-merge on just after it opens a clean pull request, so this
               # waits a minute to see which it is. One merging itself asks nothing.
               sleep 60
+              today     # read again after the minute: one that crosses 08:00 asks now
               if ! waits "$NUMBER"; then
                 say "#$NUMBER: auto-merge is on, or it is closed: it asks nothing. Nothing posted."
               elif [ "$day" = yes ]; then ask_pr "$NUMBER"; else hold "$NUMBER"; fi ;;
           esac
 
           [ "$day" = yes ] || exit 0
-          # What was held, and still waits, is asked now; the label comes off either way.
+          # What was held, and still waits, is asked now. The label comes off first, either way: a
+          # run that cannot take it off finds another run has, and leaves that question to it.
           gh api "repos/$REPO/issues?labels=ask-held&state=all&per_page=100" --paginate \
             --jq '.[] | "\(.number) \(if .pull_request then "pr" else "issue" end) \(.state) \([.labels[].name] | index("decision") != null)"' \
             > "$RUNNER_TEMP/held"
           while read -r n kind state decision; do
+            gh api -X DELETE "repos/$REPO/issues/$n/labels/ask-held" --silent < /dev/null || continue
+            asked=yes
             if [ "$kind" = pr ]; then
-              if waits "$n" < /dev/null; then ask_pr "$n" < /dev/null; say "#$n: asked for the yes, held from before."; fi
+              if pr=$(gh pr view "$n" --repo "$REPO" --json state,isDraft,autoMergeRequest \
+                   --jq '.state == "OPEN" and (.isDraft | not) and .autoMergeRequest == null' < /dev/null); then
+                [ "$pr" != true ] || ask_pr "$n" < /dev/null || asked=no
+              else asked=no; fi
             elif [ "$state" = open ] && [ "$decision" = true ]; then
-              ask_issue "$n" < /dev/null; say "#$n: asked, held from before."
+              ask_issue "$n" < /dev/null || asked=no
             fi
-            gh api -X DELETE "repos/$REPO/issues/$n/labels/ask-held" --silent < /dev/null || true
+            if [ "$asked" = yes ]; then say "#$n: held from before, and now asked if it still waits."
+            else
+              hold "$n" "::warning::#$n could not be asked: it keeps \`ask-held\`, and the next run tries again" < /dev/null || true
+            fi
           done < "$RUNNER_TEMP/held"

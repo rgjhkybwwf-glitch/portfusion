@@ -8,6 +8,10 @@ never a pull request's.
     python3 tools/starts.py --read      what an event is, from the environment: one line of JSON
     python3 tools/starts.py --working   "yes" in the maintainer's working hours, "no" outside them
     python3 tools/starts.py --queue     the Queue's number
+    python3 tools/starts.py --log       the run log's number
+    python3 tools/starts.py --at-work <level> <comments file>
+                                        "yes" while a run of that level is at work, read from the
+                                        run log's comments, a JSON list of {body, created_at}
 
 THE RUNS WRITE AS THE MAINTAINER'S ACCOUNT, so whose a comment is is told by its first words: a
 run's mark, a session's note, or else the maintainer's own.
@@ -26,6 +30,10 @@ from portfusion.log import log
 
 #: The Queue. Its `paused` label stops every start.
 QUEUE = 206
+#: The run log, where each run writes its start line and its end line (the skill `beat`).
+RUN_LOG = 289
+#: A start line with no end line after it this long is a run that died, not one at work.
+AT_WORK_FOR = timedelta(hours=3)
 #: The maintainer's working day, Monday to Friday, by this clock.
 ZONE = ZoneInfo("Europe/London")
 OPENS, CLOSES = time(8), time(17)
@@ -247,6 +255,38 @@ def _comment(e: dict[str, str], number: str, queue: bool,
         True, paused
 
 
+WHEN = re.compile(r"^(\d{1,2}) (\w{3}) (\d{1,2}):(\d\d)")
+
+
+def _when(part: str) -> str:
+    """A line's run, by the date and minute it began: "19 Nov 6:30" and "19 Nov 06:30" alike."""
+    found = WHEN.match(part)
+    return "{} {} {}:{}".format(int(found[1]), found[2], int(found[3]), found[4]) if found else ""
+
+
+def at_work(level: str, comments: list[dict], now: datetime) -> bool:
+    """Whether a run of `level` is at work: one of its start lines ("<mark> · start · 19 Nov
+    06:30 · …"), written less than AT_WORK_FOR ago, has no end line of its own ("<mark> · 19 Nov
+    06:30–06:58 · …", the skill `beat`), and no run of the level that began after it has ended,
+    which says it died. The gate waits for it to end before it starts another of the level."""
+    began, ended = [], set()
+    for c in comments:
+        lines = _lines(c.get("body", "")) or [""]
+        if whose(c.get("body", "")) != "run" or next(
+                (lv for mark, lv in MARKS.items() if lines[0].startswith(mark)), "") != level:
+            continue
+        parts = [part.strip() for part in lines[0].split("·")]
+        if len(parts) > 2 and parts[1] == "start" and _when(parts[2]):
+            at = datetime.fromisoformat(c["created_at"].replace("Z", "+00:00"))
+            began.append((_when(parts[2]), at))
+        elif len(parts) > 1 and _when(parts[1]):
+            ended.add(_when(parts[1]))
+    later_ended = [at for when, at in began if when in ended]
+    return any(when not in ended and now - at < AT_WORK_FOR
+               and not any(other > at for other in later_ended)
+               for when, at in began)
+
+
 def main(args: list[str]) -> int:
     now = datetime.now(timezone.utc)
     if args[:1] == ["--working"]:
@@ -254,6 +294,13 @@ def main(args: list[str]) -> int:
         return 0
     if args[:1] == ["--queue"]:
         log.info(str(QUEUE))
+        return 0
+    if args[:1] == ["--log"]:
+        log.info(str(RUN_LOG))
+        return 0
+    if args[:1] == ["--at-work"] and len(args) == 3:
+        comments = json.loads(open(args[2], encoding="utf-8").read() or "[]")
+        log.info("yes" if at_work(args[1], comments, now) else "no")
         return 0
     if args[:1] == ["--read"]:
         log.info(json.dumps(read(dict(os.environ), now), ensure_ascii=False))

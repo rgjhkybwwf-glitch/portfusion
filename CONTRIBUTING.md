@@ -164,7 +164,13 @@ Kept by review, and by the test named where there is one.
 ### Commits and pull requests
 
 - **One logical change per commit**, its message written for a reader who was not there.
-- **Review the branch's diff before its pull request opens**, and settle what the review finds.
+- **Every commit's diff is reviewed by the `code-review` skill before it is pushed**, by whoever
+  made it: a run, a session in the maintainer's project or on claude.ai, or the maintainer's own
+  Claude. Its level goes by the tier the change will take (`python3 tools/tiers.py` and the
+  changed paths): `low` for tier 0, `medium` for tiers 1 and 2, `high` for tier 3. Each finding is
+  fixed in the branch, or said at the top of the pull request with why it stands, and the pull
+  request's checklist names the level each commit was reviewed at. A run's skeptic reviewer
+  (Merging, below) reads the Done checks besides; it does not stand in for this review.
 - **A changed desk page is walked cold before its pull request opens**, by the cold walker
   ([`.claude/agents/cold-walker.md`](.claude/agents/cold-walker.md)), as
   [`docs/ux-audit.md`](docs/ux-audit.md) was made, by the skill
@@ -264,7 +270,9 @@ is. A run changes neither.
   start of its level: another within them takes the wait's place, so what comes together makes
   one run. So a coordinator's run the gate starts takes all that waits, each by its own playbook:
   an answer or a `Change:` not yet recorded, a release whose lines are not moved, an open `Idea:`
-  not shaped, a "Re-plan" not planned.
+  not shaped, a "Re-plan" not planned. **One run of a level at a time**: while the run log shows
+  a run of that level at work, its start line with no end line yet, the start waits for it to end,
+  up to ninety minutes.
 - **The maintainer's day is 08:00 to 17:00 UK time, Monday to Friday.** What the maintainer
   starts, by an answer, a `Change:`, an `Idea:`, a release or a `Resume:`, starts at any hour, and
   a run's own line ("Build:", "Re-plan:") carries on what its run began. No clock starts a run
@@ -580,7 +588,7 @@ How a pull request is taken to its end is the skill
   | 0 · words | `docs/`, `README.md`, `CHANGELOG.md` | `guard` and the builder's own review of its diff; no reviewer agent and no walk. Merges itself. |
   | 1 · a page, or a procedure | anything not named in another tier: `CLAUDE.md`, the skills and the helper agents under `.claude/`, and the guard's other tools among them | the clean path below |
   | 2 · the engine | `engine/`, `house/`, `record/rules*.py`, `feeds/`, `history/`, the demo and `tools/make_demo.py` | tier 1, and the demo's headline figures worked on the base and on the branch (`tools/figures.py`) |
-  | 3 · the keel: the store, the release and the guard's own | `record/schema.py`, `record/migrations.py`, `migrate/`, the release's `__version__`, `.github/`, `.githooks/`, `hooks/`, `.claude/settings.json`, the Stop hook, `pyproject.toml`, `requirements.lock`, the tools' `package.json` and lock, `tools/clean_room.py`, the tiers', the pictures' and the start gate's own tools, their tests, the Stop hook's and the runs', `pytest.ini`, `CONTRIBUTING.md`, each test a stability rule names | always the maintainer's yes |
+  | 3 · the keel: the store, the release and the guard's own | `record/schema.py`, `record/migrations.py`, `migrate/`, the release's `__version__`, `.github/`, `.githooks/`, `hooks/`, `.claude/settings.json`, the Stop hook, `pyproject.toml`, `requirements.lock`, the tools' `package.json` and lock, `tools/clean_room.py`, the tiers', the pictures' and the start gate's own tools, their tests, the Stop hook's and the runs', `pytest.ini` and pytest's other configuration files wherever they are, `CONTRIBUTING.md`, each test a stability rule names | always the maintainer's yes |
 
   The base's `tools/tiers.py` judges the branch. For tier 3, and tier 2 with a figure moved, the
   maintainer's press of Enable auto-merge is the yes, and one press is enough. The runs write as
