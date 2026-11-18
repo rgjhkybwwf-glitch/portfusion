@@ -3,7 +3,8 @@
 A book's own record — holdings, trades, capital — kept as CSV facts, with every figure derived
 from them by one engine and shown by the desk and the quarterly report. [`README.md`](README.md)
 is the way in and the folder map; **[`CONTRIBUTING.md`](CONTRIBUTING.md) is how a change is
-worked — read it before changing anything.**
+worked — read it before changing anything.** Every commit's diff goes through the `code-review` skill
+before it is pushed, at the level its tier takes (CONTRIBUTING, Commits and pull requests).
 
 ```bash
 source .venv/bin/activate                 # once per terminal (docs/environment.md)
