@@ -3,7 +3,12 @@
 Each release, newest first. The version is `src/portfusion/__init__.py`'s, and
 `portfusion --version` prints it.
 
-## Unreleased
+## 0.4.1 — beta, 18 Nov 2026
+
+The words-and-names release: one name for each figure, alike on the desk, the report and
+`portfusion record`; "price" on screen where the store says "mark"; and each finding in plain
+words, with the step that clears it. The store does not move, and one figure does: days held
+still open count to the prices' day. Read **Upgrading a book** before moving a book's pin.
 
 ### Upgrading a book
 
