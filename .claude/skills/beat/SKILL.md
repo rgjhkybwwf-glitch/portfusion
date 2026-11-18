@@ -18,7 +18,14 @@ The run's first act, before it reads anything else:
 `🌙 **Night run** · start · 17 Nov 00:30 · building the first planned line`
 
 After the word `start`: the date, the minute the run began, and in a few words what it sets out
-to do. A run started for a re-plan or by an answer says so there.
+to do. A run the gate started says there what started it: an answer, an idea, a release, a
+re-plan, a `Resume:`, or the evening's clock.
+
+## A paused loop
+
+Before the start line, read the Queue's labels. While it carries `paused`, a run its routine's
+clock started writes neither line and does nothing: it ends in one line, which begins `Next:`
+and says the loop is paused. The gate starts no run in a pause, so only a clock's run meets one.
 
 ## The end line
 

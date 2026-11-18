@@ -31,8 +31,8 @@ by the skill `gate-review`, and a `Change:` on the Queue by `keep-the-queue`.
 
 ## A `Change:`
 
-`answer.yml` has already held the work: the issue carries `decision`, the pull request has lost
-its auto-merge.
+The gate has already held the work: the issue carries `decision`, the pull request has lost its
+auto-merge.
 
 1. Rewrite the issue's Done, Not in scope and Decisions to match, quoting the change with the date.
    A change to a choice the run decided replaces that line in Decisions.
@@ -46,7 +46,15 @@ its auto-merge.
 A plan posted "if answered as recommended" stands when every answer is the recommended one. Any
 other answer, an answer to a question raised mid-build, and a `Change:` leave the plan no longer
 standing: write a comment whose first line after the run's name is "Re-plan:" and why, and take
-`planned` off. `replan.yml` starts the re-plan from that comment.
+`planned` off. The gate starts the re-plan from that comment.
+
+## What a builder may build
+
+Once every answer and change is recorded: on each answered issue under Next whose plan still
+stands, that carries no `hold`, write a comment whose first line after the run's name is "Build:"
+and, in a few words, that it was answered as recommended and its plan stands. The gate starts a
+builder from those comments, which builds the issues so marked and no other line. An issue not
+under Next, a feature, and the issue a design card was answered on get none.
 
 ## A decision issue
 

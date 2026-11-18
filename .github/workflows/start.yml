@@ -1,0 +1,208 @@
+# THE START GATE: WHAT STARTS A RUN, AND WHEN (CONTRIBUTING.md, When a run starts). A run cannot
+# start another, so this does it: it sees what happens here and fires the routine on claude.ai of
+# the level that takes it. `tools/starts.py` holds the table (what is seen, the run it starts, the
+# quiet minutes) and reads each event; this file only does what it says.
+#
+#   the maintainer's answer ("Q1: a", "All as recommended") or "Change:"   the coordinator, 30 min
+#   an issue the maintainer opens titled "Idea:", or a release they publish  the coordinator, 10 min
+#   a run's "Re-plan:", or the maintainer's "Resume:"                        the coordinator, 10 min
+#   the coordinator's "Build:"                                               a builder, 2 min
+#   18:30 UK time, Monday to Friday, by this file's own clock                a builder, at once
+#
+# QUIET MINUTES, AND ONE WAIT A LEVEL. The minutes are counted from the last start of that level:
+# another within them takes the wait's place, so what comes together makes one run. The run is told
+# only what started it last, and finds the rest itself. Nothing of a comment is ever sent.
+#
+# WHAT IS DONE AT ONCE, before any wait. The maintainer's words are marked: 🚀 when a run will
+# start, 👀 when they were only seen (any other comment starts no run, and the next morning run
+# reads it). "Change:" holds the work: the issue takes `decision`, the agent's pull request loses
+# its auto-merge. "Hold:" puts `hold` on the issue, which no run plans, builds or asks on until
+# "Resume:" takes it off. This makes no comment: the bot comments only to ask (`notify.yml`).
+#
+# A PAUSE STOPS EVERY START. While the Queue carries `paused` nothing is fired; the holds above are
+# still made. "Hold:" on the Queue itself puts `paused` on, "Resume:" there takes it off, and so
+# does a session in the maintainer's project. Taking it off starts the coordinator once, which
+# takes all that waited. A wait that ends in a pause starts nothing.
+#
+# THE RUNS WRITE AS THE OWNER'S ACCOUNT TOO, so a comment is a run's when its first line opens with
+# a run's mark, and a session's when it opens **Session note**; anything else of the owner's is
+# their own words. A token of this workflow's starts no workflow, so nothing it does starts it again.
+#
+# EACH LEVEL'S ROUTINE is fired by its address and token, the repository's secrets
+# ROUTINE_COORDINATOR_URL and _TOKEN (or, until they are set, ROUTINE_READY_URL and _TOKEN) and
+# ROUTINE_BUILDER_URL and _TOKEN. Without them this says so and does nothing. It prints the
+# routine's HTTP status alone: the session's address it answers with stays out of a public log.
+# A start that fails fails this run, and the next morning run names it.
+#
+# STARTED BY HAND (Actions, start, Run workflow), it fires the level chosen at once with a text
+# that asks the run to write nothing: the way to test a path end to end, and that its secrets are set.
+
+name: start
+
+on:
+  issue_comment:
+    types: [created]
+  issues:
+    types: [opened, unlabeled]
+  release:
+    types: [published]
+  schedule:
+    - cron: "30 17 * * 1-5"         # the evening build, 18:30 in London's summer
+    - cron: "30 18 * * 1-5"         # the evening build, 18:30 in London's winter
+  workflow_dispatch:
+    inputs:
+      level:
+        description: The level to start now, to test its path
+        type: choice
+        options: [coordinator, builder]
+        default: coordinator
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  # What this event is, outside the wait's queue: what starts nothing never cancels a wait. Of the
+  # labels a run takes off all day, only the two that resume something are looked at.
+  read:
+    if: >-
+      github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+      || (github.event.sender.login == github.repository_owner
+          && (github.event.action != 'unlabeled'
+              || github.event.label.name == 'paused' || github.event.label.name == 'hold'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    permissions:
+      contents: write               # with pull-requests, to turn a pull request's auto-merge off
+      issues: write
+      pull-requests: write
+    outputs:
+      start: ${{ steps.read.outputs.start }}
+      level: ${{ steps.read.outputs.level }}
+      wait: ${{ steps.read.outputs.wait }}
+      text: ${{ steps.read.outputs.text }}
+      queue: ${{ steps.read.outputs.queue }}
+    steps:
+      # The default branch's copy of the table: none of these events runs a pull request's code,
+      # and a release would otherwise bring the copy its tag holds.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1    # v7.0.1
+        with:
+          ref: ${{ github.event.repository.default_branch || 'main' }}
+          persist-credentials: false
+      - name: What is this, and what does it start?
+        id: read
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          EVENT: ${{ github.event_name }}
+          ACTION: ${{ github.event.action }}
+          BODY: ${{ github.event.comment.body }}
+          COMMENT: ${{ github.event.comment.id }}
+          TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          NUMBER: ${{ github.event.issue.number }}
+          URL: ${{ github.event.issue.html_url }}
+          STATE: ${{ github.event.issue.state }}
+          IS_PR: ${{ github.event.issue.pull_request && 'yes' || 'no' }}
+          LABEL: ${{ github.event.label.name }}
+          TAG: ${{ github.event.release.tag_name }}
+          CRON: ${{ github.event.schedule }}
+          LEVEL: ${{ inputs.level }}
+        run: |
+          queue=$(PYTHONPATH=src python3 tools/starts.py --queue)
+          PAUSED=no
+          labels=$(gh issue view "$queue" --repo "$REPO" --json labels --jq '.labels[].name')
+          if grep -qx paused <<< "$labels"; then PAUSED=yes; fi
+          HEAD_REF=""
+          if [ "$IS_PR" = yes ]; then
+            HEAD_REF=$(gh pr view "$NUMBER" --repo "$REPO" --json headRefName --jq .headRefName)
+          fi
+          export PAUSED HEAD_REF
+          PYTHONPATH=src python3 tools/starts.py --read > "$RUNNER_TEMP/seen.json"
+
+          label() {    # label <issue> <name> <what it means>: made if it is not there yet
+            gh label create "$2" --repo "$REPO" --color ededed --description "$3" > /dev/null 2>&1 || true
+            gh api -X POST "repos/$REPO/issues/$1/labels" -f "labels[]=$2" --silent
+          }
+          for act in $(jq -r '.acts[]' "$RUNNER_TEMP/seen.json"); do
+            case "$act" in
+              rocket|eyes)
+                if [ -n "$COMMENT" ]; then where="issues/comments/$COMMENT"; else where="issues/$NUMBER"; fi
+                gh api -X POST "repos/$REPO/$where/reactions" -f content="$act" --silent || true ;;
+              decision) gh issue edit "$NUMBER" --repo "$REPO" --add-label decision ;;
+              auto-off) gh pr merge "$NUMBER" --repo "$REPO" --disable-auto || true ;;
+              hold)     label "$NUMBER" hold "The maintainer's Hold: no run plans, builds or asks on it until Resume:" ;;
+              unhold)   gh api -X DELETE "repos/$REPO/issues/$NUMBER/labels/hold" --silent || true ;;
+              pause)    label "$queue" paused "On the Queue: no run starts until it comes off" ;;
+              unpause)  gh api -X DELETE "repos/$REPO/issues/$queue/labels/paused" --silent || true ;;
+              *) echo "::error::an act this file does not know: $act"; exit 1 ;;
+            esac
+          done
+
+          jq -r .said "$RUNNER_TEMP/seen.json" | tee -a "$GITHUB_STEP_SUMMARY"
+          {
+            echo "queue=$queue"
+            echo "start=$(jq -r .start "$RUNNER_TEMP/seen.json")"
+            echo "level=$(jq -r .level "$RUNNER_TEMP/seen.json")"
+            echo "wait=$(jq -r .wait "$RUNNER_TEMP/seen.json")"
+            echo "text=$(jq -r .text "$RUNNER_TEMP/seen.json")"
+          } >> "$GITHUB_OUTPUT"
+
+  fire:
+    needs: read
+    if: needs.read.outputs.level != ''
+    concurrency:
+      group: start-${{ needs.read.outputs.level }}
+      cancel-in-progress: true
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    permissions:
+      issues: read
+    steps:
+      - name: Wait the quiet minutes, then start the run
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          QUEUE: ${{ needs.read.outputs.queue }}
+          START: ${{ needs.read.outputs.start }}
+          LEVEL: ${{ needs.read.outputs.level }}
+          WAIT: ${{ needs.read.outputs.wait }}
+          TEXT: ${{ needs.read.outputs.text }}
+          COORDINATOR_URL: ${{ secrets.ROUTINE_COORDINATOR_URL || secrets.ROUTINE_READY_URL }}
+          COORDINATOR_TOKEN: ${{ secrets.ROUTINE_COORDINATOR_TOKEN || secrets.ROUTINE_READY_TOKEN }}
+          BUILDER_URL: ${{ secrets.ROUTINE_BUILDER_URL }}
+          BUILDER_TOKEN: ${{ secrets.ROUTINE_BUILDER_TOKEN }}
+        run: |
+          case "$LEVEL" in
+            coordinator) URL="$COORDINATOR_URL"; TOKEN="$COORDINATOR_TOKEN" ;;
+            builder)     URL="$BUILDER_URL"; TOKEN="$BUILDER_TOKEN" ;;
+            *) echo "::error::no such level: $LEVEL"; exit 1 ;;
+          esac
+          if [ -z "$URL" ] || [ -z "$TOKEN" ]; then
+            echo "::warning::The $LEVEL's address or token is not set (ROUTINE_${LEVEL^^}_URL, ROUTINE_${LEVEL^^}_TOKEN): nothing is started." | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          [[ "$WAIT" =~ ^[0-9]+$ ]] || { echo "::error::no wait was given"; exit 1; }
+          if [ "$WAIT" != 0 ]; then
+            echo "The $LEVEL starts in $WAIT minutes, unless another start of its level comes first."
+            sleep $((WAIT * 60))
+          fi
+          labels=$(gh issue view "$QUEUE" --repo "$REPO" --json labels --jq '.labels[].name')
+          if [ "$START" != hand ] && grep -qx paused <<< "$labels"; then
+            echo "The loop was paused during the wait: nothing is started. Resuming it starts the coordinator." | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          payload=$(jq -n --arg t "$TEXT" '{text: $t}')
+          # A busy or briefly unavailable endpoint (5xx) is tried again, up to four more times.
+          # Only the status is printed: the answer names the session, and this log is public.
+          status=$(curl -sS -o /dev/null -w '%{http_code}' --retry 4 --retry-delay 30 --retry-all-errors \
+            -X POST "$URL" \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "anthropic-beta: experimental-cc-routine-2026-04-01" \
+            -H "anthropic-version: 2023-06-01" \
+            -H "Content-Type: application/json" \
+            -d "$payload")
+          echo "The $LEVEL was asked to start ($START): HTTP $status." | tee -a "$GITHUB_STEP_SUMMARY"
+          case "$status" in 2*) ;; *) exit 1 ;; esac

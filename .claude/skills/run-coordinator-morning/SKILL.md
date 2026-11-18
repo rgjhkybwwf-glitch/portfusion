@@ -14,7 +14,8 @@ The order of the run's work. Each step's procedure is in the skill named; the ru
    or section answers a job.
 3. **Read what changed since the last run**: the pull requests merged or stopped, each run's
    comments on the issues, every answer and `Change:` the maintainer gave, each "Re-plan" left,
-   and every other comment of the maintainer's. The last run began at the start on this run's own
+   every other comment of the maintainer's, and each run of the workflow `start` that failed: a
+   start the gate did not make, named in the digest. The last run began at the start on this run's own
    last line in the run log, whose lines are never acted on, or three days ago when there is none.
    Clear a `building` label more than three hours old: a run that long has died.
 4. **Nothing changed: stop.** When nothing has merged, closed, been answered, changed or filed

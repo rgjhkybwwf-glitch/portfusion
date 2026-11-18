@@ -46,8 +46,9 @@ pushes anything.
   for each issue an end line names after "Decided for you", the "Decided by the run" line in that
   issue's Decisions. With nothing merged, nothing waiting and nothing decided, the digest is one
   line.
-- **A run the maintainer started**, by an answer or a `Change:`, sends its own debrief: they
-  wait for it.
+- **A run of the coordinator's that the maintainer started**, by an answer, a `Change:`, an
+  `Idea:`, a release or a `Resume:`, sends its own debrief: they wait for it. A builder's run
+  sends none, an answer build included.
 
 ## A run woken after its debrief
 
