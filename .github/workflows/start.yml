@@ -14,9 +14,9 @@
 # only what started it last, and finds the rest itself. Nothing of a comment is ever sent.
 #
 # ONE RUN OF A LEVEL AT A TIME. After the quiet minutes, while the run log shows a run of that
-# level at work (its start line with no end line yet, `tools/starts.py --at-work`), the start
-# waits for it, up to AT_WORK_WAIT minutes, then starts anyway: a coordinator's "Re-plan:" written
-# mid-run starts the next coordinator only once that run has ended.
+# level at work (a start line with no end line of its own yet, `tools/starts.py --at-work`), the
+# start waits for it to end; a start line three hours old is a run that died, and holds nothing.
+# So a coordinator's "Re-plan:" written mid-run starts the next coordinator once that run ends.
 #
 # WHAT IS DONE AT ONCE, before any wait. The maintainer's words are marked: 🚀 when a run will
 # start, 👀 when they were only seen (any other comment starts no run, and the next morning run
@@ -163,7 +163,7 @@ jobs:
       group: start-${{ needs.read.outputs.level }}${{ needs.read.outputs.start == 'hand' && '-hand' || '' }}
       cancel-in-progress: true
     runs-on: ubuntu-24.04
-    timeout-minutes: 150
+    timeout-minutes: 260
     permissions:
       contents: read
       issues: read
@@ -200,7 +200,7 @@ jobs:
             echo "The $LEVEL starts in $WAIT minutes, unless another start of its level comes first."
             sleep $((WAIT * 60))
           fi
-          AT_WORK_WAIT=90
+          AT_WORK_WAIT=185     # past AT_WORK_FOR, three hours: the cap is the start line's age
           log=$(PYTHONPATH=src python3 tools/starts.py --log)
           for ((waited = 0; waited < AT_WORK_WAIT; waited += 5)); do
             [ "$START" != hand ] || break
@@ -220,7 +220,7 @@ jobs:
           payload=$(jq -n --arg t "$TEXT" '{text: $t}')
           # A busy or briefly unavailable endpoint (5xx) is tried again, up to four more times.
           # Only the status is printed: the answer names the session, and this log is public.
-          status=$(curl -sS -o /dev/null -w '%{http_code}' --retry 4 --retry-delay 30 --retry-all-errors \
+          status=$(curl -sS --max-time 60 -o /dev/null -w '%{http_code}' --retry 4 --retry-delay 30 --retry-all-errors \
             -X POST "$URL" \
             -H "Authorization: Bearer $TOKEN" \
             -H "anthropic-beta: experimental-cc-routine-2026-04-01" \

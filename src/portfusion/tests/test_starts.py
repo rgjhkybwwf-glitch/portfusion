@@ -116,6 +116,16 @@ def test_a_start_waits_while_a_run_of_its_level_is_at_work(starts):
     assert not starts.at_work("coordinator", [died], now), "a run that died holds nothing"
     seen = [line("**Session note** · start · nothing", "06:50"), line("start: Q1: a", "06:55")]
     assert starts.at_work("coordinator", [began, *seen], now), "only a run's lines count"
+    # Each start line is paired with its own end line: one run's end hides no other at work.
+    other = line("📋 **Ready check** · start · 19 Nov 06:40 · a re-plan", "06:40")
+    assert starts.at_work("coordinator", [began, other, ended], now)
+    assert not starts.at_work("coordinator", [began, other, ended, line(
+        "📋 **Ready check** · 19 Nov 06:40–06:59 · planned #251 · Next: …", "06:59")], now)
+    # One that died is let go once a later run of its level has begun and ended.
+    later = line("📋 **Ready check** · start · 19 Nov 06:45 · the clock", "06:45")
+    done = line("📋 **Ready check** · 19 Nov 06:45—06:55 · planned · Next: …", "06:55")
+    assert not starts.at_work("coordinator", [began, later, done], now)
+    assert not starts.at_work("coordinator", [line("📋 **Ready check** · start · 19 Nov 6:30, a re-plan", "06:30"), ended], now)
     gate = (FLOWS / "start.yml").read_text(encoding="utf-8").partition("\n  fire:")[2]
     assert "starts.py --at-work" in gate and gate.index("--at-work") < gate.index("grep -qx paused")
 

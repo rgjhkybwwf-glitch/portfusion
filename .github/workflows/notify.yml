@@ -87,15 +87,18 @@ jobs:
             gh label create ask-held --repo "$REPO" --color ededed \
               --description "The bot's question here is asked at 08:00 on the next working day (notify.yml)" > /dev/null 2>&1 || true
             gh api -X POST "repos/$REPO/issues/$1/labels" -f "labels[]=ask-held" --silent
-            say "#$1: outside the maintainer's working day, so it is asked at 08:00 on the next one."
+            say "${2:-#$1: outside the maintainer's working day, so it is asked at 08:00 on the next one.}"
           }
 
           # Only a clear "no" holds a question: a fault in reading the hours asks now.
-          day=$(PYTHONPATH=src python3 tools/starts.py --working) || day=fault
-          if [ "$day" != no ]; then
-            [ "$day" = yes ] || echo "::warning::the working day could not be read ($day): asking now"
-            day=yes
-          fi
+          today() {
+            day=$(PYTHONPATH=src python3 tools/starts.py --working) || day=fault
+            if [ "$day" != no ]; then
+              [ "$day" = yes ] || echo "::warning::the working day could not be read ($day): asking now"
+              day=yes
+            fi
+          }
+          today
 
           case "$EVENT" in
             issues)
@@ -104,6 +107,7 @@ jobs:
               # A builder turns auto-merge on just after it opens a clean pull request, so this
               # waits a minute to see which it is. One merging itself asks nothing.
               sleep 60
+              today     # read again after the minute: one that crosses 08:00 asks now
               if ! waits "$NUMBER"; then
                 say "#$NUMBER: auto-merge is on, or it is closed: it asks nothing. Nothing posted."
               elif [ "$day" = yes ]; then ask_pr "$NUMBER"; else hold "$NUMBER"; fi ;;
@@ -117,9 +121,17 @@ jobs:
             > "$RUNNER_TEMP/held"
           while read -r n kind state decision; do
             gh api -X DELETE "repos/$REPO/issues/$n/labels/ask-held" --silent < /dev/null || continue
+            asked=yes
             if [ "$kind" = pr ]; then
-              if waits "$n" < /dev/null; then ask_pr "$n" < /dev/null; say "#$n: asked for the yes, held from before."; fi
+              if pr=$(gh pr view "$n" --repo "$REPO" --json state,isDraft,autoMergeRequest \
+                   --jq '.state == "OPEN" and (.isDraft | not) and .autoMergeRequest == null' < /dev/null); then
+                [ "$pr" != true ] || ask_pr "$n" < /dev/null || asked=no
+              else asked=no; fi
             elif [ "$state" = open ] && [ "$decision" = true ]; then
-              ask_issue "$n" < /dev/null; say "#$n: asked, held from before."
+              ask_issue "$n" < /dev/null || asked=no
+            fi
+            if [ "$asked" = yes ]; then say "#$n: held from before, and now asked if it still waits."
+            else
+              hold "$n" "::warning::#$n could not be asked: it keeps \`ask-held\`, and the next run tries again" < /dev/null || true
             fi
           done < "$RUNNER_TEMP/held"

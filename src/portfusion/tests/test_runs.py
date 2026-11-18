@@ -153,7 +153,7 @@ def test_every_helper_agent_is_named_by_a_step_skill(skills):
 
 
 def test_every_commit_is_reviewed_before_it_is_pushed(contributing):
-    """The maintainer's rule of 18 Nov 2026: every commit's diff, by run or session, goes through
+    """The maintainer's rule: every commit's diff, by a run or a session, goes through
     the `code-review` skill before it is pushed. THE CASE THAT MAKES IT FAIL: a day of the loop's
     own rebuild merged unreviewed, since the only reviewer named was a run's, after the pull
     request opened."""

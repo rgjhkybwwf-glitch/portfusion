@@ -104,6 +104,9 @@ def test_a_press_turned_off_at_night_is_held_to_the_working_day_not_said(tiers):
     flows = ROOT / ".github" / "workflows"
     judge = (flows / "tiers.yml").read_text(encoding="utf-8")
     assert "starts.py --working" in judge and "labels[]=ask-held" in judge
+    assert '--add-label "figures moved"' in judge, "a moved figure is on a label a builder reads"
+    for name in ("pytest.ini", ".pytest.ini", "conftest.py"):
+        assert tiers.tier(f"src/portfusion/tests/desk/{name}", set()) == 3, name
 
 
 def test_the_bot_comments_only_to_ask_or_to_turn_auto_merge_off():

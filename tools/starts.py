@@ -255,19 +255,36 @@ def _comment(e: dict[str, str], number: str, queue: bool,
         True, paused
 
 
+WHEN = re.compile(r"^(\d{1,2}) (\w{3}) (\d{1,2}):(\d\d)")
+
+
+def _when(part: str) -> str:
+    """A line's run, by the date and minute it began: "19 Nov 6:30" and "19 Nov 06:30" alike."""
+    found = WHEN.match(part)
+    return "{} {} {}:{}".format(int(found[1]), found[2], int(found[3]), found[4]) if found else ""
+
+
 def at_work(level: str, comments: list[dict], now: datetime) -> bool:
-    """Whether a run of `level` is at work: the newest line its marks wrote on the run log is a
-    start line ("<mark> · start · …"), written less than AT_WORK_FOR ago. The gate waits for it
-    to end before it starts another of the level, so two never write the same things at once."""
-    lines = [c for c in comments if whose(c.get("body", "")) == "run"
-             and next((lv for mark, lv in MARKS.items()
-                       if _lines(c["body"])[0].startswith(mark)), "") == level]
-    if not lines:
-        return False
-    newest = max(lines, key=lambda c: c.get("created_at", ""))
-    said = _lines(newest["body"])[0].partition("·")[2].strip()
-    written = datetime.fromisoformat(newest["created_at"].replace("Z", "+00:00"))
-    return said.split("·")[0].strip() == "start" and now - written < AT_WORK_FOR
+    """Whether a run of `level` is at work: one of its start lines ("<mark> · start · 19 Nov
+    06:30 · …"), written less than AT_WORK_FOR ago, has no end line of its own ("<mark> · 19 Nov
+    06:30–06:58 · …", the skill `beat`), and no run of the level that began after it has ended,
+    which says it died. The gate waits for it to end before it starts another of the level."""
+    began, ended = [], set()
+    for c in comments:
+        lines = _lines(c.get("body", "")) or [""]
+        if whose(c.get("body", "")) != "run" or next(
+                (lv for mark, lv in MARKS.items() if lines[0].startswith(mark)), "") != level:
+            continue
+        parts = [part.strip() for part in lines[0].split("·")]
+        if len(parts) > 2 and parts[1] == "start" and _when(parts[2]):
+            at = datetime.fromisoformat(c["created_at"].replace("Z", "+00:00"))
+            began.append((_when(parts[2]), at))
+        elif len(parts) > 1 and _when(parts[1]):
+            ended.add(_when(parts[1]))
+    later_ended = [at for when, at in began if when in ended]
+    return any(when not in ended and now - at < AT_WORK_FOR
+               and not any(other > at for other in later_ended)
+               for when, at in began)
 
 
 def main(args: list[str]) -> int:

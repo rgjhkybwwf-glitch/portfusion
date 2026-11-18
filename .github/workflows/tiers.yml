@@ -155,6 +155,14 @@ jobs:
             MOVED=$(PYTHONPATH=src python3 tools/figures.py "$RUNNER_TEMP/base.json" "$RUNNER_TEMP/branch.json") || status=$?
             [ "$status" = 0 ] || [ -n "$MOVED" ] || { echo "::error::the figures could not be compared"; exit 1; }
           fi
+          # A moved figure is on a label too, so a builder that reads the labels sees what holds tier 2.
+          if [ "$TIER" = 2 ] && [ -n "$MOVED" ]; then
+            gh label create "figures moved" -R "$REPO" --force --color ededed \
+              --description "Tier 2 that moves the demo's headline figures: waits for the maintainer's yes" > /dev/null
+            gh pr edit "$PR" --add-label "figures moved" > /dev/null
+          else
+            gh pr edit "$PR" --remove-label "figures moved" > /dev/null 2>&1 || true
+          fi
           AUTO_ON=$(gh pr view "$PR" --json autoMergeRequest --jq '.autoMergeRequest != null')
           WORKING=yes
           if [ -f tools/starts.py ]; then WORKING=$(PYTHONPATH=src python3 tools/starts.py --working) || WORKING=yes; fi
@@ -171,6 +179,20 @@ jobs:
             gh label create ask-held -R "$REPO" --color ededed \
               --description "The bot's question here is asked at 08:00 on the next working day (notify.yml)" > /dev/null 2>&1 || true
             gh api -X POST "repos/$REPO/issues/$NUMBER/labels" -f "labels[]=ask-held" --silent
+          fi
+          # Why it waits is kept at the top of the description, which tells no one, for 08:00's
+          # ask: written on a quiet hold, and taken off when nothing holds it. Its loss holds nothing.
+          if gh pr view "$PR" --json body --jq .body > "$RUNNER_TEMP/was"; then
+            awk 'NR == 1 && !/^> 🤖 Held by/ { keep = 1 } keep { print; next } /^$/ { keep = 1 }' \
+              "$RUNNER_TEMP/was" > "$RUNNER_TEMP/rest"
+            if [ "$action" = quiet ]; then
+              { echo "> 🤖 Held by \`tiers.yml\` on $HEAD:"; sed 's/^/> /' "$RUNNER_TEMP/body"; echo
+                cat "$RUNNER_TEMP/rest"; } > "$RUNNER_TEMP/description"
+            else
+              cp "$RUNNER_TEMP/rest" "$RUNNER_TEMP/description"
+            fi
+            cmp -s "$RUNNER_TEMP/was" "$RUNNER_TEMP/description" \
+              || gh pr edit "$PR" --body-file "$RUNNER_TEMP/description" > /dev/null || true
           fi
           # Said in the log and the run's summary, whatever was done: only "off" is a comment.
           { echo "tier $TIER on $EVENT: $action"; echo; cat "$RUNNER_TEMP/body"; } | tee -a "$GITHUB_STEP_SUMMARY"

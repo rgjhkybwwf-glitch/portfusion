@@ -18,9 +18,11 @@ request. Tier 0 takes the builder's own review of its diff, and no walk.
 ## 2. Clean, or waiting
 
 - **Clean**: turn auto-merge on as the pull request opens. GitHub merges it once `guard` is green.
-  First read its `tier N` label, which `tiers.yml` sets within a minute or two of each commit:
-  wait for the label, and never press on `tier 3`, whatever the review found. `tiers.yml` turns
-  off only a press it finds as a commit arrives; one made later is taken as the maintainer's yes.
+  First wait until `tiers.yml` has a run on the newest commit and every run of it there has
+  finished (`gh run list --workflow tiers.yml --commit <sha>`; none yet is not finished), then
+  read the labels it set: never press on `tier 3` or `figures
+  moved`, whatever the review found. `tiers.yml` turns off only a press it finds as a commit
+  arrives; one made later is taken as the maintainer's yes.
 - **Not clean**: leave auto-merge off, with what is needed from the maintainer at the top of the
   description. A pull request that moves the store or a figure says what moves there, and in the
   changelog. A pull request of tier 3, or of tier 2 with a headline figure moved, is never the

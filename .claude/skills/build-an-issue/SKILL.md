@@ -37,7 +37,7 @@ issue, its own "Part of #n" made "Closes #n"; a slice's "Part of" its feature st
 
 ## 5. The work
 
-By the conventions: one logical change a commit, a line under Unreleased in `CHANGELOG.md`, the
+By the conventions: one logical change a commit, a line under Unreleased in `CHANGELOG.md`,
 each commit's diff reviewed before it is pushed (step 6).
 
 - **A choice the issue did not make**: decided or asked by the skill `ask-or-decide`.

@@ -38,7 +38,8 @@ OWN = (".github/", ".githooks/", ".claude/settings.json", PKG + "hooks/", "pypro
        PKG + "tests/test_stop_hook.py", PKG + "tests/test_runs.py",
        PKG + "tests/test_starts.py")
 # Files pytest reads wherever they are: each can skip or deselect the guard's tests.
-GUARD_CONFIG = ("conftest.py", "setup.cfg", "tox.ini", "sitecustomize.py", "usercustomize.py")
+GUARD_CONFIG = ("conftest.py", "pytest.ini", ".pytest.ini", "setup.cfg", "tox.ini",
+                "sitecustomize.py", "usercustomize.py")
 
 
 def stability_tests(contributing: str) -> set[str]:
