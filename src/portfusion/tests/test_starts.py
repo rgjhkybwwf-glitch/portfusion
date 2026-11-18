@@ -4,6 +4,8 @@ none on the maintainer's; a clock an hour out builds in their working day; and a
 left CONTRIBUTING's leaves a run started with a text that names no row."""
 import importlib.util
 import re
+import subprocess
+import textwrap
 from datetime import datetime, timedelta, timezone
 
 import pytest
@@ -290,3 +292,43 @@ def test_the_bot_asks_only_in_the_working_day_and_holds_the_rest_to_eight(starts
     assert "ref: ${{ github.event.pull_request.base.sha || github.sha }}" in notify, \
         "the hours are the base's, never a pull request's"
     assert notify.count("labels[]=ask-held") == 1 and "labels/ask-held" in notify
+
+
+
+def scripts(flow: str) -> list[str]:
+    """Each script a workflow's steps run, as the shell is given it, an expression of GitHub's
+    put as a word. A block ends at the first line no deeper than its `run` key."""
+    found, lines = [], flow.splitlines()
+    for at, line in enumerate(lines):
+        step = re.match(r"(\s*(?:- )?)run: (.+)$", line)
+        if not step:
+            continue
+        script = step.group(2)
+        if re.fullmatch(r"[|>][+-]?\s*(#.*)?", script):
+            block = []
+            for body in lines[at + 1:]:
+                if body.strip() and len(body) - len(body.lstrip()) <= len(step.group(1)):
+                    break
+                block.append(body)
+            script = textwrap.dedent("\n".join(block))
+        found.append(re.sub(r"\$\{\{.*?\}\}", "x", script, flags=re.S))
+    return found
+
+
+def test_the_shell_can_read_every_script_a_workflow_runs():
+    """THE CASE THAT MAKES IT FAIL: a quote left open in a step's script. The shell then stops
+    before the script's first line, so a bot whose script has one asks nothing and holds nothing,
+    and says so only in a failed check. Every workflow is read, the two that ask the table among
+    them."""
+    def refused(flow: str) -> list[str]:
+        return [said.stderr.strip() for said in (
+            subprocess.run(["bash", "-n"], input=script, capture_output=True, text=True, check=False)
+            for script in scripts(flow)) if said.returncode]
+
+    step = "    steps:\n      - run: |-  # why\n          a ${{ b ||\n            c }}\n        env:\n          D: it's\n"
+    assert scripts(step + "      - name: e\n        run: f ${{ g }}\n") == ["a x", "f x"]
+    assert refused("    steps:\n      - run: |\n          say 'it is asked at 08:00\n        env:\n          D: e\n")
+    flows = sorted(FLOWS.glob("*.y*ml"))
+    assert sum(len(scripts(flow.read_text(encoding="utf-8"))) for flow in flows) > len(flows)
+    for flow in flows:
+        assert not refused(flow.read_text(encoding="utf-8")), flow.name
