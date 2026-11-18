@@ -8,7 +8,7 @@ description: "Builder: before a new issue, brings each of the agent's own open p
 The rule is in `CONTRIBUTING.md`, The nightly agent, Which issues, in what order: its own open
 pull requests come first.
 
-Before a new issue, for each open pull request from a `claude/` branch:
+Before a new issue, for each open pull request from a branch whose name begins claude/:
 
 1. **Level with `main`**: `main` is merged in, never rebased. A pushed commit is never rewritten.
 2. **Its pictures**: retaken when a page it changed moved under it (the skill `pictures`).
