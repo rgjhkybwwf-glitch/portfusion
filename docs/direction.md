@@ -36,7 +36,7 @@ changes slowly, and changes only at a milestone's gate, by the maintainer's answ
 | 0.4.2 The Bench guides | A newcomer records a fact without leaving the Bench, and the reading pages answer what the cold walks left. Closes with the empty-book walk (#41). | a Bench item's standing line |
 | 0.5.0 What each page is for | Each page answers its job, decided by the content map (#3). First, one store move: an account keyed by its code, with its migration (#225). One new figure (#146), and charts of progress (#241). | a quarter's row on Performance that opens to what made its gain (#153), a headline figure you can click (#154), a send control (#155), a holding's return column (#146), charts (#241) |
 | 0.6.0 The record takes more | New ways for a fact to reach the record. The other store changes and migrations live here. | the first edit of a row on the record (#134); opening positions (#74) |
-| 0.7.0 Look and reach | A design system and the phone. | the desk on a phone (#4) |
+| 0.7.0 Look and reach | A design system. | PortFusion's own design system (#9) |
 
 The desk runs on the Mac only through 0.7.0. The AI reading session on the Bench is a feature to
 grow, not plumbing.
