@@ -18,6 +18,8 @@ class Naming:
     def account(self, sent: str) -> str:
         """The register's account for a label or a code the page sent; anything else, "" (every
         account) and a register name included, as it came."""
+        if not sent:
+            return ""
         key = sent.strip().lower()
         return self._back.get(key, sent) if key else sent
 

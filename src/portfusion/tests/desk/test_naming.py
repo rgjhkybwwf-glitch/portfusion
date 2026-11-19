@@ -15,7 +15,7 @@ CODES = pd.DataFrame({
 def test_an_account_comes_back_by_its_label_or_code_and_anything_else_as_it_came():
     n = naming.Naming(CODES)
     assert n.account("A2 · ii ISA") == n.account("a2") == "Bob ii ISA"
-    assert n.account("") == "" and n.account("Bob ii ISA") == "Bob ii ISA"
+    assert n.account("") == n.account(None) == "" and n.account("Bob ii ISA") == "Bob ii ISA"
     blank = naming.Naming(pd.DataFrame({"account": ["X"], "code": [""], "label": ["X"]}))
     assert blank.account("") == "", "an empty filter is every account, never one with a blank code"
 
