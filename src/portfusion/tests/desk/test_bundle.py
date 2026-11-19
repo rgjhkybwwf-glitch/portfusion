@@ -13,9 +13,14 @@ from fastapi.testclient import TestClient
 from portfusion.desk import app, bundle
 
 
+def _files() -> dict[str, bytes]:
+    """The whole shell, keyed by the URL each file answers at."""
+    return {"/": bundle.index(), **{p: bundle.asset(p) for p in bundle.paths()}}
+
+
 @pytest.fixture(scope="module")
 def files():
-    return bundle.files()
+    return _files()
 
 
 def test_the_desk_serves_the_bundle_byte_for_byte(files):
@@ -33,7 +38,7 @@ def test_the_desk_serves_the_bundle_byte_for_byte(files):
 def test_the_bundle_is_built_the_same_twice(files):
     """Reproducible, or a stamp would move with nothing changed and a browser would fetch again
     what it already holds."""
-    assert bundle.files() == files
+    assert _files() == files
 
 
 def test_the_bundle_is_the_shell_and_nothing_else(files):

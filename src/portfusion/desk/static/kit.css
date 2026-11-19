@@ -132,8 +132,7 @@ table, .fresh, .steps, pre { font-variant-numeric: tabular-nums; }
   background: var(--spark); border: 2px solid var(--heading);
 }
 
-/* THE PAGES APART FROM THE WORK, below a rule and off the thread, with no heading: Method and
-   Access. */
+/* THE PAGES APART FROM THE WORK, below a rule and off the thread, with no heading: Method. */
 .tabs .apart { display: flex; flex-direction: column; margin-top: var(--space-4);
                padding-top: var(--space-3); border-top: var(--rule-section) solid var(--rule); }
 
@@ -183,7 +182,7 @@ h2:first-of-type { margin-top: 0; }
 /* A STATE IS A KEY DOT: a round point in one of the design system's bar colours, which
    The design system gives to table keys, beside the state's word in ink. The word is the reading and the dot
    the scan, so colour is never the only signal. */
-/* THE WORD IN SENTENCE CASE: "Ready", "Not built", "Owner", "Signed in". A
+/* THE WORD IN SENTENCE CASE: "Ready", "Not built". A
    state's word is read, so it is written as a word rather than set as a label in capitals; the
    size and weight stay the label's. ONE RULE FOR EVERY TAG, whoever wrote the word — the desk's
    script or an engine's answer: the first letter is raised here, so the dot sits outside the
@@ -315,7 +314,7 @@ textarea { width: 100%; resize: vertical; }
 
    THE HOOK IS WHAT WAS RENDERED, NOT A LIST OF PANEL NAMES, which would drift the first time a
    panel was added: `data-wide`, which kit.js's page() puts on every tab, or `.scroll`, the box
-   the wide-table helper emits. A page with neither (an error, the sign-in) keeps the measure. */
+   the wide-table helper emits. A page with neither (an error) keeps the measure. */
 body.data main { max-width: none; }
 
 /* PROSE KEEPS ITS MEASURE ON A WIDE PAGE. A table wants the window; the paragraph explaining it
@@ -328,16 +327,6 @@ body.data #main .items li { max-width: var(--measure); }
 /* A LINK IN THE WORK is the working blue, as a button.link is. */
 a { color: var(--link); text-underline-offset: 2px; }
 a:hover { color: var(--heading); }
-
-/* THE DESIGN SYSTEM'S TWO BUTTONS, square and at least `--touch` tall: the one thing to press, in the working
-   blue, and anything beside it, outlined in ink. */
-button.primary, button.secondary {
-  display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2);
-  min-height: var(--touch); padding: 0 var(--space-5); cursor: pointer;
-  font: inherit; font-weight: 600; border-radius: var(--radius-none);
-}
-button.primary { background: var(--accent); color: var(--paper); border: 2px solid var(--accent); }
-button.secondary { background: none; color: var(--heading); border: 2px solid var(--heading); }
 
 button.link[disabled] { color: var(--muted); cursor: not-allowed; text-decoration: none; }
 .items .tag.ok::before { background: var(--key-clear); }

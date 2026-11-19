@@ -1,7 +1,8 @@
 """THE SHELL AS ONE SET OF FILES — everything a browser loads before its first /api call.
 
     from portfusion.desk import bundle
-    bundle.files()      # {"/": b"<!doctype html>…", "/static/core.js": b"…", "/tokens.css": …}
+    bundle.index()               # b"<!doctype html>…", every asset linked by its content
+    bundle.asset("/tokens.css")  # one asset's bytes; KeyError for anything not in `paths()`
 
 ONE SOURCE. The desk answers `/`, `/static/*`, `/tokens.css`, `/favicon.png`, the app icons,
 `/manifest.webmanifest` and `/fonts/*` from here, and `tests/desk/test_bundle.py` requests every
@@ -147,24 +148,17 @@ def _digest(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()[:12]
 
 
-def index(assets: dict[str, bytes] | None = None) -> bytes:
+def index() -> bytes:
     """The page: the template, its assets stamped by content, and the lockup."""
-    assets = assets if assets is not None else {p: asset(p) for p in paths()}
     html = (STATIC / "index.html").read_text(encoding="utf-8")
     html = html.replace("<!-- styles -->", "\n".join(
         f'<link rel="stylesheet" href="/static/{n}">' for n in STYLES))
     html = html.replace("<!-- scripts -->", "\n".join(
         f'<script src="/static/{n}"></script>' for n in SCRIPTS))
     for url in _STAMPED:
-        html = html.replace(f'"{url}"', f'"{url}?v={_digest(assets[url])}"')
+        html = html.replace(f'"{url}"', f'"{url}?v={_digest(asset(url))}"')
     html = html.replace("<!-- lockup -->", brand.lockup())
     html = html.replace("<!-- title -->", _html.escape(title()))
     # WHOSE IT IS AND WHICH RELEASE, in the footer.
     html = html.replace("<!-- footer -->", _html.escape(footer()))
     return html.encode()
-
-
-def files() -> dict[str, bytes]:
-    """The whole shell, keyed by the URL each file answers at."""
-    assets = {p: asset(p) for p in paths()}
-    return {"/": index(assets), **assets}

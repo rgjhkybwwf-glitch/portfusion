@@ -16,7 +16,8 @@ Each release, newest first. The version is `src/portfusion/__init__.py`'s, and
   `portfusion migrate --write` removes their rows from `store/settings.csv` and journals it; the
   loader refuses a book that still holds one.
 - **webauthn, cbor2 and cryptography leave the dependencies**, with what only they brought: cffi,
-  pycparser, pyOpenSSL, pyasn1 and pyasn1-modules.
+  pycparser, pyOpenSSL, pyasn1 and pyasn1-modules. pypdf opened an AES-encrypted PDF with
+  cryptography; such a document now needs it installed by hand.
 
 ### Upgrading a book
 
@@ -28,6 +29,9 @@ Each release, newest first. The version is `src/portfusion/__init__.py`'s, and
 - **Delete the hosted desk's files from the book's folder**, which nothing reads now: the
   passkeys, the readers, the sign-in log and the proxy secret, each named `.desk_` and something.
 - **Reinstall against `requirements.lock`**, its `-c` line moved with the pin.
+- **Take down what served it**, outside the book: the Tailscale Funnel (`tailscale funnel
+  --https=443 off`), the Netlify project with its `DESK_PROXY_SECRET`, and the deploy-only
+  repository.
 
 ## 0.4.1 — beta, 18 Nov 2026
 

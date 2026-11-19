@@ -4,8 +4,8 @@
     naming.of(engine.book()).account("A4 · IG Spread bet")     # "Sam IG Spread bet"
 
 The reading pages name an account by its label, so a filter a page sends comes back as a label or
-a code; this maps it to the account. The codes and labels are `Book.account_codes()`. Nothing
-here is typed: a new account joins by being registered.
+a code; this maps it to the account, and passes anything else through. The codes and labels are
+`Book.account_codes()`. Nothing here is typed: a new account joins by being registered.
 """
 from __future__ import annotations
 
@@ -16,14 +16,10 @@ class Naming:
                       **{v.lower(): a for a, v in zip(codes["account"], codes["code"])}}
 
     def account(self, sent: str) -> str:
-        """The register's account for a label or a code the page sent; "" stays "" (every
-        account). Anything else is refused."""
-        if not sent:
-            return ""
-        try:
-            return self._back[sent.strip().lower()]
-        except KeyError:
-            raise ValueError(f"no account is called {sent!r}") from None
+        """The register's account for a label or a code the page sent; anything else, "" (every
+        account) and a register name included, as it came."""
+        key = sent.strip().lower()
+        return self._back.get(key, sent) if key else sent
 
 
 _made: dict = {"book": None, "naming": None}

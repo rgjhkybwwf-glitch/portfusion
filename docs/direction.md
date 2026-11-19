@@ -18,7 +18,6 @@ changes slowly, and changes only at a milestone's gate, by the maintainer's answ
   | quarterly | 6 why the value moved · 9 the best and worst closed positions · 11 the report to send |
   | occasional | 12 how a figure is made |
 
-
 **1.0** is the twelve jobs passing a cold walk on an empty book.
 
 ## Never

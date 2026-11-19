@@ -9,7 +9,7 @@ page in the same pull request.
 The map holds to the content map's decisions (#3):
 
 - **Twelve pages, one job each.** Accounts answers no job of its own and stays: it holds the
-  register and the money in and out. Access left with the hosted desk (19 Nov 2026).
+  register and the money in and out.
 - **"Why the value moved" is to be answered on Performance**: a quarter's row will open to what
   made its gain (#153, slices #251 and #252). What Changed stays, after Price Refresh, as what the
   last refresh moved and what was recorded, and will point to Performance. No period chooser.

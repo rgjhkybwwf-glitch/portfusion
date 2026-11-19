@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import pandas as pd
-import pytest
 
 from portfusion.desk import naming
 
@@ -13,12 +12,12 @@ CODES = pd.DataFrame({
 })
 
 
-def test_an_account_comes_back_by_its_label_or_code_and_nothing_else():
+def test_an_account_comes_back_by_its_label_or_code_and_anything_else_as_it_came():
     n = naming.Naming(CODES)
     assert n.account("A2 · ii ISA") == n.account("a2") == "Bob ii ISA"
-    assert n.account("") == ""
-    with pytest.raises(ValueError):
-        n.account("Bob ii ISA")
+    assert n.account("") == "" and n.account("Bob ii ISA") == "Bob ii ISA"
+    blank = naming.Naming(pd.DataFrame({"account": ["X"], "code": [""], "label": ["X"]}))
+    assert blank.account("") == "", "an empty filter is every account, never one with a blank code"
 
 
 def test_the_map_follows_the_engine_it_was_made_for():

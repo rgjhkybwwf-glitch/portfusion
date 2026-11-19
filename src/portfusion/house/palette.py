@@ -107,7 +107,7 @@ SCREEN = {
     "up": _O["status-bull"],
     "down": _O["status-bear"],
     "chart": _O["accent"],              # the report's bars, making no claim about a source
-    #: THE FIELD: the one strong moment — the app icon, the Dashboard's band, the sign-in. It is
+    #: THE FIELD: the one strong moment — the app icon, the Dashboard's band. It is
     #: the same in both schemes.
     "field": _O["field"],
     "on-field": _O["on-field"],

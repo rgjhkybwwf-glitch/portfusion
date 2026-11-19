@@ -19,11 +19,11 @@ The newest release. Fixes are not back-ported to older ones.
 
 ## What the desk assumes
 
-**One user account on the Mac.** The Mac's own desk listens on 127.0.0.1 only and has no sign-in:
-any process that reaches the port is answered as the owner, every page and action included. A
-process of the owner's own account could
-read the book's files anyway. A second account on the same Mac, or anything that forwards a port
-to its loopback, would reach the desk as the owner, and is outside what it defends.
+**One user account on the Mac.** The desk listens on 127.0.0.1 only and has no sign-in: any
+process that reaches the port is answered as the owner, every page and action included. A process
+of the owner's own account could read the book's files anyway. A second account on the same Mac,
+or anything that forwards a port to its loopback, would reach the desk as the owner, and is
+outside what it defends.
 
 ## Where the guards are
 

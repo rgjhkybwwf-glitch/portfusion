@@ -67,7 +67,7 @@ once, here, beside that test.
 
 | # | Rule | Held by |
 |---|---|---|
-| 16 | **The desk answers only this Mac.** The desk listens on 127.0.0.1 only, and answers only its own page. | `test_routes.py::test_a_request_for_another_host_is_refused` |
+| 16 | **The desk answers only this Mac.** The desk listens on 127.0.0.1 only, and answers only its own page. | `test_routes.py::test_a_request_for_another_host_is_refused`, `test_routes.py::test_a_write_from_another_page_is_refused` |
 | 17 | **The feeds only read.** A feed makes only allowlisted reads, refused by name before a request is built; a feed writes no mark and no event. | `test_ig.py::test_guard_refuses_everything_that_is_not_a_read`, `test_tv.py::test_the_allowlist_is_checked_before_a_request_is_built`, `test_tv.py::test_a_feed_writes_nothing_but_its_own_sign_in` |
 
 ### Upgrades and releases

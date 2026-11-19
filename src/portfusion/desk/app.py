@@ -436,13 +436,8 @@ def sweep_status(body: dict = Body(default={})):
 
 
 def _registered(sent: str) -> str:
-    """The register's account for the one a filter sent. The reading pages name an account by its
-    label, so a label or a code is mapped back by `naming.Naming.account`; a register name goes
-    through."""
-    try:
-        return naming.of(engine.book()).account(sent)
-    except ValueError:
-        return sent
+    """The register's account for the one a filter sent (`naming.Naming.account`)."""
+    return naming.of(engine.book()).account(sent)
 
 
 @app.get("/api/holdings")

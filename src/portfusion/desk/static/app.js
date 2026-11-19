@@ -136,7 +136,7 @@ function wireTradeLinks() {
 
 /* A PAGE TAKES THE WINDOW BY WHAT IT RENDERED, never by a list of panel names, which would drift
    on the first addition: `data-wide`, which page() puts on every tab, or a `.scroll`, the
-   wide-table helper's wrapper. A page with neither (an error, the sign-in) keeps the measure.
+   wide-table helper's wrapper. A page with neither (an error) keeps the measure.
 
    WATCHED, NOT CALLED, since a call per render must find every path that writes to #main.
    An observer cannot be forgotten by the next person to add a render path. */
