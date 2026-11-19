@@ -21,6 +21,9 @@ Each release, newest first. The version is `src/portfusion/__init__.py`'s, and
 
 ### Upgrading a book
 
+- **Take the new `.gitignore` first**, from a book `portfusion init` makes in a scratch folder: it
+  no longer lists the hosted desk's four files, and the audit `migrate --write` runs refuses the
+  old one, putting the move back.
 - **Run `portfusion migrate --write`** when the book's pin moves: it drops the three settings rows.
   A book's `checks/` that reads one is listed, to move by hand.
 - **Install the desk's agent again** if it was installed with the remote door: `portfusion desk
