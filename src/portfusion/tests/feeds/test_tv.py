@@ -627,6 +627,7 @@ def test_a_callback_from_another_page_does_not_end_the_sign_in(tmp_path, monkeyp
     monkeypatch.setattr(tv, "_post", lambda url, body, form=False: {"client_id": "c"}
                         if url.endswith("/register") else {"access_token": "a", "expires_in": 900})
     answered = []
+    visitors = []
 
     def browser(url):
         state = urllib.parse.parse_qs(urllib.parse.urlparse(url).query)["state"][0]
@@ -639,9 +640,13 @@ def test_a_callback_from_another_page_does_not_end_the_sign_in(tmp_path, monkeyp
                         f"http://127.0.0.1:{port}/callback?{query}", timeout=5).status)
                 except urllib.error.HTTPError as e:
                     answered.append(e.code)
-        threading.Thread(target=visit, daemon=True).start()
+        visitors.append(threading.Thread(target=visit, daemon=True))
+        visitors[-1].start()
 
     session = tv.sign_in(open_browser=browser)
+    (visitor,) = visitors
+    visitor.join(timeout=10)
+    assert not visitor.is_alive(), "the last answer was never recorded"
     assert answered == [400, 400, 200] and session["access_token"] == "a"
 
 
