@@ -1,8 +1,8 @@
 """WHAT LEAVES NAMES NOTHING OF THE BOOK IT IS DEVELOPED BESIDE: none of its people, accounts,
-holdings, references, figures or brand, in any file of the checkout, the commits not yet on main,
-or the branch's name. The names are read from the loaded book. On the demo or a practice book
-the names are the examples, so there is nothing to check; CI runs there, and the pre-push hook
-runs this on the book `PORTFUSION_BOOK` names (CONTRIBUTING.md)."""
+holdings, references or figures, in any file of the checkout, the commits not yet on main, or
+the branch's name. The names are read from the loaded book's record. On the demo or a practice
+book the names are the examples, so there is nothing to check; CI runs there, and the pre-push
+hook runs this on the book `PORTFUSION_BOOK` names (CONTRIBUTING.md)."""
 import datetime as dt
 import re
 import subprocess
@@ -47,23 +47,6 @@ def _instants(schema):
     return forms
 
 
-def _brand(schema):
-    """The book's own name and wordmark as code spells them, and its repository's name; none
-    when the book wears the app's."""
-    from portfusion import brand
-    if brand.DIR is None:
-        return set()
-    forms = set()
-    for words in {brand.NAME, brand.WORDMARK[0]}:
-        parts = words.split()
-        forms |= {sep.join(parts) for sep in (" ", "-", "_", "")}
-    remote = subprocess.run(["git", "remote", "get-url", "origin"], capture_output=True,
-                            text=True, cwd=schema.BOOK).stdout.strip()
-    if remote:
-        forms.add(remote.rstrip("/").removesuffix(".git").rsplit("/", 1)[-1])
-    return {f for f in forms if len(f) >= 5}
-
-
 def _either(alternatives):
     return "|".join(sorted(map(re.escape, alternatives), key=len, reverse=True)) if alternatives \
         else r"(?!x)x"
@@ -91,7 +74,7 @@ def named(D, book_names):
                 for r in _rows(schema, t) if r[k] and len(r[k]) >= 5 and " " not in r[k]})
     return re.compile(
         r"(?i:(?<![A-Za-z])(" + _either(book_names["words"]) + r")(?![A-Za-z]))"
-        r"|(?i:" + _either(book_names["joined"] | _brand(schema)) + ")"
+        r"|(?i:" + _either(book_names["joined"]) + ")"
         r"|(?<![A-Za-z0-9-])(" + _either({str(e) for e in exact if e}) + r")(?![A-Za-z0-9])"
         r"|(" + _either(book_names["numbers"]) + ")"
         r"|(" + _either(_instants(schema)) + r")(?!\d)"

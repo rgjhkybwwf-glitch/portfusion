@@ -1,5 +1,4 @@
-"""The screen palette as CSS custom properties — `house/palette.py`'s colours with the book's brand
-laid over them (`portfusion.brand`), never retyped.
+"""The screen palette as CSS custom properties — `house/palette.py`'s colours, never retyped.
 
 A second renderer is where "derive it, never type it twice" breaks first: a hand-copied hex
 here would drift the day the palette moves. So the tokens are generated from the one palette:
@@ -7,8 +6,8 @@ change a colour in house/palette.py and every renderer that wears it changes tog
 does. The dark scheme too.
 
 THE TYPEFACE: one family as one stack, and one @font-face across the file's whole weight and
-width range, served from house/fonts/ (or the brand's folder, when it names a face) by app.py's
-/fonts route — on disk, so the desk renders the same with the network down.
+width range, served from house/fonts/ by app.py's /fonts route — on disk, so the desk renders
+the same with the network down.
 
 THE DESK WEARS THESE AND NO OTHERS. A token emitted and never consumed is a palette entry
 pretending to be a treatment, so `tests/desk/test_routes.py` holds every one here to a use in
@@ -17,7 +16,7 @@ bars, which Holdings' allocation draws as the report does.
 """
 from __future__ import annotations
 
-from portfusion import brand as P
+from portfusion.house import palette as P
 
 #: The screen roles the desk wears, by house/palette.py's names for their jobs.
 DESK = ("paper", "band", "hair", "rule", "ink", "muted", "heading", "control", "recessed",

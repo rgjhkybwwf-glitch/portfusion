@@ -110,14 +110,13 @@ layers = [
     "desk",
     "feeds | report",
     "engine | history",
-    "about | brand | check",
+    "about | check",
     "record",
     "house | log | secret_scan",
 ]
 ignore_imports = [                      # the audit, `portfusion record`, runs the engine and the suite
     "portfusion.record.__main__ -> portfusion.engine",
     "portfusion.record.__main__ -> portfusion.about",
-    "portfusion.record.__main__ -> portfusion.brand",
     "portfusion.record.__main__ -> portfusion.check",
 ]
 
@@ -135,7 +134,7 @@ name = "the engine takes nothing of the app but the record's rules and house"
 type = "forbidden"
 source_modules = ["portfusion.engine"]
 forbidden_modules = ["portfusion.record.schema", "portfusion.report", "portfusion.about",
-                     "portfusion.brand", "portfusion.check", "portfusion.log"]
+                     "portfusion.check", "portfusion.log"]
 allow_indirect_imports = true
 
 # Book's topics reach one another through `self`, never by import, so the engine has no cycle.

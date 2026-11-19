@@ -98,9 +98,7 @@ def main(argv=None):
                                         "then the tests marked audit.",
                             epilog="It takes nothing: it audits the book PORTFUSION_BOOK names.").parse_args(argv)
     log.info(RULE)
-    from portfusion import brand
-    log.info(" · ".join(["PORTFUSION", "record audit",
-                         *([brand.NAME] if brand.NAME != brand.APP else [])]))
+    log.info("PORTFUSION · record audit")
     log.info("  Is the RECORD in good order? For the code, run portfusion check.")
     log.info(RULE)
     problems = findings()

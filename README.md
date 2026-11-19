@@ -30,7 +30,6 @@ On a Mac, `portfusion desk --install-agent` starts the desk at login for the boo
 | `store/` | the facts: a CSV per table, and the three histories ([`docs/store.md`](docs/store.md)) |
 | `_inbox/` | documents waiting to be read onto the record |
 | `_archive/` | the documents behind the rows |
-| `brand/` | its name and look (optional) |
 | `checks/` | its own tests (optional) |
 | `.githooks/` | its guards |
 | `requirements.txt` | the PortFusion release it runs, and the lock it installs against |
@@ -74,7 +73,7 @@ portfusion record                    # the audit
 | `hooks/` | the git hooks the app ships: what a repository's hook file runs |
 | `check/`, `tests/` | the guard, shipped with the app: `portfusion check` runs `tests/` |
 | `demo/` | the invented book; `tools/make_demo.py` writes it |
-| the `.py` files beside them | the `portfusion` command, a book's `brand/`, the release, the log and the secret scan |
+| the `.py` files beside them | the `portfusion` command, the release, the log and the secret scan |
 
 A document becomes a row only on the desk's Bench, by a person's approval
 ([`docs/intake.md`](docs/intake.md)). The engine derives every figure from the record; the desk and

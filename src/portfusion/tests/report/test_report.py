@@ -618,17 +618,12 @@ def test_a_quarter_end_cites_a_broker_check_or_says_there_is_none():
 
 
 @needs("quarter-nav", "buys")
-def test_the_reports_footer_says_whose_it_is():
-    """The desk's footer says whose it is, and the report, the document that leaves the book,
-    says it too, in the same words from the book's brand, beside the stamp of the code and data
-    that made it. A book whose brand gives none has the stamp alone."""
-    import datetime
-    import html
-    from portfusion import brand
-    footer = render(COMPLETE).split("<footer>")[1].split("</footer>")[0]
-    assert footer.startswith(html.escape(brand.ownership(datetime.date.today().year) or "built "))
+def test_the_reports_footer_is_the_stamp_of_what_made_it():
+    """The desk's footer says which release it is, and the report, the document that leaves the
+    book, says it too, in the stamp of the code and data that made it."""
     from portfusion import about
-    assert about.release() in footer and "store " in footer, "the stamp must stay beside it"
+    footer = render(COMPLETE).split("<footer>")[1].split("</footer>")[0]
+    assert footer.startswith("built ") and about.release() in footer and "store " in footer, footer
 
 
 def test_check_is_read_wherever_it_stands(monkeypatch):

@@ -1,4 +1,4 @@
-"""THE DESK'S OWN ICONS — PortFusion's stand-in mark, for a book whose brand gives none.
+"""THE DESK'S ICONS — PortFusion's stand-in mark.
 
     from portfusion.desk.icon import png
     png(64)                  # the tab's: rounded corners, RGBA
@@ -6,7 +6,6 @@
 
 WHY IT IS A MODULE OF ITS OWN. The page names `/favicon.png` as its icon, and drawing it in
 `app.py` would make the routing module compute something, which is the one thing it does not do.
-A book whose `brand/` holds icons serves those instead, and nothing here runs:
 `desk/bundle.py` says which surface takes which.
 
 THE MARK is `house/mark.py`'s ring on a tile, in proportions held there. The two colours are the
@@ -30,7 +29,7 @@ import struct
 import zlib
 
 #: Which palette token each part of the mark wears. The tokens are `desk.theme`'s; the colours
-#: behind them are house/palette.py's and the brand's, and are never written down here.
+#: behind them are house/palette.py's, and are never written down here.
 ROLES = {
     "tile": "field",        # the ground
     "ring": "on-field",     # the ring, on the field

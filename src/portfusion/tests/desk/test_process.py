@@ -119,7 +119,7 @@ def test_every_font_size_comes_from_the_scale():
         f"these font sizes are literals rather than steps: {sorted(set(literals))}. "
         f"Add a step to :root, or use the one that already means this.")
 
-    scale = {"--text-lead", "--text-body", "--text-note", "--text-label", "--text-micro",
+    scale = {"--text-lead", "--text-body", "--text-note", "--text-label",
              "--text-display", "--text-numeral"}
     used = set(re.findall(r"font-size:\s*var\((--text-[a-z]+)\)", css))
     assert used <= scale, f"unknown step(s): {sorted(used - scale)}"

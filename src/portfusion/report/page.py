@@ -8,9 +8,9 @@ from __future__ import annotations
 import datetime as _dt
 import html
 
-from portfusion import about, brand
+from portfusion import about
 from portfusion.engine import Book
-from portfusion.house import headings as H
+from portfusion.house import headings as H, mark
 from portfusion.house.precision import (MONEY_DP, REPORT_MONEY_DP, day, local_price, money, pct,
                                         points)
 from portfusion.record import rules as D
@@ -147,28 +147,21 @@ def render(quarter_end: str, b: Book | None = None) -> str:
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{name} — {html.escape(brand.NAME)}</title>
+<title>{name} — {mark.NAME}</title>
 <style>{CSS}</style></head><body>
 <div class="wrap">
 
 <header>
-  {brand.lockup()}
+  {mark.lockup()}
   <div class="eyebrow">Quarterly report</div>
   <h1>{name}</h1>
   <p class="lede">As at {label}. All figures GBP.</p>
   {notice(quarter_end)}
 </header>{_RULE}{body}
 
-<footer>{_colophon()}</footer>
+<footer>{about.stamp(store=D.store_dir())}</footer>
 
 </div></body></html>"""
-
-
-def _colophon() -> str:
-    """The footer: the brand's ownership line, if any, then `about.stamp()`."""
-    whose = brand.ownership(_dt.date.today().year)
-    return " &middot; ".join([*([html.escape(whose)] if whose else []),
-                              about.stamp(store=D.store_dir())])
 
 
 def _summary(nav_total, exposure, quarter_return, positions, accounts) -> str:

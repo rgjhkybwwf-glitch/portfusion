@@ -1,9 +1,7 @@
-"""house/palette.py — PortFusion's own colours and typeface, which every book wears unless its brand
-says otherwise.
+"""house/palette.py — PortFusion's own colours and typeface, which every book wears.
 
 The desk and the report turn SCREEN and DARK below into CSS custom properties (`desk/theme.py`,
-`report/style.py`), through `portfusion.brand`, which lays a book's accent and spark over them. A
-colour changed here moves every renderer that wears it, or none.
+`report/style.py`). A colour changed here moves every renderer that wears it, or none.
 
 A STAND-IN. PortFusion's own design system is still to be drawn; until it is, these are a set
 of cool greys, status inks and a graphite accent, with grounds and inks legible in both schemes.
@@ -11,8 +9,9 @@ Its arrival replaces this file's values and nothing else.
 
 Bare six-digit hex; the screens add the `#`.
 
-Imports nothing, so a renderer reads it without loading the record.
+Imports only the standard library, so a renderer reads it without loading the record.
 """
+import pathlib
 
 # ---- the tokens: each colour under its own name ---------------------------------------------
 #: Light first, then the dark theme where it differs.
@@ -67,8 +66,10 @@ FACES = {"sans": '"Archivo", ui-sans-serif, system-ui, sans-serif'}
 
 #: The one file, variable on both axes, declared once across its whole range so `font-stretch`
 #: and `font-weight` drive the axes rather than selecting between files. Openly licensed (SIL
-#: OFL), which is what lets a copy live in `house/fonts/`. A book's brand may name its own.
+#: OFL), which is what lets a copy live in `house/fonts/`.
 FONT = {"family": "Archivo", "file": "archivo.woff2", "weight": "100 900", "stretch": "62% 125%"}
+#: The folder the file is in: the desk serves it from there, and the report embeds it.
+FONT_DIR = pathlib.Path(__file__).resolve().parent / "fonts"
 
 
 # ---- the two screens: each colour named for its job -----------------------------------------
@@ -86,8 +87,8 @@ SCREEN = {
     "faint": _O["ink-muted"],           # the quietest text: the report's labels
     "control": _O["control-line"],      # an input's border
     "recessed": _O["control-bg"],       # an input's ground
-    #: THE ACCENT: links, a selected page, focus, the mark on a light ground. A brand's own colour
-    #: replaces it; in the dark scheme it lightens, so it stays legible on the dark page.
+    #: THE ACCENT: links, a selected page, focus, the mark on a light ground. In the dark scheme
+    #: it lightens, so it stays legible on the dark page.
     "accent": _O["accent"],
     "link": _O["accent"],
     "mark": _O["accent"],

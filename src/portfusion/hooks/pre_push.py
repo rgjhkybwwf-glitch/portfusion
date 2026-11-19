@@ -34,7 +34,7 @@ checks nothing is a choice made by naming the demo. A book's own push does not.
 
 AND IT WRITES UP WHAT IT CHANGES: a branch that changes the app since it left `origin/main`, its
 tests apart, also changes `CHANGELOG.md`, or the push is refused (`unlogged`). The version beside
-it is `test_brand.py`'s to hold.
+it is `test_about.py`'s to hold.
 
 AND IT NAMES THE GUIDES IT LEAVES BEHIND, and lets the push go: a guide that names a file the
 branch changed, when the guide itself did not change (`behind`). Whether its words are still right
