@@ -3,6 +3,8 @@
 Each release, newest first. The version is `src/portfusion/__init__.py`'s, and
 `portfusion --version` prints it.
 
+## Unreleased
+
 ## 0.4.1 — beta, 18 Nov 2026
 
 The words-and-names release: one name for each figure, alike on the desk, the report and
