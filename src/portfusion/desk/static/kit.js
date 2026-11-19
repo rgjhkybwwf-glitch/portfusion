@@ -63,8 +63,8 @@ const actButton = (attrs, html) => `<button class="act" ${attrs}>${html}</button
 /* A step's qualifier, and a link to another tab. One of each: the link is `data-panel`, which
    #main delegates, so a page that redraws keeps it working without wiring its own. */
 const quiet = (text) => `<span class="muted small">${text}</span>`;
-/* A page the server does not list — Bench and Price Refresh on the hosted desk — is left out:
-   a pointer to a page the reader cannot open is an instruction they cannot follow. `held` is
+/* A page the server does not list is left out: a pointer to a page the reader cannot open is an
+   instruction they cannot follow. `held` is
    what the link opens the page with, by box; how long it lasts is wireFilters()'s rule. */
 const panelLink = (panel, label = PANELS.get(panel), held = null) => !PANELS.has(panel) ? "" :
   goButton(`data-panel="${esc(panel)}"${held

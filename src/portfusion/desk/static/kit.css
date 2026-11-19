@@ -149,10 +149,6 @@ table, .fresh, .steps, pre { font-variant-numeric: tabular-nums; }
    below 48rem the rail is a button naming the open page, and pressing it shows the rest. */
 .pages-toggle { display: none; }
 
-/* A SCREEN WITH NOTHING TO NAVIGATE — signing in, the Mac not answering, a version mismatch —
-   draws no rail and no page button. */
-body.bare .rail, body.bare .pages-toggle { display: none; }
-
 /* FOCUS IS ALWAYS SEEN: the design system's ring, 2px solid in ink and offset 2px, on whatever the keyboard
    reaches. */
 :focus-visible { outline: 2px solid var(--heading); outline-offset: 2px; }
@@ -254,10 +250,6 @@ h2:first-of-type { margin-top: 0; }
 pre { font-family: var(--font-sans); }
 .error { border-top: var(--rule-section) solid var(--warn-ink); padding-top: var(--space-2);
          white-space: pre-wrap; font-size: var(--text-note); }
-/* A SCREEN WITH NOTHING TO NAVIGATE says what happened in the design system's display, as a page's title does. */
-body.bare #main > h2 { font-size: var(--text-display); font-weight: 800; font-stretch: 125%;
-                       letter-spacing: -0.015em; text-transform: none; line-height: 1.05;
-                       margin: var(--space-5) 0 var(--space-4); }
 
 button.link {
   appearance: none; background: none; border: 0; padding: 0; cursor: pointer;

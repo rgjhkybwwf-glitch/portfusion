@@ -141,14 +141,6 @@ def test_an_account_with_no_broker_figure_is_a_gap_not_a_pass():
 #: It pins what is SHOWN, not what the engine holds. `Book` may grow a field freely; the
 #: decision this guards is the one about putting it in front of a reader.
 PANEL_COLUMNS = {
-    # WHO OPENS THE HOSTED DESK: readers, each one's devices, the sign-in log, and the key from an
-    # account's code to its name, the one place the owner reads both.
-    "access": {
-        "CODE_COLUMNS": ("code", "label", "account"),
-        "DEVICE_COLUMNS": ("device", "enrolled", "last_used"),
-        "READER_COLUMNS": ("who", "level", "since", "devices", "last_signed_in", "now"),
-        "SIGNIN_COLUMNS": ("at", "result", "who", "device", "address", "detail"),
-    },
     # THE BENCH'S FORMS: every column of the five tables it writes, each headed in the desk's words
     # rather than its store name. Derived from the schema, so a new column joins.
     "bench": {

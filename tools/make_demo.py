@@ -276,11 +276,8 @@ def _book() -> dict[str, list[dict]]:
     T["settings"] = [{"key": k, "value": v} for k, v in (
         ("record_begins", "2026-01-01"), ("reasoning_owed_from", "2026-04-01"),
         ("first_report", "2026-09-30"), ("rate_carried", ""),
-        # An invented hosted desk on a reserved test domain; no deploy or research repository,
-        # so --publish and the research notes decline on the demo, as on a new book.
-        ("hosted_origin", "https://desk.example.test"), ("passkey_domain", "example.test"),
-        ("deploy_repo", ""), ("research_repo", ""),
-        ("insights_url", "https://example.test/insights"))]
+        # No research repository, so the research notes decline on the demo, as on a new book.
+        ("research_repo", ""), ("insights_url", "https://example.test/insights"))]
     T["contracts"] = [
         {"contract": "VELD-SEP26", "funding": "daily", "ticker": "VELD SB"},
         {"contract": "VELD-DEC26", "epic": "DM.D.VELDUS.DEC.IP", "funding": "dated", "ticker": "VELD SB"},

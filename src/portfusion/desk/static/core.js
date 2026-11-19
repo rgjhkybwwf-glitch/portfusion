@@ -66,17 +66,7 @@ async function get(path) {
   let body;
   try { body = JSON.parse(text); } catch (e) { body = { error: r.statusText }; }
   if (!r.ok) {
-    const e = new Error(body.detail || body.error || r.statusText);
-    /* 401 IS THE HOSTED DESK ASKING WHO YOU ARE. The Mac's own door never sends it. */
-    e.signIn = r.status === 401;
-    /* A 502 or 504 that is not the desk's JSON is Netlify's proxy finding no Mac behind the
-       tunnel. The desk's own refusals always come as JSON.
-       SO IS A 500 WITH NOTHING IN IT: Netlify answers that, not a 502, when there is no tunnel
-       at all. The desk's own 500 always says "Internal Server Error", so a crash on the Mac is
-       not mistaken for it. */
-    e.unreachable = ([502, 504].includes(r.status) && !body.detail)
-                    || (r.status === 500 && !text.trim());
-    throw e;
+    throw new Error(body.detail || body.error || r.statusText);
   }
   return body;
 }
@@ -155,13 +145,10 @@ let ACTIONS = {};
 /* And the pages, each with its title, so a link to one the server does not list can say so
    rather than do nothing. */
 let PANELS = new Map();
-/* Whether this page is the hosted desk, which the remote door says of itself. */
-let REMOTE = false;
 
 function takeState(s) {
   ACTIONS = Object.fromEntries(s.actions.map((a) => [a.name, a]));
   PANELS = new Map(s.panels.map((p) => [p.name, p.title]));
-  REMOTE = !!s.remote;
 }
 
 async function loadActions() {

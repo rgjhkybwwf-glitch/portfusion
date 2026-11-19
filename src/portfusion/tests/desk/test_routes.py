@@ -100,8 +100,8 @@ def test_every_state_colour_reaches_the_stylesheet():
 
 
 def test_the_freshness_line_says_what_can_be_out_of_date():
-    """THE DESK'S STATUS BAR: the store, the code, the marks and the hosted desk, each with the
-    thing that moves it beside it.
+    """THE DESK'S STATUS BAR: the store, the code and the marks, each with the thing that moves
+    it beside it.
 
     An exact set rather than a subset: a key that arrives without anyone deciding to add it is
     the drift this assertion exists to catch.
@@ -114,7 +114,7 @@ def test_the_freshness_line_says_what_can_be_out_of_date():
     """
     f = engine.freshness()
     assert set(f) == {"store_changed", "source_stale", "source_changed", "source_files",
-                      "source_count", "prices_as_at", "hosted"}
+                      "source_count", "prices_as_at"}
     assert isinstance(f["source_stale"], bool)
     from portfusion.house.precision import day
     assert f["prices_as_at"] == day(engine.book().valued_at()), \
@@ -163,21 +163,16 @@ def test_a_write_from_another_page_is_refused(client):
 
 def test_a_request_for_another_host_is_refused(client, monkeypatch):
     """DNS REBINDING, which `app.own_page_only()` explains. Any name but the loopback ones is
-    refused, reads included. And BOTH DOORS LISTEN ON 127.0.0.1 ONLY: `portfusion desk` is run
-    with the server stood in for, with and without the remote door, and has no flag to move it."""
+    refused, reads included. And THE DESK LISTENS ON 127.0.0.1 ONLY: `portfusion desk` is run
+    with the server stood in for, and has no flag to move it."""
     import uvicorn
-    from portfusion.desk import __main__ as desk, remote
+    from portfusion.desk import __main__ as desk
     assert client.get("/api/health", headers={"Host": "evil.example:8765"}).status_code == 403
     assert client.get("/api/health", headers={"Host": "localhost:8765"}).status_code == 200
     bound = []
     monkeypatch.setattr(uvicorn, "run", lambda app, **kw: bound.append(kw.get("host")))
-    monkeypatch.setattr(uvicorn, "Config", lambda app, **kw: bound.append(kw.get("host")))
-    monkeypatch.setattr(uvicorn, "Server", lambda config: None)
-    monkeypatch.setattr(desk.asyncio, "run", lambda serving: serving.close())
-    monkeypatch.setattr(remote, "PORT", None)
     desk.main(["--no-open"])
-    desk.main(["--no-open", "--remote-port", "8768"])
-    assert bound == ["127.0.0.1"] * 3, bound
+    assert bound == ["127.0.0.1"], bound
     with pytest.raises(SystemExit):
         desk.main(["--no-open", "--host", "0.0.0.0"])
 
@@ -464,8 +459,7 @@ def test_a_name_off_the_workbench_reads_nothing_from_the_books_folder(client, tm
 
 def test_a_record_that_will_not_load_is_unavailable_on_every_panel(tmp_path):
     """ONE CELL NO LOADER ACCEPTS: the shell and every panel say "record unavailable" (503), the
-    shell with the record's own words naming the file, and the remote door still opens with the
-    book's settings. Served from a child process, on a copy of the demo with one cell no loader
+    shell with the record's own words naming the file. Served from a child process, on a copy of the demo with one cell no loader
     accepts, so this process's record is untouched."""
     import json
     import shutil
@@ -483,21 +477,19 @@ def test_a_record_that_will_not_load_is_unavailable_on_every_panel(tmp_path):
     probe = (
         "import json\n"
         "from fastapi.testclient import TestClient\n"
-        "from portfusion.desk import app, panels, remote\n"
+        "from portfusion.desk import app, panels\n"
         f"c = TestClient(app.app, base_url={DESK!r})\n"
         "names = [p.stem.replace('_', '-') for p in __import__('pathlib').Path(panels.__file__)"
         ".parent.glob('[a-z]*.py')]\n"
         "state = c.get('/api/state')\n"
         "out = {n: c.get(f'/api/panel/{n}').status_code for n in names}\n"
         "out['/api/state'] = [state.status_code, state.json().get('detail', '')]\n"
-        "out['remote'] = remote.unconfigured()\n"
         "print(json.dumps(out))\n")
     run = subprocess.run([sys.executable, "-c", probe], capture_output=True, text=True,
                          env={**__import__("os").environ, "PORTFUSION_BOOK": str(book)})
     assert run.returncode == 0, run.stderr[-1500:]
     codes = json.loads(run.stdout.strip().splitlines()[-1])
     status, said = codes.pop("/api/state")
-    assert codes.pop("remote") == [], "the remote door did not read the book's settings"
     assert status == 503 and "buys.csv" in said, (status, said)
     assert len(codes) == len(panels.all_panels()) and set(codes.values()) == {503}, codes
 

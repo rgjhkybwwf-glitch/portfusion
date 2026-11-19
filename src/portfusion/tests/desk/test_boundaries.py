@@ -141,17 +141,11 @@ def test_reaches_is_not_a_fourth_value_on_writes():
 #:
 #: UNDER desk/:
 #:
-#:   auth.py          the hosted desk's three files at the root, all out of git and none the
-#:                    record: the passkeys (.desk_passkeys.json), each reader's level
-#:                    (.desk_readers.json), and the sign-in log it appends to
-#:                    (.desk_signins.jsonl, opened for appending).
 #:   bench.py         its own item note, in _inbox/.bench/ — staging, never the record
 #:   commit.py        APPENDS AN EVENT to store/
 #:   envelope.py      WRITES BACK WHAT A DOOR HELD when its write fails (`envelope.atomic()`), and
 #:                    the journal, the placing and the rewriting the store doors share
 #:   dropoff.py       a dropped document into _inbox/
-#:   publish.py       the deploy repository's clone, the book's `deploy_repo` — the hosted
-#:                    desk's generated files. Outside this repository and never the record.
 #:   freeze.py        APPENDS A QUARTER END to store/, from the engine, once a quarter, and
 #:                    RESTATES one by superseding its rows. Not commit.py,
 #:                    because a frozen quarter is not an event anybody entered; not marks.py,
@@ -189,10 +183,10 @@ def test_reaches_is_not_a_fourth_value_on_writes():
 #:
 #: desk/icon.py RETURNS BYTES and writes nothing — if it ever starts writing, this set is what
 #: says so.
-WRITERS = {"desk/agent.py", "desk/auth.py", "desk/intake/bench.py", "desk/doors/commit.py",
+WRITERS = {"desk/agent.py", "desk/intake/bench.py", "desk/doors/commit.py",
            "desk/doors/envelope.py", "desk/intake/dropoff.py", "desk/doors/freeze.py",
            "desk/doors/marks.py", "desk/doors/observations.py", "desk/doors/research_notes.py",
-           "desk/intake/withdraw.py", "desk/publish.py", "feeds/ig.py", "feeds/tv.py",
+           "desk/intake/withdraw.py", "feeds/ig.py", "feeds/tv.py",
            "history/_appendonly.py", "init/__init__.py", "record/migrations.py"}
 
 

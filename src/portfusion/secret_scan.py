@@ -1,9 +1,8 @@
 """secret_scan.py — WHAT A CREDENTIAL LOOKS LIKE, so nothing secret leaves a book's folder.
 
-A book's folder holds the files that reach its brokers and readers (`credentials.json`, the feeds'
-sessions, the hosted desk's proxy secret). Two places must never carry what is in them: a commit,
-and the hosted desk's published shell. Both ask here, so there is one statement of what counts:
-`.githooks/pre-commit` and `commit-msg` refuse a commit by it, and `desk/publish.py` a publish.
+A book's folder holds the files that reach its brokers (`credentials.json`, the feeds' sessions).
+A commit must never carry what is in them, so there is one statement of what counts:
+`.githooks/pre-commit` and `commit-msg` refuse a commit by it.
 
 It names WHICH credential matched, never the value, because a refusal that quoted the key would
 leave it in the terminal's scrollback.
@@ -33,11 +32,6 @@ SECRET_FILES = {
     ".env": ".env",
     ".ig_session.json": ".ig_session.json",
     ".tv_session.json": ".tv_session.json",
-    ".desk_passkeys.json": None,
-    ".desk_readers.json": None,
-    ".desk_signins.jsonl": None,
-    ".desk_proxy_secret.json": ".desk_proxy_secret.json",
-    ".desk_*.tmp": None,                    # desk/auth.py's, part-way through being replaced
 }
 CREDENTIAL_FILES = tuple(f for f in SECRET_FILES.values() if f)
 

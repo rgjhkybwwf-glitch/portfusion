@@ -224,23 +224,6 @@ BY_TAB = {
         "feed_key": "Feed",
         "record_begins": "Record begins",                   # blank for an account held from the book's opening
     },
-    # WHO OPENS THE HOSTED DESK, on the Mac's Access page. `at` is when a sign-in was tried, so
-    # it is not What Changed's "Recorded".
-    "Access": {
-        "who": "Reader",
-        "level": "Level",
-        "since": "Since",                   # when the reader was given their first level
-        "devices": "Devices",
-        "last_signed_in": "Last signed in",
-        "now": "Now",
-        "device": "Device",
-        "enrolled": "Enrolled",
-        "last_used": "Last used",
-        "at": "At",
-        "result": "Result",
-        "address": "Address",               # where a sign-in came from
-        "label": "Named as",
-    },
     # PAGES WITH NO HEADING OF THEIR OWN, named so that a tab nobody named is refused rather than
     # read as one of them.
     "Method": {},

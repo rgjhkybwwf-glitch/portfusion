@@ -40,18 +40,6 @@ credentials.*
 # credentials to the TradingView account, alerts and watchlists included, for as long as
 # the refresh token lives.
 .tv_session.json
-# The passkeys enrolled for the hosted desk (desk/auth.py). Public keys rather than secrets,
-# but they say who may sign in, so they stay on the machine running the desk. With them, each
-# reader's level and the sign-in log, whose addresses and times are nobody else's business.
-.desk_passkeys.json
-.desk_passkeys.tmp
-.desk_readers.json
-.desk_readers.tmp
-.desk_signins.jsonl
-.desk_signins.tmp
-# The secret Netlify signs each proxied request with (desk/remote.py). A
-# credential: whoever holds it can reach the door as if through the hosted page.
-.desk_proxy_secret.json
 
 # The demo book's workbench (PORTFUSION_BOOK=demo, record/schema.py), ignored as a book's is
 # (`init.GITIGNORE`). The other files a book keeps beside its store are ignored by the patterns

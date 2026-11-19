@@ -62,40 +62,22 @@ function drawFreshness(f) {
      its glance with. The Price Refresh tab sits directly below this line, so it needs no link
      here. */
   const prices = f.prices_as_at ? ` · prices as at ${esc(f.prices_as_at)}` : "";
-  /* THE HOSTED DESK, as this Mac sees it (desk/publish.py:status()): its tunnel, and whether the
-     version published is the one on disk. Drawn on the Mac only; the hosted page checks the
-     version for itself before drawing anything. A STALE DESK CANNOT SAY THE HOSTED ONE IS BEHIND:
-     its own version is worked out partly from the code it loaded, so it says restart first. */
-  const h = f.hosted;
-  const hosted = !h || REMOTE ? "" :
-    !h.tunnel ? ` · <span class="stale">hosted: tunnel off</span>` :
-    h.published !== h.current
-      ? ` · <span class="stale">hosted: ${!h.published ? "not published"
-          : f.source_stale ? "restart first" : "behind, publish"}</span>`
-      : ` · hosted: live`;
-  /* THE BUTTONS ARE THE SERVER'S TO OFFER. The remote door lists no actions, so a hosted page
-     shows the line and neither button. */
+  /* THE BUTTON IS THE SERVER'S TO OFFER. */
   $("#fresh").innerHTML =
-    `store changed ${esc(f.store_changed || "—")}${source}${prices}${hosted}` +
-    (ACTIONS["restart-desk"] ? ` · ${actButton(`id="restart"`, "restart the desk")}` : "") +
-    (REMOTE ? ` · ${actButton(`id="leave"`, "sign out")}` : "");
+    `store changed ${esc(f.store_changed || "—")}${source}${prices}` +
+    (ACTIONS["restart-desk"] ? ` · ${actButton(`id="restart"`, "restart the desk")}` : "");
   wireRestart();
-  $("#leave")?.addEventListener("click", async () => {
-    await fetch("/auth/sign-out", { method: "POST" }).catch(() => null);
-    location.reload();
-  });
 }
 
 function drawTabs(panels, active, onPick) {
   const tab = (p) =>
     `<button${p.name === active ? ` aria-current="page"` : ""} data-name="${esc(p.name)}">` +
     `${esc(p.title)}</button>`;
-  /* THE PAGES APART FROM THE WORK sit below a rule, off the thread, with no heading: Method and
-     Access on the Mac (`APART` on the panel module). The rule alone sets them apart. */
+  /* THE PAGES APART FROM THE WORK sit below a rule, off the thread, with no heading: Method
+     (`APART` on the panel module). The rule alone sets them apart. */
   const apart = panels.filter((p) => p.apart);
   /* THE BUTTONS ARE BUILT ONCE, and a pick only moves `aria-current`: a button rewritten under
-     the reader's focus takes the focus with it. A screen that empties the rail (the sign-in, the
-     unreachable Mac, another version) has them built again. */
+     the reader's focus takes the focus with it. */
   const tabs = $("#tabs");
   if (!tabs.querySelector("button")) {
     tabs.innerHTML =
@@ -272,7 +254,7 @@ function markBoxes(list) {
   const pinned = (c) => (c && getComputedStyle(c).position === "sticky" ? c : null);
   const boxes = list.map((b) => {
     const t = b.querySelector(":scope > table");
-    const rows = ":scope > tbody > tr:not(.detail-row):not(.devices)";
+    const rows = ":scope > tbody > tr:not(.detail-row)";
     return [b, b.scrollWidth, b.clientWidth + (parseFloat(getComputedStyle(b).borderRightWidth) || 0),
             t?.tHead?.offsetHeight || 0,
             pinned(t?.querySelector(`${rows} > td:first-child`))?.offsetWidth || 0,
@@ -395,12 +377,9 @@ function paintPanel(p) {
   return WIRE[p.name]?.(p.data, false);
 }
 
-/* A PAGE THAT COULD NOT BE READ: the hosted door asking who you are, no Mac behind it, or the
-   record's own refusal, verbatim — it names the exact file that was missing, which is the useful
-   half. */
+/* A PAGE THAT COULD NOT BE READ: the record's own refusal, verbatim — it names the exact file
+   that was missing, which is the useful half. */
 function drawFailure(e) {
-  if (e.signIn) return drawSignIn();
-  if (e.unreachable) return drawUnreachable();
   $("#main").innerHTML = `<h2>The record refused to load</h2><pre class="error">${esc(e.message)}</pre>`;
 }
 
@@ -434,109 +413,7 @@ async function show(name) {
     }
   }
   const s = await fresh;
-  if (s) { takeState(s); drawFreshness(s.freshness); otherVersion(s); }
-}
-
-/* ---------------------------------------------------------------------------------------
-   SIGNING IN — the hosted desk only, drawn when its door answers 401.
-
-   A PASSKEY, NOT A PASSWORD. The browser keeps a key for the book's passkey_domain and signs the
-   door's challenge with Face ID or Touch ID; desk/auth.py checks it. A device is enrolled once,
-   with a code issued on the Mac's Access page. The reader's level is the door's to apply.
-
-   The browser's passkey calls take and give binary, and the door speaks JSON, so the byte
-   fields cross as base64url — the encoding WebAuthn's own JSON form uses.
-   --------------------------------------------------------------------------------------- */
-const b64u = {
-  dec: (s) => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/")
-                                  + "===".slice((s.length + 3) % 4)), (c) => c.charCodeAt(0)).buffer,
-  enc: (b) => btoa(String.fromCharCode(...new Uint8Array(b)))
-                .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""),
-};
-
-/* THE HOSTED PAGE AND THE MAC MUST BE ONE VERSION. The page is published when the owner chooses,
-   and the Mac's desk moves at every merge; a page drawing data from a different version would
-   be new figures in old screens, the mixture engine.source_stale() exists to name. So it
-   draws nothing but the two versions until it is published again. */
-const PAGE_VERSION = document.querySelector('meta[name="desk-version"]')?.content;
-
-function otherVersion(s) {
-  if (!s.remote || s.version === PAGE_VERSION) return false;
-  document.body.classList.add("bare");
-  $("#tabs").innerHTML = "";
-  /* A MAC RUNNING OLDER CODE THAN IS ON DISK works its version out partly from what it loaded
-     before, and no publish can match that, so it is told to restart before anything else. */
-  const fix = s.freshness?.source_stale
-    ? "the Mac's desk is running older code than is on disk: restart it there first\n" +
-      "(its restart button, or launchctl kickstart -k gui/$UID/org.portfusion.desk)"
-    : "on the Mac:  portfusion desk --publish";
-  $("#main").innerHTML = `<h2>This page and the Mac's desk are different versions</h2>
-    <pre class="error">this page   ${esc(PAGE_VERSION)}\nthe Mac     ${esc(s.version)}\n
-${esc(fix)}</pre>`;
-  return true;
-}
-
-function drawUnreachable() {
-  document.body.classList.add("bare");
-  $("#tabs").innerHTML = "";
-  $("#fresh").innerHTML = "";
-  $("#main").innerHTML = `<h2>The Mac isn't answering</h2>
-    <pre class="error">asleep, offline, or the tunnel is off</pre>`;
-}
-
-/* THE FRONT DOOR: the field with the book's mark beside the form. The mark is the header's
-   own, copied into the field, so it is still drawn once, from the book's brand. */
-function drawSignIn(why) {
-  document.body.classList.add("bare");
-  $("#tabs").innerHTML = "";
-  $("#fresh").innerHTML = "";
-  const web = document.querySelector(".lockup svg")?.outerHTML || "";
-  $("#main").innerHTML = `<section class="signin">
-    <div class="signin-field">${web}<h1>The desk</h1></div>
-    <div class="signin-form">
-      <button class="primary" id="signin">Sign in with your passkey</button>
-      <label class="f"><span>Enrol code</span><input id="enrol-code" autocomplete="off" size="10"></label>
-      <button class="secondary" id="enrol">Enrol this device</button>
-      <pre id="signin-out" class="error"${why ? "" : " hidden"}>${esc(why || "")}</pre>
-    </div>
-  </section>`;
-  $("#signin").addEventListener("click", () =>
-    passkey("/auth/options", "/auth/verify", "get"));
-  $("#enrol").addEventListener("click", () =>
-    passkey("/auth/enrol/options", "/auth/enrol/verify", "create",
-            { code: $("#enrol-code").value }));
-}
-
-async function passkey(ask, answer, verb, body) {
-  const out = $("#signin-out");
-  try {
-    const o = await post(ask, body || {});
-    if (o.error) throw new Error(o.error);
-    const opts = o.body;
-    opts.challenge = b64u.dec(opts.challenge);
-    if (opts.user) opts.user.id = b64u.dec(opts.user.id);
-    for (const c of [...(opts.excludeCredentials || []), ...(opts.allowCredentials || [])]) {
-      c.id = b64u.dec(c.id);
-    }
-    const cred = await navigator.credentials[verb]({ publicKey: opts });
-    const r = cred.response;
-    const response = { clientDataJSON: b64u.enc(r.clientDataJSON) };
-    if (r.attestationObject) {
-      response.attestationObject = b64u.enc(r.attestationObject);
-      response.transports = r.getTransports ? r.getTransports() : [];
-    } else {
-      response.authenticatorData = b64u.enc(r.authenticatorData);
-      response.signature = b64u.enc(r.signature);
-      if (r.userHandle) response.userHandle = b64u.enc(r.userHandle);
-    }
-    const v = await post(answer, { id: cred.id, rawId: b64u.enc(cred.rawId), type: cred.type,
-                                   response, clientExtensionResults: {} });
-    if (v.error) throw new Error(v.error);
-    location.reload();
-  } catch (e) {
-    out.hidden = false;
-    out.textContent = e.message;
-  }
+  if (s) { takeState(s); drawFreshness(s.freshness); }
 }
 
 (async function start() {
@@ -544,7 +421,6 @@ async function passkey(ask, answer, verb, body) {
     watchForData();
     const s = await get("/api/state");
     takeState(s);
-    if (otherVersion(s)) { drawFreshness(s.freshness); return; }
     let active = location.hash.slice(1) || s.panels[0]?.name;
     if (!s.panels.some((p) => p.name === active)) active = s.panels[0]?.name;
     /* THE ADDRESS NAMES THE PAGE, AND THE BROWSER'S BACK AND FORWARD MOVE IT.
@@ -592,8 +468,6 @@ async function passkey(ask, answer, verb, body) {
     if (first) await paintPanel(first);
     else await show(active);          // let show() render the failure in its own words
   } catch (e) {
-    if (e.signIn) { drawSignIn(); return; }
-    if (e.unreachable) { drawUnreachable(); return; }
     $("#main").innerHTML = `<h2>The desk could not start</h2><pre class="error">${esc(e.message)}</pre>`;
   }
 })();

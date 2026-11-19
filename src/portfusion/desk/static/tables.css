@@ -78,8 +78,8 @@ tr.detail-row .scroll { margin: var(--space-2) 0; max-height: none; }
 .scroll { scroll-padding: var(--pin-top) var(--pin-right) 0 var(--pin-left); }
 .scroll > table > thead > tr > * { position: sticky; top: 0; z-index: 2; background: var(--paper); }
 .scroll > table > thead > tr > :first-child { left: 0; z-index: 3; }
-.scroll > table > tbody > tr:not(.detail-row):not(.devices) > td { white-space: nowrap; }
-.scroll > table > tbody > tr:not(.detail-row):not(.devices) > td:first-child {
+.scroll > table > tbody > tr:not(.detail-row) > td { white-space: nowrap; }
+.scroll > table > tbody > tr:not(.detail-row) > td:first-child {
   position: sticky; left: 0; z-index: 1; background: var(--paper);
 }
 /* THE PINNED EDGE shows only while the box scrolls sideways (`overflows`, set by app.js). */
@@ -91,7 +91,7 @@ tr.detail-row .scroll { margin: var(--space-2) 0; max-height: none; }
    inside the cell, as the hairline is, since a border would join the table's grid and move its
    columns. */
 .scroll.more-left > table > thead > tr > :first-child,
-.scroll.more-left > table > tbody > tr:not(.detail-row):not(.devices) > td:first-child {
+.scroll.more-left > table > tbody > tr:not(.detail-row) > td:first-child {
   box-shadow: inset calc(-1 * var(--rule-section)) 0 0 var(--control);
 }
 /* A BOX WITH NOTHING PINNED AT ITS RIGHT carries it on its own right edge: a border while the
@@ -105,15 +105,15 @@ tr.detail-row .scroll { margin: var(--space-2) 0; max-height: none; }
    box's own edge none. */
 @media (min-width: 70rem) {
   .scroll > table[data-links] > thead > tr > :last-child { right: 0; z-index: 3; }
-  .scroll > table[data-links] > tbody > tr:not(.detail-row):not(.devices) > td:last-child {
+  .scroll > table[data-links] > tbody > tr:not(.detail-row) > td:last-child {
     position: sticky; right: 0; z-index: 1; background: var(--paper);
   }
   .scroll.overflows > table[data-links] > thead > tr > :last-child,
-  .scroll.overflows > table[data-links] > tbody > tr:not(.detail-row):not(.devices) > td:last-child {
+  .scroll.overflows > table[data-links] > tbody > tr:not(.detail-row) > td:last-child {
     box-shadow: inset 1px 0 0 var(--hair);
   }
   .scroll.more-right > table[data-links] > thead > tr > :last-child,
-  .scroll.more-right > table[data-links] > tbody > tr:not(.detail-row):not(.devices) > td:last-child {
+  .scroll.more-right > table[data-links] > tbody > tr:not(.detail-row) > td:last-child {
     box-shadow: inset var(--rule-section) 0 0 var(--control);
   }
   .scroll.overflows:has(> table[data-links]) { border-right: 0; }

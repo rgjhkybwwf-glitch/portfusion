@@ -148,9 +148,8 @@ not *realized*.
 | The journal | **Recorded · Route · Did · Table · Rows · Retrieves** |
 | Where a figure came from | **Source · FX at trade · FX from · Notes** |
 | The judgement | **Why · Research notes** |
-| Who opens the hosted desk | **Reader · Level · Since · Devices · Last signed in · Now · Device · Enrolled · Last used · At · Result · Address · Named as** |
 | A currency as a category, on the Dashboard | **Currency** |
-| What happened, on a capital movement, an income row, a write or a sign-in | **Detail**; a row's detail opens in `DETAIL`'s order (`kit.js`) |
+| What happened, on a capital movement, an income row or a write | **Detail**; a row's detail opens in `DETAIL`'s order (`kit.js`) |
 
 **Entry price and Traded price are different quantities**: the first is the weighted mean of the
 legs still held, the second what one fill paid.
@@ -294,7 +293,7 @@ A value outside these fails **on load**, naming the table, the row and the colum
 | `contribution` | `positions at market` · `account equity` · `notional` | `quarter-nav` |
 | `quality` | `sourced` · `derived` | `quarter-nav` · `quarter-snapshots` |
 | `struck` | `close` · `live` | `fx` · `current-prices` |
-| `key` | `record_begins` · `reasoning_owed_from` · `first_report` · `rate_carried` · `hosted_origin` · `passkey_domain` · `deploy_repo` · `research_repo` · `insights_url` · `practice` | `settings` |
+| `key` | `record_begins` · `reasoning_owed_from` · `first_report` · `rate_carried` · `research_repo` · `insights_url` · `practice` | `settings` |
 | `funding` | `daily` · `dated` | `contracts` |
 | `route` | `baseline` · `bench` · `marks` · `freeze` · `hand` · `migrate` | `journal` |
 | `op` | `open` · `append` · `replace` · `remove` | `journal` |

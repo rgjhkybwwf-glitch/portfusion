@@ -67,7 +67,7 @@ once, here, beside that test.
 
 | # | Rule | Held by |
 |---|---|---|
-| 16 | **The desk answers only this Mac and signed-in readers.** The local desk listens on 127.0.0.1 only; the hosted door fails shut without its secret, only reads, serves only its pinned routes, answers only a signed-in reader at their level, and withholds holders' names from a principal. | `test_routes.py::test_a_request_for_another_host_is_refused`, `test_remote.py::test_with_no_secret_on_the_mac_the_door_fails_shut`, `test_remote.py::test_every_remote_route_only_reads`, `test_remote.py::test_the_remote_door_serves_only_the_pinned_routes`, `test_remote.py::test_each_level_opens_what_was_agreed`, `test_remote.py::test_a_principal_reads_no_holder_and_no_number_anywhere` |
+| 16 | **The desk answers only this Mac.** The desk listens on 127.0.0.1 only, and answers only its own page. | `test_routes.py::test_a_request_for_another_host_is_refused` |
 | 17 | **The feeds only read.** A feed makes only allowlisted reads, refused by name before a request is built; a feed writes no mark and no event. | `test_ig.py::test_guard_refuses_everything_that_is_not_a_read`, `test_tv.py::test_the_allowlist_is_checked_before_a_request_is_built`, `test_tv.py::test_a_feed_writes_nothing_but_its_own_sign_in` |
 
 ### Upgrades and releases
@@ -111,7 +111,6 @@ Kept by review, and by the test named where there is one.
 | a column heading | `house/headings.py` | `tests/test_figures.py` |
 | a desk panel | `desk/panels/<name>.py` | `tests/desk/test_panels.py` |
 | a desk button | its `Action` in `desk/actions.py` | `tests/desk/test_boundaries.py` |
-| a route on the hosted desk | `REMOTE_ROUTES` in `desk/remote.py` | `tests/desk/test_remote.py` |
 | anything that writes a file, or opens a file of the store | its door, named in `WRITERS` or `STORE_FILE_DOORS` | `tests/desk/test_boundaries.py`, `tests/record/test_store_doors.py` |
 | a kind of document | an `Evidence` in `record/rules_evidence.py` | `tests/record/test_evidence.py` |
 | which part of the app may import which | an import contract in `pyproject.toml` | `lint-imports` |

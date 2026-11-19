@@ -7,8 +7,6 @@ THE RULES ARE RENDERED FROM THE RECORD, never retyped: `rules.SPREAD_BET`, `STAT
 `SOURCE_HIERARCHY` and its note, the tolerance band, the income categories, the price
 limits and the reasoning cut-off are interpolated from the constants, through the engine's pinned
 record. tests/record/test_record.py refuses a file that writes the hierarchy out in its own words.
-
-The Mac's desk only: it is not in `remote.REMOTE_PANELS`.
 """
 from __future__ import annotations
 

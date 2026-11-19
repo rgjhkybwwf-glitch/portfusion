@@ -16,8 +16,8 @@ landing screen — `app.js` opens whatever comes first; then the work — BENCH 
 WHAT CHANGED · RECONCILE; then the book — PERFORMANCE · HOLDINGS · ROUND TRIPS · TRADES ·
 ACCOUNTS; then REPORTS, read after the work it reports on, which ends the thread. PRICE REFRESH
 PRECEDES WHAT CHANGED because you run a refresh and then read what it did; RECONCILE closes the
-work because it reads both. METHOD and ACCESS sit APART, below a rule with no heading: how the
-numbers are made and who reads them are not work on the book.
+work because it reads both. METHOD sits APART, below a rule with no heading: how the numbers are
+made is not work on the book.
 
 A PANEL HAS ONE NAME: its file, its URL and its title agree (`test_a_panel_has_one_name`).
 
