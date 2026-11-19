@@ -8,36 +8,33 @@ page in the same pull request.
 
 The map holds to the content map's decisions (#3):
 
-- **Thirteen pages, one job each.** No page is removed. Accounts and Access answer no job of their
-  own and stay: Accounts holds the register and the money in and out, Access who may read.
+- **Twelve pages, one job each.** Accounts answers no job of its own and stays: it holds the
+  register and the money in and out.
 - **"Why the value moved" is to be answered on Performance**: a quarter's row will open to what
   made its gain (#153, slices #251 and #252). What Changed stays, after Price Refresh, as what the
   last refresh moved and what was recorded, and will point to Performance. No period chooser.
-- Asked on their own cards: how a figure leads to its working (#154, slices #256 to #258), the
-  report's format and how it is sent (#155), and which pages the hosted desk carries (#6). Until
-  then the working stays on Method, the report stays one page the desk renders, and the hosted
-  desk keeps the pages it has.
+- Asked on their own cards: how a figure leads to its working (#154, slices #256 to #258), and
+  the report's format and how it is sent (#155). Until then the working stays on Method, and the
+  report stays one page the desk renders.
 
 ## The desk's pages
 
-In tab order (each panel's `ORDER`, `desk/panels/`). Hosted: the page is in `REMOTE_PANELS`
-(`desk/remote.py`), so a signed-in reader may open it ([`access-levels.md`](access-levels.md)).
+In tab order (each panel's `ORDER`, `desk/panels/`).
 
-| Page | Jobs | What it shows | Hosted |
-|---|---|---|---|
-| Dashboard | 4, part of 8 | net asset value, exposure and its two parts, the year's return, and the other headline figures; "Needs attention", what the record needs, each leading to the page that does its work, where a desk page does; "What was checked" | yes |
-| Bench | 2, 3 | documents waiting, and an item's evidence, proposed rows, reasoning and gates | no |
-| Price Refresh | 1 | bank, fetch, review, write | no |
-| What Changed | part of 6 | what the prices did, for shares and for spread bets, each line against its own previous price; every write to the record since | yes |
-| Reconcile | 5 | what disagrees; every account against its broker | yes |
-| Performance | 8, part of 6 | each quarter, for the book and for each account; the year so far | yes |
-| Holdings | 7, part of 10 | every line; a row's reasoning, research notes, company life, income and price history; where the exposure sits | yes |
-| Round Trips | 9, parts of 7 and 10 | every position sold, in part or whole, by holding or by company life | yes |
-| Trades | 10, part of 7 | every buy and sale, with no totals | yes |
-| Accounts | part of 5 | the register, external capital, income and costs for the year | no |
-| Reports | 11 | each quarter's report and whether it is ready; the year end, not built | yes |
-| Method | 12 | how the numbers are made and what enters the record, in eighteen topics; no figure leads to it yet (#154) | no |
-| Access | none | levels, readers, devices, sign-ins | no |
+| Page | Jobs | What it shows |
+|---|---|---|
+| Dashboard | 4, part of 8 | net asset value, exposure and its two parts, the year's return, and the other headline figures; "Needs attention", what the record needs, each leading to the page that does its work, where a desk page does; "What was checked" |
+| Bench | 2, 3 | documents waiting, and an item's evidence, proposed rows, reasoning and gates |
+| Price Refresh | 1 | bank, fetch, review, write |
+| What Changed | part of 6 | what the prices did, for shares and for spread bets, each line against its own previous price; every write to the record since |
+| Reconcile | 5 | what disagrees; every account against its broker |
+| Performance | 8, part of 6 | each quarter, for the book and for each account; the year so far |
+| Holdings | 7, part of 10 | every line; a row's reasoning, research notes, company life, income and price history; where the exposure sits |
+| Round Trips | 9, parts of 7 and 10 | every position sold, in part or whole, by holding or by company life |
+| Trades | 10, part of 7 | every buy and sale, with no totals |
+| Accounts | part of 5 | the register, external capital, income and costs for the year |
+| Reports | 11 | each quarter's report and whether it is ready; the year end, not built |
+| Method | 12 | how the numbers are made and what enters the record, in eighteen topics; no figure leads to it yet (#154) |
 
 ## The report's sections
 

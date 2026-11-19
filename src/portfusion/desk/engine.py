@@ -233,8 +233,8 @@ def source_stale() -> dict:
 
 
 def freshness() -> dict:
-    """When the store last changed, the date the prices stand at, whether the desk's own code has
-    moved under it, and the hosted desk's state. Every page carries this line.
+    """When the store last changed, the date the prices stand at, and whether the desk's own code
+    has moved under it. Every page carries this line.
 
     THE CODE IS THE SIGNAL A READER ACTS ON HERE — see `source_stale()` — and it is what says when
     the restart button on this line is needed.
@@ -254,13 +254,6 @@ def freshness() -> dict:
         prices_as_at = None
 
     src = source_stale()
-    # THE HOSTED DESK — its tunnel, and whether what is published is what is on disk.
-    # None unless this process opened the remote door. desk/publish.py reads it locally.
-    try:
-        from portfusion.desk import publish
-        hosted = publish.status()
-    except Exception:                       # noqa: BLE001 — as the price date above
-        hosted = None
     return {"store_changed": _stamp(s),
             "prices_as_at": day(prices_as_at) if prices_as_at else None,
             "source_stale": src["stale"],
@@ -269,5 +262,4 @@ def freshness() -> dict:
             # tells you what moved. Capped so a rebase does not fill the header line, with the full
             # count beside it so the cap is visible rather than silent.
             "source_files": src["files"][:4],
-            "source_count": len(src["files"]),
-            "hosted": hosted}
+            "source_count": len(src["files"])}

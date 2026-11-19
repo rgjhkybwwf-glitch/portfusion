@@ -22,7 +22,7 @@ the same port. This process answers the request, then exits. The browser polls /
 
 UNDER THE AGENT, LAUNCHD RESTARTS IT. A replacement this process spawned would be nobody's
 child (ppid 1), and the LaunchAgent would no longer own the desk: a later `launchctl kickstart`
-could not stop it, and the agent's fresh copy would find the ports taken. So when launchd names
+could not stop it, and the agent's fresh copy would find the port taken. So when launchd names
 THIS pid as its job's, the detached child asks launchd to `kickstart -k` that job instead, and
 the plist's own arguments and environment come back with it. `XPC_SERVICE_NAME` alone is not
 proof — a desk started from a terminal or an app inherits that app's — so the label it gives is
@@ -44,7 +44,7 @@ EXIT_DELAY = 0.5
 
 _WAITER = """
 import os, socket, subprocess, sys, time
-pid, port, project, extra = int(sys.argv[1]), sys.argv[2], sys.argv[3], sys.argv[4:]
+pid, port, project = int(sys.argv[1]), sys.argv[2], sys.argv[3]
 
 # WAIT FOR THE OLD PROCESS, NOT FOR A FIXED DELAY. os.kill(pid, 0) raises once it is gone.
 for _ in range(400):
@@ -54,20 +54,19 @@ for _ in range(400):
         break
     time.sleep(0.05)
 
-# AND THEN FOR EACH PORT, which outlives the process by a moment in TIME_WAIT.
-for p in [port, *extra[1::2]]:
-    for _ in range(400):
-        s = socket.socket()
-        try:
-            s.bind(("127.0.0.1", int(p)))
-            s.close()
-            break
-        except OSError:
-            s.close()
-            time.sleep(0.05)
+# AND THEN FOR THE PORT, which outlives the process by a moment in TIME_WAIT.
+for _ in range(400):
+    s = socket.socket()
+    try:
+        s.bind(("127.0.0.1", int(port)))
+        s.close()
+        break
+    except OSError:
+        s.close()
+        time.sleep(0.05)
 
 os.chdir(project)
-subprocess.Popen([sys.executable, "-m", "portfusion.desk", "--no-open", "--port", port, *extra],
+subprocess.Popen([sys.executable, "-m", "portfusion.desk", "--no-open", "--port", port],
                  cwd=project, start_new_session=True)
 """
 
@@ -130,13 +129,9 @@ def restart(port: int = 8765) -> dict:
 
     from portfusion.record import schema
     project = str(schema.BOOK)              # the book's folder: the desk needs no checkout
-    # THE REMOTE DOOR COMES BACK WITH IT, on the port it had: a restart that dropped it would
-    # leave the hosted desk pointing at nothing until someone noticed.
-    from portfusion.desk import remote
-    extra = ["--remote-port", str(remote.PORT)] if remote.PORT else []
     try:
         child = subprocess.Popen(
-            [sys.executable, "-c", _WAITER, str(os.getpid()), str(port), project, *extra],
+            [sys.executable, "-c", _WAITER, str(os.getpid()), str(port), project],
             cwd=project, start_new_session=True,
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     except Exception as e:                      # noqa: BLE001 — the button must report, not raise
@@ -148,8 +143,7 @@ def restart(port: int = 8765) -> dict:
 
 
 # THE BUTTON IS THE SHELL'S. Every page draws it on the rail's freshness line, which is where a
-# stale desk is noticed; no page lists it, and the hosted desk, whose door lists no actions, never
-# shows it. `writes=None` IS LITERAL: it touches no file at all; what it replaces is the PROCESS.
+# stale desk is noticed; no page lists it. `writes=None` IS LITERAL: it touches no file at all; what it replaces is the PROCESS.
 # `desk/actions.py:_load_panels()` imports this module so the button is in the registry before
 # the registry is read, as every panel's are.
 register(Action(

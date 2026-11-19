@@ -483,7 +483,7 @@ def test_the_opened_on_nothing_caveat_appears_when_the_condition_does():
 
 def test_the_tabs_run_in_the_order_of_the_work():
     """THE ORDER OF THE WORK: where the book stands, then the work, then the book's own pages, then
-    the reports, which end the thread; Method and Access apart, below the rule.
+    the reports, which end the thread; Method apart, below the rule.
     `desk/panels/__init__.py` says why each sits where it does. Pinned on TITLE, so a renamed or
     moved tab is a decision written here."""
     assert [m.TITLE for m in panels.all_panels()] == [
@@ -491,9 +491,9 @@ def test_the_tabs_run_in_the_order_of_the_work():
         "Bench", "Price Refresh", "What Changed", "Reconcile",
         "Performance", "Holdings", "Round Trips", "Trades", "Accounts",
         "Reports",
-        "Method", "Access"]
+        "Method"]
     assert [m.TITLE for m in panels.all_panels() if getattr(m, "APART", False)] == \
-        ["Method", "Access"], "the pages below the rule are a decision written here"
+        ["Method"], "the pages below the rule are a decision written here"
 
 
 def test_the_query_routes_defer_to_their_panels():
@@ -1013,10 +1013,9 @@ def test_the_dashboard_lists_the_checks_the_audit_prints():
 
 def test_the_footer_says_whose_it_is_and_which_release():
     """Every page's footer says whose the desk is and which release it is, each held once — the
-    book's words in its brand, the release in portfusion/__init__.py — and filled into the shell
-    the Mac and the hosted desk both serve: "© <owner> · <release>", the app's half alone where a
-    brand gives no ownership line. Never "Nothing here is typed": the Bench is where rows are
-    typed."""
+    book's words in its brand, the release in portfusion/__init__.py — and filled into the shell:
+    "© <owner> · <release>", the app's half alone where a brand gives no ownership line. Never
+    "Nothing here is typed": the Bench is where rows are typed."""
     import datetime
     from portfusion import about, brand
     from portfusion.desk import bundle

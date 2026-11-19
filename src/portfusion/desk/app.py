@@ -1,5 +1,4 @@
-"""The local desk's FastAPI application: routes, and nothing else. `desk/remote.py` is the
-hosted door's, with its sign-in; `actions.py` and `panels/` know neither.
+"""The desk's FastAPI application: routes, and nothing else.
 
 IT COMPUTES NOTHING. Every figure comes from a panel, every panel from `desk.engine`, and
 `desk.engine` from `engine/`.
@@ -60,7 +59,7 @@ def unavailable(request: Request, e: engine.RecordUnavailable) -> JSONResponse:
 
 @app.get("/")
 def index():
-    """The shell, built by `desk/bundle.py` — the same bytes the hosted desk is published from.
+    """The shell, built by `desk/bundle.py`.
 
     `no-store` on the responses is not enough on its own: a browser holds a script it already
     parsed, so a page can go on running an app.js rewritten on disk minutes earlier. So every
@@ -96,8 +95,7 @@ def health():
                         headers=NO_STORE)
 
 
-#: What each kind of shell file is served as. Netlify sends the same types by extension, all but
-#: the manifest's, which `desk/publish.py`'s `_HEADERS` sets and says why.
+#: What each kind of shell file is served as.
 MEDIA = {".css": "text/css", ".js": "text/javascript", ".png": "image/png",
          ".woff2": "font/woff2", ".webmanifest": "application/manifest+json"}
 
@@ -168,19 +166,6 @@ def tokens():
     replacing it is how a different design system drops in.
     """
     return _shell("/tokens.css")
-
-
-@app.post("/api/enrol")
-def enrol(body: dict = Body(...)):
-    """A one-time code for enrolling a passkey on the hosted desk, asked of THIS door, so only
-    someone at the Mac can make one. The Access page's button and `portfusion desk --enrol <name>`
-    ask it; the code is typed into the hosted sign-in page. A new reader's level comes with it.
-    Writes nothing: the code lives in memory, for ten minutes."""
-    from portfusion.desk import auth
-    try:
-        return auth.enrol_code(str(body.get("who", "")), body.get("level") or None)
-    except auth.Refused as e:
-        raise HTTPException(400, str(e))
 
 
 @app.get("/api/state")
@@ -451,14 +436,8 @@ def sweep_status(body: dict = Body(default={})):
 
 
 def _registered(sent: str) -> str:
-    """The register's account for the one a filter sent. The reading pages name an account by its
-    label, so a label or a code is mapped back by `naming.Naming.account`, the hosted door's own
-    map; a register name, which the hosted door sends on for a reader who may not see names,
-    goes through."""
-    try:
-        return naming.of(engine.book()).account(sent)
-    except ValueError:
-        return sent
+    """The register's account for the one a filter sent (`naming.Naming.account`)."""
+    return naming.of(engine.book()).account(sent)
 
 
 @app.get("/api/holdings")

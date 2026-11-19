@@ -3,8 +3,5 @@ record_begins,2026-01-01
 reasoning_owed_from,2026-04-01
 first_report,2026-09-30
 rate_carried,
-hosted_origin,https://desk.example.test
-passkey_domain,example.test
-deploy_repo,
 research_repo,
 insights_url,https://example.test/insights

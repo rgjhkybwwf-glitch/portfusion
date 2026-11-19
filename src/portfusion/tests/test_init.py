@@ -49,7 +49,7 @@ def test_an_empty_books_settings_name_every_key_and_date_its_record(tmp_path):
         dated = dict(settings(begins))
         assert (dated["record_begins"], dated["reasoning_owed_from"], dated["first_report"]) == (
             begins, begins, first), dated
-    assert not any(rows[k] for k in ("hosted_origin", "passkey_domain", "deploy_repo", "research_repo"))
+    assert not rows["research_repo"]
 
 
 def test_a_practice_book_is_the_demo_and_says_so(tmp_path):
@@ -95,8 +95,7 @@ def test_a_book_is_never_written_over(tmp_path):
 
 
 #: What a new user opens first, asked of a book `create()` has just written: the engine's
-#: figures and findings, every page the desk serves and the hosted desk's renaming of them, and
-#: the report's gate on its first quarter.
+#: figures and findings, every page the desk serves, and the report's gate on its first quarter.
 _OPENS = """
 from fastapi.testclient import TestClient
 from portfusion.desk import app, panels
@@ -115,9 +114,6 @@ paths = ["/", "/api/state", "/api/holdings", "/api/round-trips", "/api/round-tri
          *[f"/api/panel/{m.NAME}" for m in panels.all_panels()]]
 failed = [(p, r.status_code) for p in paths if (r := desk.get(p)).status_code != 200]
 assert not failed, failed
-from portfusion.desk import naming, remote
-for name in remote.REMOTE_PANELS:          # what the hosted door renames before it answers
-    naming.of(b).apply(desk.get(f"/api/panel/{name}").json())
 """
 
 

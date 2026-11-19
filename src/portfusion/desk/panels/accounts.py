@@ -5,10 +5,6 @@ engine's frame. The reconciliation has a page of its own (Reconcile).
 NOTHING IS SUMMED HERE. The year's income by account is `Book.income_summary()`'s, the report's
 table for a quarter, and its firm row is the Dashboard's YTD income; a total worked out of these
 rows would be a second answer to both.
-
-THE MAC ONLY: the register names holders and account numbers, which the hosted desk's readers
-are shown as codes (`desk/naming.py`), and a register of codes tells its reader nothing. It is
-not in `remote.REMOTE_PANELS`.
 """
 from __future__ import annotations
 

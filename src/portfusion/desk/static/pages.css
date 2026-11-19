@@ -1,11 +1,5 @@
 /* THE PAGES: what one page wears that no other does. */
 
-/* ACCESS: an enrol code is read off the screen and typed on another device, so it is set large,
-   spaced, in tabular figures. */
-.enrol-code { display: block; font-size: var(--text-numeral); font-weight: 800;
-              letter-spacing: 0.08em; font-variant-numeric: tabular-nums; color: var(--heading); }
-tr.devices > td { padding: 0 0 var(--space-3) var(--space-5); }
-
 /* WHAT CHANGED — the two bases, one under the other, and the windows above them.
 
    A BLOCK IS A SECTION UNDER ITS CLOCK. Its label is a sub-heading in the column heads' ink, so
@@ -52,22 +46,6 @@ tr.devices > td { padding: 0 0 var(--space-3) var(--space-5); }
 .items li.report .tag { min-width: 16ch; }
 .items li.report .gaps { flex-basis: 100%; margin: 0; padding-left: var(--space-5);
                          color: var(--muted); font-size: var(--text-note); }
-
-/* SIGNING IN: the field beside the form, as the hosted desk's own front door. The field carries
-   the book's web in white; the form asks for the passkey first and the enrol code after it. */
-.signin { display: flex; flex-wrap: wrap; margin-top: var(--space-5); }
-.signin-field { flex: 1 1 20rem; display: flex; flex-direction: column; justify-content: flex-end;
-                gap: var(--space-5); min-height: 22rem; padding: var(--space-6);
-                background: var(--field); color: var(--on-field); }
-.signin-field svg { width: 6rem; height: auto; }
-.signin-field svg g { stroke: var(--on-field); }
-.signin-field svg circle { fill: var(--on-field); }
-.signin-field h1 { margin: 0; font-size: var(--text-display); font-weight: 800; font-stretch: 125%;
-                   line-height: 1.05; color: var(--on-field); }
-.signin-form { flex: 1 1 20rem; display: flex; flex-direction: column; align-items: flex-start;
-               gap: var(--space-4); padding: var(--space-6); border: 1px solid var(--hair); }
-.signin-form .f { width: 100%; max-width: 20rem; }
-.signin-form #signin { width: 100%; max-width: 20rem; }
 
 /* What Changed's earlier writes: the journal before the span its marks cover, folded. */
 .earlier { margin-top: var(--space-3); }

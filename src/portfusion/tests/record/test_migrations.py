@@ -12,6 +12,8 @@ import json
 import pathlib
 import shutil
 
+import pytest
+
 from portfusion.record import migrations as M, schema
 
 #: A MADE-UP MOVE: a table renamed, a column renamed, and the buys' one money column split by
@@ -146,16 +148,28 @@ def test_a_book_two_moves_behind_is_carried_through_both_before_it_is_opened(tmp
     assert _files(book) == old
 
 
-def test_a_book_holding_the_flag_lists_is_refused_carried_and_opens(tmp_path):
-    """THIS RELEASE'S MOVE, on the demo put back before it. Its settings hold the TradingView flag
-    lists' three rows, counted when its journal opened, and the loader refuses the book naming
-    one. `carry()` removes them and journals the removal, so the book opens and its journal still
+#: EACH MOVE OF SETTINGS THIS RELEASE CARRIES: the rows a book in the shape before it holds.
+_DROPPED = {
+    "flag lists": [(k, f"10000000{i}") for i, k in enumerate(M.FLAG_LISTS, 1)],
+    "hosted desk": [("hosted_origin", "https://desk.example.test"),
+                    ("passkey_domain", "example.test"), ("deploy_repo", "")],
+}
+
+
+@pytest.mark.parametrize("move", _DROPPED)
+def test_a_book_holding_dropped_settings_is_refused_carried_and_opens(tmp_path, move):
+    """THIS RELEASE'S MOVES, each on the demo put back before it. Its settings hold the rows the
+    move drops, counted when its journal opened, and the loader refuses the book naming one.
+    `carry()` removes them and journals the removal, so the book opens and its journal still
     closes; `put_back()` returns the old shape byte for byte. A book in this release's shape has
-    nothing to carry, and a check reading a flag list is listed to move by hand."""
-    import pytest
+    nothing to carry, and a check reading a dropped key is listed to move by hand."""
     import portfusion
     from portfusion.engine import Book
     from portfusion.record import rules
+    import re
+    added_rows = _DROPPED[move]
+    key = added_rows[0][0]
+    move_of = [m for m in M.MIGRATIONS if any(re.search(c, key) for c in m.code)]
     book = _demo_copy(tmp_path)
     assert M.plan(book) == (None, []) and M.carry(book) == ([], {})
 
@@ -165,28 +179,28 @@ def test_a_book_holding_the_flag_lists_is_refused_carried_and_opens(tmp_path):
         out = io.StringIO()
         csv.writer(out, lineterminator="\n").writerows(fn(rows))
         (store / name).write_text(out.getvalue(), encoding="utf-8")
-    rewrite("settings.csv", lambda rows: rows + [[k, f"10000000{i}"]
-                                                 for i, k in enumerate(M.FLAG_LISTS, 1)])
+    rewrite("settings.csv", lambda rows: rows + [list(r) for r in added_rows])
     rewrite("journal.csv", lambda rows: [
-        r[:4] + [str(int(r[4]) + 3)] + r[5:] if r[1:4] == ["baseline", "open", "settings"] else r
-        for r in rows])
+        r[:4] + [str(int(r[4]) + len(added_rows))] + r[5:]
+        if r[1:4] == ["baseline", "open", "settings"] else r for r in rows])
     (book / "checks").mkdir()
-    (book / "checks" / "test_mine.py").write_text('lists = D.SETTINGS["tv_list_live"]\n')
+    (book / "checks" / "test_mine.py").write_text(f'value = D.SETTINGS["{key}"]\n')
     old = _files(book)
-    with pytest.raises(ValueError, match="'tv_list_live' is not one of"):
+    with pytest.raises(ValueError, match=f"'{key}' is not one of"):
         with rules.store_at(store):
             pass
-    assert M.named_in_checks(book) == ['test_mine.py:1: lists = D.SETTINGS["tv_list_live"]']
+    assert M.named_in_checks(book) == [f'test_mine.py:1: value = D.SETTINGS["{key}"]']
 
     done, before = M.carry(book)
-    assert done == list(M.MIGRATIONS)
+    assert len(move_of) == 1 and done == move_of, [m.issue for m in done]
     assert (store / "settings.csv").read_bytes() == (schema.DEMO / "store" / "settings.csv").read_bytes()
     added = (store / "journal.csv").read_bytes()[len(old[pathlib.Path("store/journal.csv")]):]
     assert added.decode().split(",")[1:6] == [
-        "migrate", "remove", "settings", "3", f"portfusion {portfusion.__version__}"], added
+        "migrate", "remove", "settings", str(len(added_rows)),
+        f"portfusion {portfusion.__version__}"], added
     assert M.plan(book) == (None, []), "a moved book still planned a move"
     with rules.store_at(store):
-        assert "tv_list_live" not in rules.SETTINGS
+        assert key not in rules.SETTINGS
         assert Book().journal_unaccounted().empty, "the journal no longer closes"
 
     M.put_back(before)

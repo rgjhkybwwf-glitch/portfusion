@@ -206,9 +206,9 @@ def test_every_report_says_the_positions_are_the_firms_own():
 @needs("quarter-nav", "buys")
 @pytest.mark.parametrize("quarter_end", [COMPLETE, FIRST_REPORTED])
 def test_the_report_names_every_account_by_its_code_and_no_holder(quarter_end):
-    """THE REPORT IS THE DOCUMENT THAT LEAVES THE BOOK, so wherever it is read, on the Mac or on
-    the hosted desk, an account is its register code and label, and no holder's name, register
-    name or account number is on the page."""
+    """THE REPORT IS THE DOCUMENT THAT LEAVES THE BOOK, so wherever it is read an account is its
+    register code and label, and no holder's name, register name or account number is on the
+    page."""
     import re
     b = Book()
     page = render(quarter_end)

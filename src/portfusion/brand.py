@@ -13,7 +13,7 @@ which is what a new book and the demo do.
 
 brand.toml:
 
-    name = "…"                      where a book is read: the tab, the Dock, the report, a passkey
+    name = "…"                      where a book is read: the tab, the Dock, the report
     ownership = "© {year} …"        the footer's first half; {year} is the page's own
     wordmark = ["…", "…"]           the lockup's lines: the name, then a smaller line under it
     [light] / [dark]                any of BRAND_ROLES, as six-digit hex

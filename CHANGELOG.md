@@ -5,6 +5,37 @@ Each release, newest first. The version is `src/portfusion/__init__.py`'s, and
 
 ## Unreleased
 
+### Removed
+
+- **The hosted desk is retired** (#5, #6). The desk is the Mac's alone, on 127.0.0.1: the remote
+  door and its tunnel port, the passkey sign-in and its access levels, `portfusion desk
+  --publish`, `--remote-port`, `--enrol` and `--level` are gone, and so are the Access page, the
+  freshness line's *hosted:* state and the sign-in screen. A book's account codes and labels stay,
+  on the report and the reading pages.
+- **A store move: settings `hosted_origin`, `passkey_domain` and `deploy_repo` are dropped.**
+  `portfusion migrate --write` removes their rows from `store/settings.csv` and journals it; the
+  loader refuses a book that still holds one.
+- **webauthn, cbor2 and cryptography leave the dependencies**, with what only they brought: cffi,
+  pycparser, pyOpenSSL, pyasn1 and pyasn1-modules. pypdf opened an AES-encrypted PDF with
+  cryptography; such a document now needs it installed by hand.
+
+### Upgrading a book
+
+- **Take the new `.gitignore` first**, from a book `portfusion init` makes in a scratch folder: it
+  no longer lists the hosted desk's four files, and the audit `migrate --write` runs refuses the
+  old one, putting the move back.
+- **Run `portfusion migrate --write`** when the book's pin moves: it drops the three settings rows.
+  A book's `checks/` that reads one is listed, to move by hand.
+- **Install the desk's agent again** if it was installed with the remote door: `portfusion desk
+  --uninstall-agent`, then `--install-agent`. An agent that still passes `--remote-port` will not
+  start.
+- **Delete the hosted desk's files from the book's folder**, which nothing reads now: the
+  passkeys, the readers, the sign-in log and the proxy secret, each named `.desk_` and something.
+- **Reinstall against `requirements.lock`**, its `-c` line moved with the pin.
+- **Take down what served it**, outside the book: the Tailscale Funnel (`tailscale funnel
+  --https=443 off`), the Netlify project with its `DESK_PROXY_SECRET`, and the deploy-only
+  repository.
+
 ## 0.4.1 — beta, 18 Nov 2026
 
 The words-and-names release: one name for each figure, alike on the desk, the report and

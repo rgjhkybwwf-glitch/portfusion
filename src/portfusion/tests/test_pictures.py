@@ -42,7 +42,7 @@ def test_a_page_not_named_fails_the_retake_by_name(pictures, monkeypatch, caplog
     """THE CASE THAT MAKES IT FAIL: a picture that moved and is not named, which a retake of every
     page would have kept."""
     monkeypatch.setenv("PR_BODY", "Pictures: bench")
-    assert pictures.judge({"bench"}, _png("bench", "trades", "access")) == (["bench"], ["access", "trades"])
+    assert pictures.judge({"bench"}, _png("bench", "trades", "reports")) == (["bench"], ["reports", "trades"])
     with caplog.at_level("INFO", logger="portfusion"):
         assert pictures.main(_png("bench", "trades")) == 1
     assert "for pages the pull request does not name: trades." in caplog.text

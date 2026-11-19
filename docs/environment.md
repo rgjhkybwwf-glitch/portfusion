@@ -82,4 +82,3 @@ a green.
 |---|---|---|
 | `PORTFUSION_BOOK` | every command, the suite and the `pre-push` hook | the book to read, as above |
 | `MAIN_REWRITE` | the `pre-push` hook | the first seven or more characters of the remote `main` a push may replace |
-| `DESK_PROXY_SECRET` | Netlify, not the Mac | the proxy secret ([`desk-app.md`](desk-app.md)) |

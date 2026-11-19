@@ -34,8 +34,8 @@ APP = pathlib.Path(__file__).resolve().parents[1]
 ROOT = APP.parents[1] if (APP.parents[1] / "pyproject.toml").is_file() else None
 
 #: THE BOOK: the folder one book lives in. Its store, the documents filed behind it, its inbox,
-#: its reports, and the files that reach its brokers and readers (credentials, sessions,
-#: passkeys) are all inside it, so a book read from elsewhere can touch nothing of this one.
+#: its reports, and the files that reach its brokers (credentials, sessions) are all inside it,
+#: so a book read from elsewhere can touch nothing of this one.
 #: The PORTFUSION_BOOK environment variable names it, absolute or relative to where the command
 #: was typed, as any path on a command line is; the word `demo` is the invented demo book the
 #: app ships. UNSET, IT IS THE BOOK IN THE FOLDER THE COMMAND WAS TYPED IN, and with none there it
@@ -655,11 +655,8 @@ SETTING_KEYS = (
     "reasoning_owed_from",  # a thesis or an exit reason is owed for a position opened or closed from here
     "first_report",         # the first quarter end the quarterly report is built for
     "rate_carried",         # currencies whose live rate is not refreshed, space-separated
-    # WHERE THIS BOOK IS PUBLISHED AND WHAT IT READS BESIDE ITSELF. Each is optional: without one,
-    # the feature that needs it declines and names the key, so a new book starts with none.
-    "hosted_origin",        # the hosted desk's own origin, the one page whose writes the remote door takes
-    "passkey_domain",       # whose passkeys the hosted desk's are: a domain the origin sits under
-    "deploy_repo",          # the deploy-only repository's local clone, which `--publish` writes
+    # WHAT THIS BOOK READS BESIDE ITSELF. Each is optional: without one, the feature that needs it
+    # declines and names the key, so a new book starts with none.
     "research_repo",        # the research repository, read for published notes
     "insights_url",         # where a published note is read, its slug appended
     # WHAT KIND OF BOOK THIS IS, when it is not a real one.

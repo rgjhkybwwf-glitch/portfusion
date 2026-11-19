@@ -16,10 +16,10 @@ Three checks, over what is STAGED rather than the working tree:
 The message does not exist yet when the files are checked, so git hands it over to a hook of its
 own: `commit-msg` runs `--message <file>`, the second and third checks over the message.
 
-What counts as a credential, and which fields are exempt, is `portfusion/secret_scan.py`, which the
-hosted desk's publish asks too. THE GATE IS THE APP'S, so every repository it guards asks the one
-copy: this checkout's `.githooks/pre-commit` runs it from `src/`, and a book's, which
-`portfusion init` writes (`init.HOOK`), runs it from the portfusion the book has installed.
+What counts as a credential, and which fields are exempt, is `portfusion/secret_scan.py`.
+THE GATE IS THE APP'S, so every repository it guards asks the one copy: this checkout's
+`.githooks/pre-commit` runs it from `src/`, and a book's, which `portfusion init` writes
+(`init.HOOK`), runs it from the portfusion the book has installed.
 `git commit --no-verify` bypasses both; that is git's own escape hatch and deliberately the only
 one.
 

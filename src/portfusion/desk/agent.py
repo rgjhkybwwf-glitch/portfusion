@@ -11,7 +11,6 @@ WHAT THE PLIST SAYS is everything the agent needs, so no shell profile is read:
   * the interpreter that typed the command — the book's own venv, which runs the release the
     book pins (docs/environment.md);
   * `PORTFUSION_BOOK`, absolute, and the book's folder to run in;
-  * the remote door on `REMOTE_PORT`, when the book's settings name a hosted desk;
   * a log in ~/Library/Logs.
 
 `desk/restart.py` finds the job again from inside it (`launchd_job()`), whatever its label.
@@ -30,8 +29,6 @@ LABEL = "org.portfusion.desk"
 AGENTS = pathlib.Path.home() / "Library" / "LaunchAgents"
 #: Where the agent's output goes.
 LOG = pathlib.Path.home() / "Library" / "Logs" / "portfusion-desk.log"
-#: The remote door's port, which the tunnel forwards to (docs/desk-app.md).
-REMOTE_PORT = 8768
 
 
 class Refused(Exception):
@@ -42,13 +39,9 @@ def plist_path() -> pathlib.Path:
     return AGENTS / f"{LABEL}.plist"
 
 
-def plist(book: pathlib.Path, python: str, remote_port: int | None) -> dict:
-    """The agent's plist for `book`, run by `python`, with the remote door on `remote_port` (None:
-    the Mac's desk alone)."""
-    args = [python, "-m", "portfusion.desk", "--no-open"]
-    if remote_port is not None:
-        args += ["--remote-port", str(remote_port)]
-    return {"Label": LABEL, "ProgramArguments": args,
+def plist(book: pathlib.Path, python: str) -> dict:
+    """The agent's plist for `book`, run by `python`."""
+    return {"Label": LABEL, "ProgramArguments": [python, "-m", "portfusion.desk", "--no-open"],
             "EnvironmentVariables": {"PORTFUSION_BOOK": str(book)},
             "WorkingDirectory": str(book), "RunAtLoad": True, "ProcessType": "Interactive",
             "StandardOutPath": str(LOG), "StandardErrorPath": str(LOG)}
@@ -93,7 +86,7 @@ def _unload() -> None:
         time.sleep(0.1)
 
 
-def install(book: pathlib.Path, remote_port: int | None, python: str = sys.executable) -> str:
+def install(book: pathlib.Path, python: str = sys.executable) -> str:
     """Write the agent's plist for `book` and (re)load it. Returns what was done, in a line.
 
     Side effects: writes `plist_path()`; boots out and bootstraps the launchd job `LABEL`.
@@ -117,14 +110,13 @@ def install(book: pathlib.Path, remote_port: int | None, python: str = sys.execu
                           f"remove it first:  portfusion desk --uninstall-agent")
     AGENTS.mkdir(parents=True, exist_ok=True)
     LOG.parent.mkdir(parents=True, exist_ok=True)
-    plist_path().write_bytes(plistlib.dumps(plist(book, python, remote_port)))
+    plist_path().write_bytes(plistlib.dumps(plist(book, python)))
     _unload()
     done = _launchctl("bootstrap", _target().rsplit("/", 1)[0], str(plist_path()))
     if done.returncode != 0:
         raise Refused(f"the plist is written ({plist_path()}), but launchd would not load it: "
                       f"{done.stderr.strip() or done.returncode}")
-    door = f", the remote door on {remote_port}" if remote_port is not None else ""
-    return f"the desk starts at login for {book}{door} — {plist_path()}"
+    return f"the desk starts at login for {book} — {plist_path()}"
 
 
 def uninstall() -> str:

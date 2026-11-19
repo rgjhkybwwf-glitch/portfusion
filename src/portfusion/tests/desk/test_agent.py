@@ -36,7 +36,7 @@ def test_the_agent_runs_the_book_it_was_installed_for_on_the_python_that_install
     """Everything the agent needs is in its plist, so no shell profile is read at login: the
     book's venv, the book absolute and its folder to run in, and the log."""
     book = tmp_path / "book"
-    agent.install(book, None, python="/a/book/.venv/bin/python3")
+    agent.install(book, python="/a/book/.venv/bin/python3")
     p = _written()
     assert p["Label"] == agent.LABEL and agent.plist_path().name == f"{agent.LABEL}.plist"
     assert p["ProgramArguments"] == ["/a/book/.venv/bin/python3", "-m", "portfusion.desk", "--no-open"]
@@ -46,26 +46,21 @@ def test_the_agent_runs_the_book_it_was_installed_for_on_the_python_that_install
     assert ("bootstrap", agents[-1][1], str(agent.plist_path())) == agents[-1]
 
 
-def test_a_book_with_a_hosted_desk_gets_its_remote_door(agents, tmp_path):
-    agent.install(tmp_path / "book", agent.REMOTE_PORT)
-    assert _written()["ProgramArguments"][-2:] == ["--remote-port", str(agent.REMOTE_PORT)]
-
-
 def test_installing_again_for_the_same_book_restarts_it(agents, tmp_path):
     """The way to bring the agent onto newly installed code: it is booted out before it is
     loaded again, never bootstrapped over itself."""
-    agent.install(tmp_path / "book", None)
+    agent.install(tmp_path / "book")
     agents.clear()
-    agent.install(tmp_path / "book", None)
+    agent.install(tmp_path / "book")
     verbs = [c[0] for c in agents]
     assert verbs.index("bootout") < verbs.index("bootstrap")
 
 
 def test_an_agent_for_another_book_is_refused_and_left_as_it_was(agents, tmp_path):
-    agent.install(tmp_path / "one", None)
+    agent.install(tmp_path / "one")
     was = agent.plist_path().read_bytes()
     with pytest.raises(agent.Refused, match="another book"):
-        agent.install(tmp_path / "two", None)
+        agent.install(tmp_path / "two")
     assert agent.plist_path().read_bytes() == was
 
 
@@ -79,13 +74,13 @@ def test_another_agent_that_runs_the_desk_is_named_and_never_removed(agents, tmp
     (agent.AGENTS / "unrelated.plist").write_bytes(plistlib.dumps({"Label": "x",
                                                                    "ProgramArguments": ["x"]}))
     with pytest.raises(agent.Refused, match="an.older.desk") as e:
-        agent.install(tmp_path / "book", None)
+        agent.install(tmp_path / "book")
     assert "unrelated" not in str(e.value) and old.exists()
     assert not agent.plist_path().exists()
 
 
 def test_uninstalling_removes_the_plist_it_wrote_and_nothing_else(agents, tmp_path):
-    agent.install(tmp_path / "book", None)
+    agent.install(tmp_path / "book")
     (agent.AGENTS / "unrelated.plist").write_bytes(b"")
     agent.uninstall()
     assert not agent.plist_path().exists() and (agent.AGENTS / "unrelated.plist").exists()
@@ -95,5 +90,5 @@ def test_uninstalling_removes_the_plist_it_wrote_and_nothing_else(agents, tmp_pa
 def test_off_macos_nothing_is_written(agents, tmp_path, monkeypatch):
     monkeypatch.setattr(sys, "platform", "linux")
     with pytest.raises(agent.Refused, match="macOS"):
-        agent.install(tmp_path / "book", None)
+        agent.install(tmp_path / "book")
     assert not agent.AGENTS.exists() and agents == []

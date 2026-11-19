@@ -32,7 +32,7 @@ book could pass or fail belongs in `tests/` or the audit, never in a book's `che
 | `tools/clean_room.py` | the tracked files install fresh and pass on the demo and on a new, empty book, and the wheel built from them passes `portfusion check` | that nothing of a book is named in what leaves |
 | `tiers.yml`, by `tools/tiers.py` and `tools/figures.py` | a pull request's risk tier, by the paths it changes, and for tier 2 whether the demo's headline figures moved between the base and the branch | that a figure is right, or that a change no path shows (the slice that turns a feature on) is held |
 | `ruff check` | the code holds none of the faults `pyproject.toml` selects: an undefined or unused name, a blind `except`, a stray `print` | layout: there is no formatter |
-| the secret scan, `.githooks/pre-commit --history` | no commit holds a secret's shape or a file that reaches a broker or a reader | a secret in a shape it does not know |
+| the secret scan, `.githooks/pre-commit --history` | no commit holds a secret's shape or a file that reaches a broker | a secret in a shape it does not know |
 | `lint-imports` | each part of the app imports only what `pyproject.toml`'s contracts allow, the build no desk, feed or history | an import made by name at run time (`importlib`) |
 | `pyright` | the packages `pyproject.toml` lists type-check | anything of the packages it does not list, or the names `rules._build()` binds |
 | CI's `newest` job | the suite passes on the newest packages the floors allow, without `requirements.lock`; not a required check | that the lock's own set passes: the guard proves that |

@@ -26,11 +26,11 @@ from portfusion import secret_scan
 #: The folders a book keeps beside its store, each made empty.
 FOLDERS = ("_archive/statements", "_archive/bench", "_inbox")
 
-#: WHAT A BOOK'S OWN REPOSITORY MUST NEVER HOLD: the files that reach its brokers and readers
+#: WHAT A BOOK'S OWN REPOSITORY MUST NEVER HOLD: the files that reach its brokers
 #: (`secret_scan.SECRET_FILES`), and the documents still being worked on. Written as the book's
 #: .gitignore.
 GITIGNORE = """\
-# The files that reach the brokers and the readers, and the shapes a key arrives in from
+# The files that reach the brokers, and the shapes a key arrives in from
 # anywhere else: never in git.
 """ + "".join(f"{pattern}\n" for pattern in secret_scan.SECRET_FILES) + """\
 # A document resting in the inbox is unfinished work.

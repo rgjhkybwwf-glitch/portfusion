@@ -1,24 +1,16 @@
 """THE SHELL AS ONE SET OF FILES — everything a browser loads before its first /api call.
 
     from portfusion.desk import bundle
-    bundle.files()      # {"/": b"<!doctype html>…", "/static/core.js": b"…", "/tokens.css": …}
-    bundle.version()    # "3f9c2a1b7d04" — the name of this exact set
+    bundle.index()               # b"<!doctype html>…", every asset linked by its content
+    bundle.asset("/tokens.css")  # one asset's bytes; KeyError for anything not in `paths()`
 
-ONE SOURCE, TWO SERVERS. The Mac desk answers `/`, `/static/*`, `/tokens.css`, `/favicon.png`,
-the app icons, `/manifest.webmanifest` and `/fonts/*` from here, and `portfusion desk --publish`
-writes the same mapping out for Netlify. The
-hosted desk and the Mac's are therefore the same bytes by construction, and
-`tests/desk/test_bundle.py` requests every path over HTTP to hold it. A file the shell needs
-joins by being named in `paths()`; a second list anywhere else would be the drift this prevents.
+ONE SOURCE. The desk answers `/`, `/static/*`, `/tokens.css`, `/favicon.png`, the app icons,
+`/manifest.webmanifest` and `/fonts/*` from here, and `tests/desk/test_bundle.py` requests every
+path over HTTP to hold it. A file the shell needs joins by being named in `paths()`; a second
+list anywhere else would be the drift this prevents.
 
 A CHANGED FILE GETS A CHANGED URL. Each stylesheet and script is linked with `?v=` and the start
-of its own content hash, so a browser can never run an older copy inside a fresh shell. Content
-rather than modification time, because the hosted copy is written by a checkout and a time
-would differ where the bytes do not.
-
-THE VERSION names the whole set: a hash over every file except the shell page, which carries it
-in `<meta name="desk-version">`. Not "build", which in this repo is the report's. The hosted page compares it with the Mac's before it draws anything,
-so old screen code never renders new data — the mixture `engine.source_stale()` guards against.
+of its own content hash, so a browser can never run an older copy inside a fresh shell.
 
 IT COMPUTES NOTHING OF THE BOOK'S. The colours come from `theme.tokens_css()`, the lockup, the
 name and the footer's words from `portfusion.brand`, the icons from the
@@ -55,16 +47,15 @@ assert set(APP_ICON_SIZES) == set(brand.APP_ICONS)
 #: loads last. `index()` writes the page's script tags from this, and nowhere else states it.
 SCRIPTS = ("core.js", "kit.js", "what-changed.js", "dashboard.js", "holdings.js", "round-trips.js",
            "method.js", "accounts.js", "reports.js", "performance.js", "trades.js", "reconcile.js",
-           "access.js", "bench.js", "sweep.js", "price-refresh.js", "app.js")
+           "bench.js", "sweep.js", "price-refresh.js", "app.js")
 
 #: THE DESK'S STYLESHEET, in the order it is linked: a later file's rule wins a tie with an
 #: earlier one's, so the kit comes first and the phone's rules last. `index()` writes the page's
 #: link tags from this.
 STYLES = ("kit.css", "tables.css", "pages.css", "bench.css", "phone.css")
 
-#: WHAT EVERY FILE OF THE SHELL IS SENT WITH, by the Mac's door and in the hosted desk's
-#: `_headers` (`desk/publish.py`) alike: the page loads and connects to its own origin only, and
-#: nothing may frame it; no type is sniffed and no referrer sent.
+#: WHAT EVERY FILE OF THE SHELL IS SENT WITH: the page loads and connects to its own origin only,
+#: and nothing may frame it; no type is sniffed and no referrer sent.
 SHELL_HEADERS = {
     "Content-Security-Policy": "default-src 'self'; img-src 'self' data:; frame-ancestors 'none'; "
                                "base-uri 'none'; form-action 'none'",
@@ -157,35 +148,17 @@ def _digest(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()[:12]
 
 
-def version(assets: dict[str, bytes] | None = None) -> str:
-    """The name of this set of files: one hash over every asset, path and bytes together."""
-    assets = assets if assets is not None else {p: asset(p) for p in paths()}
-    h = hashlib.sha256()
-    for path in sorted(assets):
-        h.update(path.encode() + b"\0" + assets[path] + b"\0")
-    return h.hexdigest()[:12]
-
-
-def index(assets: dict[str, bytes] | None = None) -> bytes:
-    """The page: the template, its assets stamped by content, the lockup, and the version."""
-    assets = assets if assets is not None else {p: asset(p) for p in paths()}
+def index() -> bytes:
+    """The page: the template, its assets stamped by content, and the lockup."""
     html = (STATIC / "index.html").read_text(encoding="utf-8")
     html = html.replace("<!-- styles -->", "\n".join(
         f'<link rel="stylesheet" href="/static/{n}">' for n in STYLES))
     html = html.replace("<!-- scripts -->", "\n".join(
         f'<script src="/static/{n}"></script>' for n in SCRIPTS))
     for url in _STAMPED:
-        html = html.replace(f'"{url}"', f'"{url}?v={_digest(assets[url])}"')
+        html = html.replace(f'"{url}"', f'"{url}?v={_digest(asset(url))}"')
     html = html.replace("<!-- lockup -->", brand.lockup())
     html = html.replace("<!-- title -->", _html.escape(title()))
-    # WHOSE IT IS AND WHICH RELEASE, in the footer, on the Mac and the hosted desk alike.
+    # WHOSE IT IS AND WHICH RELEASE, in the footer.
     html = html.replace("<!-- footer -->", _html.escape(footer()))
-    html = html.replace('<meta name="desk-version" content="">',
-                        f'<meta name="desk-version" content="{version(assets)}">')
     return html.encode()
-
-
-def files() -> dict[str, bytes]:
-    """The whole shell, keyed by the URL each file answers at."""
-    assets = {p: asset(p) for p in paths()}
-    return {"/": index(assets), **assets}

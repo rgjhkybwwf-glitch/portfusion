@@ -67,8 +67,8 @@ def test_only_a_quarter_end_is_asked_for(bad):
 
 @needs("quarter-nav")
 def test_opening_a_report_writes_nothing():
-    """The route renders for the request, or opening a page on the hosted desk would leave a file
-    on the Mac. Held on the book's folder."""
+    """The route renders for the request, or opening a report would leave a file behind. Held on
+    the book's folder."""
     from portfusion.record import schema
     before = sorted(p for p in schema.BOOK.iterdir())
     ready = [q for q in engine.reports()["quarters"] if q["closed"] and not q["gaps"]]
