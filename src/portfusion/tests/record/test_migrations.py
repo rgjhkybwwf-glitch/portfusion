@@ -148,12 +148,11 @@ def test_a_book_two_moves_behind_is_carried_through_both_before_it_is_opened(tmp
     assert _files(book) == old
 
 
-#: EACH MOVE OF SETTINGS THIS RELEASE CARRIES: its place in `MIGRATIONS`, and the rows a book in
-#: the shape before it holds.
+#: EACH MOVE OF SETTINGS THIS RELEASE CARRIES: the rows a book in the shape before it holds.
 _DROPPED = {
-    "flag lists": (0, [(k, f"10000000{i}") for i, k in enumerate(M.FLAG_LISTS, 1)]),
-    "hosted desk": (1, [("hosted_origin", "https://desk.example.test"),
-                        ("passkey_domain", "example.test"), ("deploy_repo", "")]),
+    "flag lists": [(k, f"10000000{i}") for i, k in enumerate(M.FLAG_LISTS, 1)],
+    "hosted desk": [("hosted_origin", "https://desk.example.test"),
+                    ("passkey_domain", "example.test"), ("deploy_repo", "")],
 }
 
 
@@ -167,8 +166,10 @@ def test_a_book_holding_dropped_settings_is_refused_carried_and_opens(tmp_path, 
     import portfusion
     from portfusion.engine import Book
     from portfusion.record import rules
-    at, added_rows = _DROPPED[move]
+    import re
+    added_rows = _DROPPED[move]
     key = added_rows[0][0]
+    move_of = [m for m in M.MIGRATIONS if any(re.search(c, key) for c in m.code)]
     book = _demo_copy(tmp_path)
     assert M.plan(book) == (None, []) and M.carry(book) == ([], {})
 
@@ -191,7 +192,7 @@ def test_a_book_holding_dropped_settings_is_refused_carried_and_opens(tmp_path, 
     assert M.named_in_checks(book) == [f'test_mine.py:1: value = D.SETTINGS["{key}"]']
 
     done, before = M.carry(book)
-    assert done == [M.MIGRATIONS[at]], [m.issue for m in done]
+    assert len(move_of) == 1 and done == move_of, [m.issue for m in done]
     assert (store / "settings.csv").read_bytes() == (schema.DEMO / "store" / "settings.csv").read_bytes()
     added = (store / "journal.csv").read_bytes()[len(old[pathlib.Path("store/journal.csv")]):]
     assert added.decode().split(",")[1:6] == [
