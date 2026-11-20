@@ -1,9 +1,9 @@
 """WHAT STARTS A RUN, AND WHEN: the start gate's table (CONTRIBUTING.md, When a run starts).
-`start.yml` sees what happens on GitHub (the maintainer's words, a release, a run's own line, its
-own clock) and asks this what it is, what to do at once, and which run it starts after how many
-quiet minutes. `notify.yml` asks it whether the maintainer's working day is on. It reads only the
-standard library and `portfusion.log`, and both workflows run the default branch's copy of it,
-never a pull request's.
+`start.yml` sees what happens on GitHub (the maintainer's words, a release, a run's own line) and
+asks this what it is, what to do at once, and which run it starts after how many quiet minutes.
+It keeps no clock: every run a clock starts is started by its routine's own. `notify.yml` asks it
+whether the maintainer's working day is on. It reads only the standard library and
+`portfusion.log`, and both workflows run the default branch's copy of it, never a pull request's.
 
     python3 tools/starts.py --read      what an event is, from the environment: one line of JSON
     python3 tools/starts.py --working   "yes" in the maintainer's working hours, "no" outside them
@@ -52,22 +52,17 @@ class Start(NamedTuple):
     run: str        # the row of the runs table it starts; its starting text begins with this
     level: str      # the level whose routine carries it
     wait: int       # quiet minutes after the last start of its level
-    by: str         # who began it: "maintainer", "run" (a run's own line) or "clock"
 
 
 STARTS = {
-    "answer": Start("Answer", "coordinator", 30, "maintainer"),
-    "change": Start("Answer", "coordinator", 30, "maintainer"),
-    "idea": Start("Idea", "coordinator", 10, "maintainer"),
-    "release": Start("Release", "coordinator", 10, "maintainer"),
-    "resume": Start("Re-plan", "coordinator", 10, "maintainer"),
-    "replan": Start("Re-plan", "coordinator", 10, "run"),
-    "build": Start("Answer build", "builder", 2, "run"),
-    "evening": Start("Evening build", "builder", 0, "clock"),
+    "answer": Start("Answer", "coordinator", 30),
+    "change": Start("Answer", "coordinator", 30),
+    "idea": Start("Idea", "coordinator", 10),
+    "release": Start("Release", "coordinator", 10),
+    "resume": Start("Re-plan", "coordinator", 10),
+    "replan": Start("Re-plan", "coordinator", 10),
+    "build": Start("Answer build", "builder", 2),
 }
-#: The gate's own clock: the time, by ZONE, and the days. `start.yml` carries each as two crons,
-#: an hour apart, since a cron is UTC and London is not all year; `due` takes the one in season.
-CLOCK = {"evening": (time(18, 30), WEEK)}
 
 ANSWER = re.compile(r"^(q[0-9]+\s*:|all\s+as\s+rec)", re.I)
 WORD = re.compile(r"^(change|hold|resume)\s*:", re.I)
@@ -80,21 +75,6 @@ def working(now: datetime) -> bool:
     """Whether `now` is in the maintainer's working day."""
     local = now.astimezone(ZONE)
     return local.weekday() in WEEK and OPENS <= local.time() < CLOSES
-
-
-def due(key: str, cron: str, now: datetime) -> bool:
-    """Whether the cron that fired is this clock start's, in season: its UTC time today is the
-    start's time by ZONE, on one of its days, and no more than two hours gone (GitHub runs a cron
-    late, never early)."""
-    at, days = CLOCK[key]
-    minute, hour = cron.split()[:2]
-    if not (minute.isdigit() and hour.isdigit()):
-        return False
-    then = now.astimezone(timezone.utc).replace(hour=int(hour), minute=int(minute), second=0,
-                                                microsecond=0)
-    local = then.astimezone(ZONE)
-    return (local.time() == at and local.weekday() in days
-            and timedelta(0) <= now - then < timedelta(hours=2))
 
 
 def _lines(body: str) -> list[str]:
@@ -138,13 +118,12 @@ def text(key: str, number: str = "", url: str = "", tag: str = "") -> str:
                   f"\"Re-plan\" since their last \"Plan, checked\".",
         "build": f"the coordinator left a build, the last on {where}. Build the issues under Next "
                  f"marked \"Build:\" since their last \"Plan, checked\", and no other line.",
-        "evening": "started by the gate's clock.",
     }
     said["change"] = said["answer"]
     return f"{STARTS[key].run}: {said[key]}"
 
 
-def read(e: dict[str, str], now: datetime) -> dict:
+def read(e: dict[str, str]) -> dict:
     """What an event is. "start" is the key of what it starts, or "" for nothing; "acts" is what
     `start.yml` does at once, in order; "said" is one line for the log.
 
@@ -164,14 +143,7 @@ def read(e: dict[str, str], now: datetime) -> dict:
         return {"start": "hand", "level": level, "wait": 0, "text": text("hand"), "acts": [],
                 "said": f"started by hand: the {level} starts now"}
 
-    if event == "schedule":
-        key = next((k for k in CLOCK if due(k, e.get("CRON", ""), now)), "")
-        said = (f"the clock: {STARTS[key].run}" if key
-                else "this cron is the other season's, or too late: nothing to do")
-        if key and working(now):
-            key, said = "", "the clock starts nothing in the maintainer's working hours"
-
-    elif event == "release":
+    if event == "release":
         if TAG.match(e.get("TAG", "")):
             key, said = "release", f"{e['TAG']} was published"
         else:
@@ -202,10 +174,10 @@ def read(e: dict[str, str], now: datetime) -> dict:
     if not key:
         return _seen("", acts, said)
     start = STARTS[key]
-    quiet = f"after {start.wait} quiet minutes" if start.wait else "now"
     return {"start": key, "level": start.level, "wait": start.wait,
             "text": text(key, number, e.get("URL", ""), e.get("TAG", "")), "acts": acts,
-            "said": f"{said}: the {start.level}'s {start.run} run starts {quiet}"}
+            "said": f"{said}: the {start.level}'s {start.run} run starts after {start.wait} "
+                    f"quiet minutes"}
 
 
 def _seen(key: str, acts: list[str], said: str) -> dict:
@@ -303,7 +275,7 @@ def main(args: list[str]) -> int:
         log.info("yes" if at_work(args[1], comments, now) else "no")
         return 0
     if args[:1] == ["--read"]:
-        log.info(json.dumps(read(dict(os.environ), now), ensure_ascii=False))
+        log.info(json.dumps(read(dict(os.environ)), ensure_ascii=False))
         return 0
     log.error(__doc__)
     return 2
