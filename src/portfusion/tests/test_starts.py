@@ -1,12 +1,12 @@
 """tools/starts.py and the two workflows that ask it: what starts a run, after how many quiet
 minutes, and when the bot may ask. A comment misread starts a run on the agent's own words, or
-none on the maintainer's; a clock an hour out builds in their working day; and a table that has
+none on the maintainer's; a clock set inside their working day builds in it; and a table that has
 left CONTRIBUTING's leaves a run started with a text that names no row."""
 import importlib.util
 import re
 import subprocess
 import textwrap
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, time, timezone
 
 import pytest
 
@@ -57,13 +57,10 @@ def _zone():
     return ZoneInfo("Europe/London")
 
 
-NOON = "2026-11-18 12:00"       # a Wednesday
-
-
 def comment(starts, body, number="250", **more):
     event = {"EVENT": "issue_comment", "BODY": body, "NUMBER": number, "IS_PR": "no",
              "STATE": "open", "URL": f"https://example.test/issues/{number}", **more}
-    return starts.read(event, uk(NOON))
+    return starts.read(event)
 
 
 def test_each_start_is_a_row_of_the_runs_table_and_the_table_says_its_wait(starts, rows):
@@ -72,11 +69,7 @@ def test_each_start_is_a_row_of_the_runs_table_and_the_table_says_its_wait(start
         assert row, f"{key} starts the run {start.run!r}, which the runs table does not list"
         assert row["Level"].lower() == start.level, key
         what = row["What starts it"]
-        if start.wait:
-            assert f"{WORDS[start.wait]} quiet minutes" in what, (key, what)
-        if start.by == "clock":
-            at, _ = starts.CLOCK[key]
-            assert f"{at:%H:%M} UK time" in what and "the gate's clock" in what, (key, what)
+        assert f"{WORDS[start.wait]} quiet minutes" in what, (key, what)
         assert starts.text(key, "250", "u", "v0.4.2").startswith(f"{start.run}: "), key
     # What the gate does not start has a clock of its routine's own.
     gated = {start.run for start in starts.STARTS.values()}
@@ -181,7 +174,7 @@ def test_a_pull_request_takes_a_change_and_a_hold_only_when_it_is_the_agents(sta
 def test_an_idea_and_a_release_start_the_coordinator(starts):
     def opened(title, body="Let the desk show dividends by month."):
         return starts.read({"EVENT": "issues", "ACTION": "opened", "TITLE": title,
-                            "ISSUE_BODY": body, "NUMBER": "330", "URL": "u"}, uk(NOON))
+                            "ISSUE_BODY": body, "NUMBER": "330", "URL": "u"})
     idea = opened("Idea: dividends by month")
     assert (idea["start"], idea["acts"], idea["wait"]) == ("idea", ["rocket"], 10)
     assert opened("idea : lower case too")["start"] == "idea"
@@ -190,7 +183,7 @@ def test_an_idea_and_a_release_start_the_coordinator(starts):
     assert opened("Idea: from a session", "**Session note** · filed with the maintainer")["start"] == ""
 
     def published(tag):
-        return starts.read({"EVENT": "release", "ACTION": "published", "TAG": tag}, uk(NOON))
+        return starts.read({"EVENT": "release", "ACTION": "published", "TAG": tag})
     release = published("v0.4.2")
     assert (release["start"], release["level"], release["wait"]) == ("release", "coordinator", 10)
     assert "v0.4.2" in release["text"]
@@ -206,9 +199,6 @@ def test_a_pause_stops_every_start_and_keeps_every_hold(starts):
     assert (change["start"], change["acts"]) == ("", ["eyes", "decision"])
     assert comment(starts, "🌙 **Night run** · Re-plan: x", **paused)["start"] == ""
     assert comment(starts, "Resume:", **paused)["acts"] == ["eyes", "unhold"]
-    evening = {"EVENT": "schedule", "CRON": "30 18 * * 1-5"}
-    assert starts.read(evening, uk("2026-11-18 18:31"))["start"] == "evening"
-    assert starts.read({**evening, **paused}, uk("2026-11-18 18:31"))["start"] == ""
     # "Hold:" on the Queue is the pause, and "Resume:" there ends it and starts the coordinator.
     hold = comment(starts, "Hold: away this week", number=queue)
     assert (hold["start"], hold["acts"]) == ("", ["eyes", "pause"])
@@ -218,10 +208,10 @@ def test_a_pause_stops_every_start_and_keeps_every_hold(starts):
     assert "all that waited" in back["text"]
     # Taken off by a session, the label's going is the resume.
     off = {"EVENT": "issues", "ACTION": "unlabeled", "LABEL": "paused", "NUMBER": queue, **paused}
-    assert starts.read(off, uk(NOON))["start"] == "resume"
-    assert starts.read({**off, "LABEL": "bug"}, uk(NOON))["start"] == ""
-    assert starts.read({**off, "LABEL": "hold", "NUMBER": "250", "PAUSED": "no"},
-                       uk(NOON))["start"] == "resume"
+    assert starts.read(off)["start"] == "resume"
+    assert starts.read({**off, "LABEL": "bug"})["start"] == ""
+    held = {**off, "LABEL": "hold", "NUMBER": "250", "PAUSED": "no"}
+    assert starts.read(held)["start"] == "resume"
 
 
 def test_the_working_day_is_eight_to_five_monday_to_friday_by_londons_clock(starts):
@@ -235,32 +225,32 @@ def test_the_working_day_is_eight_to_five_monday_to_friday_by_londons_clock(star
     assert not starts.working(datetime(2026, 11, 18, 7, 0, tzinfo=timezone.utc))
 
 
-def test_the_clock_fires_once_in_season_and_never_in_the_working_day(starts):
+def test_the_gate_keeps_no_clock_and_no_routines_clock_is_in_the_working_day(starts, rows):
+    """GitHub runs a workflow's clock hours late, so a run a clock starts is started by its
+    routine's own. A routine carries one clock, so each such row has a routine to itself; and a
+    level's rows differ in their hour, which is how its run tells which row it is."""
     gate = (FLOWS / "start.yml").read_text(encoding="utf-8")
-    for key, (at, days) in starts.CLOCK.items():
-        assert starts.STARTS[key].by == "clock"
-        assert not (starts.OPENS <= at < starts.CLOSES and set(days) & set(starts.WEEK)), key
-        winter = f"{at.minute} {at.hour} * * 1-5"
-        summer = f"{at.minute} {at.hour - 1} * * 1-5"
-        assert f'cron: "{winter}"' in gate and f'cron: "{summer}"' in gate, key
-        late = timedelta(minutes=14)
-        wednesday = datetime(2026, 11, 18, at.hour, at.minute, tzinfo=timezone.utc) + late
-        july = datetime(2026, 7, 15, at.hour - 1, at.minute, tzinfo=timezone.utc) + late
-        assert starts.due(key, winter, wednesday) and not starts.due(key, summer, wednesday)
-        assert starts.due(key, summer, july) and not starts.due(key, winter, july + timedelta(hours=1))
-        assert not starts.due(key, winter, wednesday + timedelta(hours=3)), "three hours late"
-        saturday = datetime(2026, 11, 21, at.hour, at.minute, tzinfo=timezone.utc)
-        assert not starts.due(key, winter, saturday)
-    assert not starts.due("evening", "not a cron", uk(NOON))
-    # Every cron the gate carries is one the table has a start for.
-    carried = set(re.findall(r'cron: "(\d+ \d+ \* \* 1-5)"', gate))
-    assert len(carried) == 2 * len(starts.CLOCK)
+    assert "schedule" not in gate.partition("\njobs:")[0].partition("\non:")[2]
+    assert "'schedule'" not in gate and "event.schedule" not in gate
+    clocked = {run: row for run, row in rows.items()
+               if "its routine's clock" in row["What starts it"]}
+    hours = {}
+    for run, row in clocked.items():
+        said = re.fullmatch(r"(\d\d):(\d\d) UK time, (every day|Monday to Friday), "
+                            r"by its routine's clock", row["What starts it"])
+        assert said, (run, row["What starts it"])
+        at = time(int(said.group(1)), int(said.group(2)))
+        assert not starts.OPENS <= at < starts.CLOSES, f"{run} starts in the working day"
+        hours.setdefault(row["Level"], []).append(at)
+    assert len({row["Routine"] for row in clocked.values()}) == len(clocked) >= 3
+    for level, ats in hours.items():
+        assert len(set(ats)) == len(ats), level
 
 
 def test_the_gate_fires_by_the_table_makes_no_comment_and_sends_nothing_of_one(starts):
     gate = (FLOWS / "start.yml").read_text(encoding="utf-8")
     assert not (FLOWS / "answer.yml").exists() and not (FLOWS / "replan.yml").exists()
-    for trigger in ("issue_comment:", "issues:", "release:", "schedule:", "workflow_dispatch:"):
+    for trigger in ("issue_comment:", "issues:", "release:", "workflow_dispatch:"):
         assert f"\n  {trigger}" in gate, trigger
     assert "pull_request" not in gate.partition("\njobs:")[0].partition("\non:")[2], \
         "the gate runs the default branch's table, never a pull request's"

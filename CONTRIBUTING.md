@@ -215,15 +215,16 @@ is. A run changes neither.
   | Coordinator | Release | a release the maintainer publishes, ten quiet minutes after | PortFusion · Coordinator | `📋 **Coordinator** ·` | 2 plans | [`run-coordinator-release`](.claude/skills/run-coordinator-release/SKILL.md) |
   | Coordinator | Re-plan | a run's "Re-plan:" or the maintainer's `Resume:`, ten quiet minutes after the last | PortFusion · Coordinator | `📋 **Coordinator** ·` | the re-plans | [`run-coordinator-replan`](.claude/skills/run-coordinator-replan/SKILL.md) |
   | Builder | Night build | 00:30 UK time, every day, by its routine's clock | PortFusion · Builder | `🌙 **Builder** ·` | 1 issue | [`run-builder-build`](.claude/skills/run-builder-build/SKILL.md) |
-  | Builder | Evening build | 18:30 UK time, Monday to Friday, by the gate's clock | PortFusion · Builder | `🌙 **Builder** ·` | 1 issue | [`run-builder-build`](.claude/skills/run-builder-build/SKILL.md) |
+  | Builder | Evening build | 18:30 UK time, Monday to Friday, by its routine's clock | PortFusion · Builder (evening) | `🌙 **Builder** ·` | 1 issue | [`run-builder-build`](.claude/skills/run-builder-build/SKILL.md) |
   | Builder | Answer build | the coordinator's "Build:", two quiet minutes after the last | PortFusion · Builder | `🌙 **Builder** ·` | 1 issue | [`run-builder-build`](.claude/skills/run-builder-build/SKILL.md) |
 
   A run the gate starts (When a run starts, below) finds its row by the first words of the text it
   was started with, the row's name and a colon; one started by its routine's own clock is the row
-  that names that clock. It loads the row's playbook, and follows it. Each routine is in the
-  personal cloud environment "PortFusion", whose setup script builds the venv on Python 3.13 and
-  installs `tools/`. A routine's prompt names this section and its run; its schedule, model and
-  effort are set on claude.ai to match the table, and nothing else is kept there.
+  that names that clock, and of a builder's two the one whose hour it is. It loads the row's
+  playbook, and follows it. Each routine is in the personal cloud environment "PortFusion", whose
+  setup script builds the venv on Python 3.13 and installs `tools/`. A routine's prompt names this
+  section and its level; its schedule, model and effort are set on claude.ai to match the table,
+  and nothing else is kept there.
 - **A playbook holds a run's order, a step skill one procedure.** A playbook names its step skills
   in order and holds no procedure of its own. A step skill is written once and names no run, so a
   duty moves between runs by moving one line, and a new run is one row and one playbook.
@@ -262,9 +263,10 @@ is. A run changes neither.
 
 - **The start gate starts every run its routine's clock does not** (`start.yml`; `tools/starts.py`
   holds its table, the rows above). A run cannot start another, so the gate does: it sees the
-  maintainer's words, a release, a run's own line and its own clock, and fires the routine of the
-  level that takes it. Nothing of a comment is sent: a run is told what started it last, and
-  finds the rest itself.
+  maintainer's words, a release and a run's own line, and fires the routine of the level that
+  takes it. It keeps no clock: GitHub runs a workflow's clock hours late, so a run a clock starts
+  is started by its routine's. Nothing of a comment is sent: a run is told what started it last,
+  and finds the rest itself.
 - **Quiet minutes, and one wait a level.** A start waits its row's minutes, counted from the last
   start of its level: another within them takes the wait's place, so what comes together makes
   one run. So a coordinator's run the gate starts takes all that waits, each by its own playbook:
@@ -275,8 +277,8 @@ is. A run changes neither.
 - **The maintainer's day is 08:00 to 17:00 UK time, Monday to Friday.** What the maintainer
   starts, by an answer, a `Change:`, an `Idea:`, a release or a `Resume:`, starts at any hour, and
   a run's own line ("Build:", "Re-plan:") carries on what its run began. No clock starts a run
-  inside the day: `test_starts.py` holds the gate's to that, and the routines' are set outside
-  it. The bot asks only inside the day (Telling the maintainer, below).
+  inside the day: the routines' are set outside it, and `test_starts.py` holds the runs table's
+  hours to that. The bot asks only inside the day (Telling the maintainer, below).
 - **`Hold:` stops one issue, and `Resume:` frees it.** A reply from the maintainer that begins
   `Hold:` puts `hold` on the issue, or on one of the agent's pull requests, whose auto-merge it
   also turns off. No run plans it, builds it, asks on it or merges it until a reply that begins
