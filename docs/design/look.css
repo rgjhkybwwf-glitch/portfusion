@@ -1,0 +1,347 @@
+/* THE NEW LOOK, DRAWN ONCE. The reference pages beside this file (parts.html, home.html,
+   company.html) link it and type no value of the look themselves. It is a drawing: the desk does not load
+   it, and nothing in src/ reads it. README.md, beside it, says what it is for.
+
+   EVERY VALUE IS A TOKEN, NAMED BY ITS JOB, and every part below wears tokens only. A part is
+   defined once: a change to a part is made in its one rule, and every page shows it. */
+
+:root {
+  color-scheme: light;
+
+  /* Colour */
+  --ground:        #F1EFE9;
+  --glow-violet:   rgba(79, 63, 214, 0.16);
+  --glow-warm:     rgba(226, 150, 96, 0.16);
+  --surface:       #FFFFFF;
+  --sunken:        #F5F4EF;
+  --divider:       #ECEAE4;
+  --divider-soft:  #F3F1EC;
+  --ink:           #1B1B1F;
+  --muted:         #5E5D66;
+  --accent:        #4F3FD6;
+  --accent-ink:    #3B2FB0;
+  --accent-soft:   #F4F2FF;
+  --lead:          linear-gradient(135deg, rgba(248, 246, 255, 0.90) 0%, rgba(227, 223, 251, 0.86) 100%);
+  --lead-solid:    linear-gradient(135deg, #F4F2FF 0%, #E3DFFB 100%);
+  --lead-ink:      #241C6B;
+  --lead-muted:    #4A4870;
+  --button:        linear-gradient(180deg, #5C4DE0 0%, #4A3AD0 100%);
+  --on-button:     #FFFFFF;
+  --quiet:         rgba(27, 27, 31, 0.06);
+  --quiet-over:    rgba(27, 27, 31, 0.10);
+  --line-over:     rgba(27, 27, 31, 0.05);
+  --up:            #0B6B50;
+  --down:          #A63A12;
+  --problem:       #FCE6DD;
+  --problem-ink:   #8A2A0E;
+  --gap-tag:       #FBF0C9;
+  --gap-ink:       #6B5300;
+  --clear:         #DDF3E8;
+  --clear-ink:     #0B5A43;
+  --closed:        #EFEEE9;
+  --closed-ink:    #5E5D66;
+  --glass:         rgba(255, 255, 255, 0.62);
+  --glass-solid:   #FBFAF7;
+  --chart-grid:    #E2DFD7;
+  --chart-base:    #D4D1C8;
+  --contrast-edge: #6E6D78;
+
+  /* Three heights, lit from above: sunken, resting, raised; and the glass, which floats. */
+  --shadow-well:        inset 0 1px 3px rgba(27, 27, 31, 0.10), inset 0 0 0 1px rgba(27, 27, 31, 0.03);
+  --shadow-card:        inset 0 1px 0 #FFFFFF, 0 0 0 1px rgba(27, 27, 31, 0.03), 0 1px 2px rgba(27, 27, 31, 0.025), 0 12px 28px -10px rgba(27, 27, 31, 0.065);
+  --shadow-card-over:   inset 0 1px 0 #FFFFFF, 0 0 0 1px rgba(27, 27, 31, 0.03), 0 2px 4px rgba(27, 27, 31, 0.03), 0 20px 36px -12px rgba(27, 27, 31, 0.10);
+  --shadow-lead:        inset 0 1px 0 #FFFFFF, inset 0 0 0 1px rgba(255, 255, 255, 0.6), 0 2px 4px rgba(79, 63, 214, 0.04), 0 28px 56px -22px rgba(79, 63, 214, 0.225);
+  --shadow-tile:        inset 0 1px 0 #FFFFFF, 0 1px 2px rgba(79, 63, 214, 0.04), 0 8px 18px -8px rgba(79, 63, 214, 0.15);
+  --shadow-line-on:     inset 0 1px 0 #FFFFFF, 0 1px 2px rgba(27, 27, 31, 0.06), 0 6px 16px -6px rgba(27, 27, 31, 0.14);
+  --shadow-tab-on:      inset 0 1px 0 #FFFFFF, 0 1px 2px rgba(27, 27, 31, 0.10), 0 4px 10px -4px rgba(27, 27, 31, 0.18);
+  --shadow-button:      inset 0 1px 0 rgba(255, 255, 255, 0.28), 0 1px 2px rgba(79, 63, 214, 0.3), 0 8px 18px -6px rgba(79, 63, 214, 0.5);
+  --shadow-button-over: inset 0 1px 0 rgba(255, 255, 255, 0.28), 0 2px 4px rgba(79, 63, 214, 0.3), 0 12px 22px -6px rgba(79, 63, 214, 0.55);
+  --shadow-glass:       inset 0 1px 0 rgba(255, 255, 255, 0.95), inset 0 0 0 1px rgba(255, 255, 255, 0.55), 0 1px 2px rgba(27, 27, 31, 0.025), 0 18px 40px -18px rgba(27, 27, 31, 0.11);
+
+  /* Corners. An inner corner is its outer corner less the gap between them. */
+  --r-lead:  20px;
+  --r-glass: 18px;
+  --r-card:  16px;
+  --r-tile:  12px;
+  --r-well:  10px;
+  --r-line:  8px;
+  --r-row:   6px;
+  --r-tab:   5px;
+  --r-pill:  999px;
+
+  /* Spacing */
+  --gap:        14px;
+  --gap-frame:  8px;
+  --gap-tiles:  7px;
+  --gap-cells:  12px;
+  --pad-card:   20px 24px;
+  --pad-figure: 24px;
+  --pad-lead:   28px;
+  --pad-tile:   14px 18px;
+  --pad-page:   8px 17px 48px 14px;
+  --inset:      12px;
+
+  /* Type: Inter, tabular numerals everywhere. */
+  --font:        Inter, system-ui, sans-serif;
+  --text-label:  12px;
+  --text-note:   13px;
+  --text-body:   14px;
+  --text-brand:  16px;
+  --text-head:   17px;
+  --text-tile:   18px;
+  --text-title:  20px;
+  --text-card:   24px;
+  --text-figure: 30px;
+  --text-lead:   52px;
+  --leading:     1.45;
+
+  /* Motion. No figure is animated. */
+  --dur-pointer: 160ms;
+  --dur-tab:     200ms;
+  --dur-arrive:  260ms;
+  --ease-arrive: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --rise:        10px;
+  --step:        60ms;
+
+  /* Control heights */
+  --h-control: 36px;
+  --h-tab:     34px;
+  --h-row:     44px;
+  --w-menu:    232px;
+}
+
+/* The ground */
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  margin: 0;
+  background:
+    radial-gradient(820px 480px at 8% -6%, var(--glow-violet), transparent 62%),
+    radial-gradient(760px 460px at 98% 0%, var(--glow-warm), transparent 62%),
+    var(--ground);
+  background-repeat: no-repeat;
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: var(--text-body);
+  line-height: var(--leading);
+  font-variant-numeric: tabular-nums;
+}
+h1, h2, p { margin: 0; }
+a { color: var(--accent); }
+a:hover { color: var(--ink); }
+button { font: inherit; border: 0; margin: 0; cursor: pointer; text-align: left; }
+[hidden] { display: none !important; }
+
+/* The frame: the menu beside the page. The menu is not pinned: it scrolls away with the page,
+   and the bar stays. */
+.frame { display: flex; flex-wrap: wrap; align-items: flex-start; min-height: 100vh; }
+.menu { flex: 1 1 var(--w-menu); padding: var(--gap-frame) 0 var(--gap-frame) var(--gap-frame); }
+.page { flex: 999 1 560px; min-width: 0; padding: var(--pad-page); display: flex; flex-direction: column; gap: var(--gap); }
+.stack { display: flex; flex-direction: column; gap: var(--gap); }
+.flow { display: flex; flex-wrap: wrap; gap: var(--gap); align-items: stretch; }
+.flow > * { flex: 1 1 240px; }
+.split { display: flex; flex-wrap: wrap; gap: var(--gap); align-items: flex-start; }
+.split > .stack { flex: 4 1 560px; min-width: 0; }
+.split > aside { flex: 1 1 240px; }
+/* A run of cards under its own heading. */
+.section { display: flex; flex-direction: column; gap: var(--gap-tiles); }
+.section > .head { padding: 0 4px; }
+
+/* THE HEIGHTS */
+
+/* Floating: the glass, on the menu and the bar only, never on a card that holds a table.
+   Safari reads -webkit-backdrop-filter only with its values typed, so they are typed here and
+   in .lead, and nowhere else. */
+.glass {
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(22px) saturate(1.7);
+  backdrop-filter: blur(22px) saturate(1.7);
+  box-shadow: var(--shadow-glass);
+  border-radius: var(--r-glass);
+}
+
+/* Resting: a card. */
+.card {
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  border-radius: var(--r-card);
+  padding: var(--pad-card);
+  color: var(--ink);
+}
+/* A card whose one job is a figure. */
+.card.figure { padding: var(--pad-figure); display: flex; flex-direction: column; gap: 6px; justify-content: center; }
+/* A card that holds a table: its rows reach the inset, so a row under the pointer has room. */
+.card.tabled { padding: 20px var(--inset) var(--inset); }
+.card > .head { margin-bottom: 12px; }
+.card.tabled > .head { padding: 0 var(--inset); margin-bottom: 4px; }
+/* A card that opens something rises under the pointer. */
+.card.lift { display: flex; flex-direction: column; gap: 4px; text-decoration: none; transition: transform var(--dur-pointer) ease, box-shadow var(--dur-pointer) ease; }
+.card.lift:hover { transform: translateY(-2px); box-shadow: var(--shadow-card-over); color: var(--ink); }
+
+/* Raised: the lead card, one to a page, and the tiles on it. */
+.lead {
+  background: var(--lead);
+  -webkit-backdrop-filter: blur(18px) saturate(1.5);
+  backdrop-filter: blur(18px) saturate(1.5);
+  box-shadow: var(--shadow-lead);
+  border-radius: var(--r-lead);
+  padding: var(--pad-lead);
+  color: var(--lead-ink);
+  display: flex; flex-wrap: wrap; gap: 24px 40px; align-items: flex-end; justify-content: space-between;
+}
+.lead > .headline { min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.lead .label { font-size: var(--text-note); font-weight: 600; color: var(--lead-muted); }
+.lead .note { color: var(--lead-muted); }
+.flow > .lead { flex: 1.3 1 280px; }
+.tiles { display: flex; flex-wrap: wrap; gap: var(--gap-tiles); }
+.tile {
+  background: var(--surface);
+  box-shadow: var(--shadow-tile);
+  border-radius: var(--r-tile);
+  padding: var(--pad-tile);
+  min-width: 150px;
+  color: var(--ink);
+}
+.tile .label { font-size: var(--text-label); font-weight: 400; color: var(--muted); }
+
+/* Sunken: a well, for a tab track and a chart. */
+.well { background: var(--sunken); box-shadow: var(--shadow-well); border-radius: var(--r-well); }
+
+/* TYPE */
+.label { font-size: var(--text-note); font-weight: 500; color: var(--muted); }
+.note { font-size: var(--text-note); color: var(--muted); }
+.note.gap { color: var(--gap-ink); }
+.note.clear { color: var(--clear-ink); }
+.small { font-size: var(--text-label); color: var(--muted); }
+.name { font-weight: 600; }
+h1, .text-title { font-size: var(--text-title); font-weight: 700; letter-spacing: -0.015em; line-height: 1.2; }
+h2, .text-head { font-size: var(--text-head); font-weight: 600; letter-spacing: -0.01em; }
+.head { display: flex; flex-wrap: wrap; gap: 4px 16px; align-items: center; justify-content: space-between; }
+.num-lead { font-size: var(--text-lead); font-weight: 600; letter-spacing: -0.035em; line-height: 1.08; }
+.num { font-size: var(--text-figure); font-weight: 600; letter-spacing: -0.02em; line-height: 1.2; }
+.num-card { font-size: var(--text-card); font-weight: 600; letter-spacing: -0.02em; }
+.num-tile { font-size: var(--text-tile); font-weight: 600; }
+.up { color: var(--up); }
+.down { color: var(--down); }
+
+/* THE MENU */
+.menu > .glass { padding: 16px 10px 14px; display: flex; flex-direction: column; gap: 13px; }
+.brand { display: flex; align-items: center; gap: 10px; padding: 0 var(--inset); }
+.brand .mark { width: 32px; height: 32px; flex: none; }
+.brand .mark rect { fill: var(--accent); }
+.brand .mark circle { fill: none; stroke: var(--on-button); stroke-width: 2.9; }
+.wordmark { font-size: var(--text-brand); font-weight: 700; letter-spacing: -0.01em; }
+.group { display: flex; flex-direction: column; gap: 2px; }
+.group > .title { padding: 0 var(--inset) 4px; font-size: var(--text-label); font-weight: 600; color: var(--muted); }
+.line {
+  display: flex; justify-content: space-between; align-items: center;
+  width: 100%; min-height: var(--h-control); padding: 0 var(--inset);
+  border-radius: var(--r-line); background: transparent; color: var(--ink);
+  font-weight: 500; text-decoration: none;
+  transition: background var(--dur-pointer) ease, box-shadow var(--dur-pointer) ease, color var(--dur-pointer) ease;
+}
+.line:hover { background: var(--line-over); color: var(--ink); }
+.line[aria-current="page"] { background: var(--surface); color: var(--accent-ink); font-weight: 600; box-shadow: var(--shadow-line-on); }
+.line .count { font-size: var(--text-label); font-weight: 400; color: var(--muted); }
+
+/* A tag: a state in two or three words. */
+.tag { display: inline-block; font-size: var(--text-label); font-weight: 600; padding: 2px 8px; border-radius: var(--r-pill); }
+.tag.problem { background: var(--problem); color: var(--problem-ink); }
+.tag.gap { background: var(--gap-tag); color: var(--gap-ink); }
+.tag.clear { background: var(--clear); color: var(--clear-ink); }
+.tag.closed { background: var(--closed); color: var(--closed-ink); }
+
+/* THE BAR: the page's name, what it stands on, and the page's one main button. */
+.bar {
+  position: sticky; top: var(--gap-frame); z-index: 2;
+  min-height: 64px; padding: 10px 14px 10px 22px;
+  display: flex; flex-wrap: wrap; gap: 8px 20px; align-items: center; justify-content: space-between;
+}
+.bar > .where { display: flex; align-items: center; gap: 14px; min-width: 0; }
+
+/* BUTTONS AND LINKS */
+.push {
+  display: inline-flex; align-items: center; min-height: var(--h-control); padding: 0 18px;
+  border-radius: var(--r-pill); background: var(--button); color: var(--on-button);
+  font-weight: 600; text-decoration: none; box-shadow: var(--shadow-button);
+  transition: transform var(--dur-pointer) ease, box-shadow var(--dur-pointer) ease;
+}
+.push:hover { transform: translateY(-1px); box-shadow: var(--shadow-button-over); color: var(--on-button); }
+.push:active { transform: translateY(0); }
+.quiet {
+  display: inline-flex; align-items: center; min-height: var(--h-control); padding: 0 14px;
+  border-radius: var(--r-pill); background: var(--quiet); color: var(--ink);
+  font-weight: 600; text-decoration: none; transition: background var(--dur-pointer) ease;
+}
+.quiet:hover { background: var(--quiet-over); color: var(--ink); }
+.more { display: inline-flex; align-items: center; min-height: var(--h-control); font-weight: 600; text-decoration: none; }
+
+/* TABS: a sunken track, and the selected tab raised out of it. */
+.tabs { display: inline-flex; gap: 2px; padding: 3px; border-radius: var(--r-line); }
+.tab {
+  min-height: var(--h-tab); padding: 0 16px; border-radius: var(--r-tab);
+  background: transparent; color: var(--muted); font-weight: 600;
+  transition: background var(--dur-pointer) ease, box-shadow var(--dur-pointer) ease, color var(--dur-pointer) ease;
+}
+.tab:hover { color: var(--ink); }
+.tab[aria-pressed="true"] { background: var(--surface); color: var(--accent-ink); box-shadow: var(--shadow-tab-on); }
+
+/* A TABLE: one part, whatever it lists. Each table says only how its columns share the width. */
+.scroll { overflow-x: auto; }
+.table { min-width: 600px; }
+.table > .cols, .table > .row {
+  display: grid; gap: var(--gap-cells); align-items: center; white-space: nowrap;
+  padding: 0 var(--inset);
+}
+.table > .cols { padding-top: 8px; padding-bottom: 8px; font-size: var(--text-label); font-weight: 600; color: var(--muted); border-bottom: 1px solid var(--divider); }
+.table > .row { min-height: var(--h-row); color: var(--ink); border-bottom: 1px solid var(--divider-soft); }
+.table .n { text-align: right; }
+.table .dim { color: var(--muted); }
+/* A row that opens its object: no rule under it, a soft fill under the pointer, its name in the
+   accent's ink. */
+.table > a.row { text-decoration: none; border-bottom-color: transparent; border-radius: var(--r-row); transition: background var(--dur-pointer) ease; }
+.table > a.row:hover { background: var(--accent-soft); color: var(--ink); }
+.table > a.row .name { color: var(--accent-ink); }
+.table.holdings > * { grid-template-columns: 2fr 1.4fr 1fr 1fr; }
+.table.lines > * { grid-template-columns: 1fr 2.05fr 1.45fr 0.95fr 0.95fr 1.15fr 1.95fr; }
+.table.trades > * { grid-template-columns: 1.2fr 0.6fr 1fr 1.8fr 1.3fr 0.8fr 1fr; }
+
+/* A CHART sits in a well. Its colours are the accent's until a chart's own set is given. */
+.chart { padding: 12px 8px 4px; }
+.chart svg { display: block; width: 100%; height: auto; }
+.chart .grid { stroke: var(--chart-grid); stroke-width: 1; }
+.chart .base { stroke: var(--chart-base); stroke-width: 1; }
+.chart .series { fill: none; stroke: var(--accent); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.chart .point { fill: var(--surface); stroke: var(--accent); stroke-width: 2.5; }
+.chart .fill-top { stop-color: var(--accent); stop-opacity: 0.22; }
+.chart .fill-end { stop-color: var(--accent); stop-opacity: 0; }
+.chart text { font-size: var(--text-label); fill: var(--muted); }
+.chart text.amount { font-weight: 600; fill: var(--ink); }
+
+/* THE STATUS PANEL: what stands against this object, then what last happened to it. */
+.status { display: flex; flex-direction: column; gap: 14px; }
+.status .items, .status .latest { display: flex; flex-direction: column; gap: 10px; }
+.status .item { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+.status .latest { border-top: 1px solid var(--divider); padding-top: 12px; }
+.status .latest .what { font-weight: 500; }
+
+/* MOTION: content arrives in three steps; a tab's content fades in. */
+@keyframes arrive { from { opacity: 0; transform: translateY(var(--rise)); } to { opacity: 1; transform: none; } }
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+.arrive { animation: arrive var(--dur-arrive) var(--ease-arrive) both; }
+.arrive.later { animation-delay: var(--step); }
+.arrive.latest { animation-delay: calc(var(--step) * 2); }
+.fade { animation: fade var(--dur-tab) ease both; }
+
+/* WHAT THE MAC'S SETTINGS ASK */
+@media (prefers-reduced-motion: reduce) {
+  .arrive, .fade { animation: none; }
+  .card.lift, .push, .line, .tab, .table > a.row, .quiet { transition: none; }
+  .card.lift:hover, .push:hover { transform: none; }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .glass { background: var(--glass-solid); -webkit-backdrop-filter: none; backdrop-filter: none; }
+  .lead { background: var(--lead-solid); -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
+@media (prefers-contrast: more) {
+  .glass, .card, .lead, .tile { outline: 1px solid var(--contrast-edge); }
+}
