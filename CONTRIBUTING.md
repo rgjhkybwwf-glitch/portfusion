@@ -214,9 +214,9 @@ is. A run changes neither.
   | Coordinator | Idea | an issue the maintainer opens titled `Idea:`, ten quiet minutes after the last | PortFusion · Coordinator | `📋 **Coordinator** ·` | the ideas | [`run-coordinator-idea`](.claude/skills/run-coordinator-idea/SKILL.md) |
   | Coordinator | Release | a release the maintainer publishes, ten quiet minutes after | PortFusion · Coordinator | `📋 **Coordinator** ·` | 2 plans | [`run-coordinator-release`](.claude/skills/run-coordinator-release/SKILL.md) |
   | Coordinator | Re-plan | a run's "Re-plan:" or the maintainer's `Resume:`, ten quiet minutes after the last | PortFusion · Coordinator | `📋 **Coordinator** ·` | the re-plans | [`run-coordinator-replan`](.claude/skills/run-coordinator-replan/SKILL.md) |
-  | Builder | Night build | 00:30 UK time, every day, by its routine's clock | PortFusion · Builder | `🌙 **Builder** ·` | 1 issue | [`run-builder-build`](.claude/skills/run-builder-build/SKILL.md) |
+  | Builder | Night build | 00:30 UK time, every day, by its routine's clock | PortFusion · Builder (night) | `🌙 **Builder** ·` | 1 issue | [`run-builder-build`](.claude/skills/run-builder-build/SKILL.md) |
   | Builder | Evening build | 18:30 UK time, Monday to Friday, by its routine's clock | PortFusion · Builder (evening) | `🌙 **Builder** ·` | 1 issue | [`run-builder-build`](.claude/skills/run-builder-build/SKILL.md) |
-  | Builder | Answer build | the coordinator's "Build:", two quiet minutes after the last | PortFusion · Builder | `🌙 **Builder** ·` | 1 issue | [`run-builder-build`](.claude/skills/run-builder-build/SKILL.md) |
+  | Builder | Answer build | the coordinator's "Build:", two quiet minutes after the last | PortFusion · Builder (night) | `🌙 **Builder** ·` | 1 issue | [`run-builder-build`](.claude/skills/run-builder-build/SKILL.md) |
 
   A run the gate starts (When a run starts, below) finds its row by the first words of the text it
   was started with, the row's name and a colon; one started by its routine's own clock is the row
