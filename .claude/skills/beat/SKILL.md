@@ -19,7 +19,7 @@ The run's first act, before it reads anything else:
 
 After the word `start`: the date, the minute the run began, and in a few words what it sets out
 to do. A run the gate started says there what started it: an answer, an idea, a release, a
-re-plan or a `Resume:`.
+re-plan, a `Resume:` or the coordinator's "Build:".
 
 ## A paused loop
 

@@ -273,7 +273,8 @@ is. A run changes neither.
   an answer or a `Change:` not yet recorded, a release whose lines are not moved, an open `Idea:`
   not shaped, a "Re-plan" not planned. **One run of a level at a time**: while the run log shows
   a run of that level at work, its start line with no end line yet, the start waits for it to end,
-  up to ninety minutes.
+  for up to three hours. A run its routine's clock starts waits for no other, so it can run
+  beside one the gate started; `building` keeps two builders off one issue.
 - **The maintainer's day is 08:00 to 17:00 UK time, Monday to Friday.** What the maintainer
   starts, by an answer, a `Change:`, an `Idea:`, a release or a `Resume:`, starts at any hour, and
   a run's own line ("Build:", "Re-plan:") carries on what its run began. No clock starts a run

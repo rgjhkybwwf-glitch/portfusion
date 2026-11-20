@@ -69,6 +69,7 @@ def test_each_start_is_a_row_of_the_runs_table_and_the_table_says_its_wait(start
         assert row, f"{key} starts the run {start.run!r}, which the runs table does not list"
         assert row["Level"].lower() == start.level, key
         what = row["What starts it"]
+        assert start.wait in WORDS, f"{key} waits {start.wait} minutes: add its word to WORDS"
         assert f"{WORDS[start.wait]} quiet minutes" in what, (key, what)
         assert starts.text(key, "250", "u", "v0.4.2").startswith(f"{start.run}: "), key
     # What the gate does not start has a clock of its routine's own.
@@ -228,7 +229,7 @@ def test_the_working_day_is_eight_to_five_monday_to_friday_by_londons_clock(star
 def test_the_gate_keeps_no_clock_and_no_routines_clock_is_in_the_working_day(starts, rows):
     """GitHub runs a workflow's clock hours late, so a run a clock starts is started by its
     routine's own. A routine carries one clock, so each such row has a routine to itself; and a
-    level's rows differ in their hour, which is how its run tells which row it is."""
+    level's rows are hours apart, which is how its run tells which row it is."""
     gate = (FLOWS / "start.yml").read_text(encoding="utf-8")
     assert "schedule" not in gate.partition("\njobs:")[0].partition("\non:")[2]
     assert "'schedule'" not in gate and "event.schedule" not in gate
@@ -244,7 +245,10 @@ def test_the_gate_keeps_no_clock_and_no_routines_clock_is_in_the_working_day(sta
         hours.setdefault(row["Level"], []).append(at)
     assert len({row["Routine"] for row in clocked.values()}) == len(clocked) >= 3
     for level, ats in hours.items():
-        assert len(set(ats)) == len(ats), level
+        minutes = sorted(at.hour * 60 + at.minute for at in ats)
+        gaps = [b - a for a, b in zip(minutes, minutes[1:] + [minutes[0] + 24 * 60])]
+        assert min(gaps) >= 4 * 60, (f"a run tells its row by the hour: {level}'s clocks, "
+                                     f"{sorted(map(str, ats))}, must be four hours apart")
 
 
 def test_the_gate_fires_by_the_table_makes_no_comment_and_sends_nothing_of_one(starts):

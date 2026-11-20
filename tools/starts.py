@@ -52,17 +52,16 @@ class Start(NamedTuple):
     run: str        # the row of the runs table it starts; its starting text begins with this
     level: str      # the level whose routine carries it
     wait: int       # quiet minutes after the last start of its level
-    by: str         # who began it: "maintainer" or "run" (a run's own line)
 
 
 STARTS = {
-    "answer": Start("Answer", "coordinator", 30, "maintainer"),
-    "change": Start("Answer", "coordinator", 30, "maintainer"),
-    "idea": Start("Idea", "coordinator", 10, "maintainer"),
-    "release": Start("Release", "coordinator", 10, "maintainer"),
-    "resume": Start("Re-plan", "coordinator", 10, "maintainer"),
-    "replan": Start("Re-plan", "coordinator", 10, "run"),
-    "build": Start("Answer build", "builder", 2, "run"),
+    "answer": Start("Answer", "coordinator", 30),
+    "change": Start("Answer", "coordinator", 30),
+    "idea": Start("Idea", "coordinator", 10),
+    "release": Start("Release", "coordinator", 10),
+    "resume": Start("Re-plan", "coordinator", 10),
+    "replan": Start("Re-plan", "coordinator", 10),
+    "build": Start("Answer build", "builder", 2),
 }
 
 ANSWER = re.compile(r"^(q[0-9]+\s*:|all\s+as\s+rec)", re.I)
