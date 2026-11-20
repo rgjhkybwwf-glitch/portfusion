@@ -1101,7 +1101,7 @@ def test_every_filter_row_can_be_cleared():
 
 
 #: THE BENCH'S OWN SCRIPTS, whose controls are still the underlined link.
-BENCH_SCRIPTS = ("bench.js", "sweep.js")
+BENCH_SCRIPTS = ("bench.js", "bench-form.js", "bench-review.js", "sweep.js")
 
 
 def test_a_control_is_drawn_in_the_shape_of_what_it_does():

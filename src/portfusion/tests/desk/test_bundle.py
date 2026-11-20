@@ -51,7 +51,9 @@ def test_the_bundle_is_the_shell_and_nothing_else(files):
     scripts = {f"/static/{n}" for n in ("core.js", "kit.js", "what-changed.js", "dashboard.js",
                                         "holdings.js", "round-trips.js", "method.js", "accounts.js",
                                         "reports.js", "performance.js", "trades.js", "reconcile.js",
-                                        "bench.js", "sweep.js", "price-refresh.js", "app.js")}
+                                        "bench-dropoff.js", "bench-save.js", "bench-form.js",
+                                        "bench-review.js", "bench.js", "bench-combo.js",
+                                        "sweep.js", "price-refresh.js", "app.js")}
     styles = {f"/static/{n}" for n in ("kit.css", "tables.css", "pages.css", "bench.css", "phone.css")}
     assert set(files) - fonts == {"/", *styles, *scripts, "/tokens.css", "/favicon.png",
                                   "/apple-touch-icon.png", "/icon-192.png", "/icon-512.png",

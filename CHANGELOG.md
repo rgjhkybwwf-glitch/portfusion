@@ -5,6 +5,13 @@ Each release, newest first. The version is `src/portfusion/__init__.py`'s, and
 
 ## Unreleased
 
+### Changed
+
+- **The Bench's script is six files by job**, so two Bench changes rarely touch one file: the
+  drop-off, the save, the item's form, the review, the page's own entry points and the combobox
+  (`bench-dropoff.js`, `bench-save.js`, `bench-form.js`, `bench-review.js`, `bench.js` and
+  `bench-combo.js`, in `desk/bundle.py`'s `SCRIPTS`). Nothing on the page changes.
+
 ### Removed
 
 - **A book's own look is gone: every book wears PortFusion's.** A book's `brand/` folder is no
