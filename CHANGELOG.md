@@ -7,6 +7,11 @@ Each release, newest first. The version is `src/portfusion/__init__.py`'s, and
 
 ### Removed
 
+- **A book's own look is gone: every book wears PortFusion's.** A book's `brand/` folder is no
+  longer read, and with it go a book's own name, wordmark and ownership line, its accent and
+  spark colours, its mark, its icons and its typeface. The desk's tab, header and icons and the
+  report's title and header are PortFusion's; the desk's footer is the release alone, and the
+  report's the stamp alone.
 - **The hosted desk is retired** (#5, #6). The desk is the Mac's alone, on 127.0.0.1: the remote
   door and its tunnel port, the passkey sign-in and its access levels, `portfusion desk
   --publish`, `--remote-port`, `--enrol` and `--level` are gone, and so are the Access page, the
@@ -35,6 +40,10 @@ Each release, newest first. The version is `src/portfusion/__init__.py`'s, and
 - **Take down what served it**, outside the book: the Tailscale Funnel (`tailscale funnel
   --https=443 off`), the Netlify project with its `DESK_PROXY_SECRET`, and the deploy-only
   repository.
+- **Delete the book's `brand/` folder**, if it has one. Nothing reads it now: one left in place is
+  ignored, and the desk and the report show PortFusion's name, colours and icons either way. A
+  book's `checks/` that reads its brand has nothing left to read, and goes with the folder. A
+  desk already in the Dock keeps the icon and name it copied until it is removed and added again.
 
 ## 0.4.1 — beta, 18 Nov 2026
 

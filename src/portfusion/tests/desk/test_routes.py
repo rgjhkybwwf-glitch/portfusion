@@ -55,11 +55,10 @@ def test_tokens_are_derived_from_the_palette_not_written_here():
 
 def test_every_token_the_desk_is_handed_is_worn():
     """A TOKEN NOBODY CONSUMES is a palette entry pretending to be a treatment. The icon wears its
-    own through `desk.icon.ROLES`, and the served shell wears the mark's two in the book's lockup,
-    so both count as a use."""
+    own through `desk.icon.ROLES`, which counts as a use."""
     import re
     from portfusion.desk import icon
-    used = desk_style() + app.index().body.decode()
+    used = desk_style()
     declared = set(re.findall(r"--([a-z-]+):", app.tokens().body.decode()))
     unworn = sorted(t for t in declared
                     if f"var(--{t})" not in used and t not in icon.ROLES.values())
@@ -78,13 +77,13 @@ def test_every_token_the_desk_wears_is_handed_to_it():
     assert not unhanded, f"the stylesheet wears {unhanded}, which nothing declares"
 
 
-def test_the_desk_wears_the_books_lockup():
-    """THE HEADER'S LOCKUP, THE TITLE AND THE FOOTER ARE FILLED IN AT SERVE TIME from
-    `portfusion.brand`, so a placeholder that stopped matching would leave the header with no
-    name at all, and quietly. Each must arrive whole, and nothing of a placeholder left."""
-    from portfusion import brand
+def test_the_desk_wears_portfusions_lockup():
+    """THE HEADER'S LOCKUP, THE TITLE AND THE FOOTER ARE FILLED IN AT SERVE TIME, so a
+    placeholder that stopped matching would leave the header with no name at all, and quietly.
+    Each must arrive whole, and nothing of a placeholder left."""
+    from portfusion.house import mark
     shell = app.index().body.decode()
-    assert brand.lockup() in shell, "the header has no lockup"
+    assert mark.lockup() in shell, "the header has no lockup"
     for placeholder in ("<!-- lockup -->", "<!-- title -->", "<!-- footer -->"):
         assert placeholder not in shell, f"{placeholder} was served as it stands"
 
@@ -287,8 +286,9 @@ def test_the_favicon_route_returns_a_real_png():
     body = app.favicon().body
     assert body[:8] == b"\x89PNG\r\n\x1a\n", "the favicon route is not returning a PNG"
 
-    width, height = struct.unpack(">II", body[16:24])
+    width, height, _, colour = struct.unpack(">IIBB", body[16:26])
     assert width == height == 64, f"the favicon is {width}x{height}, not 64x64"
+    assert colour == 6, f"the favicon is not RGBA (colour type {colour}): a tab's corners are clear"
 
     # Walk the chunks for the image data rather than assuming an offset.
     pos, idat = 8, b""
@@ -308,8 +308,7 @@ def test_the_favicon_route_returns_a_real_png():
             seen.add(tuple(row[x * 4:x * 4 + 3]))
 
     # EVERY COLOUR OF THE MARK MUST ACTUALLY APPEAR, each in at least one pixel it fills
-    # outright: the tile and the mark on it. Losing one is a part that did not render. A book's
-    # own icon is drawn in its brand's field colours as PortFusion's is in its own.
+    # outright: the tile and the mark on it. Losing one is a part that did not render.
     c = icon.colours()
     for name, rgb in (("the tile", c["tile"]), ("the mark", c["ring"])):
         assert rgb in seen, (
@@ -319,8 +318,8 @@ def test_the_favicon_route_returns_a_real_png():
 
 def test_a_palette_change_reaches_the_icon(monkeypatch):
     """THE ICON IS DRAWN IN THE PALETTE, not in copies of it, so a colour changed in
-    house/palette.py or a brand must change PortFusion's drawn mark too — the same promise
-    desk/theme.py makes for the CSS."""
+    house/palette.py must change the drawn mark too — the same promise desk/theme.py makes for
+    the CSS."""
     from portfusion.desk import icon, theme
 
     real = theme.palette
@@ -361,7 +360,7 @@ def test_the_page_declares_the_icon_the_dock_will_use():
     assert 'name="apple-mobile-web-app-title"' in html, \
         "without this the Dock web app is named with the whole <title>"
 
-    # THE DOCK AND THE TAB CARRY ONE NAME: "The Desk | <the book's name>", ending with the name,
+    # THE DOCK AND THE TAB CARRY ONE NAME: "The Desk | PortFusion", ending with the name,
     # so Safari does not trim the opening words two tabs share. The page states it twice, so this
     # holds the two alike.
     html = app.index().body.decode()
@@ -391,21 +390,19 @@ def _png_shape(body: bytes) -> tuple[int, int, int]:
 
 
 def test_the_dock_icons_are_the_full_mark_square_and_opaque():
-    """THE DOCK, THE HOME SCREEN AND ANDROID WEAR THE FULL MARK: the book's own, from its brand,
-    or PortFusion's, drawn.
+    """THE DOCK, THE HOME SCREEN AND ANDROID WEAR THE FULL MARK, drawn.
 
     Each route is requested over HTTP and must return that icon, at the size its name says, with
     no alpha channel, since every one of those surfaces draws its own corner."""
-    from portfusion import brand
-    from portfusion.desk import icon
+    from portfusion.desk import bundle, icon
     client = TestClient(app.app, base_url="http://127.0.0.1:8765")
     sizes = {"apple-touch-icon.png": 180, "icon-192.png": 192, "icon-512.png": 512}
-    assert set(sizes) == set(brand.APP_ICONS), "an app icon was added or dropped without its size"
+    assert set(sizes) == set(bundle.APP_ICON_SIZES), \
+        "an app icon was added or dropped without its size"
     for name, px in sizes.items():
         r = client.get(f"/{name}")
         assert r.status_code == 200 and r.headers["content-type"] == "image/png", f"/{name}"
-        assert r.content == ((brand.ICONS / name).read_bytes() if brand.ICONS
-                             else icon.png(px, square=True))
+        assert r.content == icon.png(px, square=True)
         width, height, colour = _png_shape(r.content)
         assert (width, height) == (px, px), f"/{name} is {width}x{height}, not {px}x{px}"
         assert colour == 2, f"/{name} is not opaque RGB (colour type {colour}): it has alpha"

@@ -12,10 +12,9 @@
      The app's name is the tab's own, and the same test holds the two alike.
      `theme-color` paints the window chrome to match the page in each scheme.
 
-     THE DOCK WEARS THE FULL MARK, square and opaque, the book's own app icon or PortFusion's:
-     180 for the name iOS asks for, 512 to stay sharp at the Dock's magnification. Chrome and
-     Android read the manifest, which names the same files. desk/bundle.py says which surface
-     reads which icon. -->
+     THE DOCK WEARS THE FULL MARK, square and opaque: 180 for the name iOS asks for, 512 to stay
+     sharp at the Dock's magnification. Chrome and Android read the manifest, which names the same
+     files. desk/bundle.py says which surface reads which icon. -->
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
 <link rel="apple-touch-icon" sizes="512x512" href="/icon-512.png">
 <link rel="manifest" href="/manifest.webmanifest">
@@ -26,12 +25,12 @@
 <!-- THE DESK'S STYLESHEET, one tag per file in desk/bundle.py's STYLES, filled in there. -->
 <!-- styles -->
 
-<!-- THE SHELL: the book's lockup in a bar, then a rail
+<!-- THE SHELL: PortFusion's lockup in a bar, then a rail
      beside the work. The rail holds the pages in the order of the work, joined by a thread, the
      page apart from the work below a rule, and the freshness line under them; on a phone it
      folds behind one button. -->
 <header class="bar">
-  <!-- THE BOOK'S LOCKUP, filled in by desk/bundle.py from portfusion.brand: one statement of the mark. -->
+  <!-- PORTFUSION'S LOCKUP, filled in by desk/bundle.py from house/mark.py: one statement of the mark. -->
   <div class="brand"><!-- lockup --><span class="desk-name">The desk</span></div>
   <button class="pages-toggle" id="pages-toggle" type="button" aria-expanded="false"
           aria-controls="rail">Pages</button>

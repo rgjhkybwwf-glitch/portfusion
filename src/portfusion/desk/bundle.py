@@ -12,10 +12,9 @@ list anywhere else would be the drift this prevents.
 A CHANGED FILE GETS A CHANGED URL. Each stylesheet and script is linked with `?v=` and the start
 of its own content hash, so a browser can never run an older copy inside a fresh shell.
 
-IT COMPUTES NOTHING OF THE BOOK'S. The colours come from `theme.tokens_css()`, the lockup, the
-name and the footer's words from `portfusion.brand`, the icons from the
-book's `brand/` folder or, where it has none, from `desk.icon`; this only gathers them, and
-states the manifest that names them. It writes nothing.
+IT COMPUTES NOTHING OF THE BOOK'S. The colours come from `theme.tokens_css()`, the lockup and
+the name from `house/mark.py`, the footer's words from `about.release()` and the icons from
+`desk.icon`; this only gathers them, and states the manifest that names them. It writes nothing.
 
 THE ICONS, BY SURFACE. A browser tab draws `/favicon.png`, rounded. Every larger surface takes
 the full mark, square and opaque, because each draws its own corner: Safari's "Add to Dock" and
@@ -25,22 +24,21 @@ Chrome and Android read `/manifest.webmanifest`.
 """
 from __future__ import annotations
 
-import datetime as _dt
 import hashlib
 import html as _html
 import json
 import pathlib
 import re
 
-from portfusion import about, brand
+from portfusion import about
 from portfusion.desk import theme
+from portfusion.house import mark, palette
 
 STATIC = pathlib.Path(__file__).resolve().parent / "static"
-FONTS = brand.FONT_DIR
+FONTS = palette.FONT_DIR
 
 #: The app icons' sizes, by the name each is served at.
 APP_ICON_SIZES = {"apple-touch-icon.png": 180, "icon-192.png": 192, "icon-512.png": 512}
-assert set(APP_ICON_SIZES) == set(brand.APP_ICONS)
 
 #: THE DESK'S SCRIPT, in the order it loads: ordered classic scripts sharing one global scope, so
 #: a file's top-level code may use only what the files before it declare. app.js, the entry,
@@ -85,19 +83,12 @@ def paths() -> list[str]:
 
 def _app_icons() -> list[str]:
     """The full-mark icons, as their URLs."""
-    return [f"/{name}" for name in brand.APP_ICONS]
+    return [f"/{name}" for name in APP_ICON_SIZES]
 
 
 def title() -> str:
-    """The page's name, which the tab, the window and the Dock carry alike: the book's."""
-    return f"The Desk | {brand.NAME}"
-
-
-def footer() -> str:
-    """WHOSE IT IS AND WHICH RELEASE: the book's own words, when it gives them, then the app's.
-    The year is the page's own, so the line never needs retyping."""
-    whose = brand.ownership(_dt.date.today().year)
-    return " · ".join([*([whose] if whose else []), about.release()])
+    """The page's name, which the tab, the window and the Dock carry alike."""
+    return f"The Desk | {mark.NAME}"
 
 
 def manifest() -> str:
@@ -113,7 +104,7 @@ def manifest() -> str:
     """
     name = title()
     colours = theme.palette()
-    sized = [(n, m[1]) for n in brand.APP_ICONS if (m := re.fullmatch(r"icon-(\d+)\.png", n))]
+    sized = [(n, m[1]) for n in APP_ICON_SIZES if (m := re.fullmatch(r"icon-(\d+)\.png", n))]
     icons = [{"src": f"/{n}", "sizes": f"{px}x{px}", "type": "image/png", "purpose": purpose}
              for purpose in ("any", "maskable") for n, px in sized]
     return json.dumps({
@@ -130,8 +121,6 @@ def asset(path: str) -> bytes:
     if path == "/tokens.css":
         return theme.tokens_css().encode()
     if path == "/favicon.png" or path in _app_icons():
-        if brand.ICONS:
-            return (brand.ICONS / path[1:]).read_bytes()
         from portfusion.desk.icon import png
         return (png(64) if path == "/favicon.png"
                 else png(APP_ICON_SIZES[path[1:]], square=True))
@@ -157,8 +146,8 @@ def index() -> bytes:
         f'<script src="/static/{n}"></script>' for n in SCRIPTS))
     for url in _STAMPED:
         html = html.replace(f'"{url}"', f'"{url}?v={_digest(asset(url))}"')
-    html = html.replace("<!-- lockup -->", brand.lockup())
+    html = html.replace("<!-- lockup -->", mark.lockup())
     html = html.replace("<!-- title -->", _html.escape(title()))
-    # WHOSE IT IS AND WHICH RELEASE, in the footer.
-    html = html.replace("<!-- footer -->", _html.escape(footer()))
+    # WHICH RELEASE, in the footer.
+    html = html.replace("<!-- footer -->", _html.escape(about.release()))
     return html.encode()

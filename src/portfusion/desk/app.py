@@ -118,7 +118,7 @@ def static(name: str):
 
 @app.get("/fonts/{name}")
 def fonts(name: str):
-    """The book's typefaces, which /tokens.css declares. They live in house/fonts/ because the
+    """The typefaces /tokens.css declares. They live in house/fonts/ because the
     report embeds the same files; served from disk, so the desk never waits on a network."""
     return _shell(f"/fonts/{name}")
 
@@ -129,9 +129,8 @@ def favicon():
 
     A browser tab with the generic page icon is one you lose among twenty others.
 
-    The book's `brand/` icon, or `desk.icon.png()` drawn in its palette on request rather than
-    committed, so a palette change reaches the tab with the pages. The Dock's icon is the next
-    route's.
+    `desk.icon.png()`, drawn in the palette on request rather than committed, so a palette
+    change reaches the tab with the pages. The Dock's icon is the next route's.
     """
     return _shell("/favicon.png")
 
@@ -159,7 +158,7 @@ def manifest():
 
 @app.get("/tokens.css")
 def tokens():
-    """The book's own colours as CSS custom properties, DERIVED not retyped.
+    """The palette's colours as CSS custom properties, DERIVED not retyped.
 
     Generated rather than written down, so a colour changed in `house/palette.py` reaches the
     desk on the next reload. The desk's stylesheet (`bundle.STYLES`) is the design system and consumes these;

@@ -15,7 +15,7 @@ what order.
   the day it merges.
 - The README installs `vN.N.N`.
 
-`test_brand.py` holds the three together.
+`test_about.py` holds the three together.
 
 ## The tag
 

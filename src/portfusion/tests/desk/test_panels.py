@@ -1011,20 +1011,15 @@ def test_the_dashboard_lists_the_checks_the_audit_prints():
     assert all(f'id="{box}"' in rt for box in held) and "go.dataset.held" in rt
 
 
-def test_the_footer_says_whose_it_is_and_which_release():
-    """Every page's footer says whose the desk is and which release it is, each held once — the
-    book's words in its brand, the release in portfusion/__init__.py — and filled into the shell:
-    "© <owner> · <release>", the app's half alone where a brand gives no ownership line. Never
-    "Nothing here is typed": the Bench is where rows are typed."""
-    import datetime
-    from portfusion import about, brand
+def test_the_footer_says_which_release():
+    """Every page's footer says which release the desk is, held once, in portfusion/__init__.py,
+    and filled into the shell. Never "Nothing here is typed": the Bench is where rows are typed."""
+    from portfusion import about
     from portfusion.desk import bundle
     template = (SRC / "desk" / "static" / "index.html").read_text()
     assert "<!-- footer -->" in template and "Nothing here is typed" not in template
     page = bundle.index().decode()
-    whose = brand.ownership(datetime.date.today().year)
-    line = " · ".join([*([whose] if whose else []), about.release()])
-    assert f"<span>{line}</span>" in page, line
+    assert f"<span>{about.release()}</span>" in page, about.release()
 
 
 def test_every_page_is_drawn_through_the_template():

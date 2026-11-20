@@ -1,7 +1,6 @@
 """The page's stylesheet: one string, inlined into the page so the file stands on its own.
 
-ITS COLOURS AND TYPEFACE ARE house/palette.py's with the book's brand over them
-(`portfusion.brand`), in both schemes, as the desk's are
+ITS COLOURS AND TYPEFACE ARE house/palette.py's, in both schemes, as the desk's are
 (`tests/test_figures.py::test_no_renderer_types_a_colour`). The look is PortFusion's: a white page
 in the light and a dark one in the dark, square corners, a 2px rule opening every section and table,
 labels in condensed capitals and every figure in tabular numerals.
@@ -12,7 +11,7 @@ so one declaration across its range serves every style the page sets.
 """
 import base64
 
-from portfusion import brand as P
+from portfusion.house import palette as P
 
 #: Each colour the stylesheet draws with, and the screen role in house/palette.py it comes from.
 #: A role with no dark value keeps its colour in both schemes.
@@ -50,11 +49,8 @@ color:var(--heading);margin:0}
 h3{color:var(--heading)}
 .lede{font-size:1.3rem;line-height:1.5;color:var(--ink);margin:14px 0 0}
 .lockup{display:inline-flex;align-items:center;gap:12px;margin-bottom:32px;color:var(--mark)}
-.lockup svg{height:36px;width:auto;flex:none}
 .wordmark{display:flex;flex-direction:column;gap:4px;line-height:.95;white-space:nowrap}
 .wordmark .name{font-size:19px;font-weight:800;font-stretch:125%;color:var(--heading)}
-.wordmark .sub{font-size:10px;font-weight:600;font-stretch:75%;letter-spacing:.5em;
-color:var(--muted)}
 .eyebrow,.snum,.stats .k,th{font-size:11.5px;font-weight:600;font-stretch:75%;letter-spacing:.1em;
 text-transform:uppercase;color:var(--faint)}
 header{padding:48px 0 0}

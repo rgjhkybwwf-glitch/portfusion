@@ -23,7 +23,7 @@ its new folder.
 
 To put it in the Dock: Safari → `http://127.0.0.1:8765/` → **File → Add to Dock**. The web app
 only opens the page; if the desk is not running, Safari shows a blank error. It copies the icon
-and name when added, so a new brand reaches the Dock only after a restart, by removing it and
+and name when added, so a release that changes either reaches the Dock only by removing it and
 adding it again.
 
 ## Restart, reload, or nothing
@@ -31,7 +31,6 @@ adding it again.
 | Changed | What to do |
 |---|---|
 | any `.py` the desk imports | restart: *restart the desk* on the freshness line, under the pages, or `launchctl kickstart -k gui/$UID/org.portfusion.desk` |
-| the book's `brand/` | restart: its name, colours and lockup are read once, and the desk does not say they changed |
 | `desk/static/` | reload the page |
 | `store/` | nothing: the next request reads it |
 

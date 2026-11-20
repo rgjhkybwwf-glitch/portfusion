@@ -788,7 +788,7 @@ NAMED_ON_PURPOSE = {
     "_inbox/": "a book's workbench, which no checkout holds",
     "_inbox/.bench/": "the Bench's staging inside a book's workbench",
     "bin/activate": "inside the venv, which git never lists",
-    "brand/": "a book's own folder, which no checkout holds",
+    "brand/": "a book's folder for a look of its own through 0.4.1, which the CHANGELOG names",
     "requirements.txt": "a book's own pin; the app's needs are pyproject.toml's",
     "trades.csv": "buys.csv's name before 0.2.1's migration, which the CHANGELOG names",
 }
