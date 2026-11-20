@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The new look · Its values and its parts</title>
+<link rel="stylesheet" href="look.css">
+<style>
+/* The sheet's own layout, and nothing of the look: every value a part wears is look.css's. */
+.sheet { max-width: 1280px; margin: 0 auto; padding: var(--gap-frame) var(--gap) 48px; display: flex; flex-direction: column; gap: 28px; }
+.sheet .section { gap: var(--gap); }
+.sheet .section > p { padding: 0 4px; max-width: 760px; color: var(--muted); }
+.list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px 24px; }
+.entry { display: flex; gap: 12px; align-items: center; min-width: 0; }
+.entry > div { min-width: 0; }
+.chip { width: 44px; height: 44px; flex: none; border-radius: var(--r-tile); box-shadow: var(--shadow-well); }
+.token, .value { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: var(--text-label); overflow-wrap: anywhere; }
+.value { color: var(--muted); }
+.samples { display: flex; flex-wrap: wrap; gap: 28px 24px; align-items: flex-start; padding: 0 4px; }
+.sample { display: flex; flex-direction: column; gap: 10px; flex: 1 1 250px; min-width: 0; }
+.sample.wide { flex-basis: 100%; }
+.sample > .box { min-height: 72px; display: flex; align-items: center; justify-content: center; }
+.corner { width: 72px; height: 56px; background: var(--surface); box-shadow: var(--shadow-card); }
+.steps { display: flex; flex-direction: column; gap: 10px; }
+.steps > div { display: flex; flex-wrap: wrap; gap: 4px 20px; align-items: baseline; }
+.steps .said { flex: 1 1 320px; }
+.narrow { max-width: var(--w-menu); }
+.sample > .menu { flex: none; padding: 0; max-width: 260px; }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+<header class="glass bar">
+<div class="where">
+<div>
+<h1>The new look: its values and its parts</h1>
+<div class="note">Each value is printed from <span class="token">look.css</span> as this page opens · the demo book</div>
+</div>
+</div>
+<div class="tiles">
+<a class="quiet" href="home.html">Home, the book</a>
+<a class="quiet" href="company.html">A company's page</a>
+</div>
+</header>
+
+<section class="section">
+<div class="head"><h2>Colour</h2></div>
+<div class="card">
+<div class="list">
+<div class="entry"><span class="chip" data-paint="--ground"></span><div><div>The ground, warm paper</div><div class="token">--ground</div><div class="value" data-token="--ground"></div></div></div>
+<div class="entry"><span class="chip" data-paint="--glow-violet"></span><div><div>The ground's glow, top left</div><div class="token">--glow-violet</div><div class="value" data-token="--glow-violet"></div></div></div>
+<div class="entry"><span class="chip" data-paint="--glow-warm"></span><div><div>The ground's glow, top right</div><div class="token">--glow-warm</div><div class="value" data-token="--glow-warm"></div></div></div>
+<div class="entry"><span class="chip" data-paint="--surface"></span><div><div>A surface: a card</div><div class="token">--surface</div><div class="value" data-token="--surface"></div></div></div>
+<div class="entry"><span class="chip" data-paint="--sunken"></span><div><div>Sunken: a well, a tab track</div><div class="token">--sunken</div><div class="value" data-token="--sunken"></div></div></div>
+<div class="entry"><span class="chip" data-paint="--divider"></span><div><div>A divider, under a table's heads</div><div class="token">--divider</div><div class="value" data-token="--divider"></div></div></div>
+<div class="entry"><span class="chip" data-paint="--divider-soft"></span><div><div>The softer divider, between rows</div><div class="token">--divider-soft</div><div class="value" data-token="--divider-soft"></div></div></div>
+<div class="entry"><span class="chip" data-paint="--ink"></span><div><div>Ink</div><div class="token">--ink</div><div class="value" data-token="--ink"></div></div></div>
+<div class="entry"><span class="chip" data-paint="--muted"></span><div><div>Muted ink: a label, a note</div><div class="token">--muted</div><div class="value" data-token="--muted"></div></div></div>
+<div class="entry"><span class="chip" data-paint="--accent"></span><div><div>The accent: a link, the mark, a chart's line</div><div class="token">--accent</div><div class="value" data-token="--accent"></div></div></div>
+<div class="entry"><span class="chip" data-paint="--accent-ink"></span><div><div>The accent's ink on white: a selected line or tab, a row that opens</div><div class="token">--accent-ink</div><div class="value" data-token="--accent-ink"></div></div></div>
+<div class="entry"><span class="chip" data-paint="--accent-soft"></span><div><div>The accent, soft: a row under the pointer</div><div class="token">--accent-soft</div><div class="value" data-token="--accent-soft"></div></div></div>
+<div class="entry"><span class="chip" data-paint="--lead"></span><div><div>The lead card</div><div class="token">--lead</div><div class="value" data-token="--lead"></div></div></div>
+<div class="entry"><span class="chip" data-paint="--lead-solid"></span><div><div>The lead card where transparency is reduced</div><div class="token">--lead-solid</div><div class="value" data-token="--lead-solid"></div></div></div>
+<div class="entry"><span class="chip" data-paint="--lead-ink"></span><div><div>Ink on the lead card</div><div class="token">--lead-ink</div><div class="value" data-token="--lead-ink"></div></div></div>
+<div class="entry"><span class="chip" data-paint="--lead-muted"></span><div><div>Muted ink on the lead card</div><div class="token">--lead-muted</div><div class="value" data-token="--lead-muted"></div></div></div>
+<div class="entry"><span class="chip" data-paint="--button"></span><div><div>The main button</div><div class="token">--button</div><div class="value" data-token="--button"></div></div></div>
+<div class="entry"><span class="chip" data-paint="--quiet"></span><div><div>The quiet button; under the pointer <span class="token">--quiet-over</span></div><div class="token">--quiet</div><div class="value" data-token="--quiet"></div></div></div>
+<div class="entry"><span class="chip" data-paint="--up"></span><div><div>Up: a gain</div><div class="token">--up</div><div class="value" data-token="--up"></div></div></div>
+<div class="entry"><span class="chip" data-paint="--down"></span><div><div>Down: a loss</div><div class="token">--down</div><div class="value" data-token="--down"></div></div></div>
+<div class="entry"><span class="chip" data-paint="--problem"></span><div><div>A problem's tag; its ink <span class="token">--problem-ink</span></div><div class="token">--problem</div><div class="value" data-token="--problem"></div></div></div>
+<div class="entry"><span class="chip" data-paint="--gap-tag"></span><div><div>A gap's tag; its ink <span class="token">--gap-ink</span></div><div class="token">--gap-tag</div><div class="value" data-token="--gap-tag"></div></div></div>
+<div class="entry"><span class="chip" data-paint="--clear"></span><div><div>A clear tag; its ink <span class="token">--clear-ink</span></div><div class="token">--clear</div><div class="value" data-token="--clear"></div></div></div>
+<div class="entry"><span class="chip" data-paint="--closed"></span><div><div>A closed tag; its ink <span class="token">--closed-ink</span></div><div class="token">--closed</div><div class="value" data-token="--closed"></div></div></div>
+<div class="entry"><span class="chip" data-paint="--glass"></span><div><div>The glass, over a blur</div><div class="token">--glass</div><div class="value" data-token="--glass"></div></div></div>
+<div class="entry"><span class="chip" data-paint="--glass-solid"></span><div><div>The glass where transparency is reduced</div><div class="token">--glass-solid</div><div class="value" data-token="--glass-solid"></div></div></div>
+<div class="entry"><span class="chip" data-paint="--chart-grid"></span><div><div>A chart's grid line</div><div class="token">--chart-grid</div><div class="value" data-token="--chart-grid"></div></div></div>
+<div class="entry"><span class="chip" data-paint="--chart-base"></span><div><div>A chart's base line</div><div class="token">--chart-base</div><div class="value" data-token="--chart-base"></div></div></div>
+</div>
+</div>
+</section>
+
+<section class="section">
+<div class="head"><h2>Three heights, lit from above</h2></div>
+<p>Sunken, resting and raised, and the glass, which floats. Light comes from above: a pale top edge, and a soft shadow that falls below.</p>
+<div class="samples">
+<div class="sample"><div class="box well"></div><div><div>Sunken: a well, a tab track</div><div class="token">--shadow-well</div><div class="value" data-token="--shadow-well"></div></div></div>
+<div class="sample"><div class="box card"></div><div><div>Resting: a card</div><div class="token">--shadow-card</div><div class="value" data-token="--shadow-card"></div></div></div>
+<div class="sample"><a class="box card lift"></a><div><div>Resting, under the pointer: a card that opens something rises 2px</div><div class="token">--shadow-card-over</div><div class="value" data-token="--shadow-card-over"></div></div></div>
+<div class="sample"><div class="box lead"></div><div><div>Raised: the lead card</div><div class="token">--shadow-lead</div><div class="value" data-token="--shadow-lead"></div></div></div>
+<div class="sample"><div class="box lead"><div class="tile"><div class="label">A tile</div><div class="num-tile">£4,210.53</div></div></div><div><div>Raised: a tile on the lead card</div><div class="token">--shadow-tile</div><div class="value" data-token="--shadow-tile"></div></div></div>
+<div class="sample"><div class="box glass"></div><div><div>Floating: the glass, on the menu and the bar only</div><div class="token">--shadow-glass</div><div class="value" data-token="--shadow-glass"></div></div></div>
+<div class="sample"><div class="box"><a class="line narrow" aria-current="page"><span>Companies</span><span class="count">5</span></a></div><div><div>Raised: the selected menu line</div><div class="token">--shadow-line-on</div><div class="value" data-token="--shadow-line-on"></div></div></div>
+<div class="sample"><div class="box"><div class="well tabs"><button type="button" class="tab" aria-pressed="true">Overview</button><button type="button" class="tab" aria-pressed="false">Trades · 4</button></div></div><div><div>Raised: the selected tab</div><div class="token">--shadow-tab-on</div><div class="value" data-token="--shadow-tab-on"></div></div></div>
+<div class="sample"><div class="box"><button type="button" class="push">Refresh prices</button></div><div><div>Raised: the main button, which rises 1px under the pointer</div><div class="token">--shadow-button</div><div class="value" data-token="--shadow-button"></div></div></div>
+</div>
+</section>
+
+<section class="section">
+<div class="head"><h2>Corners</h2></div>
+<p>An inner corner is its outer corner less the gap between them. A button and a tag are fully round.</p>
+<div class="samples">
+<div class="sample"><div class="corner" data-corner="--r-lead"></div><div><div>The lead card</div><div class="token">--r-lead</div><div class="value" data-token="--r-lead"></div></div></div>
+<div class="sample"><div class="corner" data-corner="--r-glass"></div><div><div>The glass menu and bar</div><div class="token">--r-glass</div><div class="value" data-token="--r-glass"></div></div></div>
+<div class="sample"><div class="corner" data-corner="--r-card"></div><div><div>A card</div><div class="token">--r-card</div><div class="value" data-token="--r-card"></div></div></div>
+<div class="sample"><div class="corner" data-corner="--r-tile"></div><div><div>A tile</div><div class="token">--r-tile</div><div class="value" data-token="--r-tile"></div></div></div>
+<div class="sample"><div class="corner" data-corner="--r-well"></div><div><div>A well</div><div class="token">--r-well</div><div class="value" data-token="--r-well"></div></div></div>
+<div class="sample"><div class="corner" data-corner="--r-line"></div><div><div>A menu line, a tab track</div><div class="token">--r-line</div><div class="value" data-token="--r-line"></div></div></div>
+<div class="sample"><div class="corner" data-corner="--r-row"></div><div><div>A table row</div><div class="token">--r-row</div><div class="value" data-token="--r-row"></div></div></div>
+<div class="sample"><div class="corner" data-corner="--r-tab"></div><div><div>A tab</div><div class="token">--r-tab</div><div class="value" data-token="--r-tab"></div></div></div>
+</div>
+</section>
+
+<section class="section">
+<div class="head"><h2>Spacing, control heights and motion</h2></div>
+<div class="card">
+<div class="list">
+<div><div>Between boxes</div><div class="token">--gap</div><div class="value" data-token="--gap"></div></div>
+<div><div>Round the menu and the bar</div><div class="token">--gap-frame</div><div class="value" data-token="--gap-frame"></div></div>
+<div><div>Between tiles, and under a section's heading</div><div class="token">--gap-tiles</div><div class="value" data-token="--gap-tiles"></div></div>
+<div><div>Between a table's cells</div><div class="token">--gap-cells</div><div class="value" data-token="--gap-cells"></div></div>
+<div><div>A card's padding</div><div class="token">--pad-card</div><div class="value" data-token="--pad-card"></div></div>
+<div><div>A figure card's padding</div><div class="token">--pad-figure</div><div class="value" data-token="--pad-figure"></div></div>
+<div><div>The lead card's padding</div><div class="token">--pad-lead</div><div class="value" data-token="--pad-lead"></div></div>
+<div><div>A tile's padding</div><div class="token">--pad-tile</div><div class="value" data-token="--pad-tile"></div></div>
+<div><div>The page's padding</div><div class="token">--pad-page</div><div class="value" data-token="--pad-page"></div></div>
+<div><div>The inset of a menu line and a table's row</div><div class="token">--inset</div><div class="value" data-token="--inset"></div></div>
+<div><div>A menu line and a button</div><div class="token">--h-control</div><div class="value" data-token="--h-control"></div></div>
+<div><div>A tab</div><div class="token">--h-tab</div><div class="value" data-token="--h-tab"></div></div>
+<div><div>A table row</div><div class="token">--h-row</div><div class="value" data-token="--h-row"></div></div>
+<div><div>The menu, at its narrowest</div><div class="token">--w-menu</div><div class="value" data-token="--w-menu"></div></div>
+<div><div>A pointer's answer: a line, a tab, a row, a button, a card rising</div><div class="token">--dur-pointer</div><div class="value" data-token="--dur-pointer"></div></div>
+<div><div>A tab's content fading in</div><div class="token">--dur-tab</div><div class="value" data-token="--dur-tab"></div></div>
+<div><div>Content arriving: it fades and rises</div><div class="token">--dur-arrive</div><div class="value" data-token="--dur-arrive"></div></div>
+<div><div>The curve it arrives on</div><div class="token">--ease-arrive</div><div class="value" data-token="--ease-arrive"></div></div>
+<div><div>How far it rises</div><div class="token">--rise</div><div class="value" data-token="--rise"></div></div>
+<div><div>Between its three steps</div><div class="token">--step</div><div class="value" data-token="--step"></div></div>
+</div>
+</div>
+<div class="samples">
+<div class="sample wide">
+<div><button type="button" class="quiet" id="replay">Play the arrival again</button></div>
+<div class="flow" id="arrival">
+<div class="card arrive">First</div>
+<div class="card arrive later">Then, one step later</div>
+<div class="card arrive latest">Last, two steps later</div>
+</div>
+<div class="note">No figure is animated. All of it is off under Reduce Motion; the glass and the lead card are solid under Reduce Transparency; the glass, a card, the lead card and a tile gain an outline under Increase Contrast.</div>
+</div>
+</div>
+</section>
+
+<section class="section">
+<div class="head"><h2>Type</h2></div>
+<div class="card">
+<div class="steps">
+<div><span class="said num-lead">£17,576.33</span><span><span class="token">--text-lead</span> <span class="value" data-token="--text-lead"></span> · 600 · the lead figure, one to a page</span></div>
+<div><span class="said num">£33,557.53</span><span><span class="token">--text-figure</span> <span class="value" data-token="--text-figure"></span> · 600 · a figure</span></div>
+<div><span class="said num-card">£8,260.53</span><span><span class="token">--text-card</span> <span class="value" data-token="--text-card"></span> · 600 · a card's figure</span></div>
+<div><span class="said text-title">Quenlan Robotics Inc.</span><span><span class="token">--text-title</span> <span class="value" data-token="--text-title"></span> · 700 · the page's title</span></div>
+<div><span class="said num-tile">£4,210.53</span><span><span class="token">--text-tile</span> <span class="value" data-token="--text-tile"></span> · 600 · a tile's figure</span></div>
+<div><span class="said text-head">Largest holdings</span><span><span class="token">--text-head</span> <span class="value" data-token="--text-head"></span> · 600 · a section's heading</span></div>
+<div><span class="said wordmark">PortFusion</span><span><span class="token">--text-brand</span> <span class="value" data-token="--text-brand"></span> · 700 · the name beside the mark</span></div>
+<div><span class="said">Units unchecked on Voss ii ISA: <span class="name">no holdings export on file</span></span><span><span class="token">--text-body</span> <span class="value" data-token="--text-body"></span> · 400, 500 in the menu, 600 for a name</span></div>
+<div><span class="said note">Valued at 30 Sep 2026 · prices 51 days old</span><span><span class="token">--text-note</span> <span class="value" data-token="--text-note"></span> · a note, a figure's label</span></div>
+<div><span class="said small name">Weight of exposure</span><span><span class="token">--text-label</span> <span class="value" data-token="--text-label"></span> · 600 · a column's head, a tag, a group's title</span></div>
+</div>
+</div>
+</section>
+
+<section class="section">
+<div class="head"><h2>The parts, each drawn once</h2></div>
+<p>A part has one rule in <span class="token">look.css</span>, under the class named here. The two pages are made of these and nothing else.</p>
+<div class="samples">
+
+<div class="sample">
+<nav class="menu" aria-label="A sample of the menu"><div class="glass">
+<div class="brand">
+<svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="10"></rect><circle cx="16" cy="16" r="8.6"></circle></svg>
+<div><div class="wordmark">PortFusion</div><div class="small">Demo book</div></div>
+</div>
+<div class="group">
+<div class="title">The book</div>
+<a class="line"><span>Home</span><span class="tag problem">6 to do</span></a>
+<a class="line" aria-current="page"><span>Companies</span><span class="count">5</span></a>
+<a class="line"><span>Accounts</span><span class="count">3</span></a>
+</div>
+</div></nav>
+<div><div>The menu: the mark and the name, a group with its title, a line, the selected line, a line's count</div><div class="token">.menu · .glass · .brand · .group · .line · .count</div></div>
+</div>
+
+<div class="sample">
+<div class="box tiles"><span class="tag problem">Problem</span><span class="tag gap">Gap</span><span class="tag clear">Clear</span><span class="tag closed">Closed</span></div>
+<div><div>A tag: a state in two or three words</div><div class="token">.tag .problem · .gap · .clear · .closed</div></div>
+</div>
+
+<div class="sample">
+<div class="box tiles"><button type="button" class="push">Refresh prices</button><a class="quiet">Back to Home</a><a class="more">All accounts</a></div>
+<div><div>The main button, one to a page; the quiet button; a link to more</div><div class="token">.push · .quiet · .more</div></div>
+</div>
+
+<div class="sample">
+<div class="box"><div class="well tabs" role="group" aria-label="A sample of tabs"><button type="button" class="tab" aria-pressed="true">Overview</button><button type="button" class="tab" aria-pressed="false">Trades · 4</button></div></div>
+<div><div>Tabs: a sunken track, the selected tab raised out of it</div><div class="token">.well.tabs · .tab</div></div>
+</div>
+
+<div class="sample">
+<div class="card figure"><div class="label">Total market exposure</div><div class="num">£33,557.53</div><div class="note">Owned £9,435.53 · spread-bet notional £24,122.00</div></div>
+<div><div>A figure card: its label, the figure, a note</div><div class="token">.card.figure · .label · .num · .note</div></div>
+</div>
+
+<div class="sample">
+<a class="card lift"><span class="name">Voss IG Spread bet</span><span class="num-card">£8,140.80</span><span class="note clear">Agrees with IG, read 30 Sep 2026</span></a>
+<div><div>A card that opens its object: it rises under the pointer</div><div class="token">.card.lift · .name · .num-card · .note.clear · .note.gap</div></div>
+</div>
+
+<div class="sample wide">
+<section class="lead">
+<div class="headline"><div class="label">Value at 30 Sep 2026</div><div class="num-lead">£9,450.53</div><div class="note">28.16% of exposure · first entered 14 Apr 2026</div></div>
+<div class="tiles">
+<div class="tile"><div class="label">Shares owned</div><div class="num-tile">£4,210.53</div></div>
+<div class="tile"><div class="label">Gain over its life</div><div class="num-tile up">+580.53 (4.84%)</div></div>
+</div>
+</section>
+<div><div>The lead card, one to a page: the page's one large figure, and tiles for the figures that explain it</div><div class="token">.lead · .headline · .num-lead · .tiles · .tile · .num-tile · .up · .down</div></div>
+</div>
+
+<div class="sample wide">
+<section class="card tabled">
+<div class="head"><h2>Largest holdings</h2><a class="more">All 5 companies</a></div>
+<div class="scroll"><div class="table holdings">
+<div class="cols"><span>Company</span><span>Held as</span><span class="n">Value (GBP)</span><span class="n">Weight of exposure</span></div>
+<a class="row"><span class="name">Quenlan Robotics Inc.</span><span class="dim">Shares and a spread bet</span><span class="n">9,450.53</span><span class="n">28.16%</span></a>
+<div class="row"><span class="name">A row that opens nothing</span><span class="dim">Shares</span><span class="n">3,525.00</span><span class="n">10.50%</span></div>
+</div></div>
+</section>
+<div><div>A table in its card: the heads, a row that opens its object, and a row that does not</div><div class="token">.card.tabled · .head · .scroll · .table · .cols · a.row · .row · .n · .dim</div></div>
+</div>
+
+<div class="sample">
+<section class="card">
+<div class="head"><h2>Price of QNLR</h2><div class="note">Quarter-end marks, in USD</div></div>
+<div class="well chart">
+<svg viewBox="0 0 600 190" role="img" aria-label="QNLR bought at $100.00 on 14 Apr 2026, marked $105.00 on 30 Jun 2026 and $112.00 on 30 Sep 2026">
+<defs><linearGradient id="under" x1="0" y1="0" x2="0" y2="1"><stop class="fill-top" offset="0"></stop><stop class="fill-end" offset="1"></stop></linearGradient></defs>
+<line class="grid" x1="40" y1="45" x2="560" y2="45"></line>
+<line class="grid" x1="40" y1="97" x2="560" y2="97"></line>
+<line class="base" x1="40" y1="150" x2="560" y2="150"></line>
+<polygon points="40,135 277,97 560,45 560,150 40,150" fill="url(#under)"></polygon>
+<polyline class="series" points="40,135 277,97 560,45"></polyline>
+<circle class="point" cx="40" cy="135" r="4.5"></circle>
+<circle class="point" cx="277" cy="97" r="4.5"></circle>
+<circle class="point" cx="560" cy="45" r="4.5"></circle>
+<text class="amount" x="40" y="122">$100.00</text>
+<text class="amount" x="277" y="84" text-anchor="middle">$105.00</text>
+<text class="amount" x="560" y="32" text-anchor="end">$112.00</text>
+<text x="40" y="172">14 Apr 2026, bought</text>
+<text x="277" y="172" text-anchor="middle">30 Jun 2026</text>
+<text x="560" y="172" text-anchor="end">30 Sep 2026</text>
+</svg>
+</div>
+</section>
+<div><div>A chart, in a well: the accent for its one line until a chart's own colours are given</div><div class="token">.well.chart · .grid · .base · .series · .point · .amount</div></div>
+</div>
+
+<div class="sample">
+<aside class="card status" aria-label="A sample of the status panel">
+<h2>Status</h2>
+<div class="items">
+<div class="item"><span class="tag problem">Problem</span><span>Price is 51 days old, past the 21-day limit</span></div>
+<div class="item"><span class="tag clear">Clear</span><span>Spread bet agrees with IG, read 30 Sep 2026</span></div>
+</div>
+<div class="latest">
+<div class="small name">Latest</div>
+<div><div class="what">Sold £0.30 a point of QNLR SB at 10,400</div><div class="small">15 Sep 2026 · Voss IG Spread bet</div></div>
+</div>
+</aside>
+<div><div>The status panel: what stands against the object, then what last happened to it</div><div class="token">.card.status · .items · .item · .latest · .what · .small</div></div>
+</div>
+
+</div>
+</section>
+
+</div>
+<script>
+// Each value is read from the stylesheet and printed, so the sheet cannot say one thing and the
+// stylesheet another.
+(function () {
+  "use strict";
+  var root = getComputedStyle(document.documentElement);
+  document.querySelectorAll("[data-token]").forEach(function (el) {
+    el.textContent = root.getPropertyValue(el.dataset.token).trim();
+  });
+  document.querySelectorAll("[data-paint]").forEach(function (el) {
+    el.style.background = "var(" + el.dataset.paint + ")";
+  });
+  document.querySelectorAll("[data-corner]").forEach(function (el) {
+    el.style.borderRadius = "var(" + el.dataset.corner + ")";
+  });
+  var arrival = document.getElementById("arrival");
+  document.getElementById("replay").addEventListener("click", function () {
+    arrival.hidden = true;
+    void arrival.offsetWidth;
+    arrival.hidden = false;
+  });
+})();
+</script>
+</body>
+</html>
