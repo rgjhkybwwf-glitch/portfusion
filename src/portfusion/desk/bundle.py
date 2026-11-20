@@ -45,7 +45,8 @@ APP_ICON_SIZES = {"apple-touch-icon.png": 180, "icon-192.png": 192, "icon-512.pn
 #: loads last. `index()` writes the page's script tags from this, and nowhere else states it.
 SCRIPTS = ("core.js", "kit.js", "what-changed.js", "dashboard.js", "holdings.js", "round-trips.js",
            "method.js", "accounts.js", "reports.js", "performance.js", "trades.js", "reconcile.js",
-           "bench.js", "sweep.js", "price-refresh.js", "app.js")
+           "bench-dropoff.js", "bench-save.js", "bench-form.js", "bench-review.js", "bench.js",
+           "bench-combo.js", "sweep.js", "price-refresh.js", "app.js")
 
 #: THE DESK'S STYLESHEET, in the order it is linked: a later file's rule wins a tie with an
 #: earlier one's, so the kit comes first and the phone's rules last. `index()` writes the page's
