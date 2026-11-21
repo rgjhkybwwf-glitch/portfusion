@@ -12,10 +12,9 @@ Each release, newest first. The version is `src/portfusion/__init__.py`'s, and
   (`bench-dropoff.js`, `bench-save.js`, `bench-form.js`, `bench-review.js`, `bench.js` and
   `bench-combo.js`, in `desk/bundle.py`'s `SCRIPTS`). Nothing on the page changes.
 - **The Bench's Python is three modules by job**: the item in `desk/intake/bench.py`, its form in
-  `bench_form.py` and its gates in `bench_gates.py`. The tests that ask only the form or only the
-  gates, and cannot skip on a book, move beside `test_bench.py` to `test_bench_form.py` and
-  `test_bench_gates.py`. The item's module still answers for every name, and nothing the Bench
-  does changes.
+  `bench_form.py` and its gates in `bench_gates.py`. Most of the tests that ask only the form or
+  only the gates move beside `test_bench.py`, to `test_bench_form.py` and `test_bench_gates.py`.
+  The item's module still answers for every name, and nothing the Bench does changes.
 
 ### Removed
 
