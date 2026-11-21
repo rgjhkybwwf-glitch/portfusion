@@ -46,8 +46,12 @@ from portfusion.desk.intake.bench_gates import (ADJUSTMENT_LABEL, LIMBS, WHY_FIE
                                                 is_adjustment, reading_of, unusual_signs, why)
 from portfusion.record import schema
 
-#: THE FORM'S AND THE GATES' NAMES, each answered here as well as where it is defined.
-__all__ = ["TABLES", "TABLE_LABELS", "REGISTER", "CLOSED", "OPEN", "LONG", "closed_for",
+#: WHAT THIS MODULE OFFERS: the item's own names, then the form's and the gates', each of those
+#: answered here as well as where it is defined.
+__all__ = ["bench_dir", "item_for_event", "sweep_status", "new_item", "for_document", "read_here",
+           "for_event", "to_bench", "Stale", "save", "get", "all_items", "discard", "paste_block",
+           "recognise", "waiting_documents", "document_text",
+           "TABLES", "TABLE_LABELS", "REGISTER", "CLOSED", "OPEN", "LONG", "closed_for",
            "evidence_classes", "vocabulary", "next_ids", "_blank_refused", "form_for",
            "validate_row", "_size_clash", "_parcel_clash", "_id_clash",
            "WHY_FIELDS", "ADJUSTMENT_LABEL", "LIMBS", "is_adjustment", "adjustment_cells",

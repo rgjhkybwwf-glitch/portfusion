@@ -1085,7 +1085,7 @@ def test_validation_runs_through_schema_itself():
     deliberate — a second copy of the parsing rules would drift — so this pins the name."""
     from portfusion.record import schema
     assert hasattr(schema, "_parse"), \
-        "schema._parse was renamed; desk/intake/bench.py validates through it"
+        "schema._parse was renamed; desk/intake/bench_form.py validates through it"
     assert _bench.validate_row("income", {"date": "2026-09-01", "account": SHARES_ACCOUNT,
                                           "category": "Dividend", "detail": "d",
                                           "amount": "not-a-number", "source": "s",
