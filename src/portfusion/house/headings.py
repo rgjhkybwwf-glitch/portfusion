@@ -197,8 +197,8 @@ BY_TAB = {
         "rows": "Rows",
         "ref": "Retrieves",
     },
-    # THE BENCH'S FORMS, one field per store column (`desk/intake/bench.py:form_for()`). A field the
-    # pages already head reads the same here; these are the ones only a form shows.
+    # THE BENCH'S FORMS, one field per store column (`desk/intake/bench_form.py:form_for()`). A field
+    # the pages already head reads the same here; these are the ones only a form shows.
     "Bench": {
         "closes": "Closes trade",
         "local_amount": "Amount",

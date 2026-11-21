@@ -89,6 +89,8 @@ Kept by review, and by the test named where there is one.
 - **A pull request is the proposal**: a small change is made on a branch and agreed in its pull
   request; a large one (a new table, a store move, a change of direction) is raised in an issue
   first. An approval covers exactly what it names.
+- **A change that splits, moves or renames a file is labelled `architecture`**: its issue and its
+  pull request.
 - **A decision that appears mid-task is a stop**, and so is a test or guide that would bend one
   already agreed; a test that only needs its expectation moved to the agreed outcome is not.
 - **Options carry their cost** (files, tests, figures that move), with a recommendation. A declined
