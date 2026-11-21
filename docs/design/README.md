@@ -46,6 +46,22 @@ in its place, and line breaks may differ. The desk gets Inter's own file with #3
   `table()` draws a real table. What the reference fixes is how a part looks and moves, not the
   elements it is made of.
 
+## The name and the mark
+
+The maintainer settled both on 21 Nov 2026.
+
+- **The name is PortFusion**, alone, in Inter 700 and in two colours: "Port" in the ink and
+  "Fusion" in the accent. `.wordmark` sets it, and the `span` inside it is the second word. A
+  tab's or a window's title is the browser's, in one colour.
+- **The mark is the harbour**: one line that goes up the mast and round the bowl and stops short
+  of the mast, and a core inside it. In a box of 32, the line is
+  `M10.5 24.5 V7.5 H16.4 A5.7 5.7 0 0 1 16.4 18.9`, 2.8 thick with round ends and a round corner,
+  and the core is a dot of radius 2.1 at 16.5 across and 13.2 down.
+- **In the menu** the mark is white on a tile of the accent, 32px with a corner of 10
+  (`.brand .mark`). Without a tile, the line is in the ink and the core in the accent.
+- **The app wears neither yet.** Its header says the old name and its icons draw a stand-in ring,
+  until the frame is turned on (#347).
+
 ## Where it evens out the drawing
 
 The agreed drawing typed a few values on one part that it did not type on its twin. The
@@ -67,6 +83,9 @@ reference gives each part its one value, as the consistency rule asks:
 - **The look in print**, and a chart's own colours beside the accent. Both are parked by the
   maintainer (#9, Decisions).
 - **Icons.** None is drawn: the look has no set of them yet.
+- **The app's own icons.** The tab's, the Dock's and the touch icon are the mark on its tile, and
+  are drawn when the frame is turned on (#347). The mark on a dark ground waits with the dark
+  scheme.
 - **A phone.** The pages wrap as the browser narrows, and that is all: the phone is a later
   study.
 - **Every other page.** Companies, Accounts, Quarters, the Inbox, Prices and the lists are drawn

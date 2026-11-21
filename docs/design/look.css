@@ -228,8 +228,10 @@ h2, .text-head { font-size: var(--text-head); font-weight: 600; letter-spacing: 
 .brand { display: flex; align-items: center; gap: 10px; padding: 0 var(--inset); }
 .brand .mark { width: 32px; height: 32px; flex: none; }
 .brand .mark rect { fill: var(--accent); }
-.brand .mark circle { fill: none; stroke: var(--on-button); stroke-width: 2.9; }
+.brand .mark path { fill: none; stroke: var(--on-button); stroke-width: 2.8; stroke-linecap: round; stroke-linejoin: round; }
+.brand .mark circle { fill: var(--on-button); }
 .wordmark { font-size: var(--text-brand); font-weight: 700; letter-spacing: -0.01em; }
+.wordmark span { color: var(--accent); }
 .group { display: flex; flex-direction: column; gap: 2px; }
 .group > .title { padding: 0 var(--inset) 4px; font-size: var(--text-label); font-weight: 600; color: var(--muted); }
 .line {
