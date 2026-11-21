@@ -46,8 +46,7 @@ from portfusion.desk.intake.bench_gates import (ADJUSTMENT_LABEL, LIMBS, WHY_FIE
                                                 is_adjustment, reading_of, unusual_signs, why)
 from portfusion.record import schema
 
-#: WHAT THIS MODULE OFFERS: the item's own names, then the form's and the gates', each of those
-#: answered here as well as where it is defined.
+#: WHAT THIS MODULE OFFERS: the item's own names, then the form's and the gates'.
 __all__ = ["bench_dir", "item_for_event", "sweep_status", "new_item", "for_document", "read_here",
            "for_event", "to_bench", "Stale", "save", "get", "all_items", "discard", "paste_block",
            "recognise", "waiting_documents", "document_text",
@@ -474,4 +473,3 @@ def document_text(name: str) -> dict:
     has not been read in full, and nothing can be read from an image here.
     """
     return _reader().extract(name)
-

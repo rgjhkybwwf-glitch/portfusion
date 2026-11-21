@@ -1,8 +1,7 @@
 """THE BENCH'S FORM — what a proposed row may hold, and whether the store would take it.
 
 Every column is `record/schema.py`'s, every choice is read off the record, and a row is checked
-by the loader's own parse (`validate_row()`). Nothing here writes; `bench.py` keeps the item, and
-answers for each name here as for its own.
+by the loader's own parse (`validate_row()`). Nothing here writes; the item is `bench.py`'s.
 """
 from __future__ import annotations
 
@@ -50,8 +49,6 @@ REGISTER = ("securities", "companies", "contracts")
 # OPEN sets grow in the ordinary course of business. A new holding is not an error, so these are
 # SUGGESTED — offered, and typing past them is allowed.
 CLOSED = ("account", "cur", "category", "evidence")
-
-
 OPEN = ("ticker",)
 
 
@@ -281,4 +278,3 @@ def _id_clash(table: str, field: str, value: str) -> list[str]:
         return _guarded(_load)
     except RecordUnavailable:
         return []
-

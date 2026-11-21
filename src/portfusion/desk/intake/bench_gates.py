@@ -1,8 +1,8 @@
 """THE BENCH'S GATES — whether an item may be approved, and if not, everything that holds it.
 
 The evidence, the rows, the document that retrieves it, every line read, nothing already in the
-book, each sign as its category's, and the why a decision owes. Nothing here writes either: the
-item itself is kept by `bench.py`, which offers every gate by its name.
+book, each sign as its category's, and the why a decision owes. Nothing here writes either; the
+item is `bench.py`'s.
 """
 from __future__ import annotations
 
@@ -535,4 +535,3 @@ def _why_needed(item: dict, field: str) -> bool:
 
 def approved(item: dict) -> bool:
     return all(g["ok"] for g in gates(item))
-
