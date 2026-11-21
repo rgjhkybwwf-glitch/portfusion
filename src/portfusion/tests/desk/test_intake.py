@@ -708,11 +708,13 @@ def test_the_classes_are_the_records_own_and_not_a_second_list():
     from portfusion.desk.intake import bench as _b
     assert [c["key"] for c in _b.evidence_classes()] == [e.key for e in D.EVIDENCE_CLASSES]
 
-    tree = ast.parse((SRC / "desk" / "intake" / "bench.py").read_text())
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Assign) and any(
-                getattr(t, "id", "") == "EVIDENCE_CLASSES" for t in node.targets):
-            raise AssertionError("desk/intake/bench.py has grown its own copy of the evidence classes")
+    for name in ("bench.py", "bench_form.py", "bench_gates.py"):
+        tree = ast.parse((SRC / "desk" / "intake" / name).read_text())
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Assign) and any(
+                    getattr(t, "id", "") == "EVIDENCE_CLASSES" for t in node.targets):
+                raise AssertionError(f"desk/intake/{name} has grown its own copy of the "
+                                     "evidence classes")
 
 
 def test_every_class_still_owes_all_three_limbs():

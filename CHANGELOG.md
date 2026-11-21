@@ -11,6 +11,9 @@ Each release, newest first. The version is `src/portfusion/__init__.py`'s, and
   drop-off, the save, the item's form, the review, the page's own entry points and the combobox
   (`bench-dropoff.js`, `bench-save.js`, `bench-form.js`, `bench-review.js`, `bench.js` and
   `bench-combo.js`, in `desk/bundle.py`'s `SCRIPTS`). Nothing on the page changes.
+- **The Bench's Python is three modules by job**: the item in `desk/intake/bench.py`, its form in
+  `bench_form.py` and its gates in `bench_gates.py`, and `test_bench.py` is split the same way.
+  The item's module still answers for every name, and nothing the Bench does changes.
 
 ### Removed
 

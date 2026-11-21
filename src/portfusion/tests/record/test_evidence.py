@@ -417,8 +417,8 @@ def test_every_fingerprinted_class_is_a_retrievable_document():
 
 def test_the_classes_closed_to_new_entries_are_a_named_set():
     """`not-on-file` is the one closed class: it labels rows whose document the archive does not
-    hold, and no new row may cite it. Every door refuses it — `desk/intake/bench.py` at its
-    statement-grade gate and `desk/doors/observations.py` outright.
+    hold, and no new row may cite it. Every door refuses it — `desk/intake/bench_gates.py` at
+    its statement-grade gate and `desk/doors/observations.py` outright.
 
     The set is derived from the classes and pinned here, so a second closed class fails the
     suite until somebody says why in a diff a reviewer sees.

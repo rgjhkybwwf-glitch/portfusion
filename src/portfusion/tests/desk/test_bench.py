@@ -261,17 +261,6 @@ def test_no_document_kind_no_approval_and_the_authority_is_the_kinds(item):
     assert item["evidence"]["authority"] == rules.EVIDENCE_BY_KEY["ii-contract-note"].authority
 
 
-def test_a_trade_whose_source_is_not_its_kinds_format_is_refused(item):
-    """The one format, checked at entry: a typed line in another shape is named with the line
-    its document's kind composes, so the fix is a copy rather than a guess."""
-    _ready(item, source="Contract note TESTREF1")
-    rows = next(g for g in _bench.gates(item) if g["name"] == "rows")
-    assert not rows["ok"], rows["detail"]
-    assert "'ii contract note 01 Sep 2026'" in rows["detail"], rows["detail"]
-    _ready(item)
-    assert next(g for g in _bench.gates(item) if g["name"] == "rows")["ok"]
-
-
 def test_the_authority_box_is_shown_and_not_typed():
     """The record keeps no typed authority, so the box is read-only and carries the kind's."""
     js = desk_script()
@@ -522,18 +511,6 @@ def test_a_share_bought_back_in_the_same_item_is_not_retired():
     assert commit.retired_by(sales + [buy]) == []
 
 
-def test_an_event_is_dated_on_the_bench_and_on_load():
-    """The date is required in the schema, so the loader refuses a blank on every route and the
-    Bench's form follows it."""
-    from portfusion.record import schema
-    for table in ("buys", "sales", "income", "capital-movements"):
-        date = next(f for f in schema.TABLES[table].fields if f.name == "date")
-        with pytest.raises(ValueError):
-            schema._parse(date, "", table, 0)
-        assert next(f for f in _bench.form_for(table) if f["name"] == "date")["required"]
-        assert "date: required, and empty" in _bench.validate_row(table, {"date": ""})
-
-
 def _held(account, ticker):
     from portfusion import engine
     return engine.Book().holdings(account=account, by="ticker").set_index("ticker").loc[ticker]
@@ -770,14 +747,6 @@ def test_commit_is_refused_until_every_gate_is_green(item, store_copy):
 
 
 
-def test_two_rows_of_one_item_under_one_id_are_refused(item):
-    """AN ID ONCE: two rows of one item under one id fail the rows gate."""
-    _ready(item)
-    item["rows"].append({"table": "buys", "values": dict(GOOD_TRADE, broker_ref="TESTREF2")})
-    rows = next(g for g in _bench.gates(item) if g["name"] == "rows")
-    assert not rows["ok"] and f"id {GOOD_TRADE['trade_id']} is row 1's too" in rows["detail"], rows
-
-
 @needs("accounts", "buys")
 def test_committing_twice_is_refused(item, store_copy, tmp_path, monkeypatch):
     """An event happened once. The second write would be a duplicate the schema cannot see,
@@ -952,19 +921,20 @@ def test_health_says_when_the_code_was_loaded():
 
 
 def test_nothing_on_the_bench_writes_to_the_store():
-    """THE CLAIM THAT MATTERS, for bench.py specifically. It works on a JSON note in
-    _inbox/.bench/ and produces text to paste. THE WRITE LIVES IN desk/doors/commit.py, which is a
-    separate module on purpose: this guard stays sharp.
+    """THE CLAIM THAT MATTERS, for bench.py and the form and gates beside it. It works on a JSON
+    note in _inbox/.bench/ and produces text to paste. THE WRITE LIVES IN desk/doors/commit.py,
+    which is a separate module on purpose: this guard stays sharp.
 
     CHECKED ON THE SYNTAX TREE (`harness.file_calls`), not by grepping the source. Prose is not
     behaviour; the calls are. Every write, a removal among them, is of the item note, through
     `_path()`.
     """
     from harness import file_calls
-    writes = file_calls(SRC / "desk" / "intake" / "bench.py")
-    elsewhere = [(line, call, target) for line, call, target in writes
+    writes = [(name, *w) for name in ("bench.py", "bench_form.py", "bench_gates.py")
+              for w in file_calls(SRC / "desk" / "intake" / name)]
+    elsewhere = [(name, line, call, target) for name, line, call, target in writes
                  if not target.startswith("_path(")]
-    assert not elsewhere, f"bench.py writes somewhere but its own item note: {elsewhere}"
+    assert not elsewhere, f"the Bench writes somewhere but its own item note: {elsewhere}"
 
 
 def test_the_bench_writes_only_inside_its_own_directory(item, tmp_path, monkeypatch):
@@ -1073,70 +1043,6 @@ def test_the_screen_shows_the_whys_already_on_file(item):
         "the screen no longer shows the whys already on file"
 
 
-def test_an_item_is_not_approvable_until_every_gate_is_green(item):
-    assert not _bench.approved(item)
-    # THE GATES ARE A NAMED SET, the shape test_boundaries.py's WRITERS uses. A new one
-    # joins by being written down here, on purpose — a gate that appears without a decision is a
-    # gate nobody chose. "the reference retrieves it" is statement-grade checked at the door,
-    # rather than asserted about a row afterwards.
-    assert {g["name"] for g in _bench.gates(item)} == {
-        "statement-grade", "the reference retrieves it", "rows", "every line read",
-        "not already in the record", "signs as the category's", "why_entered", "why_exited"}
-    assert _bench.approved(_ready(item))
-
-
-def test_all_three_statement_grade_limbs_are_required(item):
-    """Dated · an authority that can be asked again · a named reference that retrieves it.
-    The third is the one that gets skipped, and it is the one that makes the row retrievable."""
-    _ready(item)
-    for limb, _label, _help in _bench.LIMBS:
-        item["evidence"] = dict(GOOD_EVIDENCE, **{limb: ""})
-        gate = next(g for g in _bench.gates(item) if g["name"] == "statement-grade")
-        assert not gate["ok"], f"a missing {limb!r} was accepted"
-
-
-def test_a_new_position_must_carry_its_reasoning(item):
-    """The one field no document supplies. Required for a trade being OPENED, and not for a
-    dividend — a rationale is owed for a decision, not for an event that merely happened.
-
-    TWO FIELDS, because the record has two, and Holdings and Round Trips show both. One field
-    could only fill one.
-    """
-    _ready(item)
-    item["why"] = {"why_entered": "", "why_exited": ""}
-    assert not next(g for g in _bench.gates(item) if g["name"] == "why_entered")["ok"]
-
-    # A dividend is not a decision, so no ENTRY reason is owed for one.
-    item["rows"] = [{"table": "income", "values": {"ticker": "CRNT", "category": "Dividend"}}]
-    assert next(g for g in _bench.gates(item) if g["name"] == "why_entered")["ok"]
-
-
-def test_a_sale_owes_an_exit_reason(item):
-    """`why_exited` is Round Trips' Why we exited. A sale owes one; a purchase does not."""
-    _ready(item)
-    assert next(g for g in _bench.gates(item) if g["name"] == "why_exited")["ok"], \
-        "a purchase was asked for an exit reason"
-    item["rows"] = [{"table": "sales", "values": {"ticker": "PENR.L"}}]
-    assert not next(g for g in _bench.gates(item) if g["name"] == "why_exited")["ok"]
-
-
-def test_an_item_written_before_the_split_still_reads(item):
-    """An item written before the two fields existed holds `reasoning` as one string, which was
-    always the ENTRY reason — that is what its gate keyed on. It reads as `why_entered`, and
-    `bench.why` says why it is not rewritten on disk."""
-    legacy = {"rows": [], "reasoning": "the old single field"}
-    assert _bench.why(legacy) == {"why_entered": "the old single field", "why_exited": ""}
-
-
-def test_a_reason_is_never_refused_for_its_length(item):
-    """NO WORD CAP. The gate asks whether a reason is owed and written, and nothing about how long
-    it runs."""
-    _ready(item)
-    item["why"] = {"why_entered": "word " * 200, "why_exited": ""}
-    gate = next(g for g in _bench.gates(item) if g["name"] == "why_entered")
-    assert gate["ok"], gate
-
-
 @needs("accounts", "buys")
 def test_a_closed_vocabulary_refuses_an_invented_spelling(item):
     """Accounts, types, currencies, modes and statuses are closed. A value outside them is a typo
@@ -1147,14 +1053,6 @@ def test_a_closed_vocabulary_refuses_an_invented_spelling(item):
     assert not gate["ok"] and "is not one of" in gate["detail"]
 
 
-def test_an_open_vocabulary_accepts_a_value_the_record_has_never_seen(item):
-    """A FIRST-EVER PURCHASE OF A NEW COMPANY MUST NOT BE REFUSED: an enforced derived list would
-    fail a ticker not yet in buys.csv, blocking precisely the event the bench exists for. Tickers
-    and income categories grow in the ordinary course of business; accounts and currencies do
-    not."""
-    assert _bench.approved(_ready(item, ticker="NEVER-HELD.L"))
-
-
 @needs("accounts", "buys")
 def test_a_row_id_already_in_the_store_is_refused(item):
     """A duplicate id is a silent overwrite waiting to happen."""
@@ -1162,13 +1060,6 @@ def test_a_row_id_already_in_the_store_is_refused(item):
     _ready(item, trade_id=D.buys[0].trade_id)
     gate = next(g for g in _bench.gates(item) if g["name"] == "rows")
     assert not gate["ok"] and "already in the store" in gate["detail"]
-
-
-def test_the_next_id_is_allocated_from_the_store_not_guessed(item):
-    from portfusion.record import rules as D
-    ids = _bench.next_ids()
-    assert ids["buys"] not in {t.trade_id for t in D.buys}
-    assert ids["sales"] not in {e.sale_id for e in D.sales}
 
 
 @needs("accounts", "buys")
@@ -1199,33 +1090,6 @@ def test_validation_runs_through_schema_itself():
                                           "category": "Dividend", "detail": "d",
                                           "amount": "not-a-number", "source": "s",
                                           "note": "n"})
-
-
-def test_the_form_is_generated_from_the_schema():
-    """A hand-written form would be a third statement of the store's shape, after the schema
-    and the CSV header. A new column joins the screen by existing."""
-    from portfusion.record import schema
-    for table in _bench.TABLES:
-        assert [f["name"] for f in _bench.form_for(table)] == \
-               [f.name for f in schema.TABLES[table].fields]
-
-
-
-def test_a_currency_with_a_rate_is_offered_before_anything_trades_in_it(monkeypatch):
-    """THE FIRST TRADE IN A NEW CURRENCY. The bench offers every currency with a rate on file, so a
-    new book offers one before anything trades in it."""
-    from portfusion.record import rules
-    monkeypatch.setattr(rules, "buys", [])
-    monkeypatch.setattr(rules, "fx_rows", [("JPY", 190.0, "2026-09-30", "test", "close")])
-    assert _bench.vocabulary()["cur"] == ["GBP", "JPY"]
-
-
-def test_the_vocabulary_is_derived_from_the_record():
-    """docs/store.md states these as a markdown table, which is a SECOND statement of what the
-    record already holds — so the bench reads the record, not the table."""
-    from portfusion.record import rules as D
-    v = _bench.vocabulary()
-    assert v["account"] == list(D.ACCOUNT_ORDER)
 
 
 def test_the_paste_block_is_a_row_the_store_would_accept(item):
@@ -1495,52 +1359,6 @@ def test_the_panel_list_in_the_browser_skips_inline_actions():
     assert "!a.inline" in js, "app.js still lists every action for the panel, inline or not"
 
 
-# =====================================================================================
-# THE BENCH IS NOT STRICTER THAN THE STORE
-# =====================================================================================
-
-def test_a_column_the_store_lets_be_blank_is_not_required_here():
-    """`required = not field.null` would be stricter than the store. `schema._parse` returns ""
-    for a blank str column whatever `null` says — only a blank NUMBER raises — and income.note's
-    own schema comment reads: often `""`, "and that is a real value".
-
-    The bench refuses nothing the store accepts, as it accepts nothing the store refuses.
-    """
-    required = {f["name"]: f["required"] for f in _bench.form_for("income")}
-    assert required["note"] is False, "the store accepts a blank note; the bench must too"
-    assert required["amount"] is True, "a blank number is a GAP and must still be refused"
-
-    row = {"date": "2026-08-21", "account": SPREAD_BET_ACCOUNT,
-           "category": "Funding interest", "detail": "Funding charge",
-           "amount": -1.34, "source": "IG REST /history/transactions", "note": ""}
-    assert _bench.validate_row("income", row) == []
-
-
-def test_a_blank_number_is_still_refused():
-    """Blank is accepted exactly as far as the store accepts it."""
-    row = {"date": "2026-08-21", "account": SPREAD_BET_ACCOUNT,
-           "category": "Funding interest", "detail": "d", "amount": "",
-           "source": "s", "note": ""}
-    assert any("amount" in p for p in _bench.validate_row("income", row))
-
-
-def test_required_is_the_stores_own_answer_for_every_table():
-    """The property, not the column. Anything the loader would accept blank must be accepted
-    blank here, across every table the bench produces — so the two cannot drift apart."""
-    from portfusion.record import schema
-    for table in _bench.TABLES:
-        for spec in _bench.form_for(table):
-            field = next(f for f in schema.TABLES[table].fields if f.name == spec["name"])
-            try:
-                schema._parse(field, "", table, 0)
-                store_refuses = False
-            except ValueError:
-                store_refuses = True
-            assert spec["required"] is store_refuses, (
-                f"{table}.{spec['name']}: the bench says required={spec['required']} and the "
-                f"store says {store_refuses}")
-
-
 def test_an_empty_list_says_nothing_and_the_page_explains_itself_once():
     """An empty list is not drawn. The page explains itself in one place, its fold, in a reader's
     words and in the order the work comes in."""
@@ -1692,95 +1510,6 @@ def test_the_header_is_re_read_on_every_panel_switch():
         "show() fetches the state but never repaints the header with it")
 
 
-# =====================================================================================
-# `evidence` IS A CLASS KEY, `source` IS THE LINE — on every table
-# =====================================================================================
-
-def test_the_bench_accepts_the_source_line_every_trade_already_carries():
-    """THE CENSUS, and it is the strongest form this check has: if the bench would refuse a
-    value the store already holds on every row, the bench is wrong and not the store.
-    """
-    from portfusion.record import rules as D
-    from portfusion.desk.intake import bench
-    refused = []
-    for t in D.buys:
-        if not (t.source or "").strip():
-            continue
-        row = {"trade_id": free_id("buys"), "date": "2026-09-05", "source": t.source,
-               "account": t.acct, "ticker": t.ticker, "cur": t.cur,
-               "qty": t.qty, "cost": t.cost}
-        if [p for p in bench.validate_row("buys", row) if p.startswith("source:")]:
-            refused.append(t.source)
-    assert not refused, (
-        f"the bench would refuse the source line on {len(refused)} row(s) the store already "
-        f"holds, e.g. {sorted(set(refused))[:3]} — trades.source is prose, not a vocabulary")
-
-
-def test_the_cash_observation_evidence_is_still_a_closed_class_key():
-    """THE OTHER HALF. On `cash-readings` `evidence` holds an EVIDENCE_CLASSES KEY, and
-    `test_record.py` refuses a row citing a class the record does not know — so a free text box
-    there would let the bench build a row the suite then rejects. No table may use the name
-    for anything else."""
-    from portfusion.desk.intake import bench
-    complaints = bench.validate_row("cash-readings", {
-        "account": "Rowe HL ISA", "as_of": "2026-09-08", "cash": 1.0, "evidence": "made-up"})
-    assert any(c.startswith("evidence:") for c in complaints), \
-        "cash-readings.evidence no longer refuses a class the record does not know"
-    assert "evidence" in bench.closed_for("cash-readings")
-    from portfusion.record import schema
-    assert "evidence" not in schema.TABLES["buys"].header, \
-        "trades has an `evidence` column again — its provenance line is `source`"
-
-
-def test_a_free_prose_column_offers_no_choices_either():
-    """Not just an open vocabulary — NO vocabulary. Offering the class keys as suggestions
-    under a field that wants a sentence would invite the wrong value into the one column whose
-    whole job is naming the document. The browser renders a `choices` list as a combobox
-    whatever `closed` says."""
-    from portfusion.desk.intake import bench
-    spec = {f["name"]: f for f in bench.form_for("buys")}["source"]
-    assert spec["choices"] is None and spec["closed"] is False, \
-        f"trades.source offers a vocabulary: {spec}"
-
-
-# =====================================================================================
-# STATEMENT-GRADE, AT THE DOOR
-#
-# "Nothing enters the record except through the door — an authenticated feed read, or a
-# broker document filed in _archive/statements/." Checked only afterwards, by the audit's
-# evidence chain, it finds a row already written and hands somebody an errand. A gate is a
-# refusal, and no row.
-# =====================================================================================
-
-def _gate(item, name="the reference retrieves it"):
-    return next(g for g in _bench.gates(item) if g["name"] == name)
-
-
-def test_a_document_class_owes_a_document(item):
-    """A contract note is retrieved by its FILE. Citing one with nothing on the bench is a
-    row pointing at a document nobody can open."""
-    _ready(item)
-    item["evidence_class"] = "ii-contract-note"
-    item["document"] = None
-    g = _gate(item)
-    assert not g["ok"], "a document class was accepted with no document"
-    assert "on the bench" in g["detail"]
-
-    item["document"] = {"name": GOOD_DOCUMENT}
-    assert _gate(item)["ok"], "a document class was refused WITH its document"
-
-
-def test_a_document_named_but_not_on_the_workbench_is_refused(item):
-    """A NAME IS NOT A FILE. A document taken off the workbench after its item was opened lets no
-    row commit."""
-    _ready(item)
-    assert _gate(item)["ok"], "the fixture's own document, on its workbench, was refused"
-    item["document"] = {"name": "Contract_Note_NOT_ON_THE_BENCH.pdf"}
-    g = _gate(item)
-    assert not g["ok"], "a document nobody dropped in passed on its name alone"
-    assert "not on the workbench" in g["detail"]
-
-
 def test_a_document_gone_before_it_is_filed_writes_nothing(item, store_copy, tmp_path,
                                                           monkeypatch):
     """THE DOOR'S OWN REFUSAL, behind the gate's. The document is filed INSIDE the write's
@@ -1803,48 +1532,6 @@ def test_a_document_gone_before_it_is_filed_writes_nothing(item, store_copy, tmp
     assert _bench.get(item["id"])["state"] not in _commit.TERMINAL, \
         "the item left the bench without its rows"
     assert not (_commit.archive() / f"{item['id']}.json").exists(), "the item was archived"
-
-
-def test_an_api_read_owes_no_file(item):
-    """An authenticated endpoint and a stored dealId ARE the retrieval. Asking an IG sweep for
-    a PDF would refuse the strongest evidence in the book for not being paper."""
-    _ready(item)
-    item["evidence_class"] = "ig-api"
-    item["document"] = None
-    g = _gate(item)
-    assert g["ok"], f"an api class was asked for a file: {g['detail']}"
-
-
-def test_a_screenshot_is_refused_at_the_door(item):
-    """THE CLASS THAT SAYS SO ITSELF. `retrieval="none"` means nothing retrieves the figure a
-    second time, which is exactly what statement-grade forbids.
-
-    It stays on the list of classes — an honest weak claim that shows up as one is better than
-    a figure filed under "statement" — and the door is where it stops.
-    """
-    from portfusion.record import rules as _rules
-    _ready(item)
-    shots = [e.key for e in _rules.EVIDENCE_CLASSES if e.retrieval == "none"]
-    assert shots, "no class declares retrieval='none' any more — has the vocabulary moved?"
-    for key in shots:
-        item["evidence_class"] = key
-        g = _gate(item)
-        assert not g["ok"], f"{key} passed the door"
-        assert "nothing retrieves it" in g["detail"]
-
-
-def test_the_bench_offers_no_closed_class_and_refuses_one_chosen_anyway(item):
-    """`not-on-file` is closed because nothing retrieves it. The bench lists it as closed, and
-    its gate refuses an item that cites it."""
-    from portfusion.record import rules as D
-    listed = {c["key"]: c for c in _bench.evidence_classes()}
-    for key in D.CLOSED_TO_NEW_ENTRIES:
-        assert listed[key]["closed"], key
-        ready = _ready(item)
-        ready["evidence_class"] = key
-        gate = next(g for g in _bench.gates(ready) if g["name"] == "the reference retrieves it")
-        assert not gate["ok"], (key, gate)
-    assert not listed["hl-transactions"]["closed"]
 
 
 # =====================================================================================
@@ -2042,17 +1729,3 @@ def test_bench_saves_go_one_at_a_time_and_keep_the_field_being_typed():
     import re
     callers = re.findall(r"\bsaveNow\(", js)
     assert len(callers) == 2, "something saves round the queue"          # its definition, its one call
-
-
-def test_a_dated_statement_filed_before_is_named_as_filed(monkeypatch):
-    """WHETHER A DOCUMENT IS ALREADY FILED IS THE ARCHIVE'S RULE TO SAY: a valuation pulled at an
-    instant is filed under a name that writes the instant another way."""
-    from portfusion.record import schema
-    account = "Rowe HL ISA"
-    filed = f"03 Mar 2025 14.05 HL Account Summary download 3 Mar 2025 14-05 ({account}).csv"
-    monkeypatch.setattr(schema, "filed_statements", lambda: [filed])
-    item = {"evidence_class": "hl-valuation",
-            "evidence": {"reference": "3 Mar 2025 14:05"},
-            "rows": [{"table": "account-readings", "values": {"account": account}}]}
-    said = _bench.already_in_the_record(item)
-    assert any("already filed" in s and filed in s for s in said), said
