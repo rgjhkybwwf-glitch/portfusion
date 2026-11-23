@@ -73,6 +73,10 @@
 <div class="well tabs" role="group" aria-label="Sections of this company">
 <button type="button" class="tab" aria-pressed="true" data-shows="overview">Overview</button>
 <button type="button" class="tab" aria-pressed="false" data-shows="trades">Trades · 4</button>
+<button type="button" class="tab" aria-pressed="false" data-shows="round-trips">Round trips · 1</button>
+<button type="button" class="tab" aria-pressed="false" data-shows="income">Income · 0</button>
+<button type="button" class="tab" aria-pressed="false" data-shows="price">Price</button>
+<button type="button" class="tab" aria-pressed="false" data-shows="reasoning">Reasoning · 3</button>
 </div>
 </div>
 
@@ -132,6 +136,54 @@
 </div>
 </section>
 
+<section class="card tabled fade" id="round-trips" hidden>
+<div class="head"><h2>Round trips in this company</h2><a class="more">All round trips</a></div>
+<div class="scroll">
+<div class="table trips">
+<div class="cols"><span>Closed</span><span>Line</span><span>Size</span><span class="n">Entry</span><span class="n">Exit</span><span class="n">Days held</span><span class="n">Gain (GBP)</span></div>
+<div class="row"><span class="two"><span>15 Sep 2026</span><span class="small">opened 14 Aug 2026</span></span><span class="two"><span class="name">QNLR SB</span><span class="small">Voss IG Spread bet</span></span><span class="two"><span>£0.30 a point</span><span class="small">part closed</span></span><span class="n">10,300</span><span class="n">10,400</span><span class="n">32</span><span class="n two"><span class="up">+30.00</span><span class="small">0.97%</span></span></div>
+</div>
+</div>
+</section>
+
+<section class="card tabled fade" id="income" hidden>
+<div class="head"><h2>Income from this company</h2></div>
+<div class="scroll">
+<div class="table income">
+<div class="cols"><span>Paid</span><span>Kind</span><span>Line</span><span>Account</span><span class="n">Amount (GBP)</span></div>
+<div class="empty">No dividend from Quenlan Robotics Inc. is on file.</div>
+</div>
+</div>
+</section>
+
+<section class="card tabled fade" id="price" hidden>
+<div class="head"><h2>Marks</h2><div class="note">Every price on file for this company's lines, newest first</div></div>
+<div class="scroll">
+<div class="table marks">
+<div class="cols"><span>Day</span><span>Line</span><span>Mark</span><span class="n">Price</span><span>Struck at</span></div>
+<div class="row"><span>30 Sep 2026</span><span class="name">QNLR SB</span><span class="dim">QNLR-DEC26</span><span class="n">10,480</span><span class="dim">Live level, read 15:00</span></div>
+<div class="row"><span>30 Sep 2026</span><span class="name">QNLR</span><span class="dim">QNLR</span><span class="n">$112.00</span><span class="dim">Close</span></div>
+<div class="row"><span>30 Jun 2026</span><span class="name">QNLR</span><span class="dim">QNLR</span><span class="n">$105.00</span><span class="dim">Close</span></div>
+<div class="row"><span>14 Apr 2026</span><span class="name">QNLR</span><span class="dim">QNLR</span><span class="n">$100.00</span><span class="dim">Bought</span></div>
+</div>
+</div>
+</section>
+
+<div class="stack fade" id="reasoning" hidden>
+<section class="card">
+<div class="head"><h2>Why QNLR SB's smaller leg closed</h2><div class="note">15 Sep 2026 · Voss IG Spread bet</div></div>
+<p>Invented for the demo: why the smaller leg closed.</p>
+</section>
+<section class="card">
+<div class="head"><h2>Why QNLR SB was taken</h2><div class="note">14 Aug 2026 · Voss IG Spread bet</div></div>
+<p>Invented for the demo: why the position was taken.</p>
+</section>
+<section class="card">
+<div class="head"><h2>Why QNLR was taken</h2><div class="note">14 Apr 2026 · Voss ii ISA</div></div>
+<p>Invented for the demo: why the position was taken.</p>
+</section>
+</div>
+
 </div>
 
 <aside class="card status" aria-label="Status">
@@ -141,7 +193,7 @@
 <div class="item"><span class="tag gap">Gap</span><span>Units unchecked on Voss ii ISA: no holdings export on file</span></div>
 <div class="item"><span class="tag clear">Clear</span><span>Spread bet agrees with IG, read 30 Sep 2026</span></div>
 </div>
-<div class="latest">
+<div class="latest events">
 <div class="small name">Latest</div>
 <div><div class="what">Sold £0.30 a point of QNLR SB at 10,400</div><div class="small">15 Sep 2026 · Voss IG Spread bet</div></div>
 <div><div class="what">Bought £0.30 a point of QNLR SB at 10,300</div><div class="small">14 Aug 2026 · Voss IG Spread bet</div></div>
@@ -154,7 +206,7 @@
 </main>
 </div>
 <script>
-// A tab shows its section and hides the other: the page's one behaviour.
+// A tab shows its section and hides the others: the page's one behaviour.
 (function () {
   "use strict";
   var tabs = document.querySelectorAll(".tab[data-shows]");

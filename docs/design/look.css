@@ -313,6 +313,10 @@ h2, .text-head { font-size: var(--text-head); font-weight: 600; letter-spacing: 
 .table.lines > * { grid-template-columns: 1fr 2.05fr 1.45fr 0.95fr 0.95fr 1.15fr 1.95fr; }
 .table.trades > * { grid-template-columns: 1.2fr 0.6fr 1fr 1.8fr 1.3fr 0.8fr 1fr; }
 .table.companies { min-width: 900px; }
+.table.quarters > * { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 0.8fr); }
+.table.trips > * { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1.6fr) minmax(0, 1.2fr) minmax(0, 0.7fr) minmax(0, 0.7fr) minmax(0, 0.8fr) minmax(0, 0.9fr); }
+.table.income > * { grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 0.9fr) minmax(0, 1.6fr) minmax(0, 1fr); }
+.table.marks > * { grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr) minmax(0, 1.1fr) minmax(0, 0.9fr) minmax(0, 1.6fr); }
 .table.companies > * { grid-template-columns: minmax(0, 2.2fr) minmax(0, 1.8fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 0.8fr) minmax(0, 1.8fr); }
 
 /* A TABLE'S OTHER ROWS AND HEADS */
@@ -350,10 +354,14 @@ h2, .text-head { font-size: var(--text-head); font-weight: 600; letter-spacing: 
 
 /* THE STATUS PANEL: what stands against this object, then what last happened to it. */
 .status { display: flex; flex-direction: column; gap: 14px; }
-.status .items, .status .latest { display: flex; flex-direction: column; gap: 10px; }
+.status .items { display: flex; flex-direction: column; gap: 10px; }
 .status .item { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
 .status .latest { border-top: 1px solid var(--divider); padding-top: 12px; }
-.status .latest .what { font-weight: 500; }
+
+/* WHAT HAPPENED: events, newest first, each its sentence and under it the day and the account.
+   The status panel's Latest is one; Home's Latest is another. */
+.events { display: flex; flex-direction: column; gap: 10px; }
+.events .what { font-weight: 500; }
 
 /* WHAT THE RECORD NEEDS: each item its tag, its sentence and the object it concerns, set as the
    status panel's items are, and one button that opens that object. */

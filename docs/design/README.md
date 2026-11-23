@@ -11,9 +11,9 @@ figure in it is worked out. Every name and figure is the demo's.
 |---|---|
 | [`look.css`](look.css) | every value, as a token named by its job, and every part, as one rule that wears tokens only |
 | [`parts.html`](parts.html) | the sheet: each value printed from `look.css`, the three heights, the corners, the type steps, the motion, and each part drawn once under the class that draws it |
-| [`home.html`](home.html) | Home, the book: the lead card, two figure cards, the accounts, the largest holdings |
+| [`home.html`](home.html) | Home, the book: the lead card, two figure cards, what the record needs, the accounts, the largest holdings, the value at each quarter end, and the latest events |
 | [`companies.html`](companies.html) | the Companies list: chips for held, sold and all, a find field, every company in one table that sorts, and its total |
-| [`company.html`](company.html) | a company's page: the lead card with its tiles, the tabs, lines held, a chart, the trades, the status panel |
+| [`company.html`](company.html) | a company's page: the lead card with its tiles, the status panel, and six tabs: the overview (lines held and a chart), trades, round trips, income (empty in the demo), the marks, and the reasoning |
 
 ## Opening it
 
@@ -25,7 +25,7 @@ open docs/design/parts.html             # on the Mac, in the default browser
 
 A run with Playwright opens `file://<checkout>/docs/design/home.html` the same way. On Home,
 Quenlan Robotics Inc.'s row opens the company's page, and "Back to Home" returns. The company's
-two tabs change what is under them. Home's "All 5 companies" and the menu's Companies open the
+six tabs each show their own section. Home's "All 5 companies" and the menu's Companies open the
 Companies list, where the chips, the find field and the heads that sort work on the demo's five
 companies. Nothing else on the pages leads anywhere: only these three pages are drawn so far.
 
