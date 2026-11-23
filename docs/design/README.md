@@ -63,6 +63,10 @@ The maintainer settled both on 21 Nov 2026.
   and the core is a dot of radius 2.1 at 16.5 across and 13.2 down.
 - **In the menu** the mark is white on a tile of the accent, 32px with a corner of 10
   (`.brand .mark`). Without a tile, the line is in the ink and the core in the accent.
+- **In a browser tab** the icon is the mark on its tile, with the line and the core drawn 1.28
+  times larger about the point 16.3 across and 16 down, so the opening and the core still show
+  at 16px. Every other icon, the menu's, the Dock's and the touch icon, uses the one drawing. The
+  maintainer settled this on 23 Nov 2026.
 - **The app wears neither yet.** Its header says the old name and its icons draw a stand-in ring,
   until the frame is turned on (#347).
 
