@@ -53,7 +53,7 @@ each commit's diff reviewed before it is pushed (step 6).
 Before each push, the `code-review` skill reviews the branch, at the level the branch's tier
 takes (`python3 tools/tiers.py $(git diff --name-only origin/main...)`): `low` for tier 0,
 `medium` for tiers 1 and 2, `high` for tier 3. `CONTRIBUTING.md`, Commits and pull requests, says
-what comes first in a cloud checkout, what is done with a finding by its mark (Important,
+what comes first in a cloud checkout, what is done with a finding by its severity (Important,
 Pre-existing or Nit), and which findings a later review of the branch answers. For a builder:
 
 - The review is given no target, so one review before a push covers every commit not yet pushed.
