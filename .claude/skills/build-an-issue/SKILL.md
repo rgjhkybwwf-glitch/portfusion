@@ -60,7 +60,7 @@ Pre-existing or Nit). For a builder:
   push covers every commit not yet pushed.
 - A fix is a new commit, reviewed in turn.
 - A Pre-existing finding takes the skill `fix-fold-report`, unless the rule in `CONTRIBUTING.md`,
-  Commits and pull requests, leaves it.
+  Commits and pull requests, leaves it or has it said at the top of the pull request.
 
 The skeptic reviewer still reads the Done checks once it opens (`review-and-merge`).
 

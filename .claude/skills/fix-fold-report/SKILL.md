@@ -11,8 +11,7 @@ these three that fits.
 
 A find **the change caused** is not one of these: it is the change's to fix, in this pull request.
 Nor is a finding of the `code-review` skill's that the rule in `CONTRIBUTING.md`, Commits and pull
-requests, leaves: that one is left, and listed nowhere. A Pre-existing finding judged wrong is
-neither fixed nor folded: it is reported (step 3), with why it is judged wrong.
+requests, leaves, or has said at the top of the pull request.
 
 ## 1. Fix
 

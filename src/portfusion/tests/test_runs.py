@@ -160,7 +160,8 @@ def test_every_commit_is_reviewed_before_it_is_pushed(contributing):
     rule and the builder's skill both name the three, and the skill the one a skill takes. The
     rule holds the command that gives a cloud checkout's review its base. What the rule leaves is
     no find, and the builder's skill and the finds' skill both point at the rule for it. A
-    Pre-existing finding judged wrong is reported, so the judgment can be read."""
+    Pre-existing finding judged wrong is said at the top, so the judgment can be read, and a
+    cleanup takes a Nit's answer whatever severity it was given."""
     assert "Every commit's diff is reviewed by the `code-review` skill before it is pushed" \
         in contributing
     build = (SKILLS / "build-an-issue" / "SKILL.md").read_text(encoding="utf-8")
@@ -175,8 +176,9 @@ def test_every_commit_is_reviewed_before_it_is_pushed(contributing):
     assert "no find for Building's rule" in rule, "what the rule leaves"
     for skill in (step, finds):
         assert "Commits and pull requests, leaves" in skill, "both skills point at what it leaves"
-    assert "judged wrong is reported" in rule and "judged wrong" in finds, \
+    assert "judged wrong: then it is said at the top" in rule, \
         "a Pre-existing finding judged wrong leaves a trace"
+    assert "a cleanup takes a Nit's" in rule, "a cleanup has one answer, whatever its severity"
     assert "`git remote set-head origin main`" in rule, "the review measures from today's main"
     template = (ROOT / ".github" / "pull_request_template.md").read_text(encoding="utf-8")
     assert "reviewed by the `code-review` skill" in template
