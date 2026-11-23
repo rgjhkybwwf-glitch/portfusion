@@ -159,7 +159,8 @@ def test_every_commit_is_reviewed_before_it_is_pushed(contributing):
     request opened. What is done with a finding goes by the severity the review gives it: the
     rule and the builder's skill both name the three, and the skill the one a skill takes. The
     rule holds the command that gives a cloud checkout's review its base. What the rule leaves is
-    no find, and the builder's skill and the finds' skill both point at the rule for it."""
+    no find, and the builder's skill and the finds' skill both point at the rule for it. A
+    Pre-existing finding judged wrong is reported, so the judgment can be read."""
     assert "Every commit's diff is reviewed by the `code-review` skill before it is pushed" \
         in contributing
     build = (SKILLS / "build-an-issue" / "SKILL.md").read_text(encoding="utf-8")
@@ -170,9 +171,12 @@ def test_every_commit_is_reviewed_before_it_is_pushed(contributing):
         assert severity in rule and severity in step, f"a finding that is {severity}"
     assert "`fix-fold-report`" in step, "a Pre-existing finding is a find outside the change"
     finds = " ".join((SKILLS / "fix-fold-report" / "SKILL.md").read_text(encoding="utf-8").split())
-    assert "no find for Building's rule" in " ".join(rule.split()), "what the rule leaves"
-    assert "unless that rule leaves it" in step and "Commits and pull requests, leaves" in finds, \
-        "what the rule leaves is no find, and both skills point at the rule for it"
+    rule, step = " ".join(rule.split()), " ".join(step.split())
+    assert "no find for Building's rule" in rule, "what the rule leaves"
+    for skill in (step, finds):
+        assert "Commits and pull requests, leaves" in skill, "both skills point at what it leaves"
+    assert "judged wrong is reported" in rule and "judged wrong" in finds, \
+        "a Pre-existing finding judged wrong leaves a trace"
     assert "`git remote set-head origin main`" in rule, "the review measures from today's main"
     template = (ROOT / ".github" / "pull_request_template.md").read_text(encoding="utf-8")
     assert "reviewed by the `code-review` skill" in template
