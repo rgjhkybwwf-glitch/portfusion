@@ -1,7 +1,7 @@
 # The new look: the reference
 
 The look the desk's new frame is built in, drawn once, on the demo book. It is the drawing the
-maintainer agreed on 20 Nov 2026 (#9, Decisions), written as one stylesheet and three plain pages,
+maintainer agreed on 20 Nov 2026 (#9, Decisions), written as one stylesheet and four plain pages,
 so that whoever builds a part can open the page, read the rule, and compare what they built.
 
 It is a drawing and not the app: the desk does not load it, nothing in `src/` reads it, and no
@@ -12,6 +12,7 @@ figure in it is worked out. Every name and figure is the demo's.
 | [`look.css`](look.css) | every value, as a token named by its job, and every part, as one rule that wears tokens only |
 | [`parts.html`](parts.html) | the sheet: each value printed from `look.css`, the three heights, the corners, the type steps, the motion, and each part drawn once under the class that draws it |
 | [`home.html`](home.html) | Home, the book: the lead card, two figure cards, the accounts, the largest holdings |
+| [`companies.html`](companies.html) | the Companies list: chips for held, sold and all, a find field, every company in one table that sorts, and its total |
 | [`company.html`](company.html) | a company's page: the lead card with its tiles, the tabs, lines held, a chart, the trades, the status panel |
 
 ## Opening it
@@ -24,8 +25,9 @@ open docs/design/parts.html             # on the Mac, in the default browser
 
 A run with Playwright opens `file://<checkout>/docs/design/home.html` the same way. On Home,
 Quenlan Robotics Inc.'s row opens the company's page, and "Back to Home" returns. The company's
-two tabs change what is under them. Nothing else on the pages leads anywhere: only these two
-pages are drawn so far.
+two tabs change what is under them. Home's "All 5 companies" and the menu's Companies open the
+Companies list, where the chips, the find field and the heads that sort work on the demo's five
+companies. Nothing else on the pages leads anywhere: only these three pages are drawn so far.
 
 The typeface is Inter, read from the machine: one without Inter installed shows the system's face
 in its place, and line breaks may differ. The desk gets Inter's own file with #343.
@@ -90,7 +92,7 @@ reference gives each part its one value, as the consistency rule asks:
   scheme.
 - **A phone.** The pages wrap as the browser narrows, and that is all: the phone is a later
   study.
-- **Every other page.** Companies, Accounts, Quarters, the Inbox, Prices and the lists are drawn
+- **Every other page.** Accounts, Quarters, the Inbox, Prices and the lists are drawn
   one by one, each before it is built (#9, Order). A page not drawn yet is made of the parts
   on the sheet; a part it needs that is not on the sheet is asked for, never invented on the page.
 - **Safari.** The pages were checked in Chromium. The glass is written with the
@@ -99,6 +101,6 @@ reference gives each part its one value, as the consistency rule asks:
 ## Changing it
 
 A change to the look is the maintainer's. It is made in `look.css`, in the one token or the one
-rule, and checked on all three pages. Once `house/` holds the values, the house is the source:
+rule, and checked on every page. Once `house/` holds the values, the house is the source:
 a value changes there and here in the same pull request, until this folder is cleared out with
 the old look (#9, Order).
