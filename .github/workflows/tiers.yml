@@ -13,7 +13,8 @@
 #
 # ONE PRESS IS THE YES. The runs write as the maintainer's account, so a press is told by when it
 # came, never by whose it was. Auto-merge found on as a commit arrives was turned on before that
-# commit's tier was judged, by a builder as it opened the pull request or for the commit before:
+# commit's tier was judged, for the commit before (a builder presses only once a draft's tier is
+# judged and its guard green, as it marks it ready, which judges nothing again):
 # `act` turns it off, once a commit, and says so, naming the maintainer. Their press after that
 # (`auto_merge_enabled`) stands. That is the one comment `act` makes: what else it finds, a pull
 # request that waits among it, is in the run's summary, since a comment of the bot's reaches the
@@ -27,7 +28,7 @@ name: tiers
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review, auto_merge_enabled]
+    types: [opened, synchronize, reopened, auto_merge_enabled]
 
 concurrency:
   group: tiers-${{ github.event.pull_request.number }}

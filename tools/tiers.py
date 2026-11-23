@@ -76,9 +76,9 @@ def hold(tier: int, why: str, moved: str, auto_on: bool, said: str, head: str,
 
     ONE PRESS IS THE YES. The runs write as the maintainer's account, so a press is told by when it
     came, never by whose it was. Auto-merge found on as a commit arrives (the pull request opened,
-    pushed to, reopened) was turned on before that commit's tier was judged, by a builder as it
-    opened the pull request or for the commit before: it is turned off, once a commit, marked in
-    the bot's comments `said`. A press that comes after the judging (`event` is
+    pushed to, reopened) was turned on before that commit's tier was judged, for the commit
+    before (a builder presses only once a draft's tier is judged, as it marks it ready): it is
+    turned off, once a commit, marked in the bot's comments `said`. A press that comes after the judging (`event` is
     "auto_merge_enabled") is the maintainer's yes, and stands. A new commit is asked again."""
     if tier == 3:
         reason = f"it is tier 3, the store or the guard's own (`{why}`): it waits for the maintainer's yes."
