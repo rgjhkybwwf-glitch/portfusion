@@ -168,13 +168,19 @@ Kept by review, and by the test named where there is one.
 - **Every commit's diff is reviewed by the `code-review` skill before it is pushed**, by whoever
   made it: a run, a session in the maintainer's project or on claude.ai, or the maintainer's own
   Claude. Its level goes by the tier the change will take (`python3 tools/tiers.py` and the
-  changed paths): `low` for tier 0, `medium` for tiers 1 and 2, `high` for tier 3. The review
-  marks each finding. One marked Important, or not marked, is fixed in the branch, or said at the
-  top of the pull request with why it stands. One marked Pre-existing was there before the
-  change, and is a find outside it (Building, below). A Nit is fixed only on a line the change
-  already touches, and any other is left. The pull request's checklist names the level each
-  commit was reviewed at. A run's skeptic reviewer (Merging, below) reads the Done checks besides;
-  it does not stand in for this review.
+  changed paths): `low` for tier 0, `medium` for tiers 1 and 2, `high` for tier 3. Given no
+  target, the review reads the whole branch against the remote's default branch, which a cloud
+  checkout does not know: there `git fetch origin main` and `git remote set-head origin main`
+  come first, or it measures from a local `main` as old as the clone, and reads every commit
+  merged since as the branch's own. The review marks each finding. One marked Important, or not
+  marked, is fixed in the branch, or said at the top of the pull request with why it stands. One
+  marked Pre-existing was there before the change, and is a find outside it (Building, below). A
+  Nit, and a cleanup whatever its mark, is fixed only where the change caused it or on a line the
+  change already touches; any other is left, and listed nowhere. A later review of the same
+  branch answers only the findings on lines changed since the last: the rest have had their
+  review. The pull request's checklist names the level each commit was reviewed at. A run's
+  skeptic reviewer (Merging, below) reads the Done checks besides; it does not stand in for this
+  review.
 - **A changed desk page is walked cold before its pull request opens**, by the cold walker
   ([`.claude/agents/cold-walker.md`](.claude/agents/cold-walker.md)), as
   [`docs/ux-audit.md`](docs/ux-audit.md) was made, by the skill

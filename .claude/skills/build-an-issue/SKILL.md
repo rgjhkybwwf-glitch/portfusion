@@ -52,24 +52,15 @@ each commit's diff reviewed before it is pushed (step 6).
 
 Before each push, the `code-review` skill reviews the branch, at the level the branch's tier
 takes (`python3 tools/tiers.py $(git diff --name-only origin/main...)`): `low` for tier 0,
-`medium` for tiers 1 and 2, `high` for tier 3 (`CONTRIBUTING.md`, Commits and pull requests).
-Given no target it reads the whole branch against the default branch, the commits already pushed
-among them. A cloud checkout has no `origin/HEAD`, and its local `main` is as old as its clone, so
-first `git fetch origin main` and `git remote set-head origin main`: without them the review
-measures from the old `main`, and reads every commit merged since as the branch's own. One review
-before a push covers every commit not yet pushed, and a finding already answered, by a fix or by
-a line kept for the top of the pull request, is not answered again.
+`medium` for tiers 1 and 2, `high` for tier 3. `CONTRIBUTING.md`, Commits and pull requests, says
+what comes first in a cloud checkout, what is done with a finding by its mark (Important,
+Pre-existing or Nit), and which findings a later review of the branch answers. For a builder:
 
-What is done with a finding goes by the mark the review gives it:
+- The review is given no target, so one review before a push covers every commit not yet pushed.
+- A fix is a new commit, reviewed in turn.
+- A Pre-existing finding takes the skill `fix-fold-report`.
 
-- **Important**, or no mark: fixed in a new commit, reviewed in turn, or said at the top of the
-  pull request with why it stands.
-- **Pre-existing**: there before the change, so the skill `fix-fold-report`.
-- **Nit**: fixed only on a line the change already touches. Any other is left, and listed nowhere.
-
-The review reports bugs and broken rules of `CLAUDE.md`. A cleanup, where it still reports one,
-is taken as a Nit, so no run waits for any. The skeptic reviewer still reads the Done checks once
-it opens (`review-and-merge`).
+The skeptic reviewer still reads the Done checks once it opens (`review-and-merge`).
 
 Run the guard, and the desk walk if a desk file changed. Open one pull request that says
 "Closes #n" ("For" the release checklist, which is never closed), with any choice the run decided
