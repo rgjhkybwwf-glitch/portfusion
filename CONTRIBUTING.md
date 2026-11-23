@@ -167,11 +167,18 @@ Kept by review, and by the test named where there is one.
 - **One logical change per commit**, its message written for a reader who was not there.
 - **Every commit's diff is reviewed by the `code-review` skill before it is pushed**, by whoever
   made it: a run, a session in the maintainer's project or on claude.ai, or the maintainer's own
-  Claude. Its level goes by the tier the change will take (`python3 tools/tiers.py` and the
-  changed paths): `low` for tier 0, `medium` for tiers 1 and 2, `high` for tier 3. Each finding is
-  fixed in the branch, or said at the top of the pull request with why it stands, and the pull
-  request's checklist names the level each commit was reviewed at. A run's skeptic reviewer
-  (Merging, below) reads the Done checks besides; it does not stand in for this review.
+  Claude. Its level goes by the tier the change will take (`python3 tools/tiers.py` and the changed
+  paths): `low` for tier 0, `medium` for tiers 1 and 2, `high` for tier 3. Given no target, the
+  review reads the whole branch against the remote's default branch, which a cloud checkout does
+  not know: there `git fetch origin main` and `git remote set-head origin main` come first, or it
+  measures from a local `main` as old as the clone, and reads every commit merged since as the
+  branch's own. The review gives each finding a severity. An Important one, or one given none, is
+  fixed in the branch, or said at the top of the pull request with why it stands. A Pre-existing
+  one was there before the change, and is a find outside it (Building, below). A Nit, and a cleanup
+  whatever its severity, is fixed only where the change caused it or on a line the change already
+  touches, and a wrong one not at all; one left is listed nowhere, and is no find for Building's
+  rule. The pull request's checklist names the level each commit was reviewed at. A run's skeptic
+  reviewer (Merging, below) reads the Done checks besides; it does not stand in for this review.
 - **A changed desk page is walked cold before its pull request opens**, by the cold walker
   ([`.claude/agents/cold-walker.md`](.claude/agents/cold-walker.md)), as
   [`docs/ux-audit.md`](docs/ux-audit.md) was made, by the skill
