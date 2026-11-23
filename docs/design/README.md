@@ -39,6 +39,8 @@ in its place, and line breaks may differ. The desk gets Inter's own file with #3
   is the maintainer's rule for the app too: a component is the same wherever it appears.
 - **The values are #343's tables**, and the parts are #344's. Where an issue and this folder
   differ, say so on the issue before building either.
+- **Every control shows where the keyboard is**, in one ring of the accent (`--focus`), whatever
+  the control. Press Tab on `parts.html` to see it.
 - **The token and class names here are this folder's own.** What the house calls each value is
   settled where `house/` gains them (#343), and what the kit calls each part where the kit draws
   it (#344).

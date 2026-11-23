@@ -57,6 +57,9 @@
   --shadow-button:      inset 0 1px 0 rgba(255, 255, 255, 0.28), 0 1px 2px rgba(79, 63, 214, 0.3), 0 8px 18px -6px rgba(79, 63, 214, 0.5);
   --shadow-button-over: inset 0 1px 0 rgba(255, 255, 255, 0.28), 0 2px 4px rgba(79, 63, 214, 0.3), 0 12px 22px -6px rgba(79, 63, 214, 0.55);
   --shadow-glass:       inset 0 1px 0 rgba(255, 255, 255, 0.95), inset 0 0 0 1px rgba(255, 255, 255, 0.55), 0 1px 2px rgba(27, 27, 31, 0.025), 0 18px 40px -18px rgba(27, 27, 31, 0.11);
+  --shadow-choice:      inset 0 1px 0 #FFFFFF, 0 0 0 1px rgba(27, 27, 31, 0.08), 0 1px 2px rgba(27, 27, 31, 0.06);
+  /* The keyboard's place: a ring of the accent, parted from the control by the surface. */
+  --focus:              0 0 0 2px var(--surface), 0 0 0 4px var(--accent);
 
   /* Corners. An inner corner is its outer corner less the gap between them. */
   --r-lead:  20px;
@@ -67,6 +70,7 @@
   --r-line:  8px;
   --r-row:   6px;
   --r-tab:   5px;
+  --r-tick:  5px;
   --r-pill:  999px;
 
   /* Spacing */
@@ -107,6 +111,8 @@
   --h-control: 36px;
   --h-tab:     34px;
   --h-row:     44px;
+  --h-tick:    18px;
+  --w-find:    320px;
   --w-menu:    232px;
 }
 
@@ -307,6 +313,23 @@ h2, .text-head { font-size: var(--text-head); font-weight: 600; letter-spacing: 
 .table.lines > * { grid-template-columns: 1fr 2.05fr 1.45fr 0.95fr 0.95fr 1.15fr 1.95fr; }
 .table.trades > * { grid-template-columns: 1.2fr 0.6fr 1fr 1.8fr 1.3fr 0.8fr 1fr; }
 
+/* A TABLE'S OTHER ROWS AND HEADS */
+/* A head that sorts: the heads' own type, in the ink when its column is the order, with an arrow
+   that says which way. */
+.sort {
+  display: inline-flex; align-items: center; gap: 4px; padding: 0; border-radius: var(--r-tab);
+  background: transparent; color: inherit; font-weight: inherit; font-size: inherit;
+  transition: color var(--dur-pointer) ease;
+}
+.sort:hover { color: var(--ink); }
+.sort[data-sort] { color: var(--ink); }
+.sort[data-sort="descending"]::after { content: "\2193"; }
+.sort[data-sort="ascending"]::after { content: "\2191"; }
+/* The total row: under a full rule, in the names' weight. */
+.table > .row.total { font-weight: 600; border-top: 1px solid var(--divider); border-bottom-color: transparent; }
+/* An empty table says so, in one line under its heads. */
+.table > .empty { min-height: var(--h-row); padding: 12px var(--inset); display: flex; align-items: center; gap: 12px; color: var(--muted); }
+
 /* A CHART sits in a well. Its colours are the accent's until a chart's own set is given. */
 .chart { padding: 12px 8px 4px; }
 .chart svg { display: block; width: 100%; height: auto; }
@@ -326,6 +349,75 @@ h2, .text-head { font-size: var(--text-head); font-weight: 600; letter-spacing: 
 .status .latest { border-top: 1px solid var(--divider); padding-top: 12px; }
 .status .latest .what { font-weight: 500; }
 
+/* WHAT THE RECORD NEEDS: each item its tag, its sentence and the object it concerns, set as the
+   status panel's items are, and one button that opens that object. */
+.needs { display: flex; flex-direction: column; }
+.need {
+  display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center;
+  padding: 12px 0; border-bottom: 1px solid var(--divider-soft);
+}
+.need:last-child { border-bottom: 0; padding-bottom: 0; }
+.need:first-child { padding-top: 0; }
+.need > .says { flex: 1 1 260px; min-width: 0; display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+.need > .quiet { flex: none; }
+
+/* A FIELD GRID: one record, as labelled fields. */
+.fields { margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px 24px; }
+.fields > div { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.fields dt { font-size: var(--text-label); font-weight: 600; color: var(--muted); }
+.fields dd { margin: 0; font-weight: 500; }
+
+/* CONTROLS THAT NARROW OR CHOOSE */
+.controls { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; }
+/* Filter chips: each a choice with its count. The one chosen is raised, as a selected line is. */
+.filters { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+.filter {
+  display: inline-flex; align-items: center; gap: 6px; min-height: var(--h-tab); padding: 0 14px;
+  border-radius: var(--r-pill); background: var(--quiet); color: var(--ink); font-weight: 600;
+  transition: background var(--dur-pointer) ease, box-shadow var(--dur-pointer) ease, color var(--dur-pointer) ease;
+}
+.filter:hover { background: var(--quiet-over); }
+.filter .count { font-size: var(--text-label); font-weight: 400; color: var(--muted); }
+.filter[aria-pressed="true"] { background: var(--surface); color: var(--accent-ink); box-shadow: var(--shadow-line-on); }
+.filter[aria-pressed="true"] .count { color: var(--accent-ink); }
+/* A find field is typed into, so it is sunken, as a well is. */
+.find {
+  width: 100%; max-width: var(--w-find); min-height: var(--h-control); padding: 0 var(--inset);
+  border: 0; border-radius: var(--r-line); background: var(--sunken); box-shadow: var(--shadow-well);
+  color: var(--ink); font: inherit;
+}
+.find::placeholder { color: var(--muted); opacity: 1; }
+/* A choice box rests on the page, as a card does, with a chevron that says it opens. */
+.choice { position: relative; display: inline-flex; }
+.choice > select {
+  appearance: none; -webkit-appearance: none; min-height: var(--h-control); padding: 0 34px 0 var(--inset);
+  border: 0; border-radius: var(--r-line); background: var(--surface); box-shadow: var(--shadow-choice);
+  color: var(--ink); font: inherit; font-weight: 500; cursor: pointer;
+}
+.choice::after {
+  content: ""; position: absolute; right: 14px; top: 50%; width: 6px; height: 6px; margin-top: -5px;
+  border-right: 1.5px solid var(--muted); border-bottom: 1.5px solid var(--muted); transform: rotate(45deg);
+  pointer-events: none;
+}
+/* A tick box: sunken when off, the button's violet with a white tick when on. */
+.tick { display: inline-flex; align-items: center; gap: 8px; min-height: var(--h-control); font-weight: 500; cursor: pointer; }
+.tick > input {
+  appearance: none; -webkit-appearance: none; position: relative; flex: none; margin: 0;
+  width: var(--h-tick); height: var(--h-tick); border-radius: var(--r-tick);
+  background: var(--sunken); box-shadow: var(--shadow-well); cursor: pointer;
+  transition: background var(--dur-pointer) ease;
+}
+.tick > input:checked { background: var(--button); box-shadow: var(--shadow-button); }
+.tick > input:checked::after {
+  content: ""; position: absolute; left: 6px; top: 2.5px; width: 4px; height: 9px;
+  border-right: 2px solid var(--on-button); border-bottom: 2px solid var(--on-button); transform: rotate(45deg);
+}
+
+/* THE KEYBOARD: every control shows where the keyboard is, in one ring. */
+:is(.line, .tab, .push, .quiet, .more, .card.lift, .table > a.row, .sort, .filter, .find, .choice > select, .tick > input):focus-visible {
+  outline: none; box-shadow: var(--focus);
+}
+
 /* MOTION: content arrives in three steps; a tab's content fades in. */
 @keyframes arrive { from { opacity: 0; transform: translateY(var(--rise)); } to { opacity: 1; transform: none; } }
 @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
@@ -337,7 +429,7 @@ h2, .text-head { font-size: var(--text-head); font-weight: 600; letter-spacing: 
 /* WHAT THE MAC'S SETTINGS ASK */
 @media (prefers-reduced-motion: reduce) {
   .arrive, .fade { animation: none; }
-  .card.lift, .push, .line, .tab, .table > a.row, .quiet { transition: none; }
+  .card.lift, .push, .line, .tab, .table > a.row, .quiet, .sort, .filter, .tick > input { transition: none; }
   .card.lift:hover, .push:hover { transform: none; }
 }
 @media (prefers-reduced-transparency: reduce) {
@@ -345,5 +437,5 @@ h2, .text-head { font-size: var(--text-head); font-weight: 600; letter-spacing: 
   .lead { background: var(--lead-solid); -webkit-backdrop-filter: none; backdrop-filter: none; }
 }
 @media (prefers-contrast: more) {
-  .glass, .card, .lead, .tile { outline: 1px solid var(--contrast-edge); }
+  .glass, .card, .lead, .tile, .find, .choice > select, .tick > input { outline: 1px solid var(--contrast-edge); }
 }

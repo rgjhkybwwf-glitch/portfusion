@@ -26,6 +26,7 @@
 .steps .said { flex: 1 1 320px; }
 .narrow { max-width: var(--w-menu); }
 .sample > .menu { flex: none; padding: 0; max-width: 260px; }
+.focused { box-shadow: var(--focus); }
 </style>
 </head>
 <body>
@@ -93,6 +94,8 @@
 <div class="sample"><div class="box"><a class="line narrow" aria-current="page"><span>Companies</span><span class="count">5</span></a></div><div><div>Raised: the selected menu line</div><div class="token">--shadow-line-on</div><div class="value" data-token="--shadow-line-on"></div></div></div>
 <div class="sample"><div class="box"><div class="well tabs"><button type="button" class="tab" aria-pressed="true">Overview</button><button type="button" class="tab" aria-pressed="false">Trades · 4</button></div></div><div><div>Raised: the selected tab</div><div class="token">--shadow-tab-on</div><div class="value" data-token="--shadow-tab-on"></div></div></div>
 <div class="sample"><div class="box"><button type="button" class="push">Refresh prices</button></div><div><div>Raised: the main button, which rises 1px under the pointer</div><div class="token">--shadow-button</div><div class="value" data-token="--shadow-button"></div></div></div>
+<div class="sample"><div class="box"><span class="choice"><select aria-label="A sample of a choice box"><option>All accounts</option></select></span></div><div><div>Resting, small: a choice box</div><div class="token">--shadow-choice</div><div class="value" data-token="--shadow-choice"></div></div></div>
+<div class="sample"><div class="box"><button type="button" class="quiet focused">Back to Home</button></div><div><div>Where the keyboard is: one ring of the accent on every control, parted from it by the surface</div><div class="token">--focus</div><div class="value" data-token="--focus"></div></div></div>
 </div>
 </section>
 
@@ -108,6 +111,7 @@
 <div class="sample"><div class="corner" data-corner="--r-line"></div><div><div>A menu line, a tab track</div><div class="token">--r-line</div><div class="value" data-token="--r-line"></div></div></div>
 <div class="sample"><div class="corner" data-corner="--r-row"></div><div><div>A table row</div><div class="token">--r-row</div><div class="value" data-token="--r-row"></div></div></div>
 <div class="sample"><div class="corner" data-corner="--r-tab"></div><div><div>A tab</div><div class="token">--r-tab</div><div class="value" data-token="--r-tab"></div></div></div>
+<div class="sample"><div class="corner" data-corner="--r-tick"></div><div><div>A tick box</div><div class="token">--r-tick</div><div class="value" data-token="--r-tick"></div></div></div>
 </div>
 </section>
 
@@ -128,6 +132,8 @@
 <div><div>A menu line and a button</div><div class="token">--h-control</div><div class="value" data-token="--h-control"></div></div>
 <div><div>A tab</div><div class="token">--h-tab</div><div class="value" data-token="--h-tab"></div></div>
 <div><div>A table row</div><div class="token">--h-row</div><div class="value" data-token="--h-row"></div></div>
+<div><div>A tick box, each way</div><div class="token">--h-tick</div><div class="value" data-token="--h-tick"></div></div>
+<div><div>A find field, at its widest</div><div class="token">--w-find</div><div class="value" data-token="--w-find"></div></div>
 <div><div>The menu, at its narrowest</div><div class="token">--w-menu</div><div class="value" data-token="--w-menu"></div></div>
 <div><div>A pointer's answer: a line, a tab, a row, a button, a card rising</div><div class="token">--dur-pointer</div><div class="value" data-token="--dur-pointer"></div></div>
 <div><div>A tab's content fading in</div><div class="token">--dur-tab</div><div class="value" data-token="--dur-tab"></div></div>
@@ -170,7 +176,7 @@
 
 <section class="section">
 <div class="head"><h2>The parts, each drawn once</h2></div>
-<p>A part has one rule in <span class="token">look.css</span>, under the class named here. The two pages are made of these and nothing else.</p>
+<p>A part has one rule in <span class="token">look.css</span>, under the class named here. The two pages are made of these and nothing else. Press Tab to see where the keyboard is: every control wears the same ring.</p>
 <div class="samples">
 
 <div class="sample">
@@ -278,6 +284,73 @@
 <div><div>The status panel: what stands against the object, then what last happened to it</div><div class="token">.card.status · .items · .item · .latest · .what · .small</div></div>
 </div>
 
+<div class="sample wide">
+<div class="controls">
+<div class="filters" role="group" aria-label="A sample of filter chips">
+<button type="button" class="filter" aria-pressed="true">Held <span class="count">4</span></button>
+<button type="button" class="filter" aria-pressed="false">Sold <span class="count">1</span></button>
+<button type="button" class="filter" aria-pressed="false">All <span class="count">5</span></button>
+</div>
+<input class="find" type="search" placeholder="Find a company by name or ticker" aria-label="Find a company">
+<span class="choice"><select aria-label="Account"><option>All accounts</option><option>Voss ii ISA</option><option>Voss ii Trading</option><option>Voss IG Spread bet</option></select></span>
+<label class="tick"><input type="checkbox" checked> Show sold lines</label>
+<label class="tick"><input type="checkbox"> In GBP only</label>
+</div>
+<div><div>The controls that narrow a list: filter chips with their counts, the one chosen raised as a selected line is; a find field, sunken because it is typed into; a choice box; tick boxes, off and on</div><div class="token">.controls · .filters · .filter · .count · .find · .choice · .tick</div></div>
+</div>
+
+<div class="sample wide">
+<section class="card tabled">
+<div class="head"><h2>Companies</h2><div class="note">Held at 30 Sep 2026</div></div>
+<div class="scroll"><div class="table holdings">
+<div class="cols"><span><button type="button" class="sort">Company</button></span><span>Held as</span><span class="n"><button type="button" class="sort" data-sort="descending">Value (GBP)</button></span><span class="n"><button type="button" class="sort">Weight of exposure</button></span></div>
+<a class="row"><span class="name">Veldrome Metals Inc.</span><span class="dim">Spread bet</span><span class="n">18,882.00</span><span class="n">56.27%</span></a>
+<a class="row"><span class="name">Quenlan Robotics Inc.</span><span class="dim">Shares and a spread bet</span><span class="n">9,450.53</span><span class="n">28.16%</span></a>
+<a class="row"><span class="name">Bryncoed Minerals plc</span><span class="dim">Shares</span><span class="n">3,525.00</span><span class="n">10.50%</span></a>
+<a class="row"><span class="name">Kelstrand Foods plc</span><span class="dim">Shares</span><span class="n">1,700.00</span><span class="n">5.07%</span></a>
+<div class="row total"><span>Total, 4 companies</span><span></span><span class="n">33,557.53</span><span class="n">100.00%</span></div>
+</div></div>
+</section>
+<div><div>A table that sorts, and its total: a head that sorts, in the ink with an arrow when its column is the order; the total row under a full rule</div><div class="token">.sort · [data-sort] · .row.total</div></div>
+</div>
+
+<div class="sample wide">
+<section class="card tabled">
+<div class="head"><h2>Round trips</h2></div>
+<div class="scroll"><div class="table holdings">
+<div class="cols"><span>Closed</span><span>Line</span><span class="n">Days held</span><span class="n">Gain (GBP)</span></div>
+<div class="empty">No round trip closed in Q3 2026. <a class="more">All round trips</a></div>
+</div></div>
+</section>
+<div><div>An empty table says so, in one line under its heads, and where to look instead</div><div class="token">.table · .empty</div></div>
+</div>
+
+<div class="sample">
+<section class="card">
+<div class="head"><h2>The company</h2></div>
+<dl class="fields">
+<div><dt>Name</dt><dd>Quenlan Robotics Inc.</dd></div>
+<div><dt>Sector</dt><dd>Industrials</dd></div>
+<div><dt>Region</dt><dd>US</dd></div>
+<div><dt>Quoted in</dt><dd>USD</dd></div>
+<div><dt>Lines</dt><dd>QNLR, QNLR SB</dd></div>
+<div><dt>First entered</dt><dd>14 Apr 2026</dd></div>
+</dl>
+</section>
+<div><div>A field grid: one record, as labelled fields</div><div class="token">.fields · dt · dd</div></div>
+</div>
+
+<div class="sample wide">
+<section class="card">
+<div class="head"><h2>What the record needs</h2><div class="note">6 to do</div></div>
+<div class="needs">
+<div class="need"><div class="says"><span class="tag problem">Problem</span><span>The price of QNLR is 51 days old, past the 21-day limit</span><span class="small">Company · Quenlan Robotics Inc.</span></div><a class="quiet">Open the company</a></div>
+<div class="need"><div class="says"><span class="tag gap">Gap</span><span>Units unchecked: no holdings export on file</span><span class="small">Account · Voss ii ISA</span></div><a class="quiet">Open the account</a></div>
+</div>
+</section>
+<div><div>What the record needs: each item its tag, its sentence and the object it concerns, as the status panel's are, and one button that opens that object</div><div class="token">.needs · .need · .says · .tag · .small · .quiet</div></div>
+</div>
+
 </div>
 </section>
 
@@ -296,6 +369,25 @@
   });
   document.querySelectorAll("[data-corner]").forEach(function (el) {
     el.style.borderRadius = "var(" + el.dataset.corner + ")";
+  });
+  // A chip chooses one of its group; a head that sorts takes the order, and turns it if it had it.
+  document.querySelectorAll(".filters").forEach(function (group) {
+    group.addEventListener("click", function (e) {
+      var chip = e.target.closest(".filter");
+      if (!chip) return;
+      group.querySelectorAll(".filter").forEach(function (each) {
+        each.setAttribute("aria-pressed", each === chip ? "true" : "false");
+      });
+    });
+  });
+  document.querySelectorAll(".cols").forEach(function (cols) {
+    cols.addEventListener("click", function (e) {
+      var head = e.target.closest(".sort");
+      if (!head) return;
+      var next = head.dataset.sort === "descending" ? "ascending" : "descending";
+      cols.querySelectorAll(".sort").forEach(function (each) { delete each.dataset.sort; });
+      head.dataset.sort = next;
+    });
   });
   var arrival = document.getElementById("arrival");
   document.getElementById("replay").addEventListener("click", function () {
