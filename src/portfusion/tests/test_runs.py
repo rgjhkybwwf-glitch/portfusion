@@ -168,6 +168,9 @@ def test_every_commit_is_reviewed_before_it_is_pushed(contributing):
     for severity in ("Important", "Pre-existing", "Nit"):
         assert severity in rule and severity in step, f"a finding that is {severity}"
     assert "`fix-fold-report`" in step, "a Pre-existing finding is a find outside the change"
+    finds = " ".join((SKILLS / "fix-fold-report" / "SKILL.md").read_text(encoding="utf-8").split())
+    assert "`code-review`" in finds and "Commits and pull requests" in finds, \
+        "what the rule leaves is no find, and the finds' skill points at the rule for it"
     assert "`git remote set-head origin main`" in rule, "the review measures from today's main"
     template = (ROOT / ".github" / "pull_request_template.md").read_text(encoding="utf-8")
     assert "reviewed by the `code-review` skill" in template
