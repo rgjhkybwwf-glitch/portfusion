@@ -59,7 +59,7 @@ Pre-existing or Nit). For a builder:
 - The review is given no target, so it reads the whole branch each time, and one review before a
   push covers every commit not yet pushed.
 - A fix is a new commit, reviewed in turn.
-- A Pre-existing finding takes the skill `fix-fold-report`.
+- A Pre-existing finding takes the skill `fix-fold-report`, which says what it leaves.
 
 The skeptic reviewer still reads the Done checks once it opens (`review-and-merge`).
 

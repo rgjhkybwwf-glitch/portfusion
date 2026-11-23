@@ -176,9 +176,10 @@ Kept by review, and by the test named where there is one.
   fixed in the branch, or said at the top of the pull request with why it stands. A Pre-existing
   one was there before the change, and is a find outside it (Building, below). A Nit, and a cleanup
   whatever its severity, is fixed only where the change caused it or on a line the change already
-  touches, and a wrong one not at all; one left is listed nowhere, and is no find for Building's
-  rule. The pull request's checklist names the level each commit was reviewed at. A run's skeptic
-  reviewer (Merging, below) reads the Done checks besides; it does not stand in for this review.
+  touches. A Nit, a cleanup or a Pre-existing finding that is wrong is left. One left is listed
+  nowhere, and is no find for Building's rule. The pull request's checklist names the level each
+  commit was reviewed at. A run's skeptic reviewer (Merging, below) reads the Done checks besides;
+  it does not stand in for this review.
 - **A changed desk page is walked cold before its pull request opens**, by the cold walker
   ([`.claude/agents/cold-walker.md`](.claude/agents/cold-walker.md)), as
   [`docs/ux-audit.md`](docs/ux-audit.md) was made, by the skill
