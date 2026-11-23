@@ -175,12 +175,10 @@ Kept by review, and by the test named where there is one.
   branch's own. The review gives each finding a severity. An Important one, or one given none, is
   fixed in the branch, or said at the top of the pull request with why it stands. A Pre-existing
   one was there before the change, and is a find outside it (Building, below). A Nit, and a cleanup
-  whatever its severity, is fixed where the change caused it or on a line the change already
-  touches; any other is left and listed nowhere, and is no find for Building's rule. A later review
-  reads the pushed commits again, and answers only the findings the commits not yet pushed caused,
-  wherever they lie; it answers them all when the level has risen since the last. The pull
-  request's checklist names the level each commit was reviewed at. A run's skeptic reviewer
-  (Merging, below) reads the Done checks besides; it does not stand in for this review.
+  whatever its severity, is fixed only where the change caused it or on a line the change already
+  touches, and a wrong one not at all; one left is listed nowhere, and is no find for Building's
+  rule. The pull request's checklist names the level each commit was reviewed at. A run's skeptic
+  reviewer (Merging, below) reads the Done checks besides; it does not stand in for this review.
 - **A changed desk page is walked cold before its pull request opens**, by the cold walker
   ([`.claude/agents/cold-walker.md`](.claude/agents/cold-walker.md)), as
   [`docs/ux-audit.md`](docs/ux-audit.md) was made, by the skill

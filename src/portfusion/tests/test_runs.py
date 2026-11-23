@@ -157,7 +157,8 @@ def test_every_commit_is_reviewed_before_it_is_pushed(contributing):
     the `code-review` skill before it is pushed. THE CASE THAT MAKES IT FAIL: a day of the loop's
     own rebuild merged unreviewed, since the only reviewer named was a run's, after the pull
     request opened. What is done with a finding goes by the severity the review gives it: the
-    rule and the builder's skill both name the three, and the skill the one a skill takes."""
+    rule and the builder's skill both name the three, and the skill the one a skill takes. The
+    rule holds the command that gives a cloud checkout's review its base."""
     assert "Every commit's diff is reviewed by the `code-review` skill before it is pushed" \
         in contributing
     build = (SKILLS / "build-an-issue" / "SKILL.md").read_text(encoding="utf-8")
@@ -167,6 +168,7 @@ def test_every_commit_is_reviewed_before_it_is_pushed(contributing):
     for severity in ("Important", "Pre-existing", "Nit"):
         assert severity in rule and severity in step, f"a finding that is {severity}"
     assert "`fix-fold-report`" in step, "a Pre-existing finding is a find outside the change"
+    assert "`git remote set-head origin main`" in rule, "the review measures from today's main"
     template = (ROOT / ".github" / "pull_request_template.md").read_text(encoding="utf-8")
     assert "reviewed by the `code-review` skill" in template
     assert "`code-review` skill" in (ROOT / "CLAUDE.md").read_text(encoding="utf-8")
