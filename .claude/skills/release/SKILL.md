@@ -27,5 +27,5 @@ release, and closes the milestone. No cloud session can push a tag.
 Once the release is tagged, its milestone closed and the next milestone's lines moved to Next
 (the skill `open-milestone`), a builder opens the next version: a pull request that sets
 `__version__` to the next milestone's number with `.dev0` and puts an empty Unreleased above the
-release's entry, opened as a draft and taken to its end by the skill `review-and-merge`. It merges only when the maintainer enables auto-merge, since it changes
-`__version__`.
+release's entry, opened as a draft and taken to its end by the skill `review-and-merge`. It
+merges only when the maintainer enables auto-merge, since it changes `__version__`.

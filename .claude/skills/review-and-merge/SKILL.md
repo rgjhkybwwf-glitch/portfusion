@@ -37,12 +37,19 @@ Never by ending the turn.
 Only once the reviewer has come back, its findings are fixed or said, and `guard` is green on the
 newest commit. First wait until `tiers.yml` has a run on the newest commit and every run of it
 there has finished (`gh run list --workflow tiers.yml --commit <sha>`; none yet is not finished),
-then read the labels it set.
+then read the labels it set. A press after the tier is judged is taken as the maintainer's yes, so
+nothing in `tiers.yml` catches a wrong one: a run there that failed, or no `tier` label, is read
+as `tier 3`.
+
+Then read the pull request and its issue again. A `hold` or `decision` label, or a `Change:` reply,
+that came while it was read leaves it a draft, for `tend-pull-requests` and the coordinator.
 
 - **Clean**: mark it ready (`gh pr ready <n>`) and turn auto-merge on straight after
   (`gh pr merge <n> --auto --merge`), inside the minute `notify.yml` waits before it asks. GitHub
   merges it once `guard` is green; when GitHub refuses the press because the pull request is
-  already clean, merge it (`gh pr merge <n> --merge`). Never press on `tier 3` or `figures moved`,
+  already clean, merge it (`gh pr merge <n> --merge`). Refused for anything else, it is made a
+  draft again at once (`gh pr ready <n> --undo`), before `notify.yml` asks, and the refusal is put
+  right or said at its top. Never press on `tier 3` or `figures moved`,
   whatever the review found. `tiers.yml` turns off only a press it finds as a commit arrives; one
   made later is taken as the maintainer's yes. Auto-merge is never on, nor the pull request ready,
   while a commit is still to come: one needed after the press turns auto-merge off and makes it a
