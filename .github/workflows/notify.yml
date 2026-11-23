@@ -106,7 +106,7 @@ jobs:
             issues)
               if [ "$day" = yes ]; then ask_issue "$NUMBER"; else hold "$NUMBER"; fi ;;
             pull_request)
-              # A builder turns auto-merge on just after it opens a clean pull request, so this
+              # A builder turns auto-merge on just after it marks a clean pull request ready, so this
               # waits a minute to see which it is. One merging itself asks nothing.
               sleep 60
               today     # read again after the minute: one that crosses 08:00 asks now

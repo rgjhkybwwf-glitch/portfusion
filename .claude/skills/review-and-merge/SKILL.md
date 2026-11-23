@@ -8,6 +8,10 @@ description: "Builder: takes an open pull request to its end. The skeptic review
 The tiers, what makes a pull request clean and the three that never are, are in `CONTRIBUTING.md`,
 The loop, Merging.
 
+The pull request is a draft until its end (the skill `build-an-issue` opens it so): nothing can
+merge it, and `notify.yml` asks nothing of it, while it is read and its guard runs. Auto-merge is
+the last thing done, never the first.
+
 ## 1. The reviewer
 
 For a pull request of tier 1 or above: the skeptic reviewer
@@ -15,21 +19,7 @@ For a pull request of tier 1 or above: the skeptic reviewer
 "Done" checks and the diff, reviews it. Its findings are fixed, or said at the top of the pull
 request. Tier 0 takes the builder's own review of its diff, and no walk.
 
-## 2. Clean, or waiting
-
-- **Clean**: turn auto-merge on as the pull request opens. GitHub merges it once `guard` is green.
-  First wait until `tiers.yml` has a run on the newest commit and every run of it there has
-  finished (`gh run list --workflow tiers.yml --commit <sha>`; none yet is not finished), then
-  read the labels it set: never press on `tier 3` or `figures
-  moved`, whatever the review found. `tiers.yml` turns off only a press it finds as a commit
-  arrives; one made later is taken as the maintainer's yes.
-- **Not clean**: leave auto-merge off, with what is needed from the maintainer at the top of the
-  description. A pull request that moves the store or a figure says what moves there, and in the
-  changelog. A pull request of tier 3, or of tier 2 with a headline figure moved, is never the
-  agent's to turn on, at any moment: `tiers.yml` turns off what it finds on as a commit arrives,
-  and a press made after the tier is judged stands as the maintainer's yes.
-
-## 3. The guard
+## 2. The guard
 
 Wait for CI's `guard` on the newest commit, in the foreground: a command that polls the checks,
 and the `baselines/<branch>` ref when pictures are being retaken, run again until they finish.
@@ -39,7 +29,38 @@ Never by ending the turn.
 - **The walk fails only because a page the issue meant to change looks different**: the skill
   `pictures`.
 - **A failure the agent cannot fix** is said at the top of the pull request, with what would fix
-  it.
+  it, and the pull request stays a draft, for the next run's `tend-pull-requests` and the debrief's
+  Faults.
+
+## 3. Clean, or waiting
+
+Only once the reviewer has come back, its findings are fixed or said, and `guard` is green on the
+newest commit. First wait until `tiers.yml` has a run on the newest commit and every run of it
+there has finished (`gh run list --workflow tiers.yml --commit <sha>`; none yet is not finished),
+then read the labels it set. A press after the tier is judged is taken as the maintainer's yes, so
+nothing in `tiers.yml` catches a wrong one: a run there that failed, or no `tier` label, is read
+as `tier 3`.
+
+Then read the pull request and its issue again. A `hold` or `decision` label, or a `Change:` reply,
+that came while it was read leaves it a draft, for `tend-pull-requests` and the coordinator.
+
+- **Clean**: mark it ready (`gh pr ready <n>`) and turn auto-merge on straight after
+  (`gh pr merge <n> --auto --merge`), inside the minute `notify.yml` waits before it asks. GitHub
+  merges it once `guard` is green; when GitHub refuses the press because the pull request is
+  already clean, merge it (`gh pr merge <n> --merge`). Refused for anything else, it is made a
+  draft again at once (`gh pr ready <n> --undo`), before `notify.yml` asks, and the refusal is put
+  right or said at its top. Never press on `tier 3` or `figures moved`,
+  whatever the review found. `tiers.yml` turns off only a press it finds as a commit arrives; one
+  made later is taken as the maintainer's yes. Auto-merge is never on, nor the pull request ready,
+  while a commit is still to come: one needed after the press turns auto-merge off and makes it a
+  draft again first (`gh pr merge <n> --disable-auto`, `gh pr ready <n> --undo`), and the pull
+  request goes back through 1 and 2.
+- **Not clean**: write what is needed from the maintainer at the top of the description first,
+  then mark it ready and leave auto-merge off: `notify.yml` asks a minute later, and points them to
+  the top. A pull request that moves the store or a figure says what moves there, and in the
+  changelog. A pull request of tier 3, or of tier 2 with a headline figure moved,
+  is never the agent's to turn on, at any moment: `tiers.yml` turns off what it finds on as a
+  commit arrives, and a press made after the tier is judged stands as the maintainer's yes.
 
 ## 4. After it merges
 

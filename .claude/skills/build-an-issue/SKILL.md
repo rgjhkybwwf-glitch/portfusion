@@ -64,9 +64,9 @@ Pre-existing or Nit). For a builder:
 
 The skeptic reviewer still reads the Done checks once it opens (`review-and-merge`).
 
-Run the guard, and the desk walk if a desk file changed. Open one pull request that says
-"Closes #n" ("For" the release checklist, which is never closed), with any choice the run decided
-at its top. Then the skill `review-and-merge`.
+Run the guard, and the desk walk if a desk file changed. Open one pull request, as a draft, that
+says "Closes #n" ("For" the release checklist, which is never closed), with any choice the run
+decided at its top. Then the skill `review-and-merge`, which marks it ready at its end.
 
 No issue goes past a second attempt at a green guard: one that will not go green is left as a
 draft pull request with what blocks it at the top, and the run moves on.

@@ -111,7 +111,7 @@ Kept by review, and by the test named where there is one.
 | a change the loader would refuse an older book for | its move in `record/migrations.py` | `tests/record/test_migrations.py` |
 | a headline figure | a `Book` method and its entry in `Book.HEADLINE` | `tests/test_figures.py` |
 | a column heading | `house/headings.py` | `tests/test_figures.py` |
-| a desk panel | `desk/panels/<name>.py` | `tests/desk/test_panels.py` |
+| a desk panel | `desk/panels/<name>.py` | `tests/desk/test_panels.py`, and how every page looks `tests/desk/test_page_look.py` |
 | a desk button | its `Action` in `desk/actions.py` | `tests/desk/test_boundaries.py` |
 | anything that writes a file, or opens a file of the store | its door, named in `WRITERS` or `STORE_FILE_DOORS` | `tests/desk/test_boundaries.py`, `tests/record/test_store_doors.py` |
 | a kind of document | an `Evidence` in `record/rules_evidence.py` | `tests/record/test_evidence.py` |
@@ -607,13 +607,15 @@ How a pull request is taken to its end is the skill
   The base's `tools/tiers.py` judges the branch. For tier 3, and tier 2 with a figure moved, the
   maintainer's press of Enable auto-merge is the yes, and one press is enough. The runs write as
   the maintainer's account, so a press is told by when it came: auto-merge found on as a commit
-  arrives was turned on before that commit's tier was judged, and `tiers.yml` turns it off, once
-  a commit, and says why. So the agent never turns it on for these. A new commit, a merge of
+  arrives was turned on before that commit's tier was judged (a builder presses only after, on a
+  judged and green draft it marks ready), and `tiers.yml` turns it off, once a commit, and says
+  why. So the agent never turns it on for these. A new commit, a merge of
   `main` included, is asked again. A Dependabot pull request is left to `dependabot-merge.yml`.
 - **A clean pull request merges itself**: one that asks the maintainer nothing, passes the guard,
   the walk and the reviewer (tier 0: the guard alone), and has its finds placed. A choice the run
-  decided, said at its top, keeps it clean. The agent turns its auto-merge on as it opens it, and
-  GitHub merges it once `guard` is green. Pictures retaken for a page the issue meant to change
+  decided, said at its top, keeps it clean. The agent opens it as a draft, and turns its auto-merge
+  on only once the reviewer has come back and `guard` is green on its newest commit, as it marks
+  it ready; GitHub then merges it. Pictures retaken for a page the issue meant to change
   keep it clean.
 - **Three are never clean**: a pull request that moves the store (a table or column of
   `record/schema.py`, or a move in `record/migrations.py`), a slice that moves a figure (what an
