@@ -50,12 +50,22 @@ each commit's diff reviewed before it is pushed (step 6).
 
 ## 6. The review, the guard, then one pull request
 
-Before each push, the `code-review` skill reviews the commits not yet pushed, at the level the
-branch's tier takes (`python3 tools/tiers.py $(git diff --name-only origin/main...)`): `low` for
-tier 0, `medium` for tiers 1 and 2, `high` for tier 3 (`CONTRIBUTING.md`, Commits and pull
-requests). Fix each finding in a new commit, reviewed in turn, or say it at the top of the pull
-request with why it stands. The skeptic reviewer still reads the Done checks once it opens
-(`review-and-merge`).
+Before each push, the `code-review` skill reviews the branch, at the level the branch's tier
+takes (`python3 tools/tiers.py $(git diff --name-only origin/main...)`): `low` for tier 0,
+`medium` for tiers 1 and 2, `high` for tier 3 (`CONTRIBUTING.md`, Commits and pull requests).
+Given no target it reads the whole branch against `main`, the commits already pushed among them.
+So one review before a push covers every commit not yet pushed, and a finding the top of the pull
+request already answers is not answered again.
+
+The review marks each finding, and the mark says what is done with it:
+
+- **Important**: fixed in a new commit, reviewed in turn, or said at the top of the pull request
+  with why it stands. A finding that carries no mark is taken as Important.
+- **Pre-existing**: there before the change, so the skill `fix-fold-report`.
+- **Nit**: fixed only on a line the change already touches.
+
+The review reports bugs and broken rules of `CLAUDE.md`, and no cleanups, so no run waits for
+any. The skeptic reviewer still reads the Done checks once it opens (`review-and-merge`).
 
 Run the guard, and the desk walk if a desk file changed. Open one pull request that says
 "Closes #n" ("For" the release checklist, which is never closed), with any choice the run decided

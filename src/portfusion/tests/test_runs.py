@@ -156,11 +156,14 @@ def test_every_commit_is_reviewed_before_it_is_pushed(contributing):
     """The maintainer's rule: every commit's diff, by a run or a session, goes through
     the `code-review` skill before it is pushed. THE CASE THAT MAKES IT FAIL: a day of the loop's
     own rebuild merged unreviewed, since the only reviewer named was a run's, after the pull
-    request opened."""
+    request opened. What is done with a finding goes by the mark the review gives it, and the rule
+    and the builder's skill both name the three."""
     assert "Every commit's diff is reviewed by the `code-review` skill before it is pushed" \
         in contributing
     build = (SKILLS / "build-an-issue" / "SKILL.md").read_text(encoding="utf-8")
     assert build.index("`code-review`") < build.index("Run the guard"), "reviewed before it opens"
+    for mark in ("Important", "Pre-existing", "Nit"):
+        assert mark in build and mark in contributing, f"a finding marked {mark}"
     template = (ROOT / ".github" / "pull_request_template.md").read_text(encoding="utf-8")
     assert "reviewed by the `code-review` skill" in template
     assert "`code-review` skill" in (ROOT / "CLAUDE.md").read_text(encoding="utf-8")
