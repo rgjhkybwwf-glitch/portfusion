@@ -170,12 +170,11 @@ Kept by review, and by the test named where there is one.
   Claude. Its level goes by the tier the change will take (`python3 tools/tiers.py` and the
   changed paths): `low` for tier 0, `medium` for tiers 1 and 2, `high` for tier 3. The review
   marks each finding. One marked Important, or not marked, is fixed in the branch, or said at the
-  top of the pull request with why it stands. One marked Pre-existing was there before the change:
-  a small one in a file the change already touches is fixed, and any other is said in the pull
-  request (a run's, by the skill [`fix-fold-report`](.claude/skills/fix-fold-report/SKILL.md)). A
-  Nit is fixed only on a line the change already touches. The pull request's checklist names the
-  level each commit was reviewed at. A run's skeptic reviewer (Merging, below) reads the Done
-  checks besides; it does not stand in for this review.
+  top of the pull request with why it stands. One marked Pre-existing was there before the
+  change, and is a find outside it (Building, below). A Nit is fixed only on a line the change
+  already touches, and any other is left. The pull request's checklist names the level each
+  commit was reviewed at. A run's skeptic reviewer (Merging, below) reads the Done checks besides;
+  it does not stand in for this review.
 - **A changed desk page is walked cold before its pull request opens**, by the cold walker
   ([`.claude/agents/cold-walker.md`](.claude/agents/cold-walker.md)), as
   [`docs/ux-audit.md`](docs/ux-audit.md) was made, by the skill

@@ -162,8 +162,10 @@ def test_every_commit_is_reviewed_before_it_is_pushed(contributing):
         in contributing
     build = (SKILLS / "build-an-issue" / "SKILL.md").read_text(encoding="utf-8")
     assert build.index("`code-review`") < build.index("Run the guard"), "reviewed before it opens"
+    rule = contributing[contributing.index("- **Every commit's diff is reviewed"):]
+    rule, step = rule[:rule.index("\n- **", 1)], build[build.index("## 6. The review"):]
     for mark in ("Important", "Pre-existing", "Nit"):
-        assert mark in build and mark in contributing, f"a finding marked {mark}"
+        assert mark in rule and mark in step, f"a finding marked {mark}"
     template = (ROOT / ".github" / "pull_request_template.md").read_text(encoding="utf-8")
     assert "reviewed by the `code-review` skill" in template
     assert "`code-review` skill" in (ROOT / "CLAUDE.md").read_text(encoding="utf-8")
