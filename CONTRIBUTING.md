@@ -258,8 +258,9 @@ is. A run changes neither.
   below); a release's read checks it and changes nothing in it.
 - **The loop's own work is not tracked here.** A change to this section, a skill, a helper agent,
   a workflow or a routine is made from the maintainer's project on claude.ai, by pull request. A
-  run that meets a fault in its own rules says so in one line of its debrief, and does nothing
-  more about it: it files no issue for it.
+  run that meets a fault in its own rules, or in a tool or an access they call for and give no
+  way round, says so in one line of its debrief, and on its end line after the word `Fault:`
+  (Telling the maintainer, below), and does nothing more about it: it files no issue for it.
 
 **When a run starts**
 
@@ -641,27 +642,28 @@ How a pull request is taken to its end is the skill
   by ending its turn. CI is polled in the foreground.
 - **Each run writes two lines on the run log**, by the skill
   [`beat`](.claude/skills/beat/SKILL.md): one as it starts, and one as it ends, which gives when
-  it began and ended, UK time, what it did in a line, the issues it decided a choice on, and its
-  `Next:` line. They are the source for which run is at work, a run's length and its stops, and
-  for the morning's digest; they ask nothing and ping no one.
+  it began and ended, UK time, what it did in a line, each fault it met (How it runs, above), the
+  issues it decided a choice on, and its `Next:` line. They are the source for which run is at
+  work, a run's length, its stops and its faults, and for the morning's digest; they ask nothing
+  and ping no one.
 - **When nothing is left to wait for, the run takes its last three steps**, by the skill
   [`end-of-run`](.claude/skills/end-of-run/SKILL.md): it stops watching each pull request it
   leaves, writes its end line on the run log, then ends its turn with the debrief: what merged,
-  what waits on the maintainer, what it decided for them, or that it had nothing to do. **Its
-  last line begins with the word `Next:`**, then who acts next, on what, and when, as in "Next:
-  the night build, at 00:30, builds #250." When no line under Next can be built, it names each
-  line and what holds it: a question (whose), no plan yet or a "Re-plan" (the coordinator's),
+  what waits on the maintainer, what it decided for them, each fault it met, or that it had nothing
+  to do. **Its last line begins with the word `Next:`**, then who acts next, on what, and when, as
+  in "Next: the night build, at 00:30, builds #250." When no line under Next can be built, it names
+  each line and what holds it: a question (whose), no plan yet or a "Re-plan" (the coordinator's),
   `building` (which run), an open pull request, a "waits" or the gate. None of the three is ever
   done while something is still running. While a gate review stands unanswered, or a release
-  untagged, the debrief says in one line what the run waits on. A run woken after its debrief
-  sends no push, adds no second line to the run log, and ends in one line, which begins `Next:`.
+  untagged, the debrief says in one line what the run waits on. A run woken after its debrief sends
+  no push, adds no second line to the run log, and ends in one line, which begins `Next:`.
 - **Only the coordinator sends a debrief to the maintainer's phone, and only for two kinds of
-  run.** Its morning run sends the day's digest: what merged, what was decided for them and what
-  waits on them, its own and every run's since the last morning run, read from the run log, and
-  any start the gate failed to make. A run of its own that the maintainer started, by an answer,
-  a `Change:`, an `Idea:`, a release or a `Resume:`, sends its debrief, since they wait for it. A
-  builder's run and a re-plan a run began send none: what they did is in the run log, and in the
-  next morning's digest.
+  run.** Its morning run sends the day's digest: what merged, what waits on them, what was decided
+  for them and each fault met, with the number of runs that met it, its own and every run's since
+  the last morning run, read from the run log, and any start the gate failed to make. A run of its
+  own that the maintainer started, by an answer, a `Change:`, an `Idea:`, a release or a `Resume:`,
+  sends its debrief, since they wait for it. A builder's run and a re-plan a run began send none:
+  what they did is in the run log, and in the next morning's digest.
 - **The Stop hook holds all three** (`tools/stop_hook.py`, run by `.claude/settings.json`): a run
   cannot end while an open pull request of a branch it pushed has `guard` running, nor while a
   helper agent it started has not returned, each for up to an hour a wait, nor, asked twice, with a
