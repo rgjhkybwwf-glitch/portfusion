@@ -50,12 +50,18 @@ each commit's diff reviewed before it is pushed (step 6).
 
 ## 6. The review, the guard, then one pull request
 
-Before each push, the `code-review` skill reviews the commits not yet pushed, at the level the
-branch's tier takes (`python3 tools/tiers.py $(git diff --name-only origin/main...)`): `low` for
-tier 0, `medium` for tiers 1 and 2, `high` for tier 3 (`CONTRIBUTING.md`, Commits and pull
-requests). Fix each finding in a new commit, reviewed in turn, or say it at the top of the pull
-request with why it stands. The skeptic reviewer still reads the Done checks once it opens
-(`review-and-merge`).
+Before each push, the `code-review` skill reviews the branch, at the level the branch's tier
+takes (`python3 tools/tiers.py $(git diff --name-only origin/main...)`): `low` for tier 0,
+`medium` for tiers 1 and 2, `high` for tier 3. `CONTRIBUTING.md`, Commits and pull requests, says
+what comes first in a cloud checkout, and what is done with a finding by its severity (Important,
+Pre-existing or Nit). For a builder:
+
+- The review is given no target, so it reads the whole branch each time, and one review before a
+  push covers every commit not yet pushed.
+- A fix is a new commit, reviewed in turn.
+- A Pre-existing finding takes the skill `fix-fold-report`.
+
+The skeptic reviewer still reads the Done checks once it opens (`review-and-merge`).
 
 Run the guard, and the desk walk if a desk file changed. Open one pull request that says
 "Closes #n" ("For" the release checklist, which is never closed), with any choice the run decided
