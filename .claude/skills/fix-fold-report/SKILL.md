@@ -10,8 +10,8 @@ writes neither the Queue nor the walk finds. What it meets outside its issue tak
 these three that fits.
 
 A find **the change caused** is not one of these: it is the change's to fix, in this pull request.
-Nor is a finding of the `code-review` skill's that its rule leaves (`CONTRIBUTING.md`, Commits and
-pull requests): that one is left, and listed nowhere.
+Nor is a finding of the `code-review` skill's that the rule in `CONTRIBUTING.md`, Commits and pull
+requests, leaves: that one is left, and listed nowhere.
 
 ## 1. Fix
 
