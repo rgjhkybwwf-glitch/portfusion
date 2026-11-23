@@ -612,8 +612,9 @@ How a pull request is taken to its end is the skill
   `main` included, is asked again. A Dependabot pull request is left to `dependabot-merge.yml`.
 - **A clean pull request merges itself**: one that asks the maintainer nothing, passes the guard,
   the walk and the reviewer (tier 0: the guard alone), and has its finds placed. A choice the run
-  decided, said at its top, keeps it clean. The agent turns its auto-merge on as it opens it, and
-  GitHub merges it once `guard` is green. Pictures retaken for a page the issue meant to change
+  decided, said at its top, keeps it clean. The agent opens it as a draft, and turns its auto-merge
+  on only once the reviewer has come back and `guard` is green on its newest commit, as it marks
+  it ready; GitHub then merges it. Pictures retaken for a page the issue meant to change
   keep it clean.
 - **Three are never clean**: a pull request that moves the store (a table or column of
   `record/schema.py`, or a move in `record/migrations.py`), a slice that moves a figure (what an
