@@ -152,6 +152,31 @@ def test_every_helper_agent_is_named_by_a_step_skill(skills):
         assert f".claude/agents/{agent.name}" in steps or f"`{agent.stem}`" in steps, agent.name
 
 
+def test_a_fault_is_said_on_the_end_line_in_one_place_and_one_form(skills, section):
+    """A run's fault can be counted only where every run says it in the same place: the rule, the
+    skill that gives the end line's form and the skill that writes it all name the `Fault:` part,
+    and it sits after the holds and before "Decided for you:" and `Next:`. THE CASE THAT MAKES IT
+    FAIL: one fault stood on the run log three mornings, as loose words in what each run did, and
+    nobody counted it."""
+    def said(text, start, end):
+        """One part of a text, from the words it starts with to `end`, its line breaks gone."""
+        found = text.partition(start)[2].partition(end)[0]
+        assert found, f"no part begins {start!r}"
+        return " ".join(found.split())
+
+    rule = said(section, "- **The loop's own work is not tracked here.**", "\n\n")
+    assert "`Fault:`" in rule and "end line" in rule, "the rule sends a fault to the end line"
+    beat, end = skills["beat"][1], skills["end-of-run"][1]
+    shown = said(beat, "A run that met a fault says so next", "\n\n")
+    parts = [shown.find(part) for part in ("· held ", "· Fault: ", "Decided for you:", "· Next:")]
+    assert -1 not in parts and parts == sorted(parts), "holds, then faults, then what was decided"
+    line = said(end, "## 2. The end line", "\n## ")
+    assert -1 < line.find("--holds") < line.find("`Fault:`"), "the run writes it after the holds"
+    assert "**Faults**" in said(end, "## 3. The debrief", "\n## "), "and its debrief says it"
+    digest = said(end, "sends the day's digest", "\n- **")
+    assert "Faults" in digest and "the number of runs that met it" in digest
+
+
 def test_every_commit_is_reviewed_before_it_is_pushed(contributing):
     """The maintainer's rule: every commit's diff, by a run or a session, goes through
     the `code-review` skill before it is pushed. THE CASE THAT MAKES IT FAIL: a day of the loop's

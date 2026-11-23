@@ -35,11 +35,21 @@ Written by the skill `end-of-run`, once nothing is left to wait for:
 
 The mark, the date, when the run began and ended, what it did in a line, then "Decided for you:"
 and each issue the run decided a choice on (left out when it decided nothing), and its `Next:`
-line. The morning's digest is put together from these lines.
+line. A hold and a fault, when the run had one, go between what it did and "Decided for you:",
+the hold first, as below. The morning's digest is put together from these lines.
 
 A run the Stop hook held says so after what it did, in the hook's own words, as in
 "· built #250, merged · held 1× for `guard`, 12 min · Next: …". The skill `end-of-run` says where
 the words come from; a run that was never held leaves the part out.
+
+A run that met a fault says so next, after the word `Fault:`, as in "· planned #250 · held 1× for
+a helper, 3 min · Fault: security alerts, not readable from this session · Decided for you: #250 ·
+Next: …". A fault is the loop's own (`CONTRIBUTING.md`, How it runs): a rule the run could not
+follow as written, or a tool or an access its rules call for, and give no way round, that failed
+it. A red guard, a plan the checker refused and a question are the work, and are no fault. The
+part is one line: each fault in a few words, the tool or the place first and then what it did, two
+faults parted by `;`. A run that met none leaves the part out.
+
 The time it began is the start line's, to the minute: the two lines are paired by it. The time
 stays first after the mark; a run started for a re-plan says so after its time.
 
