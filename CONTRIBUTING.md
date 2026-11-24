@@ -178,11 +178,11 @@ Kept by review, and by the test named where there is one.
   outside it (Building, below), unless it is judged wrong: then it is said at the top with why, as
   an Important one is. A Nit is fixed only where the change caused it or on a line the change
   already touches, and a wrong one not at all; one left is listed nowhere, and is no find for
-  Building's rule. **The review runs twice at most before a push**: once on the work, and once on
-  its fixes. Of what the second review finds, only an Important finding its fixes caused is
-  fixed, and that fix is reviewed once more, alone; every other finding of the second review,
-  and every finding of that last, is said at the top or left, by its severity as above, and not
-  fixed. A push after the pull request opens (a CI fix, `main` merged in, pictures retaken) is
+  Building's rule. **The review's rounds end at two**: one on the work, one on its fixes, and a
+  last check of a fix the second caused. Of what the second review finds, only an Important
+  finding its fixes caused is fixed, and that fix is reviewed once more, alone; every other
+  finding of the second review, and every finding of that last check, is said at the top or
+  left, by its severity as above, and not fixed. A push after the pull request opens (a CI fix, `main` merged in, pictures retaken) is
   reviewed the same way first. **What is said at the top is the maintainer's to read**: an
   Important finding that stands keeps a run's pull request from being clean (Merging, below).
   The pull request's checklist names the level each commit was reviewed at. A
@@ -656,7 +656,8 @@ How a pull request is taken to its end is the skill
   waits, and takes the label off. An issue or pull request that closes loses the label at once.
   A run the maintainer started tells them itself, in its debrief, at any hour.
 - **Nothing is left saying it is pending once it is not.** The first paragraph of an agent's pull
-  request says where it stands, between the marks `<!-- state -->` and `<!-- /state -->`: that it
+  request says where it stands, between the marks `<!-- state -->` and `<!-- /state -->`, each on
+  a line of its own: that it
   merges itself once `guard` is green, or what waits for the maintainer. When the pull request
   merges or closes, `notify.yml` rewrites what is between the marks to say so, with the time.
 - **The bot comments only to ask, or when it turned auto-merge off.** Every issue and pull request

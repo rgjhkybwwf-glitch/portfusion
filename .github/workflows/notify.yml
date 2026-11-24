@@ -164,7 +164,7 @@ jobs:
       github.event.action == 'closed'
       || (github.event_name == 'pull_request' && github.event.action == 'reopened')
     concurrency:
-      group: notify-${{ github.event.issue.number || github.event.pull_request.number }}
+      group: notify-settle-${{ github.event.issue.number || github.event.pull_request.number }}
       cancel-in-progress: false
     runs-on: ubuntu-24.04
     timeout-minutes: 3
@@ -186,15 +186,22 @@ jobs:
             gh api -X DELETE "repos/$REPO/issues/$NUMBER/labels/ask-held" --silent 2> /dev/null || true
           fi
           case "$HEAD" in claude/*) ;; *) exit 0 ;; esac
-          gh api "repos/$REPO/pulls/$NUMBER" --jq .body > "$RUNNER_TEMP/was"
+          gh api "repos/$REPO/pulls/$NUMBER" --jq .body | tr -d '\r' > "$RUNNER_TEMP/was"
           # The marks count only at the start of a line: a sentence that quotes them is left alone.
           grep -q '^<!-- state -->' "$RUNNER_TEMP/was" || exit 0
           if [ "$ACTION" = reopened ]; then at=$(date -u +%FT%TZ); did="**Reopened**, and waits for its run to say where it stands,"
           elif [ -n "$MERGED" ]; then at=$MERGED; did="**Merged**"; else at=$CLOSED; did="**Closed without merging**"; fi
-          awk 'NR == 1 && !/^> 🤖 Held by/ { keep = 1 } keep { print; next } /^$/ { keep = 1 }' \
-            "$RUNNER_TEMP/was" > "$RUNNER_TEMP/body"
+          # A quiet hold's note from `tiers.yml` goes with a close; a reopened one may have just
+          # been written, so it stays.
+          if [ "$ACTION" = closed ]; then
+            awk 'NR == 1 && !/^> 🤖 Held by/ { keep = 1 } keep { print; next } /^$/ { keep = 1 }' \
+              "$RUNNER_TEMP/was" > "$RUNNER_TEMP/body"
+          else cp "$RUNNER_TEMP/was" "$RUNNER_TEMP/body"; fi
+          # The marks stand on lines of their own, so what is between them is read as Markdown.
           SAID="$did on $(TZ=Europe/London date -d "$at" '+%-d %b %Y at %H:%M') UK time." \
-            perl -0pi -e 's/^<!-- state -->.*?<!-- \/state -->/<!-- state -->$ENV{SAID}<!-- \/state -->/ms' "$RUNNER_TEMP/body"
-          cmp -s "$RUNNER_TEMP/was" "$RUNNER_TEMP/body" \
-            || gh api -X PATCH "repos/$REPO/pulls/$NUMBER" -F "body=@$RUNNER_TEMP/body" --silent
-          echo "#$NUMBER: its top now says how it ended." >> "$GITHUB_STEP_SUMMARY"
+            perl -0pi -e 's/^<!-- state -->.*?<!-- \/state -->/<!-- state -->\n$ENV{SAID}\n<!-- \/state -->/ms' "$RUNNER_TEMP/body"
+          grep -q '^<!-- state -->' "$RUNNER_TEMP/body" || { echo "::warning::#$NUMBER: its top was not rewritten"; exit 0; }
+          if ! cmp -s "$RUNNER_TEMP/was" "$RUNNER_TEMP/body"; then
+            gh api -X PATCH "repos/$REPO/pulls/$NUMBER" -F "body=@$RUNNER_TEMP/body" --silent
+            echo "#$NUMBER: its top now says it is ${ACTION}." >> "$GITHUB_STEP_SUMMARY"
+          fi

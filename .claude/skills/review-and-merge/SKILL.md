@@ -45,12 +45,13 @@ as `tier 3`.
 Then read the pull request and its issue again. A `hold` or `decision` label, or a `Change:` reply,
 that came while it was read leaves it a draft, for `tend-pull-requests` and the coordinator.
 
-Before either, the top's first paragraph is written in its marks, `<!-- state -->` and
-`<!-- /state -->`: "Merges itself once `guard` is green." for a clean one, or what is needed from
-the maintainer. `notify.yml` rewrites it when the pull request merges or closes, so it is never
+Before either, the top's first paragraph is written between its marks, `<!-- state -->` and
+`<!-- /state -->`, each on a line of its own: "Merges itself once `guard` is green." for a clean
+one, or what is needed from the maintainer. `notify.yml` rewrites it when the pull request merges or closes, so it is never
 written to say what happened after.
 
-An Important finding of the `code-review` skill said at the top keeps it from being clean.
+An Important finding of the `code-review` skill that stands, said at the top, keeps it from being
+clean; one said there as judged wrong, with why, does not.
 
 - **Clean**: mark it ready (`gh pr ready <n>`) and turn auto-merge on straight after
   (`gh pr merge <n> --auto --merge`), inside the minute `notify.yml` waits before it asks. GitHub

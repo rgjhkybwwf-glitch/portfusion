@@ -59,8 +59,8 @@ Pre-existing or Nit). For a builder:
 
 - The review is given no target, so it reads the whole branch each time, and one review before a
   push covers every commit not yet pushed.
-- A fix is a new commit, reviewed once more. What that second review finds is answered as the
-  rule says: it ends the rounds.
+- A fix is a new commit, reviewed once more. That second review ends the rounds: what it finds
+  is answered as the rule says, with at most a last check of a fix it caused.
 - A Pre-existing finding takes the skill `fix-fold-report`, unless the rule in `CONTRIBUTING.md`,
   Commits and pull requests, leaves it or has it said at the top of the pull request.
 

@@ -205,7 +205,7 @@ def test_every_commit_is_reviewed_before_it_is_pushed(contributing):
         "a Pre-existing finding judged wrong leaves a trace"
     assert "a cleanup takes a Nit's" in rule, "a cleanup has one answer, whatever its severity"
     assert "`git remote set-head origin main`" in rule, "the review measures from today's main"
-    assert "The review runs twice at most before a push" in rule, \
+    assert "The review's rounds end at two" in rule, \
         "review rounds end: five rounds at high gave 7, 9, 7, 9 and 7 findings (#354)"
     assert "keeps a run's pull request from being clean" in rule, \
         "a finding said at the top has a reader, and a clean pull request carries none (#357)"
