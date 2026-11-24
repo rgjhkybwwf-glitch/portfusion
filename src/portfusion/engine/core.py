@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import cast
+
 import pandas as pd
 
 from portfusion.record import rules as D
@@ -28,6 +30,12 @@ class _Pinned:
 
     def __init__(self, module):
         self.__dict__.update(vars(module))
+
+
+def _pin[M](module: M) -> M:
+    """`_Pinned(module)`, typed as the module it pins, so the type checker reads a Book's
+    `self.D.X` as `rules.X`, declared once in `record/rules.py`."""
+    return cast(M, _Pinned(module))
 
 
 class Core:
@@ -57,7 +65,7 @@ class Core:
             self._build()
 
     def _build(self):
-        self.D = _Pinned(D)
+        self.D = _pin(D)
         self.store = load_store()
         self.ledger = value_legs(build_ledger())
         self.cost_released = cost_released(self.ledger)

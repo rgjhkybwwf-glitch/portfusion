@@ -493,6 +493,26 @@ def test_the_record_exports_named_rows_not_bare_tuples(D):
     assert not wrong, f"containers no longer carrying their declared row type: {wrong}"
 
 
+def test_the_record_is_the_names_it_declares(D, monkeypatch):
+    """
+    THE RECORD IS THE NAMES DECLARED ABOVE `_build()`, no more and no fewer. A public local it
+    did not declare would be a name of the record the type checker cannot see, as `rules.o`, a
+    comprehension's date, would be; a declared name it does not make would fail far from here, as
+    an attribute nobody bound. `_build()` refuses either, by name.
+    """
+    declared = D.RECORD_NAMES
+    assert set(D._build()) == declared, "the record's names are not the ones declared"
+    assert all(hasattr(D, name) for name in declared), "a declared name is not bound"
+    assert not hasattr(D, "o"), "a comprehension's variable is a name of the record"
+    # THE TWO FAILING CASES, on file: a name taken out of the declaration, and one put in.
+    monkeypatch.setattr(D, "RECORD_NAMES", declared - {"buys"})
+    with pytest.raises(RuntimeError, match=r"made and not declared: \['buys'\]"):
+        D._build()
+    monkeypatch.setattr(D, "RECORD_NAMES", declared | {"LEDGER"})
+    with pytest.raises(RuntimeError, match=r"declared and not made: \['LEDGER'\]"):
+        D._build()
+
+
 @needs("buys")
 def test_whether_a_leg_is_still_held_comes_from_the_sales(D, book):
     """Which legs are still held comes from the sales alone: a leg an IG close names is not held,
