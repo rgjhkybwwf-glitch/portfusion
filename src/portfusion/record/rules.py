@@ -8,8 +8,8 @@ once — SOURCE_HIERARCHY, STATEMENT_GRADE, SPREAD_BET, ARCHIVE_CONVENTION, the 
 everything that shows one reads it from here.
 
 THE RECORD IS BUILT, THEN TAKEN. `_build()` reads every table and checks it, and this module
-takes the names it made only when all of it passed — at import, and at each `reload_store()` —
-so a store that will not load leaves the record exactly as it was.
+takes the names it made, the ones declared above it, only when all of it passed — at import,
+and at each `reload_store()` — so a store that will not load leaves the record exactly as it was.
 """
 import collections as _collections
 import contextlib as _contextlib
@@ -232,7 +232,7 @@ QUARTER_RESULTS: list[tuple]
 REALISATION_FORM: _re.Pattern[str]
 QSNAP_ROWS: list[tuple]
 
-#: The names declared above, read from the module's own annotations: it holds no others.
+#: The names declared above, read from the module's own annotations, so it annotates nothing else.
 RECORD_NAMES = frozenset(_sys.modules[__name__].__annotations__)
 
 
