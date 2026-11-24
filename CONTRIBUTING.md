@@ -178,7 +178,13 @@ Kept by review, and by the test named where there is one.
   outside it (Building, below), unless it is judged wrong: then it is said at the top with why, as
   an Important one is. A Nit is fixed only where the change caused it or on a line the change
   already touches, and a wrong one not at all; one left is listed nowhere, and is no find for
-  Building's rule. The pull request's checklist names the level each commit was reviewed at. A
+  Building's rule. **The review runs twice at most before a push**: once on the work, and once on
+  its fixes. What the second review finds is fixed only when it is Important and the first
+  review's fixes caused it; the rest is answered by its severity as above, never by a third
+  review. A push after the pull request opens (a CI fix, `main` merged in, pictures retaken) is
+  reviewed the same way first. **What is said at the top is the maintainer's to read**: an
+  Important finding that stands keeps a run's pull request from being clean (Merging, below).
+  The pull request's checklist names the level each commit was reviewed at. A
   run's skeptic reviewer (Merging, below) reads the Done checks besides; it does not stand in for
   this review.
 - **A changed desk page is walked cold before its pull request opens**, by the cold walker
@@ -196,11 +202,11 @@ Kept by review, and by the test named where there is one.
   way, unasked (`dependabot-merge.yml`), and so does a run's clean pull request, whose
   yes was given in advance by a ready issue (below).
 
-### The loop (on trial since 12 Nov 2026)
+### The loop
 
 Unattended Claude sessions work the ready issues, and the maintainer checks in when they ask.
-This is a trial: the process is being developed as it runs, and each surprise becomes a rule here,
-a test, or a better-written issue. **This section is the agent's rules**: what must be true. **How
+The loop is in use and refined as it runs: each surprise becomes a rule here, a test, or a
+better-written issue. **This section is the agent's rules**: what must be true. **How
 each thing is done is a skill** under [`.claude/skills/`](.claude/skills), named where its rule
 is. A run changes neither.
 
@@ -569,6 +575,12 @@ The coordinator's morning run, whose order is its playbook.
   the issue takes `decision` and loses `planned`, what is built so far is pushed to its branch
   with no pull request, and the run moves on. Its answer leaves the plan to the coordinator, which
   plans it again; then the issue starts again, whole, on that branch.
+- **Work set aside for later is never left in prose.** What an issue, a plan or a pull request
+  puts off as a later step ("its own issue", "a separate step", "later") is a find: a builder
+  reports it, and the coordinator files, folds or drops it with the reason, as any other. An
+  option a run or the maintainer declines is written with what would bring it back ("Revisit
+  when: …"), and the gate review lists each whose time has come (the skill
+  [`gate-review`](.claude/skills/gate-review/SKILL.md)).
 - **A find outside the change is fixed, folded or reported, in that order**, by the skill
   [`fix-fold-report`](.claude/skills/fix-fold-report/SKILL.md): a small one in a file the change
   already touches is fixed in the same pull request; otherwise it is folded onto the open issue
@@ -613,7 +625,8 @@ How a pull request is taken to its end is the skill
   `main` included, is asked again. A Dependabot pull request is left to `dependabot-merge.yml`.
 - **A clean pull request merges itself**: one that asks the maintainer nothing, passes the guard,
   the walk and the reviewer (tier 0: the guard alone), and has its finds placed. A choice the run
-  decided, said at its top, keeps it clean. The agent opens it as a draft, and turns its auto-merge
+  decided, said at its top, keeps it clean; an Important review finding said there does not, and
+  waits for the maintainer's yes. The agent opens it as a draft, and turns its auto-merge
   on only once the reviewer has come back and `guard` is green on its newest commit, as it marks
   it ready; GitHub then merges it. Pictures retaken for a page the issue meant to change
   keep it clean.
@@ -639,8 +652,12 @@ How a pull request is taken to its end is the skill
 - **The bot asks in the maintainer's working day, and holds the rest to 08:00.** A question or a
   pull request raised outside 08:00 to 17:00 UK time, Monday to Friday, takes the label
   `ask-held`, which tells no one; at 08:00 on the next working day the bot asks each that still
-  waits, and takes the label off. A run the maintainer started tells them itself, in its
-  debrief, at any hour.
+  waits, and takes the label off. An issue or pull request that closes loses the label at once.
+  A run the maintainer started tells them itself, in its debrief, at any hour.
+- **Nothing is left saying it is pending once it is not.** The first paragraph of an agent's pull
+  request says where it stands, between the marks `<!-- state -->` and `<!-- /state -->`: that it
+  merges itself once `guard` is green, or what waits for the maintainer. When the pull request
+  merges or closes, `notify.yml` rewrites what is between the marks to say so, with the time.
 - **The bot comments only to ask, or when it turned auto-merge off.** Every issue and pull request
   is under the maintainer's account, so GitHub tells them of each comment the bot makes, whether
   it names them or not. A note that asks nothing (a pull request merging itself, a tier that
@@ -671,7 +688,9 @@ How a pull request is taken to its end is the skill
 - **Only the coordinator sends a debrief to the maintainer's phone, and only for two kinds of
   run.** Its morning run sends the day's digest: what merged, what waits on them, what was decided
   for them and each fault met, with the number of runs that met it, its own and every run's since
-  the last morning run, read from the run log, and any start the gate failed to make. A run of its
+  the last morning run, read from each end line written or edited on the run log since that run's
+  own (a fault or a hold a run adds to its line later is read so), and any start the gate failed
+  to make. A run of its
   own that the maintainer started, by an answer, a `Change:`, an `Idea:`, a release or a `Resume:`,
   sends its debrief, since they wait for it. A builder's run and a re-plan a run began send none:
   what they did is in the run log, and in the next morning's digest.

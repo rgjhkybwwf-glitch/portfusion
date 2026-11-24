@@ -205,6 +205,32 @@ def test_every_commit_is_reviewed_before_it_is_pushed(contributing):
         "a Pre-existing finding judged wrong leaves a trace"
     assert "a cleanup takes a Nit's" in rule, "a cleanup has one answer, whatever its severity"
     assert "`git remote set-head origin main`" in rule, "the review measures from today's main"
+    assert "The review runs twice at most before a push" in rule, \
+        "review rounds end: five rounds at high gave 7, 9, 7, 9 and 7 findings (#354)"
+    assert "keeps a run's pull request from being clean" in rule, \
+        "a finding said at the top has a reader, and a clean pull request carries none (#357)"
     template = (ROOT / ".github" / "pull_request_template.md").read_text(encoding="utf-8")
     assert "reviewed by the `code-review` skill" in template
     assert "`code-review` skill" in (ROOT / "CLAUDE.md").read_text(encoding="utf-8")
+
+
+
+def test_nothing_set_aside_or_left_pending_is_lost(skills, section):
+    """What a run puts off is given a home, an option declined says what brings it back, and what
+    says it waits stops saying so once it does not. THE CASES THAT MAKE IT FAIL: eight items issues
+    had set aside as later steps were filed by no run (#365); an answer's options left out were
+    never looked at again; #364's top said "a draft until then" after it merged, and `ask-held`
+    stayed on closed #362 and #363."""
+    def flat(text):
+        return " ".join(text.split())
+
+    rule = flat(section)
+    assert "Work set aside for later is never left in prose" in rule
+    assert "Revisit when" in rule and "`gate-review`" in rule
+    assert "Work set aside is a find" in flat(skills["fix-fold-report"][1])
+    assert "Work set aside has a home" in flat(skills["keep-the-queue"][1])
+    for name in ("ask-or-decide", "record-answer", "gate-review"):
+        assert "Revisit when" in skills[name][1], f"{name} keeps what brings an option back"
+    assert "`<!-- state -->`" in rule and "`notify.yml` rewrites" in rule
+    assert "`<!-- state -->`" in skills["review-and-merge"][1]
+    assert "loses the label at once" in rule

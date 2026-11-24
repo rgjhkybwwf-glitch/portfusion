@@ -17,6 +17,16 @@
 # `decision`, the pull request still open with auto-merge off) gets its comment, and the label
 # comes off. A run the maintainer started tells them itself, in its debrief, at any hour.
 #
+# GITHUB RUNS THIS CLOCK HOURS LATE (six to nine, 18 to 20 Nov 2026), so 08:00 came at half past
+# four. A first clock at midnight UTC comes before the day, and waits for 08:00 here
+# (`tools/starts.py --opens-in`), up to five hours; one that would wait longer leaves it to the
+# later two, which ask anything still held.
+#
+# NOTHING IS LEFT PENDING ONCE IT CLOSES (the job `settle`). An issue or pull request that closes
+# loses `ask-held` at once. An agent's pull request says where it stands in the first paragraph
+# of its top, between `<!-- state -->` and `<!-- /state -->`; when it merges or closes, what is
+# between the marks is rewritten to say so, with the time.
+#
 # The one action used is the checkout of the default branch's `tools/starts.py`, never a pull
 # request's; the rest is `gh`, which the runner carries. The token is the workflow's own, so its
 # comment and its label start no other workflow. Titles and links reach the shell as variables,
@@ -26,10 +36,11 @@ name: notify
 
 on:
   issues:
-    types: [labeled]
+    types: [labeled, closed]
   pull_request:
-    types: [opened, reopened, ready_for_review]
+    types: [opened, reopened, ready_for_review, closed]
   schedule:
+    - cron: "0 0 * * 1-5"           # early, since GitHub's clock is late: it waits for 08:00
     - cron: "0 7 * * 1-5"           # 08:00 in London's summer
     - cron: "0 8 * * 1-5"           # 08:00 in London's winter
 
@@ -44,7 +55,7 @@ jobs:
     if: >-
       github.event_name == 'schedule'
       || (github.event_name == 'issues' && github.event.label.name == 'decision')
-      || (github.event_name == 'pull_request'
+      || (github.event_name == 'pull_request' && github.event.action != 'closed'
           && startsWith(github.event.pull_request.head.ref, 'claude/')
           && !github.event.pull_request.draft)
     # One run at a time for each issue or pull request, and one for the clock. A group keeps one
@@ -54,7 +65,7 @@ jobs:
       group: notify-${{ github.event.issue.number || github.event.pull_request.number || 'clock' }}
       cancel-in-progress: false
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: ${{ github.event_name == 'schedule' && 310 || 10 }}
     permissions:
       contents: read
       issues: write
@@ -91,6 +102,13 @@ jobs:
             held="#$1: outside the maintainer's working day, so it is asked at 08:00 on the next one."
             say "${2:-$held}"
           }
+
+          # The early clock waits for the day to open; one that would wait over five hours stops.
+          if [ "$EVENT" = schedule ]; then
+            wait=$(PYTHONPATH=src python3 tools/starts.py --opens-in) || wait=0
+            if [ "$wait" -gt 18000 ]; then say "Before the day by more than five hours: a later clock asks."; exit 0; fi
+            if [ "$wait" -gt 0 ]; then say "Waiting $((wait / 60)) min for the working day."; sleep "$wait"; fi
+          fi
 
           # Only a clear "no" holds a question: a fault in reading the hours asks now.
           today() {
@@ -137,3 +155,34 @@ jobs:
               hold "$n" "::warning::#$n could not be asked: it keeps \`ask-held\`, and the next run tries again" < /dev/null || true
             fi
           done < "$RUNNER_TEMP/held"
+
+  settle:
+    # A closed issue or pull request waits on no one: what said it waits is taken back at once.
+    if: github.event.action == 'closed'
+    concurrency:
+      group: notify-${{ github.event.issue.number || github.event.pull_request.number }}
+      cancel-in-progress: false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Take ask-held off, and say on its top how an agent's pull request ended
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          NUMBER: ${{ github.event.issue.number || github.event.pull_request.number }}
+          HEAD: ${{ github.event.pull_request.head.ref }}
+          MERGED: ${{ github.event.pull_request.merged_at }}
+          CLOSED: ${{ github.event.pull_request.closed_at }}
+        run: |
+          gh api -X DELETE "repos/$REPO/issues/$NUMBER/labels/ask-held" --silent 2> /dev/null || true
+          case "$HEAD" in claude/*) ;; *) exit 0 ;; esac
+          gh api "repos/$REPO/pulls/$NUMBER" --jq .body > "$RUNNER_TEMP/body"
+          grep -q '<!-- state -->' "$RUNNER_TEMP/body" && grep -q '<!-- /state -->' "$RUNNER_TEMP/body" || exit 0
+          if [ -n "$MERGED" ]; then at=$MERGED; did="**Merged**"; else at=$CLOSED; did="**Closed without merging**"; fi
+          SAID="$did on $(TZ=Europe/London date -d "$at" '+%-d %b %Y at %H:%M') UK time." \
+            perl -0pi -e 's/<!-- state -->.*?<!-- \/state -->/<!-- state -->$ENV{SAID}<!-- \/state -->/s' "$RUNNER_TEMP/body"
+          gh api -X PATCH "repos/$REPO/pulls/$NUMBER" -F "body=@$RUNNER_TEMP/body" --silent
+          echo "#$NUMBER: its top now says how it ended." >> "$GITHUB_STEP_SUMMARY"

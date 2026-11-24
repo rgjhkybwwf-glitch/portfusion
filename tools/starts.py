@@ -7,6 +7,8 @@ whether the maintainer's working day is on. It reads only the standard library a
 
     python3 tools/starts.py --read      what an event is, from the environment: one line of JSON
     python3 tools/starts.py --working   "yes" in the maintainer's working hours, "no" outside them
+    python3 tools/starts.py --opens-in  the seconds until today's working day opens, 0 when it is
+                                        not still to come today
     python3 tools/starts.py --queue     the Queue's number
     python3 tools/starts.py --log       the run log's number
     python3 tools/starts.py --at-work <level> <comments file>
@@ -75,6 +77,17 @@ def working(now: datetime) -> bool:
     """Whether `now` is in the maintainer's working day."""
     local = now.astimezone(ZONE)
     return local.weekday() in WEEK and OPENS <= local.time() < CLOSES
+
+
+def opens_in(now: datetime) -> int:
+    """The seconds from `now` until the working day opens, when it opens later today; else 0.
+    GitHub runs `notify.yml`'s clock hours late, so its earliest start is set before the day and
+    waits for it here, rather than asking in the afternoon."""
+    local = now.astimezone(ZONE)
+    if local.weekday() not in WEEK or local.time() >= OPENS:
+        return 0
+    opens = datetime.combine(local.date(), OPENS, tzinfo=ZONE)
+    return max(0, int((opens - local).total_seconds()))
 
 
 def _lines(body: str) -> list[str]:
@@ -263,6 +276,9 @@ def main(args: list[str]) -> int:
     now = datetime.now(timezone.utc)
     if args[:1] == ["--working"]:
         log.info("yes" if working(now) else "no")
+        return 0
+    if args[:1] == ["--opens-in"]:
+        log.info(str(opens_in(now)))
         return 0
     if args[:1] == ["--queue"]:
         log.info(str(QUEUE))

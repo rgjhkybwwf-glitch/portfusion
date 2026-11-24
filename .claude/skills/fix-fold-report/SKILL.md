@@ -13,6 +13,11 @@ A find **the change caused** is not one of these: it is the change's to fix, in 
 Nor is a finding of the `code-review` skill's that the rule in `CONTRIBUTING.md`, Commits and pull
 requests, leaves, or has said at the top of the pull request.
 
+**Work set aside is a find.** What the issue's Not in scope, its plan or this pull request puts
+off as a later step ("its own issue", "a separate step", "later", "worth weighing") is reported
+below, a line each, unless an open issue already covers it (then it is folded). The run never
+leaves it in prose alone: prose is where it was lost.
+
 ## 1. Fix
 
 A small find in a file the change already touches is fixed in this pull request, in a commit of
