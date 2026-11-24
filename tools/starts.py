@@ -44,10 +44,11 @@ WEEK = range(5)
 
 #: Each run's mark, as the runs table gives it, and the level that signs with it. The marks of
 #: before the restart are kept though no row has them: a comment that opens with one is still a
-#: run's, not the maintainer's.
+#: run's, not the maintainer's. The Loop Scout is outside the loop and has no row, but writes its
+#: one line on the run log under its own mark, which starts nothing.
 MARKS = {"📋 **Coordinator**": "coordinator", "🌙 **Builder**": "builder",
          "📋 **Ready check**": "coordinator", "🌙 **Night run**": "builder",
-         "💬 **Answer run**": ""}
+         "💬 **Answer run**": "", "🔭 **Loop Scout**": ""}
 NOTE = "**Session note**"
 
 

@@ -348,3 +348,10 @@ def test_the_shell_can_read_every_script_a_workflow_runs():
     assert sum(len(scripts(flow.read_text(encoding="utf-8"))) for flow in flows) > len(flows)
     for flow in flows:
         assert not refused(flow.read_text(encoding="utf-8")), flow.name
+
+
+def test_the_scouts_line_on_the_run_log_is_a_runs_and_starts_nothing(starts):
+    """The Loop Scout, outside the loop, writes one line on the run log for the dashboard. THE CASE
+    THAT MAKES IT FAIL: a line without a known mark is read as the maintainer's own words."""
+    assert starts.whose("🔭 **Loop Scout** · 29 Nov 18:50–19:05 · a brief · Next: you read it") == "run"
+    assert starts.MARKS["🔭 **Loop Scout**"] == ""
