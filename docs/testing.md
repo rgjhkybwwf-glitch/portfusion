@@ -34,7 +34,7 @@ book could pass or fail belongs in `tests/` or the audit, never in a book's `che
 | `ruff check` | the code holds none of the faults `pyproject.toml` selects: an undefined or unused name, a blind `except`, a stray `print` | layout: there is no formatter |
 | the secret scan, `.githooks/pre-commit --history` | no commit holds a secret's shape or a file that reaches a broker | a secret in a shape it does not know |
 | `lint-imports` | each part of the app imports only what `pyproject.toml`'s contracts allow, the build no desk, feed or history | an import made by name at run time (`importlib`) |
-| `pyright` | the packages `pyproject.toml` lists type-check | anything of the packages it does not list, or the names `rules._build()` binds |
+| `pyright` | the packages `pyproject.toml` lists type-check | anything of the packages it does not list, or that a name `rules._build()` binds is the type declared for it |
 | CI's `newest` job | the suite passes on the newest packages the floors allow, without `requirements.lock`; not a required check | that the lock's own set passes: the guard proves that |
 | `tools/advisories.py` | no package `requirements.lock` or `tools/package-lock.json` pins has an advisory OSV knows of | that the floors' older versions have none |
 | `node --check` on each of `src/portfusion/desk/static/*.js` | the desk's script parses: a syntax error there blanks every page | that it runs |

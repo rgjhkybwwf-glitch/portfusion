@@ -15,6 +15,11 @@ Each release, newest first. The version is `src/portfusion/__init__.py`'s, and
   `bench_form.py` and its gates in `bench_gates.py`. Most of the tests that ask only the form or
   only the gates move beside `test_bench.py`, to `test_bench_form.py` and `test_bench_gates.py`.
   The item's module still answers for every name, and nothing the Bench does changes.
+- **The record's names are declared once, at the top of `record/rules.py`**, and the record is
+  those names and no others: a name the build makes and does not declare, or declares and does
+  not make, stops it by name. The type checker reads `rules.X`, and a Book's `self.D.X`, from that
+  one list. Its one name that goes is `rules.o`, a comprehension's variable nothing read; no fact
+  of the record changes, and no figure moves.
 
 ### Removed
 

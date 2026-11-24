@@ -30,6 +30,12 @@ class _Pinned:
         self.__dict__.update(vars(module))
 
 
+def _pin[M](module: M) -> M:
+    """`_Pinned(module)`, typed as the module it pins, so the type checker reads a Book's
+    `self.D.X` as `rules.X`, declared once in `record/rules.py`."""
+    return _Pinned(module)  # pyright: ignore[reportReturnType] — it holds the module's names
+
+
 class Core:
     """The Book's construction, and the state every topic class reads through `self`."""
 
@@ -57,7 +63,7 @@ class Core:
             self._build()
 
     def _build(self):
-        self.D = _Pinned(D)
+        self.D = _pin(D)
         self.store = load_store()
         self.ledger = value_legs(build_ledger())
         self.cost_released = cost_released(self.ledger)

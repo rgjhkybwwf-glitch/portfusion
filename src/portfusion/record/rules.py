@@ -8,14 +8,16 @@ once — SOURCE_HIERARCHY, STATEMENT_GRADE, SPREAD_BET, ARCHIVE_CONVENTION, the 
 everything that shows one reads it from here.
 
 THE RECORD IS BUILT, THEN TAKEN. `_build()` reads every table and checks it, and this module
-takes the names it made only when all of it passed — at import, and at each `reload_store()` —
-so a store that will not load leaves the record exactly as it was.
+takes the names it made, the ones declared above it, only when all of it passed — at import,
+and at each `reload_store()` — so a store that will not load leaves the record exactly as it was.
 """
 import collections as _collections
 import contextlib as _contextlib
 import datetime as _dt
 import re as _re
-from typing import TYPE_CHECKING, Any, NamedTuple
+import sys as _sys
+from collections.abc import Callable
+from typing import Any, NamedTuple
 
 from portfusion.record import schema         # THE SCHEMA — column types, and it validates on load
 from portfusion.record import order as _order
@@ -173,13 +175,75 @@ from portfusion.record.rules_evidence import *    # noqa: F403 — their names a
 from portfusion.record.rules_brokers import *     # noqa: F403 — as the comment above says
 
 
+# ==============================================================================================
+# THE RECORD'S NAMES — every name `_build()` makes, declared once, here, and read into
+# `RECORD_NAMES` below. `_build()` refuses to return any other set, so a name joins or leaves the
+# record only by its line here, and the type checker reads `rules.X`, and a Book's `self.D.X`
+# (`engine/core.py`), from these lines alone. A ROW CLASS EXISTS ONLY INSIDE `_build()`, so it is
+# declared `type[Any]` and its rows `list[Any]`: a row's own fields are unknown to the checker.
+# ==============================================================================================
+SETTINGS: dict[str, str]
+RECORD_BEGINS: _dt.date
+REVIEW_FROM: _dt.date
+COMPANIES: list[tuple]
+SECURITIES: list[tuple]
+KIND_OF_CODE: dict[str, str]
+fx_rows: list[tuple]
+CURRENT_PRICES: list[tuple]
+STATEMENT_PRICED: dict[str, str]
+RATE_CARRIED_WHY: str
+RATE_CARRIED: dict[str, str]
+RESEARCH_NOTES: dict        # typed in full, `Book.with_reasoning()` fails the type check
+Buy: type[Any]
+buys: list[Any]
+CONTRACTS: dict[str, str | None]
+CONTRACT_FUNDING: dict[str, str]
+CONTRACT_CODE: dict[str, str]
+LEG_CONTRACT: dict[str, str]
+Sale: type[Any]
+sales: list[Any]
+Reasoning: type[Any]
+reasoning: list[Any]
+REASONING: dict[str, list[Any]]
+REALISATION_BY_EXIT: dict   # typed in full, `Book.changes_since()` fails the type check
+EXIT_LEG_MATCH: dict[str, str]
+CostIncomeRow: type[Any]
+ci_rows: list[Any]
+POSITION_INCOME: tuple[str, ...]
+ACCOUNT_INCOME: tuple[str, ...]
+DAILY_FUNDED_LEGS: list[tuple[str, str, _dt.date, _dt.date | None]]
+FX_RATE_AGE_LIMIT_DAYS: int
+CashReading: type[Any]
+cash_readings: list[Any]
+cash_latest: Callable[..., dict[str, Any]]
+AccountRow: type[Any]
+ac_rows: list[Any]
+register: list[tuple]
+movements: list[tuple]
+QuarterNAV: type[Any]
+QUARTER_NAV: list[Any]
+ACCOUNT_ORDER: list[str]
+ACCOUNT_KIND: dict[str, str]
+ACCOUNT_BEGINS: dict[str, str]
+accounts_open: Callable[[Any], list[str]]
+next_free_ids: Callable[[], dict[str, str]]
+QSNAP_FROZEN: list[str]
+QUARTER_RESULTS: list[tuple]
+REALISATION_FORM: _re.Pattern[str]
+QSNAP_ROWS: list[tuple]
+
+#: The names declared above, read from the module's own annotations, so it annotates nothing else.
+RECORD_NAMES = frozenset(_sys.modules[__name__].__annotations__)
+
+
 def _build() -> dict:
     """THE RECORD, read from the store and checked: the names this module takes.
 
     Everything the store decides is bound here — each table, what is derived from it, and the
     rules it must satisfy, which raise — and a row class or a function among them answers from
-    the build it was made in. A name without a leading underscore is the record's;
-    `reload_store()` takes them all at once, or none when a rule refuses.
+    the build it was made in. The names it returns are `RECORD_NAMES`, no more and no fewer, and
+    a local not among them is named with a leading underscore; `reload_store()` takes them all at
+    once, or none when a rule refuses.
     """
     # ==============================================================================================
     # THE BOOK'S STORE IS WHOLE, OR NOTHING IS READ. This module LOADS the facts, so a book whose
@@ -683,8 +747,8 @@ def _build() -> dict:
     ACCOUNT_KIND = {r[0]: r[schema.TABLES["accounts"].header.index("held_as")] for r in register}
     #: THE DAY EACH ACCOUNT'S RECORD BEGAN, FOR ONE OPENED AFTER THE BOOK'S OWN OPENING, as an ISO
     #: date; an account held from the opening is not here.
-    ACCOUNT_BEGINS = {r[0]: str(o) for r in register
-                     if (o := r[schema.TABLES["accounts"].header.index("record_begins")])}
+    ACCOUNT_BEGINS = {r[0]: str(_o) for r in register
+                     if (_o := r[schema.TABLES["accounts"].header.index("record_begins")])}
 
 
     def accounts_open(date) -> list[str]:
@@ -873,7 +937,15 @@ def _build() -> dict:
         raise ValueError("THE RECORD IS NOT IN DATE ORDER:\n  "
                          + "\n  ".join(_out_of_order))
 
-    return {name: value for name, value in locals().items() if not name.startswith("_")}
+    # THE NAMES MADE ARE THE NAMES DECLARED. A difference is the code's fault, not the store's, so
+    # it is no ValueError, which the desk would read as the book's record refusing to load.
+    _made = {name: value for name, value in locals().items() if not name.startswith("_")}
+    if set(_made) != RECORD_NAMES:
+        raise RuntimeError(
+            "THE RECORD'S NAMES ARE NOT THE ONES DECLARED ABOVE _build() IN record/rules.py:\n"
+            f"  made and not declared: {sorted(set(_made) - RECORD_NAMES)}\n"
+            f"  declared and not made: {sorted(RECORD_NAMES - set(_made))}")
+    return _made
 
 
 #: The journal's columns, for the engine's frame, FROM THE SCHEMA, so the engine names them without
@@ -972,6 +1044,3 @@ def reload_store() -> None:
 # THE RECORD, AT IMPORT, with no lock to take: nothing holds this module until its import ends,
 # and a thread that holds the lock may be the one importing it.
 globals().update(_build())
-
-if TYPE_CHECKING:
-    def __getattr__(name: str) -> Any: ...      # the names `_build()` binds, to a type checker
