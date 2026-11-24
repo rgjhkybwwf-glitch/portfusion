@@ -259,8 +259,9 @@ is. A run changes neither.
   on it (When a run starts, below). Only the run that changes a state changes its label, and a
   comment says why; `hold` is the maintainer's alone.
 - **A run reads narrow.** It reads the Queue and the labels, then whole only the issues it acts
-  on. A wide read, every open issue for a review or for "covers", goes to a helper agent that
-  returns a short list, so the run's own context stays small.
+  on. A wide read, every open issue for a review or for "covers", goes to the wide reader
+  ([`.claude/agents/wide-reader.md`](.claude/agents/wide-reader.md)), a helper agent that returns
+  a short list, so the run's own context stays small.
 - **A run has a cap**, its row's. A builder takes no more issues than it names; the coordinator's
   number counts plans that stand, those already standing included, not the lines it asks. No
   issue goes past a second attempt at a green guard: one that will not go green is left as a
@@ -586,6 +587,10 @@ The coordinator's morning run, whose order is its playbook.
   [`fix-fold-report`](.claude/skills/fix-fold-report/SKILL.md): a small one in a file the change
   already touches is fixed in the same pull request; otherwise it is folded onto the open issue
   that covers it, as evidence; the rest are reported in the pull request, which lists all three.
+  Ahead of these, while #9 is open: a find about the look (colour, type, spacing, a part's shape)
+  is folded onto #9 as evidence, never restyled in place and never folded onto a page issue that
+  names the same file, unless the change is #9 or one of its slices; a find about behaviour or
+  words keeps the three routes.
   A builder files no issue for a find: the coordinator sorts what is reported at its next run,
   files what earns an issue, and says what it dropped. The cold walk keeps to the pages the
   change touched.

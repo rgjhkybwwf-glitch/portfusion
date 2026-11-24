@@ -6,8 +6,8 @@ description: "Builder: what to do with a find the change did not cause. Fix it t
 # A find outside the change: fix, fold, then report
 
 The rule is in `CONTRIBUTING.md`, The loop, Building: a builder files no issue and
-writes neither the Queue nor the walk finds. What it meets outside its issue takes the first of
-these three that fits.
+writes neither the Queue nor the walk finds. A find about the look takes its own route, below;
+anything else it meets outside its issue takes the first of the three after it that fits.
 
 A find **the change caused** is not one of these: it is the change's to fix, in this pull request.
 Nor is a finding of the `code-review` skill's that the rule in `CONTRIBUTING.md`, Commits and pull
@@ -17,6 +17,13 @@ requests, leaves, or has said at the top of the pull request.
 off as a later step ("its own issue", "a separate step", "later", "worth weighing") is reported
 below, a line each, unless an open issue already covers it (then it is folded). The run never
 leaves it in prose alone: prose is where it was lost.
+
+**A find about the look goes to #9.** While #9 is open, a find about colour, type, spacing or a
+part's shape is folded onto #9 as evidence, for its one pass through the shared layer: never
+restyled in place, even in a file the change touches, and never folded onto a page issue that
+names the same file. The pull request lists it under **Folded**, with #9. When the change is #9
+itself or one of its slices, the look is the change's own work, not a find. A find about
+behaviour or words, and any find once #9 is closed, keeps the three routes below.
 
 ## 1. Fix
 

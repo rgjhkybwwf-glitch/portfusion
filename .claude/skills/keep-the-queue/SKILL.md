@@ -35,8 +35,9 @@ maintainer placed, by hand or by an answer, is never moved.
 ## The review, on Monday and Thursday
 
 On the morning run of a Monday and of a Thursday, and not while a gate review stands unanswered.
-It reads every open issue against today's `main`, by a helper agent that returns a short list,
-and then acts:
+It reads every open issue against today's `main`, by the wide reader
+([`.claude/agents/wide-reader.md`](../../agents/wide-reader.md)), which returns a short list, and
+then acts:
 
 - **Duplicates are merged**: the later issue is closed as a duplicate, and its evidence and
   Decisions are carried to the one kept.
@@ -50,7 +51,7 @@ and then acts:
   the maintainer placed is not.
 - **Work set aside has a home**: the Not in scope and Decisions of each issue closed since the
   last review, and the descriptions of the pull requests that closed them, are read for work put
-  off as a later step. Each item no open issue covers is filed, folded or dropped with the
+  off as a later step, by the wide reader in the same read. Each item no open issue covers is filed, folded or dropped with the
   reason, as a reported find is (Each run, above).
 
 What it never does unasked: cut a line from a milestone, add a feature the arc does not name, or
