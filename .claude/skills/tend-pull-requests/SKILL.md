@@ -14,7 +14,8 @@ Every push below is reviewed first, as `CONTRIBUTING.md`, Commits and pull reque
 whose auto-merge is on, merging itself, is made a draft again with it off before a commit is
 pushed to it (`gh pr merge <n> --disable-auto`, `gh pr ready <n> --undo`), and goes through the
 skill `review-and-merge` again from its start. One that waits for the maintainer stays ready with
-auto-merge off: the bot has asked already, and the new commit's tier is judged again (Merging).
+auto-merge off: the bot has asked, or holds the question under `ask-held`, and the run asks
+nothing itself; the new commit's tier is judged again (Merging).
 
 1. **Level with `main`**: `main` is merged in, never rebased. A pushed commit is never rewritten.
 2. **Its pictures**: retaken when a page it changed moved under it (the skill `pictures`).

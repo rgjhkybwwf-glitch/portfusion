@@ -690,9 +690,9 @@ How a pull request is taken to its end is the skill
 - **Only the coordinator sends a debrief to the maintainer's phone, and only for two kinds of
   run.** Its morning run sends the day's digest: what merged, what waits on them, what was decided
   for them and each fault met, with the number of runs that met it, its own and every run's since
-  the last morning run, read from each end line written on the run log since that run's own, and
-  a fault or a hold added since to a line written before it, and any start the gate failed to
-  make. A run of its
+  the morning run before it, read from each end line written on the run log since that run's
+  own, and a fault or a hold added since to a line written before it, and any start the gate
+  failed to make. A run of its
   own that the maintainer started, by an answer, a `Change:`, an `Idea:`, a release or a `Resume:`,
   sends its debrief, since they wait for it. A builder's run and a re-plan a run began send none:
   what they did is in the run log, and in the next morning's digest.

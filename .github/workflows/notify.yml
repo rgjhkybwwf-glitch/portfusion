@@ -42,7 +42,7 @@ on:
   # `settle` only, which checks out nothing: GitHub runs no `pull_request` workflow for a pull
   # request in conflict, and a stale one is the likeliest to be closed.
   pull_request_target:
-    types: [closed, reopened]
+    types: [closed]
   schedule:
     - cron: "17 0 * * 1-5"          # early, since GitHub's clock is late: it waits for 08:00
     - cron: "0 7 * * 1-5"           # 08:00 in London's summer
@@ -102,6 +102,10 @@ jobs:
             gh label create ask-held --repo "$REPO" --color ededed \
               --description "The bot's question here is asked at 08:00 on the next working day (notify.yml)" > /dev/null 2>&1 || true
             gh api -X POST "repos/$REPO/issues/$1/labels" -f "labels[]=ask-held" --silent
+            # A close that came meanwhile has had its `settle`: what is closed is not held.
+            if [ "$(gh api "repos/$REPO/issues/$1" --jq .state)" = closed ]; then
+              gh api -X DELETE "repos/$REPO/issues/$1/labels/ask-held" --silent || true
+            fi
             # The words stand outside the braces: an apostrophe inside "${2:-…}" opens a quote.
             held="#$1: outside the maintainer's working day, so it is asked at 08:00 on the next one."
             say "${2:-$held}"
@@ -161,12 +165,10 @@ jobs:
           done < "$RUNNER_TEMP/held"
 
   settle:
-    # A closed issue or pull request waits on no one: what said it waits is taken back at once, a
-    # quiet hold's note from `tiers.yml` among it. A pull request reopened says so, until the run
-    # that tends it writes where it stands.
-    if: >-
-      (github.event_name == 'issues' && github.event.action == 'closed')
-      || github.event_name == 'pull_request_target'
+    # A closed issue or pull request waits on no one: what said it waits is taken back at once,
+    # `ask-held` and a quiet hold's note from `tiers.yml`, and an agent's pull request says between
+    # its state marks how it ended. A reopened one is left to the run that tends it.
+    if: github.event.action == 'closed'
     concurrency:
       group: notify-settle-${{ github.event.issue.number || github.event.pull_request.number }}
       cancel-in-progress: false
@@ -176,37 +178,34 @@ jobs:
       issues: write
       pull-requests: write
     steps:
-      - name: Take ask-held off, and say on its top how an agent's pull request ended
+      - name: Take ask-held off, and say on its top how a pull request ended
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
           NUMBER: ${{ github.event.issue.number || github.event.pull_request.number }}
-          ACTION: ${{ github.event.action }}
           HEAD: ${{ github.event.pull_request.head.ref }}
           MERGED: ${{ github.event.pull_request.merged_at }}
           CLOSED: ${{ github.event.pull_request.closed_at }}
         run: |
-          if [ "$ACTION" = closed ]; then
-            gh api -X DELETE "repos/$REPO/issues/$NUMBER/labels/ask-held" --silent 2> /dev/null || true
-          fi
-          case "$HEAD" in claude/*) ;; *) exit 0 ;; esac
+          gh api -X DELETE "repos/$REPO/issues/$NUMBER/labels/ask-held" --silent 2> /dev/null || true
+          [ -n "$HEAD" ] || exit 0          # an issue: nothing more
           gh api "repos/$REPO/pulls/$NUMBER" --jq .body | tr -d '\r' > "$RUNNER_TEMP/was"
-          # The marks count only at the start of a line: a sentence that quotes them is left alone.
-          grep -q '^<!-- state -->' "$RUNNER_TEMP/was" || exit 0
-          if [ "$ACTION" = reopened ]; then at=$(date -u +%FT%TZ); did="**Reopened**, and waits for its run to say where it stands,"
-          elif [ -n "$MERGED" ]; then at=$MERGED; did="**Merged**"; else at=$CLOSED; did="**Closed without merging**"; fi
-          # A quiet hold's note from `tiers.yml` goes with a close; a reopened one may have just
-          # been written, so it stays.
-          if [ "$ACTION" = closed ]; then
-            awk 'NR == 1 && !/^> 🤖 Held by/ { keep = 1 } keep { print; next } /^$/ { keep = 1 }' \
-              "$RUNNER_TEMP/was" > "$RUNNER_TEMP/body"
-          else cp "$RUNNER_TEMP/was" "$RUNNER_TEMP/body"; fi
-          # The marks stand on lines of their own, so what is between them is read as Markdown.
-          SAID="$did on $(TZ=Europe/London date -d "$at" '+%-d %b %Y at %H:%M') UK time."
-          export SAID
-          perl -0pi -e 's/^<!-- state -->.*?<!-- \/state -->/<!-- state -->\n$ENV{SAID}\n<!-- \/state -->/ms' "$RUNNER_TEMP/body"
-          grep -qF "$SAID" "$RUNNER_TEMP/body" || { echo "::warning::#$NUMBER: its state marks could not be rewritten"; exit 0; }
-          if ! cmp -s "$RUNNER_TEMP/was" "$RUNNER_TEMP/body"; then
+          [ -s "$RUNNER_TEMP/was" ] || exit 0
+          awk 'NR == 1 && !/^> 🤖 Held by/ { keep = 1 } keep { print; next } /^$/ { keep = 1 }' \
+            "$RUNNER_TEMP/was" > "$RUNNER_TEMP/body"
+          # The marks count only at a line's start, so a sentence that quotes them is left alone,
+          # and stand on lines of their own, so what is between them is read as Markdown.
+          case "$HEAD" in claude/*)
+            if grep -q '^<!-- state -->' "$RUNNER_TEMP/body"; then
+              if [ -n "$MERGED" ]; then at=$MERGED; did="**Merged**"; else at=$CLOSED; did="**Closed without merging**"; fi
+              SAID="$did on $(TZ=Europe/London date -d "$at" '+%-d %b %Y at %H:%M') UK time."
+              export SAID
+              perl -0pi -e 's/^<!-- state -->.*?<!-- \/state -->/<!-- state -->\n$ENV{SAID}\n<!-- \/state -->/ms' "$RUNNER_TEMP/body"
+              grep -qF "$SAID" "$RUNNER_TEMP/body" || echo "::warning::#$NUMBER: its state marks could not be rewritten"
+            fi ;;
+          esac
+          # Never written back empty.
+          if [ -s "$RUNNER_TEMP/body" ] && ! cmp -s "$RUNNER_TEMP/was" "$RUNNER_TEMP/body"; then
             gh api -X PATCH "repos/$REPO/pulls/$NUMBER" -F "body=@$RUNNER_TEMP/body" --silent
-            echo "#$NUMBER: its top now says it is ${ACTION}." >> "$GITHUB_STEP_SUMMARY"
+            echo "#$NUMBER: closed, and its top says so." >> "$GITHUB_STEP_SUMMARY"
           fi
