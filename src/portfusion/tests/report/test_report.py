@@ -133,10 +133,8 @@ def test_the_report_is_rendered_and_never_written(tmp_path, monkeypatch):
     assert list(tmp_path.iterdir()) == []
 
 
-def test_a_printed_report_cuts_no_column():
-    """A SHEET CANNOT SCROLL: in print a wide table's box lets the table run its full width, and the
-    page is A4 on its side, so the widest table is printed whole at the size it is read on screen."""
-    import re
+def _printed() -> str:
+    """The stylesheet's `@media print` block, cut out by its braces."""
     from portfusion.report.style import CSS
     block = CSS.split("@media print{", 1)[1]
     depth = 1
@@ -144,9 +142,40 @@ def test_a_printed_report_cuts_no_column():
         depth += {"{": 1, "}": -1}.get(ch, 0)
         if not depth:
             break
-    printed = block[:end]
+    return block[:end]
+
+
+def test_a_printed_report_cuts_no_column():
+    """A SHEET CANNOT SCROLL: in print a wide table's box lets the table run its full width, and the
+    page is A4 on its side, so the widest table is printed whole at the size it is read on screen."""
+    import re
+    printed = _printed()
     assert ".scroll{overflow:visible}" in printed, "a wide table's box still scrolls in print"
     assert re.search(r"@page\{size:A4 landscape\b", printed), "the printed page is not A4 on its side"
+
+
+def test_a_printed_report_takes_the_light_inks():
+    """PAPER IS WHITE IN EITHER SCHEME: in print every colour token takes its light value, by a rule
+    whose selector weighs no less than each dark rule's and stands after them, so it wins over both
+    and a report printed from a dark setting has no pale ink on the page."""
+    import re
+    from portfusion.report.style import CSS, _scheme
+
+    def rules(sheet, scheme):
+        return list(re.finditer(r"([^{}]+)\{" + re.escape(scheme) + r"\}", sheet))
+
+    def weight(selector):   # pseudo-classes and attributes; a :not() counts by what it holds
+        return len(re.findall(r":[\w-]+|\[[^\]]*\]", re.sub(r":not\((.*)\)", r"\1", selector)))
+
+    light = rules(_printed(), _scheme(False))
+    dark = rules(CSS, _scheme(True))
+    assert light, "the printed page keeps whichever scheme the screen has"
+    assert dark, "the sheet's dark rules are not where the test reads them"
+    for d in dark:
+        assert weight(light[0][1]) >= weight(d[1]), \
+            f"print's light rule {light[0][1].strip()!r} is lighter than {d[1].strip()!r}"
+    assert CSS.index("@media print{") > max(d.end() for d in dark), \
+        "print's light rule stands before a dark rule, which wins over it"
 
 
 @needs("quarter-nav", "buys")

@@ -40,6 +40,11 @@ Each release, newest first. The version is `src/portfusion/__init__.py`'s, and
   pycparser, pyOpenSSL, pyasn1 and pyasn1-modules. pypdf opened an AES-encrypted PDF with
   cryptography; such a document now needs it installed by hand.
 
+### Fixed
+
+- **A report printed, or saved as PDF, from a dark setting takes the light scheme's inks**, so
+  its headings and figures no longer print pale on the paper's white. On screen nothing changes.
+
 ### Upgrading a book
 
 - **Take the new `.gitignore` first**, from a book `portfusion init` makes in a scratch folder: it

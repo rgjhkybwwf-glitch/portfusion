@@ -2,8 +2,9 @@
 
 ITS COLOURS AND TYPEFACE ARE house/palette.py's, in both schemes, as the desk's are
 (`tests/test_figures.py::test_no_renderer_types_a_colour`). The look is PortFusion's: a white page
-in the light and a dark one in the dark, square corners, a 2px rule opening every section and table,
-labels in condensed capitals and every figure in tabular numerals.
+in the light and a dark one in the dark, on screen, and the light's inks always in print, square
+corners, a 2px rule opening every section and table, labels in condensed capitals and every figure
+in tabular numerals.
 
 THE FACE TRAVELS INSIDE THE PAGE, as base64, because a page that stands on its own cannot fetch
 it, and one that falls back would do so silently. The one file is variable on weight and width,
@@ -87,5 +88,9 @@ background-clip:padding-box}
 .scroll::-webkit-scrollbar-thumb:hover{background-color:var(--muted)}
 footer{margin-top:56px;padding-top:16px;border-top:var(--rule-section) solid var(--strong);
 font-size:.75rem;color:var(--faint)}
-@media print{.rule{margin-top:32px}.scroll{overflow:visible}@page{size:A4 landscape;margin:10mm}}
+@media print{"""
+       # Paper is white in either scheme, so print takes the light inks: a selector as heavy as
+       # each dark rule's, and later in the sheet, so it wins over both.
+       + f":root:root{{{_scheme(False)}}}"
+       + """.rule{margin-top:32px}.scroll{overflow:visible}@page{size:A4 landscape;margin:10mm}}
 """)
