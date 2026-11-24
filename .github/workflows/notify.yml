@@ -38,9 +38,13 @@ on:
   issues:
     types: [labeled, closed]
   pull_request:
-    types: [opened, reopened, ready_for_review, closed]   # `settle` takes closed, and reopened
+    types: [opened, reopened, ready_for_review]
+  # `settle` only, which checks out nothing: GitHub runs no `pull_request` workflow for a pull
+  # request in conflict, and a stale one is the likeliest to be closed.
+  pull_request_target:
+    types: [closed, reopened]
   schedule:
-    - cron: "0 0 * * 1-5"           # early, since GitHub's clock is late: it waits for 08:00
+    - cron: "17 0 * * 1-5"          # early, since GitHub's clock is late: it waits for 08:00
     - cron: "0 7 * * 1-5"           # 08:00 in London's summer
     - cron: "0 8 * * 1-5"           # 08:00 in London's winter
 
@@ -55,7 +59,7 @@ jobs:
     if: >-
       github.event_name == 'schedule'
       || (github.event_name == 'issues' && github.event.label.name == 'decision')
-      || (github.event_name == 'pull_request' && github.event.action != 'closed'
+      || (github.event_name == 'pull_request'
           && startsWith(github.event.pull_request.head.ref, 'claude/')
           && !github.event.pull_request.draft)
     # One run at a time for each issue or pull request, and one for the clock. A group keeps one
@@ -161,8 +165,8 @@ jobs:
     # quiet hold's note from `tiers.yml` among it. A pull request reopened says so, until the run
     # that tends it writes where it stands.
     if: >-
-      github.event.action == 'closed'
-      || (github.event_name == 'pull_request' && github.event.action == 'reopened')
+      (github.event_name == 'issues' && github.event.action == 'closed')
+      || github.event_name == 'pull_request_target'
     concurrency:
       group: notify-settle-${{ github.event.issue.number || github.event.pull_request.number }}
       cancel-in-progress: false
@@ -198,9 +202,10 @@ jobs:
               "$RUNNER_TEMP/was" > "$RUNNER_TEMP/body"
           else cp "$RUNNER_TEMP/was" "$RUNNER_TEMP/body"; fi
           # The marks stand on lines of their own, so what is between them is read as Markdown.
-          SAID="$did on $(TZ=Europe/London date -d "$at" '+%-d %b %Y at %H:%M') UK time." \
-            perl -0pi -e 's/^<!-- state -->.*?<!-- \/state -->/<!-- state -->\n$ENV{SAID}\n<!-- \/state -->/ms' "$RUNNER_TEMP/body"
-          grep -q '^<!-- state -->' "$RUNNER_TEMP/body" || { echo "::warning::#$NUMBER: its top was not rewritten"; exit 0; }
+          SAID="$did on $(TZ=Europe/London date -d "$at" '+%-d %b %Y at %H:%M') UK time."
+          export SAID
+          perl -0pi -e 's/^<!-- state -->.*?<!-- \/state -->/<!-- state -->\n$ENV{SAID}\n<!-- \/state -->/ms' "$RUNNER_TEMP/body"
+          grep -qF "$SAID" "$RUNNER_TEMP/body" || { echo "::warning::#$NUMBER: its state marks could not be rewritten"; exit 0; }
           if ! cmp -s "$RUNNER_TEMP/was" "$RUNNER_TEMP/body"; then
             gh api -X PATCH "repos/$REPO/pulls/$NUMBER" -F "body=@$RUNNER_TEMP/body" --silent
             echo "#$NUMBER: its top now says it is ${ACTION}." >> "$GITHUB_STEP_SUMMARY"
