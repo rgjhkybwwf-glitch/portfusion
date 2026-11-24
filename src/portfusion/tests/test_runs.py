@@ -214,13 +214,12 @@ def test_every_commit_is_reviewed_before_it_is_pushed(contributing):
     assert "`code-review` skill" in (ROOT / "CLAUDE.md").read_text(encoding="utf-8")
 
 
-
 def test_nothing_set_aside_or_left_pending_is_lost(skills, section):
     """What a run puts off is given a home, an option declined says what brings it back, and what
-    says it waits stops saying so once it does not. THE CASES THAT MAKE IT FAIL: eight items issues
-    had set aside as later steps were filed by no run (#365); an answer's options left out were
-    never looked at again; #364's top said "a draft until then" after it merged, and `ask-held`
-    stayed on closed #362 and #363."""
+    says it waits stops saying so once it does not. THE CASES THAT MAKE IT FAIL: work an issue set
+    aside as a later step is filed by no run; an answer's options left out are never looked at
+    again; a pull request's top still says "a draft until then" after it merged; and `ask-held`
+    stays on what has closed."""
     def flat(text):
         return " ".join(text.split())
 
