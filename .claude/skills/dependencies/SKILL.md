@@ -12,8 +12,12 @@ Each of these becomes an issue, unless an open issue covers it (the skill `shape
 
 - an open Dependabot pull request left for the maintainer: a major or a 0.x bump;
 - one that has been red, or behind `main`, for a week;
-- an open Dependabot security alert the run can read. A call for the alerts that is refused, or
-  fails, is a fault, said on the run's end line (the skill `beat`); a list read and empty is none.
+- an open Dependabot security alert. They are read by REST, which a cloud session's `gh` allows
+  where its GraphQL and the GitHub tools cannot reach them:
+  `gh api "repos/rgjhkybwwf-glitch/portfusion/dependabot/alerts?state=open" --paginate`. A call
+  that is refused, or fails, is a fault, said on the run's end line (the skill `beat`) with the
+  command's own error; a list read and empty is none. Dependabot's security updates are on, so an
+  alert with a fix also comes as its own pull request, above.
 
 The issue:
 
