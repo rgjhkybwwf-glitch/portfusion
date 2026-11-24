@@ -164,8 +164,11 @@ def test_a_printed_report_takes_the_light_inks():
     def rules(sheet, scheme):
         return list(re.finditer(r"([^{}]+)\{" + re.escape(scheme) + r"\}", sheet))
 
-    def weight(selector):   # pseudo-classes and attributes; a :not() counts by what it holds
-        return len(re.findall(r":[\w-]+|\[[^\]]*\]", re.sub(r":not\((.*)\)", r"\1", selector)))
+    def weight(selector):   # (ids, classes and attributes and pseudo-classes, types)
+        s = re.sub(r"\[[^\]]*\]", "[]", selector)       # an attribute's value holds no selector
+        s = re.sub(r":not\(([^()]*)\)", r" \1", s)      # a :not() weighs what it holds
+        return (len(re.findall(r"#[\w-]+", s)), len(re.findall(r"\.[\w-]+|\[\]|:[\w-]+", s)),
+                len(re.findall(r"(?:^|[\s>+~])[a-zA-Z][\w-]*", s)))
 
     light = rules(_printed(), _scheme(False))
     dark = rules(CSS, _scheme(True))
