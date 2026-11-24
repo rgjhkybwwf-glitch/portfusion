@@ -34,11 +34,11 @@ changes slowly, and changes only at a milestone's gate, by the maintainer's answ
 |---|---|---|
 | 0.4.1 Words and names | One name per figure, and findings in plain words. No figure or store change. | "price" for "mark"; "Trading gain, excl. income" |
 | 0.4.2 The Bench guides | A newcomer records a fact without leaving the Bench, and the reading pages answer what the cold walks left. Closes with the empty-book walk (#41). | a Bench item's standing line |
-| 0.5.0 What each page is for | Each page answers its job, decided by the content map (#3). First, one store move: an account keyed by its code, with its migration (#225). One new figure (#146), and charts of progress (#241). | a quarter's row on Performance that opens to what made its gain (#153), a headline figure you can click (#154), a send control (#155), a holding's return column (#146), charts (#241) |
+| 0.4.3 The new frame | The desk opens in a new frame, in PortFusion's own design system (#9): a side menu, an address for each object, and new Home, Companies and company pages (#347). One store move: a company keyed by a code of its own, with its migration (#349). First the engine is cleaned up (#366, #367, #368), under a figure check widened to every round trip, company life and holding (#375), so the clean-up moves no figure. | the side menu, and a company's own page (#347) |
+| 0.5.0 What each page is for | Each page answers its job, decided by the content map (#3). One piece of structural engine work, in this order: an account keyed by its code, a store move with its migration (#225); one instrument that a share and a bet each answer for, and a bet's margin through it, its rate a second store move (#145); then one new figure (#146). Charts of progress (#241). | a quarter's row on Performance that opens to what made its gain (#153), a headline figure you can click (#154), a send control (#155), a bet's return on the money put up for it (#145), a holding's return column (#146), charts (#241) |
 | 0.6.0 The record takes more | New ways for a fact to reach the record. The other store changes and migrations live here. | the first edit of a row on the record (#134); opening positions (#74) |
-| 0.7.0 Look and reach | A design system. | PortFusion's own design system (#9) |
 
-The desk runs on the Mac only through 0.7.0. The AI reading session on the Bench is a feature to
+The desk runs on the Mac only through 0.6.0. The AI reading session on the Bench is a feature to
 grow, not plumbing.
 
 ## Later and Declined
@@ -51,4 +51,4 @@ has changed; nothing is declined yet.
 | The year-end report | 13 Nov 2026 | decided on the content map's card (#3): later |
 | A time-weighted return beside the money-weighted | 13 Nov 2026 | an open bet: the figures cannot be set against an index today |
 | Tax reporting from the section 104 pools | 13 Nov 2026 | decided: later |
-| Platforms other than the Mac | 13 Nov 2026 | decided: Mac only through 0.7.0 |
+| Platforms other than the Mac | 13 Nov 2026 | decided: Mac only through 0.6.0 |
