@@ -501,6 +501,7 @@ def test_the_record_is_the_names_it_declares(D, monkeypatch):
     an attribute nobody bound. `_build()` refuses either, by name.
     """
     declared = D.RECORD_NAMES
+    assert declared == set(D.__annotations__), "RECORD_NAMES is not the module's own declaration"
     assert all(hasattr(D, name) for name in declared), "a declared name is not bound"
     assert not hasattr(D, "o"), "a comprehension's variable is a name of the record"
     # THE TWO FAILING CASES, on file: a name taken out of the declaration, and one put in.
