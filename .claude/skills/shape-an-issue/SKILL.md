@@ -11,10 +11,12 @@ under Asking and answering.
 
 ## Does an open issue cover it?
 
-"Covers" is by the code, not the topic. Read every open issue's Cause and Done first, by a helper
-agent that returns a short list: an open issue covers a find, an idea or a bump when its Cause or
-Done names the same file and function. What is covered is added to that issue, as evidence, and
-no new issue is filed.
+"Covers" is by the code, not the topic. Read every open issue's Cause and Done first, by the wide
+reader ([`.claude/agents/wide-reader.md`](../../agents/wide-reader.md)), which returns a short
+list: an open issue covers a find, an idea or a bump when its Cause or Done names the same file
+and function. A find about the look (colour, type, spacing, a part's shape) is covered by #9
+alone while it is open (the skill `fix-fold-report`). What is covered is added to that issue, as
+evidence, and no new issue is filed.
 
 ## An `Idea:` issue
 
