@@ -21,6 +21,7 @@ run's mark, a session's note, or else the maintainer's own.
 from __future__ import annotations
 
 import json
+import math
 import os
 import re
 import sys
@@ -87,7 +88,7 @@ def opens_in(now: datetime) -> int:
     if local.weekday() not in WEEK or local.time() >= OPENS:
         return 0
     opens = datetime.combine(local.date(), OPENS, tzinfo=ZONE)
-    return max(0, int((opens - local).total_seconds()))
+    return max(0, math.ceil((opens - local).total_seconds()))
 
 
 def _lines(body: str) -> list[str]:

@@ -38,7 +38,7 @@ on:
   issues:
     types: [labeled, closed]
   pull_request:
-    types: [opened, reopened, ready_for_review, closed]
+    types: [opened, reopened, ready_for_review, closed]   # `settle` takes closed, and reopened
   schedule:
     - cron: "0 0 * * 1-5"           # early, since GitHub's clock is late: it waits for 08:00
     - cron: "0 7 * * 1-5"           # 08:00 in London's summer
@@ -107,7 +107,7 @@ jobs:
           if [ "$EVENT" = schedule ]; then
             wait=$(PYTHONPATH=src python3 tools/starts.py --opens-in) || wait=0
             if [ "$wait" -gt 18000 ]; then say "Before the day by more than five hours: a later clock asks."; exit 0; fi
-            if [ "$wait" -gt 0 ]; then say "Waiting $((wait / 60)) min for the working day."; sleep "$wait"; fi
+            if [ "$wait" -gt 0 ]; then say "Waiting $((wait / 60)) min for the working day."; sleep $((wait + 5)); fi
           fi
 
           # Only a clear "no" holds a question: a fault in reading the hours asks now.
@@ -157,8 +157,12 @@ jobs:
           done < "$RUNNER_TEMP/held"
 
   settle:
-    # A closed issue or pull request waits on no one: what said it waits is taken back at once.
-    if: github.event.action == 'closed'
+    # A closed issue or pull request waits on no one: what said it waits is taken back at once, a
+    # quiet hold's note from `tiers.yml` among it. A pull request reopened says so, until the run
+    # that tends it writes where it stands.
+    if: >-
+      github.event.action == 'closed'
+      || (github.event_name == 'pull_request' && github.event.action == 'reopened')
     concurrency:
       group: notify-${{ github.event.issue.number || github.event.pull_request.number }}
       cancel-in-progress: false
@@ -173,16 +177,24 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
           NUMBER: ${{ github.event.issue.number || github.event.pull_request.number }}
+          ACTION: ${{ github.event.action }}
           HEAD: ${{ github.event.pull_request.head.ref }}
           MERGED: ${{ github.event.pull_request.merged_at }}
           CLOSED: ${{ github.event.pull_request.closed_at }}
         run: |
-          gh api -X DELETE "repos/$REPO/issues/$NUMBER/labels/ask-held" --silent 2> /dev/null || true
+          if [ "$ACTION" = closed ]; then
+            gh api -X DELETE "repos/$REPO/issues/$NUMBER/labels/ask-held" --silent 2> /dev/null || true
+          fi
           case "$HEAD" in claude/*) ;; *) exit 0 ;; esac
-          gh api "repos/$REPO/pulls/$NUMBER" --jq .body > "$RUNNER_TEMP/body"
-          grep -q '<!-- state -->' "$RUNNER_TEMP/body" && grep -q '<!-- /state -->' "$RUNNER_TEMP/body" || exit 0
-          if [ -n "$MERGED" ]; then at=$MERGED; did="**Merged**"; else at=$CLOSED; did="**Closed without merging**"; fi
+          gh api "repos/$REPO/pulls/$NUMBER" --jq .body > "$RUNNER_TEMP/was"
+          # The marks count only at the start of a line: a sentence that quotes them is left alone.
+          grep -q '^<!-- state -->' "$RUNNER_TEMP/was" || exit 0
+          if [ "$ACTION" = reopened ]; then at=$(date -u +%FT%TZ); did="**Reopened**, and waits for its run to say where it stands,"
+          elif [ -n "$MERGED" ]; then at=$MERGED; did="**Merged**"; else at=$CLOSED; did="**Closed without merging**"; fi
+          awk 'NR == 1 && !/^> 🤖 Held by/ { keep = 1 } keep { print; next } /^$/ { keep = 1 }' \
+            "$RUNNER_TEMP/was" > "$RUNNER_TEMP/body"
           SAID="$did on $(TZ=Europe/London date -d "$at" '+%-d %b %Y at %H:%M') UK time." \
-            perl -0pi -e 's/<!-- state -->.*?<!-- \/state -->/<!-- state -->$ENV{SAID}<!-- \/state -->/s' "$RUNNER_TEMP/body"
-          gh api -X PATCH "repos/$REPO/pulls/$NUMBER" -F "body=@$RUNNER_TEMP/body" --silent
+            perl -0pi -e 's/^<!-- state -->.*?<!-- \/state -->/<!-- state -->$ENV{SAID}<!-- \/state -->/ms' "$RUNNER_TEMP/body"
+          cmp -s "$RUNNER_TEMP/was" "$RUNNER_TEMP/body" \
+            || gh api -X PATCH "repos/$REPO/pulls/$NUMBER" -F "body=@$RUNNER_TEMP/body" --silent
           echo "#$NUMBER: its top now says how it ended." >> "$GITHUB_STEP_SUMMARY"

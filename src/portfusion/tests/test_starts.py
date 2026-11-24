@@ -6,7 +6,7 @@ import importlib.util
 import re
 import subprocess
 import textwrap
-from datetime import datetime, time, timezone
+from datetime import datetime, time, timedelta, timezone
 
 import pytest
 
@@ -234,6 +234,9 @@ def test_the_bots_early_clock_waits_for_the_day_to_open(starts):
                        ("2026-11-24 08:00", 0), ("2026-11-24 16:00", 0),
                        ("2026-11-28 05:30", 0), ("2026-07-15 06:00", 7200)]:
         assert starts.opens_in(uk(when)) == wait, when
+    # Rounded up: a wait cut short by a fraction of a second would wake before the day opens.
+    early = uk("2026-11-24 05:30") + timedelta(microseconds=700_000)
+    assert starts.working(early + timedelta(seconds=starts.opens_in(early)))
 
 
 def test_the_gate_keeps_no_clock_and_no_routines_clock_is_in_the_working_day(starts, rows):
@@ -301,8 +304,8 @@ def test_the_bot_asks_only_in_the_working_day_and_holds_the_rest_to_eight(starts
     settle = notify.partition("\n  settle:")[2]
     assert "github.event.action == 'closed'" in settle and "labels/ask-held" in settle, \
         "a closed issue or pull request keeps no ask-held"
-    assert "<!-- state -->" in settle and "<!-- /state -->" in settle, \
-        "a closed pull request's top says how it ended"
+    assert "'^<!-- state -->'" in settle and r"<!-- \/state -->" in settle, \
+        "a closed pull request's top says how it ended, from marks at a line's start"
 
 
 

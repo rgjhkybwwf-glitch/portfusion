@@ -179,9 +179,10 @@ Kept by review, and by the test named where there is one.
   an Important one is. A Nit is fixed only where the change caused it or on a line the change
   already touches, and a wrong one not at all; one left is listed nowhere, and is no find for
   Building's rule. **The review runs twice at most before a push**: once on the work, and once on
-  its fixes. What the second review finds is fixed only when it is Important and the first
-  review's fixes caused it; the rest is answered by its severity as above, never by a third
-  review. A push after the pull request opens (a CI fix, `main` merged in, pictures retaken) is
+  its fixes. Of what the second review finds, only an Important finding its fixes caused is
+  fixed, and that fix is reviewed once more, alone; every other finding of the second review,
+  and every finding of that last, is said at the top or left, by its severity as above, and not
+  fixed. A push after the pull request opens (a CI fix, `main` merged in, pictures retaken) is
   reviewed the same way first. **What is said at the top is the maintainer's to read**: an
   Important finding that stands keeps a run's pull request from being clean (Merging, below).
   The pull request's checklist names the level each commit was reviewed at. A
@@ -688,9 +689,9 @@ How a pull request is taken to its end is the skill
 - **Only the coordinator sends a debrief to the maintainer's phone, and only for two kinds of
   run.** Its morning run sends the day's digest: what merged, what waits on them, what was decided
   for them and each fault met, with the number of runs that met it, its own and every run's since
-  the last morning run, read from each end line written or edited on the run log since that run's
-  own (a fault or a hold a run adds to its line later is read so), and any start the gate failed
-  to make. A run of its
+  the last morning run, read from each end line written on the run log since that run's own, and
+  a fault or a hold added since to a line written before it, and any start the gate failed to
+  make. A run of its
   own that the maintainer started, by an answer, a `Change:`, an `Idea:`, a release or a `Resume:`,
   sends its debrief, since they wait for it. A builder's run and a re-plan a run began send none:
   what they did is in the run log, and in the next morning's digest.
