@@ -31,6 +31,10 @@ carried over is written where it belongs. Decisions that conflict are settled as
 **What it only lists**:
 
 - at most three ideas, a line each with its cost;
+- **the options to look at again**: each option declined in an issue's Decisions, by a run or by
+  the maintainer, whose "Revisit when" has come true since the last gate, or that has none and
+  was declined more than one milestone ago, a line each with its issue. The maintainer reopens one
+  with `Change:` or an `Idea:`;
 - the rules of The loop that cost a run a wrong turn, time or money, each with its run.
 
 The Queue takes `decision`.

@@ -16,7 +16,8 @@ When the walk fails only because a page the issue meant to change looks differen
    the change moved a page its plan did not, which is a fault to find, not a picture to add.
 3. The workflow takes the label off as it starts, so a retake not landed ten minutes after the
    label is asked for again by putting it back on.
-4. Merge `baselines/<branch>` in and push, which runs the guard.
+4. Merge `baselines/<branch>` in, review it as `CONTRIBUTING.md`, Commits and pull requests,
+   says, and push, which runs the guard.
 
 The retake leaves no comment. What it did, or why it refused, is its `push` job's result, that
 job's log and the run's summary.

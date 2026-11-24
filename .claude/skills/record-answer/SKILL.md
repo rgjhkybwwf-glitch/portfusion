@@ -22,6 +22,9 @@ already in its issue's Decisions is skipped.
 ## An answer
 
 1. Copy the answers into the issue's Decisions, quoted, with the date.
+   Under each, the options the answer left out, as "Declined:", each with what would bring it
+   back ("Revisit when: …", from what the question said it costs), so the gate review can read
+   them again (the skill `ask-or-decide`).
 2. Take `decision` off.
 3. An answer that leaves a question open: ask that question again, alone, and take `decision` off
    and put it back on, so the maintainer is told.

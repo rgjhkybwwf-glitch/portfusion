@@ -48,6 +48,10 @@ and then acts:
   is struck through with where it went, so the list holds only what waits.
 - **The order is kept**: a line a run placed is moved when the order of the work asks it. A line
   the maintainer placed is not.
+- **Work set aside has a home**: the Not in scope and Decisions of each issue closed since the
+  last review, and the descriptions of the pull requests that closed them, are read for work put
+  off as a later step. Each item no open issue covers is filed, folded or dropped with the
+  reason, as a reported find is (Each run, above).
 
 What it never does unasked: cut a line from a milestone, add a feature the arc does not name, or
 change what a milestone is for. Those are the gate review's questions (the skill `gate-review`).

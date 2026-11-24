@@ -23,6 +23,8 @@ them. Everything else the run decides.
 1. Take the option the run would have recommended.
 2. Write it in the issue's Decisions:
    `Decided by the run, D Mon YYYY: <the choice>, because <why, in a line>. Declined: <the others>.`
+   Each option declined says what would bring it back, as in "Declined: b, a second cache.
+   Revisit when: a page takes more than a second to load." The gate review reads these lines.
 3. Carry on. A choice made mid-build is also said at the top of the pull request.
 4. Keep it for the debrief's "Decided for you" (the skill `end-of-run`).
 

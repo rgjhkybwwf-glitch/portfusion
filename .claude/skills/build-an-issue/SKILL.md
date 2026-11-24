@@ -41,7 +41,8 @@ By the conventions: one logical change a commit, a line under Unreleased in `CHA
 each commit's diff reviewed before it is pushed (step 6).
 
 - **A choice the issue did not make**: decided or asked by the skill `ask-or-decide`.
-- **A find outside the change**: the skill `fix-fold-report`.
+- **A find outside the change**, and work the issue or the plan puts off as a later step: the
+  skill `fix-fold-report`.
 - **A changed desk page**: walked cold before the pull request opens (the skill `cold-walk`). The
   slice that turns a feature on is walked by the trial walker
   ([`.claude/agents/trial-walker.md`](../../agents/trial-walker.md)), over the whole feature by its
@@ -58,7 +59,8 @@ Pre-existing or Nit). For a builder:
 
 - The review is given no target, so it reads the whole branch each time, and one review before a
   push covers every commit not yet pushed.
-- A fix is a new commit, reviewed in turn.
+- A fix is a new commit, reviewed once more. That second review ends the rounds: what it finds
+  is answered as the rule says, with at most a last check of a fix it caused.
 - A Pre-existing finding takes the skill `fix-fold-report`, unless the rule in `CONTRIBUTING.md`,
   Commits and pull requests, leaves it or has it said at the top of the pull request.
 

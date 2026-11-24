@@ -205,6 +205,31 @@ def test_every_commit_is_reviewed_before_it_is_pushed(contributing):
         "a Pre-existing finding judged wrong leaves a trace"
     assert "a cleanup takes a Nit's" in rule, "a cleanup has one answer, whatever its severity"
     assert "`git remote set-head origin main`" in rule, "the review measures from today's main"
+    assert "The review's rounds end at two" in rule, \
+        "the review's rounds end at two, so a change does not go round for ever"
+    assert "keeps a run's pull request from being clean" in rule, \
+        "a finding said at the top has a reader, and a clean pull request carries none that stands"
     template = (ROOT / ".github" / "pull_request_template.md").read_text(encoding="utf-8")
     assert "reviewed by the `code-review` skill" in template
     assert "`code-review` skill" in (ROOT / "CLAUDE.md").read_text(encoding="utf-8")
+
+
+def test_nothing_set_aside_or_left_pending_is_lost(skills, section):
+    """What a run puts off is given a home, an option declined says what brings it back, and what
+    says it waits stops saying so once it does not. THE CASES THAT MAKE IT FAIL: work an issue set
+    aside as a later step is filed by no run; an answer's options left out are never looked at
+    again; a pull request's top still says "a draft until then" after it merged; and `ask-held`
+    stays on what has closed."""
+    def flat(text):
+        return " ".join(text.split())
+
+    rule = flat(section)
+    assert "Work set aside for later is never left in prose" in rule
+    assert "Revisit when" in rule and "`gate-review`" in rule
+    assert "Work set aside is a find" in flat(skills["fix-fold-report"][1])
+    assert "Work set aside has a home" in flat(skills["keep-the-queue"][1])
+    for name in ("ask-or-decide", "record-answer", "gate-review"):
+        assert "Revisit when" in skills[name][1], f"{name} keeps what brings an option back"
+    assert "`<!-- state -->`" in rule and "`notify.yml` rewrites" in rule
+    assert "`<!-- state -->`" in skills["review-and-merge"][1]
+    assert "loses it at once, and `planned` and `building` with it" in rule

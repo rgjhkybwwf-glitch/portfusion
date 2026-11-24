@@ -20,7 +20,8 @@ what order.
 ## The tag
 
 The maintainer tags `vN.N.N` on the release's merge, in the GitHub app: Releases, Draft a new
-release, and closes the milestone. No cloud session can push a tag.
+release, and closes the milestone. No cloud session can push a tag. The release's pull request
+says, at its top, each issue still open in the milestone, so none is left in it when it closes.
 
 ## After the tag
 

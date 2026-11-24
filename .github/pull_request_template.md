@@ -1,3 +1,9 @@
+<!-- state -->
+Where it stands: what it waits for, or that it merges itself once `guard` is green.
+<!-- /state -->
+<!-- Between the state marks, each on a line of its own: `notify.yml` rewrites it when the pull
+     request merges or closes (CONTRIBUTING.md, Telling the maintainer). -->
+
 ## What and why
 
 <!-- One logical change, for a reader who was not there. Link the issue it was agreed in. -->

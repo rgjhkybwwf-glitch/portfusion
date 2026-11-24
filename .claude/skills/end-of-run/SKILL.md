@@ -51,7 +51,12 @@ pushes anything.
 
 - **The coordinator's morning run** sends the day's digest. Under the same four heads, what
   merged, what waits on the maintainer, Decided for you and Faults, it gives its own and those of
-  every run since its last: it reads the end lines on the run log written since its own last one,
+  every run since the last morning run: it reads each end line on the run log written since the
+  end line of the morning run before it (the coordinator's line whose start line says "the
+  morning run", or
+  where none does, its last that began before 08:00 on a weekday), and of a line written before
+  that and edited since (the comment's `updated_at`), its faults and holds alone, each said as
+  added since,
   and, for each issue an end line names after "Decided for you", the "Decided by the run" line in
   that issue's Decisions. Under Faults, each fault an end line names after `Fault:` is said once,
   with the number of runs that met it: one fault two lines say in different words is counted as

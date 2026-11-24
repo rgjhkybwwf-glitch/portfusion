@@ -6,7 +6,7 @@ import importlib.util
 import re
 import subprocess
 import textwrap
-from datetime import datetime, time, timezone
+from datetime import datetime, time, timedelta, timezone
 
 import pytest
 
@@ -226,6 +226,19 @@ def test_the_working_day_is_eight_to_five_monday_to_friday_by_londons_clock(star
     assert not starts.working(datetime(2026, 11, 18, 7, 0, tzinfo=timezone.utc))
 
 
+def test_the_bots_early_clock_waits_for_the_day_to_open(starts):
+    """GitHub ran `notify.yml`'s 08:00 clock six to nine hours late, so a question held overnight
+    was asked at half past four. THE CASE THAT MAKES IT FAIL: an early start that asks at once, or
+    that waits on a Saturday or after the day has opened."""
+    for when, wait in [("2026-11-24 05:30", 9000), ("2026-11-24 07:59", 60),
+                       ("2026-11-24 08:00", 0), ("2026-11-24 16:00", 0),
+                       ("2026-11-28 05:30", 0), ("2026-07-15 06:00", 7200)]:
+        assert starts.opens_in(uk(when)) == wait, when
+    # Rounded up: a wait cut short by a fraction of a second would wake before the day opens.
+    early = uk("2026-11-24 05:30") + timedelta(microseconds=700_000)
+    assert starts.working(early + timedelta(seconds=starts.opens_in(early)))
+
+
 def test_the_gate_keeps_no_clock_and_no_routines_clock_is_in_the_working_day(starts, rows):
     """GitHub runs a workflow's clock hours late, so a run a clock starts is started by its
     routine's own. A routine carries one clock, so each such row has a routine to itself; and a
@@ -286,6 +299,15 @@ def test_the_bot_asks_only_in_the_working_day_and_holds_the_rest_to_eight(starts
     assert "ref: ${{ github.event.pull_request.base.sha || github.sha }}" in notify, \
         "the hours are the base's, never a pull request's"
     assert notify.count("labels[]=ask-held") == 1 and "labels/ask-held" in notify
+    assert "tools/starts.py --opens-in" in notify and 'cron: "17 0 * * 1-5"' in notify, \
+        "the early clock waits for the day, since GitHub's clock comes hours late"
+    settle = notify.partition("\n  settle:")[2]
+    assert "github.event.action == 'closed'" in settle \
+        and "for label in ask-held planned building" in settle \
+        and "pull_request_target:" in notify, \
+        "a closed issue or pull request keeps no ask-held"
+    assert "'^<!-- state -->'" in settle and r"<!-- \/state -->" in settle, \
+        "a closed pull request's top says how it ended, from marks at a line's start"
 
 
 
@@ -326,3 +348,10 @@ def test_the_shell_can_read_every_script_a_workflow_runs():
     assert sum(len(scripts(flow.read_text(encoding="utf-8"))) for flow in flows) > len(flows)
     for flow in flows:
         assert not refused(flow.read_text(encoding="utf-8")), flow.name
+
+
+def test_the_scouts_line_on_the_run_log_is_a_runs_and_starts_nothing(starts):
+    """The Loop Scout, outside the loop, writes one line on the run log for the dashboard. THE CASE
+    THAT MAKES IT FAIL: a line without a known mark is read as the maintainer's own words."""
+    assert starts.whose("🔭 **Loop Scout** · 29 Nov 18:50–19:05 · a brief · Next: you read it") == "run"
+    assert starts.MARKS["🔭 **Loop Scout**"] == ""

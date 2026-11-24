@@ -14,6 +14,8 @@ A run that finds the release tagged and its milestone closed does this first:
 2. Move the lines under the heading for after the gate to Next, in the order answered, the
    release checklist last.
 3. Clear each "waits" already met.
+4. An issue still open in the closed milestone is moved to the next one, its line with it, and
+   the debrief says which and why: a closed milestone holds none open.
 
 The lines then take their plans in order (the skill `plan`). The next version's own pull request
 is a builder's (the skill `release`, After the tag).
