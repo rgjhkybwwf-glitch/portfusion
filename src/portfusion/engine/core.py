@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import cast
-
 import pandas as pd
 
 from portfusion.record import rules as D
@@ -35,7 +33,7 @@ class _Pinned:
 def _pin[M](module: M) -> M:
     """`_Pinned(module)`, typed as the module it pins, so the type checker reads a Book's
     `self.D.X` as `rules.X`, declared once in `record/rules.py`."""
-    return cast(M, _Pinned(module))
+    return _Pinned(module)  # pyright: ignore[reportReturnType] — it holds the module's names
 
 
 class Core:
