@@ -653,7 +653,8 @@ How a pull request is taken to its end is the skill
 - **The bot asks in the maintainer's working day, and holds the rest to 08:00.** A question or a
   pull request raised outside 08:00 to 17:00 UK time, Monday to Friday, takes the label
   `ask-held`, which tells no one; at 08:00 on the next working day the bot asks each that still
-  waits, and takes the label off. An issue or pull request that closes loses the label at once.
+  waits, and takes the label off. An issue or pull request that closes loses it at once, and
+  `planned` and `building` with it (`notify.yml`).
   A run the maintainer started tells them itself, in its debrief, at any hour.
 - **Nothing is left saying it is pending once it is not.** The first paragraph of an agent's pull
   request says where it stands, between the marks `<!-- state -->` and `<!-- /state -->`, each on

@@ -166,8 +166,8 @@ jobs:
 
   settle:
     # A closed issue or pull request waits on no one: what said it waits is taken back at once,
-    # `ask-held` and a quiet hold's note from `tiers.yml`, and an agent's pull request says between
-    # its state marks how it ended. A reopened one is left to the run that tends it.
+    # `ask-held`, `planned`, `building` and a quiet hold's note from `tiers.yml`, and an agent's
+    # pull request says between its state marks how it ended. A reopened one is left to the run that tends it.
     if: github.event.action == 'closed'
     concurrency:
       group: notify-settle-${{ github.event.issue.number || github.event.pull_request.number }}
@@ -187,7 +187,10 @@ jobs:
           MERGED: ${{ github.event.pull_request.merged_at }}
           CLOSED: ${{ github.event.pull_request.closed_at }}
         run: |
-          gh api -X DELETE "repos/$REPO/issues/$NUMBER/labels/ask-held" --silent 2> /dev/null || true
+          # The labels that say something waits or is under way: none holds once it is closed.
+          for label in ask-held planned building; do
+            gh api -X DELETE "repos/$REPO/issues/$NUMBER/labels/$label" --silent 2> /dev/null || true
+          done
           [ -n "$HEAD" ] || exit 0          # an issue: nothing more
           gh api "repos/$REPO/pulls/$NUMBER" --jq .body | tr -d '\r' > "$RUNNER_TEMP/was"
           [ -s "$RUNNER_TEMP/was" ] || exit 0

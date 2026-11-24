@@ -302,7 +302,8 @@ def test_the_bot_asks_only_in_the_working_day_and_holds_the_rest_to_eight(starts
     assert "tools/starts.py --opens-in" in notify and 'cron: "17 0 * * 1-5"' in notify, \
         "the early clock waits for the day, since GitHub's clock comes hours late"
     settle = notify.partition("\n  settle:")[2]
-    assert "github.event.action == 'closed'" in settle and "labels/ask-held" in settle \
+    assert "github.event.action == 'closed'" in settle \
+        and "for label in ask-held planned building" in settle \
         and "pull_request_target:" in notify, \
         "a closed issue or pull request keeps no ask-held"
     assert "'^<!-- state -->'" in settle and r"<!-- \/state -->" in settle, \

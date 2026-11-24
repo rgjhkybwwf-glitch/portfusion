@@ -233,4 +233,4 @@ def test_nothing_set_aside_or_left_pending_is_lost(skills, section):
         assert "Revisit when" in skills[name][1], f"{name} keeps what brings an option back"
     assert "`<!-- state -->`" in rule and "`notify.yml` rewrites" in rule
     assert "`<!-- state -->`" in skills["review-and-merge"][1]
-    assert "loses the label at once" in rule
+    assert "loses it at once, and `planned` and `building` with it" in rule
