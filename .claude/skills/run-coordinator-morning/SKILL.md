@@ -19,10 +19,11 @@ The order of the run's work. Each step's procedure is in the skill named; the ru
    last line in the run log, whose lines are never acted on, or three days ago when there is none.
    Clear a `building` label more than three hours old: a run that long has died.
 4. **Nothing changed: stop.** When nothing has merged, closed, been answered, changed or filed
-   since, Next holds as many `planned` lines as the cap or no line that could be planned, and no
-   review of the Queue is due, go to the last step with a one-line debrief; where this run met
-   a fault, or an end line since its last names one, the Faults head comes before that line, and
-   the Pages head likewise for a page (the skill `end-of-run`).
+   since, Next holds as many `planned` lines not yet built (the skill `plan`, Which lines) as
+   the cap or no line that could be planned, and no review of the Queue is due, go to the last
+   step with a one-line debrief; where this run met a fault, or an end line since its last names
+   one, the Faults head comes before that line, and the Pages head likewise for a page (the skill
+   `end-of-run`).
 5. **Record**: the skill `record-answer`, for each answer or `Change:` not yet recorded. Any other
    comment of the maintainer's is applied where its issue is shaped or planned, and otherwise
    named in the debrief.
