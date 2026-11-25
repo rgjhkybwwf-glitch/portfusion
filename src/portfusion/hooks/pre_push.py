@@ -171,7 +171,7 @@ SECTION = re.compile(
     rf"(?:'s|’s){_GAP}{_NAME.replace('name', 'name2')}")
 
 #: A file named in a paragraph, for "that file's": a path with an extension, or a guide's stem.
-NAMED = re.compile(rf"[\w./-]+\.\w+|\b(?:{'|'.join(GUIDE_STEMS)})\b")
+NAMED = re.compile(rf"(?<![\w./:-])(?:[\w./-]+\.\w+|(?:{'|'.join(GUIDE_STEMS)})\b)")
 
 
 def section_pointers(text: str) -> list[tuple[int, str]]:
@@ -189,7 +189,10 @@ def section_pointers(text: str) -> list[tuple[int, str]]:
     for m in SECTION.finditer(text):
         path = m["target"] or m["code"] or m["stem"] or m["paren"] or m["bare"]
         if m["that"]:
-            before = NAMED.findall(text[text.rfind("\n\n", 0, m.start()) + 1:m.start()])
+            # Back to the paragraph's start, or the list item's.
+            start = max((b.end() for b in re.finditer(r"\n\s*\n|\n[ \t]*[-*] ", text[:m.start()])),
+                        default=0)
+            before = NAMED.findall(text[start:m.start()])
             if not before or not (before[-1].endswith(".md") or before[-1] in GUIDE_STEMS):
                 continue
             path = before[-1]
@@ -254,7 +257,7 @@ def behind(sha: str, checkout, base: str = "origin/main") -> dict[str, list[str]
         here = str(pathlib.PurePosixPath(guide).parent)
         text = subprocess.run(["git", "show", f"{sha}:{guide}"], cwd=root, capture_output=True,
                               text=True, encoding="utf-8", errors="replace").stdout
-        named = {names(p, here) for _, p in guide_pointers(text)}
+        named = {n for _, p in guide_pointers(text) if (n := names(p, here))}
         left = sorted(n for n in named & changed if not n.endswith(".md"))
         if left:
             out[guide] = left

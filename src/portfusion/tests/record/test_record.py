@@ -849,15 +849,19 @@ def test_every_pointer_in_a_guide_leads_somewhere(repo_root, project_files):
         return any(subprocess.run(["git", "check-ignore", "-q", c], cwd=repo_root).returncode == 0
                    for c in (path, f"{here}/{path}"))
 
-    # Each guide's sections: a `#` heading or a line wholly bold, outside its fenced blocks, and
-    # a heading's words before its comma ("Which issues, in what order"). A section named in words
-    # begins with one; the words may run on past it ("Setting up has the line").
+    # Each guide's sections: a `#` heading or a line wholly bold, outside its fenced blocks, with
+    # no step number or backticks, and each of its leading parts that ends at a mark ("Which
+    # issues", of "Which issues, in what order"), as a name in words ends at one. A section named
+    # in words begins with one; its words may run on past it ("Setting up has the line").
     headings = {}
     for guide in project_files(".md"):
         text = re.sub(r"```.*?```", "", guide.read_text(encoding="utf-8"), flags=re.S)
+        whole = (re.sub(r"^\d+\.\s+", "", (h or b).replace("`", "")) for h, b in re.findall(
+            r"^(?:#+\s+(.+?)|\*\*([^*]+)\*\*)\s*$", text, re.M))
         headings[guide.relative_to(repo_root).as_posix()] = {
-            h for whole in re.findall(r"^(?:#+\s+(.+?)|\*\*([^*]+)\*\*)\s*$", text, re.M)
-            for h in (whole[0] or whole[1], (whole[0] or whole[1]).split(",")[0])}
+            part for h in whole for part in [h] + [h[:m.start()] for m in re.finditer(r"[,:;(.]", h)]}
+    # The release turns Unreleased into its version's heading, and the next version brings it back.
+    headings.get("CHANGELOG.md", set()).add("Unreleased")
 
     broken = []
     for guide in project_files(".md"):
@@ -872,9 +876,11 @@ def test_every_pointer_in_a_guide_leads_somewhere(repo_root, project_files):
             if (n, pointer) in sections:
                 if (n, pointer) not in current:
                     continue
-                found, name = find(pointer.split("::")[0], here), pointer.split("::", 1)[1]
+                given, name = pointer.split("::", 1)
+                found = find(given, here)
                 if found not in headings:
-                    broken.append(f"{rel}:{n}: {pointer} — no such guide")
+                    if given not in NAMED_ON_PURPOSE and not ignored(given, here):
+                        broken.append(f"{rel}:{n}: {pointer} — no such guide")
                 elif not any(re.match(re.escape(h) + r"(?!\w)", name) for h in headings[found]):
                     broken.append(f"{rel}:{n}: {pointer} — {found} has no section {name}")
                 continue

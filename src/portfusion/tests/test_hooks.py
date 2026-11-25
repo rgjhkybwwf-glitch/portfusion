@@ -309,8 +309,8 @@ def test_a_guide_left_behind_is_named_and_the_push_goes_on(pushed, capfd, monkey
 def test_a_section_named_in_words_is_a_pointer():
     """A guide that names a section in words points at it as surely as a path does: by a guide's
     stem, its name in code, or a link to it, then `'s` or `,`, then the section, across a line
-    break, in a fenced comment, or after "that file's" for the guide named last in the paragraph.
-    Prose, a command and a row of data name none. The test that every pointer leads somewhere then
+    break, in a fenced comment, or after "that file's" for the guide named last in its paragraph or
+    list item. Prose, a command, a row of data and a file that is no guide name none. The test that every pointer leads somewhere then
     asks the guide for that heading."""
     from portfusion.hooks.pre_push import guide_pointers, section_pointers
     text = ("Set up by CONTRIBUTING's Setting up (the hooks); see CONTRIBUTING, Commits and pull\n"
@@ -328,7 +328,10 @@ def test_a_section_named_in_words_is_a_pointer():
             "\n"
             "Setting up's venv line names no guide, CONTRIBUTING's rules no section, in docs/store.md,\n"
             "Columns is prose, and `record/rules.py` is no guide, so that file's Method names none.\n"
-            "See https://example.com/README.md, Then go.\n")
+            "See https://example.com/README.md, Then go.\n"
+            "\n"
+            "- one in `docs/a.md`\n"
+            "- and in `tools/x.py`, whose item ends at the next: that file's Setting up names none\n")
     assert section_pointers(text) == [
         (1, "CONTRIBUTING.md::Setting up"),
         (1, "CONTRIBUTING.md::Commits and pull requests"),
