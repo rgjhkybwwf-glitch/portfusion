@@ -122,8 +122,8 @@ def _tables() -> list[str]:
 def _columns() -> list[str]:
     """What each column of the store may hold, from its fields' `holds`, a closed list's led by
     `CLOSED`, in the order the schema first says it. Columns that say the same share a row. Where
-    a column's tables say different things the cell says each by its table; a column said on some
-    of its tables only is named by those, as `table.column`."""
+    a column's tables say different things the cell says each by its table; a column that says one
+    thing on some of its tables only is named by those, as `table.column`."""
     from portfusion.record import schema
     tables: dict[str, list[str]] = {}                 # column -> every table that has it
     said: dict[str, dict[str, list[str]]] = {}        # column -> what it holds -> those tables
@@ -151,6 +151,8 @@ def _columns() -> list[str]:
 
 def generate(guide: pathlib.Path = GLOSSARY) -> str:
     """The derived block of `guide`, the glossary's or the store's, between its markers."""
+    if guide not in (GLOSSARY, STORE):
+        raise ValueError(f"{guide} has no generated block: only {GLOSSARY} and {STORE} do")
     if guide == STORE:
         return "\n".join([BEGIN, "", *_columns(), "", END]) + "\n"
     parts = [BEGIN, "",

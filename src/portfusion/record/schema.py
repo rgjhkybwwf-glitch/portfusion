@@ -190,7 +190,8 @@ _TRADED_PRICE = ("a deal's price as its document states it: never sterling ÷ qu
                  "carries the dealing charge")
 _BROKER_RATE = ("units of the other currency per £1, and only the broker's, where its document "
                 "states one")
-_MARK = "a mark, what a line is worth, filed under a share's ticker or a bet's contract"
+_MARK = ("a mark, what a line is worth, filed under a share's ticker or a bet's contract; "
+         "`price-history.csv` banks each")
 _AT = "an instant, as [the glossary](glossary.md)'s §4 says"
 _EVIDENCE = "a key of `rules.EVIDENCE_CLASSES`, printed in the glossary's §9"
 
@@ -287,8 +288,8 @@ ACCOUNTS = Table(
         Field("held_as", "str", enum=KINDS, required=True, holds=_HELD_AS),
         # THE LABEL OF THE ACCOUNT'S BLOCK IN credentials.json, for an account a feed reads.
         Field("feed_key", "str", null=True),
-        # Before it the account holds nothing (`rules.accounts_open()`), whatever deal dates the
-        # statement it opened at carries.
+        # Before `record_begins` the account holds nothing (`rules.accounts_open()`), whatever deal
+        # dates the statement it opened at carries.
         Field("record_begins", "date", null=True,
               holds=("the day an account opened after the book did; blank for one held from the "
                      "opening. The loader refuses a quarter-end row before it")),
