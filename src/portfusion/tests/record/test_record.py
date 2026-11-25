@@ -820,8 +820,9 @@ def test_every_pointer_in_a_guide_leads_somewhere(repo_root, project_files):
     The guides point rather than restate, so a pointer is most of what one holds, and it goes stale
     when the thing it names moves. A path must name a listed file or folder (from the root, from
     the guide's own folder, or by a tail only one path has, or only the path nearest the root has)
-    or one git ignores; after `:` or `::`, the name must be in that file. Code points at guides
-    too, so a `.py` file naming a CLAUDE.md is held to the same.
+    or one git ignores; after `:` or `::`, the name must be in that file, and in a guide it must be
+    a section's heading, as a section named in words is ("CONTRIBUTING's Setting up"). Code points
+    at guides too, so a `.py` file naming a CLAUDE.md is held to the same.
     """
     import subprocess
     # Every listed file whatever its suffix, by project_files' own git call, which filters by one.
@@ -864,6 +865,16 @@ def test_every_pointer_in_a_guide_leads_somewhere(repo_root, project_files):
                 # As written: a pattern ending in `/` ignores only a folder, and says so by the slash.
                 if not ignored(given, here):
                     broken.append(f"{rel}:{n}: {pointer} — no such file or folder")
+                continue
+            if found.endswith(".md") and name and (repo_root / found).is_file():
+                # A guide's name is a section's: a `#` heading or a line wholly bold, or that
+                # heading's words before its comma. The words may run on past it.
+                headings = {h for whole in re.findall(
+                    r"^(?:#+\s+(.+?)|\*\*([^*]+)\*\*)\s*$",
+                    (repo_root / found).read_text(encoding="utf-8"), re.M)
+                    for h in (whole[0] or whole[1], (whole[0] or whole[1]).split(",")[0])}
+                if not any(name == h or name.startswith(h + " ") for h in headings):
+                    broken.append(f"{rel}:{n}: {pointer} — {found} has no section {name}")
                 continue
             name = name.split("(")[0]
             if name and not name.isdigit() and (repo_root / found).is_file() and not re.search(

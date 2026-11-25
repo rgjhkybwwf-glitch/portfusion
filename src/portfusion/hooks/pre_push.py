@@ -153,11 +153,44 @@ def written_up(lines: list[str], checkout) -> int:
 GUIDES, NOT_GUIDES = ("README.md", "CONTRIBUTING.md", "CLAUDE.md", "docs/*.md"), ("docs/ux-audit.md",)
 
 
+#: The guides at the root, which a guide may name in words by their stem: "CONTRIBUTING's ...".
+GUIDE_STEMS = ("README", "CONTRIBUTING", "CLAUDE", "CHANGELOG")
+
+#: A section named in words: a guide (`X.md`, a link to one, or its stem), then `'s` or `,`, then
+#: the section's name, capitalised, to the first mark that ends it; or "that file's" for the guide
+#: named last before it in the same paragraph. A line break may fall anywhere a space does.
+SECTION = re.compile(
+    r"(?:\[`?[\w./-]+\.md`?\]\((?P<target>[\w./-]+\.md)\)|`(?P<code>[\w./-]+\.md)`"
+    rf"|(?<![\w./`-])(?P<bare>[\w./-]+\.md|{'|'.join(GUIDE_STEMS)})(?![\w./`-])"
+    r"|(?P<that>\b[Tt]hat[ \t]*\n?[ \t]*file))"
+    r"(?:'s|’s|,)[ \t]*\n?[ \t]*(?P<name>[A-Z][a-z][\w-]*(?:[ \t]*\n?[ \t]*[\w-]+)*)")
+
+
+def section_pointers(text: str) -> list[tuple[int, str]]:
+    """(line, `path::Section`) for every section a guide names in words, fenced comments too.
+
+    The name runs to the first mark after it, so it may carry the words that follow the section's
+    own ("Setting up has the line"): the test that reads it asks for a heading it begins with."""
+    out = []
+    for m in SECTION.finditer(text):
+        path = m["target"] or m["code"] or m["bare"]
+        if m["that"]:
+            before = re.findall(r"[\w./-]+\.md", text[text.rfind("\n\n", 0, m.start()) + 1:m.start()])
+            if not before:
+                continue
+            path = before[-1]
+        path = path if path.endswith(".md") else path + ".md"
+        out.append((text.count("\n", 0, m.start()) + 1, f"{path}::{' '.join(m['name'].split())}"))
+    return out
+
+
 def guide_pointers(text: str) -> list[tuple[int, str]]:
-    """(line, pointer) for every path a guide names in code or as a link target.
+    """(line, pointer) for every path a guide names in code or as a link target, and every section
+    it names in words (`section_pointers`).
 
     A fenced block is blanked line for line so the numbers stay true. A span holding a space is a
     command and one holding `*` or `<` a pattern; a bare extension names a kind of file, not one."""
+    sections = section_pointers(text)
     text = re.sub(r"```.*?```", lambda m: "\n" * m.group().count("\n"), text, flags=re.S)
     out = []
     for n, line in enumerate(text.splitlines(), 1):
@@ -171,7 +204,7 @@ def guide_pointers(text: str) -> list[tuple[int, str]]:
             if (re.search(r"\.(py|md|csv|json|css|js|html|ini|toml|txt|xlsx)$", path)
                     or ("/" in path and re.fullmatch(r"[\w./-]+", path))):
                 out.append((n, t))
-    return out
+    return out + sections
 
 
 def behind(sha: str, checkout, base: str = "origin/main") -> dict[str, list[str]]:

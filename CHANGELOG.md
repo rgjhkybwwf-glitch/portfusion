@@ -42,6 +42,10 @@ Each release, newest first. The version is `src/portfusion/__init__.py`'s, and
 
 ### Fixed
 
+- **A guide's pointer at a section named in words is held**, as one at a path is: "CONTRIBUTING's
+  Setting up", "`CONTRIBUTING.md`, Building" or "that file's Setting up" must name a heading of
+  that guide, or the suite says which pointer leads nowhere (`hooks/pre_push.py`'s
+  `section_pointers`).
 - **A report printed, or saved as PDF, from a dark setting takes the light scheme's inks**, so
   its headings and figures no longer print pale on the paper's white. On screen nothing changes.
 

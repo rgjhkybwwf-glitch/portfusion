@@ -306,6 +306,37 @@ def test_a_guide_left_behind_is_named_and_the_push_goes_on(pushed, capfd, monkey
     assert pre_push.behind("HEAD", pushed) == {}
 
 
+def test_a_section_named_in_words_is_a_pointer():
+    """A guide that names a section in words points at it as surely as a path does: by a guide's
+    stem, its name in code, or a link to it, then `'s` or `,`, then the section, across a line
+    break, in a fenced comment, or after "that file's" for the guide named last in the paragraph.
+    The test that every pointer leads somewhere then asks the guide for that heading."""
+    from portfusion.hooks.pre_push import guide_pointers, section_pointers
+    text = ("Set up by CONTRIBUTING's Setting up (the hooks); see CONTRIBUTING, Commits and pull\n"
+            "requests.\n"
+            "\n"
+            "```bash\n"
+            "source .venv/bin/activate   # once per terminal (CONTRIBUTING, Setting up)\n"
+            "```\n"
+            "\n"
+            "[`CONTRIBUTING.md`](../CONTRIBUTING.md)'s\n"
+            "Setting up has the line, and `docs/store.md`, Columns, the rest.\n"
+            "\n"
+            "[`CONTRIBUTING.md`](../CONTRIBUTING.md) has it, and that file's Setting up the demo.\n"
+            "\n"
+            "Setting up's venv line names no guide, CONTRIBUTING's rules no section,\n"
+            "and that file's Setting up no guide before it in its paragraph.\n")
+    assert section_pointers(text) == [
+        (1, "CONTRIBUTING.md::Setting up"),
+        (1, "CONTRIBUTING.md::Commits and pull requests"),
+        (5, "CONTRIBUTING.md::Setting up"),
+        (8, "../CONTRIBUTING.md::Setting up has the line"),
+        (9, "docs/store.md::Columns"),
+        (11, "../CONTRIBUTING.md::Setting up the demo"),
+    ]
+    assert set(section_pointers(text)) <= set(guide_pointers(text))
+
+
 def test_a_main_moved_on_github_and_not_fetched_is_never_overwritten(pushed, tmp_path):
     """A merge made on GitHub that this checkout has not pulled: what a push would overwrite has
     not been seen here, so not even the override lets it through."""
