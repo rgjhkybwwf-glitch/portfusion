@@ -15,7 +15,7 @@ from collections import Counter, defaultdict
 from datetime import date as _date
 import pytest
 from harness import needs, free_id
-from portfusion.hooks.pre_push import guide_pointers
+from portfusion.hooks.pre_push import guide_pointers, section_pointers
 
 # =====================================================================================
 # Identity and referential integrity
@@ -820,8 +820,10 @@ def test_every_pointer_in_a_guide_leads_somewhere(repo_root, project_files):
     The guides point rather than restate, so a pointer is most of what one holds, and it goes stale
     when the thing it names moves. A path must name a listed file or folder (from the root, from
     the guide's own folder, or by a tail only one path has, or only the path nearest the root has)
-    or one git ignores; after `:` or `::`, the name must be in that file. Code points at guides
-    too, so a `.py` file naming a CLAUDE.md is held to the same.
+    or one git ignores; after `:` or `::`, the name must be in that file. A section a guide names
+    in words ("CONTRIBUTING's Setting up") must be a heading of that guide, but in the CHANGELOG's
+    released entries, which are history. Code points at guides too, so a `.py` file naming a
+    CLAUDE.md is held to the same.
     """
     import subprocess
     # Every listed file whatever its suffix, by project_files' own git call, which filters by one.
@@ -847,11 +849,41 @@ def test_every_pointer_in_a_guide_leads_somewhere(repo_root, project_files):
         return any(subprocess.run(["git", "check-ignore", "-q", c], cwd=repo_root).returncode == 0
                    for c in (path, f"{here}/{path}"))
 
+    # Each guide's sections: a `#` heading or a line wholly bold, outside its fenced blocks, with
+    # no step number or backticks, and each of its leading parts that ends at a mark ("Which
+    # issues", of "Which issues, in what order"), as a name in words ends at one. A section named
+    # in words begins with one; its words may run on past it ("Setting up has the line").
+    headings = {}
+    for guide in project_files(".md"):
+        text = re.sub(r"```.*?```", "", guide.read_text(encoding="utf-8"), flags=re.S)
+        whole = (re.sub(r"^\d+\.\s+", "", (h or b).replace("`", "")) for h, b in re.findall(
+            r"^(?:#+\s+(.+?)|\*\*([^*]+)\*\*)\s*$", text, re.M))
+        headings[guide.relative_to(repo_root).as_posix()] = {
+            part for h in whole for part in [h] + [h[:m.start()] for m in re.finditer(r"[,:;(.]", h)]}
+    # The release turns Unreleased into its version's heading, and the next version brings it back.
+    headings.get("CHANGELOG.md", set()).add("Unreleased")
+
     broken = []
     for guide in project_files(".md"):
         rel = guide.relative_to(repo_root).as_posix()
         here = guide.parent.relative_to(repo_root).as_posix()
-        for n, pointer in guide_pointers(guide.read_text(encoding="utf-8")):
+        text = guide.read_text(encoding="utf-8")
+        sections = set(section_pointers(text))
+        # A released entry of the CHANGELOG is history: it named the sections as they were then.
+        current = set(section_pointers(re.split(r"^## (?!Unreleased)", text, maxsplit=1,
+                                                flags=re.M)[0])) if rel == "CHANGELOG.md" else sections
+        for n, pointer in guide_pointers(text):
+            if (n, pointer) in sections:
+                if (n, pointer) not in current:
+                    continue
+                given, name = pointer.split("::", 1)
+                found = find(given, here)
+                if found not in headings:
+                    if given not in NAMED_ON_PURPOSE and not ignored(given, here):
+                        broken.append(f"{rel}:{n}: {pointer} — no such guide")
+                elif not any(re.match(re.escape(h) + r"(?!\w)", name) for h in headings[found]):
+                    broken.append(f"{rel}:{n}: {pointer} — {found} has no section {name}")
+                continue
             if pointer in NAMED_ON_PURPOSE:
                 continue
             given, _, name = re.match(r"([^:]+)(:+)?(.*)", pointer).groups()
