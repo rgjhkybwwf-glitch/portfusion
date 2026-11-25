@@ -14,6 +14,7 @@ figure in it is worked out. Every name and figure is the demo's.
 |---|---|
 | [`look.css`](look.css) | the light scheme's values, each a token named by its job, and every part, as one rule that holds each of its states |
 | [`dusk.css`](dusk.css) | the dark scheme: a second value for the tokens that change in the dark, and nothing else |
+| [`icons/`](icons) | the icons: Lucide's own files, one for each job (Icons), and its licence |
 | [`parts.html`](parts.html) | the sheet: every token printed from the two stylesheets, light beside dark, and every part drawn in each of its states, in both schemes |
 | [`home.html`](home.html) | Home, the book: the lead card, two figure cards, what the record needs, the accounts, the largest holdings, the value at each quarter end, and the latest events |
 | [`companies.html`](companies.html) | the Companies list: chips for held, sold and all, a find field, every company in one table that sorts, and its total |
@@ -52,11 +53,13 @@ in its place, and line breaks may differ. The desk gets Inter's own file with #3
   is the maintainer's rule for the app too: a component is the same wherever it appears.
 - **A state is defined once**, in its part's rule: what the pointer gives by `:hover` and
   `:active`, what the keyboard gives by `:focus-visible`, and what is chosen by the attribute that
-  says so (`aria-current`, `aria-pressed`, `checked`, `data-sort`). The pointer's and the
+  says so (`aria-current`, `aria-pressed`, `checked`, `data-sort`), as is a control that can't be
+  used (`disabled`, `aria-disabled`) or a button at work (`aria-busy`). The pointer's and the
   keyboard's states also answer to `data-as` (`over`, `pressed`, `keyboard`), so that the sheet
   can draw them with no pointer on them. The desk's own parts need only the pseudo-class.
 - **Every control shows where the keyboard is**, in one ring of the accent (`--focus`), whatever
-  the control, and never under the pointer. Press Tab on `parts.html` to see it.
+  the control, and never under the pointer. A table's scroll box keeps 4px of room round its
+  table, the ring's reach, so a row's ring is never cut. Press Tab on `parts.html` to see it.
 - **The values are #343's tables**, the parts are #344's, and the dark values are built by #347's
   switch. Where an issue and this folder differ, say so on the issue before building either.
 - **The token and class names here are this folder's own.** What the house calls each value is
@@ -106,19 +109,20 @@ not drawn, and is not invented on a page.
 | the frame | `.frame`, `.menu`, `.page` | the menu beside the page, `--gap` apart; the menu scrolls away with the page |
 | a run of boxes | `.stack`, `.flow`, `.split`, `.section`, `.head` | none: they set boxes `--gap` apart, and a section's heading `--gap-tiles` above its cards |
 | the menu | `.menu > .glass`, `.brand`, `.group`, `.title` | none of its own; its lines have theirs |
-| a menu line | `.line`, `.count` | at rest; under the pointer (`--line-over`); the page you are on (`aria-current="page"`: raised, in the accent's ink, at 600); the keyboard |
+| a menu line | `.line`, `.with-icon`, `.count` | its icon before its name, in the muted ink; at rest; under the pointer (`--line-over`); the page you are on (`aria-current="page"`: raised, in the accent's ink, its icon too, at 600); the keyboard |
 | the name and the mark | `.brand .mark`, `.wordmark` | none (The name and the mark, below) |
 | the bar | `.glass.bar`, `.where` | the page's title and its note, the way back, and the page's one main button; it stays at the top as the page scrolls under it |
-| the main button | `.push` | at rest; under the pointer (rises 1px, `--shadow-button-over`); pressed (back down); the keyboard. One to a page |
-| the quiet button | `.quiet` | at rest; under the pointer (`--quiet-over`); the keyboard |
+| the main button | `.push` | its icon before its words; at rest; under the pointer (rises 1px, `--shadow-button-over`); pressed (back down); the keyboard; can't be used; at work (`aria-busy="true"`: holds still, says what it is doing, and turns a small ring in its icon's place). One to a page |
+| the quiet button | `.quiet` | at rest; under the pointer (`--quiet-over`); the keyboard; can't be used |
 | a link to more | `.more`, and `a` | at rest, in the accent; under the pointer, in the ink; the keyboard (`.more`) |
-| tabs | `.well.tabs`, `.tab` | a tab at rest, in the muted ink; under the pointer, in the ink; selected (`aria-pressed="true"`: raised, `--shadow-tab-on`, in the accent's ink); the keyboard. The selected tab is the only one with a shadow, and its content fades in |
-| a tag | `.tag` | four kinds: `.problem`, `.gap`, `.clear`, `.closed` |
+| tabs | `.well.tabs`, `.tab` | a tab at rest, in the muted ink; under the pointer, in the ink; selected (`aria-pressed="true"`: raised, `--shadow-tab-on`, in the accent's ink); the keyboard; can't be used (in the muted ink, answering nothing). The selected tab is the only one with a shadow, and its content fades in |
+| a tag | `.tag` | four kinds: `.problem`, `.gap`, `.clear`, `.closed`, each with its kind's icon before its words |
+| an icon | `.icon` | none: it takes the ink of the words beside it (Icons) |
 | a card | `.card`, `.card.figure`, `.card.tabled` | resting |
 | a card that opens its object | `.card.lift` | at rest; under the pointer (rises 2px, `--shadow-card-over`); the keyboard |
 | the lead card | `.lead`, `.headline`, `.tiles`, `.tile` | one to a page: the page's one large figure, and tiles for the figures that explain it |
 | a well | `.well` | sunken |
-| a table | `.scroll`, `.table`, `.cols`, `.row`, `.n`, `.dim`, `.two` | a row under a soft rule; figures to the right, in tabular numerals, and a cell never wraps; a cell with a smaller second line (`.two`) |
+| a table | `.scroll`, `.table`, `.cols`, `.row`, `.n`, `.dim`, `.two` | a row under a soft rule; figures to the right, in tabular numerals, and a cell never wraps; a cell with a smaller second line (`.two`). The scroll box keeps 4px of room round the table for the keyboard's ring |
 | a row that opens its object | `.table > a.row` | at rest, its name in the accent's ink and no rule under it; under the pointer (`--accent-soft`); the keyboard |
 | a head that sorts | `.sort` | at rest, in the heads' muted ink; under the pointer, in the ink; the order, down or up (`data-sort`: in the ink, with an arrow); the keyboard |
 | the total row | `.row.total` | under a full rule, in the names' weight |
@@ -128,11 +132,20 @@ not drawn, and is not invented on a page.
 | what happened | `.events`, `.what` | events newest first, each its sentence, and under it the day and the account |
 | what the record needs | `.needs`, `.need`, `.says` | each item its tag, its sentence and the object it concerns, and one quiet button that opens that object |
 | a field grid | `.fields` | one record as labelled fields |
-| filter chips | `.filters`, `.filter`, `.count` | at rest (`--quiet`); under the pointer (`--quiet-over`); chosen (`aria-pressed="true"`: raised as a selected line is, its count in the accent's ink); the keyboard |
-| a find field | `.find` | empty, saying what it finds; typed into; the keyboard. Sunken |
-| a choice box | `.choice` | closed, resting with its chevron; the keyboard. Open, it is the Mac's own list |
-| a tick box | `.tick` | off (sunken); on (`checked`: the main button's violet with a white tick); the keyboard |
+| filter chips | `.filters`, `.filter`, `.count` | at rest (`--quiet`); under the pointer (`--quiet-over`); chosen (`aria-pressed="true"`: raised as a selected line is, its count in the accent's ink); the keyboard; can't be used |
+| a find field | `.find` | empty, saying what it finds; typed into; the keyboard; can't be used (its words in the muted ink). Sunken |
+| a choice box | `.choice` | closed, resting with its chevron; the keyboard; can't be used. Open, it is the Mac's own list |
+| a tick box | `.tick` | off (sunken); on (`checked`: the main button's violet with a white tick); the keyboard; can't be used (sunken, on or off, its tick and its words in the muted ink) |
 | the type | `.label`, `.note`, `.small`, `.name`, `h1`, `h2`, `.num-lead`, `.num`, `.num-card`, `.num-tile`, `.up`, `.down` | the ten steps on the sheet; a note in the gap's or the clear's ink (`.note.gap`, `.note.clear`) |
+
+A **control that can't be used** (`disabled`, or `aria-disabled="true"`) drops to the quiet fill
+(`--quiet`), its words in the muted ink, with no shadow, and answers neither the pointer nor a
+press. Its words still pass 4.5 to 1 in both schemes, and the violet is left to mean what can be
+pressed. A tab and the find field keep their own ground and only mute their words. A **main button
+at work** (`aria-busy="true"` and `aria-disabled="true"`) keeps its violet and holds still, says
+what it is doing in the present ("Refreshing prices…"), and turns a small ring before its words,
+so a long wait never looks stuck; the keyboard keeps its place on it. The maintainer chose both on
+25 Nov 2026, from two ways of each drawn side by side.
 
 ## Motion
 
@@ -141,6 +154,7 @@ not drawn, and is not invented on a page.
 | a pointer's answer: a line, a tab, a row, a button, a chip, a head that sorts, a tick box, a card rising | its fill, its shadow, its ink, or how high it sits | `--dur-pointer`, 160ms, `ease` |
 | a tab's content | fades in | `--dur-tab`, 200ms, `ease` |
 | a page's content | arrives: fades in and rises `--rise`, 10px, in three steps (`.arrive`, `.later`, `.latest`), `--step` apart | `--dur-arrive`, 260ms, on `--ease-arrive` |
+| a main button at work | the small ring before its words turns, again and again | `--dur-turn`, 1000ms a turn, `linear` |
 
 No figure is animated, and nothing else moves. The sheet prints what each part moves, read from
 its rule.
@@ -150,7 +164,7 @@ its rule.
 | The Mac's setting | What changes |
 |---|---|
 | Appearance, dark | every token `dusk.css` gives a second value (The two schemes) |
-| Reduce motion | nothing arrives, fades, rises or eases: no animation and no transition |
+| Reduce motion | nothing arrives, fades, rises or eases, and a button at work's ring holds still: no animation and no transition |
 | Reduce transparency | the glass is solid `--glass-solid` and the lead card solid `--lead-solid`, with no blur |
 | Increase contrast | the glass, a card, the lead card, a tile, the find field, the choice box and a tick box gain a 1px outline of `--contrast-edge` |
 
@@ -200,6 +214,44 @@ The maintainer settled both on 21 Nov 2026.
 - **The app wears neither yet.** Its header says the old name and its icons draw a stand-in ring,
   until the frame is turned on (#347).
 
+## Icons
+
+The icons are Lucide's, version 1.69.0, under its ISC licence, which [`icons/LICENSE`](icons/LICENSE)
+carries. Each is a line 2px wide on a 24px grid, with round ends and corners, close to the
+harbour's own line. The maintainer chose the set on 25 Nov 2026, from Lucide and Phosphor drawn
+side by side.
+
+- **An icon stands before a menu line's name, the main button's words and a tag's words**, and
+  nowhere else. Everything else stays words, and a new place for an icon is asked for.
+- **It is drawn in the ink of the words beside it**, `--icon` (16px) square, and `--icon-tag`
+  (12px) on a tag. In the menu it is in the muted ink, and in the accent's ink on the page you are
+  on. On a button at work, the turning ring stands in its place.
+- **Each job has one icon, and each icon one job:**
+
+| Job | Its icon in `icons/` |
+|---|---|
+| Home | `house.svg` |
+| Companies | `building-2.svg` |
+| Accounts | `wallet.svg` |
+| Quarters | `calendar.svg` |
+| Inbox | `inbox.svg` |
+| Prices | `chart-line.svg` |
+| Trades | `arrow-left-right.svg` |
+| Round trips | `repeat.svg` |
+| What changed | `history.svg` |
+| Method | `book-open.svg` |
+| Refresh prices, the main button | `refresh-cw.svg` |
+| a tag: a problem | `circle-alert.svg` |
+| a tag: a gap | `circle-dashed.svg` |
+| a tag: clear | `circle-check.svg` |
+| a tag: closed | `circle-minus.svg` |
+
+- **The files are Lucide's own, unchanged.** A page draws an icon inline, as
+  `<svg class="icon" viewBox="0 0 24 24" aria-hidden="true">` round the file's shapes, so the
+  line's width and ends come from `.icon`, and the words beside it say what it means. A new
+  job's icon is taken from the same set, at the same version, and added to the table; an icon is
+  never redrawn, and never taken from another set.
+
 ## Where it evens out the drawing
 
 The agreed drawing typed a few values on one part that it did not type on its twin. The
@@ -220,13 +272,6 @@ Each is drawn when the maintainer gives it, and until then no page or part decid
 
 - **A chart's own colours** beside the accent, which the sector charts the maintainer wants will
   need, and **the look in print**. Both are parked by the maintainer (#9, Decisions).
-- **A control that cannot be used, or is at work.** No drawn page needs one, so neither is drawn.
-  Today's desk has both, a greyed button, link or tick box, and a button held while it works with
-  a word saying what it is doing, so the first page drawn that needs one asks for it.
-- **The keyboard's ring on a row that opens** is cut at its sides by the scroll box round its
-  table, so only its top and bottom show. How the ring finds room there is the maintainer's to
-  give.
-- **Icons.** None is drawn: the look has no set of them yet.
 - **The app's own icons.** The tab's, the Dock's and the touch icon are the mark on its tile, and
   are drawn when the frame is turned on (#347). On a dark ground the mark is the same violet
   tile.
@@ -248,6 +293,7 @@ both schemes, and on every page:
 | a corner, a gap, a size, a type step or a duration | its token in `look.css`: it has one value in both schemes |
 | how a part looks, or one of its states | the part's one rule in `look.css` |
 | a value only one part wears, or a blur | that part's rule in `look.css` |
+| which icon a job has | its file in `icons/`, the table under Icons, and each page that draws it |
 
 A token that no part wears, or a part that types a value a token holds, is a mistake. Once
 `house/` holds the values, the house is the source: a value changes there and here in the same

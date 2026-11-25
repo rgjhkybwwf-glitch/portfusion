@@ -110,13 +110,14 @@
   --text-lead:   52px;
   --leading:     1.45;
 
-  /* Motion. No figure is animated. */
+  /* Motion. No figure is animated, and only a button at work turns. */
   --dur-pointer: 160ms;
   --dur-tab:     200ms;
   --dur-arrive:  260ms;
   --ease-arrive: cubic-bezier(0.2, 0.7, 0.2, 1);
   --rise:        10px;
   --step:        60ms;
+  --dur-turn:    1000ms;
 
   /* Control heights */
   --h-control: 36px;
@@ -125,6 +126,10 @@
   --h-tick:    18px;
   --w-find:    320px;
   --w-menu:    232px;
+
+  /* Icons */
+  --icon:      16px;
+  --icon-tag:  12px;
 }
 
 /* The ground */
@@ -240,6 +245,15 @@ h2, .text-head { font-size: var(--text-head); font-weight: 600; letter-spacing: 
 .up { color: var(--up); }
 .down { color: var(--down); }
 
+/* AN ICON: one of Lucide's lines (icons/, README.md, Icons), drawn in the ink of the words beside
+   it. It stands before a menu line's name, the main button's words and a tag's words, and nowhere
+   else. */
+.icon {
+  width: var(--icon); height: var(--icon); flex: none;
+  fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+}
+.with-icon { display: inline-flex; align-items: center; gap: 10px; }
+
 /* THE MENU */
 .menu > .glass { padding: 16px 10px 14px; display: flex; flex-direction: column; gap: 13px; }
 .brand { display: flex; align-items: center; gap: 10px; padding: 0 var(--inset); }
@@ -261,9 +275,13 @@ h2, .text-head { font-size: var(--text-head); font-weight: 600; letter-spacing: 
 .line:is(:hover, [data-as~="over"]) { background: var(--line-over); color: var(--ink); }
 .line[aria-current="page"] { background: var(--raised); color: var(--accent-ink); font-weight: 600; box-shadow: var(--shadow-line-on); }
 .line .count { font-size: var(--text-label); font-weight: 400; color: var(--muted); }
+.line .icon { color: var(--muted); }
+.line[aria-current="page"] .icon { color: var(--accent-ink); }
 
-/* A tag: a state in two or three words. */
-.tag { display: inline-block; font-size: var(--text-label); font-weight: 600; padding: 2px 8px; border-radius: var(--r-pill); }
+/* A tag: a state in two or three words, after its kind's icon. */
+.tag { display: inline-flex; align-items: center; gap: 4px; font-size: var(--text-label); font-weight: 600; padding: 2px 8px; border-radius: var(--r-pill); }
+.tag:has(> .icon) { padding-left: 6px; }
+.tag > .icon { width: var(--icon-tag); height: var(--icon-tag); }
 .tag.problem { background: var(--problem); color: var(--problem-ink); }
 .tag.gap { background: var(--gap-tag); color: var(--gap-ink); }
 .tag.clear { background: var(--clear); color: var(--clear-ink); }
@@ -279,13 +297,14 @@ h2, .text-head { font-size: var(--text-head); font-weight: 600; letter-spacing: 
 
 /* BUTTONS AND LINKS */
 .push {
-  display: inline-flex; align-items: center; min-height: var(--h-control); padding: 0 18px;
+  display: inline-flex; align-items: center; gap: 8px; min-height: var(--h-control); padding: 0 18px;
   border-radius: var(--r-pill); background: var(--button); color: var(--on-button);
   font-weight: 600; text-decoration: none; box-shadow: var(--shadow-button);
   transition: transform var(--dur-pointer) ease, box-shadow var(--dur-pointer) ease;
 }
 .push:is(:hover, [data-as~="over"]) { transform: translateY(-1px); box-shadow: var(--shadow-button-over); color: var(--on-button); }
 .push:is(:active, [data-as~="pressed"]) { transform: translateY(0); }
+.push:has(> .icon) { padding-left: 16px; }
 .quiet {
   display: inline-flex; align-items: center; min-height: var(--h-control); padding: 0 14px;
   border-radius: var(--r-pill); background: var(--quiet); color: var(--ink);
@@ -293,6 +312,17 @@ h2, .text-head { font-size: var(--text-head); font-weight: 600; letter-spacing: 
 }
 .quiet:is(:hover, [data-as~="over"]) { background: var(--quiet-over); color: var(--ink); }
 .more { display: inline-flex; align-items: center; min-height: var(--h-control); font-weight: 600; text-decoration: none; }
+/* A main button at work says what it is doing, "Refreshing prices", holds still, and turns
+   a small ring before its words, in its icon's place, so a long wait never looks stuck. It is
+   marked aria-busy and aria-disabled, so it cannot be pressed again and the keyboard keeps its
+   place. */
+.push[aria-busy="true"] { transform: none; box-shadow: var(--shadow-button); cursor: progress; }
+.push[aria-busy="true"] > .icon { display: none; }
+.push[aria-busy="true"]::before {
+  content: ""; flex: none; width: 14px; height: 14px; border-radius: 50%;
+  border: 2px solid currentColor; border-right-color: transparent;
+  animation: turn var(--dur-turn) linear infinite;
+}
 
 /* TABS: a sunken track, and the selected tab raised out of it. */
 .tabs { display: inline-flex; gap: 2px; padding: 3px; border-radius: var(--r-line); }
@@ -305,7 +335,9 @@ h2, .text-head { font-size: var(--text-head); font-weight: 600; letter-spacing: 
 .tab[aria-pressed="true"] { background: var(--raised); color: var(--accent-ink); box-shadow: var(--shadow-tab-on); }
 
 /* A TABLE: one part, whatever it lists. Each table says only how its columns share the width. */
-.scroll { overflow-x: auto; }
+/* The scroll box keeps 4px of room round its table, the keyboard ring's reach, so a row's ring is
+   never cut; its margin gives the room back, so nothing else moves. */
+.scroll { overflow-x: auto; padding: 4px; margin: -4px; }
 .table { min-width: 600px; }
 .table > .cols, .table > .row {
   display: grid; gap: var(--gap-cells); align-items: center; white-space: nowrap;
@@ -438,14 +470,28 @@ h2, .text-head { font-size: var(--text-head); font-weight: 600; letter-spacing: 
   border-right: 2px solid var(--on-button); border-bottom: 2px solid var(--on-button); transform: rotate(45deg);
 }
 
+/* A CONTROL THAT CAN'T BE USED drops to the quiet fill, its words in the muted ink, with no
+   shadow, and answers neither the pointer nor a press. Its words still pass 4.5 to 1. A button at
+   work is not one: it keeps its violet (above). The keyboard's ring still shows on one marked
+   aria-disabled, since the keyboard can still reach it. */
+:where(.push, .quiet, .filter, .choice > select):is(:disabled, [aria-disabled="true"]):not([aria-busy="true"]) {
+  background: var(--quiet); color: var(--muted); box-shadow: none; transform: none; cursor: default;
+}
+:is(.tab, .find):is(:disabled, [aria-disabled="true"]) { color: var(--muted); cursor: default; }
+.tick:has(> input:disabled) { color: var(--muted); cursor: default; }
+.tick > input:disabled { background: var(--sunken); box-shadow: var(--shadow-well); cursor: default; }
+.tick > input:disabled:checked::after { border-color: var(--muted); }
+
 /* THE KEYBOARD: every control shows where the keyboard is, in one ring. */
 :is(.line, .tab, .push, .quiet, .more, .card.lift, .table > a.row, .sort, .filter, .find, .choice > select, .tick > input):is(:focus-visible, [data-as~="keyboard"]) {
   outline: none; box-shadow: var(--focus);
 }
 
-/* MOTION: content arrives in three steps; a tab's content fades in. */
+/* MOTION: content arrives in three steps; a tab's content fades in; a button at work's ring
+   turns. */
 @keyframes arrive { from { opacity: 0; transform: translateY(var(--rise)); } to { opacity: 1; transform: none; } }
 @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes turn { to { transform: rotate(360deg); } }
 .arrive { animation: arrive var(--dur-arrive) var(--ease-arrive) both; }
 .arrive.later { animation-delay: var(--step); }
 .arrive.latest { animation-delay: calc(var(--step) * 2); }
@@ -453,7 +499,7 @@ h2, .text-head { font-size: var(--text-head); font-weight: 600; letter-spacing: 
 
 /* WHAT THE MAC'S SETTINGS ASK */
 @media (prefers-reduced-motion: reduce) {
-  .arrive, .fade { animation: none; }
+  .arrive, .fade, .push[aria-busy="true"]::before { animation: none; }
   .card.lift, .push, .line, .tab, .table > a.row, .quiet, .sort, .filter, .tick > input { transition: none; }
   .card.lift:is(:hover, [data-as~="over"]), .push:is(:hover, [data-as~="over"]) { transform: none; }
 }
