@@ -1,12 +1,18 @@
 /* THE NEW LOOK, DRAWN ONCE. The reference pages beside this file (parts.html, home.html,
-   company.html) link it and type no value of the look themselves. It is a drawing: the desk does not load
-   it, and nothing in src/ reads it. README.md, beside it, says what it is for.
+   companies.html, company.html) link it and type no value of the look themselves. It is a
+   drawing: the desk does not load it, and nothing in src/ reads it. README.md, beside it, says
+   what it is for.
 
    EVERY VALUE IS A TOKEN, NAMED BY ITS JOB, and every part below wears tokens only. A part is
    defined once: a change to a part is made in its one rule, and every page shows it.
 
-   TWO SCHEMES, light and dark, follow the Mac's setting. The dark scheme gives a token a second
-   value and nothing else, so no part has a rule of its own in the dark. */
+   TWO SCHEMES, light and dark, follow the Mac's setting. This file holds the light scheme's
+   values. dusk.css, which each page links after it for a Mac set to dark, gives some of them a
+   second value and holds nothing else, so no part has a rule of its own in the dark.
+
+   A STATE THE POINTER OR THE KEYBOARD GIVES is written once, in the part's own rule, and that
+   rule also answers to data-as ("over", "pressed", "keyboard"), so the sheet can draw each state
+   with no pointer on it. The desk's own parts need only the pseudo-class. */
 
 :root {
   color-scheme: light;
@@ -121,68 +127,6 @@
   --w-menu:    232px;
 }
 
-
-/* THE DARK SCHEME: Dusk, the maintainer's choice (README.md). The light look's warm paper,
-   turned down to warm graphite, when the Mac is set to dark. Only colour and light change: every
-   corner, gap, size and motion is the light scheme's, and so are the button and the mark's tile.
-   A surface lifts by a lit top edge and a deeper shadow, since a shadow barely shows on a dark
-   ground, and what is raised out of a surface is a lighter step of it, never a darker box. */
-@media (prefers-color-scheme: dark) {
-  :root {
-    color-scheme: dark;
-
-    /* Colour */
-    --ground:        #141316;
-    --glow-violet:   rgba(124, 108, 255, 0.13);
-    --glow-warm:     rgba(226, 150, 96, 0.06);
-    --surface:       #222026;
-    --raised:        rgba(255, 255, 255, 0.075);
-    --sunken:        #1A191D;
-    --divider:       #34323A;
-    --divider-soft:  #2A282F;
-    --ink:           #EDEBF0;
-    --muted:         #A9A6B3;
-    --accent:        #978CFF;
-    --accent-ink:    #B7AFFF;
-    --accent-soft:   rgba(151, 140, 255, 0.12);
-    --lead:          linear-gradient(135deg, rgba(70, 59, 165, 0.62) 0%, rgba(44, 37, 104, 0.62) 100%);
-    --lead-solid:    linear-gradient(135deg, #3A3186 0%, #272254 100%);
-    --lead-ink:      #F2F0FF;
-    --lead-muted:    #C3BDEB;
-    --quiet:         rgba(255, 255, 255, 0.07);
-    --quiet-over:    rgba(255, 255, 255, 0.12);
-    --line-over:     rgba(255, 255, 255, 0.05);
-    --up:            #5ACFA3;
-    --down:          #FF9C78;
-    --problem:       #3D241B;
-    --problem-ink:   #FFB8A0;
-    --gap-tag:       #3A3114;
-    --gap-ink:       #F1D57E;
-    --clear:         #163A2E;
-    --clear-ink:     #93E0BE;
-    --closed:        #2E2C33;
-    --closed-ink:    #B5B2BE;
-    --glass:         rgba(28, 27, 32, 0.62);
-    --glass-solid:   #1D1C21;
-    --chart-grid:    #302E35;
-    --chart-base:    #45424C;
-    --contrast-edge: #908D9B;
-
-    /* The three heights in the dark: the edge is lit, and the shadow falls deeper. */
-    --shadow-well:        inset 0 1px 3px rgba(0, 0, 0, 0.45), inset 0 0 0 1px rgba(255, 255, 255, 0.03);
-    --shadow-card:        inset 0 1px 0 rgba(255, 255, 255, 0.055), 0 0 0 1px rgba(255, 255, 255, 0.038), 0 1px 2px rgba(0, 0, 0, 0.30), 0 12px 28px -10px rgba(0, 0, 0, 0.50);
-    --shadow-card-over:   inset 0 1px 0 rgba(255, 255, 255, 0.077), 0 0 0 1px rgba(255, 255, 255, 0.055), 0 2px 4px rgba(0, 0, 0, 0.35), 0 20px 36px -12px rgba(0, 0, 0, 0.62);
-    --shadow-lead:        inset 0 1px 0 rgba(255, 255, 255, 0.11), inset 0 0 0 1px rgba(170, 160, 255, 0.14), 0 2px 4px rgba(0, 0, 0, 0.25), 0 28px 56px -22px rgba(79, 63, 214, 0.45);
-    --shadow-tile:        inset 0 1px 0 rgba(255, 255, 255, 0.066), 0 0 0 1px rgba(255, 255, 255, 0.033), 0 8px 18px -8px rgba(0, 0, 0, 0.50);
-    --shadow-line-on:     inset 0 1px 0 rgba(255, 255, 255, 0.066), 0 0 0 1px rgba(255, 255, 255, 0.044), 0 1px 2px rgba(0, 0, 0, 0.30), 0 6px 16px -6px rgba(0, 0, 0, 0.45);
-    --shadow-tab-on:      inset 0 1px 0 rgba(255, 255, 255, 0.066), 0 0 0 1px rgba(255, 255, 255, 0.044), 0 1px 2px rgba(0, 0, 0, 0.35), 0 4px 10px -4px rgba(0, 0, 0, 0.45);
-    --shadow-button:      inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 1px 2px rgba(0, 0, 0, 0.35), 0 8px 18px -6px rgba(79, 63, 214, 0.55);
-    --shadow-button-over: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 2px 4px rgba(0, 0, 0, 0.35), 0 12px 22px -6px rgba(79, 63, 214, 0.65);
-    --shadow-glass:       inset 0 1px 0 rgba(255, 255, 255, 0.072), inset 0 0 0 1px rgba(255, 255, 255, 0.044), 0 1px 2px rgba(0, 0, 0, 0.25), 0 18px 40px -18px rgba(0, 0, 0, 0.55);
-    --shadow-choice:      inset 0 1px 0 rgba(255, 255, 255, 0.055), 0 0 0 1px rgba(255, 255, 255, 0.10), 0 1px 2px rgba(0, 0, 0, 0.30);
-  }
-}
-
 /* The ground */
 *, *::before, *::after { box-sizing: border-box; }
 body {
@@ -200,7 +144,7 @@ body {
 }
 h1, h2, p { margin: 0; }
 a { color: var(--accent); }
-a:hover { color: var(--ink); }
+a:is(:hover, [data-as~="over"]) { color: var(--ink); }
 button { font: inherit; border: 0; margin: 0; cursor: pointer; text-align: left; }
 [hidden] { display: none !important; }
 
@@ -248,7 +192,7 @@ button { font: inherit; border: 0; margin: 0; cursor: pointer; text-align: left;
 .card.tabled > .head { padding: 0 var(--inset); margin-bottom: 4px; }
 /* A card that opens something rises under the pointer. */
 .card.lift { display: flex; flex-direction: column; gap: 4px; text-decoration: none; transition: transform var(--dur-pointer) ease, box-shadow var(--dur-pointer) ease; }
-.card.lift:hover { transform: translateY(-2px); box-shadow: var(--shadow-card-over); color: var(--ink); }
+.card.lift:is(:hover, [data-as~="over"]) { transform: translateY(-2px); box-shadow: var(--shadow-card-over); color: var(--ink); }
 
 /* Raised: the lead card, one to a page, and the tiles on it. */
 .lead {
@@ -314,7 +258,7 @@ h2, .text-head { font-size: var(--text-head); font-weight: 600; letter-spacing: 
   font-weight: 500; text-decoration: none;
   transition: background var(--dur-pointer) ease, box-shadow var(--dur-pointer) ease, color var(--dur-pointer) ease;
 }
-.line:hover { background: var(--line-over); color: var(--ink); }
+.line:is(:hover, [data-as~="over"]) { background: var(--line-over); color: var(--ink); }
 .line[aria-current="page"] { background: var(--raised); color: var(--accent-ink); font-weight: 600; box-shadow: var(--shadow-line-on); }
 .line .count { font-size: var(--text-label); font-weight: 400; color: var(--muted); }
 
@@ -340,14 +284,14 @@ h2, .text-head { font-size: var(--text-head); font-weight: 600; letter-spacing: 
   font-weight: 600; text-decoration: none; box-shadow: var(--shadow-button);
   transition: transform var(--dur-pointer) ease, box-shadow var(--dur-pointer) ease;
 }
-.push:hover { transform: translateY(-1px); box-shadow: var(--shadow-button-over); color: var(--on-button); }
-.push:active { transform: translateY(0); }
+.push:is(:hover, [data-as~="over"]) { transform: translateY(-1px); box-shadow: var(--shadow-button-over); color: var(--on-button); }
+.push:is(:active, [data-as~="pressed"]) { transform: translateY(0); }
 .quiet {
   display: inline-flex; align-items: center; min-height: var(--h-control); padding: 0 14px;
   border-radius: var(--r-pill); background: var(--quiet); color: var(--ink);
   font-weight: 600; text-decoration: none; transition: background var(--dur-pointer) ease;
 }
-.quiet:hover { background: var(--quiet-over); color: var(--ink); }
+.quiet:is(:hover, [data-as~="over"]) { background: var(--quiet-over); color: var(--ink); }
 .more { display: inline-flex; align-items: center; min-height: var(--h-control); font-weight: 600; text-decoration: none; }
 
 /* TABS: a sunken track, and the selected tab raised out of it. */
@@ -357,7 +301,7 @@ h2, .text-head { font-size: var(--text-head); font-weight: 600; letter-spacing: 
   background: transparent; color: var(--muted); font-weight: 600;
   transition: background var(--dur-pointer) ease, box-shadow var(--dur-pointer) ease, color var(--dur-pointer) ease;
 }
-.tab:hover { color: var(--ink); }
+.tab:is(:hover, [data-as~="over"]) { color: var(--ink); }
 .tab[aria-pressed="true"] { background: var(--raised); color: var(--accent-ink); box-shadow: var(--shadow-tab-on); }
 
 /* A TABLE: one part, whatever it lists. Each table says only how its columns share the width. */
@@ -374,7 +318,7 @@ h2, .text-head { font-size: var(--text-head); font-weight: 600; letter-spacing: 
 /* A row that opens its object: no rule under it, a soft fill under the pointer, its name in the
    accent's ink. */
 .table > a.row { text-decoration: none; border-bottom-color: transparent; border-radius: var(--r-row); transition: background var(--dur-pointer) ease; }
-.table > a.row:hover { background: var(--accent-soft); color: var(--ink); }
+.table > a.row:is(:hover, [data-as~="over"]) { background: var(--accent-soft); color: var(--ink); }
 .table > a.row .name { color: var(--accent-ink); }
 .table.holdings > * { grid-template-columns: 2fr 1.4fr 1fr 1fr; }
 .table.lines > * { grid-template-columns: 1fr 2.05fr 1.45fr 0.95fr 0.95fr 1.15fr 1.95fr; }
@@ -394,7 +338,7 @@ h2, .text-head { font-size: var(--text-head); font-weight: 600; letter-spacing: 
   background: transparent; color: inherit; font-weight: inherit; font-size: inherit;
   transition: color var(--dur-pointer) ease;
 }
-.sort:hover { color: var(--ink); }
+.sort:is(:hover, [data-as~="over"]) { color: var(--ink); }
 .sort[data-sort] { color: var(--ink); }
 .sort[data-sort="descending"]::after { content: "\2193"; }
 .sort[data-sort="ascending"]::after { content: "\2191"; }
@@ -457,7 +401,7 @@ h2, .text-head { font-size: var(--text-head); font-weight: 600; letter-spacing: 
   border-radius: var(--r-pill); background: var(--quiet); color: var(--ink); font-weight: 600;
   transition: background var(--dur-pointer) ease, box-shadow var(--dur-pointer) ease, color var(--dur-pointer) ease;
 }
-.filter:hover { background: var(--quiet-over); }
+.filter:is(:hover, [data-as~="over"]) { background: var(--quiet-over); }
 .filter .count { font-size: var(--text-label); font-weight: 400; color: var(--muted); }
 .filter[aria-pressed="true"] { background: var(--raised); color: var(--accent-ink); box-shadow: var(--shadow-line-on); }
 .filter[aria-pressed="true"] .count { color: var(--accent-ink); }
@@ -495,7 +439,7 @@ h2, .text-head { font-size: var(--text-head); font-weight: 600; letter-spacing: 
 }
 
 /* THE KEYBOARD: every control shows where the keyboard is, in one ring. */
-:is(.line, .tab, .push, .quiet, .more, .card.lift, .table > a.row, .sort, .filter, .find, .choice > select, .tick > input):focus-visible {
+:is(.line, .tab, .push, .quiet, .more, .card.lift, .table > a.row, .sort, .filter, .find, .choice > select, .tick > input):is(:focus-visible, [data-as~="keyboard"]) {
   outline: none; box-shadow: var(--focus);
 }
 
@@ -511,7 +455,7 @@ h2, .text-head { font-size: var(--text-head); font-weight: 600; letter-spacing: 
 @media (prefers-reduced-motion: reduce) {
   .arrive, .fade { animation: none; }
   .card.lift, .push, .line, .tab, .table > a.row, .quiet, .sort, .filter, .tick > input { transition: none; }
-  .card.lift:hover, .push:hover { transform: none; }
+  .card.lift:is(:hover, [data-as~="over"]), .push:is(:hover, [data-as~="over"]) { transform: none; }
 }
 @media (prefers-reduced-transparency: reduce) {
   .glass { background: var(--glass-solid); -webkit-backdrop-filter: none; backdrop-filter: none; }
