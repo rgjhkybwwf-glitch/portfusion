@@ -153,11 +153,62 @@ def written_up(lines: list[str], checkout) -> int:
 GUIDES, NOT_GUIDES = ("README.md", "CONTRIBUTING.md", "CLAUDE.md", "docs/*.md"), ("docs/ux-audit.md",)
 
 
+#: The guides at the root, which a guide may name in words by their stem: "CONTRIBUTING's ...".
+GUIDE_STEMS = ("README", "CONTRIBUTING", "CLAUDE", "CHANGELOG")
+
+#: A section named in words: a guide (a link to one, its name in code, or its stem), then `'s` or
+#: `,` and the section's name, capitalised, to the first mark that ends it. A guide's bare `X.md`
+#: names one by `'s`, or by `,` straight after a bracket ("(CONTRIBUTING.md, Merging)"), so prose
+#: and a row of data do not; "that file's" names one of the file named last before it in the
+#: paragraph, when that file is a guide. A line break may fall anywhere a space does.
+_GAP = r"[ \t]*\n?[ \t]*"
+_NAME = rf"(?P<name>(?:[A-Z][a-z][\w'’-]*|A)(?:{_GAP}[\w'’-]+)*)"
+SECTION = re.compile(
+    r"(?:\[`?[\w./-]+\.md`?\]\((?P<target>[\w./-]+\.md)\)|`(?P<code>[\w./-]+\.md)`"
+    rf"|(?<![\w./`:-])(?P<stem>{'|'.join(GUIDE_STEMS)})(?![\w./`-])"
+    rf"|(?<=\()(?P<paren>[\w./-]+\.md)(?=,))(?:'s|’s|,){_GAP}{_NAME}"
+    rf"|(?:(?<![\w./`:-])(?P<bare>[\w./-]+\.md)(?![\w./`-])|(?P<that>\b[Tt]hat{_GAP}file))"
+    rf"(?:'s|’s){_GAP}{_NAME.replace('name', 'name2')}")
+
+#: A file named in a paragraph, for "that file's": a path with an extension, or a guide's stem.
+NAMED = re.compile(rf"(?<![\w./:-])(?:[\w./-]+\.\w+|(?:{'|'.join(GUIDE_STEMS)})\b)")
+
+
+def section_pointers(text: str) -> list[tuple[int, str]]:
+    """(line, `path::Section`) for every section a guide names in words, in its prose and in its
+    fenced blocks' comments, which name sections too ("# once per terminal (CONTRIBUTING, Setting
+    up)").
+
+    The name runs to the first mark after it, so it may carry the words that follow the section's
+    own ("Setting up has the line"): the test that reads it asks for a heading it begins with."""
+    # A fenced line keeps only its comment, so a command or a row of data names no section.
+    text = re.sub(r"```.*?```", lambda m: "\n".join(
+        re.split(r"(?:^|\s)#\s", line, maxsplit=1)[1] if re.search(r"(?:^|\s)#\s", line) else ""
+        for line in m.group().split("\n")), text, flags=re.S)
+    out = []
+    for m in SECTION.finditer(text):
+        path = m["target"] or m["code"] or m["stem"] or m["paren"] or m["bare"]
+        if m["that"]:
+            # Back to the paragraph's start, or the list item's.
+            start = max((b.end() for b in re.finditer(r"\n\s*\n|\n[ \t]*[-*] ", text[:m.start()])),
+                        default=0)
+            before = NAMED.findall(text[start:m.start()])
+            if not before or not (before[-1].endswith(".md") or before[-1] in GUIDE_STEMS):
+                continue
+            path = before[-1]
+        path = path if path.endswith(".md") else path + ".md"
+        name = " ".join((m["name"] or m["name2"]).split())
+        out.append((text.count("\n", 0, m.start()) + 1, f"{path}::{name}"))
+    return out
+
+
 def guide_pointers(text: str) -> list[tuple[int, str]]:
-    """(line, pointer) for every path a guide names in code or as a link target.
+    """(line, pointer) for every path a guide names in code or as a link target, and every section
+    it names in words (`section_pointers`).
 
     A fenced block is blanked line for line so the numbers stay true. A span holding a space is a
     command and one holding `*` or `<` a pattern; a bare extension names a kind of file, not one."""
+    sections = section_pointers(text)
     text = re.sub(r"```.*?```", lambda m: "\n" * m.group().count("\n"), text, flags=re.S)
     out = []
     for n, line in enumerate(text.splitlines(), 1):
@@ -171,7 +222,7 @@ def guide_pointers(text: str) -> list[tuple[int, str]]:
             if (re.search(r"\.(py|md|csv|json|css|js|html|ini|toml|txt|xlsx)$", path)
                     or ("/" in path and re.fullmatch(r"[\w./-]+", path))):
                 out.append((n, t))
-    return out
+    return out + sections
 
 
 def behind(sha: str, checkout, base: str = "origin/main") -> dict[str, list[str]]:
@@ -206,7 +257,7 @@ def behind(sha: str, checkout, base: str = "origin/main") -> dict[str, list[str]
         here = str(pathlib.PurePosixPath(guide).parent)
         text = subprocess.run(["git", "show", f"{sha}:{guide}"], cwd=root, capture_output=True,
                               text=True, encoding="utf-8", errors="replace").stdout
-        named = {names(p, here) for _, p in guide_pointers(text)}
+        named = {n for _, p in guide_pointers(text) if (n := names(p, here))}
         left = sorted(n for n in named & changed if not n.endswith(".md"))
         if left:
             out[guide] = left

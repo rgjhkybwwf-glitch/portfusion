@@ -306,6 +306,44 @@ def test_a_guide_left_behind_is_named_and_the_push_goes_on(pushed, capfd, monkey
     assert pre_push.behind("HEAD", pushed) == {}
 
 
+def test_a_section_named_in_words_is_a_pointer():
+    """A guide that names a section in words points at it as surely as a path does: by a guide's
+    stem, its name in code, or a link to it, then `'s` or `,`, then the section, across a line
+    break, in a fenced comment, or after "that file's" for the guide named last in its paragraph or
+    list item. Prose, a command, a row of data and a file that is no guide name none. The test that every pointer leads somewhere then
+    asks the guide for that heading."""
+    from portfusion.hooks.pre_push import guide_pointers, section_pointers
+    text = ("Set up by CONTRIBUTING's Setting up (the hooks); see CONTRIBUTING, Commits and pull\n"
+            "requests, and (docs/store.md, Your book's data).\n"
+            "\n"
+            "```bash\n"
+            "source .venv/bin/activate   # once per terminal (CONTRIBUTING, Setting up)\n"
+            "file,notes.md,Broker statement\n"
+            "```\n"
+            "\n"
+            "[`CONTRIBUTING.md`](../CONTRIBUTING.md)'s\n"
+            "Setting up has the line, and `docs/store.md`, Columns, the rest.\n"
+            "\n"
+            "[`CONTRIBUTING.md`](../CONTRIBUTING.md) has it, and that file's Setting up the demo.\n"
+            "\n"
+            "Setting up's venv line names no guide, CONTRIBUTING's rules no section, in docs/store.md,\n"
+            "Columns is prose, and `record/rules.py` is no guide, so that file's Method names none.\n"
+            "See https://example.com/README.md, Then go.\n"
+            "\n"
+            "- one in `docs/a.md`\n"
+            "- and in `tools/x.py`, whose item ends at the next: that file's Setting up names none\n")
+    assert section_pointers(text) == [
+        (1, "CONTRIBUTING.md::Setting up"),
+        (1, "CONTRIBUTING.md::Commits and pull requests"),
+        (2, "docs/store.md::Your book's data"),
+        (5, "CONTRIBUTING.md::Setting up"),
+        (9, "../CONTRIBUTING.md::Setting up has the line"),
+        (10, "docs/store.md::Columns"),
+        (12, "../CONTRIBUTING.md::Setting up the demo"),
+    ]
+    assert set(section_pointers(text)) <= set(guide_pointers(text))
+
+
 def test_a_main_moved_on_github_and_not_fetched_is_never_overwritten(pushed, tmp_path):
     """A merge made on GitHub that this checkout has not pulled: what a push would overwrite has
     not been seen here, so not even the override lets it through."""
