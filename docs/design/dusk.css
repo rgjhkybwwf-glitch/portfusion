@@ -1,0 +1,65 @@
+/* THE DARK SCHEME, DUSK: the maintainer's choice (README.md, The two schemes). The light look's
+   warm paper, turned down to warm graphite. Each page links this file after look.css, for a Mac
+   set to dark:
+
+     <link rel="stylesheet" href="dusk.css" media="(prefers-color-scheme: dark)">
+
+   It gives some of look.css's tokens a second value and holds nothing else, so no part has a rule
+   of its own in the dark. Only colour and light change: every corner, gap, size and motion is the
+   light scheme's, and so are the button and the mark's tile. A surface lifts by a lit top edge
+   and a deeper shadow, since a shadow barely shows on a dark ground, and what is raised out of a
+   surface is a lighter step of it, never a darker box. */
+
+:root {
+  color-scheme: dark;
+
+  /* Colour */
+  --ground:        #141316;
+  --glow-violet:   rgba(124, 108, 255, 0.13);
+  --glow-warm:     rgba(226, 150, 96, 0.06);
+  --surface:       #222026;
+  --raised:        rgba(255, 255, 255, 0.075);
+  --sunken:        #1A191D;
+  --divider:       #34323A;
+  --divider-soft:  #2A282F;
+  --ink:           #EDEBF0;
+  --muted:         #A9A6B3;
+  --accent:        #978CFF;
+  --accent-ink:    #B7AFFF;
+  --accent-soft:   rgba(151, 140, 255, 0.12);
+  --lead:          linear-gradient(135deg, rgba(70, 59, 165, 0.62) 0%, rgba(44, 37, 104, 0.62) 100%);
+  --lead-solid:    linear-gradient(135deg, #3A3186 0%, #272254 100%);
+  --lead-ink:      #F2F0FF;
+  --lead-muted:    #C3BDEB;
+  --quiet:         rgba(255, 255, 255, 0.07);
+  --quiet-over:    rgba(255, 255, 255, 0.12);
+  --line-over:     rgba(255, 255, 255, 0.05);
+  --up:            #5ACFA3;
+  --down:          #FF9C78;
+  --problem:       #3D241B;
+  --problem-ink:   #FFB8A0;
+  --gap-tag:       #3A3114;
+  --gap-ink:       #F1D57E;
+  --clear:         #163A2E;
+  --clear-ink:     #93E0BE;
+  --closed:        #2E2C33;
+  --closed-ink:    #B5B2BE;
+  --glass:         rgba(28, 27, 32, 0.62);
+  --glass-solid:   #1D1C21;
+  --chart-grid:    #302E35;
+  --chart-base:    #45424C;
+  --contrast-edge: #908D9B;
+
+  /* The three heights in the dark: the edge is lit, and the shadow falls deeper. */
+  --shadow-well:        inset 0 1px 3px rgba(0, 0, 0, 0.45), inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+  --shadow-card:        inset 0 1px 0 rgba(255, 255, 255, 0.055), 0 0 0 1px rgba(255, 255, 255, 0.038), 0 1px 2px rgba(0, 0, 0, 0.30), 0 12px 28px -10px rgba(0, 0, 0, 0.50);
+  --shadow-card-over:   inset 0 1px 0 rgba(255, 255, 255, 0.077), 0 0 0 1px rgba(255, 255, 255, 0.055), 0 2px 4px rgba(0, 0, 0, 0.35), 0 20px 36px -12px rgba(0, 0, 0, 0.62);
+  --shadow-lead:        inset 0 1px 0 rgba(255, 255, 255, 0.11), inset 0 0 0 1px rgba(170, 160, 255, 0.14), 0 2px 4px rgba(0, 0, 0, 0.25), 0 28px 56px -22px rgba(79, 63, 214, 0.45);
+  --shadow-tile:        inset 0 1px 0 rgba(255, 255, 255, 0.066), 0 0 0 1px rgba(255, 255, 255, 0.033), 0 8px 18px -8px rgba(0, 0, 0, 0.50);
+  --shadow-line-on:     inset 0 1px 0 rgba(255, 255, 255, 0.066), 0 0 0 1px rgba(255, 255, 255, 0.044), 0 1px 2px rgba(0, 0, 0, 0.30), 0 6px 16px -6px rgba(0, 0, 0, 0.45);
+  --shadow-tab-on:      inset 0 1px 0 rgba(255, 255, 255, 0.066), 0 0 0 1px rgba(255, 255, 255, 0.044), 0 1px 2px rgba(0, 0, 0, 0.35), 0 4px 10px -4px rgba(0, 0, 0, 0.45);
+  --shadow-button:      inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 1px 2px rgba(0, 0, 0, 0.35), 0 8px 18px -6px rgba(79, 63, 214, 0.55);
+  --shadow-button-over: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 2px 4px rgba(0, 0, 0, 0.35), 0 12px 22px -6px rgba(79, 63, 214, 0.65);
+  --shadow-glass:       inset 0 1px 0 rgba(255, 255, 255, 0.072), inset 0 0 0 1px rgba(255, 255, 255, 0.044), 0 1px 2px rgba(0, 0, 0, 0.25), 0 18px 40px -18px rgba(0, 0, 0, 0.55);
+  --shadow-choice:      inset 0 1px 0 rgba(255, 255, 255, 0.055), 0 0 0 1px rgba(255, 255, 255, 0.10), 0 1px 2px rgba(0, 0, 0, 0.30);
+}
