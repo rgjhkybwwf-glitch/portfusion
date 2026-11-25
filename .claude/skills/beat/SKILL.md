@@ -35,9 +35,10 @@ Written by the skill `end-of-run`, once nothing is left to wait for:
 `🌙 **Builder** · 17 Nov 00:30–01:17 · built #250, merged · Decided for you: #250 · Next: …`
 
 The mark, the date, when the run began and ended, what it did in a line, then "Decided for you:"
-and each issue the run decided a choice on (left out when it decided nothing), and its `Next:`
-line. A hold and a fault, when the run had one, go between what it did and "Decided for you:",
-the hold first, as below. The morning's digest is put together from these lines.
+and each issue the run decided a choice on (left out when it decided nothing), each page it
+published after `Page:` (left out when it published none), and its `Next:` line. A hold and a
+fault, when the run had one, go between what it did and "Decided for you:", the hold first, as
+below. The morning's digest is put together from these lines.
 
 A run the Stop hook held says so after what it did, in the hook's own words, as in
 "· built #250, merged · held 1× for `guard`, 12 min · Next: …". The skill `end-of-run` says where
@@ -50,6 +51,13 @@ follow as written, or a tool or an access its rules call for, and give no way ro
 it. A red guard, a plan the checker refused and a question are the work, and are no fault. The
 part is one line: each fault in a few words, the tool or the place first and then what it did, two
 faults parted by `;`. A run that met none leaves the part out.
+
+A run that published a page with the Artifact tool names it after "Decided for you:" and before
+`Next:`, after the word `Page:`, by its title and link, as in "· Fault: … · Decided for you: #145
+· Page: A spread bet's life https://claude.ai/artifact/… · Next: …". Two pages are parted by
+`;`, and a title loses any `·` or `;` it holds, so the line still parts where it should. The maintainer's project reads the part to copy
+each page in, since a routine's page is not in the project's list (`CONTRIBUTING.md`, Telling the
+maintainer). A run that published none leaves the part out.
 
 The time it began is the start line's, to the minute: the two lines are paired by it. The time
 stays first after the mark; a run started for a re-plan says so after its time.

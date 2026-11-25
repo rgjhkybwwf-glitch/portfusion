@@ -26,4 +26,6 @@ The evidence is folded under `<details>`.
 
 It shows today's page and each option, on the demo's names. It is a private page published with
 the Artifact tool and touches no code. A run that cannot publish without stopping to ask gives
-words and a picture of today's page instead, and says so.
+words and a picture of today's page instead, and says so. The card links the page, and the run's
+end line names it after `Page:`, as the skill `beat` gives it, so the maintainer's project can
+copy it in.
