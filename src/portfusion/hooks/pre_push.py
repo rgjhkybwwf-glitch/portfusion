@@ -156,31 +156,46 @@ GUIDES, NOT_GUIDES = ("README.md", "CONTRIBUTING.md", "CLAUDE.md", "docs/*.md"),
 #: The guides at the root, which a guide may name in words by their stem: "CONTRIBUTING's ...".
 GUIDE_STEMS = ("README", "CONTRIBUTING", "CLAUDE", "CHANGELOG")
 
-#: A section named in words: a guide (`X.md`, a link to one, or its stem), then `'s` or `,`, then
-#: the section's name, capitalised, to the first mark that ends it; or "that file's" for the guide
-#: named last before it in the same paragraph. A line break may fall anywhere a space does.
+#: A section named in words: a guide (a link to one, its name in code, or its stem), then `'s` or
+#: `,` and the section's name, capitalised, to the first mark that ends it. A guide's bare `X.md`
+#: names one by `'s`, or by `,` straight after a bracket ("(CONTRIBUTING.md, Merging)"), so prose
+#: and a row of data do not; "that file's" names one of the file named last before it in the
+#: paragraph, when that file is a guide. A line break may fall anywhere a space does.
+_GAP = r"[ \t]*\n?[ \t]*"
+_NAME = rf"(?P<name>(?:[A-Z][a-z][\w'’-]*|A)(?:{_GAP}[\w'’-]+)*)"
 SECTION = re.compile(
     r"(?:\[`?[\w./-]+\.md`?\]\((?P<target>[\w./-]+\.md)\)|`(?P<code>[\w./-]+\.md)`"
-    rf"|(?<![\w./`-])(?P<bare>[\w./-]+\.md|{'|'.join(GUIDE_STEMS)})(?![\w./`-])"
-    r"|(?P<that>\b[Tt]hat[ \t]*\n?[ \t]*file))"
-    r"(?:'s|’s|,)[ \t]*\n?[ \t]*(?P<name>[A-Z][a-z][\w-]*(?:[ \t]*\n?[ \t]*[\w-]+)*)")
+    rf"|(?<![\w./`:-])(?P<stem>{'|'.join(GUIDE_STEMS)})(?![\w./`-])"
+    rf"|(?<=\()(?P<paren>[\w./-]+\.md)(?=,))(?:'s|’s|,){_GAP}{_NAME}"
+    rf"|(?:(?<![\w./`:-])(?P<bare>[\w./-]+\.md)(?![\w./`-])|(?P<that>\b[Tt]hat{_GAP}file))"
+    rf"(?:'s|’s){_GAP}{_NAME.replace('name', 'name2')}")
+
+#: A file named in a paragraph, for "that file's": a path with an extension, or a guide's stem.
+NAMED = re.compile(rf"[\w./-]+\.\w+|\b(?:{'|'.join(GUIDE_STEMS)})\b")
 
 
 def section_pointers(text: str) -> list[tuple[int, str]]:
-    """(line, `path::Section`) for every section a guide names in words, fenced comments too.
+    """(line, `path::Section`) for every section a guide names in words, in its prose and in its
+    fenced blocks' comments, which name sections too ("# once per terminal (CONTRIBUTING, Setting
+    up)").
 
     The name runs to the first mark after it, so it may carry the words that follow the section's
     own ("Setting up has the line"): the test that reads it asks for a heading it begins with."""
+    # A fenced line keeps only its comment, so a command or a row of data names no section.
+    text = re.sub(r"```.*?```", lambda m: "\n".join(
+        re.split(r"(?:^|\s)#\s", line, maxsplit=1)[1] if re.search(r"(?:^|\s)#\s", line) else ""
+        for line in m.group().split("\n")), text, flags=re.S)
     out = []
     for m in SECTION.finditer(text):
-        path = m["target"] or m["code"] or m["bare"]
+        path = m["target"] or m["code"] or m["stem"] or m["paren"] or m["bare"]
         if m["that"]:
-            before = re.findall(r"[\w./-]+\.md", text[text.rfind("\n\n", 0, m.start()) + 1:m.start()])
-            if not before:
+            before = NAMED.findall(text[text.rfind("\n\n", 0, m.start()) + 1:m.start()])
+            if not before or not (before[-1].endswith(".md") or before[-1] in GUIDE_STEMS):
                 continue
             path = before[-1]
         path = path if path.endswith(".md") else path + ".md"
-        out.append((text.count("\n", 0, m.start()) + 1, f"{path}::{' '.join(m['name'].split())}"))
+        name = " ".join((m["name"] or m["name2"]).split())
+        out.append((text.count("\n", 0, m.start()) + 1, f"{path}::{name}"))
     return out
 
 

@@ -15,7 +15,7 @@ from collections import Counter, defaultdict
 from datetime import date as _date
 import pytest
 from harness import needs, free_id
-from portfusion.hooks.pre_push import guide_pointers
+from portfusion.hooks.pre_push import guide_pointers, section_pointers
 
 # =====================================================================================
 # Identity and referential integrity
@@ -820,9 +820,10 @@ def test_every_pointer_in_a_guide_leads_somewhere(repo_root, project_files):
     The guides point rather than restate, so a pointer is most of what one holds, and it goes stale
     when the thing it names moves. A path must name a listed file or folder (from the root, from
     the guide's own folder, or by a tail only one path has, or only the path nearest the root has)
-    or one git ignores; after `:` or `::`, the name must be in that file, and in a guide it must be
-    a section's heading, as a section named in words is ("CONTRIBUTING's Setting up"). Code points
-    at guides too, so a `.py` file naming a CLAUDE.md is held to the same.
+    or one git ignores; after `:` or `::`, the name must be in that file. A section a guide names
+    in words ("CONTRIBUTING's Setting up") must be a heading of that guide, but in the CHANGELOG's
+    released entries, which are history. Code points at guides too, so a `.py` file naming a
+    CLAUDE.md is held to the same.
     """
     import subprocess
     # Every listed file whatever its suffix, by project_files' own git call, which filters by one.
@@ -848,11 +849,35 @@ def test_every_pointer_in_a_guide_leads_somewhere(repo_root, project_files):
         return any(subprocess.run(["git", "check-ignore", "-q", c], cwd=repo_root).returncode == 0
                    for c in (path, f"{here}/{path}"))
 
+    # Each guide's sections: a `#` heading or a line wholly bold, outside its fenced blocks, and
+    # a heading's words before its comma ("Which issues, in what order"). A section named in words
+    # begins with one; the words may run on past it ("Setting up has the line").
+    headings = {}
+    for guide in project_files(".md"):
+        text = re.sub(r"```.*?```", "", guide.read_text(encoding="utf-8"), flags=re.S)
+        headings[guide.relative_to(repo_root).as_posix()] = {
+            h for whole in re.findall(r"^(?:#+\s+(.+?)|\*\*([^*]+)\*\*)\s*$", text, re.M)
+            for h in (whole[0] or whole[1], (whole[0] or whole[1]).split(",")[0])}
+
     broken = []
     for guide in project_files(".md"):
         rel = guide.relative_to(repo_root).as_posix()
         here = guide.parent.relative_to(repo_root).as_posix()
-        for n, pointer in guide_pointers(guide.read_text(encoding="utf-8")):
+        text = guide.read_text(encoding="utf-8")
+        sections = set(section_pointers(text))
+        # A released entry of the CHANGELOG is history: it named the sections as they were then.
+        current = set(section_pointers(re.split(r"^## (?!Unreleased)", text, maxsplit=1,
+                                                flags=re.M)[0])) if rel == "CHANGELOG.md" else sections
+        for n, pointer in guide_pointers(text):
+            if (n, pointer) in sections:
+                if (n, pointer) not in current:
+                    continue
+                found, name = find(pointer.split("::")[0], here), pointer.split("::", 1)[1]
+                if found not in headings:
+                    broken.append(f"{rel}:{n}: {pointer} — no such guide")
+                elif not any(re.match(re.escape(h) + r"(?!\w)", name) for h in headings[found]):
+                    broken.append(f"{rel}:{n}: {pointer} — {found} has no section {name}")
+                continue
             if pointer in NAMED_ON_PURPOSE:
                 continue
             given, _, name = re.match(r"([^:]+)(:+)?(.*)", pointer).groups()
@@ -865,16 +890,6 @@ def test_every_pointer_in_a_guide_leads_somewhere(repo_root, project_files):
                 # As written: a pattern ending in `/` ignores only a folder, and says so by the slash.
                 if not ignored(given, here):
                     broken.append(f"{rel}:{n}: {pointer} — no such file or folder")
-                continue
-            if found.endswith(".md") and name and (repo_root / found).is_file():
-                # A guide's name is a section's: a `#` heading or a line wholly bold, or that
-                # heading's words before its comma. The words may run on past it.
-                headings = {h for whole in re.findall(
-                    r"^(?:#+\s+(.+?)|\*\*([^*]+)\*\*)\s*$",
-                    (repo_root / found).read_text(encoding="utf-8"), re.M)
-                    for h in (whole[0] or whole[1], (whole[0] or whole[1]).split(",")[0])}
-                if not any(name == h or name.startswith(h + " ") for h in headings):
-                    broken.append(f"{rel}:{n}: {pointer} — {found} has no section {name}")
                 continue
             name = name.split("(")[0]
             if name and not name.isdigit() and (repo_root / found).is_file() and not re.search(

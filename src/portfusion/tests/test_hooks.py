@@ -310,13 +310,15 @@ def test_a_section_named_in_words_is_a_pointer():
     """A guide that names a section in words points at it as surely as a path does: by a guide's
     stem, its name in code, or a link to it, then `'s` or `,`, then the section, across a line
     break, in a fenced comment, or after "that file's" for the guide named last in the paragraph.
-    The test that every pointer leads somewhere then asks the guide for that heading."""
+    Prose, a command and a row of data name none. The test that every pointer leads somewhere then
+    asks the guide for that heading."""
     from portfusion.hooks.pre_push import guide_pointers, section_pointers
     text = ("Set up by CONTRIBUTING's Setting up (the hooks); see CONTRIBUTING, Commits and pull\n"
-            "requests.\n"
+            "requests, and (docs/store.md, Your book's data).\n"
             "\n"
             "```bash\n"
             "source .venv/bin/activate   # once per terminal (CONTRIBUTING, Setting up)\n"
+            "file,notes.md,Broker statement\n"
             "```\n"
             "\n"
             "[`CONTRIBUTING.md`](../CONTRIBUTING.md)'s\n"
@@ -324,15 +326,17 @@ def test_a_section_named_in_words_is_a_pointer():
             "\n"
             "[`CONTRIBUTING.md`](../CONTRIBUTING.md) has it, and that file's Setting up the demo.\n"
             "\n"
-            "Setting up's venv line names no guide, CONTRIBUTING's rules no section,\n"
-            "and that file's Setting up no guide before it in its paragraph.\n")
+            "Setting up's venv line names no guide, CONTRIBUTING's rules no section, in docs/store.md,\n"
+            "Columns is prose, and `record/rules.py` is no guide, so that file's Method names none.\n"
+            "See https://example.com/README.md, Then go.\n")
     assert section_pointers(text) == [
         (1, "CONTRIBUTING.md::Setting up"),
         (1, "CONTRIBUTING.md::Commits and pull requests"),
+        (2, "docs/store.md::Your book's data"),
         (5, "CONTRIBUTING.md::Setting up"),
-        (8, "../CONTRIBUTING.md::Setting up has the line"),
-        (9, "docs/store.md::Columns"),
-        (11, "../CONTRIBUTING.md::Setting up the demo"),
+        (9, "../CONTRIBUTING.md::Setting up has the line"),
+        (10, "docs/store.md::Columns"),
+        (12, "../CONTRIBUTING.md::Setting up the demo"),
     ]
     assert set(section_pointers(text)) <= set(guide_pointers(text))
 
