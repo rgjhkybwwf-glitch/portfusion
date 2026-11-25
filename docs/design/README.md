@@ -238,7 +238,7 @@ side by side.
 | Prices | `chart-line.svg` |
 | Trades | `arrow-left-right.svg` |
 | Round trips | `repeat.svg` |
-| What changed | `history.svg` |
+| What changed <!-- tab-name-ok: the new menu's line, in sentence case --> | `history.svg` |
 | Method | `book-open.svg` |
 | Refresh prices, the main button | `refresh-cw.svg` |
 | a tag: a problem | `circle-alert.svg` |
