@@ -49,7 +49,7 @@ where one of their columns needs saying, the live table's field it is banked fro
 | `cost` · `level_points` | on a buy: a share's settled sterling, or a spread bet's entry level in points; the other is blank; on `quarter-snapshots.csv`, a frozen line's cost |
 | `broker_ref` | the deal's own reference (a contract number, a deal id), never a SEDOL; blank where no document prints one |
 | `traded_price` | a deal's price as its document states it: never sterling ÷ quantity, which carries the dealing charge |
-| `rate` | on `buys.csv`, `sales.csv` and `income.csv`, units of the other currency per £1, and only the broker's, where its document states one; on `fx.csv`, units of the currency per £1, the feed's or one typed by hand, banked into `fx-history.csv`, where a typed one's `struck` is blank |
+| `rate` | on `buys.csv`, `sales.csv` and `income.csv`, units of the other currency per £1, and only the broker's, where its document states one; on `fx.csv`, units of the currency per £1, the feed's or one typed by hand, banked into `fx-history.csv` with its `struck`. A rate typed into that history itself has a blank one |
 | `category` · `contribution` · `quality` · `struck` · `key` · `funding` · `route` · `op` · `table` | `record/schema.py`'s closed list, printed in [the glossary](glossary.md)'s §9 |
 | `income.ticker` | the line a dividend was paid on; blank on interest, fees and funding |
 | `mark_key` · `current-prices.price` | a mark, what a line is worth, filed under a share's ticker or a bet's contract; `price-history.csv` banks each |

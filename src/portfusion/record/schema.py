@@ -500,7 +500,8 @@ FX = Table(
         Field("currency", "str", holds="the currency the rate converts"),
         Field("rate", "float", **QUOTE,
               holds=("units of the currency per £1, the feed's or one typed by hand, banked into "
-                     "`fx-history.csv`, where a typed one's `struck` is blank")),
+                     "`fx-history.csv` with its `struck`. A rate typed into that history itself "
+                     "has a blank one")),
         Field("as_of", "str"),
         Field("source", "str", holds=_SOURCE),
         # `struck`: a session close or a live read, as current-prices.csv says it.
