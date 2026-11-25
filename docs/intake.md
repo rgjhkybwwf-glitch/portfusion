@@ -28,20 +28,8 @@ it.
 **The Bench's gates all clear before a row is approved.** An income row whose sign is not its
 category's usual one (a dividend out, a fee in) holds the item until the sign is confirmed.
 
-Where the code lives; `desk/intake/__init__.py` names every module:
-
-| Module | Does |
-|---|---|
-| `desk/intake/dropoff.py` | the one door into `_inbox/` |
-| `desk/intake/read_rows.py` | reads a document the record recognises, as it opens |
-| `desk/intake/propose.py` | a Claude session's reading, each quote checked by `verify.py` |
-| `desk/intake/bench.py` | the item: kept, read and previewed |
-| `desk/intake/bench_form.py` | the item's form: each column, its choices, and a row checked as the loader checks it |
-| `desk/intake/bench_gates.py` | the item's gates, and its approval |
-| `desk/intake/recorded.py` | asks what the record already holds: a row, a reference, an account |
-| `desk/intake/filing.py` | names a document and the date it is filed under |
-| `desk/intake/withdraw.py` | the one door out of `_inbox/` for a document not used |
-| `desk/intake/sweep.py` | every read the desk asks of the feeds; it writes nothing |
+Where the code lives: `desk/intake/__init__.py` names every module and what it does, and each
+module's own docstring the rest.
 
 ## What rests where
 

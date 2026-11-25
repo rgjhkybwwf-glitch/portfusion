@@ -980,39 +980,43 @@ def _glossary(root):
 
 
 def test_the_generated_half_of_the_glossary_matches_the_constants(repo_root):
-    """docs/glossary.md's §9 is GENERATED, and this is what makes that worth anything.
+    """docs/glossary.md's §9 is GENERATED, and so is docs/store.md's table of the columns, and
+    this is what makes that worth anything.
 
     A GLOSSARY KEPT BY HAND DRIFTS. So the half with a code home is emitted from
-    `record/rules.py`, `record/schema.py` and `Book.HEADLINE`, and the checked-in file is
-    compared against what those constants produce right now.
+    `record/rules.py`, `record/schema.py` and `Book.HEADLINE`, the store's table from each
+    field's `holds`, and each checked-in file is compared against what the code produces now.
 
     IF THIS FAILS, THE DOCUMENT IS STALE AND THE CODE IS RIGHT — which is the rule stated at
     the foot of the glossary itself. Run `python3 tools/glossary.py --write` and commit the result;
     read the diff, because it is telling you a vocabulary moved.
 
-    THE MARKERS ARE PART OF THE CONTRACT. A glossary that has lost them is one where the
+    THE MARKERS ARE PART OF THE CONTRACT. A guide that has lost them is one where the
     generated block has been pasted in by hand, and that is the drift arriving by another route.
     """
     glossary = _glossary(repo_root)
-    text = (repo_root / "docs" / "glossary.md").read_text(encoding="utf-8")
-    assert glossary.BEGIN in text and glossary.END in text, (
-        "docs/glossary.md has lost its generated-block markers. §9 is emitted by glossary.py; "
-        "without them nothing can tell the derived half from the hand-written one.")
-
-    on_file = glossary.BEGIN + text.split(glossary.BEGIN, 1)[1].split(glossary.END, 1)[0] \
-        + glossary.END
-    fresh = glossary.generate().rstrip("\n")
     import unittest.mock
     from portfusion.engine import Book
     other = "Return since 2 Feb 2031 (MWR)"
     since = {other if k == Book.SINCE_START else k: v for k, v in Book.HEADLINE.items()}
+    fresh = glossary.generate().rstrip("\n")
     with unittest.mock.patch.multiple(Book, SINCE_START=other, HEADLINE=since):
         assert glossary.generate().rstrip("\n") == fresh, \
             "the generated block prints the loaded book's own day"
-    assert on_file == fresh, (
-        "docs/glossary.md's generated section no longer matches the constants it is derived "
-        "from. The CODE is right and the document is a defect — run `python3 tools/glossary.py "
-        "--write`, then read the diff: a vocabulary has moved.")
+
+    for guide, block in ((glossary.GLOSSARY, fresh),
+                         (glossary.STORE, glossary.generate(glossary.STORE).rstrip("\n"))):
+        name = f"docs/{guide.name}"
+        text = (repo_root / name).read_text(encoding="utf-8")
+        assert glossary.BEGIN in text and glossary.END in text, (
+            f"{name} has lost its generated-block markers. Its block is emitted by glossary.py; "
+            "without them nothing can tell the derived half from the hand-written one.")
+        on_file = glossary.BEGIN + text.split(glossary.BEGIN, 1)[1].split(glossary.END, 1)[0] \
+            + glossary.END
+        assert on_file == block, (
+            f"{name}'s generated section no longer matches the code it is derived from. The "
+            "CODE is right and the document is a defect — run `python3 tools/glossary.py "
+            "--write`, then read the diff: a vocabulary, or what a column may hold, has moved.")
 
 
 def test_the_generated_glossary_indexes_rather_than_redefines(repo_root):

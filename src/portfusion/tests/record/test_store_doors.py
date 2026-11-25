@@ -56,6 +56,9 @@ from harness import (ROOT, SRC, STORE_NAMES, TESTS, book_classes, engine_files,
 #:   init/__init__.py     a new book's tables and histories, each headed as the demo's are.
 #:   about.py             every table's bytes, read for the record's fingerprint in a page's stamp.
 #:   tools/make_demo.py   the demo's store, written whole (`test_demo.py` holds it to the demo).
+#:   tools/glossary.py    NOT THE STORE: the guide `docs/store.md`, whose table of the columns
+#:                        it writes from the schema, and whose name the census reads as the
+#:                        store's.
 #:
 #: A document is not the store: `desk/intake/read_document.py` reads _inbox/ and is not here.
 STORE_FILE_DOORS = {
@@ -63,7 +66,7 @@ STORE_FILE_DOORS = {
     "desk/doors/marks.py", "desk/doors/observations.py", "desk/doors/freeze.py",
     "history/_appendonly.py", "desk/doors/commit.py", "desk/doors/envelope.py",
     "desk/doors/research_notes.py",
-    "init/__init__.py", "about.py", "tools/make_demo.py",
+    "init/__init__.py", "about.py", "tools/make_demo.py", "tools/glossary.py",
 }
 
 

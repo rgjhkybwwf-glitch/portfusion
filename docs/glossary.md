@@ -342,4 +342,5 @@ asserted on import; the rest are held by the suite.
 ## Changing a word
 
 A word changes here and in its declaration in the same commit, and §9 is regenerated, by the skill
-[`change-a-word`](../.claude/skills/change-a-word/SKILL.md).
+[`change-a-word`](../.claude/skills/change-a-word/SKILL.md); the command that writes §9 writes
+[the store](store.md)'s table of its columns too.

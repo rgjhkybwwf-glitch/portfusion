@@ -20,6 +20,9 @@ Each release, newest first. The version is `src/portfusion/__init__.py`'s, and
   not make, stops it by name. The type checker reads `rules.X`, and a Book's `self.D.X`, from that
   one list. Its one name that goes is `rules.o`, a comprehension's variable nothing read; no fact
   of the record changes, and no figure moves.
+- **`docs/store.md`'s table of what each column may hold is written from the schema**: each
+  field's `holds` in `record/schema.py`, by `python3 tools/glossary.py --write`, and the suite
+  fails when the guide falls behind. The loader reads none of it, so no book moves.
 
 ### Removed
 

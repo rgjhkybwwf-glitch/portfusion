@@ -2,10 +2,10 @@
 // opened by its tab and must draw no error, draw each control in the shape of what it does, hold
 // no accessibility fault but the `KNOWN`, and look as its baseline does; the Dashboard, Holdings
 // and the Bench say "price", never "mark", and so do a holding's detail's headings; a finding is
-// followed to its page, what was checked stands apart from what needs attention, and the
-// Dashboard's "add a fact on the Bench" leads to the Bench; a wide
-// table's button to Trades is in view, a press on a row opens its detail in view, and a heading
-// that sorts shows it; a box that
+// followed to its page, what was checked stands apart from what needs attention, the closed-out
+// count leads to as many round trips, and the Dashboard's "add a fact on the Bench" leads to the
+// Bench; a wide table's button to Trades is in view, a press on a row opens its detail in view,
+// and a heading that sorts shows it; a holding's detail leads to its company's life; a box that
 // scrolls sideways marks each edge with more beyond it, and one that does not marks none; an open
 // detail leaves its table's width as it was, and runs whole as far as the box; a page chosen
 // by keyboard puts focus on its heading, one Tab from its first control, its tab buttons kept, and
