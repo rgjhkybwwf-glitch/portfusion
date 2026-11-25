@@ -16,13 +16,13 @@ derived from the ledger and the marks, against IG's own reading, struck in the s
 **The book's side is never typed.** A figure read off the document it is compared with makes the
 check agree with itself.
 
-**One sentence per account**, `Book.account_checks()`'s: what it was checked on, what was found,
-and the step that clears it. Reconcile shows it on the account's row; `portfusion record` and the
-Dashboard list it among their findings, the Dashboard with the step as its link's words and an
-account within its tolerance under What was checked. An account whose units agree is named only in
-the count of accounts checked against the broker. Reconcile and the Dashboard count a filed export
-again; `portfusion record`'s findings take the check made when it was filed, and its audit counts
-it again.
+**One sentence per account**, `engine/reconciliation.py::account_checks`'s: what it was checked
+on, what was found, and the step that clears it. Reconcile shows it on the account's row;
+`portfusion record` and the Dashboard list it among their findings, the Dashboard with the step as
+its link's words and an account within its tolerance under What was checked. An account whose
+units agree is named only in the count of accounts checked against the broker. Reconcile and the
+Dashboard count a filed export again; `portfusion record`'s findings take the check made when it
+was filed, and its audit counts it again.
 
 **The last broker check** is the account history's newest broker document or reading, on
 Reconcile and in the report alike. A reading from IG keeps no document: it is "read from IG on"

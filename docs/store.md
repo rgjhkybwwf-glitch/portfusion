@@ -52,33 +52,35 @@ One idea, one column name, in every table.
 
 ## What bites
 
-- **A share sale is one `sales.csv` row.** `share_pools()` derives what it released and what stays
-  held.
+- **A share sale is one `sales.csv` row.** `engine/ledger.py::share_pools` derives what it
+  released and what stays held.
 - **The Realisation ID is the join key, not the ticker.** A code can be an open holding and a
   realised one at once. A spread-bet sale names the leg it closes in `closes`; a share sale names
   none. A realisation is one holding's (one account, one ticker), in the form
-  `rules.REALISATION_FORM`.
-- **A spread bet's stake is the bet**: `stake` in £ per point, the level in points, no `qty`; its
-  notional at entry is stake × level. It is priced by contract: its row names the contract, and
-  `contracts.csv` gives the contract its epic and the ticker of its line, which is the leg's.
-  The write that closes a contract's last leg retires it.
-- **A live price is on a line still held.** The sale that leaves a share in no account banks its
-  price and takes it out of `current-prices.csv`, as a contract's last close does; the audit
-  names any price nothing holds.
-- **A banked mark has two axes**: `quality` (provenance) and `struck` (`close` or `live`); the
-  live tables carry `struck` alone. A blank `struck` compares with nothing.
-- **Money is written to the penny, a quote to at most six places.** Every sum of money has
-  exactly two decimal places and a price, rate or level no more than six, as `schema.MONEY` and
-  `schema.QUOTE` declare per column; the loader refuses a figure written otherwise, and every
-  writer writes them so.
+  `record/rules.py::REALISATION_FORM`.
+- **A spread bet's stake is the bet**: `stake` in £ per point, the level in points, no `qty`
+  (`record/schema.py::BUYS`). It is priced by contract: its row names the contract, and
+  `contracts.csv` gives the contract its epic and the ticker of its line, which is the leg's
+  (`record/schema.py::CONTRACTS`). The write that closes a contract's last leg retires it
+  (`desk/doors/commit.py::retired_by`).
+- **A live price is on a line still held.** The sale that leaves a line held by nothing retires
+  its price in the same write (`desk/doors/marks.py::retire`); the audit names any price nothing
+  holds.
+- **A banked mark has two axes**: `quality`, its provenance (`record/schema.py::QUALITIES`), and
+  `struck` (`record/schema.py::STRUCK_KINDS`); the live tables carry `struck` alone. A blank
+  `struck` compares with nothing.
+- **Money is written to the penny, a quote to at most six places**, as
+  `record/schema.py::MONEY` and `record/schema.py::QUOTE` declare per column; the loader refuses a
+  figure written otherwise.
 - **A share account's cash is in one place, its cash readings.** A reading off a document that
   states the cash writes it as a cash reading of that day, and a share reading's total is its
-  stock plus the account's newest cash reading on or before its day. A spread bet's cash is IG's
-  funds, on its reading.
+  stock plus the account's newest cash reading on or before its day
+  (`record/rules.py::cash_latest`). A spread bet's cash is IG's funds, on its reading.
 - **A correction replaces its row.** A mark read again on its own day takes its row's place, and
-  `restate()` replaces a frozen quarter end's rows and results, the journal saying why; git keeps
-  what each row said. One row per fact, so no reader filters.
-- **Every file is LF.** Every writer keeps a file's own ending, so an editor that saves another
-  turns the next diff into the whole file.
+  a frozen quarter end's rows and results are restated (`desk/doors/freeze.py::restate`). One row
+  per fact, so no reader filters.
+- **Every file is LF.** Every writer keeps a file's own ending
+  (`desk/doors/envelope.py::line_ending`), so an editor that saves another turns the next diff
+  into the whole file.
 
 **After any change here, check that the headline figures moved only in ways you can explain.**
