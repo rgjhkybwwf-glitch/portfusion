@@ -6,12 +6,14 @@ is the way in and the folder map; **[`CONTRIBUTING.md`](CONTRIBUTING.md) is how 
 worked — read it before changing anything.** Every commit's diff goes through the `code-review` skill
 before it is pushed, at the level its tier takes (CONTRIBUTING, Commits and pull requests).
 
+A checkout is set up by CONTRIBUTING's Setting up (the hooks, the venv and the clean room); then
+each terminal needs the first two lines below, and a session works with the rest.
+
 ```bash
-source .venv/bin/activate                 # once per terminal (docs/environment.md)
+source .venv/bin/activate                 # once per terminal (CONTRIBUTING, Setting up)
 export PORTFUSION_BOOK=demo               # once per terminal: a checkout holds no book
 python3 -m pytest                         # the guard: green unless the code broke
 portfusion record                         # the audit: what the record needs
-python3 tools/clean_room.py               # the app on its own: a copy, a new book and a wheel
 portfusion desk --port 8769               # the desk, in a browser, beside any book's
 ```
 
