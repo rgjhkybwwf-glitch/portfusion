@@ -141,6 +141,9 @@ class Field(NamedTuple):
     `places` is how many decimal places a figure may hold, and `exact` that it holds exactly that
     many: MONEY, written to the penny, and QUOTE, a price, rate or level to at most six. The loader
     refuses a cell written otherwise, and `cell()` writes every figure so.
+
+    `holds` is what the column may hold, in a line, where that needs saying: `docs/store.md`'s
+    table of the columns is written from it (`tools/glossary.py`). The loader reads none of it.
     """
     name: str
     kind: str                    # str | int | float | number | date
@@ -149,12 +152,47 @@ class Field(NamedTuple):
     required: bool = False
     places: int | None = None
     exact: bool = False
+    holds: str = ""
 
 
 #: A SUM OF MONEY, in sterling or its line's own currency: written to the penny, always two places.
 MONEY: dict[str, Any] = {"places": 2, "exact": True}
 #: A PRICE, A RATE OR A LEVEL: at most six places, a trailing nought never written.
 QUOTE: dict[str, Any] = {"places": 6}
+
+# WHAT A COLUMN MAY HOLD, written once for every field that holds the same (`Field.holds`).
+_ACCOUNT = ("one of the register's, `accounts.csv`; on the record's tables the loader refuses any "
+            "other; on `quarter-results.csv` a blank is the book")
+_HELD_AS = ("A line's `held_as` sits once, on its ticker's `securities.csv` row; an account's, on "
+            "its own")
+_LISTING = ("a listing as its market names it: the market's ISO code and its ticker (`XLON:BRYC`, "
+            "`XNYS:VELD`), and the unit it quotes in (`GBX` is pence). The price feed translates "
+            "the symbol into its own form")
+_POINTS = ("on a spread-bet line, blank on a share: how many points make one unit of its "
+           "listing's price (100 where IG quotes in cents or pence), and how many shares one unit "
+           "of the listing stands for (blank is one; a depositary receipt's ratio). With the stake "
+           "they make a bet's share-equivalents")
+_INSTRUMENT_CURRENCY = "an instrument's"
+_AMOUNT = ("a sterling amount on an event, or, on `quarter-nav.csv`, an account's quarter-end "
+           "figure in the measure its `contribution` names; a frozen line's value")
+_SOURCE = ("the provenance line; on buys and sales the document's kind and date only, as "
+           "`trade_source()` writes them; a row whose document is not on file reads "
+           "`Not on file: …`, a split's `Derived: …`")
+_IDS = ("`T-NNN` and `E-NNN`, the row's place in date order: given when the row is written, and "
+        "moved, with every `closes` and every buy or sale `note` that names it, when an "
+        "earlier-dated row is written before it")
+_CUR = "the currency the document states `traded_price` in: `GBP` or the share's own"
+_COST = ("on a buy: a share's settled sterling, or a spread bet's entry level in points; the other "
+         "is blank; on `quarter-snapshots.csv`, a frozen line's cost")
+_BROKER_REF = ("the deal's own reference (a contract number, a deal id), never a SEDOL; blank where "
+               "no document prints one")
+_TRADED_PRICE = ("a deal's price as its document states it: never sterling ÷ quantity, which "
+                 "carries the dealing charge")
+_BROKER_RATE = ("units of the other currency per £1, and only the broker's, where its document "
+                "states one")
+_MARK = "a mark, what a line is worth, filed under a share's ticker or a bet's contract"
+_AT = "an instant, as [the glossary](glossary.md)'s §4 says"
+_EVIDENCE = "a key of `rules.EVIDENCE_CLASSES`, printed in the glossary's §9"
 
 
 class Table(NamedTuple):
@@ -221,22 +259,16 @@ SECURITIES = Table(
     fields=(
         Field("ticker", "str"),
         Field("company", "str"),           # joins to companies.company
-        Field("held_as", "str", enum=KINDS),
-        Field("currency", "str", required=True),   # a split by currency drops a blank one
-        # THE LISTING: the market's ISO code and the ticker as that market spells it
-        # (XLON:BRYC, XCSE:HALD B), and the unit the market quotes it in (GBX is pence). A unit
-        # means the book prices the line from a feed, which translates the symbol into its own
-        # form; a spread bet has a symbol, the listing it is a bet on, and no unit, because IG
-        # prices it.
-        Field("symbol", "str", null=True),
-        Field("quote_unit", "str", null=True),
-        # A SPREAD BET'S POINT AGAINST ITS LISTING'S PRICE: how many points make one unit of
-        # `currency` (100 where IG quotes the market in cents or pence), and how many of the
-        # company's shares one unit of the listing stands for (a depositary receipt's ratio;
-        # blank is one). Together with the stake they turn a bet into share-equivalents.
-        # Blank on a share.
-        Field("points_per_unit", "float", null=True, **QUOTE),
-        Field("shares_per_unit", "float", null=True, **QUOTE),
+        Field("held_as", "str", enum=KINDS, holds=_HELD_AS),
+        # REQUIRED: a split by currency drops a blank one.
+        Field("currency", "str", required=True, holds=_INSTRUMENT_CURRENCY),
+        # THE LISTING. A unit means the book prices the line from a feed; a spread bet has a
+        # symbol, the listing it is a bet on, and no unit, because IG prices it.
+        Field("symbol", "str", null=True, holds=_LISTING),
+        Field("quote_unit", "str", null=True, holds=_LISTING),
+        # A SPREAD BET'S POINT AGAINST ITS LISTING'S PRICE.
+        Field("points_per_unit", "float", null=True, **QUOTE, holds=_POINTS),
+        Field("shares_per_unit", "float", null=True, **QUOTE, holds=_POINTS),
     ),
 )
 
@@ -245,20 +277,21 @@ ACCOUNTS = Table(
     doc=("The account register. One row per account, in the order every page lists them: "
          "share accounts, then spread bets."),
     fields=(
-        Field("account", "str"),
+        Field("account", "str", holds=_ACCOUNT),
         Field("holder", "str"),
         Field("broker_firm", "str"),
         Field("number", "str"),            # STRING, not int — "0123456" keeps its zero
         # WHAT THE ACCOUNT IS CALLED TO ANYONE BUT THE OWNER: A1, A2… in register order, never
         # reused. `Book.account_codes()` gives each its label.
         Field("code", "str", required=True),
-        Field("held_as", "str", enum=KINDS, required=True),
+        Field("held_as", "str", enum=KINDS, required=True, holds=_HELD_AS),
         # THE LABEL OF THE ACCOUNT'S BLOCK IN credentials.json, for an account a feed reads.
         Field("feed_key", "str", null=True),
-        # THE DAY THE ACCOUNT'S RECORD BEGINS, for one opened after the book's; blank for one held
-        # from the book's opening. Before it the account holds nothing and has no quarter-end
-        # row (`rules.accounts_open()`), whatever deal dates the statement it opened at carries.
-        Field("record_begins", "date", null=True),
+        # Before it the account holds nothing (`rules.accounts_open()`), whatever deal dates the
+        # statement it opened at carries.
+        Field("record_begins", "date", null=True,
+              holds=("the day an account opened after the book did; blank for one held from the "
+                     "opening. The loader refuses a quarter-end row before it")),
     ),
 )
 
@@ -270,9 +303,9 @@ CAPITAL_MOVEMENTS = Table(
     fields=(
         # AN EVENT IS DATED, refused on load when blank.
         Field("date", "str", required=True),   # ISO string: the ledger's own date convention
-        Field("account", "str"),
-        Field("amount", "float", **MONEY),
-        Field("source", "str"),
+        Field("account", "str", holds=_ACCOUNT),
+        Field("amount", "float", **MONEY, holds=_AMOUNT),
+        Field("source", "str", holds=_SOURCE),
         Field("detail", "str"),
     ),
 )
@@ -292,35 +325,32 @@ BUYS = Table(
          "Never a SEDOL, which HL statements print beside each deal, so two deals would "
          "share one; the movements downloads print each deal's own reference."),
     fields=(
-        Field("trade_id", "str"),
+        Field("trade_id", "str", holds=_IDS),
         Field("date", "str", required=True),   # ISO; tests/record/test_record.py holds it; never blank
-        # `source`: WHAT DOCUMENT IS THIS ROW'S EVIDENCE — its kind and its date, "ii contract
-        # note 14 Apr 2026" (`rules.trade_source()`) — the provenance line every other table
-        # calls `source`. Not `evidence`, which names an EVIDENCE_CLASSES key wherever it appears
-        # (glossary §2). `broker_ref` says WHICH ONE; this says what KIND.
-        Field("source", "str"),
-        Field("account", "str"),
+        # `source`, e.g. "ii contract note 14 Apr 2026" (`rules.trade_source()`). Not `evidence`,
+        # which names an EVIDENCE_CLASSES key wherever it appears (glossary §2). `broker_ref`
+        # says WHICH ONE; this says what KIND.
+        Field("source", "str", holds=_SOURCE),
+        Field("account", "str", holds=_ACCOUNT),
         Field("ticker", "str"),            # the security's code in securities.csv
-        # `cur`: THE CURRENCY `traded_price` IS STATED IN — the share's own where the broker dealt in it,
-        # GBP where it priced the deal in sterling (HL, in pence) and on a spread bet, IG's
-        # "Curr £". Never the share's currency by default: securities.csv holds that.
-        Field("cur", "str"),
+        # `cur`: the share's own where the broker dealt in it, GBP where it priced the deal in
+        # sterling (HL, in pence) and on a spread bet, IG's "Curr £". Never the share's currency
+        # by default: securities.csv holds that.
+        Field("cur", "str", holds=_CUR),
         Field("qty", "int", null=True),    # shares; blank on a spread bet, whose size is its stake
         Field("stake", "number", null=True),      # £ per point, a bet's size; blank on a share
-        Field("cost", "float", null=True, **MONEY),          # a share's settled GBP; blank on a bet
-        # A BET'S ENTRY LEVEL IN POINTS; blank on a share.
-        Field("level_points", "float", null=True, **QUOTE),
-        Field("broker_ref", "str", null=True),
+        Field("cost", "float", null=True, **MONEY, holds=_COST),
+        Field("level_points", "float", null=True, **QUOTE, holds=_COST),
+        Field("broker_ref", "str", null=True, holds=_BROKER_REF),
         Field("note", "str"),
         # WHICH IG CONTRACT A SPREAD-BET LEG IS ON — what prices it, open or closed. Blank on a
         # share leg. Joins to contracts.csv.
         Field("contract", "str", null=True),
-        # THE DEAL'S OWN PRICE, per share in `cur` (HL's pence as pounds), and the broker's RATE
-        # where the document gives one, units of the share's currency per £1. Never worked out
-        # from `cost`: that carries the dealing charge. Empty when nothing filed
-        # gives it, and on a spread bet, whose level is `level_points`.
-        Field("traded_price", "float", null=True, **QUOTE),
-        Field("rate", "float", null=True, **QUOTE),
+        # `traded_price` per share in `cur` (HL's pence as pounds), the `rate` in units of the
+        # share's currency. Both empty when nothing filed gives them, and on a spread bet, whose
+        # level is `level_points`.
+        Field("traded_price", "float", null=True, **QUOTE, holds=_TRADED_PRICE),
+        Field("rate", "float", null=True, **QUOTE, holds=_BROKER_RATE),
     ),
 )
 
@@ -363,22 +393,23 @@ SALES = Table(
          "management fees, funding interest. Booking a dealing commission there as well "
          "would subtract it twice."),
     fields=(
-        Field("sale_id", "str"),
+        Field("sale_id", "str", holds=_IDS),
         Field("date", "str", required=True),   # an event is dated
-        Field("account", "str"),
+        Field("account", "str", holds=_ACCOUNT),
         Field("ticker", "str"),            # the security's code in securities.csv
         Field("qty", "int", null=True),    # shares; blank on a spread-bet sale
         Field("stake", "number", null=True),      # £ per point, a bet sale's size; blank on a share
-        Field("traded_price", "float", **QUOTE),    # per share, or a bet's closing level in points
-        Field("cur", "str", required=True),  # the currency `traded_price` is stated in, as buys.cur
-        Field("rate", "float", null=True, **QUOTE),   # the broker's, where the document states one
+        # per share, or a bet's closing level in points
+        Field("traded_price", "float", **QUOTE, holds=_TRADED_PRICE),
+        Field("cur", "str", required=True, holds=_CUR),
+        Field("rate", "float", null=True, **QUOTE, holds=_BROKER_RATE),
         Field("proceeds", "float", **MONEY),        # GBP, always
-        Field("source", "str"),
+        Field("source", "str", holds=_SOURCE),
         # THE BROKER'S REFERENCE FOR THIS SALE: an IG close's closing deal, an ii contract
-        # number, HL's sale reference. Nullable where no document on file prints one. ONE
-        # reference — the one that retrieves THIS row. The leg an IG close closes is a link
-        # between two rows: `closes`. `source` names the document's kind and date, as a trade's.
-        Field("broker_ref", "str", null=True),
+        # number, HL's sale reference. ONE reference — the one that retrieves THIS row. The leg
+        # an IG close closes is a link between two rows: `closes`. `source` names the document's
+        # kind and date, as a trade's.
+        Field("broker_ref", "str", null=True, holds=_BROKER_REF),
         # WHICH PARCEL THIS SALE BELONGS TO — stated per row, never inferred. A realisation is a
         # PARCEL and accumulates sales over time (a trimmed pool, a bet closed leg by leg); it, not
         # the ticker, is the join.
@@ -399,22 +430,23 @@ INCOME = Table(
          "an explicit year filter."),
     fields=(
         Field("date", "str", required=True),   # an event is dated
-        Field("account", "str"),
+        Field("account", "str", holds=_ACCOUNT),
         Field("category", "str", enum=INCOME_CATEGORIES),
         Field("detail", "str"),
-        Field("amount", "float", **MONEY),         # ALWAYS GBP — the figure the book adds up
-        Field("source", "str"),
+        Field("amount", "float", **MONEY, holds=_AMOUNT),   # the figure the book adds up
+        Field("source", "str", holds=_SOURCE),
         Field("note", "str"),              # often "", and that is a real value
         # THE CONVERSION, AS DATA. A foreign-currency income row states its currency and its
         # amount in it, and `rate` where the broker's document states the rate it was converted
         # at; a blank `rate` converts at the day's TradingView close on fx-history.csv, as a
         # deal's does. Blank on every GBP row, meaning "no conversion".
-        Field("currency", "str"),          # the currency the income was PAID in
+        Field("currency", "str", holds="the currency it was paid in, blank on a sterling row"),
         Field("local_amount", "float", null=True, **MONEY),
-        Field("rate", "float", null=True, **QUOTE),  # units of the currency per £1, the broker's
-        # THE LINE A DIVIDEND WAS PAID ON, a code in securities.csv, so a company's life can count
-        # it. Blank on interest, fees and funding, which no one line earns.
-        Field("ticker", "str"),
+        Field("rate", "float", null=True, **QUOTE, holds=_BROKER_RATE),
+        # A code in securities.csv, so a company's life can count the dividend: no one line earns
+        # interest, fees or funding.
+        Field("ticker", "str",
+              holds="the line a dividend was paid on; blank on interest, fees and funding"),
     ),
 )
 
@@ -446,12 +478,12 @@ QUARTER_NAV = Table(
          "this record. `contribution` is that rule, as a column."),
     fields=(
         Field("as_of", "str"),
-        Field("account", "str"),
-        Field("amount", "float", **MONEY),
+        Field("account", "str", holds=_ACCOUNT),
+        Field("amount", "float", **MONEY, holds=_AMOUNT),
         # Declared to the loader, so a stray value fails at the door rather than in review.
         Field("contribution", "str", enum=CONTRIBUTIONS),
         Field("quality", "str", enum=QUALITIES),
-        Field("source", "str"),
+        Field("source", "str", holds=_SOURCE),
     ),
 )
 
@@ -464,10 +496,12 @@ FX = Table(
     fields=(
         # `currency` IS THE KEY, as a ticker is current-prices.csv's; a currency held in nothing
         # has no row.
-        Field("currency", "str"),
-        Field("rate", "float", **QUOTE),            # units of the currency per £1
+        Field("currency", "str", holds="the currency the rate converts"),
+        Field("rate", "float", **QUOTE,
+              holds=("units of the currency per £1, the feed's or one typed by hand, banked into "
+                     "`fx-history.csv`, where a typed one's `struck` is blank")),
         Field("as_of", "str"),
-        Field("source", "str"),
+        Field("source", "str", holds=_SOURCE),
         # `struck`: a session close or a live read, as current-prices.csv says it.
         Field("struck", "str", enum=STRUCK_KINDS, required=True),
     ),
@@ -486,13 +520,13 @@ CURRENT_PRICES = Table(
          "is a date, so its `at` is blank. The feed is the only party that knows, so it says "
          "so in a column."),
     fields=(
-        Field("mark_key", "str"),          # a share's ticker, or a spread bet's CONTRACT
-        Field("price", "float", **QUOTE),
-        Field("currency", "str"),
+        Field("mark_key", "str", holds=_MARK),
+        Field("price", "float", **QUOTE, holds=_MARK),
+        Field("currency", "str", holds=_INSTRUMENT_CURRENCY),
         Field("as_of", "str"),
-        Field("source", "str"),
+        Field("source", "str", holds=_SOURCE),
         Field("struck", "str", enum=STRUCK_KINDS, required=True),
-        Field("at", "str"),                # ISO UTC, e.g. 2026-09-29T14:02:11Z; blank for a close
+        Field("at", "str", holds=_AT),     # e.g. 2026-09-29T14:02:11Z; blank for a close
     ),
 )
 
@@ -510,7 +544,7 @@ QUARTER_SNAPSHOTS = Table(
          "`quality` is the line's provenance in the record's one vocabulary (glossary §3)."),
     fields=(
         Field("as_of", "str"),
-        Field("account", "str"),
+        Field("account", "str", holds=_ACCOUNT),
         Field("ticker", "str"),            # "(no positions)" for an account holding none
         # NULLABLE, and only on the "(no positions)" rows: an account holding nothing has no
         # quantity, price or currency to state. Blank, never zero — a zero quantity is a holding
@@ -518,11 +552,11 @@ QUARTER_SNAPSHOTS = Table(
         # account adds nothing to either total.
         Field("qty", "number", null=True),
         Field("price", "float", null=True, **QUOTE),
-        Field("currency", "str", null=True),
-        Field("value", "float", **MONEY),
-        Field("cost", "float", **MONEY),
+        Field("currency", "str", null=True, holds=_INSTRUMENT_CURRENCY),
+        Field("value", "float", **MONEY, holds=_AMOUNT),
+        Field("cost", "float", **MONEY, holds=_COST),
         Field("quality", "str", enum=QUALITIES),
-        Field("source", "str"),
+        Field("source", "str", holds=_SOURCE),
     ),
 )
 
@@ -540,9 +574,9 @@ ACCOUNT_READINGS = Table(
          "notional is not typed here but derived, and the load holds funds + running P/L to "
          "the equity and equity − deposit to the available (record/rules.py)."),
     fields=(
-        Field("account", "str"),
+        Field("account", "str", holds=_ACCOUNT),
         Field("as_of", "date"),            # A REAL DATE.
-        Field("at", "str"),                # ISO UTC, e.g. 2026-09-30T17:40Z; blank if unknown
+        Field("at", "str", holds=_AT),     # e.g. 2026-09-30T17:40Z; blank if unknown
         # A SHARE ACCOUNT'S READING, blank on a spread-bet row.
         Field("positions", "float", null=True, **MONEY),   # positions at market
         # A SPREAD-BET ACCOUNT'S READING, IG'S OWN FIGURES, blank on a share row.
@@ -557,7 +591,7 @@ ACCOUNT_READINGS = Table(
         # `quality` is DERIVED from the class, never stored beside it, and so is the source line
         # a banked row carries. REQUIRED: this is the figure the reconciliation is judged against,
         # and must say what it rests on.
-        Field("evidence", "str", required=True),   # an EVIDENCE_CLASSES key
+        Field("evidence", "str", required=True, holds=_EVIDENCE),
         Field("reference", "str", required=True),  # what retrieves it — limb 3, per the class
     ),
 )
@@ -599,11 +633,11 @@ CASH_READINGS = Table(
          "(account-readings.funds), and the Accounts page reads them there; a row here would "
          "name that figure twice."),
     fields=(
-        Field("account", "str"),
+        Field("account", "str", holds=_ACCOUNT),
         Field("as_of", "date"),
         Field("cash", "float", **MONEY),
         # REQUIRED, with account-readings' matching pair.
-        Field("evidence", "str", required=True),   # an EVIDENCE_CLASSES id
+        Field("evidence", "str", required=True, holds=_EVIDENCE),
         Field("reference", "str", required=True),   # what retrieves it: a statement, or the query
     ),
 )
@@ -637,7 +671,7 @@ QUARTER_RESULTS = Table(
          "blank `account` is the book."),
     fields=(
         Field("as_of", "str"),
-        Field("account", "str"),           # blank for the book
+        Field("account", "str", holds=_ACCOUNT),
         Field("opening_nav", "float", **MONEY),
         Field("capital_deployed", "float", **MONEY),
         Field("return_income", "float", **MONEY),
@@ -709,7 +743,7 @@ JOURNAL = Table(
         # RECORD TIME, to the second, IN UTC (`record_instant()`) — a `str`, because
         # `date.fromisoformat` would refuse a time. One without its `Z` is refused
         # (`rules.journal_rows()`).
-        Field("at", "str"),
+        Field("at", "str", holds=_AT),
         # WHO WROTE. `baseline` opens a table; `bench` is a press on the Bench: commit.py, which
         # appends an event, or research_notes.py, a published note's rows; `marks` is marks.py,
         # which replaces a mark; `freeze` is desk/doors/freeze.py, which appends a quarter end

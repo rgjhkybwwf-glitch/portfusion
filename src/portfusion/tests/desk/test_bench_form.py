@@ -45,8 +45,8 @@ def test_a_currency_with_a_rate_is_offered_before_anything_trades_in_it(monkeypa
 
 
 def test_the_vocabulary_is_derived_from_the_record():
-    """docs/store.md states these as a markdown table, which is a SECOND statement of what the
-    record already holds — so the bench reads the record, not the table."""
+    """The choices are the record's own, read from it: a guide names no account, and a list of
+    them written down would be a SECOND statement of what the record already holds."""
     from portfusion.record import rules as D
     v = _bench.vocabulary()
     assert v["account"] == list(D.ACCOUNT_ORDER)
