@@ -1,8 +1,8 @@
 # Testing
 
 What each layer of the guard proves, how to write a test, and what to do when one fails.
-[`CONTRIBUTING.md`](../CONTRIBUTING.md) has the commands that set up and run it; a checkout holds
-no book, so its Setting up names the demo, once per terminal.
+[`CONTRIBUTING.md`](../CONTRIBUTING.md) has the commands that set up and run it. A checkout holds
+no book, so that file's Setting up names the demo, once per terminal.
 
 ```bash
 portfusion check               # the code on the demo, then the loaded book opening with its checks/

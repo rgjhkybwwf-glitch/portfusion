@@ -57,7 +57,7 @@ advisory `tools/advisories.py` finds in the lock.
 ```bash
 v=$(mktemp -d)/venv && python3 -m venv "$v" && "$v/bin/python3" -m pip install -q -e '.[dev]'
 { grep '^#' requirements.lock; "$v/bin/python3" -m pip freeze --exclude-editable; } > lock.new
-mv lock.new requirements.lock && rm -rf .venv     # then Setting up's venv line (CONTRIBUTING.md), the guard, the clean room
+mv lock.new requirements.lock && rm -rf .venv     # then Setting up's venv line, the guard, the clean room
 ```
 
 ## Which book
