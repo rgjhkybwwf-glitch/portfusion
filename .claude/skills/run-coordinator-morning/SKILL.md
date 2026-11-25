@@ -12,15 +12,15 @@ The order of the run's work. Each step's procedure is in the skill named; the ru
 2. **Read the direction**: `docs/direction.md` first, cited for a milestone, a cut or an idea, and
    `docs/content-map.md` beside it, cited for a design card and for a plan that changes which page
    or section answers a job.
-3. **Read what changed since the last run**: the pull requests merged or stopped, the agent's
-   pull requests still open (a planned issue with one holds no place: the skill `plan`), each run's
+3. **Read what changed since the last run**: the pull requests merged or stopped, the pull requests
+   still open (a planned issue with a ready one holds no place: the skill `plan`), each run's
    comments on the issues, every answer and `Change:` the maintainer gave, each "Re-plan" left,
    every other comment of the maintainer's, and each run of the workflow `start` that failed: a
-   start the gate did not make, named in the digest. The last run began at the start on this run's own
-   last line in the run log, whose lines are never acted on, or three days ago when there is none.
-   Clear a `building` label more than three hours old: a run that long has died.
+   start the gate did not make, named in the digest. The last run began at the start on this run's
+   own last line in the run log, whose lines are never acted on, or three days ago when there is
+   none. Clear a `building` label more than three hours old: a run that long has died.
 4. **Nothing changed: stop.** When nothing has merged, closed, been answered, changed or filed
-   since, Next holds as many `planned` lines with no open pull request of their own as the cap or
+   since, Next holds as many `planned` lines with no ready pull request of their own as the cap or
    no line that could be planned, and no review of the Queue is due, go to the last step with a
    one-line debrief; where this run met a fault, or an end line since its last names one, the
    Faults head comes before that line, and the Pages head likewise for a page (the skill

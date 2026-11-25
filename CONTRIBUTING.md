@@ -264,11 +264,10 @@ is. A run changes neither.
   a short list, so the run's own context stays small.
 - **A run has a cap**, its row's. A builder takes no more issues than it names; the coordinator's
   number counts plans that stand and are not yet built, those already standing included, not the
-  lines it asks: a planned issue with an open pull request of its own, ready or draft, holds no
-  place. No issue
-  goes past a second attempt at a green guard: one that will not go green is left as a
-  draft pull request with what blocks it at the top, and the run moves on. A run that is going
-  nowhere stops and says so; it does not file issues to show work.
+  lines it asks: a planned issue whose own pull request is open and ready, not a draft, is built
+  and holds no place. No issue goes past a second attempt at a green guard: one that will not go
+  green is left as a draft pull request with what blocks it at the top, and the run moves on. A run
+  that is going nowhere stops and says so; it does not file issues to show work.
 - **A dry run changes nothing.** A run whose starting text begins "Dry run" follows its playbook
   but writes nothing on GitHub and sends no push. Its last message says what it would have done,
   step by step: the way a changed playbook is rehearsed before it runs for real.
@@ -465,7 +464,7 @@ The coordinator's morning run, whose order is its playbook.
   its Cause or Done names the same file and function; the coordinator reads every open issue's
   Cause and Done for that before it files a new one.
 - **Every line under Next is planned ahead, in order, so each build has a plan**, by the skill
-  [`plan`](.claude/skills/plan/SKILL.md), until as many lines carry `planned`, with no open
+  [`plan`](.claude/skills/plan/SKILL.md), until as many lines carry `planned`, with no ready
   pull request of their own, as its cap.
 - **It keeps the dependencies**: a Dependabot pull request that does not merge itself
   (`dependabot-merge.yml`), and each security alert, becomes an issue, by the skill
