@@ -679,14 +679,18 @@ How a pull request is taken to its end is the skill
 - **Each run writes two lines on the run log**, by the skill
   [`beat`](.claude/skills/beat/SKILL.md): one as it starts, and one as it ends, which gives when
   it began and ended, UK time, what it did in a line, each fault it met (How it runs, above), the
-  issues it decided a choice on, and its `Next:` line. They are the source for which run is at
-  work, a run's length, its stops and its faults, and for the morning's digest; they ask nothing
-  and ping no one.
+  issues it decided a choice on, each page it published, and its `Next:` line. They are the source
+  for which run is at work, a run's length, its stops and its faults, and for the morning's
+  digest; they ask nothing and ping no one.
+- **A page a run publishes is named on its end line**, after the word `Page:`, by its title and
+  link. A routine runs outside the maintainer's project, so a page it publishes with the Artifact
+  tool is private to their account but missing from the project's list of pages; the project
+  copies in each page an end line names. The issue the page is for links it too.
 - **When nothing is left to wait for, the run takes its last three steps**, by the skill
   [`end-of-run`](.claude/skills/end-of-run/SKILL.md): it stops watching each pull request it
   leaves, writes its end line on the run log, then ends its turn with the debrief: what merged,
-  what waits on the maintainer, what it decided for them, each fault it met, or that it had nothing
-  to do. **Its last line begins with the word `Next:`**, then who acts next, on what, and when, as
+  what waits on the maintainer, what it decided for them, each fault it met, each page it
+  published, or that it had nothing to do. **Its last line begins with the word `Next:`**, then who acts next, on what, and when, as
   in "Next: the night build, at 00:30, builds #250." When no line under Next can be built, it names
   each line and what holds it: a question (whose), no plan yet or a "Re-plan" (the coordinator's),
   `building` (which run), an open pull request, a "waits" or the gate. None of the three is ever
@@ -695,9 +699,9 @@ How a pull request is taken to its end is the skill
   no push, adds no second line to the run log, and ends in one line, which begins `Next:`.
 - **Only the coordinator sends a debrief to the maintainer's phone, and only for two kinds of
   run.** Its morning run sends the day's digest: what merged, what waits on them, what was decided
-  for them and each fault met, with the number of runs that met it, its own and every run's since
-  the morning run before it, read from each end line written on the run log since that run's
-  own, and a fault or a hold added since to a line written before it, and any start the gate
+  for them, each fault met, with the number of runs that met it, and each page published, its own
+  and every run's since the morning run before it, read from each end line written on the run log
+  since that run's own, and a fault, a hold or a page added since to a line written before it, and any start the gate
   failed to make. A run of its
   own that the maintainer started, by an answer, a `Change:`, an `Idea:`, a release or a `Resume:`,
   sends its debrief, since they wait for it. A builder's run and a re-plan a run began send none:

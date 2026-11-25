@@ -177,6 +177,36 @@ def test_a_fault_is_said_on_the_end_line_in_one_place_and_one_form(skills, secti
     assert "Faults" in digest and "the number of runs that met it" in digest
 
 
+def test_a_page_a_run_publishes_is_named_on_its_end_line(skills, contributing):
+    """A routine runs outside the maintainer's project, so a page it publishes is missing from the
+    project's list: the rule, the skill that gives the end line's form and the skill that writes
+    it all name the `Page:` part, after "Decided for you:" and before `Next:`, and the debrief and
+    the morning's digest list the pages. THE CASE THAT MAKES IT FAIL: two of the coordinator's
+    pages, a design card's and a map a change asked for, stood outside the project, found only by
+    their links on GitHub."""
+    def said(text, start, end):
+        """One part of a text, from the words it starts with to `end`, its line breaks gone."""
+        found = text.partition(start)[2].partition(end)[0]
+        assert found, f"no part begins {start!r}"
+        return " ".join(found.split())
+
+    rule = said(contributing, "- **A page a run publishes is named on its end line**", "\n- **")
+    assert "`Page:`" in rule and "project" in rule, "the rule sends a page to the end line"
+    beat, end = skills["beat"][1], skills["end-of-run"][1]
+    shown = said(beat, "A run that published a page", "\n\n").partition(" as in ")[2]
+    parts = [shown.find(part) for part in ("· Fault: ", "Decided for you:", "· Page: ", "· Next:")]
+    assert -1 not in parts and parts == sorted(parts), "faults, what was decided, then pages"
+    line = said(end, "## 2. The end line", "\n## ")
+    assert -1 < line.find("`Fault:`") < line.find("`Page:`"), "the run writes it after the faults"
+    assert "**Pages**" in said(end, "## 3. The debrief", "\n## "), "and its debrief lists it"
+    digest = said(end, "sends the day's digest", "\n- **")
+    assert "Pages" in digest and "holds and pages alone" in digest, "and so does the digest"
+    told = said(contributing, "- **When nothing is left to wait for", "\n- **")
+    phone = said(contributing, "- **Only the coordinator sends a debrief", "\n- **")
+    assert "each page it published" in told and "a hold or a page added since" in phone
+    assert "`Page:`" in skills["design-card"][1], "the design card's page is named the same way"
+
+
 def test_every_commit_is_reviewed_before_it_is_pushed(contributing):
     """The maintainer's rule: every commit's diff, by a run or a session, goes through
     the `code-review` skill before it is pushed. THE CASE THAT MAKES IT FAIL: a day of the loop's

@@ -21,8 +21,8 @@ The order of the run's work. Each step's procedure is in the skill named; the ru
 4. **Nothing changed: stop.** When nothing has merged, closed, been answered, changed or filed
    since, Next holds as many `planned` lines as the cap or no line that could be planned, and no
    review of the Queue is due, go to the last step with a one-line debrief; where this run met
-   a fault, or an end line since its last names one, the Faults head comes before that line (the
-   skill `end-of-run`).
+   a fault, or an end line since its last names one, the Faults head comes before that line, and
+   the Pages head likewise for a page (the skill `end-of-run`).
 5. **Record**: the skill `record-answer`, for each answer or `Change:` not yet recorded. Any other
    comment of the maintainer's is applied where its issue is shaped or planned, and otherwise
    named in the debrief.

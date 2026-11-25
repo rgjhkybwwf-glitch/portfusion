@@ -29,6 +29,10 @@ that was never held. What it prints goes after what the run did, between two `·
 A fault the run met goes next, after the word `Fault:`, between two `·`: what counts as one, and
 the words it takes, are the skill `beat`'s. A run that met none leaves the part out.
 
+Each page the run published goes after "Decided for you:" and before `Next:`, after the word
+`Page:`, by its title and link, as the skill `beat` gives it. A run that published none leaves
+the part out.
+
 ## 3. The debrief
 
 A few lines, the message that ends the turn:
@@ -40,7 +44,8 @@ A few lines, the message that ends the turn:
   Left out when the run decided nothing;
 - **Faults**: each fault the run met, in one line, in its end line's words. Left out when it met
   none;
-- or, with nothing merged, waiting or decided, that the run had nothing to do;
+- **Pages**: each page the run published, by its title and link. Left out when it published none;
+- or, with nothing merged, waiting, decided or published, that the run had nothing to do;
 - last, its `Next:` line, as CONTRIBUTING.md says, as in "Next: the night build, at 00:30, builds
   #250."
 
@@ -49,19 +54,19 @@ A few lines, the message that ends the turn:
 Two, by the `PushNotification` tool, just before the message that ends the turn. No other run
 pushes anything.
 
-- **The coordinator's morning run** sends the day's digest. Under the same four heads, what
-  merged, what waits on the maintainer, Decided for you and Faults, it gives its own and those of
-  every run since the last morning run: it reads each end line on the run log written since the
+- **The coordinator's morning run** sends the day's digest. Under the same five heads, what
+  merged, what waits on the maintainer, Decided for you, Faults and Pages, it gives its own and
+  those of every run since the last morning run: it reads each end line on the run log written since the
   end line of the morning run before it (the coordinator's line whose start line says "the
   morning run", or
   where none does, its last that began before 08:00 on a weekday), and of a line written before
-  that and edited since (the comment's `updated_at`), its faults and holds alone, each said as
-  added since,
-  and, for each issue an end line names after "Decided for you", the "Decided by the run" line in
+  that and edited since (the comment's `updated_at`), its faults, holds and pages alone, each
+  said as added since,
+  and, for each issue an end line's `Decided for you:` part names, up to its next `·`, the "Decided by the run" line in
   that issue's Decisions. Under Faults, each fault an end line names after `Fault:` is said once,
   with the number of runs that met it: one fault two lines say in different words is counted as
-  one. With nothing merged, nothing waiting, nothing decided and no fault, the digest is one
-  line.
+  one. With nothing merged, nothing waiting, nothing decided, no fault and no page, the digest is
+  one line.
 - **A run of the coordinator's that the maintainer started**, by an answer, a `Change:`, an
   `Idea:`, a release or a `Resume:`, sends its own debrief: they wait for it. A builder's run
   sends none, an answer build included.
@@ -76,7 +81,8 @@ the time it now ends. It edits the one line: it never adds a second.
 ## A fault met after its end line
 
 A run that meets a fault once its end line is written, a push that fails among them, edits that
-one line to carry it, as for a hold.
+one line to carry it, as for a hold. A page it publishes after its end line is carried the same
+way, after `Page:`.
 
 ## A run woken after its debrief
 
