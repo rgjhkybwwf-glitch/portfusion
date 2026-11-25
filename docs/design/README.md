@@ -29,6 +29,10 @@ six tabs each show their own section. Home's "All 5 companies" and the menu's Co
 Companies list, where the chips, the find field and the heads that sort work on the demo's five
 companies. Nothing else on the pages leads anywhere: only these three pages are drawn so far.
 
+Each page is drawn in the scheme the Mac is set to, light or dark. To see the other, change the
+Mac's Appearance (System Settings, Appearance), or open the page in Playwright with
+`colorScheme: "dark"`.
+
 The typeface is Inter, read from the machine: one without Inter installed shows the system's face
 in its place, and line breaks may differ. The desk gets Inter's own file with #343.
 
@@ -70,6 +74,31 @@ The maintainer settled both on 21 Nov 2026.
 - **The app wears neither yet.** Its header says the old name and its icons draw a stand-in ring,
   until the frame is turned on (#347).
 
+## The dark scheme
+
+The maintainer chose it on 25 Nov 2026, from three drawn over these pages: Dusk, the light
+look's warm paper turned down to warm graphite.
+
+- **It follows the Mac's setting**, as today's desk does: `look.css` gives its dark values under
+  `prefers-color-scheme: dark`. There is no switch of the desk's own.
+- **Only colour and light change.** Every corner, gap, size, type step and motion is the light
+  scheme's, and so are the main button and the mark's tile. No part has a rule of its own in the
+  dark: the dark scheme is a second value for some of the tokens, and nothing else.
+- **A surface lifts by a lit top edge and a deeper shadow**, since a soft shadow barely shows on
+  a dark ground. The lead card is a deep violet glass.
+- **What is raised out of a surface is a lighter step of it** (`--raised`): a tile on the lead
+  card, the selected menu line, the selected tab and the chosen chip. In light it is the white of
+  a card, as before; in dark it is a pale veil over what is under it, so a tile on the violet
+  lead card takes the violet and never sits on it as a dark box.
+- **The accent lightens as a colour of text**, to `#978CFF`, so a link, the name's "Fusion" and
+  a chart's line read on the graphite. The mark's tile wears its own token (`--mark-tile`) and
+  stays the brand's violet, `#4F3FD6`, with the harbour in white, in both schemes.
+- **Every text colour passes the accessibility contrast bar** (4.5 to 1) on what is behind it:
+  text on a card is about 13.6 to 1, muted text 6.8 to 1, and a tile's label on the lead card
+  4.7 to 1 at its lightest, measured on the drawn company page.
+- Where the Mac asks for less transparency or more contrast, the dark scheme gives its own solid
+  glass, solid lead card and edge (`--glass-solid`, `--lead-solid`, `--contrast-edge`).
+
 ## Where it evens out the drawing
 
 The agreed drawing typed a few values on one part that it did not type on its twin. The
@@ -86,14 +115,12 @@ reference gives each part its one value, as the consistency rule asks:
 
 ## What is not here
 
-- **The dark scheme.** Light only: the maintainer gives the dark scheme before the frame is
-  turned on.
 - **The look in print**, and a chart's own colours beside the accent. Both are parked by the
   maintainer (#9, Decisions).
 - **Icons.** None is drawn: the look has no set of them yet.
 - **The app's own icons.** The tab's, the Dock's and the touch icon are the mark on its tile, and
-  are drawn when the frame is turned on (#347). The mark on a dark ground waits with the dark
-  scheme.
+  are drawn when the frame is turned on (#347). On a dark ground the mark is the same violet
+  tile (The dark scheme).
 - **A phone.** The pages wrap as the browser narrows, and that is all: the phone is a later
   study.
 - **Every other page.** Accounts, Quarters, the Inbox, Prices and the lists are drawn
