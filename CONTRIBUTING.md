@@ -264,7 +264,8 @@ is. A run changes neither.
   a short list, so the run's own context stays small.
 - **A run has a cap**, its row's. A builder takes no more issues than it names; the coordinator's
   number counts plans that stand and are not yet built, those already standing included, not the
-  lines it asks: a planned issue with an open pull request of its own holds no place. No issue
+  lines it asks: a planned issue with an open pull request of its own holds no place, and no new
+  line is planned while four of the agent's pull requests are open. No issue
   goes past a second attempt at a green guard: one that will not go green is left as a
   draft pull request with what blocks it at the top, and the run moves on. A run that is going
   nowhere stops and says so; it does not file issues to show work.

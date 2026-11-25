@@ -14,7 +14,8 @@ Every line under Next, in order, so each build has a plan:
 
 - A line marked "Re-plan" first, then each line whose "waits" have closed, until as many carry
   `planned` as the run's cap, those already standing included. A line whose issue has an open pull
-  request of its own is built, and is not counted.
+  request of its own, ready or draft, holds no place, nor does its re-plan; and no new line is
+  planned while four of the agent's pull requests are open.
 - Each line's questions are settled as it is reached, a line whose "waits" are still open
   included, so an answer is in before its turn comes (the skill `ask-or-decide`).
 - Skipped: a feature, an issue labelled `planned`, `building` or `hold`, and one whose questions
