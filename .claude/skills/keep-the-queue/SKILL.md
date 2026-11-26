@@ -11,7 +11,10 @@ description: "Coordinator: keeps the Queue. Each run it ticks what merged and so
 - **The coordinator keeps the Queue current**: each run it ticks the line of each pull request
   merged since its last and moves it to Done, and sorts what the builders reported. It reads the
   Queue afresh just before each edit, since the maintainer may have changed it. A line the
-  maintainer placed, by hand or by an answer, is never moved.
+  maintainer placed, by hand or by an answer, is never moved. Such a line ends `· yours`.
+- **The Queue holds what is live.** A line is one short line (the skill `place-an-issue`), a
+  milestone's heading one sentence of what it is for, and Done only the milestone being worked. A
+  wait met, a line that left and a review answered leave no note: GitHub keeps every edit.
 
 What it does here is decided and told, not asked (the skill `ask-or-decide`): each act is listed,
 and the maintainer reverses one with `Change:`.
@@ -19,7 +22,8 @@ and the maintainer reverses one with `Change:`.
 ## Each run
 
 1. **Tick what merged.** For each pull request merged since the run's last, tick its issue's
-   line and move it to Done, with the pull request's number. Clear each "waits" now met.
+   line and move it to Done, in a few words with the pull request's number. Delete each "waits"
+   now met.
 2. **Sort what was reported.** Read the **Reported** list of each of the agent's pull requests
    opened or merged since the run's last (the skill `fix-fold-report`), and give each find one of
    four ends, the first that fits:
@@ -51,7 +55,12 @@ then acts:
 - **An issue with no line** is placed (`place-an-issue`).
 - **The walk finds are gathered**: three or more held for one page, or any for a page the next
   milestone works, become one issue or join the feature that reworks the page. Each line handled
-  is struck through with where it went, so the list holds only what waits.
+  is removed, so the list holds only what waits; the review's post says where each went.
+- **The sizes are kept**: the Queue's body under 15,000 characters, and each open issue's body
+  under 8,000, measured by
+  `gh api "repos/{owner}/{repo}/issues?state=open&per_page=100" --jq '.[] | [.number, (.body | length)]'`.
+  One over is trimmed by the rules that write it: a line by `place-an-issue`, Decisions by
+  `record-answer`, a feature's sections by `shape-an-issue`.
 - **The order is kept**: a line a run placed is moved when the order of the work asks it. A line
   the maintainer placed is not.
 - **Work set aside has a home**: the Not in scope and Decisions of each issue closed since the
@@ -64,11 +73,14 @@ change what a milestone is for. Those are the gate review's questions (the skill
 
 It then posts a **Queue review** on the Queue: what it merged, ordered, closed, placed and
 gathered, a line each with the reason, and the count of open issues beside the last review's.
-The Queue takes no `decision` for it, so it pings no one, and it lists no ideas.
+The Queue takes no `decision` for it, so it pings no one, and it lists no ideas. The review
+before it is then cut to one line, as in "Queue review of 23 Nov 2026, replaced by <link>", and
+the comment's edit history keeps the rest. Only a run's own comment is cut, never the
+maintainer's, and a cut starts no run: the gate reads only a comment as it is made.
 
 ## A `Change:` on the Queue
 
 The maintainer's `Change:` under a review, or on an issue the review closed or moved, is recorded
 (the skill `record-answer`) and applied here, not built: the issue is reopened, the line put
-back, the "waits" taken off. The Queue takes no Decisions section: the line's brackets say who
-placed it.
+back, the "waits" taken off. The Queue takes no Decisions section: `· yours` says the maintainer
+placed a line, and the issue's placing comment says who else did and why.

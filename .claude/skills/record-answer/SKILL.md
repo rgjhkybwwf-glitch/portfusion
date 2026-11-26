@@ -53,6 +53,14 @@ and rewrites the issue to match:
 3. A pull request already open is held for the new plan, or closed with the reason when the change
    makes it moot.
 
+## What Decisions keep
+
+**An issue's Decisions hold what stands.** A decision that a later answer or `Change:` replaces is
+removed, and its "Declined:" and "Revisit when" lines move to the entry that replaces it, so the
+gate review still finds them. A run's decision about a step of the work, such as which card goes
+up first, is removed once that step is done. The maintainer's words in the answer that stands
+stay quoted with the date. GitHub keeps every edit of the body, so nothing removed is lost.
+
 ## What no longer stands
 
 A plan posted "if answered as recommended" stands when every answer is the recommended one. Any
