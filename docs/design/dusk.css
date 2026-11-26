@@ -48,6 +48,13 @@
   --glass-solid:   #1D1C21;
   --chart-grid:    #302E35;
   --chart-base:    #45424C;
+  --chart-1:       #8C80F5;
+  --chart-2:       #008B9E;
+  --chart-3:       #9C721C;
+  --chart-4:       #437EB9;
+  --chart-5:       #5D8943;
+  --chart-6:       #BE6F96;
+  --chart-other:   #6E6B76;
   --contrast-edge: #908D9B;
 
   /* The three heights in the dark: the edge is lit, and the shadow falls deeper. */
