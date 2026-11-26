@@ -11,7 +11,8 @@ description: "Coordinator: keeps the Queue. Each run it ticks what merged and so
 - **The coordinator keeps the Queue current**: each run it ticks the line of each pull request
   merged since its last and moves it to Done, and sorts what the builders reported. It reads the
   Queue afresh just before each edit, since the maintainer may have changed it. A line the
-  maintainer placed, by hand or by an answer, is never moved. Such a line ends `· yours`.
+  maintainer placed, by hand or by an answer, is never moved. Such a line ends `· yours`, or,
+  written before that mark, says in its brackets that the maintainer placed it.
 - **The Queue holds what is live.** A line is one short line (the skill `place-an-issue`), a
   milestone's heading one sentence of what it is for, and Done only the milestone being worked. A
   wait met, a line that left and a review answered leave no note: GitHub keeps every edit.
@@ -57,8 +58,8 @@ then acts:
   milestone works, become one issue or join the feature that reworks the page. Each line handled
   is removed, so the list holds only what waits; the review's post says where each went.
 - **The sizes are kept**: the Queue's body under 15,000 characters, and each open issue's body
-  under 8,000, measured by
-  `gh api "repos/{owner}/{repo}/issues?state=open&per_page=100" --jq '.[] | [.number, (.body | length)]'`.
+  under 8,000, measured by `gh api --paginate "repos/{owner}/{repo}/issues?state=open&per_page=100"
+  --jq '.[] | select(.pull_request | not) | [.number, (.body | length)]'`.
   One over is trimmed by the rules that write it: a line by `place-an-issue`, Decisions by
   `record-answer`, a feature's sections by `shape-an-issue`.
 - **The order is kept**: a line a run placed is moved when the order of the work asks it. A line

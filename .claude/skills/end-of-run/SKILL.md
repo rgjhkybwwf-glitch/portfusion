@@ -73,9 +73,10 @@ pushes anything.
   run" line in that issue's Decisions. Under Faults, each fault an end line names after `Fault:` is said once,
   with the number of runs that met it: one fault two lines say in different words is counted as
   one. With nothing merged, nothing waiting, nothing decided, no fault and no page, the digest is
-  one line. It asks GitHub for those lines alone, never the whole run log:
-  `gh api "repos/{owner}/{repo}/issues/289/comments?since=<the weekday before today>T05:00:00Z&per_page=100"`
-  returns each line written or edited since that morning.
+  one line. It reads the last four days of the run log, never the whole of it: `gh api --paginate
+  "repos/{owner}/{repo}/issues/289/comments?since=<four days ago>T00:00:00Z&per_page=100"` returns
+  each line written or edited since, a weekend and a missed morning included, and of those it
+  takes the lines this rule names.
 - **A run of the coordinator's that the maintainer started**, by an answer, a `Change:`, an
   `Idea:`, a release or a `Resume:`, sends its own debrief: they wait for it. A builder's run,
   an answer build included, and a re-plan a run began send none: what they did is in the run log,
