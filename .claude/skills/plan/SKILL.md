@@ -75,9 +75,9 @@ it to the content map. The plan is mended from what it finds.
   Decisions, as decided by the run.
 - **A question that must be asked is its only open point**: posted as **Plan, checked, if answered
   as recommended**, with the question asked; the issue takes `planned` and `decision`.
-- **A plan replaces the one before.** Once it is posted, the issue's earlier plan comment is cut
-  to one line, as in "Plan of 24 Nov 2026, replaced by the plan of 26 Nov 2026 <link>"; the old
-  plan stays whole in the comment's history. The line never carries a plan's heading, so the brief
-  does not read it as a plan.
+- **A plan replaces the one before.** Once it is posted, the issue's earlier plan comment is cut to
+  one line that opens with the run's mark, as in "📋 **Coordinator** · Plan of 24 Nov 2026, replaced
+  by the plan of 26 Nov 2026 <link>"; the old plan stays whole in the comment's history. The line
+  never carries a plan's heading, so the brief does not read it as a plan.
 - **The issue's cause or premise no longer holds**: no plan is posted. The issue is closed with
   the reason, or re-shaped to what does hold, as the skill `ask-or-decide` says.

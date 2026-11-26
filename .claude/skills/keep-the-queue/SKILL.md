@@ -23,8 +23,8 @@ and the maintainer reverses one with `Change:`.
 ## Each run
 
 1. **Tick what merged.** For each pull request merged since the run's last, tick its issue's
-   line and move it to Done, in a few words with the pull request's number. Delete each "waits"
-   now met.
+   line and move it to Done, in a few words with the pull request's number; the line of a
+   milestone already closed is deleted instead. Delete each "waits" now met.
 2. **Sort what was reported.** Read the **Reported** list of each of the agent's pull requests
    opened or merged since the run's last (the skill `fix-fold-report`), and give each find one of
    four ends, the first that fits:
@@ -61,7 +61,7 @@ then acts:
   under 8,000, measured by `gh api --paginate "repos/{owner}/{repo}/issues?state=open&per_page=100"
   --jq '.[] | select(.pull_request | not) | [.number, (.body | length)]'`.
   One over is trimmed by the rules that write it: a line by `place-an-issue`, Decisions by
-  `record-answer`, a feature's sections by `shape-an-issue`.
+  `record-answer`, a feature's sections by `shape-an-issue`. One still over is named in the post.
 - **The order is kept**: a line a run placed is moved when the order of the work asks it. A line
   the maintainer placed is not.
 - **Work set aside has a home**: the Not in scope and Decisions of each issue closed since the
@@ -74,10 +74,11 @@ change what a milestone is for. Those are the gate review's questions (the skill
 
 It then posts a **Queue review** on the Queue: what it merged, ordered, closed, placed and
 gathered, a line each with the reason, and the count of open issues beside the last review's.
-The Queue takes no `decision` for it, so it pings no one, and it lists no ideas. The review
-before it is then cut to one line, as in "Queue review of 23 Nov 2026, replaced by <link>", and
-the comment's edit history keeps the rest. Only a run's own comment is cut, never the
-maintainer's, and a cut starts no run: the gate reads only a comment as it is made.
+The Queue takes no `decision` for it, so it pings no one, and it lists no ideas. The review before
+it is then cut to one line that keeps the run's mark first, as in "📋 **Coordinator** · Queue review
+of 23 Nov 2026, replaced by <link>", and the comment's edit history keeps the rest. Only a run's own
+comment is cut, never the maintainer's, and a cut starts no run: the gate reads only a comment as it
+is made.
 
 ## A `Change:` on the Queue
 

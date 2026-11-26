@@ -19,11 +19,11 @@ A run that finds the release tagged and its milestone closed does this first:
 3. Delete each "waits" already met.
 4. An issue still open in the closed milestone is moved to the next one, its line with it, and
    the debrief says which and why: a closed milestone holds none open.
-5. Empty Done: the closed milestone and the CHANGELOG hold what it shipped. A pull request of it
-   that merged before the tag and is not yet ticked is not added back.
+5. Empty Done: the closed milestone and the CHANGELOG hold what it shipped.
 6. Cut to one line the milestone's gate review and each comment the runs left on the release
-   checklist for it, as in "Gate review · 0.4.2: answered 1 Dec 2026 and applied", the whole of
-   each kept in its edit history. The gate review keeps its heading. A comment of the
+   checklist for it, the run's mark first, as in "📋 **Coordinator** · Gate review · 0.4.2:
+   answered 1 Dec 2026 and applied", the whole of each kept in its edit history. The gate review
+   keeps its heading. A comment of the
    maintainer's is never cut.
 
 The lines then take their plans in order (the skill `plan`). The next version's own pull request
