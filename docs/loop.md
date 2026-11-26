@@ -119,8 +119,8 @@ and the wording the files share has a ceiling.
 | a builder's order, the line it takes, when it stops | [`role-builder`](../.claude/skills/role-builder/SKILL.md) |
 | the run's brief, its two lines on the run log, a page it publishes | [`beat`](../.claude/skills/beat/SKILL.md) |
 | the Definition of Ready, "covers", an `Idea:` | [`shape-an-issue`](../.claude/skills/shape-an-issue/SKILL.md) |
-| an issue's place, a milestone that only gets shorter | [`place-an-issue`](../.claude/skills/place-an-issue/SKILL.md) |
-| the milestone being worked, the Queue kept current, its review on Monday and Thursday | [`keep-the-queue`](../.claude/skills/keep-the-queue/SKILL.md) |
+| an issue's place, a release's headline, Upkeep, a milestone that only gets shorter | [`place-an-issue`](../.claude/skills/place-an-issue/SKILL.md) |
+| the milestone being worked, the Queue kept current, its review on Monday and Thursday, Monday's read against the arc | [`keep-the-queue`](../.claude/skills/keep-the-queue/SKILL.md) |
 | the gate, its review, the trial, keep or pull | [`gate-review`](../.claude/skills/gate-review/SKILL.md) |
 | the next milestone after a tag | [`open-milestone`](../.claude/skills/open-milestone/SKILL.md) |
 | the test for asking, how and when a question is asked, five open at most | [`ask-or-decide`](../.claude/skills/ask-or-decide/SKILL.md) |

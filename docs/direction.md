@@ -2,7 +2,8 @@
 
 Who PortFusion is for, what it never does, and what each milestone is for. The agents read it
 before they plan ([`CONTRIBUTING.md`](../CONTRIBUTING.md), The loop). It holds only what
-changes slowly, and changes only at a milestone's gate, by the maintainer's answer.
+changes slowly, and changes only by the maintainer's answer: at a milestone's gate, or to a
+design card that asks which release builds its feature.
 
 ## For whom
 

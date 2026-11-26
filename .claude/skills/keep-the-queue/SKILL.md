@@ -64,17 +64,27 @@ then acts:
   `record-answer`, a feature's sections by `shape-an-issue`. One still over is named in the post.
 - **The order is kept**: a line a run placed is moved when the order of the work asks it. A line
   the maintainer placed is not.
+- **On Monday the whole list is read against the arc**, by the wide reader in the same read:
+  each open line against the headline of the release it stands in (the skill `place-an-issue`).
+  A fault a run placed where no headline needs it moves to Upkeep, an Upkeep line a later
+  release's headline has come to need joins that release, and Upkeep is ranked again, each move
+  listed with its reason. Nothing of the milestone being worked moves. A feature, and a line the
+  maintainer placed, move only by their word: where the order of the work asks for one, the
+  review asks it under "Questions for you", three moves at most and within the limit on open
+  questions (the skill `ask-or-decide`), and the Queue takes `decision` until they are answered.
 - **Work set aside has a home**: the Not in scope and Decisions of each issue closed since the
   last review, and the descriptions of the pull requests that closed them, are read for work put
   off as a later step, by the wide reader in the same read. Each item no open issue covers is
   filed, folded or dropped with the reason, as a reported find is (Each run, above).
 
-What it never does unasked: cut a line from a milestone, add a feature the arc does not name, or
-change what a milestone is for. Those are the gate review's questions (the skill `gate-review`).
+What it never does unasked: move a feature or a line the maintainer placed, take a line from the
+milestone being worked, add a feature the arc does not name, or change what a milestone is for.
+The last two are the gate review's questions (the skill `gate-review`).
 
 It then posts a **Queue review** on the Queue: what it merged, ordered, closed, placed and
 gathered, a line each with the reason, and the count of open issues beside the last review's.
-The Queue takes no `decision` for it, so it pings no one, and it lists no ideas. The review before
+The Queue takes `decision` only for a move it asks, so it pings no one else, and it lists no
+ideas. The review before
 it is then cut to one line that keeps the run's mark first, as in "📋 **Coordinator** · Queue review
 of 23 Nov 2026, replaced by <link>", and the comment's edit history keeps the rest. Only a run's own
 comment is cut, never the maintainer's, and a cut starts no run: the gate reads only a comment as it
@@ -84,5 +94,7 @@ is made.
 
 The maintainer's `Change:` under a review, or on an issue the review closed or moved, is recorded
 (the skill `record-answer`) and applied here, not built: the issue is reopened, the line put
-back, the "waits" taken off. The Queue takes no Decisions section: `· yours` says the maintainer
-placed a line, and the issue's placing comment says who else did and why.
+back, the "waits" taken off. An answer to a move the review asked is applied the same way: the
+line is moved and ends `· yours`, its issue takes the release's milestone or none, and `decision`
+comes off the Queue once none is left to answer. The Queue takes no Decisions section: `· yours`
+says the maintainer placed a line, and the issue's placing comment says who else did and why.

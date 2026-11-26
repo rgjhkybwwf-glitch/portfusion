@@ -23,6 +23,12 @@ it, and each that comes near (the same file, another function), marked as near.
 - **A cause that no longer holds**: what the Cause says, and what on `main` ended it, by file and
   line.
 - **An issue with no line in the Queue** (issue #206).
+- **Against the arc**, when the run asks for it: for each open issue outside the milestone being
+  worked, whether the headline of the release it stands in needs it, by `docs/direction.md`, The
+  arc. A headline needs an issue that is a slice of its feature, that a slice's "waits" names,
+  or whose Cause names a file a slice's Cause or plan names. Return each issue that stands where
+  no headline needs it, and each issue under the Queue's Upkeep heading that a headline has come
+  to need, with the release.
 - **Work set aside**: in each issue closed since the date you are given, its Not in scope and
   Decisions, and in the pull requests that closed it, each item put off as a later step ("its
   own issue", "a separate step", "later"), with the open issue that covers it, or none.
