@@ -40,7 +40,7 @@ PLAN = re.compile(r"[^·]*(?:·[^·]*)?· \*\*Plan, checked(?:, if answered as r
                   r"(?: against `main` at ([0-9a-f]{7,40}))?")
 #: A clock's run is its row for this long after the row's hour; the rows are four hours apart.
 ROW_FOR = 4 * 60
-#: The labels that keep a builder off a planned line (the role book's "Take a line").
+#: The labels that keep a builder off a planned line (the builder's book, The level's rules).
 KEEPS_OFF = ("decision", "building", "hold")
 #: A `building` label this old is a run that died (CONTRIBUTING.md, Building).
 DIED_AFTER = starts.AT_WORK_FOR

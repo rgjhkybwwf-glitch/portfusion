@@ -153,7 +153,7 @@ def test_no_step_skill_points_back_up_at_the_loops_section(skills, contributing,
     parts |= {part.split(",")[0] for part in parts}
     assert len(parts) >= 7, "the loop's parts were not found"
     headings = set(re.findall(r"^#+ (.+)$", contributing.replace(section, ""), re.M))
-    mention = re.compile(r"CONTRIBUTING(?:\.md)?`?(?:\]\([^)]*\))?(.{0,60})")
+    mention = re.compile(r"CONTRIBUTING(?:\.md)?`?(?:\]\([^)]*\))?(?=(.{0,60}))")
     fine = re.compile(r"'s conventions\b|, `|(?:'s|,) (?:%s)(?!\w)"
                       % "|".join(re.escape(heading) for heading in headings))
     place = "|".join(re.escape(part) for part in sorted(parts, key=len, reverse=True))

@@ -80,15 +80,17 @@ Every start takes the start line and the end; the table names the rest.
 | Release | `Release:` and the tag | 7, then 6, and 10 to the cap, and of 5 and 8 what waits | its own |
 | Re-plan | `Re-plan:` | 10, and of 5, 6, 7 and 8 what waits | its own: a line an issue |
 
-- **Of a part taken only for what waits**, a run does what its own start would: an answer is
-  recorded and the Queue kept (5, 6 and 12), a release's lines are moved (7), an idea is shaped
-  (2 and 8), and of 10 only the issues marked "Re-plan" or resumed are planned.
-- **Only the morning run and a release plan to the cap.** In any other run nothing else is
-  planned: a shaped idea takes its plan when its line is reached, and an answered issue is
-  marked for a re-plan or for a builder.
-- **A release run moves the milestone's lines before it keeps the Queue**, 7 then 6, and one
-  that finds the milestone still open goes from 7 to the end: the next morning run opens it. The
-  next version's own pull request is a builder's (the skill `release`, After the tag).
+- **Of a part taken only for what waits**, a run does what the start that waits would have
+  done: an answer is recorded, the Queue kept and the marks left (5, 6 and 12); a release's lines
+  are moved, the Queue kept and its first lines planned to the cap (7, 6 and 10); an idea is
+  shaped (2 and 8); and an issue marked "Re-plan", or resumed, is planned (10).
+- **Only the morning run, and a run that moves a release's lines, plan to the cap.** In any other
+  run only what is marked "Re-plan" or resumed is planned: a shaped idea takes its plan when its
+  line is reached, and an answered issue is marked for a re-plan or for a builder.
+- **A release's lines are moved before the Queue is kept**, 7 then 6. A run that finds the
+  release's milestone still open moves nothing and plans nothing for it, and the next morning run
+  opens it; what else waits is still taken. The next version's own pull request is a builder's
+  (the skill `release`, After the tag).
 - **An idea is never placed in the milestone being worked** by the run that shapes it: that is
   the maintainer's to do.
 - **Only the morning run takes 3, 4, 9 and 11.**

@@ -311,8 +311,7 @@ is written for the maintainer and which no run needs. A run changes none of them
 
 - **The Queue sets the order.** It ranks the lines of the milestone being worked, unblockers first,
   then bugs and wrong figures, small safe fixes, features and polish. Nothing outside Next is
-  built, and no run reorders it. Each issue is read whole, comments included, before its work
-  starts.
+  built. Each issue is read whole, comments included, before its work starts.
 
 **Asking and answering**
 

@@ -13,7 +13,6 @@ walk finds.
 
 ## The level's rules
 
-- **A builder takes no more issues than its cap**, its row's.
 - **It takes the first line it can build, and never reorders**: the first under Next whose issue
   carries `planned` and none of `decision`, `building` and `hold`, has no open pull request of its
   own, and whose "waits" issues are all closed. It skips the rest.
@@ -42,9 +41,6 @@ walk finds.
 
 | Start | Its text begins | What it builds |
 |---|---|---|
-| Night build | nothing: its routine's clock, 00:30 | the first line it can build, to the cap |
-| Evening build | nothing: its routine's clock, 18:30 | the first line it can build, to the cap |
+| Night build | nothing: its routine's clock | the first line it can build, to the cap |
+| Evening build | nothing: its routine's clock | the first line it can build, to the cap |
 | Answer build | `Answer build:` | only the issues marked "Build:", in the Queue's order, to the cap |
-
-A builder's run sends nothing to the maintainer's phone: what it did is in the run log, and in
-the next morning's digest.
