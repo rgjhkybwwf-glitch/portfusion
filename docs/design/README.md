@@ -127,7 +127,7 @@ not drawn, and is not invented on a page.
 | a head that sorts | `.sort` | at rest, in the heads' muted ink; under the pointer, in the ink; the order, down or up (`data-sort`: in the ink, with an arrow); the keyboard |
 | the total row | `.row.total` | under a full rule, in the names' weight |
 | an empty table | `.empty` | one line under the heads, saying so, and where to look instead |
-| a chart | `.well.chart` | one line in the accent, until a chart's own colours are given (What is still open) |
+| a chart | `.well.chart`, and its parts' `.s1` to `.s6`, `.other`, `.gain`, `.loss` | five kinds, each drawn on the sheet: a line, columns, ranked bars, gain and loss bars, and a donut beside its figures (Charts) |
 | the status panel | `.card.status`, `.items`, `.item`, `.latest` | what stands against the object, each a tag and a sentence; then what last happened to it |
 | what happened | `.events`, `.what` | events newest first, each its sentence, and under it the day and the account |
 | what the record needs | `.needs`, `.need`, `.says` | each item its tag, its sentence and the object it concerns, and one quiet button that opens that object |
@@ -184,14 +184,42 @@ light look's warm paper turned down to warm graphite.
   a dark ground. The lead card is a deep violet glass.
 - **What is raised out of a surface is a lighter step of it** (`--raised`), so a tile on the
   violet lead card takes the violet and never sits on it as a dark box.
-- **The accent lightens as a colour of text**, to `#978CFF`, so a link, the name's "Fusion" and
-  a chart's line read on the graphite. The mark's tile wears its own token (`--mark-tile`) and
+- **The accent lightens as a colour of text**, to `#978CFF`, so a link and the name's "Fusion"
+  read on the graphite. The mark's tile wears its own token (`--mark-tile`) and
   stays the brand's violet, `#4F3FD6`, with the harbour in white, in both schemes.
 - **Every text colour passes the accessibility contrast bar** (4.5 to 1) on what is behind it:
   text on a card is about 13.6 to 1, muted text 6.8 to 1, and a tile's label on the lead card
   4.7 to 1 at its lightest, measured on the drawn company page.
 - Where the Mac asks for less transparency or more contrast, the dark scheme gives its own solid
   glass, solid lead card and edge (`--glass-solid`, `--lead-solid`, `--contrast-edge`).
+
+## Charts
+
+The maintainer agreed the five kinds and chose their colours on 26 Nov 2026. A chart sits in a
+well inside its card, is drawn once for the desk and the report (#241), and its title uses the
+glossary's words.
+
+- **Six chart colours, in one order**, `--chart-1` to `--chart-6`: violet, teal, ochre, steel,
+  sage, plum, each with a dark value. A chart's parts take them in that order, which is what keeps
+  two neighbours apart for a reader who is colour-blind: both schemes pass that check on the card
+  and on the well. A chart of one series wears the first. What is folded together is Other, in
+  grey (`--chart-other`), always last.
+- **A gain or a loss wears `--up` or `--down`**, as a figure does, and no series wears them. The
+  sign and the side of the zero line say the same thing, so colour never speaks alone.
+- **A chart carries its figures or a key.** Ochre and sage are light against the paper, so no
+  part is left to be read by its colour alone.
+
+| Chart | For | Its rules |
+|---|---|---|
+| a line | a figure moving through time | 2.5 thick, straight from one valuation to the next and never smoothed, a ring at each. One line has a soft fill under it; two to four have none and are named at their ends. One line alone carries its figure at up to six points; past six, at the first, the last, the highest and the lowest. Several lines carry their names and no figures. A line to compare against (an entry price) is dashed, in the muted ink, and named, and then only the last point carries its figure. Money starts at zero; a price may start just under its lowest mark |
+| columns | an amount at a few moments | 24 wide at most, round at the data end, the figure above. A stack holds up to four parts, in the colours' order, 2px of the well between them, its key above and its total on top. Up to twelve columns; past twelve, a line. Always from zero |
+| ranked bars | parts compared by size | 14 high, round at the data end, longest first, the longest filling the track. Each row carries its share, and its value where there is room. Up to eight rows; the rest fold into Other |
+| gain and loss bars | what went up and what went down | 14 high, best first, a gain right of the zero line and a loss left of it, each with its signed figure. With no loss the zero line sits at the left |
+| a donut, beside its figures | the parts of one whole, six or fewer | largest first, clockwise from twelve o'clock, 2px of the well between parts, the whole in the middle, and each part's name, share and value beside the ring. A part under 3% folds into Other. Seven parts or more, two parts within a point of each other, or two wholes to compare, are ranked bars instead |
+
+The sheet draws each with the demo's figures. The demo holds no losing quarter, no list long
+enough to fold and no whole of six parts, so a column below the zero line, the Other row and
+`.s5`, `.s6` and `.other` are ruled here and not drawn.
 
 ## The name and the mark
 
@@ -270,8 +298,9 @@ reference gives each part its one value, as the consistency rule asks:
 
 Each is drawn when the maintainer gives it, and until then no page or part decides it.
 
-- **A chart's own colours** beside the accent, which the sector charts the maintainer wants will
-  need, and **the look in print**. Both are parked by the maintainer (#9, Decisions).
+- **The look in print**, parked by the maintainer (#9, Decisions).
+- **Three more charts**, drawn when a page needs them: a bridge, a trend beside a figure, and a
+  split bar in a table's row.
 - **The app's own icons.** The tab's, the Dock's and the touch icon are the mark on its tile, and
   are drawn when the frame is turned on (#347). On a dark ground the mark is the same violet
   tile.

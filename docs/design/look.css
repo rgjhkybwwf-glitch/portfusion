@@ -55,6 +55,13 @@
   --glass-solid:   #FBFAF7;
   --chart-grid:    #E2DFD7;
   --chart-base:    #D4D1C8;
+  --chart-1:       #4F3FD6;
+  --chart-2:       #0091A4;
+  --chart-3:       #CFA354;
+  --chart-4:       #4984BF;
+  --chart-5:       #8CBB73;
+  --chart-6:       #B16389;
+  --chart-other:   #B9B6AE;
   --contrast-edge: #6E6D78;
 
   /* Three heights, lit from above: sunken, resting, raised; and the glass, which floats. */
@@ -383,17 +390,36 @@ h2, .text-head { font-size: var(--text-head); font-weight: 600; letter-spacing: 
 /* An empty table says so, in one line under its heads. */
 .table > .empty { min-height: var(--h-row); padding: 12px var(--inset); display: flex; align-items: center; gap: 12px; color: var(--muted); }
 
-/* A CHART sits in a well. Its colours are the accent's until a chart's own set is given. */
+/* A CHART sits in a well, and wears the chart colours in their order: a part of it says which
+   (.s1 to .s6, .other), and a part that says nothing wears the first. A gain or a loss wears its
+   own colour, which no series wears. README.md, Charts, holds each chart's rules. */
 .chart { padding: 12px 8px 4px; }
 .chart svg { display: block; width: 100%; height: auto; }
+.chart .s1 { --series: var(--chart-1); }
+.chart .s2 { --series: var(--chart-2); }
+.chart .s3 { --series: var(--chart-3); }
+.chart .s4 { --series: var(--chart-4); }
+.chart .s5 { --series: var(--chart-5); }
+.chart .s6 { --series: var(--chart-6); }
+.chart .other { --series: var(--chart-other); }
+.chart .gain { --series: var(--up); }
+.chart .loss { --series: var(--down); }
 .chart .grid { stroke: var(--chart-grid); stroke-width: 1; }
 .chart .base { stroke: var(--chart-base); stroke-width: 1; }
-.chart .series { fill: none; stroke: var(--accent); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
-.chart .point { fill: var(--surface); stroke: var(--accent); stroke-width: 2.5; }
-.chart .fill-top { stop-color: var(--accent); stop-opacity: 0.22; }
-.chart .fill-end { stop-color: var(--accent); stop-opacity: 0; }
+.chart .ref { stroke: var(--muted); stroke-width: 1.5; stroke-dasharray: 5 4; }
+.chart .series { fill: none; stroke: var(--series, var(--chart-1)); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.chart .point { fill: var(--surface); stroke: var(--series, var(--chart-1)); stroke-width: 2.5; }
+.chart .fill-top { stop-color: var(--series, var(--chart-1)); stop-opacity: 0.22; }
+.chart .fill-end { stop-color: var(--series, var(--chart-1)); stop-opacity: 0; }
+.chart .block, .chart .dot { fill: var(--series, var(--chart-1)); }
+.chart .ring { fill: none; stroke: var(--series, var(--chart-1)); }
 .chart text { font-size: var(--text-label); fill: var(--muted); }
+.chart text.plain { fill: var(--ink); }
 .chart text.amount { font-weight: 600; fill: var(--ink); }
+.chart text.whole { font-size: var(--text-head); }
+.chart .keys { display: flex; flex-wrap: wrap; gap: 4px 14px; padding: 0 4px 8px; }
+.chart .key { display: inline-flex; align-items: center; gap: 6px; font-size: var(--text-label); color: var(--muted); }
+.chart .key i { width: 10px; height: 10px; border-radius: 3px; background: var(--series); }
 
 /* THE STATUS PANEL: what stands against this object, then what last happened to it. */
 .status { display: flex; flex-direction: column; gap: 14px; }
