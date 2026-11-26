@@ -25,9 +25,9 @@ it, and each that comes near (the same file, another function), marked as near.
 - **An issue with no line in the Queue** (issue #206).
 - **Against the arc**, when the run asks for it: for each open issue outside the milestone being
   worked, whether the headline of the release it stands in needs it, by `docs/direction.md`, The
-  arc. A headline is the release's row there. It needs an issue the row names or its words
-  plainly take in, a slice of a feature it names, an issue the "waits" of one of those names,
-  and one whose Cause names a file that one of those names in its Cause, Reach or plan. Return each issue that stands where
+  arc. A headline is the release's row there. It needs an issue the row names by its number,
+  a slice of a feature it names, an issue the "waits" of one of those names, and one whose
+  Cause names a file that one of those names in its Cause or plan. Return each issue that stands where
   no headline needs it, and each issue under the Queue's Upkeep heading that a headline has come
   to need, with the release.
 - **Work set aside**: in each issue closed since the date you are given, its Not in scope and

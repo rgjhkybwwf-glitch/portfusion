@@ -71,8 +71,8 @@ then acts:
   listed with its reason. Nothing of the milestone being worked moves. A feature, and a line the
   maintainer placed, move only by their word: where the order of the work asks for one, the
   review asks it on the line's own issue, as any question is asked (the skill `ask-or-decide`):
-  three moves open at most, and none its Decisions already answer. The answer is applied by
-  `place-an-issue`.
+  three moves open at most, none its Decisions already answer, and none on an issue that
+  carries `decision`. The answer is applied by `place-an-issue`.
 - **Work set aside has a home**: the Not in scope and Decisions of each issue closed since the
   last review, and the descriptions of the pull requests that closed them, are read for work put
   off as a later step, by the wide reader in the same read. Each item no open issue covers is
@@ -94,5 +94,5 @@ is made.
 
 The maintainer's `Change:` under a review, or on an issue the review closed or moved, is recorded
 (the skill `record-answer`) and applied here, not built: the issue is reopened, the line put
-back, the "waits" taken off. The Queue takes no Decisions section: `· yours` says the maintainer
+back, ending `· yours`, the "waits" taken off. The Queue takes no Decisions section: `· yours` says the maintainer
 placed a line, and the issue's placing comment says who else did and why.
