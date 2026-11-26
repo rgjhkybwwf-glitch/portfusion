@@ -63,10 +63,11 @@ def test_a_run_finds_its_row_by_its_clock_or_by_the_gates_own_text(brief, table)
     started for an answer build that reads "Answer:" takes the coordinator's row. Each clocked row
     is found at its own hour and for three hours after, and every text the gate sends finds the
     row the gate's own table names."""
-    clocked = [row for row in table if brief.CLOCK.search(row["What starts it"])]
+    clocked = [row for row in table if "its routine's clock" in row["What starts it"]]
     assert len(clocked) >= 3
     for row in clocked:
         said = brief.CLOCK.search(row["What starts it"])
+        assert said, f"{row['Run']}: the brief reads no hour and days in \"{row['What starts it']}\""
         for late in (0, 5, 179):       # the fixture's 2nd is a Wednesday
             at = int(said[1]) * 60 + int(said[2]) + late
             now = uk(brief, 2 + at // (24 * 60), at // 60 % 24, at % 60)
@@ -74,12 +75,12 @@ def test_a_run_finds_its_row_by_its_clock_or_by_the_gates_own_text(brief, table)
         at = int(said[1]) * 60 + int(said[2]) + brief.ROW_FOR
         assert brief.which(table, row["Level"].lower(), "", uk(brief, 2, at // 60 % 24, at % 60)) != row, \
             "hours past its clock, a run with no text is not that row's"
-        for day in range(1, 8):        # the fixture's 1st is a Tuesday, so its 7th is a Monday
+        # The fixture's 1st is a Tuesday: its 5th a Saturday, its 6th a Sunday and its 7th a Monday.
+        on = {"Monday to Friday": {1, 2, 3, 4, 7}, "Tuesday to Saturday": {1, 2, 3, 4, 5}}[said[3]]
+        for day in range(1, 8):
             found = brief.which(table, row["Level"].lower(), "", uk(brief, day, int(said[1]), int(said[2])))
-            if day % 7 in brief.DAYS[said[3]]:
-                assert found == row, (row["Run"], day)
-            else:
-                assert found is None, f"{row['Run']}: its clock names no run on a day its row leaves out"
+            assert (found == row) if day in on else (found is None), \
+                f"{row['Run']} is its clock's row on the days its row names, and on no other: {day} Jan"
     for key, start in brief.starts.STARTS.items():
         text = brief.starts.text(key, "9", "https://example.invalid/9", "v9.9.9")
         assert brief.which(table, start.level, text, uk(brief, 3, 12, 0))["Run"] == start.run, key
