@@ -6,6 +6,7 @@
 #   the maintainer's answer ("Q1: a", "All as recommended") or "Change:"   the coordinator, 30 min
 #   an issue the maintainer opens titled "Idea:", or a release they publish  the coordinator, 10 min
 #   a run's "Re-plan:", or the maintainer's "Resume:"                        the coordinator, 10 min
+#   a planned issue closed by its pull request's merge                       the coordinator, 10 min
 #   the coordinator's "Build:"                                               a builder, 2 min
 #
 # IT KEEPS NO CLOCK. GitHub runs a workflow's clock hours late, so every run a clock starts is
@@ -50,7 +51,7 @@ on:
   issue_comment:
     types: [created]
   issues:
-    types: [opened, unlabeled]
+    types: [opened, unlabeled, closed]
   release:
     types: [published]
   workflow_dispatch:
@@ -69,13 +70,17 @@ defaults:
 
 jobs:
   # What this event is, outside the wait's queue: what starts nothing never cancels a wait. Of the
-  # labels a run takes off all day, only the two that resume something are looked at.
+  # labels a run takes off all day, only the two that resume something are looked at; and of the
+  # issues that close, only a planned one that closed as done, which a merge does.
   read:
     if: >-
       github.event_name == 'workflow_dispatch'
       || (github.event.sender.login == github.repository_owner
           && (github.event.action != 'unlabeled'
-              || github.event.label.name == 'paused' || github.event.label.name == 'hold'))
+              || github.event.label.name == 'paused' || github.event.label.name == 'hold')
+          && (github.event.action != 'closed'
+              || (github.event.issue.state_reason == 'completed'
+                  && contains(github.event.issue.labels.*.name, 'planned'))))
     runs-on: ubuntu-24.04
     timeout-minutes: 3
     permissions:
@@ -111,6 +116,8 @@ jobs:
           STATE: ${{ github.event.issue.state }}
           IS_PR: ${{ github.event.issue.pull_request && 'yes' || 'no' }}
           LABEL: ${{ github.event.label.name }}
+          LABELS: ${{ join(github.event.issue.labels.*.name, ',') }}
+          REASON: ${{ github.event.issue.state_reason }}
           TAG: ${{ github.event.release.tag_name }}
           LEVEL: ${{ inputs.level }}
         run: |

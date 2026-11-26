@@ -78,8 +78,9 @@ pushes anything.
   returns each line written or edited since, and of those it takes the lines this rule names.
 - **A run of the coordinator's that the maintainer started**, by an answer, a `Change:`, an
   `Idea:`, a release or a `Resume:`, sends its own debrief: they wait for it. A builder's run,
-  an answer build included, and a re-plan a run began send none: what they did is in the run log,
-  and in the next morning's digest.
+  an answer build included, a re-plan a run began and a top-up send none: what they did is in
+  the run log, and in the next morning's digest. One of those that took what the maintainer
+  started, an answer that waited among it, sends its debrief as that run would have.
 
 ## A run the hook holds after its end line
 

@@ -24,7 +24,7 @@ started it:
 It reads GitHub once, writes nothing, and prints in a few lines: the run's row, cap and mark;
 whether the loop is paused; the level's last end line; the agent's open pull requests, each with
 its `guard`; and every line under Next with its labels, its plan, its own pull request and its open
-"waits". A builder is told the line to take. The coordinator is told how many plans stand, and
+"waits". A builder is told the line to take. The coordinator is told how many plans hold a place, and
 what changed since its last run began: what merged and closed, what was filed, whose comments are
 on which issues, a start the gate failed to make, a tag, an open `Idea:`, a `building` label that
 is too old, and whether a Queue review is due.
@@ -42,7 +42,7 @@ The run's first act on GitHub:
 
 After the word `start`: the date, the minute the run began, and in a few words what it sets out
 to do. A run the gate started says there what started it: an answer, an idea, a release, a
-re-plan, a `Resume:` or the coordinator's "Build:". The coordinator's morning run says "the
+re-plan, a top-up, a `Resume:` or the coordinator's "Build:". The coordinator's morning run says "the
 morning run" there: the next morning's digest reads from its end line.
 
 ## A paused loop

@@ -1,6 +1,6 @@
 ---
 name: role-coordinator
-description: "Role book: every run of the coordinator's. It holds the one order the coordinator's work follows, which parts of it each start takes (the morning's clock, an answer, an idea, a release, a re-plan), and the rules of the level."
+description: "Role book: every run of the coordinator's. It holds the one order the coordinator's work follows, which parts of it each start takes (the morning's clock, an answer, an idea, a release, a re-plan, a top-up), and the rules of the level."
 ---
 
 # The coordinator's book
@@ -13,7 +13,8 @@ The coordinator writes no code, opens no branch and builds nothing.
 ## The level's rules
 
 - **A run the gate starts takes all that waits**: an answer or a `Change:` not yet recorded, a
-  release whose lines are not moved, an open `Idea:` not shaped, a "Re-plan" not planned. A start
+  release whose lines are not moved, an open `Idea:` not shaped, a "Re-plan" not planned, a
+  place a merge left empty. A start
   within another's quiet minutes takes its place, so the run its text names may not be the only
   one owed. After a pause that is all that came in while the loop was paused.
 - **One long job, at most, a run**, after its plans: the first that is due of those part 11
@@ -27,7 +28,7 @@ A run works the parts it takes in this order, and no part twice. A release is th
 exception, and the table says so.
 
 1. **The start line**: the skill `beat`, saying what started the run: the morning run, an
-   answer, an idea, a release with its tag, a re-plan, or a `Resume:`.
+   answer, an idea, a release with its tag, a re-plan, a top-up, or a `Resume:`.
 2. **Read the direction**: `docs/direction.md` first, cited for a milestone, a cut or an idea,
    and `docs/content-map.md` beside it, cited for a design card and for a plan that changes which
    page or section answers a job.
@@ -40,8 +41,8 @@ exception, and the table says so.
    when there is none. Clear a `building` label more than three hours old: a run that long has
    died.
 4. **Nothing changed: stop.** When nothing has merged, closed, been answered, changed or filed
-   since, Next holds as many `planned` lines with no ready pull request of their own as the cap
-   or no line that could be planned, and no review of the Queue is due, go to the last part with
+   since, as many plans hold a place as the cap or no line under Next could be planned (the
+   skill `plan`), and no review of the Queue is due, go to the last part with
    a one-line debrief; where this run met a fault, or an end line since its last names one, the
    Faults head comes before that line, and the Pages head likewise for a page (the skill
    `end-of-run`).
@@ -81,15 +82,18 @@ under it the parts a waiting start brings with it.
 | Idea | `Idea:` | 2 and 8, and of 5, 6, 7 and 10 what waits | its own: for each idea, the issue it became, where it was placed and why, and what is asked |
 | Release | `Release:` and the tag | 7 before 6, then 10 to the cap, and of 5 and 8 what waits | its own |
 | Re-plan | `Re-plan:` | 10, and of 5, 6, 7 and 8 what waits | its own: a line an issue |
+| Top-up | `Top-up:` | 6, then 10 to the cap, and of 5, 7 and 8 what waits | its own: a line a plan |
 
 - **Of a part taken only for what waits**, a run does what the start that waits would have
   done: an answer is recorded, the Queue kept and the marks left (5, 6 and 12); a release's
   lines are moved, the Queue kept, and its first lines planned to the cap of the runs table's
-  Release row (7, 6 and 10); an idea is shaped (2 and 8); and an issue marked "Re-plan", or
-  resumed, is planned (10).
-- **Only the morning run, and a run that moves a release's lines, plan to a cap.** In any other
-  run only what is marked "Re-plan" or resumed is planned: a shaped idea takes its plan when its
-  line is reached, and an answered issue is marked for a re-plan or for a builder.
+  Release row (7, 6 and 10); an idea is shaped (2 and 8); an issue marked "Re-plan", or
+  resumed, is planned (10); and where a line under Next merged since the coordinator's last run,
+  it is ticked and the lines planned to the cap of the Top-up row (6 and 10).
+- **Only the morning run, a top-up, and a run that moves a release's lines, plan to a cap.** In
+  any other run only what is marked "Re-plan" or resumed is planned, beside a top-up that waits:
+  a shaped idea takes its plan when its line is reached, and an answered issue is marked for a
+  re-plan or for a builder.
 - **A release's lines are moved before the Queue is kept**, 7 before 6, in a release run and in
   a run that takes a waiting release and has not yet kept the Queue; the morning run works the
   two as numbered. A run that finds the release's milestone still open moves nothing and plans

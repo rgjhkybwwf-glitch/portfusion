@@ -191,6 +191,34 @@ def test_an_idea_and_a_release_start_the_coordinator(starts):
     assert published("nightly\"; rm -rf")["start"] == ""
 
 
+def test_a_merge_that_closes_a_planned_issue_tops_the_plans_up(starts):
+    """A line that was built closes with `planned` still on it, as done: its place is empty, and
+    the line that waited on it can now be planned. THE CASES THAT MAKE IT FAIL: the place stays
+    empty until the next morning, so a build finds no plan; or every issue the coordinator closes
+    as a duplicate starts a run that has nothing to plan."""
+    def closed(labels, reason="completed", **more):
+        return starts.read({"EVENT": "issues", "ACTION": "closed", "NUMBER": "250", "URL": "u",
+                            "LABELS": labels, "REASON": reason, **more})
+    built = closed("desk,planned")
+    assert (built["start"], built["level"], built["wait"], built["acts"]) == \
+        ("topup", "coordinator", 10, []), built["said"]
+    assert built["text"].startswith("Top-up: ") and "#250" in built["text"]
+    assert closed("desk")["start"] == "", "an issue with no plan was not a line built"
+    assert closed("desk,not-planned")["start"] == "", "the label is read whole"
+    assert closed("planned", reason="not_planned")["start"] == "", "closed as not planned"
+    assert closed("planned", reason="duplicate")["start"] == ""
+    paused = closed("planned", PAUSED="yes")
+    assert paused["start"] == "" and "paused" in paused["said"]
+    gate = (FLOWS / "start.yml").read_text(encoding="utf-8")
+    assert "types: [opened, unlabeled, closed]" in gate
+    read = gate.partition("\n  read:")[2].partition("\n  fire:")[0]
+    assert "github.event.issue.state_reason == 'completed'" in read \
+        and "contains(github.event.issue.labels.*.name, 'planned')" in read, \
+        "an issue closed any other way starts no job at all, so it cancels no start's wait"
+    assert "LABELS: ${{ join(github.event.issue.labels.*.name, ',') }}" in read \
+        and "REASON: ${{ github.event.issue.state_reason }}" in read
+
+
 def test_a_pause_stops_every_start_and_keeps_every_hold(starts):
     queue = str(starts.QUEUE)
     paused = {"PAUSED": "yes"}
@@ -242,7 +270,8 @@ def test_the_bots_early_clock_waits_for_the_day_to_open(starts):
 def test_the_gate_keeps_no_clock_and_no_routines_clock_is_in_the_working_day(starts, rows):
     """GitHub runs a workflow's clock hours late, so a run a clock starts is started by its
     routine's own. A routine carries one clock, so each such row has a routine to itself; and a
-    level's rows are hours apart, which is how its run tells which row it is."""
+    level's rows are three hours apart or more, which is how its run tells which row it is
+    (`ROW_FOR`, in `tools/brief.py`)."""
     gate = (FLOWS / "start.yml").read_text(encoding="utf-8")
     assert "schedule" not in gate.partition("\njobs:")[0].partition("\non:")[2]
     assert "'schedule'" not in gate and "event.schedule" not in gate
@@ -256,12 +285,12 @@ def test_the_gate_keeps_no_clock_and_no_routines_clock_is_in_the_working_day(sta
         at = time(int(said.group(1)), int(said.group(2)))
         assert not starts.OPENS <= at < starts.CLOSES, f"{run} starts in the working day"
         hours.setdefault(row["Level"], []).append(at)
-    assert len({row["Routine"] for row in clocked.values()}) == len(clocked) >= 3
+    assert len({row["Routine"] for row in clocked.values()}) == len(clocked) >= 4
     for level, ats in hours.items():
         minutes = sorted(at.hour * 60 + at.minute for at in ats)
         gaps = [b - a for a, b in zip(minutes, minutes[1:] + [minutes[0] + 24 * 60])]
-        assert min(gaps) >= 4 * 60, (f"a run tells its row by the hour: {level}'s clocks, "
-                                     f"{sorted(map(str, ats))}, must be four hours apart")
+        assert min(gaps) >= 3 * 60, (f"a run tells its row by the hour: {level}'s clocks, "
+                                     f"{sorted(map(str, ats))}, must be three hours apart")
 
 
 def test_the_gate_fires_by_the_table_makes_no_comment_and_sends_nothing_of_one(starts):

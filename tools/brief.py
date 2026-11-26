@@ -41,10 +41,12 @@ OWN = re.compile(r"\b(?:Closes|Part of|For) #(\d+)")
 #: A plan's comment, as the skill `plan` posts it: the mark, the date, then these words.
 PLAN = re.compile(r"[^·]*(?:·[^·]*)?· \*\*Plan, checked(?:, if answered as recommended)?\*\*"
                   r"(?: against `main` at ([0-9a-f]{7,40}))?")
-#: A clock's run is its row for this long after the row's hour; the rows are four hours apart.
-ROW_FOR = 4 * 60
+#: A clock's run is its row for this long after the row's hour; the rows are three hours apart.
+ROW_FOR = 3 * 60
 #: The labels that keep a builder off a planned line (the builder's book, The level's rules).
 KEEPS_OFF = ("decision", "building", "hold")
+#: Of those, the two that wait on the maintainer: a plan under one holds no place (the skill `plan`).
+THEIRS = ("decision", "hold")
 #: A `building` label this old is a run that died (CONTRIBUTING.md, Building).
 DIED_AFTER = starts.AT_WORK_FOR
 #: Where the last run cannot be told, what changed is read from this long ago.
@@ -171,7 +173,8 @@ def lines_said(lines: list[Line], issues: dict[int, dict], own: dict[int, list[d
                plans: dict[int, dict], holes: tuple[str, ...] = (),
                marked: bool = False) -> tuple[list[str], list[int], list[int]]:
     """Each line under Next in a line of the brief, the lines a builder may take, in order, and
-    the lines whose plan stands and is not yet built (the coordinator's count). `holes` names the
+    the lines whose plan holds a place (the coordinator's count): it stands, is not yet built,
+    and waits on no answer or hold of the maintainer's. `holes` names the
     reads that failed or were cut short: with any, no line is called free, and an issue the list
     of open ones does not hold is "not read", not closed. `marked` is an answer build's rule:
     only a line marked "Build:" since its plan is taken."""
@@ -201,7 +204,8 @@ def lines_said(lines: list[Line], issues: dict[int, dict], own: dict[int, list[d
             parts.append("waits " + ", ".join(f"#{n}" for n in open_waits) + f" ({state})")
         replan = bool(plan and "Re-plan" in plan["since"])
         ready = any(not p["draft"] for p in pulls)
-        if "planned" in labels and (replan or not ready):
+        if ("planned" in labels and (replan or not ready)
+                and not any(label in labels for label in THEIRS)):
             standing.append(line.number)
         if (not holes and "planned" in labels and not replan and not pulls and not open_waits
                 and not any(label in labels for label in KEEPS_OFF)
@@ -364,7 +368,7 @@ def brief(level: str, text: str, now: datetime, asked: Asked) -> list[str]:
                if answer_build else ".")))
         return out + _missed(asked)
 
-    out.append("Plans that stand and are not yet built: "
+    out.append("Plans that hold a place: "
                + ("not counted here, since " + ", ".join(holes) + " could not be read" if holes else
                   str(len(standing)) + (f" ({', '.join(f'#{n}' for n in standing)})" if standing else ""))
                + (f" · the cap is {row['Cap']}" if row else ""))

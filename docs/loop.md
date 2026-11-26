@@ -29,8 +29,8 @@ where each rule is kept. No run needs it, and no run changes it.
 
 - **The start gate starts every run its routine's clock does not** (`start.yml`; `tools/starts.py`
   holds its table, the rows of the runs table). A run cannot start another, so the gate does: it sees the
-  maintainer's words, a release and a run's own line, and fires the routine of the level that
-  takes it. It keeps no clock: GitHub runs a workflow's clock hours late, so a run a clock starts
+  maintainer's words, a release, a run's own line and a merge that closes a planned issue, and
+  fires the routine of the level that takes it. It keeps no clock: GitHub runs a workflow's clock hours late, so a run a clock starts
   is started by its routine's. Nothing of a comment is sent: a run is told what started it last,
   and finds the rest itself.
 - **Quiet minutes, and one wait a level.** A start waits its row's minutes, counted from the last
@@ -43,18 +43,29 @@ where each rule is kept. No run needs it, and no run changes it.
   minutes are for the milestone's close, which follows the tag.
 - **The maintainer's day is 08:00 to 17:00 UK time, Monday to Friday.** What the maintainer
   starts, by an answer, a `Change:`, an `Idea:`, a release or a `Resume:`, starts at any hour, and
-  a run's own line ("Build:", "Re-plan:") carries on what its run began. No clock starts a run
+  a run's own line ("Build:", "Re-plan:") carries on what its run began; a merge is the
+  maintainer's press or a builder's own, and its top-up follows it at any hour. No clock starts a run
   inside the day: the routines' are set outside it, and `test_starts.py` holds the runs table's
   hours to that. The bot asks only inside the day (Telling the maintainer, below).
 - **The maintainer's answers start the answer run, in a batch.** The gate sees the owner's comment on an
   issue that begins `Q1:` or `All as recommended`, whatever its labels, or one that begins
   `Change:` on an issue or an agent's pull request, and starts the coordinator's answer run
-  thirty quiet minutes after the last, so answers given together make one run. Nothing of a
-  comment is passed, and the issue it names is only the last.
+  thirty quiet minutes after the last, so answers given together make one run; a merge in
+  those minutes brings the run forward to ten after it, and it takes the answers given by
+  then. Nothing of a comment is passed, and the issue it names is only the last.
 - **A re-plan starts the coordinator at once, by its comment.** A comment whose first line after
   the run's name is "Re-plan:" is all it takes: the gate sees it and, ten quiet minutes after the
   last, starts the re-plan run, so the plan is ready for the next build. No run starts a routine
   itself.
+- **A merge tops the plans up.** A line that was built closes when its pull request merges, still
+  carrying `planned`. The gate sees an issue close so, as done, and ten quiet minutes after the
+  last starts the coordinator's top-up run, which ticks the line and plans to the cap. So the
+  line that waited on the merge has its plan before the next build, and a place freed in the day
+  is filled that day. An issue closed for any other reason, or with no plan, starts nothing.
+- **Three builds a working day, each by a routine's clock of its own**: 18:30, 21:30 and 00:30.
+  A run tells its row by the hour, so a level's clocks stand three hours apart or more. A build
+  still at work when the next begins is not waited for: `building` keeps the second off its
+  issue and off its pull request.
 - **A start that fails is said.** The gate prints the routine's HTTP status alone, never the
   session's address, and fails its own workflow run; the next morning run names it in its digest.
   Each level's address and token are the repository's secrets, which `start.yml` names; without
