@@ -95,7 +95,7 @@ works by.
 ## Where each rule is
 
 A rule has one home, and `test_runs.py` holds that: the charter, a role book or one step skill.
-It holds their size too: the charter, a role book and a step skill each have a budget of lines,
+It holds their size too: the charter, a role book and a step skill each have a budget of words,
 and the wording the files share has a ceiling.
 
 | The rule | Its home |

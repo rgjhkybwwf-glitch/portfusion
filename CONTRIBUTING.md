@@ -282,10 +282,9 @@ is written for the maintainer and which no run needs. A run changes none of them
   skill `gate-review`); a release's read checks it and changes nothing in it.
 - **The loop's own work is not tracked here.** A change to this section, a skill, a helper agent,
   a workflow, a routine or `docs/loop.md` is made from the maintainer's project on claude.ai, by
-  pull request. A
-  run that meets a fault in its own rules, or in a tool or an access they call for and give no
-  way round, says so in one line of its debrief, and on its end line after the word `Fault:`
-  (the skill `beat`), and does nothing more about it: it files no issue for it.
+  pull request. A run that meets a fault in its own rules, or in a tool or an access they call
+  for and give no way round, says so in one line of its debrief, and on its end line after the
+  word `Fault:` (the skill `beat`), and does nothing more about it: it files no issue for it.
 
 **When a run starts**
 
