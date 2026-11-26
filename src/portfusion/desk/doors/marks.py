@@ -5,8 +5,9 @@ purpose. An event happened once and is history, so its table is append-only. A p
 by design at every refresh — which is safe only because the outgoing value is BANKED first, and
 that is the ordering this module refuses to skip.
 
-THE MARKS RULE IS WHAT MAKES THIS LEGAL, and `desk/actions.py` states it: the prices and rates a
-feed read are written here, on the owner's tick. This is the door `Action(writes="marks")` declares.
+THE MARKS RULE IS WHAT MAKES THIS LEGAL, and `desk/actions.py` states it: the prices, rates and
+live equity a feed read are written on the owner's tick, the equity through `observations.py`.
+This is the door `Action(writes="marks")` declares.
 
 THE ORDERING IS ENFORCED BY THE FLOW, NOT REMEMBERED. `feeds/refresh.py` exists because two
 commands are two chances to forget one. Here the bank runs first and the replace does not happen

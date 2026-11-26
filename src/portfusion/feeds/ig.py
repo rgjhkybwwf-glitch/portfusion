@@ -1176,7 +1176,7 @@ IG price sweep — read-only. Fetches spread-bet CONTRACT levels from IG's REST 
 
     python3 -m portfusion.feeds.ig --ig-search "Zephyr" "Morane" ...    find epics (do this first)
     python3 -m portfusion.feeds.ig --ig-verify            compare live levels against the record
-    python3 -m portfusion.feeds.ig --ig-events            trades, income, costs and capital against the book
+    python3 -m portfusion.feeds.ig --ig-events            trades, income, costs, capital vs the book
     python3 -m portfusion.feeds.ig --ig-events 2026-08-01     ...from a day, a number of days back
                                                           (90), or `begins`: never before an
                                                           account's record began

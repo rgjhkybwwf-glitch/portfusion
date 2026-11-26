@@ -151,7 +151,7 @@ def test_no_call_site_puts_anything_in_a_style_attribute():
 #: never fail it; only new prose can.
 #:
 #: The step line's quiet notes (`<span class="muted small">`, `quiet()`) are counted too.
-DESK_CHROME_WORDS = 438
+DESK_CHROME_WORDS = 440
 
 
 def _chrome_words():

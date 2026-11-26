@@ -141,6 +141,6 @@ register(Action(
     summary=("Bank the outgoing prices and IG readings, replace them with the ticked ones, then "
              "bank those. One operation: if any part of it is refused, every file is left exactly "
              "as it was. The desk writes the ticked prices, rates and live equity; a feed "
-             "writes nothing."),
+             "writes none of them."),
     run=marks.refresh,
 ))
