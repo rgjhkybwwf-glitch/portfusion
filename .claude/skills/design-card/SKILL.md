@@ -9,7 +9,7 @@ description: "Coordinator: posts a feature's design card, with its mock page, on
   under Design next in the Queue, or of a feature at the top of Next: above the fold, at most 150
   words and three questions.
 - **A card also asks which release builds the feature**, as one of its three questions: the one
-  it stands in, or the next. Its slices take the release answered (the skill `slice-a-feature`),
+  it stands in, or the next milestone to open. Its slices take the release answered (the skill `slice-a-feature`),
   so a feature put first for design is not left last to build.
 - **Two cards a week, at most.** When Design next is empty the coordinator fills it itself, with
   the first feature that has no decided shape, lowest milestone first and in the order its

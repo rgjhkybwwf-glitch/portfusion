@@ -37,7 +37,8 @@ review's place that day, and asks each line waiting under the Queue's heading fo
 - **keep or pull**, for each feature the maintainer has trialled;
 - **the next milestone's shape**: its order, its cuts and its moves, with each design card
   unanswered and a move for each feature left under Next with no shape; and its share of Upkeep,
-  each line named: at most one for every three of its headline's lines, the worst first.
+  each line named: every wrong figure and security alert, and of the rest at most one for every
+  three of its headline's lines, the worst first, and one at least.
 
 **What it does and lists, unasked**, under "Done with this review": the housekeeping a helper's
 read of every open issue, and of the Decisions of the issues closed since the last gate, turns
@@ -63,8 +64,8 @@ The Queue takes `decision`.
    the reason.
 2. Move issues between milestones.
 3. Write the next milestone's lines, in the order answered, under the Queue's heading for after
-   the gate: its headline's first, then its share of Upkeep, each of those taking the milestone
-   and leaving the Upkeep heading.
+   the gate: its headline's first, then its share of Upkeep, each of those taking the milestone,
+   leaving the Upkeep heading and ending `· yours`, the answer being the maintainer's placing.
 4. File the issue for a pull (The trial is on the release, above).
 5. Edit `docs/direction.md` to the answer in a pull request that links the Queue. It may merge
    itself once `guard` is green, the answer being its yes.

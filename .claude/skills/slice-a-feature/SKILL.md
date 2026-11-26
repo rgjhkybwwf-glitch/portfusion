@@ -19,8 +19,8 @@ description: "Coordinator: turns a feature's decided shape into two to six slice
 2. **Write each slice as an issue**, "Part of #n", that meets the Definition of Ready and leaves
    `main` green with its own changelog line. Its Decisions quote the card. Its Cause is what the
    code lacks, by file and function.
-3. **Its labels** are the feature's, **and its milestone** the release its card's answer names.
-   Where that is not the one the feature stands in, the feature moves there first, its line
+3. **Its labels** are the feature's, **and its milestone** the release its card's answer names, or the
+   one the feature stands in where its card asked none. Where that is not the one the feature stands in, the feature moves there first, its line
    with it, and the arc's rows in `docs/direction.md` are edited to the answer as a gate
    review's are (the skill `gate-review`, Applying its answer).
 4. **Place them** at the feature's line, in order, wherever that stands in the Queue (the skill

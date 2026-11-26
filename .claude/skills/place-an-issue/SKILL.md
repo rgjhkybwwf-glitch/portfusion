@@ -11,9 +11,10 @@ description: "Coordinator: gives every issue it files or shapes its labels and i
   `ask-or-decide`), and the debrief names each and why. The maintainer moves a line by editing
   the Queue, or with `Change:` on it, and a line they placed is never moved by a run. Only a
   feature the arc does not name is left unplaced, for the gate review to ask.
-- **A milestone is a release with a headline**: what the direction's arc says is first seen in
-  it. A line joins a release only when its headline needs it: a slice of its feature, an issue a
-  slice waits on, or a fault in a file a slice changes, so that file is opened once.
+- **A milestone is a release with a headline**: its row in the direction's arc, what it is for
+  and where it is first seen. A line joins a release only when its headline needs it: an issue
+  the row names or its words plainly take in, a slice of a feature it names, an issue one of
+  those waits on, or a fault in a file one of those changes, so that file is opened once.
 - **Every other issue is Upkeep.** It takes no milestone, and its line stands under the Queue's
   Upkeep heading, the worst first. A release draws its share of Upkeep at its gate (the skill
   `gate-review`), so a fault no headline needs is still built, and none stands ahead of a
@@ -30,14 +31,14 @@ The area labels of the issue it came from, or of the files its Cause names.
 
 ## Its milestone
 
-By each release's headline, in `docs/direction.md`, The arc, under "Where you first see
-something new":
+By each release's headline, its row in `docs/direction.md`, The arc:
 
 - **The next milestone at the earliest**, never the one being worked, whatever the issue is: a
   bug or a wrong figure included.
-- **The first release whose headline needs it**, by the code: the issue is a slice of the
-  headline's feature, a slice's "waits" names it, or its Cause names a file a slice's Cause or
-  plan names. The placing comment says which.
+- **The first release whose headline needs it**: the row names the issue or its words plainly
+  take it in, it is a slice of a feature the row names, the "waits" of one of those names it,
+  or its Cause names a file that one of those names in its Cause, Reach or plan. The placing
+  comment says which.
 - **Upkeep, when no headline needs it**: no milestone, whatever its page or its size.
 - **A feature the arc does not name** is not placed: adding it would change what a milestone is
   for, which is the maintainer's. It gets a line under the Queue's heading for the next gate
@@ -55,9 +56,18 @@ adds when the milestone has none:
 - **Lines already there keep their order**, and a line the maintainer placed is never moved.
 - **A decided feature's slices** go at the feature's line, in order (the skill
   `slice-a-feature`).
-- **In Upkeep, the worst first**: a wrong figure, then a fault that stops one of the owner's
-  jobs, then the rest, and within each the oldest first. A line the maintainer placed there
+- **In Upkeep, the worst first**: a wrong figure or a security alert, then a fault that stops
+  one of the owner's jobs, then the rest, and within each the oldest first. A line the maintainer placed there
   keeps its place.
+
+## A move the maintainer answers
+
+An answer to a move Monday's review asked (the skill `keep-the-queue`) is recorded on its issue
+(the skill `record-answer`) and applied here, in the same run. A yes moves the line, which then
+ends `· yours`, and its issue takes the release's milestone, or none in Upkeep. A feature's
+slices move with it, and the arc follows, as step 3 of the skill `slice-a-feature` edits it.
+A no stays in the issue's
+Decisions, and the move is not asked again.
 
 ## Saying so
 

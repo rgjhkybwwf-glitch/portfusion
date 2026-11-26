@@ -36,8 +36,8 @@ and takes `decision` off:
 wherever its issue stands. An issue not under Next, a feature, and the issue a design card was
 answered on are left there: nothing of them is built, and the maintainer's placing or the
 coordinator's slices come first. A card's answer takes its line out of Design next. An answer to
-a gate review is applied by the skill `gate-review`, and a `Change:` on the Queue by
-`keep-the-queue`.
+a gate review is applied by the skill `gate-review`, a `Change:` on the Queue by
+`keep-the-queue`, and a move that Monday's review asked by `place-an-issue`.
 
 ## A `Change:`
 
