@@ -1,15 +1,18 @@
 ---
 name: beat
-description: "Any run: writes the run's start line and its end line on the run log, in the form the dashboard reads (CONTRIBUTING.md, Telling the maintainer)."
+description: "Any run: asks for the run's brief, then writes the run's start line and its end line on the run log, in the form the dashboard reads."
 ---
 
 # The beat
 
-The rule is in `CONTRIBUTING.md`, The loop, Telling the maintainer: each run writes two
-lines on the run log, one as it starts and one as it ends.
+**Each run writes two lines on the run log**: one as it starts, and one as it ends, which gives
+when it began and ended, UK time, what it did in a line, each fault it met, the issues it decided
+a choice on, each page it published, and its `Next:` line. They are the source for which run is
+at work, a run's length, its stops and its faults, and for the morning's digest; they ask nothing
+and ping no one.
 
 Both are comments on the run log. Each opens with the run's mark, as the runs table gives it, then
-a date and a time, UK time. Neither asks anything, and neither pings anyone.
+a date and a time, UK time.
 
 ## The brief
 
@@ -67,18 +70,20 @@ the words come from; a run that was never held leaves the part out.
 
 A run that met a fault says so next, after the word `Fault:`, as in "· planned #250 · held 1× for
 a helper, 3 min · Fault: security alerts, not readable from this session · Decided for you: #250 ·
-Next: …". A fault is the loop's own (`CONTRIBUTING.md`, How it runs): a rule the run could not
+Next: …". A fault is the loop's own: a rule the run could not
 follow as written, or a tool or an access its rules call for, and give no way round, that failed
 it. A red guard, a plan the checker refused and a question are the work, and are no fault. The
 part is one line: each fault in a few words, the tool or the place first and then what it did, two
 faults parted by `;`. A run that met none leaves the part out.
 
-A run that published a page with the Artifact tool names it after "Decided for you:" and before
-`Next:`, after the word `Page:`, by its title and link, as in "· Fault: … · Decided for you: #145
-· Page: A spread bet's life https://claude.ai/artifact/… · Next: …". Two pages are parted by
-`;`, and a title loses any `·` or `;` it holds, so the line still parts where it should. The maintainer's project reads the part to copy
-each page in, since a routine's page is not in the project's list (`CONTRIBUTING.md`, Telling the
-maintainer). A run that published none leaves the part out.
+**A page a run publishes is named on its end line**, after "Decided for you:" and before `Next:`,
+after the word `Page:`, by its title and link, as in "· Fault: … · Decided for you: #145 · Page: A
+spread bet's life https://claude.ai/artifact/… · Next: …". Two pages are parted by `;`, and a
+title loses any `·` or `;` it holds, so the line still parts where it should. A routine runs
+outside the maintainer's project, so a page it publishes with the Artifact tool is private to
+their account but missing from the project's list of pages; the project copies in each page an
+end line names. The issue the page is for links it too. A run that published none leaves the part
+out.
 
 The time it began is the start line's, to the minute: the two lines are paired by it. The time
 stays first after the mark; a run started for a re-plan says so after its time.

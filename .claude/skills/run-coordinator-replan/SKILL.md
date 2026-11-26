@@ -6,7 +6,8 @@ description: "Playbook: the coordinator's re-plan run, started by a run's Re-pla
 # The coordinator's re-plan run
 
 Started by the gate, ten quiet minutes after a run's last "Re-plan:" or the maintainer's
-`Resume:`, with a text that begins "Re-plan:". The rules are in `CONTRIBUTING.md`, The loop.
+`Resume:`, with a text that begins "Re-plan:". The plan's rules are in the skill named; the rules
+every run works by are in `CONTRIBUTING.md`, The loop.
 
 1. **The start line**: the skill `beat`, saying it was started for a re-plan, or by a `Resume:`.
 2. **All else that waits**: a start within another's quiet minutes takes its place

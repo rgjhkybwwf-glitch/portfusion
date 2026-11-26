@@ -1,16 +1,20 @@
 ---
 name: keep-the-queue
-description: "Coordinator: keeps the Queue. Each run it ticks what merged and sorts what the builders reported; on Monday and Thursday it reviews the whole Queue, acts, and posts what it did (CONTRIBUTING.md, Which issues, and The ready check)."
+description: "Coordinator: keeps the Queue. Each run it ticks what merged and sorts what the builders reported; on Monday and Thursday it reviews the whole Queue, acts, and posts what it did."
 ---
 
 # Keeping the Queue
 
-The rules are in `CONTRIBUTING.md`, The loop: only the coordinator writes the Queue and
-the walk finds, and only it files an issue. What it does here is decided and told, not asked
-(the skill `ask-or-decide`): each act is listed, and the maintainer reverses one with `Change:`.
+- **The milestone being worked is the lowest open milestone.** The Queue's Next holds only its
+  lines and ends with the release checklist, which stays open: each release ticks it, and the
+  release's pull request links to it.
+- **The coordinator keeps the Queue current**: each run it ticks the line of each pull request
+  merged since its last and moves it to Done, and sorts what the builders reported. It reads the
+  Queue afresh just before each edit, since the maintainer may have changed it. A line the
+  maintainer placed, by hand or by an answer, is never moved.
 
-Read the Queue afresh just before each edit: the maintainer may have changed it. A line the
-maintainer placed, by hand or by an answer, is never moved.
+What it does here is decided and told, not asked (the skill `ask-or-decide`): each act is listed,
+and the maintainer reverses one with `Change:`.
 
 ## Each run
 
@@ -34,8 +38,9 @@ maintainer placed, by hand or by an answer, is never moved.
 
 ## The review, on Monday and Thursday
 
-On the morning run of a Monday and of a Thursday, and not while a gate review stands unanswered.
-It reads every open issue against today's `main`, by the wide reader
+**On Monday and Thursday it reviews the whole Queue, and acts**: on the morning run of a Monday
+and of a Thursday, and not while a gate review stands unanswered. None of it is asked. It reads
+every open issue against today's `main`, by the wide reader
 ([`.claude/agents/wide-reader.md`](../../agents/wide-reader.md)), which returns a short list, and
 then acts:
 
@@ -51,18 +56,19 @@ then acts:
   the maintainer placed is not.
 - **Work set aside has a home**: the Not in scope and Decisions of each issue closed since the
   last review, and the descriptions of the pull requests that closed them, are read for work put
-  off as a later step, by the wide reader in the same read. Each item no open issue covers is filed, folded or dropped with the
-  reason, as a reported find is (Each run, above).
+  off as a later step, by the wide reader in the same read. Each item no open issue covers is
+  filed, folded or dropped with the reason, as a reported find is (Each run, above).
 
 What it never does unasked: cut a line from a milestone, add a feature the arc does not name, or
 change what a milestone is for. Those are the gate review's questions (the skill `gate-review`).
 
 It then posts a **Queue review** on the Queue: what it merged, ordered, closed, placed and
 gathered, a line each with the reason, and the count of open issues beside the last review's.
-The Queue takes no `decision` for it, and it lists no ideas.
+The Queue takes no `decision` for it, so it pings no one, and it lists no ideas.
 
 ## A `Change:` on the Queue
 
 The maintainer's `Change:` under a review, or on an issue the review closed or moved, is recorded
-(the skill `record-answer`) and applied here: the issue is reopened, the line put back, the
-"waits" taken off. The Queue takes no Decisions section: the line's brackets say who placed it.
+(the skill `record-answer`) and applied here, not built: the issue is reopened, the line put
+back, the "waits" taken off. The Queue takes no Decisions section: the line's brackets say who
+placed it.

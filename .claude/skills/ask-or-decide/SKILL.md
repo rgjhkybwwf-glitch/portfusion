@@ -1,12 +1,9 @@
 ---
 name: ask-or-decide
-description: "Any run: when a choice comes up, applies the test for asking. It either asks, under Questions for you, or decides and records the choice as decided by the run (CONTRIBUTING.md, Asking and answering)."
+description: "Any run: when a choice comes up, applies the test for asking. It either asks, under Questions for you, or decides and records the choice as decided by the run. It holds the test, how a question is written and when, and the limit on open questions."
 ---
 
 # Ask, or decide and tell
-
-The test, and the limits on questions, are in `CONTRIBUTING.md`, The loop, Asking and
-answering.
 
 ## First, settle what can be settled
 
@@ -15,8 +12,16 @@ decision: the run settles it and says so.
 
 ## The test
 
-Ask and wait only when the step cannot be undone or changes direction, as CONTRIBUTING lists
-them. Everything else the run decides.
+**A run asks only what cannot be undone or changes direction.**
+
+- **Cannot be undone**: a move of the store, a moved figure, a release, a feature turned on, a
+  change to the keel (tier 3).
+- **Changes direction**: who PortFusion is for, what a milestone is for, a feature's shape, an
+  `Idea:` of the maintainer's.
+
+**Everything else it decides, and tells.** It takes the option it would have recommended, writes
+it in the issue's Decisions as decided by the run, with the date, carries on, and lists it under
+"Decided for you" in its debrief. The maintainer reverses one with `Change:`.
 
 ## Deciding
 
@@ -25,10 +30,11 @@ them. Everything else the run decides.
    `Decided by the run, D Mon YYYY: <the choice>, because <why, in a line>. Declined: <the others>.`
    Each option declined says what would bring it back, as in "Declined: b, a second cache.
    Revisit when: a page takes more than a second to load." The gate review reads these lines.
-3. Carry on. A choice made mid-build is also said at the top of the pull request.
+3. Carry on. **A choice that comes up mid-build is decided, and said at the top of the pull
+   request.**
 4. Keep it for the debrief's "Decided for you" (the skill `end-of-run`).
 
-It takes no `decision` label and pings no one. The maintainer reverses it with `Change:`.
+It takes no `decision` label and pings no one.
 
 Three choices are always decided, never asked:
 
@@ -41,14 +47,28 @@ Three choices are always decided, never asked:
 
 ## Asking
 
-- **Where**: at the end, under "Questions for you": of an issue, or of a comment that stops one.
-- **How**: one line a question, written to be answered on a phone:
-  `**Q1** the question? **a** an option (recommended) · **b** another`, with what each costs in a
-  few words. Tables above it are evidence, read only when wanted, and carry no column to fill in.
-- **When**: once its issue is under Next, and within the limit on open questions. An `Idea:`'s
-  questions and a design card's are asked sooner. A question written before then sits at the end
-  of its issue, whose Decisions read "Open: asked when it is under Next".
+- **Every question for the maintainer is asked at the end, under "Questions for you"**: of an
+  issue, and of a comment that stops one. A question is one line, written to be answered on a
+  phone: `**Q1** the question? **a** an option (recommended) · **b** another`, with what it
+  costs in a few words. Tables above it are evidence, read only when wanted, and carry no column
+  to fill in.
+- **A question is asked when its issue is under Next, not when it is filed.** One the agent
+  files, from a find or from a comment, has its Decisions read "Open: asked when it is under
+  Next"; it takes no `decision`, so it pings no one, and it is not ready. Once the issue is under
+  Next the coordinator asks or decides each, whether or not its "waits" have closed, so an answer
+  is in before its turn comes. Two are asked sooner, within the limit below: an `Idea:`'s, as it
+  is shaped, since the maintainer is waiting on it, and a feature's shape, on its design card. A
+  question written in a session the maintainer is part of keeps `decision` wherever its issue
+  stands, and is not asked again. An answer the maintainer gives early, in a comment, counts when
+  its line is planned.
+- **At most five questions stand open at once**, counting the milestone being worked's issues, a
+  design card's and a gate review's; questions on issues of a later milestone, written in a
+  session the maintainer is part of, apart. Beyond five it asks nothing new but what blocks the
+  first line under Next: an `Idea:`'s and a card's questions are written, and wait. While a card
+  of its own stands unanswered it posts no new one; the gate review is the exception (the skill
+  `gate-review`).
 - **The label**: the issue takes `decision`, which is what tells the maintainer.
-- **Mid-build**: a question that meets the test stops the issue. It is asked at the end of a
+- **Mid-build**: only a choice that meets the test stops the issue. It is asked at the end of a
   comment on the issue, the issue takes `decision` and loses `planned`, what is built so far is
-  pushed to its branch with no pull request, and the run moves on.
+  pushed to its branch with no pull request, and the run moves on. Its answer leaves the plan to
+  the coordinator, which plans it again; then the issue starts again, whole, on that branch.

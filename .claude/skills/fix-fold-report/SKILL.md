@@ -1,22 +1,28 @@
 ---
 name: fix-fold-report
-description: "Builder: what to do with a find the change did not cause. Fix it there when it is small and in a file the change touches, else fold it onto the issue that covers it, else report it (CONTRIBUTING.md, Building)."
+description: "Builder: what to do with a find the change did not cause. Fix it there when it is small and in a file the change touches, else fold it onto the issue that covers it, else report it. Work set aside is a find too."
 ---
 
 # A find outside the change: fix, fold, then report
 
-The rule is in `CONTRIBUTING.md`, The loop, Building: a builder files no issue and
-writes neither the Queue nor the walk finds. A find about the look takes its own route, below;
-anything else it meets outside its issue takes the first of the three after it that fits.
+**A find outside the change is fixed, folded or reported, in that order**: a small one in a file
+the change already touches is fixed in the same pull request; otherwise it is folded onto the
+open issue that covers it, as evidence; the rest are reported in the pull request, which lists
+all three. A builder files no issue for a find, and writes neither the Queue nor the walk finds:
+the coordinator sorts what is reported at its next run, files what earns an issue, and says what
+it dropped. A find about the look takes its own route, below, ahead of the three.
 
 A find **the change caused** is not one of these: it is the change's to fix, in this pull request.
 Nor is a finding of the `code-review` skill's that the rule in `CONTRIBUTING.md`, Commits and pull
 requests, leaves, or has said at the top of the pull request.
 
-**Work set aside is a find.** What the issue's Not in scope, its plan or this pull request puts
-off as a later step ("its own issue", "a separate step", "later", "worth weighing") is reported
-below, a line each, unless an open issue already covers it (then it is folded). The run never
-leaves it in prose alone: prose is where it was lost.
+**Work set aside for later is never left in prose.** What the issue's Not in scope, its plan or
+this pull request puts off as a later step ("its own issue", "a separate step", "later", "worth
+weighing") is a find: it is reported below, a line each, unless an open issue already covers it
+(then it is folded), and the coordinator files, folds or drops it with the reason, as any other.
+The run never leaves it in prose alone: prose is where it was lost. An option a run or the
+maintainer declines is written with what would bring it back ("Revisit when: …"), and the gate
+review lists each whose time has come (the skill `gate-review`).
 
 **A find about the look goes to #9.** While #9 is open, a find about colour, type, spacing or a
 part's shape is folded onto #9 as evidence, for its one pass through the shared layer: never

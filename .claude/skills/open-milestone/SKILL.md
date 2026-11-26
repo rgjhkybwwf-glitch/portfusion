@@ -1,12 +1,16 @@
 ---
 name: open-milestone
-description: "Coordinator: after a release is tagged and its milestone closed, moves the next milestone's lines in the Queue to Next (CONTRIBUTING.md, Which issues)."
+description: "Coordinator: after a release is tagged and its milestone closed, moves the next milestone's lines in the Queue to Next."
 ---
 
 # Opening the next milestone
 
-The rule is in `CONTRIBUTING.md`, The loop, Which issues, in what order: after the tag,
-the next milestone opens.
+**After the tag, the next milestone opens.** The gate starts the coordinator's release run ten
+quiet minutes after the maintainer publishes the release, at any hour. Finding the release tagged
+and its milestone closed, it moves the Queue's lines from after the gate to Next and plans the
+first of them, so the next build has a plan; a builder opens the next version (the skill
+`release`). A run that finds the milestone still open says so and moves nothing, and the next
+morning run does it.
 
 A run that finds the release tagged and its milestone closed does this first:
 

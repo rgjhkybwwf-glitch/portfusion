@@ -1,12 +1,16 @@
 ---
 name: release
-description: "Builder: makes a release's pull request, says what the maintainer does to tag it, and opens the next version after the tag (CONTRIBUTING.md, Which issues)."
+description: "Builder: makes a release's pull request, says what the maintainer does to tag it, and opens the next version after the tag."
 ---
 
 # The release, the tag and the next version
 
-The rules that call for each step are in `CONTRIBUTING.md`, The loop, Which issues, in
-what order.
+- **The release's pull request names the release**, after the release's read (the skill
+  `release-read`). It waits for the maintainer, since a tag follows it.
+- **The checklist is never closed.** Its pull request says "For #156", not "Closes", and ticks
+  its boxes.
+- **The tag and the milestone are the maintainer's.** They tag the release's merge and close the
+  milestone; no cloud session can push a tag.
 
 ## The release's pull request
 

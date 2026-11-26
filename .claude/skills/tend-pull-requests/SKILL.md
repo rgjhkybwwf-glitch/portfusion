@@ -1,12 +1,12 @@
 ---
 name: tend-pull-requests
-description: "Builder: before a new issue, brings each of the agent's own open pull requests level with main and makes it green (CONTRIBUTING.md, Which issues)."
+description: "Builder: before a new issue, brings each of the agent's own open pull requests level with main and makes it green."
 ---
 
 # Tending its own pull requests
 
-The rule is in `CONTRIBUTING.md`, The loop, Which issues, in what order: its own open
-pull requests come first.
+**Its own open pull requests come first** in a builder's run, so none waits on the maintainer for
+anything but what it asked of them.
 
 Before a new issue, for each open pull request from a branch whose name begins claude/:
 
@@ -15,7 +15,7 @@ whose auto-merge is on, merging itself, is made a draft again with it off before
 pushed to it (`gh pr merge <n> --disable-auto`, `gh pr ready <n> --undo`), and goes through the
 skill `review-and-merge` again from its start. One that waits for the maintainer stays ready with
 auto-merge off: the bot has asked, or holds the question under `ask-held`, and the run asks
-nothing itself; the new commit's tier is judged again (Merging).
+nothing itself; the new commit's tier is judged again (the skill `review-and-merge`).
 
 1. **Level with `main`**: `main` is merged in, never rebased. A pushed commit is never rewritten.
 2. **Its pictures**: retaken when a page it changed moved under it (the skill `pictures`).
@@ -28,7 +28,7 @@ nothing itself; the new commit's tier is judged again (Merging).
    green now), its issue under Next, and nothing in 4 or 5 on it: the skill `review-and-merge`,
    from its start.
 
-So none waits on the maintainer for anything but what it asked of them. An open pull request of an
-issue that is not under Next is kept level and green, and nothing is added to it.
+An open pull request of an issue that is not under Next is kept level and green, and nothing is
+added to it.
 
 A pull request that waits for the maintainer to enable auto-merge is never turned on by the agent.

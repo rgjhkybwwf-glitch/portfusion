@@ -1,7 +1,8 @@
 """The runs' pointers: CONTRIBUTING's runs table names a playbook, a playbook names step skills, and
-a step skill names its helper agent and the heading its rule is under. Each is a name written in
-one file about another, so a renamed skill or a cut heading would leave a run following a pointer
-to nothing, and say nothing. Pointers only go down: no step skill names a run."""
+a step skill names its helper agent. Each is a name written in one file about another, so a renamed
+skill or a cut heading would leave a run following a pointer to nothing, and say nothing. Pointers
+only go down: no step skill names a run, and none names the loop's section of CONTRIBUTING, since
+a step's rules are in its own skill. A rule has one home: no rule's lead is written in two files."""
 import re
 
 import pytest
@@ -129,21 +130,54 @@ def test_every_step_skill_is_named_from_above_and_none_names_a_run(skills, contr
         assert not sorted(book for book in books if book in text), f"{name} names a run"
 
 
-def test_each_skill_cites_a_heading_that_is_there(skills, contributing):
-    parts = set(re.findall(r"^\*\*([^*\n]+)\*\*$", contributing, re.M))
-    parts |= set(re.findall(r"^#+ (.+)$", contributing, re.M))
+def test_no_step_skill_points_back_up_at_the_loops_section(skills, contributing, section):
+    """A step skill holds its own rules, so a run can follow it when its step comes with nothing
+    above it open. THE CASE THAT MAKES IT FAIL: every skill said "the rule is in CONTRIBUTING", so
+    no run could skip the 538 lines of the section and trust the skill. A skill may still name a
+    convention every change follows, by a heading of CONTRIBUTING outside the loop's section, and
+    a heading it cites is there."""
+    parts = set(re.findall(r"^\*\*([^*\n]+)\*\*$", section, re.M))
     parts |= {part.split(",")[0] for part in parts}
-    for name, (front, _, _) in skills.items():
-        cited = CITED.findall(front["description"])
-        assert cited, f"{name} cites no rule"
-        for guide, headings in cited:
-            if guide == "CONTRIBUTING.md":
-                known = parts
-            else:
-                known = set(re.findall(r"^#+ (.+)$", (ROOT / guide).read_text(encoding="utf-8"),
-                                       re.M))
-            for heading in re.split(r", and |, ", headings):
+    assert len(parts) >= 11, "the loop's parts were not found"
+    headings = set(re.findall(r"^#+ (.+)$", contributing.replace(section, ""), re.M))
+    named = re.compile(r"CONTRIBUTING(?:\.md)?`?(?:'s|,)\s+((?:[A-Z][\w'-]*)(?:\s+[a-z][\w'-]*)*)")
+    for name, (front, _, text) in skills.items():
+        for guide, cited in CITED.findall(front["description"]):
+            known = set(re.findall(r"^#+ (.+)$", (ROOT / guide).read_text(encoding="utf-8"), re.M))
+            if guide == "CONTRIBUTING.md":      # a playbook is a run's: it names the run's part
+                known = headings | parts if name.startswith("run-") else headings
+            for heading in re.split(r", and |, ", cited):
                 assert heading in known, f"{name} cites {guide}, {heading}"
+        if name.startswith("run-"):
+            continue
+        flat = " ".join(text.split())
+        assert "The loop" not in flat, f"{name} names the loop's section"
+        for heading in named.findall(flat):
+            assert heading not in parts, f"{name} points up at CONTRIBUTING, {heading}"
+            assert heading in headings, f"{name} names CONTRIBUTING, {heading}, and there is none"
+
+
+def _leads(text):
+    """The rules a text states: the bold words a bullet or a paragraph opens with, of four words
+    or more, their line breaks gone."""
+    found = re.findall(r"^(?:[-*] |\d+\. )?\*\*([^*]+)\*\*", text, re.M)
+    return {" ".join(lead.split()).rstrip(".:,") for lead in found if len(lead.split()) >= 4}
+
+
+def test_a_rule_has_one_home(skills, section):
+    """A rule stated in two files is two rules the day one of them is changed. Each rule opens
+    with its name in bold, and no name is written in the loop's section and a step skill, or in
+    two step skills. A playbook's bold words name its steps, not rules. THE CASE THAT MAKES IT
+    FAIL: a rule moved into its step skill and left behind too."""
+    homes = {}
+    texts = {"CONTRIBUTING.md": section, **{name: body for name, (_, body, _) in skills.items()
+                                            if not name.startswith("run-")}}
+    for where, text in texts.items():
+        for lead in _leads(text):
+            homes.setdefault(lead, []).append(where)
+    twice = {lead: where for lead, where in homes.items() if len(where) > 1}
+    assert not twice, f"stated in two places: {twice}"
+    assert len(homes) >= 80, "the rules' names were not found"
 
 
 def test_every_helper_agent_is_named_by_a_step_skill(skills):
@@ -177,7 +211,7 @@ def test_a_fault_is_said_on_the_end_line_in_one_place_and_one_form(skills, secti
     assert "Faults" in digest and "the number of runs that met it" in digest
 
 
-def test_a_page_a_run_publishes_is_named_on_its_end_line(skills, contributing):
+def test_a_page_a_run_publishes_is_named_on_its_end_line(skills):
     """A routine runs outside the maintainer's project, so a page it publishes is missing from the
     project's list: the rule, the skill that gives the end line's form and the skill that writes
     it all name the `Page:` part, after "Decided for you:" and before `Next:`, and the debrief and
@@ -190,10 +224,10 @@ def test_a_page_a_run_publishes_is_named_on_its_end_line(skills, contributing):
         assert found, f"no part begins {start!r}"
         return " ".join(found.split())
 
-    rule = said(contributing, "- **A page a run publishes is named on its end line**", "\n- **")
-    assert "`Page:`" in rule and "project" in rule, "the rule sends a page to the end line"
     beat, end = skills["beat"][1], skills["end-of-run"][1]
-    shown = said(beat, "A run that published a page", "\n\n").partition(" as in ")[2]
+    rule = said(beat, "**A page a run publishes is named on its end line**", "\n\n")
+    assert "`Page:`" in rule and "project" in rule, "the rule sends a page to the end line"
+    shown = rule.partition(" as in ")[2]
     parts = [shown.find(part) for part in ("· Fault: ", "Decided for you:", "· Page: ", "· Next:")]
     assert -1 not in parts and parts == sorted(parts), "faults, what was decided, then pages"
     line = said(end, "## 2. The end line", "\n## ")
@@ -201,9 +235,7 @@ def test_a_page_a_run_publishes_is_named_on_its_end_line(skills, contributing):
     assert "**Pages**" in said(end, "## 3. The debrief", "\n## "), "and its debrief lists it"
     digest = said(end, "sends the day's digest", "\n- **")
     assert "Pages" in digest and "holds and pages alone" in digest, "and so does the digest"
-    told = said(contributing, "- **When nothing is left to wait for", "\n- **")
-    phone = said(contributing, "- **Only the coordinator sends a debrief", "\n- **")
-    assert "each page it published" in told and "a hold or a page added since" in phone
+    assert "**Only the coordinator sends a debrief to the maintainer's phone" in end
     assert "`Page:`" in skills["design-card"][1], "the design card's page is named the same way"
 
 
@@ -253,13 +285,13 @@ def test_nothing_set_aside_or_left_pending_is_lost(skills, section):
     def flat(text):
         return " ".join(text.split())
 
-    rule = flat(section)
-    assert "Work set aside for later is never left in prose" in rule
-    assert "Revisit when" in rule and "`gate-review`" in rule
-    assert "Work set aside is a find" in flat(skills["fix-fold-report"][1])
+    finds = flat(skills["fix-fold-report"][1])
+    assert "Work set aside for later is never left in prose" in finds
+    assert "Revisit when" in finds and "`gate-review`" in finds
     assert "Work set aside has a home" in flat(skills["keep-the-queue"][1])
     for name in ("ask-or-decide", "record-answer", "gate-review"):
         assert "Revisit when" in skills[name][1], f"{name} keeps what brings an option back"
-    assert "`<!-- state -->`" in rule and "`notify.yml` rewrites" in rule
-    assert "`<!-- state -->`" in skills["review-and-merge"][1]
-    assert "loses it at once, and `planned` and `building` with it" in rule
+    merge = flat(skills["review-and-merge"][1])
+    assert "Nothing is left saying it is pending once it is not" in merge
+    assert "`<!-- state -->`" in merge and "`notify.yml` rewrites" in merge
+    assert "loses it at once, and `planned` and `building` with it" in flat(section)

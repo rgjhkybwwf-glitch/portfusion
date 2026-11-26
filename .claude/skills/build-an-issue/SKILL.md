@@ -1,12 +1,12 @@
 ---
 name: build-an-issue
-description: "Builder: builds one planned issue on a plan that stands. It claims the issue, works one branch by the conventions, runs the guard and opens one pull request (CONTRIBUTING.md, Building)."
+description: "Builder: builds one planned issue on a plan that stands. It claims the issue, works one branch by the conventions, runs the guard and opens one pull request."
 ---
 
 # Building an issue
 
-The rules are in `CONTRIBUTING.md`, The loop, Building, and the conventions above it. A
-builder builds only on a plan that stands, and never writes its own.
+A builder builds only on a plan that stands, and never writes its own: the skill `plan` says
+when one stands. The work follows `CONTRIBUTING.md`'s conventions, as any change does.
 
 ## 1. Read it whole
 
@@ -31,7 +31,15 @@ issue stopped.
 
 ## 4. One branch
 
-A branch `claude/<name>` from the latest `main`. An issue with a branch of its own continues on
+- **One issue, one branch, one pull request**: a branch claude/<name> from the latest `main`,
+  worked by the conventions (changelog, own diff reviewed, a changed desk page walked cold), the
+  guard run, and the desk walk if a desk file changed. The pull request says "Closes #n", and the
+  agent goes on to the next issue without waiting for a merge.
+- **A pushed commit is never rewritten.** A fix, or a corrected message, is a new commit; a
+  branch is brought level with `main` by merging, never by rebasing. `main` and the release tags
+  are GitHub's to guard: their rulesets refuse a rewrite or a deletion from anyone.
+
+An issue with a branch of its own continues on
 it, brought level with `main` by merging. An open pull request from it is completed to the whole
 issue, its own "Part of #n" made "Closes #n"; a slice's "Part of" its feature stays.
 
