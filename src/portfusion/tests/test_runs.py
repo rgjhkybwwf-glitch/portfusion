@@ -25,9 +25,9 @@ CITED = re.compile(r"\(([\w/.-]+\.md), ([^()]+)\)")
 #: and its role book whole, and a step skill when its step comes: a file that outgrows its budget
 #: is cut or split, or the budget is raised here with the reason beside it. Words, not lines: a
 #: table's row is one line however long.
-BUDGET = {"the charter": 2800, "a role book": 1350, "a step skill": 1250}
+BUDGET = {"the charter": 2550, "a role book": 1250, "a step skill": 1120}
 #: The copies of shared wording those files may hold between them.
-SHARED_WORDING_HIGH_WATER = 203
+SHARED_WORDING_HIGH_WATER = 170
 #: Each model by its name in the runs table, with its name in a helper's frontmatter.
 MODELS = {"Fable 5.2": "claude-fable-5-2", "Opus 5.5": "claude-opus-5-5",
           "Sonnet 5.5": "claude-sonnet-5-5", "Haiku 5.5": "claude-haiku-5-5"}
@@ -212,8 +212,10 @@ def test_a_rule_has_one_home(skills, section):
 
 
 def _words(text):
-    """A text's words, lower case, a link's address apart: a path is not wording."""
-    return re.findall(r"[a-z0-9']+", re.sub(r"\]\([^)]*\)", "]", text).lower())
+    """A text's words, lower case, its links and ticked names apart: a pointer to a skill, a
+    file or a label is not wording, and naming one is how a rule is said once."""
+    text = re.sub(r"\[[^\]\n]*\]\([^)]*\)|`[^`\n]*`", " ", text)
+    return re.findall(r"[a-z0-9']+", text.lower())
 
 
 def test_each_file_a_run_reads_keeps_to_its_budget(skills, section):
