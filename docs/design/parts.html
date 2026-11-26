@@ -100,7 +100,7 @@
 <div class="entry" data-token="--divider-soft"><span class="job">The softer divider: between rows, and between what the record needs</span></div>
 <div class="entry" data-token="--ink"><span class="job">Ink</span></div>
 <div class="entry" data-token="--muted"><span class="job">Muted ink: a label, a note, a column's head, a tab at rest</span></div>
-<div class="entry" data-token="--accent"><span class="job">The accent: a link, the name's second word, a chart's line, the keyboard's ring</span></div>
+<div class="entry" data-token="--accent"><span class="job">The accent: a link, the name's second word, the keyboard's ring</span></div>
 <div class="entry" data-token="--accent-ink"><span class="job">The accent's ink: a selected line, tab or chip, a row that opens</span></div>
 <div class="entry" data-token="--accent-soft"><span class="job">The accent, soft: a row that opens, under the pointer</span></div>
 <div class="entry" data-token="--mark-tile"><span class="job">The mark's tile, the brand's violet in both schemes</span></div>
@@ -113,8 +113,8 @@
 <div class="entry" data-token="--quiet"><span class="job">The quiet button, and a filter chip</span></div>
 <div class="entry" data-token="--quiet-over"><span class="job">The quiet button and a filter chip, under the pointer</span></div>
 <div class="entry" data-token="--line-over"><span class="job">A menu line, under the pointer</span></div>
-<div class="entry" data-token="--up"><span class="job">Up: a gain</span></div>
-<div class="entry" data-token="--down"><span class="job">Down: a loss</span></div>
+<div class="entry" data-token="--up"><span class="job">Up: a gain, as a figure and as a chart's bar</span></div>
+<div class="entry" data-token="--down"><span class="job">Down: a loss, as a figure and as a chart's bar</span></div>
 <div class="entry" data-token="--problem"><span class="job">A problem's tag</span></div>
 <div class="entry" data-token="--problem-ink"><span class="job">A problem's ink</span></div>
 <div class="entry" data-token="--gap-tag"><span class="job">A gap's tag</span></div>
@@ -127,6 +127,13 @@
 <div class="entry" data-token="--glass-solid"><span class="job">The glass where transparency is reduced</span></div>
 <div class="entry" data-token="--chart-grid"><span class="job">A chart's grid line</span></div>
 <div class="entry" data-token="--chart-base"><span class="job">A chart's base line</span></div>
+<div class="entry" data-token="--chart-1"><span class="job">The first chart colour, violet: a chart of one series, and the first part of any other</span></div>
+<div class="entry" data-token="--chart-2"><span class="job">The second chart colour, teal</span></div>
+<div class="entry" data-token="--chart-3"><span class="job">The third chart colour, ochre</span></div>
+<div class="entry" data-token="--chart-4"><span class="job">The fourth chart colour, steel</span></div>
+<div class="entry" data-token="--chart-5"><span class="job">The fifth chart colour, sage</span></div>
+<div class="entry" data-token="--chart-6"><span class="job">The sixth chart colour, plum</span></div>
+<div class="entry" data-token="--chart-other"><span class="job">A chart's Other: what is folded together, always last</span></div>
 <div class="entry" data-token="--contrast-edge"><span class="job">The outline where contrast is increased</span></div>
 </div>
 </div>
@@ -475,9 +482,10 @@
 </article>
 
 <article class="card part wide">
-<div class="about"><h3 class="name">A chart, in a well</h3><span class="token">.well.chart · .grid · .base · .series · .point · .fill-top · .fill-end · .amount</span></div>
-<div class="note">One line in the accent, until a chart's own colours are given.</div>
-<div class="drawn"><div class="states"><div class="state grow">
+<div class="about"><h3 class="name">A chart: a line</h3><span class="token">.well.chart · .grid · .base · .series · .point · .fill-top · .fill-end · .ref · .dot · .amount · .s1 to .s6</span></div>
+<div class="note">A figure moving through time, straight from one valuation to the next. One line wears the first chart colour with a soft fill under it; several lose the fill and are named at their ends; a line to compare against is dashed.</div>
+<div class="drawn"><div class="states">
+<div class="state grow">
 <section class="card">
 <div class="head"><h2>Price of QNLR</h2><div class="note">Quarter-end marks, in USD</div></div>
 <div class="well chart">
@@ -500,7 +508,274 @@
 </svg>
 </div>
 </section>
-</div></div></div>
+</div>
+<div class="state grow">
+<section class="card">
+<div class="head"><h2>Net asset value, by account</h2><div class="note">At each quarter end, in GBP</div></div>
+<div class="well chart">
+<svg viewBox="0 0 600 200" role="img" aria-label="Each account's net asset value at each quarter end. At 30 Sep 2026: ISA £8,261, Spread bet £8,141, Trading £1,175">
+<line class="grid" x1="40" y1="93" x2="508" y2="93"></line>
+<text x="0" y="97">£5k</text>
+<line class="grid" x1="40" y1="16" x2="508" y2="16"></line>
+<text x="0" y="20">£10k</text>
+<line class="base" x1="40" y1="170" x2="508" y2="170"></line>
+<text x="52" y="190" text-anchor="middle">31 Dec 2025</text>
+<text x="201.3" y="190" text-anchor="middle">31 Mar 2026</text>
+<text x="350.7" y="190" text-anchor="middle">30 Jun 2026</text>
+<text x="500" y="190" text-anchor="middle">30 Sep 2026</text>
+<g class="s3">
+<polyline class="series" points="350.7,170 500,44.6"></polyline>
+<circle class="point" cx="350.7" cy="170" r="4"></circle>
+<circle class="point" cx="500" cy="44.6" r="4"></circle>
+<circle class="dot" cx="518" cy="62.6" r="4"></circle>
+<text class="amount" x="528" y="66.6">Spread bet</text>
+</g>
+<g class="s2">
+<polyline class="series" points="52,170 201.3,153.8 350.7,153.1 500,151.9"></polyline>
+<circle class="point" cx="52" cy="170" r="4"></circle>
+<circle class="point" cx="201.3" cy="153.8" r="4"></circle>
+<circle class="point" cx="350.7" cy="153.1" r="4"></circle>
+<circle class="point" cx="500" cy="151.9" r="4"></circle>
+<circle class="dot" cx="518" cy="143.9" r="4"></circle>
+<text class="amount" x="528" y="147.9">Trading</text>
+</g>
+<g class="s1">
+<polyline class="series" points="52,139.2 201.3,105.6 350.7,25.6 500,42.8"></polyline>
+<circle class="point" cx="52" cy="139.2" r="4"></circle>
+<circle class="point" cx="201.3" cy="105.6" r="4"></circle>
+<circle class="point" cx="350.7" cy="25.6" r="4"></circle>
+<circle class="point" cx="500" cy="42.8" r="4"></circle>
+<circle class="dot" cx="518" cy="32.8" r="4"></circle>
+<text class="amount" x="528" y="36.8">ISA</text>
+</g>
+</svg>
+</div>
+</section>
+</div>
+<div class="state grow">
+<section class="card">
+<div class="head"><h2>Price of BRYC.L</h2><div class="note">Quarter-end marks, in GBP, against the entry price</div></div>
+<div class="well chart">
+<svg viewBox="0 0 600 200" role="img" aria-label="BRYC.L marked £2.00 on 31 Dec 2025, £2.10, £2.20, then £2.35 on 30 Sep 2026, against its entry price of £2.02">
+<line class="grid" x1="46" y1="140.4" x2="574" y2="140.4"></line>
+<text x="0" y="144.4">£2.00</text>
+<line class="grid" x1="46" y1="81.2" x2="574" y2="81.2"></line>
+<text x="0" y="85.2">£2.20</text>
+<line class="grid" x1="46" y1="22" x2="574" y2="22"></line>
+<text x="0" y="26">£2.40</text>
+<line class="base" x1="46" y1="170" x2="574" y2="170"></line>
+<line class="ref" x1="46" y1="135.5" x2="574" y2="135.5"></line>
+<text x="574" y="128.5" text-anchor="end">Entry price £2.02</text>
+<polyline class="series" points="60,140.4 226.7,110.8 393.3,81.2 560,36.8"></polyline>
+<circle class="point" cx="60" cy="140.4" r="4.5"></circle>
+<text x="60" y="190" text-anchor="middle">31 Dec 2025</text>
+<circle class="point" cx="226.7" cy="110.8" r="4.5"></circle>
+<text x="226.7" y="190" text-anchor="middle">31 Mar 2026</text>
+<circle class="point" cx="393.3" cy="81.2" r="4.5"></circle>
+<text x="393.3" y="190" text-anchor="middle">30 Jun 2026</text>
+<circle class="point" cx="560" cy="36.8" r="4.5"></circle>
+<text x="560" y="190" text-anchor="middle">30 Sep 2026</text>
+<text class="amount" x="548" y="37.8" text-anchor="end">£2.35</text>
+</svg>
+</div>
+</section>
+</div>
+</div></div>
+<div class="facts note" data-facts></div>
+</article>
+
+<article class="card part wide">
+<div class="about"><h3 class="name">A chart: columns</h3><span class="token">.well.chart · .keys · .key · .bar · .s1 to .s6 · .gain · .loss · .amount</span></div>
+<div class="note">An amount at a few moments, side by side. A stack shows what it is made of, in the chart colours' order, with its key above. A column that is a gain or a loss wears the gain's or the loss's colour.</div>
+<div class="drawn"><div class="states">
+<div class="state grow">
+<section class="card">
+<div class="head"><h2>Net asset value, by account</h2><div class="note">At each quarter end, in GBP</div></div>
+<div class="well chart">
+<div class="keys"><span class="key s1"><i></i>ISA</span><span class="key s2"><i></i>Trading</span><span class="key s3"><i></i>Spread bet</span></div>
+<svg viewBox="0 0 600 200" role="img" aria-label="Net asset value by account at each quarter end, from £2,000 on 31 Dec 2025 to £17,576 on 30 Sep 2026">
+<line class="grid" x1="36" y1="133.5" x2="596" y2="133.5"></line>
+<text x="0" y="137.5">£5k</text>
+<line class="grid" x1="36" y1="97" x2="596" y2="97"></line>
+<text x="0" y="101">£10k</text>
+<line class="grid" x1="36" y1="60.5" x2="596" y2="60.5"></line>
+<text x="0" y="64.5">£15k</text>
+<line class="base" x1="36" y1="170" x2="596" y2="170"></line>
+<path class="bar s1" d="M101 170 v-10.6 a4 4 0 0 1 4 -4 h16 a4 4 0 0 1 4 4 v10.6 z"></path>
+<text class="amount" x="113" y="148.4" text-anchor="middle">£2,000</text>
+<text x="113" y="190" text-anchor="middle">31 Dec 2025</text>
+<rect class="bar s1" x="239" y="139.5" width="24" height="30.5"></rect>
+<path class="bar s2" d="M239 137.5 v-1.7 a4 4 0 0 1 4 -4 h16 a4 4 0 0 1 4 4 v1.7 z"></path>
+<text class="amount" x="251" y="124.8" text-anchor="middle">£5,230</text>
+<text x="251" y="190" text-anchor="middle">31 Mar 2026</text>
+<rect class="bar s1" x="377" y="101.5" width="24" height="68.5"></rect>
+<path class="bar s2" d="M377 99.5 v-2 a4 4 0 0 1 4 -4 h16 a4 4 0 0 1 4 4 v2 z"></path>
+<text class="amount" x="389" y="86.5" text-anchor="middle">£10,477</text>
+<text x="389" y="190" text-anchor="middle">30 Jun 2026</text>
+<rect class="bar s1" x="515" y="109.7" width="24" height="60.3"></rect>
+<rect class="bar s2" x="515" y="101.1" width="24" height="6.6"></rect>
+<path class="bar s3" d="M515 99.1 v-53.4 a4 4 0 0 1 4 -4 h16 a4 4 0 0 1 4 4 v53.4 z"></path>
+<text class="amount" x="527" y="34.7" text-anchor="middle">£17,576</text>
+<text x="527" y="190" text-anchor="middle">30 Sep 2026</text>
+</svg>
+</div>
+</section>
+</div>
+<div class="state grow">
+<section class="card">
+<div class="head"><h2>Return</h2><div class="note">By quarter</div></div>
+<div class="well chart">
+<svg viewBox="0 0 600 200" role="img" aria-label="Return by quarter in 2026: plus 6.00%, plus 7.51%, plus 15.68%">
+<line class="grid" x1="36" y1="133.5" x2="596" y2="133.5"></line>
+<text x="0" y="137.5">5%</text>
+<line class="grid" x1="36" y1="97" x2="596" y2="97"></line>
+<text x="0" y="101">10%</text>
+<line class="grid" x1="36" y1="60.5" x2="596" y2="60.5"></line>
+<text x="0" y="64.5">15%</text>
+<path class="bar gain" d="M124 170 v-39.8 a4 4 0 0 1 4 -4 h16 a4 4 0 0 1 4 4 v39.8 z"></path>
+<text class="amount" x="136" y="119.2" text-anchor="middle">+6.00%</text>
+<text x="136" y="190" text-anchor="middle">Q1 2026</text>
+<path class="bar gain" d="M308 170 v-50.8 a4 4 0 0 1 4 -4 h16 a4 4 0 0 1 4 4 v50.8 z"></path>
+<text class="amount" x="320" y="108.2" text-anchor="middle">+7.51%</text>
+<text x="320" y="190" text-anchor="middle">Q2 2026</text>
+<path class="bar gain" d="M492 170 v-110.5 a4 4 0 0 1 4 -4 h16 a4 4 0 0 1 4 4 v110.5 z"></path>
+<text class="amount" x="504" y="48.5" text-anchor="middle">+15.68%</text>
+<text x="504" y="190" text-anchor="middle">Q3 2026</text>
+<line class="base" x1="36" y1="170" x2="596" y2="170"></line>
+</svg>
+</div>
+</section>
+</div>
+</div></div>
+<div class="facts note" data-facts></div>
+</article>
+
+<article class="card part wide">
+<div class="about"><h3 class="name">A chart: ranked bars</h3><span class="token">.well.chart · .bar · .name · .amount</span></div>
+<div class="note">Parts compared by size, longest first. Every bar wears the first chart colour, and each row carries its own figures.</div>
+<div class="drawn"><div class="states">
+<div class="state grow">
+<section class="card">
+<div class="head"><h2>Market exposure, by company</h2><div class="note">30 Sep 2026</div></div>
+<div class="well chart">
+<svg viewBox="0 0 600 152" role="img" aria-label="Market exposure by company at 30 Sep 2026: Veldrome Metals 56.27%, Quenlan Robotics 28.16%, Bryncoed Minerals 10.50%, Kelstrand Foods 5.07%">
+<text class="name" x="0" y="23">Veldrome Metals Inc.</text>
+<path class="bar" d="M180 12 h246 a4 4 0 0 1 4 4 v6 a4 4 0 0 1 -4 4 h-246 z"></path>
+<text class="amount" x="438" y="23">56.27%</text>
+<text x="598" y="23" text-anchor="end">£18,882.00</text>
+<line class="grid" x1="0" y1="38" x2="600" y2="38"></line>
+<text class="name" x="0" y="61">Quenlan Robotics Inc.</text>
+<path class="bar" d="M180 50 h121.1 a4 4 0 0 1 4 4 v6 a4 4 0 0 1 -4 4 h-121.1 z"></path>
+<text class="amount" x="313.1" y="61">28.16%</text>
+<text x="598" y="61" text-anchor="end">£9,450.53</text>
+<line class="grid" x1="0" y1="76" x2="600" y2="76"></line>
+<text class="name" x="0" y="99">Bryncoed Minerals plc</text>
+<path class="bar" d="M180 88 h42.7 a4 4 0 0 1 4 4 v6 a4 4 0 0 1 -4 4 h-42.7 z"></path>
+<text class="amount" x="234.7" y="99">10.50%</text>
+<text x="598" y="99" text-anchor="end">£3,525.00</text>
+<line class="grid" x1="0" y1="114" x2="600" y2="114"></line>
+<text class="name" x="0" y="137">Kelstrand Foods plc</text>
+<path class="bar" d="M180 126 h18.5 a4 4 0 0 1 4 4 v6 a4 4 0 0 1 -4 4 h-18.5 z"></path>
+<text class="amount" x="210.5" y="137">5.07%</text>
+<text x="598" y="137" text-anchor="end">£1,700.00</text>
+</svg>
+</div>
+</section>
+</div>
+</div></div>
+<div class="facts note" data-facts></div>
+</article>
+
+<article class="card part wide">
+<div class="about"><h3 class="name">A chart: gain and loss bars</h3><span class="token">.well.chart · .bar · .gain · .loss · .base · .name · .amount</span></div>
+<div class="note">What went up and what went down, best first. A gain runs right of the zero line and a loss runs left, each with its signed figure.</div>
+<div class="drawn"><div class="states">
+<div class="state grow">
+<section class="card">
+<div class="head"><h2>Gain, by company</h2><div class="note">Q3 2026, realised and unrealised, in GBP</div></div>
+<div class="well chart">
+<svg viewBox="0 0 600 152" role="img" aria-label="Gain by company in Q3 2026: Veldrome Metals £1,472.00, Quenlan Robotics £403.26, Kelstrand Foods £300.00, Bryncoed Minerals £225.00">
+<text class="name" x="0" y="23">Veldrome Metals Inc.</text>
+<path class="bar gain" d="M180 12 h326 a4 4 0 0 1 4 4 v6 a4 4 0 0 1 -4 4 h-326 z"></path>
+<text class="amount" x="518" y="23">+£1,472.00</text>
+<text class="name" x="0" y="61">Quenlan Robotics Inc.</text>
+<path class="bar gain" d="M180 50 h86.4 a4 4 0 0 1 4 4 v6 a4 4 0 0 1 -4 4 h-86.4 z"></path>
+<text class="amount" x="278.4" y="61">+£403.26</text>
+<text class="name" x="0" y="99">Kelstrand Foods plc</text>
+<path class="bar gain" d="M180 88 h63.3 a4 4 0 0 1 4 4 v6 a4 4 0 0 1 -4 4 h-63.3 z"></path>
+<text class="amount" x="255.3" y="99">+£300.00</text>
+<text class="name" x="0" y="137">Bryncoed Minerals plc</text>
+<path class="bar gain" d="M180 126 h46.4 a4 4 0 0 1 4 4 v6 a4 4 0 0 1 -4 4 h-46.4 z"></path>
+<text class="amount" x="238.4" y="137">+£225.00</text>
+<line class="base" x1="180" y1="2" x2="180" y2="150"></line>
+</svg>
+</div>
+</section>
+</div>
+<div class="state grow">
+<section class="card">
+<div class="head"><h2>What moved the shares' value</h2><div class="note">Since 30 Jun 2026, in GBP</div></div>
+<div class="well chart">
+<svg viewBox="0 0 600 76" role="img" aria-label="What moved the value of the shares since 30 Jun 2026: price added £790.15, currency took £31.90">
+<text class="name" x="0" y="23">Price</text>
+<path class="bar gain" d="M180 12 h326 a4 4 0 0 1 4 4 v6 a4 4 0 0 1 -4 4 h-326 z"></path>
+<text class="amount" x="518" y="23">+£790.15</text>
+<text class="name" x="0" y="61">Currency</text>
+<path class="bar loss" d="M180 50 h-9.3 a4 4 0 0 0 -4 4 v6 a4 4 0 0 0 4 4 h9.3 z"></path>
+<text class="amount" x="188" y="61">−£31.90</text>
+<line class="base" x1="180" y1="2" x2="180" y2="74"></line>
+</svg>
+</div>
+</section>
+</div>
+</div></div>
+<div class="facts note" data-facts></div>
+</article>
+
+<article class="card part wide">
+<div class="about"><h3 class="name">A chart: a donut, beside its figures</h3><span class="token">.well.chart · .ring · .dot · .s1 to .s6 · .other · .whole · .name · .amount</span></div>
+<div class="note">The parts of one whole, when there are six or fewer: largest first from twelve o'clock, the whole in the middle, and each part's figures beside the ring.</div>
+<div class="drawn"><div class="states">
+<div class="state grow">
+<section class="card">
+<div class="head"><h2>Market exposure, by sector</h2><div class="note">30 Sep 2026</div></div>
+<div class="well chart">
+<svg viewBox="0 0 600 200" role="img" aria-label="Market exposure by sector at 30 Sep 2026: Materials 56.27%, Industrials 28.16%, Mining 10.50%, Consumer Staples 5.07%">
+<g transform="rotate(-90 100 100)">
+<circle class="ring s1" cx="100" cy="100" r="70" stroke-width="30" stroke-dasharray="245.5 194.3" stroke-dashoffset="-0"></circle>
+<circle class="ring s2" cx="100" cy="100" r="70" stroke-width="30" stroke-dasharray="121.9 318" stroke-dashoffset="-247.5"></circle>
+<circle class="ring s3" cx="100" cy="100" r="70" stroke-width="30" stroke-dasharray="44.2 395.6" stroke-dashoffset="-371.3"></circle>
+<circle class="ring s4" cx="100" cy="100" r="70" stroke-width="30" stroke-dasharray="20.3 419.5" stroke-dashoffset="-417.5"></circle>
+</g>
+<text class="amount whole" x="100" y="101" text-anchor="middle">£33,558</text>
+<text x="100" y="117" text-anchor="middle">exposure</text>
+<text x="460" y="24" text-anchor="end">% of exposure</text>
+<text x="596" y="24" text-anchor="end">Value (GBP)</text>
+<line class="grid" x1="228" y1="34" x2="600" y2="34"></line>
+<circle class="dot s1" cx="236" cy="52" r="5"></circle>
+<text class="name" x="250" y="56">Materials</text>
+<text class="amount" x="460" y="56" text-anchor="end">56.27%</text>
+<text class="name" x="596" y="56" text-anchor="end">18,882.00</text>
+<line class="grid" x1="228" y1="68" x2="600" y2="68"></line>
+<circle class="dot s2" cx="236" cy="86" r="5"></circle>
+<text class="name" x="250" y="90">Industrials</text>
+<text class="amount" x="460" y="90" text-anchor="end">28.16%</text>
+<text class="name" x="596" y="90" text-anchor="end">9,450.53</text>
+<line class="grid" x1="228" y1="102" x2="600" y2="102"></line>
+<circle class="dot s3" cx="236" cy="120" r="5"></circle>
+<text class="name" x="250" y="124">Mining</text>
+<text class="amount" x="460" y="124" text-anchor="end">10.50%</text>
+<text class="name" x="596" y="124" text-anchor="end">3,525.00</text>
+<line class="grid" x1="228" y1="136" x2="600" y2="136"></line>
+<circle class="dot s4" cx="236" cy="154" r="5"></circle>
+<text class="name" x="250" y="158">Consumer Staples</text>
+<text class="amount" x="460" y="158" text-anchor="end">5.07%</text>
+<text class="name" x="596" y="158" text-anchor="end">1,700.00</text>
+</svg>
+</div>
+</section>
+</div>
+</div></div>
 <div class="facts note" data-facts></div>
 </article>
 
