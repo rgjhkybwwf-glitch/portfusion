@@ -270,7 +270,8 @@ def test_the_bots_early_clock_waits_for_the_day_to_open(starts):
 def test_the_gate_keeps_no_clock_and_no_routines_clock_is_in_the_working_day(starts, rows):
     """GitHub runs a workflow's clock hours late, so a run a clock starts is started by its
     routine's own. A routine carries one clock, so each such row has a routine to itself; and a
-    level's rows are hours apart, which is how its run tells which row it is."""
+    level's rows are three hours apart or more, which is how its run tells which row it is
+    (`ROW_FOR`, in `tools/brief.py`)."""
     gate = (FLOWS / "start.yml").read_text(encoding="utf-8")
     assert "schedule" not in gate.partition("\njobs:")[0].partition("\non:")[2]
     assert "'schedule'" not in gate and "event.schedule" not in gate
@@ -284,12 +285,12 @@ def test_the_gate_keeps_no_clock_and_no_routines_clock_is_in_the_working_day(sta
         at = time(int(said.group(1)), int(said.group(2)))
         assert not starts.OPENS <= at < starts.CLOSES, f"{run} starts in the working day"
         hours.setdefault(row["Level"], []).append(at)
-    assert len({row["Routine"] for row in clocked.values()}) == len(clocked) >= 3
+    assert len({row["Routine"] for row in clocked.values()}) == len(clocked) >= 4
     for level, ats in hours.items():
         minutes = sorted(at.hour * 60 + at.minute for at in ats)
         gaps = [b - a for a, b in zip(minutes, minutes[1:] + [minutes[0] + 24 * 60])]
-        assert min(gaps) >= 4 * 60, (f"a run tells its row by the hour: {level}'s clocks, "
-                                     f"{sorted(map(str, ats))}, must be four hours apart")
+        assert min(gaps) >= 3 * 60, (f"a run tells its row by the hour: {level}'s clocks, "
+                                     f"{sorted(map(str, ats))}, must be three hours apart")
 
 
 def test_the_gate_fires_by_the_table_makes_no_comment_and_sends_nothing_of_one(starts):

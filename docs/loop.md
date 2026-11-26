@@ -61,6 +61,10 @@ where each rule is kept. No run needs it, and no run changes it.
   last starts the coordinator's top-up run, which ticks the line and plans to the cap. So the
   line that waited on the merge has its plan before the next build, and a place freed in the day
   is filled that day. An issue closed for any other reason, or with no plan, starts nothing.
+- **Three builds a working day, each by a routine's clock of its own**: 18:30, 21:30 and 00:30.
+  A run tells its row by the hour, so a level's clocks stand three hours apart or more. A build
+  still at work when the next begins is not waited for: `building` keeps the second off its
+  issue and off its pull request.
 - **A start that fails is said.** The gate prints the routine's HTTP status alone, never the
   session's address, and fails its own workflow run; the next morning run names it in its digest.
   Each level's address and token are the repository's secrets, which `start.yml` names; without

@@ -41,8 +41,8 @@ OWN = re.compile(r"\b(?:Closes|Part of|For) #(\d+)")
 #: A plan's comment, as the skill `plan` posts it: the mark, the date, then these words.
 PLAN = re.compile(r"[^·]*(?:·[^·]*)?· \*\*Plan, checked(?:, if answered as recommended)?\*\*"
                   r"(?: against `main` at ([0-9a-f]{7,40}))?")
-#: A clock's run is its row for this long after the row's hour; the rows are four hours apart.
-ROW_FOR = 4 * 60
+#: A clock's run is its row for this long after the row's hour; the rows are three hours apart.
+ROW_FOR = 3 * 60
 #: The labels that keep a builder off a planned line (the builder's book, The level's rules).
 KEEPS_OFF = ("decision", "building", "hold")
 #: Of those, the two that wait on the maintainer: a plan under one holds no place (the skill `plan`).

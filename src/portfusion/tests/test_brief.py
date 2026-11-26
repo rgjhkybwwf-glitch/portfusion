@@ -64,7 +64,7 @@ def test_a_run_finds_its_row_by_its_clock_or_by_the_gates_own_text(brief, table)
     is found at its own hour and for less than `ROW_FOR` minutes after, and every text the gate
     sends finds the row the gate's own table names."""
     clocked = [row for row in table if "its routine's clock" in row["What starts it"]]
-    assert len(clocked) >= 3
+    assert len(clocked) >= 4
     for row in clocked:
         said = brief.CLOCK.search(row["What starts it"])
         assert said, f"{row['Run']}: the brief reads no hour and days in \"{row['What starts it']}\""

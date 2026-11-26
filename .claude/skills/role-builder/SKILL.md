@@ -26,7 +26,7 @@ walk finds.
 ## The order
 
 1. **The start line**: the skill `beat`, saying which build it is: the night's, the evening's,
-   or an answer build, whose starting text begins "Answer build:".
+   the late evening's, or an answer build, whose starting text begins "Answer build:".
 2. **After a tag**: the next version's pull request (the skill `release`, After the tag). The
    Queue's lines are the coordinator's to move: until it has, Next holds nothing of the new
    milestone to build.
@@ -43,4 +43,5 @@ walk finds.
 |---|---|---|
 | Night build | nothing: its routine's clock | the first line it can build, to the cap |
 | Evening build | nothing: its routine's clock | the first line it can build, to the cap |
+| Late evening build | nothing: its routine's clock | the first line it can build, to the cap |
 | Answer build | `Answer build:` | only the issues marked "Build:", in the Queue's order, to the cap |
