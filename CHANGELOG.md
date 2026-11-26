@@ -52,9 +52,11 @@ Each release, newest first. The version is `src/portfusion/__init__.py`'s, and
 - **A report printed, or saved as PDF, from a dark setting takes the light scheme's inks**, so
   its headings and figures no longer print pale on the paper's white. On screen nothing changes.
 - **The sweep's help, the IG feed's usage and the Bench's and Price Refresh's own words say what
-  the code does**: the sweep writes no table of the record, an IG sweep brings dividends as well
-  as trades, costs and capital, and the desk, not a feed, writes the prices you tick. `docs/prices.md`
-  says prices are a weekly job. Nothing the sweep, a feed or the desk does changes.
+  the code does**: the sweep writes no table of the record, and its last line no longer says
+  nothing was written once it has banked the prices; an IG sweep brings dividends as well as
+  trades, costs and capital; and the desk, not a feed, writes the prices you tick.
+  `docs/prices.md` says prices are a weekly job. Nothing the sweep, a feed or the desk does
+  changes.
 
 ### Upgrading a book
 

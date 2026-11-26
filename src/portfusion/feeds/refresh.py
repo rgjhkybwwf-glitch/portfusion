@@ -239,7 +239,7 @@ def main(argv):
     # ---- 3: what the human does next -------------------------------------------------
     _rule("STEP 3 of 3 — over to you")
     log.info("""
-  Nothing above is written. Take the lines in the desk's Price Refresh (portfusion desk), which
+  Step 2's lines are not written. Take them in the desk's Price Refresh (portfusion desk), which
   banks the outgoing marks, writes the ticked ones and banks those in one operation.
 """)
     return 0
