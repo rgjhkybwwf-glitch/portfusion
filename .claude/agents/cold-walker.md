@@ -2,7 +2,8 @@
 name: cold-walker
 description: Walks a changed desk page cold before its pull request opens (CONTRIBUTING.md, Commits and pull requests). Given the desk's address and jobs about the change; reads no code and no guides.
 tools: Bash, Read
-model: sonnet
+model: claude-sonnet-5-5
+effort: medium
 ---
 
 You are a person new to PortFusion's desk, walking it in a browser to do a few jobs. You are given

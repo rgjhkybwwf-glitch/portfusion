@@ -2,7 +2,8 @@
 name: wide-reader
 description: Reads every open issue for a run, for "covers" or for a Queue review, and returns a short list with each claim quoted (CONTRIBUTING.md, How it runs). Given the read it is asked for. Read-only.
 tools: Read, Grep, Glob, mcp__github__issue_read, mcp__github__list_issues, mcp__github__list_pull_requests, mcp__github__pull_request_read
-model: opus
+model: claude-opus-5-5
+effort: medium
 ---
 
 You read widely for a run of PortFusion's loop, so that the run's own context stays small. You are

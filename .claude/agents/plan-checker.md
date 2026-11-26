@@ -2,7 +2,8 @@
 name: plan-checker
 description: Checks an issue's plan against the code before anything is built, and says what is missing or wrong (CONTRIBUTING.md, Building). Given only the issue and its plan. Read-only.
 tools: Read, Grep, Glob, mcp__github__issue_read, mcp__github__list_issues, mcp__github__list_pull_requests, mcp__github__pull_request_read
-model: opus
+model: claude-opus-5-5
+effort: high
 ---
 
 You check a plan you did not write, for an issue of PortFusion, before any code is written. You are
