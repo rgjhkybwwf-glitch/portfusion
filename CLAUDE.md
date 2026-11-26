@@ -5,6 +5,8 @@ from them by one engine and shown by the desk and the quarterly report. [`README
 is the way in and the folder map; **[`CONTRIBUTING.md`](CONTRIBUTING.md) is how a change is
 worked — read it before changing anything.** Every commit's diff goes through the `code-review` skill
 before it is pushed, at the level its tier takes (CONTRIBUTING, Commits and pull requests).
+Anything a session writes on GitHub opens with `**Session note** ·`, exactly, or the start gate reads
+it as the maintainer's own words (CONTRIBUTING, Telling the maintainer).
 
 A checkout is set up by CONTRIBUTING's Setting up (the hooks, the venv and the clean room); then
 each terminal needs the first two lines below, and a session works with the rest.

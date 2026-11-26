@@ -14,7 +14,8 @@ the glossary and in its declaration in the same commit.
 3. **The retired word**: a heading that is retired joins `RETIRED_HEADINGS` in
    `src/portfusion/tests/test_figures.py`, so it cannot come back.
 4. **The changelog**: a line under Unreleased in `CHANGELOG.md`.
-5. **§9 regenerated**:
+5. **§9 and the store's table regenerated**: the command writes the glossary's §9 and
+   [`docs/store.md`](../../../docs/store.md)'s table of the columns, What a column may hold:
 
    ```bash
    python3 tools/glossary.py --write
