@@ -16,9 +16,8 @@ The coordinator writes no code, opens no branch and builds nothing.
   release whose lines are not moved, an open `Idea:` not shaped, a "Re-plan" not planned. A start
   within another's quiet minutes takes its place, so the run its text names may not be the only
   one owed. After a pause that is all that came in while the loop was paused.
-- **One long job, at most, a run**, after its plans: the gate review, else a Queue review that is
-  due, else the design card or a decided feature's slices. The rest wait for the next run, and
-  its debrief says which.
+- **One long job, at most, a run**, after its plans: the first that is due of those part 11
+  names, in its order. The rest wait for the next run, and its debrief says which.
 - **Whatever it files or shapes takes its place** by the skill `place-an-issue`, and every choice
   goes through `ask-or-decide`.
 
@@ -47,11 +46,12 @@ exception, and the table says so.
    Faults head comes before that line, and the Pages head likewise for a page (the skill
    `end-of-run`).
 5. **Record** every answer and `Change:` not yet recorded, before anything is built: the skill
-   `record-answer`. Any other comment of the maintainer's is applied where its issue is shaped or
-   planned, and otherwise named in the debrief.
+   `record-answer`. With it, a `Change:` on the Queue is applied by the skill `keep-the-queue`,
+   and an answered gate review by the skill `gate-review`, Applying its answer. Any other comment
+   of the maintainer's is applied where its issue is shaped or planned, and otherwise named in
+   the debrief.
 6. **The Queue**: the skill `keep-the-queue`, Each run: tick what merged, and sort what the
-   builders reported. A `Change:` on the Queue is applied by the same skill, and an answered
-   gate review by the skill `gate-review`, Applying its answer.
+   builders reported.
 7. **After a tag**: the skill `open-milestone`. A run that finds the release's milestone still
    open says so in the debrief and moves nothing.
 8. **Each open `Idea:` issue**, the oldest first: the skill `shape-an-issue`, then its place by

@@ -230,18 +230,19 @@ is written for the maintainer and which no run needs. A run changes none of them
   edits neither: what it meets outside its issue it fixes, folds or reports (the skill
   `fix-fold-report`).
 - **The runs table lists every run.** A run is one row: what starts it, the routine on claude.ai
-  that carries it, the mark it signs with, its cap, and its level's role book.
+  that carries it, with the model and effort it is set to there, the mark it signs with, its cap,
+  and its level's role book.
 
-  | Level | Run | What starts it | Routine | Mark | Cap | Role book |
-  |---|---|---|---|---|---|---|
-  | Coordinator | Morning | 06:30 UK time, Monday to Friday, by its routine's clock | PortFusion · Coordinator | `📋 **Coordinator** ·` | 2 plans | [`role-coordinator`](.claude/skills/role-coordinator/SKILL.md) |
-  | Coordinator | Answer | the maintainer's answer or `Change:`, thirty quiet minutes after the last | PortFusion · Coordinator | `📋 **Coordinator** ·` | the answers | [`role-coordinator`](.claude/skills/role-coordinator/SKILL.md) |
-  | Coordinator | Idea | an issue the maintainer opens titled `Idea:`, ten quiet minutes after the last | PortFusion · Coordinator | `📋 **Coordinator** ·` | the ideas | [`role-coordinator`](.claude/skills/role-coordinator/SKILL.md) |
-  | Coordinator | Release | a release the maintainer publishes, ten quiet minutes after | PortFusion · Coordinator | `📋 **Coordinator** ·` | 2 plans | [`role-coordinator`](.claude/skills/role-coordinator/SKILL.md) |
-  | Coordinator | Re-plan | a run's "Re-plan:" or the maintainer's `Resume:`, ten quiet minutes after the last | PortFusion · Coordinator | `📋 **Coordinator** ·` | the re-plans | [`role-coordinator`](.claude/skills/role-coordinator/SKILL.md) |
-  | Builder | Night build | 00:30 UK time, every day, by its routine's clock | PortFusion · Builder (night) | `🌙 **Builder** ·` | 1 issue | [`role-builder`](.claude/skills/role-builder/SKILL.md) |
-  | Builder | Evening build | 18:30 UK time, Monday to Friday, by its routine's clock | PortFusion · Builder (evening) | `🌙 **Builder** ·` | 1 issue | [`role-builder`](.claude/skills/role-builder/SKILL.md) |
-  | Builder | Answer build | the coordinator's "Build:", two quiet minutes after the last | PortFusion · Builder (night) | `🌙 **Builder** ·` | 1 issue | [`role-builder`](.claude/skills/role-builder/SKILL.md) |
+  | Level | Run | What starts it | Routine | Model | Effort | Mark | Cap | Role book |
+  |---|---|---|---|---|---|---|---|---|
+  | Coordinator | Morning | 06:30 UK time, Monday to Friday, by its routine's clock | PortFusion · Coordinator | Fable 5.2 | high | `📋 **Coordinator** ·` | 2 plans | [`role-coordinator`](.claude/skills/role-coordinator/SKILL.md) |
+  | Coordinator | Answer | the maintainer's answer or `Change:`, thirty quiet minutes after the last | PortFusion · Coordinator | Fable 5.2 | high | `📋 **Coordinator** ·` | the answers | [`role-coordinator`](.claude/skills/role-coordinator/SKILL.md) |
+  | Coordinator | Idea | an issue the maintainer opens titled `Idea:`, ten quiet minutes after the last | PortFusion · Coordinator | Fable 5.2 | high | `📋 **Coordinator** ·` | the ideas | [`role-coordinator`](.claude/skills/role-coordinator/SKILL.md) |
+  | Coordinator | Release | a release the maintainer publishes, ten quiet minutes after | PortFusion · Coordinator | Fable 5.2 | high | `📋 **Coordinator** ·` | 2 plans | [`role-coordinator`](.claude/skills/role-coordinator/SKILL.md) |
+  | Coordinator | Re-plan | a run's "Re-plan:" or the maintainer's `Resume:`, ten quiet minutes after the last | PortFusion · Coordinator | Fable 5.2 | high | `📋 **Coordinator** ·` | the re-plans | [`role-coordinator`](.claude/skills/role-coordinator/SKILL.md) |
+  | Builder | Night build | 00:30 UK time, every day, by its routine's clock | PortFusion · Builder (night) | Opus 5.5 | extra high | `🌙 **Builder** ·` | 1 issue | [`role-builder`](.claude/skills/role-builder/SKILL.md) |
+  | Builder | Evening build | 18:30 UK time, Monday to Friday, by its routine's clock | PortFusion · Builder (evening) | Opus 5.5 | extra high | `🌙 **Builder** ·` | 1 issue | [`role-builder`](.claude/skills/role-builder/SKILL.md) |
+  | Builder | Answer build | the coordinator's "Build:", two quiet minutes after the last | PortFusion · Builder (night) | Opus 5.5 | extra high | `🌙 **Builder** ·` | 1 issue | [`role-builder`](.claude/skills/role-builder/SKILL.md) |
 
   A run the gate starts (When a run starts, below) finds its row by the first words of the text it
   was started with, the row's name and a colon; one started by its routine's own clock is the row
@@ -280,7 +281,8 @@ is written for the maintainer and which no run needs. A run changes none of them
   each milestone is for. It changes only at a gate, by the maintainer's answer (the
   skill `gate-review`); a release's read checks it and changes nothing in it.
 - **The loop's own work is not tracked here.** A change to this section, a skill, a helper agent,
-  a workflow or a routine is made from the maintainer's project on claude.ai, by pull request. A
+  a workflow, a routine or `docs/loop.md` is made from the maintainer's project on claude.ai, by
+  pull request. A
   run that meets a fault in its own rules, or in a tool or an access they call for and give no
   way round, says so in one line of its debrief, and on its end line after the word `Fault:`
   (the skill `beat`), and does nothing more about it: it files no issue for it.
