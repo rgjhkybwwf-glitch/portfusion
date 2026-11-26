@@ -21,6 +21,18 @@ TICKED = re.compile(r"`([^`\n]+)`")
 LINKED = re.compile(r"\]\((?:\.\./)?\.claude/skills/([^/)]+)/SKILL\.md\)")
 SAID = re.compile(r"\bskills? `([^`\n]+)`")
 CITED = re.compile(r"\(([\w/.-]+\.md), ([^()]+)\)")
+#: The most words each kind of file may hold, its frontmatter and its links' addresses apart.
+#: Every run reads the charter and its role book whole, and a step skill when its step comes: a
+#: file that outgrows its budget is cut or split, or the budget is raised here with the reason
+#: beside it. Words, not lines: a table's row is one line however long.
+BUDGET = {"the charter": 2800, "a role book": 1350, "a step skill": 1250}
+#: The copies of shared wording those files may hold between them, a pointer counted as one word.
+SHARED_WORDING_HIGH_WATER = 190
+#: Each model by its name in the runs table, with its name in a helper's frontmatter.
+MODELS = {"Fable 5.2": "claude-fable-5-2", "Opus 5.5": "claude-opus-5-5",
+          "Sonnet 5.5": "claude-sonnet-5-5", "Haiku 5.5": "claude-haiku-5-5"}
+#: Each effort likewise: said in words there, and by its key here.
+EFFORTS = {"low": "low", "medium": "medium", "high": "high", "extra high": "xhigh", "max": "max"}
 
 
 def _front(text):
@@ -121,10 +133,12 @@ def test_every_skill_named_is_a_skill(skills, contributing):
 
 def test_every_step_skill_is_named_from_above_and_none_names_a_run(skills, contributing):
     books = _books(skills)
-    # From above: CONTRIBUTING, and a guide that hands its own procedure to a skill.
+    # From above: CONTRIBUTING, and a guide that hands its own procedure to a skill. The loop's
+    # guide is no such guide: its map names every skill, and no run reads it.
     reached = _named(contributing, skills)
     for guide in sorted((ROOT / "docs").glob("*.md")):
-        reached |= set(LINKED.findall(guide.read_text(encoding="utf-8")))
+        if guide.name != "loop.md":
+            reached |= set(LINKED.findall(guide.read_text(encoding="utf-8")))
     for book in books:
         reached |= _named(skills[book][1], skills)
     # A skill reached only through another skill (the end line, written by `end-of-run`) counts.
@@ -195,6 +209,84 @@ def test_a_rule_has_one_home(skills, section):
     twice = {lead: where for lead, where in homes.items() if len(where) > 1}
     assert not twice, f"stated in two places: {twice}"
     assert len(homes) >= 80, "the rules' names were not found"
+
+
+def _words(text, names="keep"):
+    """A text's words, lower case, as a run reads them: a link's address apart, its lines joined.
+    With `names="one"`, each link and each ticked name of one word counts as the one word "name":
+    a pointer to a skill, a file or a label is not wording, and naming one is how a rule is said
+    once. A ticked form or command of several words is wording, and stays."""
+    text = " ".join(text.split())
+    if names == "one":
+        text = re.sub(r"\[[^\]]*\]\([^)]*\)|`[^`\s]+`", " name ", text)
+    return re.findall(r"[a-z0-9']+", re.sub(r"\]\([^)]*\)", "]", text).lower())
+
+
+def test_each_file_a_run_reads_keeps_to_its_budget(skills, section):
+    """THE CASE THAT MAKES IT FAIL: the loop's section grew a rule a surprise until it was 538
+    lines, read whole by every run, and nothing said when it had become too long."""
+    sizes = {"the charter": {"CONTRIBUTING.md, The loop": len(_words(section))},
+             "a role book": {}, "a step skill": {}}
+    for name, (_, body, _) in skills.items():
+        kind = "a role book" if name.startswith("role-") else "a step skill"
+        sizes[kind][name] = len(_words(body))
+    over = {name: words for kind, files in sizes.items() for name, words in files.items()
+            if words > BUDGET[kind]}
+    assert not over, f"over its budget of words ({BUDGET}): {over}"
+
+
+def test_the_charter_and_the_skills_share_no_more_wording_than_they_did(skills, section):
+    """One home a rule is held by its lead alone, so a rule said again under another lead would
+    pass. This counts the wording itself: each time an eight-word run stands in a file of the
+    charter and the skills beyond its first, a link or a ticked name read as one word. THE CASE THAT MAKES IT FAIL: a second skill is given
+    a copy of a rule to save its reader a step, and only one of the two is changed afterwards."""
+    def runs_of(text):
+        words = _words(text, names="one")
+        return {" ".join(words[i:i + 8]) for i in range(len(words) - 7)}
+
+    texts = {"the charter": section, **{name: body for name, (_, body, _) in skills.items()}}
+    homes = {}
+    for where, text in texts.items():
+        for run in runs_of(text):
+            homes.setdefault(run, []).append(where)
+    by_files = {}
+    for where in homes.values():
+        if len(where) > 1:
+            by_files[" + ".join(sorted(where))] = by_files.get(" + ".join(sorted(where)), 0) + 1
+    copies = sum(len(where) - 1 for where in homes.values())
+    assert copies <= SHARED_WORDING_HIGH_WATER, (
+        f"{copies} copies of an eight-word run stand in a second file, above the "
+        f"{SHARED_WORDING_HIGH_WATER} on file; say it once and name the skill, or raise this "
+        f"with the reason beside it. Runs shared, by the files that share them: "
+        f"{sorted(by_files.items(), key=lambda item: (-item[1], item[0]))}")
+
+
+def test_each_routine_and_helper_runs_at_a_model_and_effort_the_tables_name(runs):
+    """A routine's model and effort are set on claude.ai, where no test reads them: the runs table
+    is what they are set to match, so it names both, and a routine's rows agree. A helper's are
+    in its own file, and the loop's guide lists them for the maintainer. THE CASE THAT MAKES IT
+    FAIL: a helper's file that names no effort, which then runs at whatever the session was
+    given."""
+    by_routine = {}
+    for row in runs:
+        assert row["Model"] in MODELS and row["Effort"] in EFFORTS, row["Run"]
+        by_routine.setdefault(row["Routine"], set()).add((row["Model"], row["Effort"]))
+    assert all(len(said) == 1 for said in by_routine.values()), by_routine
+    guide = (ROOT / "docs" / "loop.md").read_text(encoding="utf-8")
+    listed = {name: (model, effort) for name, model, effort in
+              re.findall(r"^\s*\| `([\w-]+)` \|[^|]+\| ([^|]+?) \| ([^|]+?) \|$", guide, re.M)}
+    agents = {}
+    for agent in sorted(AGENTS.glob("*.md")):
+        front = agent.read_text(encoding="utf-8").split("---\n", 2)[1]
+        agents[agent.stem] = dict(line.split(": ", 1) for line in front.splitlines()
+                                  if ": " in line)
+    assert set(listed) == set(agents), "the guide's table lists each helper, and no other"
+    for name, front in agents.items():
+        model, effort = listed[name]
+        assert model in MODELS and effort in EFFORTS, f"{name}: {model} at {effort}"
+        assert front.get("model") == MODELS[model], f"{name}: {front.get('model')}, not {model}"
+        assert front.get("effort") == EFFORTS[effort], \
+            f"{name}: {front.get('effort')}, not {effort}"
 
 
 def test_every_helper_agent_is_named_by_a_step_skill(skills):

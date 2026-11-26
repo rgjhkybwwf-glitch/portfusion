@@ -12,6 +12,18 @@ where each rule is kept. No run needs it, and no run changes it.
   personal cloud environment "PortFusion", whose setup script builds the venv on Python 3.13 and
   installs `tools/`. A routine's prompt names the loop's section and its level; its schedule,
   model and effort are set on claude.ai to match the table, and nothing else is kept there.
+- **A helper agent runs at the model and effort its own file names**, under
+  [`.claude/agents/`](../.claude/agents), each chosen for its job: a helper that reasons about
+  the code takes more than one that walks a page. `test_runs.py` holds this table to the files.
+
+  | Helper | Its job | Model | Effort |
+  |---|---|---|---|
+  | `plan-drafter` | drafts an issue's plan from the code | Fable 5.2 | high |
+  | `plan-checker` | checks a plan against the code | Opus 5.5 | high |
+  | `skeptic-reviewer` | reviews a pull request it did not build | Fable 5.2 | high |
+  | `wide-reader` | reads every open issue, and returns a short list | Opus 5.5 | medium |
+  | `cold-walker` | walks a changed desk page cold | Sonnet 5.5 | medium |
+  | `trial-walker` | walks a whole feature by its Trial jobs | Sonnet 5.5 | medium |
 
 ## When a run starts
 
@@ -83,6 +95,8 @@ works by.
 ## Where each rule is
 
 A rule has one home, and `test_runs.py` holds that: the charter, a role book or one step skill.
+It holds their size too: the charter, a role book and a step skill each have a budget of words,
+and the wording the files share has a ceiling.
 
 | The rule | Its home |
 |---|---|
