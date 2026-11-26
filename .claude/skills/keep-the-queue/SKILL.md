@@ -65,7 +65,7 @@ then acts:
 - **The order is kept**: a line a run placed is moved when the order of the work asks it. A line
   the maintainer placed is not.
 - **On Monday the whole list is read against the arc**, by the wide reader in the same read:
-  each open line against the headline of the release it stands in (the skill `place-an-issue`).
+  each open line that is no feature against its release's headline (the skill `place-an-issue`).
   A fault a run placed where no headline needs it moves to Upkeep, an Upkeep line a later
   release's headline has come to need joins that release, and Upkeep is ranked again, each move
   listed with its reason. Nothing of the milestone being worked moves. A feature, and a line the

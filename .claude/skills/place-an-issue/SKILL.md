@@ -14,7 +14,7 @@ description: "Coordinator: gives every issue it files or shapes its labels and i
 - **A milestone is a release with a headline**: its row in the direction's arc, what it is for
   and where it is first seen. A line joins a release only when its headline needs it: an issue
   the row names by its number, a slice of a feature it names, an issue one of those waits on,
-  or a fault in a file one of those changes, so that file is opened once.
+  at any remove, or a fault in a file one of those changes, so that file is opened once.
 - **Every other issue is Upkeep.** It takes no milestone, and its line stands under the Queue's
   Upkeep heading, the worst first. A release draws its share of Upkeep at its gate (the skill
   `gate-review`), so a fault no headline needs is still built, and none stands ahead of a
@@ -36,10 +36,9 @@ By each release's headline, its row in `docs/direction.md`, The arc:
 - **The next milestone at the earliest**, never the one being worked, whatever the issue is: a
   bug or a wrong figure included.
 - **The first release whose headline needs it**: the row names the issue by its number, it is
-  a slice of a feature the row names, the "waits" of one of those names it, or its Cause names
-  a file that one of those names in its Cause or plan. The placing comment says which. A
-  feature not yet sliced names no file: a fault in its files joins it on the Monday after its
-  slices are written (the skill `keep-the-queue`).
+  a slice of a feature the row names, the "waits" of one of those names it, at any remove, or its
+  Cause names a file that one of those names in its Cause or plan. The placing comment says
+  which. A feature not yet sliced names no file, so until then a fault in its files is Upkeep.
 - **Upkeep, when no headline needs it**: no milestone, whatever its page or its size.
 - **A feature the arc does not name** is not placed: adding it would change what a milestone is
   for, which is the maintainer's. It gets a line under the Queue's heading for the next gate
