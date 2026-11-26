@@ -191,6 +191,34 @@ def test_an_idea_and_a_release_start_the_coordinator(starts):
     assert published("nightly\"; rm -rf")["start"] == ""
 
 
+def test_a_merge_that_closes_a_planned_issue_tops_the_plans_up(starts):
+    """A line that was built closes with `planned` still on it, as done: its place is empty, and
+    the line that waited on it can now be planned. THE CASES THAT MAKE IT FAIL: the place stays
+    empty until the next morning, so a build finds no plan; or every issue the coordinator closes
+    as a duplicate starts a run that has nothing to plan."""
+    def closed(labels, reason="completed", **more):
+        return starts.read({"EVENT": "issues", "ACTION": "closed", "NUMBER": "250", "URL": "u",
+                            "LABELS": labels, "REASON": reason, **more})
+    built = closed("desk,planned")
+    assert (built["start"], built["level"], built["wait"], built["acts"]) == \
+        ("topup", "coordinator", 10, []), built["said"]
+    assert built["text"].startswith("Top-up: ") and "#250" in built["text"]
+    assert closed("desk")["start"] == "", "an issue with no plan was not a line built"
+    assert closed("desk,not-planned")["start"] == "", "the label is read whole"
+    assert closed("planned", reason="not_planned")["start"] == "", "closed as not planned"
+    assert closed("planned", reason="duplicate")["start"] == ""
+    paused = closed("planned", PAUSED="yes")
+    assert paused["start"] == "" and "paused" in paused["said"]
+    gate = (FLOWS / "start.yml").read_text(encoding="utf-8")
+    assert "types: [opened, unlabeled, closed]" in gate
+    read = gate.partition("\n  read:")[2].partition("\n  fire:")[0]
+    assert "github.event.issue.state_reason == 'completed'" in read \
+        and "contains(github.event.issue.labels.*.name, 'planned')" in read, \
+        "an issue closed any other way starts no job at all, so it cancels no start's wait"
+    assert "LABELS: ${{ join(github.event.issue.labels.*.name, ',') }}" in read \
+        and "REASON: ${{ github.event.issue.state_reason }}" in read
+
+
 def test_a_pause_stops_every_start_and_keeps_every_hold(starts):
     queue = str(starts.QUEUE)
     paused = {"PAUSED": "yes"}

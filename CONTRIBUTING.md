@@ -235,11 +235,12 @@ is written for the maintainer and which no run needs. A run changes none of them
 
   | Level | Run | What starts it | Routine | Model | Effort | Mark | Cap | Role book |
   |---|---|---|---|---|---|---|---|---|
-  | Coordinator | Morning | 06:30 UK time, Monday to Friday, by its routine's clock | PortFusion · Coordinator | Fable 5.2 | high | `📋 **Coordinator** ·` | 2 plans | [`role-coordinator`](.claude/skills/role-coordinator/SKILL.md) |
+  | Coordinator | Morning | 06:30 UK time, Monday to Friday, by its routine's clock | PortFusion · Coordinator | Fable 5.2 | high | `📋 **Coordinator** ·` | 3 plans | [`role-coordinator`](.claude/skills/role-coordinator/SKILL.md) |
   | Coordinator | Answer | the maintainer's answer or `Change:`, thirty quiet minutes after the last | PortFusion · Coordinator | Fable 5.2 | high | `📋 **Coordinator** ·` | the answers | [`role-coordinator`](.claude/skills/role-coordinator/SKILL.md) |
   | Coordinator | Idea | an issue the maintainer opens titled `Idea:`, ten quiet minutes after the last | PortFusion · Coordinator | Fable 5.2 | high | `📋 **Coordinator** ·` | the ideas | [`role-coordinator`](.claude/skills/role-coordinator/SKILL.md) |
-  | Coordinator | Release | a release the maintainer publishes, ten quiet minutes after | PortFusion · Coordinator | Fable 5.2 | high | `📋 **Coordinator** ·` | 2 plans | [`role-coordinator`](.claude/skills/role-coordinator/SKILL.md) |
+  | Coordinator | Release | a release the maintainer publishes, ten quiet minutes after | PortFusion · Coordinator | Fable 5.2 | high | `📋 **Coordinator** ·` | 3 plans | [`role-coordinator`](.claude/skills/role-coordinator/SKILL.md) |
   | Coordinator | Re-plan | a run's "Re-plan:" or the maintainer's `Resume:`, ten quiet minutes after the last | PortFusion · Coordinator | Fable 5.2 | high | `📋 **Coordinator** ·` | the re-plans | [`role-coordinator`](.claude/skills/role-coordinator/SKILL.md) |
+  | Coordinator | Top-up | a planned issue closed by its pull request's merge, ten quiet minutes after the last | PortFusion · Coordinator | Fable 5.2 | high | `📋 **Coordinator** ·` | 3 plans | [`role-coordinator`](.claude/skills/role-coordinator/SKILL.md) |
   | Builder | Night build | 00:30 UK time, Tuesday to Saturday, by its routine's clock | PortFusion · Builder (night) | Opus 5.5 | extra high | `🌙 **Builder** ·` | 1 issue | [`role-builder`](.claude/skills/role-builder/SKILL.md) |
   | Builder | Evening build | 18:30 UK time, Monday to Friday, by its routine's clock | PortFusion · Builder (evening) | Opus 5.5 | extra high | `🌙 **Builder** ·` | 1 issue | [`role-builder`](.claude/skills/role-builder/SKILL.md) |
   | Builder | Answer build | the coordinator's "Build:", two quiet minutes after the last | PortFusion · Builder (night) | Opus 5.5 | extra high | `🌙 **Builder** ·` | 1 issue | [`role-builder`](.claude/skills/role-builder/SKILL.md) |
@@ -290,7 +291,8 @@ is written for the maintainer and which no run needs. A run changes none of them
 
 - **A routine's clock or the start gate starts a run, and no run starts another.** The runs table
   says which starts each. A run cannot start a routine: its own line, a comment whose first line
-  after the run's name is "Re-plan:" or "Build:", is all it leaves, and the gate reads it. What the
+  after the run's name is "Re-plan:" or "Build:", is all it leaves, and the gate reads it. A
+  merge that closes a planned issue starts the coordinator too, to plan in its place. What the
   gate sees, its quiet minutes, the maintainer's day and a start that fails are in
   [`docs/loop.md`](docs/loop.md).
 - **`Hold:` stops one issue, and `Resume:` frees it.** A reply from the maintainer that begins

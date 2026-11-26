@@ -1,5 +1,6 @@
 """WHAT STARTS A RUN, AND WHEN: the start gate's table (docs/loop.md, When a run starts).
-`start.yml` sees what happens on GitHub (the maintainer's words, a release, a run's own line) and
+`start.yml` sees what happens on GitHub (the maintainer's words, a release, a run's own line, a
+planned issue closed by its pull request's merge) and
 asks this what it is, what to do at once, and which run it starts after how many quiet minutes.
 It keeps no clock: every run a clock starts is started by its routine's own. `notify.yml` asks it
 whether the maintainer's working day is on. It reads only the standard library and
@@ -68,6 +69,7 @@ STARTS = {
     "release": Start("Release", "coordinator", 10),
     "resume": Start("Re-plan", "coordinator", 10),
     "replan": Start("Re-plan", "coordinator", 10),
+    "topup": Start("Top-up", "coordinator", 10),
     "build": Start("Answer build", "builder", 2),
 }
 
@@ -76,6 +78,10 @@ WORD = re.compile(r"^(change|hold|resume)\s*:", re.I)
 IDEA = re.compile(r"^idea\s*:", re.I)
 LINE = re.compile(r"^(?:\*\*)?(Re-plan|Build):")
 TAG = re.compile(r"^v\d+\.\d+\.\d+$")
+#: A line that was built closes with this label still on it and for this reason: its pull
+#: request's merge closed it. `notify.yml` takes the label off after, and an issue closed as a
+#: duplicate, or as one whose cause has gone, has another reason or no plan.
+PLANNED, DONE = "planned", "completed"
 
 
 def working(now: datetime) -> bool:
@@ -136,6 +142,8 @@ def text(key: str, number: str = "", url: str = "", tag: str = "") -> str:
                   f"\"Re-plan\" since their last \"Plan, checked\".",
         "build": f"the coordinator left a build, the last on {where}. Build the issues under Next "
                  f"marked \"Build:\" since their last \"Plan, checked\", and no other line.",
+        "topup": f"a planned line merged, the last {where}. Tick what merged, and plan the lines "
+                 f"under Next to the cap.",
     }
     said["change"] = said["answer"]
     return f"{STARTS[key].run}: {said[key]}"
@@ -174,6 +182,12 @@ def read(e: dict[str, str]) -> dict:
             key, said, mine = "idea", f"an idea, #{number}", True
         else:
             said = f"#{number} was opened, and is not titled \"Idea:\""
+
+    elif event == "issues" and e.get("ACTION") == "closed":
+        if PLANNED in e.get("LABELS", "").split(",") and e.get("REASON") == DONE:
+            key, said = "topup", f"#{number}, a planned line, was closed by a merge"
+        else:
+            said = f"#{number} was closed, and not as a planned line that merged"
 
     elif event == "issues" and e.get("ACTION") == "unlabeled":
         label = e.get("LABEL", "")

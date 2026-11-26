@@ -123,8 +123,9 @@ def test_a_builder_is_sent_only_to_a_line_it_may_take(brief):
     del plans[6]
     assert "a builder may take it" in said[5] and "waits #90 (open)" in said[4]
     assert "closed, not yet ticked" in said[8], "a line whose issue is closed is said so"
-    assert standing == [2, 3, 4, 5, 6, 8], \
-        "a planned line with a ready pull request is built and holds no place, unless it is re-planned"
+    assert standing == [4, 5, 6, 8], \
+        ("a planned line with a ready pull request is built and holds no place, unless it is "
+         "re-planned; and neither does one that waits on the maintainer, under `hold` or `decision`")
     own[7][0]["draft"] = True
     assert 7 in brief.lines_said(lines, issues, own, plans)[2], "a draft is not yet built"
 
@@ -220,9 +221,9 @@ def test_the_brief_says_the_line_what_it_could_not_read_and_stops_at_a_pause(bri
     assert "The agent's open pull requests: not read" in out
     morning = uk(brief, 3, 6, 31)
     out = "\n".join(brief.brief("coordinator", "", morning, Canned(answers, missing=("the open pull requests",))))
-    assert "Plans that stand and are not yet built: not counted here" in out, \
+    assert "Plans that hold a place: not counted here" in out, \
         "a count that rests on a failed read is not given as a number"
-    assert "Plans that stand and are not yet built: 1 (#11)" in "\n".join(
+    assert "Plans that hold a place: 1 (#11) · the cap is 3 plans" in "\n".join(
         brief.brief("coordinator", "", morning, Canned(answers)))
     out = brief.brief("builder", "", now, Canned(answers, missing=("the Queue",)))
     assert "Paused: not read" in out[-1] and "Next, in" not in "\n".join(out), \

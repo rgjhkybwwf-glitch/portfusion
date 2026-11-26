@@ -12,16 +12,19 @@ description: "Coordinator: has the plan drafter draft an issue's plan from the c
   stands, and never writes its own: a line without one it leaves for the coordinator, and names
   it in its debrief.
 - **Every line under Next is planned ahead, in order, so each build has a plan**, until as many
-  lines carry `planned`, with no ready pull request of their own, as the run's cap.
+  plans hold a place as the run's cap.
+- **A plan holds a place while a builder could still come to it.** It stands, its issue is not
+  yet built, and it waits on nothing of the maintainer's: an issue that carries `decision` or
+  `hold` holds none, and its plan is built when they answer or resume it.
 
 ## Which lines
 
 Every line under Next, in order:
 
-- A line marked "Re-plan" first, then each line whose "waits" have closed, until as many carry
-  `planned` as the run's cap, those already standing included. A line whose issue's own pull
-  request is open and ready, not a draft, is built and holds no place. A line marked "Re-plan"
-  holds a place whatever its pull request's state.
+- A line marked "Re-plan" first, then each line whose "waits" have closed, until as many hold a
+  place as the run's cap, those already standing included. A line whose issue's own pull
+  request is open and ready, not a draft, is built and holds no place; a draft holds its own. A
+  line marked "Re-plan" holds a place whatever its pull request's state.
 - Each line's questions are settled as it is reached, a line whose "waits" are still open
   included, so an answer is in before its turn comes (the skill `ask-or-decide`).
 - Skipped: a feature, an issue labelled `planned`, `building` or `hold`, and one whose questions
