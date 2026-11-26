@@ -41,6 +41,9 @@ AT_WORK_FOR = timedelta(hours=3)
 ZONE = ZoneInfo("Europe/London")
 OPENS, CLOSES = time(8), time(17)
 WEEK = range(5)
+#: The days a routine's clock names in the runs table, each as the weekdays its hour is reached
+#: on, Monday being 0. The night after a working day falls on the Tuesday to the Saturday.
+DAYS = {"Monday to Friday": WEEK, "Tuesday to Saturday": range(1, 6)}
 
 #: Each run's mark, as the runs table gives it, and the level that signs with it. The marks of
 #: before the restart are kept though no row has them: a comment that opens with one is still a

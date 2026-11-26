@@ -240,7 +240,7 @@ is written for the maintainer and which no run needs. A run changes none of them
   | Coordinator | Idea | an issue the maintainer opens titled `Idea:`, ten quiet minutes after the last | PortFusion · Coordinator | Fable 5.2 | high | `📋 **Coordinator** ·` | the ideas | [`role-coordinator`](.claude/skills/role-coordinator/SKILL.md) |
   | Coordinator | Release | a release the maintainer publishes, ten quiet minutes after | PortFusion · Coordinator | Fable 5.2 | high | `📋 **Coordinator** ·` | 2 plans | [`role-coordinator`](.claude/skills/role-coordinator/SKILL.md) |
   | Coordinator | Re-plan | a run's "Re-plan:" or the maintainer's `Resume:`, ten quiet minutes after the last | PortFusion · Coordinator | Fable 5.2 | high | `📋 **Coordinator** ·` | the re-plans | [`role-coordinator`](.claude/skills/role-coordinator/SKILL.md) |
-  | Builder | Night build | 00:30 UK time, every day, by its routine's clock | PortFusion · Builder (night) | Opus 5.5 | extra high | `🌙 **Builder** ·` | 1 issue | [`role-builder`](.claude/skills/role-builder/SKILL.md) |
+  | Builder | Night build | 00:30 UK time, Tuesday to Saturday, by its routine's clock | PortFusion · Builder (night) | Opus 5.5 | extra high | `🌙 **Builder** ·` | 1 issue | [`role-builder`](.claude/skills/role-builder/SKILL.md) |
   | Builder | Evening build | 18:30 UK time, Monday to Friday, by its routine's clock | PortFusion · Builder (evening) | Opus 5.5 | extra high | `🌙 **Builder** ·` | 1 issue | [`role-builder`](.claude/skills/role-builder/SKILL.md) |
   | Builder | Answer build | the coordinator's "Build:", two quiet minutes after the last | PortFusion · Builder (night) | Opus 5.5 | extra high | `🌙 **Builder** ·` | 1 issue | [`role-builder`](.claude/skills/role-builder/SKILL.md) |
 
