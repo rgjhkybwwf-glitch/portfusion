@@ -1,8 +1,9 @@
-"""The runs' pointers: CONTRIBUTING's runs table names a playbook, a playbook names step skills, and
-a step skill names its helper agent. Each is a name written in one file about another, so a renamed
-skill or a cut heading would leave a run following a pointer to nothing, and say nothing. Pointers
-only go down: no step skill names a run, and none names the loop's section of CONTRIBUTING, since
-a step's rules are in its own skill. A rule has one home: no rule's lead is written in two files."""
+"""The runs' pointers: CONTRIBUTING's runs table names a level's role book, a role book names step
+skills, and a step skill names its helper agent. Each is a name written in one file about another,
+so a renamed skill or a cut heading would leave a run following a pointer to nothing, and say
+nothing. Pointers only go down: no step skill names a role book, and none names the loop's section
+of CONTRIBUTING, since a step's rules are in its own skill. A rule has one home: no rule's lead is
+written in two files."""
 import re
 
 import pytest
@@ -15,7 +16,7 @@ if ROOT is None:
 SKILLS = ROOT / ".claude" / "skills"
 AGENTS = ROOT / ".claude" / "agents"
 SECTION = "### The loop"
-WHO = ("Any run:", "Any session:", "Coordinator:", "Builder:", "Playbook:")
+WHO = ("Any run:", "Any session:", "Coordinator:", "Builder:", "Role book:")
 TICKED = re.compile(r"`([^`\n]+)`")
 LINKED = re.compile(r"\]\((?:\.\./)?\.claude/skills/([^/)]+)/SKILL\.md\)")
 SAID = re.compile(r"\bskills? `([^`\n]+)`")
@@ -65,8 +66,9 @@ def runs(section):
     return rows
 
 
-def _playbooks(skills):
-    return {name for name in skills if name.startswith("run-")}
+def _books(skills):
+    """The role books: a level's order of work, and its own rules."""
+    return {name for name in skills if name.startswith("role-")}
 
 
 def _named(text, skills):
@@ -84,20 +86,27 @@ def test_every_skill_is_one_folder_deep_and_says_whose_it_is(skills):
         # the skill is tied to, and the loop's places are named once, in CONTRIBUTING.
         assert said.startswith('"') and said.endswith('"') and "#" not in said, name
         assert said[1:].startswith(WHO), name
-        assert said[1:].startswith("Playbook:") == name.startswith("run-"), name
+        assert said[1:].startswith("Role book:") == name.startswith("role-"), name
 
 
-def test_the_runs_table_and_the_playbooks_name_one_another(runs, skills):
+def test_the_runs_table_names_each_levels_role_book_and_the_book_each_of_its_runs(runs, skills):
+    """THE CASE THAT MAKES IT FAIL: the table gains a row that no book names, and the run it
+    starts loads its level's book and finds no line for itself."""
     assert runs, "CONTRIBUTING's runs table was not found"
     named = set()
     for row in runs:
-        books = LINKED.findall(row["Playbook"])
-        assert books, row["Run"]
-        for book, level in zip(books, re.split(r", then ", row["Level"].lower())):
-            assert book in skills, f"{row['Run']}: no playbook {book}"
-            assert book.startswith(f"run-{level}-"), f"{row['Run']}: {book} is not the {level}'s"
+        books = LINKED.findall(row["Role book"])
+        assert books == [f"role-{row['Level'].lower()}"], f"{row['Run']}: {books}"
+        assert books[0] in skills, f"{row['Run']}: no role book {books[0]}"
+        starts = re.findall(r"^\| ([^|]+) \|", skills[books[0]][1], re.M)
+        assert row["Run"] in starts, f"{books[0]} has no line for the run {row['Run']}"
         named.update(books)
-    assert named == _playbooks(skills)
+    assert named == _books(skills)
+    for book in sorted(named):
+        level = book.removeprefix("role-")
+        listed = {start for start in re.findall(r"^\| ([^|]+) \|", skills[book][1], re.M)
+                  if start not in ("Start", "---")}
+        assert listed == {row["Run"] for row in runs if row["Level"].lower() == level}, book
 
 
 def test_every_skill_named_is_a_skill(skills, contributing):
@@ -111,7 +120,7 @@ def test_every_skill_named_is_a_skill(skills, contributing):
 
 
 def test_every_step_skill_is_named_from_above_and_none_names_a_run(skills, contributing):
-    books = _playbooks(skills)
+    books = _books(skills)
     # From above: CONTRIBUTING, and a guide that hands its own procedure to a skill.
     reached = _named(contributing, skills)
     for guide in sorted((ROOT / "docs").glob("*.md")):
@@ -127,45 +136,40 @@ def test_every_step_skill_is_named_from_above_and_none_names_a_run(skills, contr
     assert not sorted(set(skills) - reached), "skills nothing names"
     for name in sorted(set(skills) - books):
         text = skills[name][2]
-        assert not sorted(book for book in books if book in text), f"{name} names a run"
+        assert not sorted(book for book in books if book in text), f"{name} names a role book"
         assert "quiet minute" not in " ".join(text.split()), f"{name} holds a run's wait"
 
 
 def test_no_step_skill_points_back_up_at_the_loops_section(skills, contributing, section):
-    """A step skill holds its own rules, so a run can follow it when its step comes with nothing
-    above it open. THE CASE THAT MAKES IT FAIL: every skill said "the rule is in CONTRIBUTING", so
-    no run could skip the 538 lines of the section and trust the skill. A skill may still name a
+    """A skill holds its own rules, so a run can follow it when its step comes with nothing above
+    it open. THE CASE THAT MAKES IT FAIL: every skill said "the rule is in CONTRIBUTING", so no run
+    could skip the 538 lines of the section and trust the skill. A skill may still name a
     convention every change follows, by a heading of CONTRIBUTING outside the loop's section, and
     a heading it cites is there. So a skill names CONTRIBUTING only as a file in a list, as the
-    conventions' home, or with such a heading straight after; and it names none of the section's
-    parts as a place, in brackets or with "above", "below", "says" or "'s rule"."""
+    conventions' home, or with such a heading straight after, "under Building" being none; and it
+    names none of the section's parts as a place, in brackets or with "above", "below", "says" or
+    "'s rule". A role book may name the runs table, which is the charter's."""
     parts = set(re.findall(r"^\*\*([^*\n]+)\*\*$", section, re.M))
     parts |= {part.split(",")[0] for part in parts}
-    assert len(parts) >= 11, "the loop's parts were not found"
+    assert len(parts) >= 7, "the loop's parts were not found"
     headings = set(re.findall(r"^#+ (.+)$", contributing.replace(section, ""), re.M))
-    named = re.compile(r"CONTRIBUTING(?:\.md)?`?(?:\]\([^)]*\))?(?:'s|,)\s+"
-                       r"((?:[A-Z][\w'-]*)(?:\s+[a-z][\w'-]*)*)")
-    mention = re.compile(r"CONTRIBUTING(?:\.md)?`?(?:\]\([^)]*\))?(.{0,40})")
-    fine = [f", {heading}" for heading in headings] + ["'s conventions", ","]
+    mention = re.compile(r"CONTRIBUTING(?:\.md)?`?(?:\]\([^)]*\))?(?=(.{0,60}))")
+    fine = re.compile(r"'s conventions\b|, `|(?:'s|,) (?:%s)(?!\w)"
+                      % "|".join(re.escape(heading) for heading in headings))
     place = "|".join(re.escape(part) for part in sorted(parts, key=len, reverse=True))
     place = re.compile(rf"\((?:{place})[,)]|\b(?:{place})(?:, (?:above|below)| says|'s rule)")
     for name, (front, _, text) in skills.items():
         for guide, cited in CITED.findall(front["description"]):
             known = set(re.findall(r"^#+ (.+)$", (ROOT / guide).read_text(encoding="utf-8"), re.M))
-            if guide == "CONTRIBUTING.md":      # a playbook is a run's: it names the run's part
-                known = headings | parts if name.startswith("run-") else headings
+            if guide == "CONTRIBUTING.md":
+                known = headings
             for heading in re.split(r", and |, ", cited):
                 assert heading in known, f"{name} cites {guide}, {heading}"
-        if name.startswith("run-"):
-            continue
         flat = " ".join(text.split())
         assert not re.search(r"(?:, |\"|section |`)The loop\b", flat), \
             f"{name} names the loop's section"
-        for heading in named.findall(flat):
-            assert heading not in parts, f"{name} points up at CONTRIBUTING, {heading}"
-            assert heading in headings, f"{name} names CONTRIBUTING, {heading}, and there is none"
         for after in mention.findall(flat):
-            assert any(after.startswith(way) for way in fine), \
+            assert fine.match(after), \
                 f"{name} names CONTRIBUTING with no heading outside the loop's section: {after!r}"
         assert not place.search(flat), f"{name} names a part: {place.search(flat).group()}"
 
@@ -179,13 +183,12 @@ def _leads(text):
 
 def test_a_rule_has_one_home(skills, section):
     """A rule stated in two files is two rules the day one of them is changed. Each rule opens
-    with its name in bold, and no name is written in the loop's section and a step skill, or in
-    two step skills. A playbook's bold words name its steps, not rules. It holds the names alone:
+    with its name in bold, and no name is written in the loop's section and a skill, or in two
+    skills, a role book included. It holds the names alone:
     a rule said again in other words is for its reader to catch. THE CASE THAT MAKES IT FAIL: a
     rule moved into its step skill and left behind too."""
     homes = {}
-    texts = {"CONTRIBUTING.md": section, **{name: body for name, (_, body, _) in skills.items()
-                                            if not name.startswith("run-")}}
+    texts = {"CONTRIBUTING.md": section, **{name: body for name, (_, body, _) in skills.items()}}
     for where, text in texts.items():
         for lead in _leads(text):
             homes.setdefault(lead, []).append(where)
@@ -195,7 +198,7 @@ def test_a_rule_has_one_home(skills, section):
 
 
 def test_every_helper_agent_is_named_by_a_step_skill(skills):
-    steps = "".join(text for name, (_, _, text) in skills.items() if not name.startswith("run-"))
+    steps = "".join(text for name, (_, _, text) in skills.items() if not name.startswith("role-"))
     for agent in sorted(AGENTS.glob("*.md")):
         assert f".claude/agents/{agent.name}" in steps or f"`{agent.stem}`" in steps, agent.name
 
@@ -291,7 +294,7 @@ def test_every_commit_is_reviewed_before_it_is_pushed(contributing):
     assert "`code-review` skill" in (ROOT / "CLAUDE.md").read_text(encoding="utf-8")
 
 
-def test_nothing_set_aside_or_left_pending_is_lost(skills, section):
+def test_nothing_set_aside_or_left_pending_is_lost(skills):
     """What a run puts off is given a home, an option declined says what brings it back, and what
     says it waits stops saying so once it does not. THE CASES THAT MAKE IT FAIL: work an issue set
     aside as a later step is filed by no run; an answer's options left out are never looked at
@@ -309,4 +312,5 @@ def test_nothing_set_aside_or_left_pending_is_lost(skills, section):
     merge = flat(skills["review-and-merge"][1])
     assert "Nothing is left saying it is pending once it is not" in merge
     assert "`<!-- state -->`" in merge and "`notify.yml` rewrites" in merge
-    assert "loses it at once, and `planned` and `building` with it" in flat(section)
+    guide = flat((ROOT / "docs" / "loop.md").read_text(encoding="utf-8"))
+    assert "loses it at once, and `planned` and `building` with it" in guide

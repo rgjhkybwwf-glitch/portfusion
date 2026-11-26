@@ -208,12 +208,14 @@ Kept by review, and by the test named where there is one.
 ### The loop
 
 Unattended Claude sessions work the ready issues, and the maintainer checks in when they ask.
-The loop is in use and refined as it runs: each surprise becomes a rule here, a test, or a
-better-written issue. **This section holds the rules every run works by, whatever its step**:
-the two levels, the runs and what starts them, whose words count, the tiers, and what no run
-does. **A rule that belongs to one step is in that step's skill**, under
-[`.claude/skills/`](.claude/skills), with how the step is done; each part below names its skills.
-A run changes neither.
+The loop is in use and refined as it runs: each surprise becomes a rule, a test, or a
+better-written issue. **This section is the loop's charter: the rules every run works by,
+whatever its level or its step**: the two levels, the runs, whose words count, the tiers, and
+what no run does. **A level's order of work, and its own rules, are in its role book; a step's
+rules, with how it is done, are in that step's skill**, both under
+[`.claude/skills/`](.claude/skills). How the machinery round the runs works, the start gate, the
+bot and the Stop hook, and where each rule is kept, is in [`docs/loop.md`](docs/loop.md), which
+is written for the maintainer and which no run needs. A run changes none of them.
 
 **How it runs**
 
@@ -225,40 +227,40 @@ A run changes neither.
   never writes a plan.
 - **Only the coordinator writes the Queue and the walk finds, and only it files an issue.** So one
   level owns the list, and it grows only by what earns a place on it. A builder files nothing and
-  edits neither: what it meets outside its issue it fixes, folds or reports (Building, below).
+  edits neither: what it meets outside its issue it fixes, folds or reports (the skill
+  `fix-fold-report`).
 - **The runs table lists every run.** A run is one row: what starts it, the routine on claude.ai
-  that carries it, the mark it signs with, its cap, and its playbook.
+  that carries it, the mark it signs with, its cap, and its level's role book.
 
-  | Level | Run | What starts it | Routine | Mark | Cap | Playbook |
+  | Level | Run | What starts it | Routine | Mark | Cap | Role book |
   |---|---|---|---|---|---|---|
-  | Coordinator | Morning | 06:30 UK time, Monday to Friday, by its routine's clock | PortFusion · Coordinator | `📋 **Coordinator** ·` | 2 plans | [`run-coordinator-morning`](.claude/skills/run-coordinator-morning/SKILL.md) |
-  | Coordinator | Answer | the maintainer's answer or `Change:`, thirty quiet minutes after the last | PortFusion · Coordinator | `📋 **Coordinator** ·` | the answers | [`run-coordinator-answer`](.claude/skills/run-coordinator-answer/SKILL.md) |
-  | Coordinator | Idea | an issue the maintainer opens titled `Idea:`, ten quiet minutes after the last | PortFusion · Coordinator | `📋 **Coordinator** ·` | the ideas | [`run-coordinator-idea`](.claude/skills/run-coordinator-idea/SKILL.md) |
-  | Coordinator | Release | a release the maintainer publishes, ten quiet minutes after | PortFusion · Coordinator | `📋 **Coordinator** ·` | 2 plans | [`run-coordinator-release`](.claude/skills/run-coordinator-release/SKILL.md) |
-  | Coordinator | Re-plan | a run's "Re-plan:" or the maintainer's `Resume:`, ten quiet minutes after the last | PortFusion · Coordinator | `📋 **Coordinator** ·` | the re-plans | [`run-coordinator-replan`](.claude/skills/run-coordinator-replan/SKILL.md) |
-  | Builder | Night build | 00:30 UK time, every day, by its routine's clock | PortFusion · Builder (night) | `🌙 **Builder** ·` | 1 issue | [`run-builder-build`](.claude/skills/run-builder-build/SKILL.md) |
-  | Builder | Evening build | 18:30 UK time, Monday to Friday, by its routine's clock | PortFusion · Builder (evening) | `🌙 **Builder** ·` | 1 issue | [`run-builder-build`](.claude/skills/run-builder-build/SKILL.md) |
-  | Builder | Answer build | the coordinator's "Build:", two quiet minutes after the last | PortFusion · Builder (night) | `🌙 **Builder** ·` | 1 issue | [`run-builder-build`](.claude/skills/run-builder-build/SKILL.md) |
+  | Coordinator | Morning | 06:30 UK time, Monday to Friday, by its routine's clock | PortFusion · Coordinator | `📋 **Coordinator** ·` | 2 plans | [`role-coordinator`](.claude/skills/role-coordinator/SKILL.md) |
+  | Coordinator | Answer | the maintainer's answer or `Change:`, thirty quiet minutes after the last | PortFusion · Coordinator | `📋 **Coordinator** ·` | the answers | [`role-coordinator`](.claude/skills/role-coordinator/SKILL.md) |
+  | Coordinator | Idea | an issue the maintainer opens titled `Idea:`, ten quiet minutes after the last | PortFusion · Coordinator | `📋 **Coordinator** ·` | the ideas | [`role-coordinator`](.claude/skills/role-coordinator/SKILL.md) |
+  | Coordinator | Release | a release the maintainer publishes, ten quiet minutes after | PortFusion · Coordinator | `📋 **Coordinator** ·` | 2 plans | [`role-coordinator`](.claude/skills/role-coordinator/SKILL.md) |
+  | Coordinator | Re-plan | a run's "Re-plan:" or the maintainer's `Resume:`, ten quiet minutes after the last | PortFusion · Coordinator | `📋 **Coordinator** ·` | the re-plans | [`role-coordinator`](.claude/skills/role-coordinator/SKILL.md) |
+  | Builder | Night build | 00:30 UK time, every day, by its routine's clock | PortFusion · Builder (night) | `🌙 **Builder** ·` | 1 issue | [`role-builder`](.claude/skills/role-builder/SKILL.md) |
+  | Builder | Evening build | 18:30 UK time, Monday to Friday, by its routine's clock | PortFusion · Builder (evening) | `🌙 **Builder** ·` | 1 issue | [`role-builder`](.claude/skills/role-builder/SKILL.md) |
+  | Builder | Answer build | the coordinator's "Build:", two quiet minutes after the last | PortFusion · Builder (night) | `🌙 **Builder** ·` | 1 issue | [`role-builder`](.claude/skills/role-builder/SKILL.md) |
 
   A run the gate starts (When a run starts, below) finds its row by the first words of the text it
   was started with, the row's name and a colon; one started by its routine's own clock is the row
-  that names that clock, and of a builder's two the one whose hour it is. It loads the row's
-  playbook, and follows it. Each routine is in the personal cloud environment "PortFusion", whose
-  setup script builds the venv on Python 3.13 and installs `tools/`. A routine's prompt names this
-  section and its level; its schedule, model and effort are set on claude.ai to match the table,
-  and nothing else is kept there.
-- **A playbook holds a run's order, a step skill one step: its rules and how it is done.** A
-  playbook names its step skills in order and holds no procedure of its own. A step skill is
-  written once, names no playbook and no run's wait, and points at no rule of this section: it
-  holds its own, so it can be followed when its step comes with nothing above it open. So a duty moves between runs by
-  moving one line, and a new run is one row and one playbook. `test_runs.py` holds the pointers:
-  every playbook the table names exists, every skill a playbook or this file names exists, none
+  that names that clock, and of a builder's two the one whose hour it is. Its brief says which
+  (the skill [`beat`](.claude/skills/beat/SKILL.md)). It loads its level's role book, and follows
+  the parts its start takes.
+- **A role book holds a level's order, a step skill one step: its rules and how it is done.** A
+  role book names its step skills in order, says which of them each start takes, and holds the
+  level's own rules and no procedure. A step skill is written once, names no role book and no
+  run's wait, and points at no rule of this section: it holds its own, so it can be followed when
+  its step comes with nothing above it open. So a duty moves between runs by moving one line, and
+  a new run is one row here and one line of its level's book. `test_runs.py` holds the pointers:
+  every role book the table names exists, every skill a role book or this file names exists, none
   is left that nothing names, and no step skill names this section.
 - **The loop works from four open issues**, which the skills call by name: **the Queue**, "Queue:
   what the loop builds next" (#206); **the run log** (#289); **the walk finds**, "Walk
   finds: to sort" (#220); and **the release checklist** (#156).
 - **An issue's state is on its labels**, so a run reads it without reading the issue:
-  `decision`, a one-line question (Asking and answering, below) waits on the maintainer, or a
+  `decision`, a one-line question (the skill `ask-or-decide`) waits on the maintainer, or a
   `Change:` holds the issue, and only while one does: an open point with no such question is
   written in the issue's body, with no label; `planned`, its latest **Plan, checked** stands;
   `building`, a run is at work on it, planning or building; `hold`, the maintainer's `Hold:` is
@@ -268,44 +270,28 @@ A run changes neither.
   on. A wide read, every open issue for a review or for "covers", goes to the wide reader
   ([`.claude/agents/wide-reader.md`](.claude/agents/wide-reader.md)), a helper agent that returns
   a short list, so the run's own context stays small.
-- **A run has a cap**, its row's. A builder takes no more issues than it names; the coordinator's
-  number counts plans that stand and are not yet built, those already standing included, not the
-  lines it asks: a planned issue whose own pull request is open and ready, not a draft, is built
-  and holds no place, unless it is marked "Re-plan". A run that is going nowhere stops and says
-  so; it does not file issues to show work.
-- **A dry run changes nothing.** A run whose starting text begins "Dry run" follows its playbook
+- **A run has a cap**, its row's. A builder takes no more issues than its row names; what the
+  coordinator's counts is in the skill `plan`. A run that is going nowhere stops and says so; it
+  does not file issues to show work.
+- **A dry run changes nothing.** A run whose starting text begins "Dry run" follows its role book
   but writes nothing on GitHub and sends no push. Its last message says what it would have done,
-  step by step: the way a changed playbook is rehearsed before it runs for real.
+  step by step: the way a changed role book is rehearsed before it runs for real.
 - **The direction is [`docs/direction.md`](docs/direction.md)**: for whom, what never, and what
-  each milestone is for. It changes only at a gate, by the maintainer's answer (The answer run,
-  below); a release's read checks it and changes nothing in it.
+  each milestone is for. It changes only at a gate, by the maintainer's answer (the
+  skill `gate-review`); a release's read checks it and changes nothing in it.
 - **The loop's own work is not tracked here.** A change to this section, a skill, a helper agent,
   a workflow or a routine is made from the maintainer's project on claude.ai, by pull request. A
   run that meets a fault in its own rules, or in a tool or an access they call for and give no
   way round, says so in one line of its debrief, and on its end line after the word `Fault:`
-  (Telling the maintainer, below), and does nothing more about it: it files no issue for it.
+  (the skill `beat`), and does nothing more about it: it files no issue for it.
 
 **When a run starts**
 
-- **The start gate starts every run its routine's clock does not** (`start.yml`; `tools/starts.py`
-  holds its table, the rows above). A run cannot start another, so the gate does: it sees the
-  maintainer's words, a release and a run's own line, and fires the routine of the level that
-  takes it. It keeps no clock: GitHub runs a workflow's clock hours late, so a run a clock starts
-  is started by its routine's. Nothing of a comment is sent: a run is told what started it last,
-  and finds the rest itself.
-- **Quiet minutes, and one wait a level.** A start waits its row's minutes, counted from the last
-  start of its level: another within them takes the wait's place, so what comes together makes
-  one run. So a coordinator's run the gate starts takes all that waits, each by its own playbook:
-  an answer or a `Change:` not yet recorded, a release whose lines are not moved, an open `Idea:`
-  not shaped, a "Re-plan" not planned. **One run of a level at a time**: while the run log shows
-  a run of that level at work, its start line with no end line yet, the start waits for it to end,
-  for up to three hours. A run its routine's clock starts waits for no other, so it can run
-  beside one the gate started; `building` keeps two builders off one issue.
-- **The maintainer's day is 08:00 to 17:00 UK time, Monday to Friday.** What the maintainer
-  starts, by an answer, a `Change:`, an `Idea:`, a release or a `Resume:`, starts at any hour, and
-  a run's own line ("Build:", "Re-plan:") carries on what its run began. No clock starts a run
-  inside the day: the routines' are set outside it, and `test_starts.py` holds the runs table's
-  hours to that. The bot asks only inside the day (Telling the maintainer, below).
+- **A routine's clock or the start gate starts a run, and no run starts another.** The runs table
+  says which starts each. A run cannot start a routine: its own line, a comment whose first line
+  after the run's name is "Re-plan:" or "Build:", is all it leaves, and the gate reads it. What the
+  gate sees, its quiet minutes, the maintainer's day and a start that fails are in
+  [`docs/loop.md`](docs/loop.md).
 - **`Hold:` stops one issue, and `Resume:` frees it.** A reply from the maintainer that begins
   `Hold:` puts `hold` on the issue, or on one of the agent's pull requests, whose auto-merge it
   also turns off. No run plans it, builds it, asks on it or merges it until a reply that begins
@@ -320,32 +306,12 @@ A run changes neither.
   switches the routines' clocks off, and undoes both at "resume" or on the day named; or by
   `Hold:` on the Queue itself, which `Resume:` there ends. Taking `paused` off starts the
   coordinator once, and it takes all that waited.
-- **A start that fails is said.** The gate prints the routine's HTTP status alone, never the
-  session's address, and fails its own workflow run; the next morning run names it in its digest.
-  Each level's address and token are the repository's secrets, which `start.yml` names; without
-  them the gate says so in its log and starts nothing.
 
 **Which issues, in what order**
 
 - **The Queue sets the order.** It ranks the lines of the milestone being worked, unblockers first,
-  then bugs and wrong figures, small safe fixes, features and polish. A run builds the first line
-  under Next whose issue carries `planned` and none of `decision`, `building` and `hold`, has no
-  open pull request of its own, and whose "waits" issues are all closed; it skips the rest and
-  never reorders. Nothing outside Next is built. Each issue is read whole, comments included,
-  before its work starts.
-- **No line it can build and nothing to tend: stop**, posting nothing on GitHub but its lines in
-  the run log; the debrief says what holds each line (Telling the maintainer, below).
-- **The Queue's other rules are in the skills that work by them**: what makes an issue ready, the
-  Definition of Ready, "covers", and an `Idea:`, in
-  [`shape-an-issue`](.claude/skills/shape-an-issue/SKILL.md); an issue's place, and a milestone
-  that only gets shorter, in [`place-an-issue`](.claude/skills/place-an-issue/SKILL.md); the
-  milestone being worked and the Queue kept current, in
-  [`keep-the-queue`](.claude/skills/keep-the-queue/SKILL.md); the gate, in
-  [`gate-review`](.claude/skills/gate-review/SKILL.md); the release, its checklist and its tag, in
-  [`release`](.claude/skills/release/SKILL.md) and
-  [`release-read`](.claude/skills/release-read/SKILL.md); the next milestone, in
-  [`open-milestone`](.claude/skills/open-milestone/SKILL.md); a builder's own pull requests, first in
-  its run, and one whose issue is not under Next, in [`tend-pull-requests`](.claude/skills/tend-pull-requests/SKILL.md).
+  then bugs and wrong figures, small safe fixes, features and polish. Nothing outside Next is
+  built. Each issue is read whole, comments included, before its work starts.
 
 **Asking and answering**
 
@@ -361,46 +327,6 @@ A run changes neither.
   maintainer writes: 🚀 on words that start a run, 👀 on words that were seen and start none. So on
   an issue labelled `decision`, 👀 says the comment was not read as an answer; the bot says nothing.
   The next morning run reads it; a reply beginning `Change:` holds the work and is read sooner.
-- **Asking, and recording an answer, are two skills.** The test for asking, how a question is
-  written, when it is asked and how many may stand open are in
-  [`ask-or-decide`](.claude/skills/ask-or-decide/SKILL.md). How an answer is recorded, and what a
-  `Change:` does, are in [`record-answer`](.claude/skills/record-answer/SKILL.md).
-
-**The ready check**
-
-The coordinator's morning run, whose order is its playbook.
-
-- **One long job, at most, a run**, after its plans: the gate review, else a Queue review that is
-  due, else the design card or a decided feature's slices (Features, below). The rest wait for the
-  next run, and its debrief says which.
-- **The run's other rules are in its steps' skills**: the plans, in
-  [`plan`](.claude/skills/plan/SKILL.md); the dependencies, in
-  [`dependencies`](.claude/skills/dependencies/SKILL.md); the Queue's review on Monday and
-  Thursday, in [`keep-the-queue`](.claude/skills/keep-the-queue/SKILL.md); the gate review, in
-  [`gate-review`](.claude/skills/gate-review/SKILL.md).
-
-**Features**
-
-A feature's rules are in the skills that work it: its design card, how many go up and when, in
-[`design-card`](.claude/skills/design-card/SKILL.md); its slices, and how each stays hidden until
-the last, in [`slice-a-feature`](.claude/skills/slice-a-feature/SKILL.md); its trial, and keep or
-pull, in [`gate-review`](.claude/skills/gate-review/SKILL.md).
-
-**The answer run**
-
-- **The maintainer's answers start it, in a batch.** The gate sees the owner's comment on an
-  issue that begins `Q1:` or `All as recommended`, whatever its labels, or one that begins
-  `Change:` on an issue or an agent's pull request, and starts the coordinator's answer run
-  thirty quiet minutes after the last, so answers given together make one run. Nothing of a
-  comment is passed, and the issue it names is only the last.
-- **A re-plan starts the coordinator at once, by its comment.** A comment whose first line after
-  the run's name is "Re-plan:" is all it takes: the gate sees it and, ten quiet minutes after the
-  last, starts the re-plan run, so the plan is ready for the next build. No run starts a routine
-  itself.
-- **What the run does is in its skills**: every answer and `Change:` recorded, what is marked
-  "Re-plan:" and "Build:", and a decision issue closed, in
-  [`record-answer`](.claude/skills/record-answer/SKILL.md); an answered gate review applied, in
-  [`gate-review`](.claude/skills/gate-review/SKILL.md).
 
 **Building**
 
@@ -409,31 +335,21 @@ pull, in [`gate-review`](.claude/skills/gate-review/SKILL.md).
   the issue: its pull request clean or left for the maintainer, or the issue stopped. Every other
   run leaves an issue that carries it alone. A `building` label more than three hours old is a
   run that died: the next run takes it off and says so.
-- **Building's other rules are in its steps' skills**: the plan, and when it stands, in
-  [`plan`](.claude/skills/plan/SKILL.md); one issue, one branch, one pull request, a commit never
-  rewritten, and no third attempt at a green guard, in [`build-an-issue`](.claude/skills/build-an-issue/SKILL.md); a choice that
-  comes up mid-build, in [`ask-or-decide`](.claude/skills/ask-or-decide/SKILL.md); a find outside
-  the change, and work set aside, in [`fix-fold-report`](.claude/skills/fix-fold-report/SKILL.md);
-  a CI failure, and `guard` green on the last push, in
-  [`review-and-merge`](.claude/skills/review-and-merge/SKILL.md), with
-  [`pictures`](.claude/skills/pictures/SKILL.md) for the walk's pictures.
 
 **Merging**
 
 How a pull request is taken to its end is the skill
-[`review-and-merge`](.claude/skills/review-and-merge/SKILL.md), which holds the reviewer who did
-not build it, what makes a pull request clean, the three that never are, and what waits for the
-maintainer's yes.
+[`review-and-merge`](.claude/skills/review-and-merge/SKILL.md).
 
 - **A pull request's risk tier is set by the paths it changes**, the highest of them, and
   `tiers.yml` labels it so (`tools/tiers.py` holds the paths):
 
   | Tier | Paths | Needs |
   |---|---|---|
-  | 0 · words | `docs/`, `README.md`, `CHANGELOG.md` | `guard` and the builder's own review of its diff; no reviewer agent and no walk. Merges itself. |
-  | 1 · a page, or a procedure | anything not named in another tier: `CLAUDE.md`, the skills and the helper agents under `.claude/`, and the guard's other tools among them | the clean path, in `review-and-merge` |
+  | 0 · words | `docs/` but `docs/loop.md`, `README.md`, `CHANGELOG.md` | `guard` and the builder's own review of its diff; no reviewer agent and no walk. Merges itself. |
+  | 1 · a page, or a procedure | anything not named in another tier: `CLAUDE.md`, the step skills and the helper agents under `.claude/`, and the guard's other tools among them | the clean path, in `review-and-merge` |
   | 2 · the engine | `engine/`, `house/`, `record/rules*.py`, `feeds/`, `history/`, the demo and `tools/make_demo.py` | tier 1, and the demo's headline figures worked on the base and on the branch (`tools/figures.py`) |
-  | 3 · the keel: the store, the release and the guard's own | `record/schema.py`, `record/migrations.py`, `migrate/`, the release's `__version__`, `.github/`, `.githooks/`, `hooks/`, `.claude/settings.json`, the Stop hook, `pyproject.toml`, `requirements.lock`, the tools' `package.json` and lock, `tools/clean_room.py`, the tiers', the pictures' and the start gate's own tools, their tests, the Stop hook's and the runs', `pytest.ini` and pytest's other configuration files wherever they are, `CONTRIBUTING.md`, each test a stability rule names | always the maintainer's yes |
+  | 3 · the keel: the store, the release and the guard's own | `record/schema.py`, `record/migrations.py`, `migrate/`, the release's `__version__`, `.github/`, `.githooks/`, `hooks/`, `.claude/settings.json`, the Stop hook, `pyproject.toml`, `requirements.lock`, the tools' `package.json` and lock, `tools/clean_room.py`, the tiers', the pictures', the start gate's and the brief's own tools, their tests, the Stop hook's and the runs', the role books (`.claude/skills/role-*`), `docs/loop.md`, `pytest.ini` and pytest's other configuration files wherever they are, `CONTRIBUTING.md`, each test a stability rule names | always the maintainer's yes |
 
   The base's `tools/tiers.py` judges the branch. For tier 3, and tier 2 with a figure moved, the
   maintainer's press of Enable auto-merge is the yes, and one press is enough. The runs write as
@@ -447,43 +363,14 @@ maintainer's yes.
 
 - **A ping means something waits on the maintainer.** Everything else is written where it is read
   when they choose: the run log, the issue, the pull request. No run names the maintainer with
-  an @, assigns them, or requests their review: the bot does the naming (next), and only for a
-  question or for what only they can do.
-- **A question or pull request reaches the maintainer as a mention**: the agent works as the
-  maintainer's account, so GitHub would tell them nothing; an issue labelled `decision`, and a pull
-  request from a branch whose name begins claude/ that waits for a yes, get a comment from
-  `github-actions[bot]`, headed "PortFusion agent", that names them (`notify.yml`).
-- **The bot asks in the maintainer's working day, and holds the rest to 08:00.** A question or a
-  pull request raised outside 08:00 to 17:00 UK time, Monday to Friday, takes the label
-  `ask-held`, which tells no one; at 08:00 on the next working day the bot asks each that still
-  waits, and takes the label off. An issue or pull request that closes loses it at once, and
-  `planned` and `building` with it (`notify.yml`).
-  A run the maintainer started tells them itself, in its debrief, at any hour.
-- **The bot comments only to ask, or when it turned auto-merge off.** Every issue and pull request
-  is under the maintainer's account, so GitHub tells them of each comment the bot makes, whether
-  it names them or not. A note that asks nothing (a pull request merging itself, a tier that
-  holds, the pictures retaken) is written in its workflow run's summary, where a run reads it.
+  an @, assigns them, or requests their review: the bot does the naming
+  ([`docs/loop.md`](docs/loop.md)), and only for a question or for what only they can do.
 - **A run is one turn, and it ends by sending its debrief.** Every wait is inside that turn. A
   helper agent (the plan checker, the reviewer, a walker) runs in the background, whatever the run
   asks: the run starts it, goes on with what does not depend on it, and waits for its completion
   notification before acting on its result, never on a guess of it. With nothing else left, it
   waits by a command in the foreground, as for CI, which the notification comes back with, never
   by ending its turn. CI is polled in the foreground.
-- **The run log, the last steps and the debrief are two skills.** The run's two lines on the run
-  log, and a page named on its end line, are in [`beat`](.claude/skills/beat/SKILL.md). The last
-  three steps, the debrief, its last line that begins `Next:`, and which runs send it to the
-  maintainer's phone are in [`end-of-run`](.claude/skills/end-of-run/SKILL.md). A pull request's
-  first paragraph, which says where it stands, is in
-  [`review-and-merge`](.claude/skills/review-and-merge/SKILL.md).
-- **The Stop hook holds all three** (`tools/stop_hook.py`, run by `.claude/settings.json`): a run
-  cannot end while an open pull request of a branch it pushed has `guard` running, nor while a
-  helper agent it started has not returned, each for up to an hour a wait, nor, asked twice, with a
-  last message whose last line does not begin `Next:`, a one-line ending included. It holds only a
-  session started by a routine's prompt, which names this section, never one with the maintainer;
-  it reads the section's name from the heading the runs table is under, so a new run needs no
-  change to it. **Each hold is logged, and the run's end line says it**, as in "held 1× for
-  `guard`, 12 min": the hook writes it in a file in the session, and
-  `python3 tools/stop_hook.py --holds` prints it (the skill `end-of-run`).
 - **The agent's own comments never begin `Q` and a number, `All as recommended`, `Change:`,
   `Hold:` or `Resume:`**, in any case, and no issue it files is titled `Idea:`: the maintainer's
   shapes, which the gate acts on, since it writes as the maintainer's account.
@@ -498,11 +385,11 @@ maintainer's yes.
 **Never**
 
 - **The agent never pushes to `main`, bypasses a hook, or changes** a workflow, a ruleset, a test
-  that holds a stability rule, this section, a skill or a helper agent (`.claude/skills/`,
-  `.claude/agents/`), a routine (its prompt, model, effort, cap or schedule), or the guard's own
-  files: `.claude/settings.json`, `.githooks/`, `src/portfusion/hooks/`, `pyproject.toml`,
-  `requirements.lock`, `tools/clean_room.py`, `tools/tiers.py`, `tools/starts.py` and
-  `tools/stop_hook.py`. Those are changed from the maintainer's project, or in a session the
+  that holds a stability rule, this section, [`docs/loop.md`](docs/loop.md), a skill or a helper
+  agent (`.claude/skills/`, `.claude/agents/`), a routine (its prompt, model, effort, cap or
+  schedule), or the guard's own files: `.claude/settings.json`, `.githooks/`,
+  `src/portfusion/hooks/`, `pyproject.toml`, `requirements.lock`, `tools/clean_room.py`,
+  `tools/tiers.py`, `tools/starts.py`, `tools/stop_hook.py` and `tools/brief.py`. Those are changed from the maintainer's project, or in a session the
   maintainer is part of.
   `.claude/settings.json` refuses a forced push, a push or commit with `--no-verify`, and a
   rewrite of `main`.

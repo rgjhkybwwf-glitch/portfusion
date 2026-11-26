@@ -1,4 +1,4 @@
-"""WHAT STARTS A RUN, AND WHEN: the start gate's table (CONTRIBUTING.md, When a run starts).
+"""WHAT STARTS A RUN, AND WHEN: the start gate's table (docs/loop.md, When a run starts).
 `start.yml` sees what happens on GitHub (the maintainer's words, a release, a run's own line) and
 asks this what it is, what to do at once, and which run it starts after how many quiet minutes.
 It keeps no clock: every run a clock starts is started by its routine's own. `notify.yml` asks it
@@ -117,11 +117,11 @@ def runs_line(body: str) -> tuple[str, str]:
 
 def text(key: str, number: str = "", url: str = "", tag: str = "") -> str:
     """The one line a run is started with. It begins with its row's name, which is how the run
-    finds its playbook; nothing of a comment is in it."""
+    finds its row; nothing of a comment is in it."""
     where = f"#{number} ({url})" if number else ""
     if key == "hand":
         return ("Dry run: the start gate was started by hand, to test this path. Follow no "
-                "playbook, write nothing, and end in one line, which begins \"Next:\".")
+                "role book, write nothing, and end in one line, which begins \"Next:\".")
     said = {
         "answer": f"the maintainer answered or changed something, the last on {where}. Find each "
                   f"answer and change yourself, and record them all.",

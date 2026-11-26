@@ -32,7 +32,7 @@ is too old, and whether a Queue review is due.
 What the brief says, the run does not read again to find out: a builder does not read the Queue,
 and no run reads the run log or the list of the gate's runs. It still reads whole each issue,
 comment and pull request it acts on. What the brief lists under "Not read", and all of it when the
-brief fails, the run reads as its playbook says.
+brief fails, the run reads as its role book says.
 
 ## The start line
 

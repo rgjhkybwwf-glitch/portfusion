@@ -1,6 +1,6 @@
 """THE RUN'S STOP HOOK (`.claude/settings.json`): a run of the loop cannot end while a pull request
 it pushed to has `guard` pending, while a helper agent it started has not returned, or when its last
-message is not a debrief whose last line begins `Next:` (CONTRIBUTING.md, Telling the maintainer).
+message is not a debrief whose last line begins `Next:` (docs/loop.md, The Stop hook).
 Claude Code runs it each time a turn would end, with the turn's details on stdin; a block is said
 on stdout, and the run goes on with the reason.
 
@@ -55,7 +55,7 @@ REASON = {
               "command in the foreground, act on its result, and only then send the debrief "
               "(CONTRIBUTING.md, Telling the maintainer)." + LOGGED,
     "debrief": "The run ends with its debrief: a few lines, your last message, whose last line "
-               "begins `Next:` (CONTRIBUTING.md, Telling the maintainer)." + LOGGED,
+               "begins `Next:` (the skill `end-of-run`)." + LOGGED,
 }
 SAID = (("guard", "`guard`"), ("helper", "a helper"), ("debrief", "the debrief"))
 
