@@ -24,7 +24,8 @@ The coordinator writes no code, opens no branch and builds nothing.
 
 ## The order
 
-A run works the parts it takes in this order, and no part twice.
+A run works the parts it takes in this order, and no part twice. A release is the one
+exception, and the table says so.
 
 1. **The start line**: the skill `beat`, saying what started the run: the morning run, an
    answer, an idea, a release with its tag, a re-plan, or a `Resume:`.
@@ -70,27 +71,30 @@ A run works the parts it takes in this order, and no part twice.
 ## Which parts a start takes
 
 The run's row is named by the first words of the text it was started with, or by its clock.
-Every start takes the start line and the end; the table names the rest.
+Every start takes the start line and the end; the table names the rest, and the first rule
+under it the parts a waiting start brings with it.
 
 | Start | Its text begins | The parts it takes | Its debrief |
 |---|---|---|---|
 | Morning | nothing: its routine's clock | every part | the day's digest |
 | Answer | `Answer:` | 5, 6 and 12, and of 7, 8 and 10 what waits | its own |
 | Idea | `Idea:` | 2 and 8, and of 5, 6, 7 and 10 what waits | its own: for each idea, the issue it became, where it was placed and why, and what is asked |
-| Release | `Release:` and the tag | 6, 7, and 10 to the cap, and of 5 and 8 what waits | its own |
+| Release | `Release:` and the tag | 7 before 6, then 10 to the cap, and of 5 and 8 what waits | its own |
 | Re-plan | `Re-plan:` | 10, and of 5, 6, 7 and 8 what waits | its own: a line an issue |
 
 - **Of a part taken only for what waits**, a run does what the start that waits would have
-  done: an answer is recorded, the Queue kept and the marks left (5, 6 and 12); the Queue is
-  kept, a release's lines are moved and its first lines planned, to the Release row's cap (6, 7
-  and 10); an idea is shaped (2 and 8); and an issue marked "Re-plan", or resumed, is planned
-  (10).
+  done: an answer is recorded, the Queue kept and the marks left (5, 6 and 12); a release's
+  lines are moved, the Queue kept, and its first lines planned to the cap of the runs table's
+  Release row (7, 6 and 10); an idea is shaped (2 and 8); and an issue marked "Re-plan", or
+  resumed, is planned (10).
 - **Only the morning run, and a run that moves a release's lines, plan to a cap.** In any other
   run only what is marked "Re-plan" or resumed is planned: a shaped idea takes its plan when its
   line is reached, and an answered issue is marked for a re-plan or for a builder.
-- **A run that finds the release's milestone still open** moves nothing and plans nothing for
-  it, and the next morning run opens it; what else waits is still taken. The next version's own
-  pull request is a builder's (the skill `release`, After the tag).
+- **A release's lines are moved before the Queue is kept**, 7 before 6, in a release run and in
+  a run that takes a waiting release and has not yet kept the Queue; the morning run works the
+  two as numbered. A run that finds the release's milestone still open moves nothing and plans
+  nothing for it, and the next morning run opens it; what else waits is still taken.
+- **The next version's own pull request is a builder's** (the skill `release`, After the tag).
 - **An idea is never placed in the milestone being worked** by the run that shapes it: that is
   the maintainer's to do.
 - **Only the morning run takes 3, 4, 9 and 11.**
