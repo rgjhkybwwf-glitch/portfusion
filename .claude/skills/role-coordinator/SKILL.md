@@ -1,0 +1,96 @@
+---
+name: role-coordinator
+description: "Role book: every run of the coordinator's. It holds the one order the coordinator's work follows, which parts of it each start takes (the morning's clock, an answer, an idea, a release, a re-plan), and the rules of the level."
+---
+
+# The coordinator's book
+
+A coordinator's run follows this book from its start line to its debrief. Its row of the runs
+table says what started it, its mark and its cap, and the brief says which row it is (the skill
+`beat`). Each part's rules and its procedure are in the skill named, opened when the part comes.
+The coordinator writes no code, opens no branch and builds nothing.
+
+## The level's rules
+
+- **A run the gate starts takes all that waits**: an answer or a `Change:` not yet recorded, a
+  release whose lines are not moved, an open `Idea:` not shaped, a "Re-plan" not planned. A start
+  within another's quiet minutes takes its place, so the run its text names may not be the only
+  one owed. After a pause that is all that came in while the loop was paused.
+- **One long job, at most, a run**, after its plans: the gate review, else a Queue review that is
+  due, else the design card or a decided feature's slices. The rest wait for the next run, and
+  its debrief says which.
+- **Whatever it files or shapes takes its place** by the skill `place-an-issue`, and every choice
+  goes through `ask-or-decide`.
+
+## The order
+
+A run works the parts it takes in this order, and no part twice.
+
+1. **The start line**: the skill `beat`, saying what started the run: the morning run, an
+   answer, an idea, a release with its tag, a re-plan, or a `Resume:`.
+2. **Read the direction**: `docs/direction.md` first, cited for a milestone, a cut or an idea,
+   and `docs/content-map.md` beside it, cited for a design card and for a plan that changes which
+   page or section answers a job.
+3. **Read what changed since the last run**: the pull requests merged or stopped, the pull
+   requests still open (a planned issue with a ready one holds no place: the skill `plan`), each
+   run's comments on the issues, every answer and `Change:` the maintainer gave, each "Re-plan"
+   left, every other comment of the maintainer's, and each run of the workflow `start` that
+   failed: a start the gate did not make, named in the digest. The last run began at the start on
+   this run's own last line in the run log, whose lines are never acted on, or three days ago
+   when there is none. Clear a `building` label more than three hours old: a run that long has
+   died.
+4. **Nothing changed: stop.** When nothing has merged, closed, been answered, changed or filed
+   since, Next holds as many `planned` lines with no ready pull request of their own as the cap
+   or no line that could be planned, and no review of the Queue is due, go to the last part with
+   a one-line debrief; where this run met a fault, or an end line since its last names one, the
+   Faults head comes before that line, and the Pages head likewise for a page (the skill
+   `end-of-run`).
+5. **Record** every answer and `Change:` not yet recorded, before anything is built: the skill
+   `record-answer`. Any other comment of the maintainer's is applied where its issue is shaped or
+   planned, and otherwise named in the debrief.
+6. **The Queue**: the skill `keep-the-queue`, Each run: tick what merged, and sort what the
+   builders reported. A `Change:` on the Queue is applied by the same skill, and an answered
+   gate review by the skill `gate-review`, Applying its answer.
+7. **After a tag**: the skill `open-milestone`. A run that finds the release's milestone still
+   open says so in the debrief and moves nothing.
+8. **Each open `Idea:` issue**, the oldest first: the skill `shape-an-issue`, then its place by
+   `place-an-issue` and its questions by `ask-or-decide`, asked as it is shaped. An idea an open
+   issue already covers is added to that issue and closed.
+9. **The dependencies**: the skill `dependencies`.
+10. **Plan**: the skill `plan`. First each issue under Next marked "Re-plan" since its last
+    **Plan, checked**, and an issue the maintainer resumed whose plan no longer stands; then the
+    lines under Next, in order, to the cap.
+11. **One long job, at most**: the skill `gate-review` on the day the gate is reached; else
+    `keep-the-queue`, The review, on a Monday or a Thursday; else `design-card`, or
+    `slice-a-feature` for a feature whose shape is decided.
+12. **The marks**: what no longer stands is marked "Re-plan:", and what a builder may build is
+    marked "Build:", both as `record-answer` says. The gate starts the next run from each.
+13. **The end**: the skill `end-of-run`.
+
+## Which parts a start takes
+
+The run's row is named by the first words of the text it was started with, or by its clock.
+Every start takes the start line and the end; the table names the rest.
+
+| Start | Its text begins | The parts it takes | Its debrief |
+|---|---|---|---|
+| Morning | nothing: its routine's clock | every part | the day's digest |
+| Answer | `Answer:` | 5, 6 and 12, and of 7, 8 and 10 what waits | its own |
+| Idea | `Idea:` | 2 and 8, and of 5, 6, 7 and 10 what waits | its own: for each idea, the issue it became, where it was placed and why, and what is asked |
+| Release | `Release:` and the tag | 7, then 6, and 10 to the cap, and of 5 and 8 what waits | its own |
+| Re-plan | `Re-plan:` | 10, and of 5, 6, 7 and 8 what waits | its own: a line an issue |
+
+- **Of a part taken only for what waits**, a run does what its own start would: an answer is
+  recorded and the Queue kept (5, 6 and 12), a release's lines are moved (7), an idea is shaped
+  (2 and 8), and of 10 only the issues marked "Re-plan" or resumed are planned.
+- **Only the morning run and a release plan to the cap.** In any other run nothing else is
+  planned: a shaped idea takes its plan when its line is reached, and an answered issue is
+  marked for a re-plan or for a builder.
+- **A release run moves the milestone's lines before it keeps the Queue**, 7 then 6, and one
+  that finds the milestone still open goes from 7 to the end: the next morning run opens it. The
+  next version's own pull request is a builder's (the skill `release`, After the tag).
+- **An idea is never placed in the milestone being worked** by the run that shapes it: that is
+  the maintainer's to do.
+- **Only the morning run takes 3, 4, 9 and 11.**
+- **Which debriefs also go to the maintainer's phone** is in the skill `end-of-run`: the digest,
+  and that of a run the maintainer started.

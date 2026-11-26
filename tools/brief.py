@@ -9,7 +9,7 @@ prints the few lines the run needs, each with where it came from.
 IT READS AND NEVER WRITES: GitHub by `gh api`, and CONTRIBUTING.md for the runs table. It decides
 nothing a rule leaves to the run: it says which line under Next a builder may take by the labels
 and the Queue's "waits", and the run still reads that issue and its plan whole. What it could not
-read it names under "Not read", and the run reads that itself, as its playbook says. A brief that
+read it names under "Not read", and the run reads that itself, as its role book says. A brief that
 fails prints why and exits 0: it never stops a run.
 """
 from __future__ import annotations
@@ -40,7 +40,7 @@ PLAN = re.compile(r"[^·]*(?:·[^·]*)?· \*\*Plan, checked(?:, if answered as r
                   r"(?: against `main` at ([0-9a-f]{7,40}))?")
 #: A clock's run is its row for this long after the row's hour; the rows are four hours apart.
 ROW_FOR = 4 * 60
-#: The labels that keep a builder off a planned line (the playbook's "Take a line").
+#: The labels that keep a builder off a planned line (the role book's "Take a line").
 KEEPS_OFF = ("decision", "building", "hold")
 #: A `building` label this old is a run that died (CONTRIBUTING.md, Building).
 DIED_AFTER = starts.AT_WORK_FOR
@@ -276,7 +276,7 @@ def brief(level: str, text: str, now: datetime, asked: Asked) -> list[str]:
     """The brief's lines, for a run of `level` started with `text`, or by its clock with none."""
     out = [f"RUN BRIEF · {level} · {_uk(now)} UK time"]
     if text.strip().startswith("Dry run"):
-        return out + ["A dry run: follow no playbook, write nothing, and end in one line that "
+        return out + ["A dry run: follow no role book, write nothing, and end in one line that "
                       "begins \"Next:\"."]
     table = rows((ROOT / "CONTRIBUTING.md").read_text(encoding="utf-8"))
     row = which(table, level, text, now)
@@ -292,7 +292,7 @@ def brief(level: str, text: str, now: datetime, asked: Asked) -> list[str]:
     queue = asked.get(f"issues/{starts.QUEUE}", "the Queue", one=True)
     if "the Queue" in asked.missed:
         return out + ["Paused: not read. The Queue could not be read: read its labels and its "
-                      "lines yourself, as the playbook says, before the start line."]
+                      "lines yourself, as the role book says, before the start line."]
     paused = "paused" in [label["name"] for label in queue.get("labels", [])]
     if paused and not gate:
         return out + [f"Paused: yes, the Queue (#{starts.QUEUE}) carries `paused`. A run its "
@@ -350,7 +350,7 @@ def brief(level: str, text: str, now: datetime, asked: Asked) -> list[str]:
     if level == "builder":
         if holes:
             out.append("The line to take: not decided here, since " + ", ".join(holes)
-                       + " could not be read. Take it as the playbook says.")
+                       + " could not be read. Take it as the role book says.")
             return out + _missed(asked)
         out.append("The line to take: " + (
             f"#{takeable[0]}. Read it whole, with its latest Plan, checked, and confirm the plan "
@@ -440,7 +440,7 @@ def _changed(asked: Asked, since: datetime, now: datetime, issues: dict[int, dic
 def _missed(asked: Asked) -> list[str]:
     if not asked.missed:
         return []
-    return ["Not read, so read it as the playbook says: " + ", ".join(dict.fromkeys(asked.missed))]
+    return ["Not read, so read it as the role book says: " + ", ".join(dict.fromkeys(asked.missed))]
 
 
 def main(args: list[str]) -> int:
@@ -450,7 +450,7 @@ def main(args: list[str]) -> int:
     try:    # a starting text holds quotes, so a shell may hand it over in pieces
         lines = brief(args[0], " ".join(args[1:]), datetime.now(timezone.utc), Asked(_repo()))
     except Exception as e:              # noqa: BLE001 — a brief that fails must not stop a run
-        lines = [f"RUN BRIEF · it failed and says nothing: {e!r}. Read as the playbook says."]
+        lines = [f"RUN BRIEF · it failed and says nothing: {e!r}. Read as the role book says."]
     log.info("\n".join(lines))
     return 0
 

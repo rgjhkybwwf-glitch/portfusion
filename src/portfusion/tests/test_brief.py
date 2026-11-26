@@ -209,7 +209,7 @@ def test_the_brief_says_the_line_what_it_could_not_read_and_stops_at_a_pause(bri
 
     asked = Canned(answers, missing=("the open pull requests",))
     out = "\n".join(brief.brief("builder", "", now, asked))
-    assert "Not read, so read it as the playbook says: the open pull requests" in out
+    assert "Not read, so read it as the role book says: the open pull requests" in out
     assert "The line to take: not decided here" in out and "may take it" not in out, \
         "a line whose own pull request could not be looked for is not called free"
     assert "The agent's open pull requests: not read" in out

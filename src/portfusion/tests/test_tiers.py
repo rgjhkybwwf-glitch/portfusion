@@ -47,6 +47,9 @@ def held(tiers):
     ("tools/stop_hook.py", 3), ("src/portfusion/tests/test_stop_hook.py", 3),
     ("src/portfusion/tests/test_runs.py", 3),
     ("tools/starts.py", 3), ("src/portfusion/tests/test_starts.py", 3),
+    ("tools/brief.py", 3), ("src/portfusion/tests/test_brief.py", 3),
+    (".claude/skills/role-coordinator/SKILL.md", 3), (".claude/skills/role-builder/SKILL.md", 3),
+    ("docs/loop.md", 3), ("docs/store.md", 0), (".claude/skills/beat/SKILL.md", 1),
     ("conftest.py", 3), ("src/portfusion/tests/conftest.py", 3), ("setup.cfg", 3),
     ("src/portfusion/tests/desk/conftest.py", 3), ("tox.ini", 3),
 ])
