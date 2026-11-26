@@ -1,6 +1,6 @@
 ---
 name: skeptic-reviewer
-description: Reviews a pull request of tier 1 or above as a skeptic before it is called clean (CONTRIBUTING.md, Merging). Given only the issue's "Done" checks and the diff. Read-only.
+description: Reviews a pull request of tier 1 or above as a skeptic before it is called clean (the skill `review-and-merge`). Given only the issue's "Done" checks and the diff. Read-only.
 tools: Read, Grep, Glob
 model: claude-fable-5-2
 effort: high

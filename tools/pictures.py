@@ -2,7 +2,7 @@
 and no other. `baselines.yml` walks the desk, retakes every page's picture, then asks this which may
 be kept; a page whose picture changed and is not named fails the retake, by name, and nothing is
 pushed. The line is the plan's list of the pages the change means to move, copied into the pull
-request (CONTRIBUTING.md, Building).
+request (the skills `plan` and `pictures`).
 
     PR_BODY="$body" python3 tools/pictures.py tools/desk_walk/<page>-linux.png …
 

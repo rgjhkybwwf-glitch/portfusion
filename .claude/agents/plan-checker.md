@@ -1,6 +1,6 @@
 ---
 name: plan-checker
-description: Checks an issue's plan against the code before anything is built, and says what is missing or wrong (CONTRIBUTING.md, Building). Given only the issue and its plan. Read-only.
+description: Checks an issue's plan against the code before anything is built, and says what is missing or wrong (the skill `plan`). Given only the issue and its plan. Read-only.
 tools: Read, Grep, Glob, mcp__github__issue_read, mcp__github__list_issues, mcp__github__list_pull_requests, mcp__github__pull_request_read
 model: claude-opus-5-5
 effort: high

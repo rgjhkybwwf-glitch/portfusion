@@ -55,5 +55,5 @@ A cold walk's finds are reported the same way. So is something a comment of the 
 raises outside the issue, quoted. The coordinator sorts what is reported at its next run (the
 skill `keep-the-queue`): it files what earns an issue, and says what it dropped.
 
-A pull request with nothing under a heading leaves the heading out. A run that is going nowhere
-stops and says so: it reports no finds to show work.
+A pull request with nothing under a heading leaves the heading out, and no find is reported to
+show work.

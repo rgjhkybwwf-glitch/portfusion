@@ -1,24 +1,15 @@
 ---
 name: record-answer
-description: "Coordinator: finds the maintainer's answers and changes, copies each into its issue's Decisions, and marks what must be planned again and what a builder may build. It holds what counts as an answer and what a Change does."
+description: "Coordinator: finds the maintainer's answers and changes, copies each into its issue's Decisions, and marks what must be planned again and what a builder may build. It holds what a Change does, and when a decision issue closes."
 ---
 
 # Recording an answer
 
-- **The maintainer answers in one comment, a line a question**: `Q1: a`, `Q2: b, and …`, or
-  `All as recommended`. A question is settled when its answer is written so; a recommendation is
-  not an answer, and neither is a comment's tone or silence. A slip in its first words, as "All
-  as recomemded", is read as meant.
-- **Any other comment of the maintainer's is read, not acted on at once.** The gate marks what the
-  maintainer writes: 🚀 on words that start a run, 👀 on words that were seen and start none. So on
-  an issue labelled `decision`, 👀 says the comment was not read as an answer; the bot says nothing.
-  The next morning run reads it; a reply beginning `Change:` holds the work and is read sooner.
-
 ## Finding them
 
-**The answer run records every answer and change, and builds nothing**: each is found by the
+**Every answer and change is recorded before anything is built**: each is found by the
 comments, not the labels, and recorded before a builder is started, so a run started later does
-not take the same issue.
+not take the same issue. The run that records them builds nothing.
 
 List the owner's comments on issues and pull requests since this run's own last run began (the
 start on its last line in the run log; the last three days when there is none). Leave out each
@@ -52,8 +43,8 @@ a gate review is applied by the skill `gate-review`, and a `Change:` on the Queu
 
 **A reply beginning `Change:` redirects an issue or one of the agent's pull requests**, and
 reverses a choice a run decided. The gate marks it 🚀 and holds the work at once: the issue takes
-`decision`, the pull request loses its auto-merge. The answer run then reads the change and
-rewrites the issue to match:
+`decision`, the pull request loses its auto-merge. The run that records it then reads the change
+and rewrites the issue to match:
 
 1. Rewrite the issue's Done, Not in scope and Decisions to match, quoting the change with the date.
    A change to a choice the run decided replaces that line in Decisions.
@@ -67,7 +58,7 @@ rewrites the issue to match:
 A plan posted "if answered as recommended" stands when every answer is the recommended one. Any
 other answer, an answer to a question raised mid-build, and a `Change:` leave the plan no longer
 standing: write a comment whose first line after the run's name is "Re-plan:" and why, take
-`planned` off, and leave the issue for the re-plan run. The gate starts the re-plan from that
+`planned` off, and leave the issue to be planned again. The gate starts the re-plan from that
 comment.
 
 ## What a builder may build
@@ -75,9 +66,9 @@ comment.
 **Then a builder builds the answered issues under Next whose plan still stands.** Once every
 answer and change is recorded: on each answered issue under Next whose plan still stands, that
 carries no `hold`, write a comment whose first line after the run's name is "Build:" and, in a few
-words, that it was answered as recommended and its plan stands. The gate starts a builder two
-quiet minutes after the last of those comments. It builds the issues so marked one after another,
-in Queue order, as a night build would, up to its cap, and no other line. An issue not under
+words, that it was answered as recommended and its plan stands. The gate starts a builder after
+the last of those comments. It builds the issues so marked one after another, in Queue order, up
+to its cap, and no other line. An issue not under
 Next, a feature, and the issue a design card was answered on get none. One still not ready, a
 question open or a "waits" issue open, is named in the debrief and left.
 

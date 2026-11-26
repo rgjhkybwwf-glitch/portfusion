@@ -128,6 +128,7 @@ def test_every_step_skill_is_named_from_above_and_none_names_a_run(skills, contr
     for name in sorted(set(skills) - books):
         text = skills[name][2]
         assert not sorted(book for book in books if book in text), f"{name} names a run"
+        assert "quiet minute" not in " ".join(text.split()), f"{name} holds a run's wait"
 
 
 def test_no_step_skill_points_back_up_at_the_loops_section(skills, contributing, section):
@@ -135,12 +136,19 @@ def test_no_step_skill_points_back_up_at_the_loops_section(skills, contributing,
     above it open. THE CASE THAT MAKES IT FAIL: every skill said "the rule is in CONTRIBUTING", so
     no run could skip the 538 lines of the section and trust the skill. A skill may still name a
     convention every change follows, by a heading of CONTRIBUTING outside the loop's section, and
-    a heading it cites is there."""
+    a heading it cites is there. So a skill names CONTRIBUTING only as a file in a list, as the
+    conventions' home, or with such a heading straight after; and it names none of the section's
+    parts as a place, in brackets or with "above", "below", "says" or "'s rule"."""
     parts = set(re.findall(r"^\*\*([^*\n]+)\*\*$", section, re.M))
     parts |= {part.split(",")[0] for part in parts}
     assert len(parts) >= 11, "the loop's parts were not found"
     headings = set(re.findall(r"^#+ (.+)$", contributing.replace(section, ""), re.M))
-    named = re.compile(r"CONTRIBUTING(?:\.md)?`?(?:'s|,)\s+((?:[A-Z][\w'-]*)(?:\s+[a-z][\w'-]*)*)")
+    named = re.compile(r"CONTRIBUTING(?:\.md)?`?(?:\]\([^)]*\))?(?:'s|,)\s+"
+                       r"((?:[A-Z][\w'-]*)(?:\s+[a-z][\w'-]*)*)")
+    mention = re.compile(r"CONTRIBUTING(?:\.md)?`?(?:\]\([^)]*\))?(.{0,40})")
+    fine = [f", {heading}" for heading in headings] + ["'s conventions", ","]
+    place = "|".join(re.escape(part) for part in sorted(parts, key=len, reverse=True))
+    place = re.compile(rf"\((?:{place})[,)]|\b(?:{place})(?:, (?:above|below)| says|'s rule)")
     for name, (front, _, text) in skills.items():
         for guide, cited in CITED.findall(front["description"]):
             known = set(re.findall(r"^#+ (.+)$", (ROOT / guide).read_text(encoding="utf-8"), re.M))
@@ -151,10 +159,15 @@ def test_no_step_skill_points_back_up_at_the_loops_section(skills, contributing,
         if name.startswith("run-"):
             continue
         flat = " ".join(text.split())
-        assert "The loop" not in flat, f"{name} names the loop's section"
+        assert not re.search(r"(?:, |\"|section |`)The loop\b", flat), \
+            f"{name} names the loop's section"
         for heading in named.findall(flat):
             assert heading not in parts, f"{name} points up at CONTRIBUTING, {heading}"
             assert heading in headings, f"{name} names CONTRIBUTING, {heading}, and there is none"
+        for after in mention.findall(flat):
+            assert any(after.startswith(way) for way in fine), \
+                f"{name} names CONTRIBUTING with no heading outside the loop's section: {after!r}"
+        assert not place.search(flat), f"{name} names a part: {place.search(flat).group()}"
 
 
 def _leads(text):
@@ -167,8 +180,9 @@ def _leads(text):
 def test_a_rule_has_one_home(skills, section):
     """A rule stated in two files is two rules the day one of them is changed. Each rule opens
     with its name in bold, and no name is written in the loop's section and a step skill, or in
-    two step skills. A playbook's bold words name its steps, not rules. THE CASE THAT MAKES IT
-    FAIL: a rule moved into its step skill and left behind too."""
+    two step skills. A playbook's bold words name its steps, not rules. It holds the names alone:
+    a rule said again in other words is for its reader to catch. THE CASE THAT MAKES IT FAIL: a
+    rule moved into its step skill and left behind too."""
     homes = {}
     texts = {"CONTRIBUTING.md": section, **{name: body for name, (_, body, _) in skills.items()
                                             if not name.startswith("run-")}}
@@ -260,7 +274,8 @@ def test_every_commit_is_reviewed_before_it_is_pushed(contributing):
     assert "`fix-fold-report`" in step, "a Pre-existing finding is a find outside the change"
     finds = " ".join((SKILLS / "fix-fold-report" / "SKILL.md").read_text(encoding="utf-8").split())
     rule, step = " ".join(rule.split()), " ".join(step.split())
-    assert "no find for Building's rule" in rule, "what the rule leaves"
+    assert "(the skill [`fix-fold-report`]" in rule and "is no find for that skill" in rule, \
+        "what the rule leaves, and where a find outside the change goes"
     for skill in (step, finds):
         assert "Commits and pull requests, leaves" in skill, "both skills point at what it leaves"
     assert "judged wrong: then it is said at the top" in rule, \

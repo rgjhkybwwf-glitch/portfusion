@@ -8,7 +8,7 @@ description: "Builder: before a new issue, brings each of the agent's own open p
 **Its own open pull requests come first** in a builder's run, so none waits on the maintainer for
 anything but what it asked of them.
 
-Before a new issue, for each open pull request from a branch whose name begins claude/:
+Before a new issue, for each open pull request from a branch whose name begins `claude/`:
 
 Every push below is reviewed first, as `CONTRIBUTING.md`, Commits and pull requests, says. One
 whose auto-merge is on, merging itself, is made a draft again with it off before a commit is
@@ -17,10 +17,10 @@ skill `review-and-merge` again from its start. One that waits for the maintainer
 auto-merge off: the bot has asked, or holds the question under `ask-held`, and the run asks
 nothing itself; the new commit's tier is judged again (the skill `review-and-merge`).
 
-1. **Level with `main`**: `main` is merged in, never rebased. A pushed commit is never rewritten.
+1. **Level with `main`**: `main` is merged in, never rebased.
 2. **Its pictures**: retaken when a page it changed moved under it (the skill `pictures`).
-3. **Its CI**: made green, waited for in the foreground. One that will not go green at a second
-   attempt is left as a draft, with what blocks it at the top.
+3. **Its CI**: made green, waited for in the foreground, or left as a draft at the second
+   attempt (the skill `build-an-issue`).
 4. **A `Change:` on it**: left for the coordinator, which records it and plans again.
 5. **A `hold` on it**: kept level and green, nothing added to it, and its auto-merge left off
    until the maintainer's `Resume:` takes the label off.

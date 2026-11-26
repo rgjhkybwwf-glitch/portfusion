@@ -1,6 +1,6 @@
 ---
 name: trial-walker
-description: Walks a whole feature cold by its Trial jobs, for the slice that turns it on (CONTRIBUTING.md, Features). Given the desk's address and the feature's Trial jobs; reads no code and no guides.
+description: Walks a whole feature cold by its Trial jobs, for the slice that turns it on (the skill `slice-a-feature`). Given the desk's address and the feature's Trial jobs; reads no code and no guides.
 tools: Bash, Read
 model: claude-sonnet-5-5
 effort: medium

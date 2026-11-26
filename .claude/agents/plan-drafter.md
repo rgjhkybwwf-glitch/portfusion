@@ -1,6 +1,6 @@
 ---
 name: plan-drafter
-description: Drafts an issue's plan from the code for the coordinator, each claim with its file and line (CONTRIBUTING.md, Building). Given the issue, the commit of main the checkout is at, and on a re-plan why the last plan fell. Read-only.
+description: Drafts an issue's plan from the code for the coordinator, each claim with its file and line (the skill `plan`). Given the issue, the commit of main the checkout is at, and on a re-plan why the last plan fell. Read-only.
 tools: Read, Grep, Glob, mcp__github__issue_read, mcp__github__list_issues, mcp__github__list_pull_requests, mcp__github__pull_request_read
 model: claude-fable-5-2
 effort: high

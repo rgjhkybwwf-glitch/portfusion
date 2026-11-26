@@ -44,8 +44,7 @@ new issue is filed.
 ## An `Idea:` issue
 
 **An issue the owner opens with a title beginning `Idea:` is new work in their words.** The
-coordinator shapes it in place, in the idea run the gate starts ten quiet minutes after, at any
-hour:
+coordinator shapes it in place, in the run the gate starts for it, at any hour:
 
 1. The maintainer's words stay at the top, quoted.
 2. The title is made an issue's title.

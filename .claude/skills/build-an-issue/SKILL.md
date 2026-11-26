@@ -10,7 +10,9 @@ when one stands. The work follows `CONTRIBUTING.md`'s conventions, as any change
 
 ## 1. Read it whole
 
-The issue, its comments included, and its latest **Plan, checked**.
+The issue, its comments included, and its latest **Plan, checked**. An answer of the
+maintainer's that stands only in a comment is copied into the issue's Decisions, quoted with the
+date, before the work starts.
 
 ## 2. Confirm the plan still stands
 
@@ -31,7 +33,7 @@ issue stopped.
 
 ## 4. One branch
 
-- **One issue, one branch, one pull request**: a branch claude/<name> from the latest `main`,
+- **One issue, one branch, one pull request**: a branch `claude/<name>` from the latest `main`,
   worked by the conventions (changelog, own diff reviewed, a changed desk page walked cold), the
   guard run, and the desk walk if a desk file changed. The pull request says "Closes #n", and the
   agent goes on to the next issue without waiting for a merge.
@@ -78,5 +80,5 @@ Run the guard, and the desk walk if a desk file changed. Open one pull request, 
 says "Closes #n" ("For" the release checklist, which is never closed), with any choice the run
 decided at its top. Then the skill `review-and-merge`, which marks it ready at its end.
 
-No issue goes past a second attempt at a green guard: one that will not go green is left as a
-draft pull request with what blocks it at the top, and the run moves on.
+**No issue goes past a second attempt at a green guard**: one that will not go green is left as
+a draft pull request with what blocks it at the top, and the run moves on.

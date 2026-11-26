@@ -20,7 +20,8 @@ description: "Builder: takes an open pull request to its end. The skeptic review
   engine method returns on the demo), and the slice that turns a feature on. `tiers.yml` holds the
   store and a moved headline figure; any other figure, and the third, are the builder's to say.
   The first two are never hidden: each says what moves at the top of its pull request, and in the
-  changelog.
+  changelog. Nor is the pull request that reverts a feature's slices, for a pull answered at a
+  gate, ever clean.
 - **Any other waits for the maintainer's yes**, auto-merge off, with what is needed from them at
   the top of its description. The yes is the maintainer pressing Enable auto-merge, so the merge
   is theirs and everything after it runs.
@@ -44,8 +45,8 @@ before it leaves a pull request. **It waits in the foreground**, on the newest c
 command that polls the checks, and the `baselines/<branch>` ref when pictures are being retaken,
 run again until they finish, **never by ending its turn**.
 
-- **A failure** is the agent's to fix, in a new commit, reviewed before it is pushed as
-  `CONTRIBUTING.md`, Commits and pull requests, says.
+- **A failure** is fixed in a new commit, reviewed before it is pushed as `CONTRIBUTING.md`,
+  Commits and pull requests, says.
 - **The walk fails only because a page the issue meant to change looks different**: the skill
   `pictures`.
 - **A failure the agent cannot fix** is said at the top of the pull request, with what would fix
