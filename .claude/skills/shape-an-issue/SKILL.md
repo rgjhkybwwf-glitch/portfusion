@@ -31,6 +31,9 @@ description: "Coordinator: brings an issue, or the maintainer's Idea, to its Def
   - **Introduction**: how it stays hidden until its last slice, and what that slice turns on.
   - **Trial**: three jobs for the maintainer to try on their own book after the release.
 
+  Once its Shape is written, a section written before it that the Outcome, Shape or Slices now
+  answer is replaced by them, not kept beside them. An idea's own words at the top stay.
+
 ## Does an open issue cover it?
 
 **"Covers" is by the code, not the topic.** An open issue covers a find, an idea or a bump when

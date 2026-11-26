@@ -48,6 +48,9 @@ adds when the milestone has none:
 
 ## Saying so
 
-The line says in brackets where the issue came from, who placed it and when, and why it stands
-where it does, as in "(reported by #318's build; placed 19 Nov 2026 by the coordinator: a bug,
-after both its waits)". The debrief names each placement and why, under "Decided for you".
+**A line is one short line: what the issue is, why it stands there in brackets, and what it waits
+on**, about 200 characters at most, as in "- [ ] #315 The Bench files a document under the wrong
+name (a bug, after both its waits) · waits #185, #186". The maintainer's own lines, whether typed or
+answered, end `· yours`, and no run moves one. Where the issue came from, who placed it and when go
+in a comment on the issue, and the debrief names each placement and why, under "Decided for you".
+The Queue keeps no history: GitHub keeps every edit of its body.
