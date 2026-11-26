@@ -56,13 +56,14 @@ Three choices are always decided, never asked:
   files, from a find or from a comment, has its Decisions read "Open: asked when it is under
   Next"; it takes no `decision`, so it pings no one, and it is not ready. Once the issue is under
   Next the coordinator asks or decides each, whether or not its "waits" have closed, so an answer
-  is in before its turn comes. Two are asked sooner, within the limit below: an `Idea:`'s, as it
-  is shaped, since the maintainer is waiting on it, and a feature's shape, on its design card. A
+  is in before its turn comes. Three are asked sooner, within the limit below: an `Idea:`'s, as it
+  is shaped, since the maintainer is waiting on it, a feature's shape, on its design card, and
+  a move Monday's review asks (the skill `keep-the-queue`). A
   question written in a session the maintainer is part of keeps `decision` wherever its issue
   stands, and is not asked again. An answer the maintainer gives early, in a comment, counts when
   its line is planned.
 - **At most five questions stand open at once**, counting the milestone being worked's issues, a
-  design card's and a gate review's; questions on issues of a later milestone, written in a
+  design card's, a gate review's and a Queue review's moves; questions on issues of a later milestone, written in a
   session the maintainer is part of, apart. Beyond five it asks nothing new but what blocks the
   first line under Next: an `Idea:`'s and a card's questions are written, and wait. While a card
   of its own stands unanswered it posts no new one; the gate review is the exception (the skill

@@ -280,8 +280,9 @@ is written for the maintainer and which no run needs. A run changes none of them
   but writes nothing on GitHub and sends no push. Its last message says what it would have done,
   step by step: the way a changed role book is rehearsed before it runs for real.
 - **The direction is [`docs/direction.md`](docs/direction.md)**: for whom, what never, and what
-  each milestone is for. It changes only at a gate, by the maintainer's answer (the
-  skill `gate-review`); a release's read checks it and changes nothing in it.
+  each milestone is for. It changes only by the maintainer's answer, to a gate review or to a
+  question of which release builds a feature (the skills `gate-review`, `design-card` and
+  `place-an-issue`); a release's read checks it and changes nothing in it.
 - **The loop's own work is not tracked here.** A change to this section, a skill, a helper agent,
   a workflow, a routine or `docs/loop.md` is made from the maintainer's project on claude.ai, by
   pull request. A run that meets a fault in its own rules, or in a tool or an access they call
@@ -313,9 +314,11 @@ is written for the maintainer and which no run needs. A run changes none of them
 
 **Which issues, in what order**
 
-- **The Queue sets the order.** It ranks the lines of the milestone being worked, unblockers first,
-  then bugs and wrong figures, small safe fixes, features and polish. Nothing outside Next is
-  built. Each issue is read whole, comments included, before its work starts.
+- **The Queue sets the order.** A milestone holds what its release's headline needs, and a
+  share of Upkeep, the faults no headline needs (the skill `place-an-issue`). The Queue ranks the lines of the milestone being worked, its headline's
+  first: unblockers, then bugs and wrong figures, small safe fixes, features and polish, and
+  its share of Upkeep after them. Nothing outside Next is built. Each issue is read whole,
+  comments included, before its work starts.
 
 **Asking and answering**
 

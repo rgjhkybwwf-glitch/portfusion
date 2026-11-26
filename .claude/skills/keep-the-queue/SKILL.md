@@ -18,7 +18,7 @@ description: "Coordinator: keeps the Queue. Each run it ticks what merged and so
   wait met, a line that left and a review answered leave no note: GitHub keeps every edit.
 
 What it does here is decided and told, not asked (the skill `ask-or-decide`): each act is listed,
-and the maintainer reverses one with `Change:`.
+and the maintainer reverses one with `Change:`. Only a move Monday's review asks is a question.
 
 ## Each run
 
@@ -44,7 +44,7 @@ and the maintainer reverses one with `Change:`.
 ## The review, on Monday and Thursday
 
 **On Monday and Thursday it reviews the whole Queue, and acts**: on the morning run of a Monday
-and of a Thursday, and not while a gate review stands unanswered. None of it is asked. It reads
+and of a Thursday, and not while a gate review stands unanswered. Only a Monday's move is asked. It reads
 every open issue against today's `main`, by the wide reader
 ([`.claude/agents/wide-reader.md`](../../agents/wide-reader.md)), which returns a short list, and
 then acts:
@@ -64,13 +64,23 @@ then acts:
   `record-answer`, a feature's sections by `shape-an-issue`. One still over is named in the post.
 - **The order is kept**: a line a run placed is moved when the order of the work asks it. A line
   the maintainer placed is not.
+- **On Monday the whole list is read against the arc**, by the wide reader in the same read:
+  each open line that is no feature against its release's headline (the skill `place-an-issue`).
+  A fault a run placed where no headline needs it moves to Upkeep, an Upkeep line a later
+  release's headline has come to need joins that release, and Upkeep is ranked again, each move
+  listed with its reason. Nothing of the milestone being worked moves. A feature, and a line the
+  maintainer placed, move only by their word: where the order of the work asks for one, the
+  review asks it on the line's own issue, as any question is asked (the skill `ask-or-decide`):
+  three moves open at most, none its Decisions already answer, and none on an issue that
+  carries `decision`. The answer is applied by `place-an-issue`.
 - **Work set aside has a home**: the Not in scope and Decisions of each issue closed since the
   last review, and the descriptions of the pull requests that closed them, are read for work put
   off as a later step, by the wide reader in the same read. Each item no open issue covers is
   filed, folded or dropped with the reason, as a reported find is (Each run, above).
 
-What it never does unasked: cut a line from a milestone, add a feature the arc does not name, or
-change what a milestone is for. Those are the gate review's questions (the skill `gate-review`).
+What it never does unasked: move a feature or a line the maintainer placed, take a line from the
+milestone being worked, add a feature the arc does not name, or change what a milestone is for.
+The last two are the gate review's questions (the skill `gate-review`).
 
 It then posts a **Queue review** on the Queue: what it merged, ordered, closed, placed and
 gathered, a line each with the reason, and the count of open issues beside the last review's.
@@ -84,5 +94,5 @@ is made.
 
 The maintainer's `Change:` under a review, or on an issue the review closed or moved, is recorded
 (the skill `record-answer`) and applied here, not built: the issue is reopened, the line put
-back, the "waits" taken off. The Queue takes no Decisions section: `· yours` says the maintainer
+back, ending `· yours`, the "waits" taken off. The Queue takes no Decisions section: `· yours` says the maintainer
 placed a line, and the issue's placing comment says who else did and why.

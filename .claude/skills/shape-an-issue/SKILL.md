@@ -51,7 +51,7 @@ coordinator shapes it in place, in the run the gate starts for it, at any hour:
 
 1. The maintainer's words stay at the top, quoted.
 2. The title is made an issue's title.
-3. It takes its area labels, and the milestone whose theme it fits.
+3. It takes its area labels. Its release, or Upkeep, comes with its line, in step 5.
 4. One that adds function is shaped as a feature and labelled `feature`, its Shape left for its
    design card. Any other gets a cause found in the code, then Done, Not in scope and Order.
 5. Its line goes in the Queue by the skill `place-an-issue`.
