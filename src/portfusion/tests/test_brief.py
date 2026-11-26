@@ -61,14 +61,14 @@ def pull(number, closes, draft=False, ref="claude/a-branch"):
 def test_a_run_finds_its_row_by_its_clock_or_by_the_gates_own_text(brief, table):
     """THE CASE THAT MAKES IT FAIL: a row found wrongly gives the run another's cap, and a builder
     started for an answer build that reads "Answer:" takes the coordinator's row. Each clocked row
-    is found at its own hour and for three hours after, and every text the gate sends finds the
-    row the gate's own table names."""
+    is found at its own hour and for less than `ROW_FOR` minutes after, and every text the gate
+    sends finds the row the gate's own table names."""
     clocked = [row for row in table if "its routine's clock" in row["What starts it"]]
     assert len(clocked) >= 3
     for row in clocked:
         said = brief.CLOCK.search(row["What starts it"])
         assert said, f"{row['Run']}: the brief reads no hour and days in \"{row['What starts it']}\""
-        for late in (0, 5, 179):       # the fixture's 2nd is a Wednesday
+        for late in (0, 5, brief.ROW_FOR - 1):       # the fixture's 2nd is a Wednesday
             at = int(said[1]) * 60 + int(said[2]) + late
             now = uk(brief, 2 + at // (24 * 60), at // 60 % 24, at % 60)
             assert brief.which(table, row["Level"].lower(), "", now)["Run"] == row["Run"], (row, late)
@@ -76,7 +76,8 @@ def test_a_run_finds_its_row_by_its_clock_or_by_the_gates_own_text(brief, table)
         assert brief.which(table, row["Level"].lower(), "", uk(brief, 2, at // 60 % 24, at % 60)) != row, \
             "hours past its clock, a run with no text is not that row's"
         # The fixture's 1st is a Tuesday: its 5th a Saturday, its 6th a Sunday and its 7th a Monday.
-        on = {"Monday to Friday": {1, 2, 3, 4, 7}, "Tuesday to Saturday": {1, 2, 3, 4, 5}}[said[3]]
+        on = {"Monday to Friday": {1, 2, 3, 4, 7}, "Tuesday to Saturday": {1, 2, 3, 4, 5}}.get(said[3])
+        assert on, f"\"{said[3]}\" is new to this test: state here the days of the fixture it means"
         for day in range(1, 8):
             found = brief.which(table, row["Level"].lower(), "", uk(brief, day, int(said[1]), int(said[2])))
             assert (found == row) if day in on else (found is None), \

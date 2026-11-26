@@ -29,7 +29,8 @@ import starts                           # noqa: E402 — the gate's table: the m
 from portfusion.log import log          # noqa: E402 — the brief runs without the venv: src/ is put first
 
 TABLE = "| Level | Run |"
-#: A clocked row's hour and its days, in the gate's own words for them, the longest tried first.
+#: A clocked row's hour and its days, in the runs table's words for them (`starts.DAYS`), the
+#: longest tried first.
 CLOCK = re.compile(r"(\d\d):(\d\d) UK time, (%s)"
                    % "|".join(map(re.escape, sorted(starts.DAYS, key=len, reverse=True))))
 NEXT = re.compile(r"^- \[ \] #(\d+) (.*)$")
