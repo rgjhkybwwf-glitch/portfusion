@@ -41,9 +41,10 @@ issue stopped.
   branch is brought level with `main` by merging, never by rebasing. `main` and the release tags
   are GitHub's to guard: their rulesets refuse a rewrite or a deletion from anyone.
 
-An issue with a branch of its own continues on
-it, brought level with `main` by merging. An open pull request from it is completed to the whole
-issue, its own "Part of #n" made "Closes #n"; a slice's "Part of" its feature stays.
+An issue with a branch of its own continues on it, brought level with `main` by merging. An open
+pull request from it is completed to the whole issue, its own "Part of #n" made "Closes #n"; a
+slice's "Part of" its feature stays, but for the last slice, whose pull request closes the
+feature too.
 
 ## 5. The work
 
@@ -57,8 +58,10 @@ each commit's diff reviewed before it is pushed (step 6).
   slice that turns a feature on is walked by the trial walker
   ([`.claude/agents/trial-walker.md`](../../agents/trial-walker.md)), over the whole feature by its
   Trial jobs, and its pull request shows each page's picture before and after.
-- **A slice of a feature**: it stays hidden until the last, registered on no page, tab or
-  report, and the last slice's pull request closes the feature too (the skill `slice-a-feature`).
+- **A slice of a feature**: it stays hidden until the last, registered on no page, no tab and
+  not on the report, unless it moves the store or a figure, which is never hidden (the skill
+  `review-and-merge`, Three are never clean). The last slice's pull request closes the feature
+  too. The rule is the coordinator's, in `slice-a-feature`, and nothing else there is a builder's.
 - **The release checklist**: the skills `release-read` and `release`.
 
 ## 6. The review, the guard, then one pull request
