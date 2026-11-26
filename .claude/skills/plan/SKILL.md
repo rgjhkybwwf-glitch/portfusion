@@ -1,6 +1,6 @@
 ---
 name: plan
-description: "Coordinator: writes an issue's plan, has the plan checker check it against the code, and posts it as Plan, checked (CONTRIBUTING.md, Building). A builder never writes one."
+description: "Coordinator: has the plan drafter draft an issue's plan from the code, settles it, has the plan checker check it, and posts it as Plan, checked (CONTRIBUTING.md, Building). A builder never writes one."
 ---
 
 # The plan and its check
@@ -25,6 +25,21 @@ Every line under Next, in order, so each build has a plan:
 The issue carries `building` while it is planned.
 
 ## Writing it
+
+The run puts the checkout on the latest `main` and starts the plan drafter
+([`.claude/agents/plan-drafter.md`](../../agents/plan-drafter.md)) with the issue and that commit
+of `main`, which is the commit the plan will name. For a line marked "Re-plan" it says too why
+the last plan fell: the "Re-plan" comment, or the answer recorded or the change on `main` since.
+The checkout does not move while a drafter or the plan checker is out; two drafts may be out
+together.
+
+The drafter reads the code, and the diff of the issue's own pull request where it has one, and
+returns a draft with a file and line for each claim, and under Open what the code did not settle.
+The run reads the issue and the draft, not the code again: it opens a file only where the draft's
+Open, or a claim it doubts, sends it. It settles each open point (the skill `ask-or-decide`), and
+the plan is its own: the drafter decides nothing and posts nothing. A draft that names another
+commit, or says it could not read a part the plan rests on, is drafted again, once; after that
+the run reads that part itself.
 
 The plan is a comment on its issue, against today's `main` and the issue's branch if it has one.
 It names:
