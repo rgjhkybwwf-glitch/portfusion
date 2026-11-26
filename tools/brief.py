@@ -29,7 +29,10 @@ import starts                           # noqa: E402 — the gate's table: the m
 from portfusion.log import log          # noqa: E402 — the brief runs without the venv: src/ is put first
 
 TABLE = "| Level | Run |"
-CLOCK = re.compile(r"(\d\d):(\d\d) UK time, (every day|Monday to Friday)")
+#: A clocked row's hour and its days, in the runs table's words for them (`starts.DAYS`), the
+#: longest tried first.
+CLOCK = re.compile(r"(\d\d):(\d\d) UK time, (%s)"
+                   % "|".join(map(re.escape, sorted(starts.DAYS, key=len, reverse=True))))
 NEXT = re.compile(r"^- \[ \] #(\d+) (.*)$")
 WAITS = re.compile(r"· waits (?:on )?((?:#\d+(?:, | and )?)+)")
 #: The release checklist's line waits on every line above it, in these words.
@@ -88,7 +91,7 @@ def which(table: list[dict[str, str]], level: str, text: str, now: datetime) -> 
         if said:
             late = (local.hour * 60 + local.minute - int(said[1]) * 60 - int(said[2])) % (24 * 60)
             day = (local - timedelta(minutes=late)).weekday()
-            if late < ROW_FOR and (said[3] == "every day" or day in starts.WEEK):
+            if late < ROW_FOR and day in starts.DAYS[said[3]]:
                 return row
     return None
 
