@@ -11,9 +11,29 @@ lines on the run log, one as it starts and one as it ends.
 Both are comments on the run log. Each opens with the run's mark, as the runs table gives it, then
 a date and a time, UK time. Neither asks anything, and neither pings anyone.
 
+## The brief
+
+Before anything else, the run asks for its brief, with the text it was started with if the gate
+started it:
+
+`python3 tools/brief.py builder` · `python3 tools/brief.py coordinator "Answer: …"`
+
+It reads GitHub once, writes nothing, and prints in a few lines: the run's row, cap and mark;
+whether the loop is paused; the level's last end line; the agent's open pull requests, each with
+its `guard`; and every line under Next with its labels, its plan, its own pull request and its open
+"waits". A builder is told the line to take. The coordinator is told how many plans stand, and
+what changed since its last run began: what merged and closed, what was filed, whose comments are
+on which issues, a start the gate failed to make, a tag, an open `Idea:`, a `building` label that
+is too old, and whether a Queue review is due.
+
+What the brief says, the run does not read again to find out: a builder does not read the Queue,
+and no run reads the run log or the list of the gate's runs. It still reads whole each issue,
+comment and pull request it acts on. What the brief lists under "Not read", and all of it when the
+brief fails, the run reads as its playbook says.
+
 ## The start line
 
-The run's first act, before it reads anything else:
+The run's first act on GitHub:
 
 `🌙 **Builder** · start · 17 Nov 00:30 · building the first planned line`
 
@@ -24,9 +44,10 @@ morning run" there: the next morning's digest reads from its end line.
 
 ## A paused loop
 
-Before the start line, read the Queue's labels. While it carries `paused`, a run its routine's
-clock started writes neither line and does nothing: it ends in one line, which begins `Next:`
-and says the loop is paused. The gate starts no run in a pause, so only a clock's run meets one.
+Before the start line, the brief says whether the Queue carries `paused`; without a brief, read
+the Queue's labels. While it carries `paused`, a run its routine's clock started writes neither
+line and does nothing: it ends in one line, which begins `Next:` and says the loop is paused. The
+gate starts no run in a pause, so only a clock's run meets one.
 
 ## The end line
 
