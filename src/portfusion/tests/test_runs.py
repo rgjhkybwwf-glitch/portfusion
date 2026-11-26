@@ -21,13 +21,13 @@ TICKED = re.compile(r"`([^`\n]+)`")
 LINKED = re.compile(r"\]\((?:\.\./)?\.claude/skills/([^/)]+)/SKILL\.md\)")
 SAID = re.compile(r"\bskills? `([^`\n]+)`")
 CITED = re.compile(r"\(([\w/.-]+\.md), ([^()]+)\)")
-#: The most words each kind of file may hold, its frontmatter apart. Every run reads the charter
-#: and its role book whole, and a step skill when its step comes: a file that outgrows its budget
-#: is cut or split, or the budget is raised here with the reason beside it. Words, not lines: a
-#: table's row is one line however long.
-BUDGET = {"the charter": 2550, "a role book": 1250, "a step skill": 1120}
-#: The copies of shared wording those files may hold between them.
-SHARED_WORDING_HIGH_WATER = 170
+#: The most words each kind of file may hold, its frontmatter and its links' addresses apart.
+#: Every run reads the charter and its role book whole, and a step skill when its step comes: a
+#: file that outgrows its budget is cut or split, or the budget is raised here with the reason
+#: beside it. Words, not lines: a table's row is one line however long.
+BUDGET = {"the charter": 2800, "a role book": 1350, "a step skill": 1250}
+#: The copies of shared wording those files may hold between them, a pointer counted as one word.
+SHARED_WORDING_HIGH_WATER = 190
 #: Each model by its name in the runs table, with its name in a helper's frontmatter.
 MODELS = {"Fable 5.2": "claude-fable-5-2", "Opus 5.5": "claude-opus-5-5",
           "Sonnet 5.5": "claude-sonnet-5-5", "Haiku 5.5": "claude-haiku-5-5"}
@@ -211,11 +211,15 @@ def test_a_rule_has_one_home(skills, section):
     assert len(homes) >= 80, "the rules' names were not found"
 
 
-def _words(text):
-    """A text's words, lower case, its links and ticked names apart: a pointer to a skill, a
-    file or a label is not wording, and naming one is how a rule is said once."""
-    text = re.sub(r"\[[^\]\n]*\]\([^)]*\)|`[^`\n]*`", " ", text)
-    return re.findall(r"[a-z0-9']+", text.lower())
+def _words(text, names="keep"):
+    """A text's words, lower case, as a run reads them: a link's address apart, its lines joined.
+    With `names="one"`, each link and each ticked name of one word counts as the one word "name":
+    a pointer to a skill, a file or a label is not wording, and naming one is how a rule is said
+    once. A ticked form or command of several words is wording, and stays."""
+    text = " ".join(text.split())
+    if names == "one":
+        text = re.sub(r"\[[^\]]*\]\([^)]*\)|`[^`\s]+`", " name ", text)
+    return re.findall(r"[a-z0-9']+", re.sub(r"\]\([^)]*\)", "]", text).lower())
 
 
 def test_each_file_a_run_reads_keeps_to_its_budget(skills, section):
@@ -234,10 +238,10 @@ def test_each_file_a_run_reads_keeps_to_its_budget(skills, section):
 def test_the_charter_and_the_skills_share_no_more_wording_than_they_did(skills, section):
     """One home a rule is held by its lead alone, so a rule said again under another lead would
     pass. This counts the wording itself: each time an eight-word run stands in a file of the
-    charter and the skills beyond its first. THE CASE THAT MAKES IT FAIL: a second skill is given
+    charter and the skills beyond its first, a link or a ticked name read as one word. THE CASE THAT MAKES IT FAIL: a second skill is given
     a copy of a rule to save its reader a step, and only one of the two is changed afterwards."""
     def runs_of(text):
-        words = _words(text)
+        words = _words(text, names="one")
         return {" ".join(words[i:i + 8]) for i in range(len(words) - 7)}
 
     texts = {"the charter": section, **{name: body for name, (_, body, _) in skills.items()}}
