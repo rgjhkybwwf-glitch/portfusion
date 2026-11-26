@@ -78,9 +78,9 @@ WORD = re.compile(r"^(change|hold|resume)\s*:", re.I)
 IDEA = re.compile(r"^idea\s*:", re.I)
 LINE = re.compile(r"^(?:\*\*)?(Re-plan|Build):")
 TAG = re.compile(r"^v\d+\.\d+\.\d+$")
-#: A line that was built closes with this label still on it and for this reason: its pull
-#: request's merge closed it. `notify.yml` takes the label off after, and an issue closed as a
-#: duplicate, or as one whose cause has gone, has another reason or no plan.
+#: A line that was built closes with this label still on it and for this reason, GitHub's own
+#: for an issue a merge closes. `notify.yml` takes the label off after. A planned issue closed
+#: as done by hand reads the same, and its top-up finds a place to fill all the same.
 PLANNED, DONE = "planned", "completed"
 
 
@@ -142,8 +142,8 @@ def text(key: str, number: str = "", url: str = "", tag: str = "") -> str:
                   f"\"Re-plan\" since their last \"Plan, checked\".",
         "build": f"the coordinator left a build, the last on {where}. Build the issues under Next "
                  f"marked \"Build:\" since their last \"Plan, checked\", and no other line.",
-        "topup": f"a planned line merged, the last {where}. Tick what merged, and plan the lines "
-                 f"under Next to the cap.",
+        "topup": f"a planned issue closed as done, the last {where}. Tick what merged, and plan "
+                 f"the lines under Next to the cap.",
     }
     said["change"] = said["answer"]
     return f"{STARTS[key].run}: {said[key]}"
@@ -185,9 +185,9 @@ def read(e: dict[str, str]) -> dict:
 
     elif event == "issues" and e.get("ACTION") == "closed":
         if PLANNED in e.get("LABELS", "").split(",") and e.get("REASON") == DONE:
-            key, said = "topup", f"#{number}, a planned line, was closed by a merge"
+            key, said = "topup", f"#{number}, a planned issue, closed as done"
         else:
-            said = f"#{number} was closed, and not as a planned line that merged"
+            said = f"#{number} closed, and not as a planned issue done"
 
     elif event == "issues" and e.get("ACTION") == "unlabeled":
         label = e.get("LABEL", "")

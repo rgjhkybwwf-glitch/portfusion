@@ -50,8 +50,9 @@ where each rule is kept. No run needs it, and no run changes it.
 - **The maintainer's answers start the answer run, in a batch.** The gate sees the owner's comment on an
   issue that begins `Q1:` or `All as recommended`, whatever its labels, or one that begins
   `Change:` on an issue or an agent's pull request, and starts the coordinator's answer run
-  thirty quiet minutes after the last, so answers given together make one run. Nothing of a
-  comment is passed, and the issue it names is only the last.
+  thirty quiet minutes after the last, so answers given together make one run; a merge in
+  those minutes brings the run forward to ten after it, and it takes the answers given by
+  then. Nothing of a comment is passed, and the issue it names is only the last.
 - **A re-plan starts the coordinator at once, by its comment.** A comment whose first line after
   the run's name is "Re-plan:" is all it takes: the gate sees it and, ten quiet minutes after the
   last, starts the re-plan run, so the plan is ready for the next build. No run starts a routine

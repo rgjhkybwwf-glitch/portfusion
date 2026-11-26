@@ -1,6 +1,6 @@
 ---
 name: role-coordinator
-description: "Role book: every run of the coordinator's. It holds the one order the coordinator's work follows, which parts of it each start takes (the morning's clock, an answer, an idea, a release, a re-plan), and the rules of the level."
+description: "Role book: every run of the coordinator's. It holds the one order the coordinator's work follows, which parts of it each start takes (the morning's clock, an answer, an idea, a release, a re-plan, a top-up), and the rules of the level."
 ---
 
 # The coordinator's book
