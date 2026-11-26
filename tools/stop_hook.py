@@ -50,7 +50,7 @@ LOGGED = (" This hold is logged: the run's end line on the run log says it (the 
 REASON = {
     "guard": "`guard` has not finished on {}. Wait for it in the foreground, by a command that "
              "polls the checks, fix it if it fails, and only then send the debrief "
-             "(CONTRIBUTING.md, Building and Telling the maintainer)." + LOGGED,
+             "(the skill `review-and-merge`; CONTRIBUTING.md, Telling the maintainer)." + LOGGED,
     "helper": "A helper agent has not returned: {}. Wait for its completion notification, by a "
               "command in the foreground, act on its result, and only then send the debrief "
               "(CONTRIBUTING.md, Telling the maintainer)." + LOGGED,

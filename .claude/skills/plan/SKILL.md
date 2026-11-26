@@ -1,21 +1,27 @@
 ---
 name: plan
-description: "Coordinator: has the plan drafter draft an issue's plan from the code, settles it, has the plan checker check it, and posts it as Plan, checked (CONTRIBUTING.md, Building). A builder never writes one."
+description: "Coordinator: has the plan drafter draft an issue's plan from the code, settles it, has the plan checker check it, and posts it as Plan, checked. It holds when a plan stands. A builder never writes one."
 ---
 
 # The plan and its check
 
-The rules are in `CONTRIBUTING.md`, The loop, Building: a plan, checked, before code, and
-when a plan stands.
+- **A plan, checked, before code, and the coordinator's.** The plan is the issue's latest
+  **Plan, checked**, which names the commit of `main` it was checked against. It stands while
+  `main` has not changed what it relies on since that commit, no answer recorded since changes
+  what it assumed, and no "Re-plan" comment follows it. A builder builds only on a plan that
+  stands, and never writes its own: a line without one it leaves for the coordinator, and names
+  it in its debrief.
+- **Every line under Next is planned ahead, in order, so each build has a plan**, until as many
+  lines carry `planned`, with no ready pull request of their own, as the run's cap.
 
 ## Which lines
 
-Every line under Next, in order, so each build has a plan:
+Every line under Next, in order:
 
 - A line marked "Re-plan" first, then each line whose "waits" have closed, until as many carry
   `planned` as the run's cap, those already standing included. A line whose issue's own pull
-  request is open and ready, not a draft, is built and holds no place (CONTRIBUTING.md, The loop).
-  A line marked "Re-plan" holds a place whatever its pull request's state.
+  request is open and ready, not a draft, is built and holds no place. A line marked "Re-plan"
+  holds a place whatever its pull request's state.
 - Each line's questions are settled as it is reached, a line whose "waits" are still open
   included, so an answer is in before its turn comes (the skill `ask-or-decide`).
 - Skipped: a feature, an issue labelled `planned`, `building` or `hold`, and one whose questions

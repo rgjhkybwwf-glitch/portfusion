@@ -1,6 +1,6 @@
 ---
 name: cold-walk
-description: "Builder: has the cold walker walk a changed desk page before its pull request opens, and fixes, folds or reports what it finds (CONTRIBUTING.md, Commits and pull requests, and Building)."
+description: "Builder: has the cold walker walk a changed desk page before its pull request opens, and fixes, folds or reports what it finds (CONTRIBUTING.md, Commits and pull requests)."
 ---
 
 # The cold walk

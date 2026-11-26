@@ -1,12 +1,14 @@
 ---
 name: dependencies
-description: "Coordinator: turns each Dependabot bump that does not merge itself, and each security alert, into an issue that meets the Definition of Ready (CONTRIBUTING.md, The ready check)."
+description: "Coordinator: turns each Dependabot bump that does not merge itself, and each security alert, into an issue that meets the Definition of Ready."
 ---
 
 # Keeping the dependencies
 
-The rule is in `CONTRIBUTING.md`, The loop, The ready check. A Dependabot pull request
-that stays in its major version merges itself (`dependabot-merge.yml`); this looks after the rest.
+**The coordinator keeps the dependencies**: a Dependabot pull request that does not merge itself
+(`dependabot-merge.yml`), and each security alert, becomes an issue. A bump that stays in its
+major version merges itself; this looks after the rest, and Dependabot's pull request for one of
+those is never merged on its own: the issue's pull request makes the bump and closes it.
 
 Each of these becomes an issue, unless an open issue covers it (the skill `shape-an-issue`):
 

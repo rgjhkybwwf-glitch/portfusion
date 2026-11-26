@@ -6,8 +6,8 @@ description: "Playbook: the coordinator's idea run, started when the maintainer 
 # The coordinator's idea run
 
 Started by the gate, ten quiet minutes after the maintainer last opened an issue titled `Idea:`,
-at any hour, with a text that begins "Idea:". The rules are in `CONTRIBUTING.md`, The loop,
-Asking and answering, and Which issues, in what order. The coordinator writes no code.
+at any hour, with a text that begins "Idea:". Each step's rules are in the skill named; the rules every
+run works by are in `CONTRIBUTING.md`, The loop. The coordinator writes no code.
 
 1. **The start line**: the skill `beat`, saying it was started by an idea.
 2. **All else that waits**: a start within another's quiet minutes takes its place

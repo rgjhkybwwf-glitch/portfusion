@@ -7,8 +7,8 @@ description: "Playbook: the coordinator's answer run, started by the maintainer'
 
 Started by the gate, thirty quiet minutes after the maintainer's last answer or `Change:`, with a
 text that begins "Answer:". Nothing of a comment is passed to the run: it finds the answers
-itself. The rules are in `CONTRIBUTING.md`, The loop, Asking and answering, and The
-answer run. The coordinator builds nothing.
+itself. Each step's rules are in the skill named; what starts the run is in `CONTRIBUTING.md`, The
+loop, The answer run. The coordinator builds nothing.
 
 1. **The start line**: the skill `beat`, saying it was started by an answer.
 2. **Find and record** every answer and `Change:`, before anything is built: the skill

@@ -175,18 +175,20 @@ Kept by review, and by the test named where there is one.
   branch's own. The review gives each finding a severity, and a cleanup takes a Nit's whatever it
   was given. An Important one, or one given none, is fixed in the branch, or said at the top of the
   pull request with why it stands. A Pre-existing one was there before the change, and is a find
-  outside it (Building, below), unless it is judged wrong: then it is said at the top with why, as
+  outside it (the skill
+  [`fix-fold-report`](.claude/skills/fix-fold-report/SKILL.md)), unless it is judged wrong: then it is said at the top with why, as
   an Important one is. A Nit is fixed only where the change caused it or on a line the change
   already touches, and a wrong one not at all; one left is listed nowhere, and is no find for
-  Building's rule. **The review's rounds end at two**: one on the work, one on its fixes, and a
+  that skill. **The review's rounds end at two**: one on the work, one on its fixes, and a
   last check of a fix the second caused. Of what the second review finds, only an Important
   finding its fixes caused is fixed, and that fix is reviewed once more, alone; every other
   finding of the second review, and every finding of that last check, is said at the top or
   left, by its severity as above, and not fixed. A push after the pull request opens (a CI fix, `main` merged in, pictures retaken) is
   reviewed the same way first. **What is said at the top is the maintainer's to read**: an
-  Important finding that stands keeps a run's pull request from being clean (Merging, below).
+  Important finding that stands keeps a run's pull request from being clean (the skill
+  [`review-and-merge`](.claude/skills/review-and-merge/SKILL.md)).
   The pull request's checklist names the level each commit was reviewed at. A
-  run's skeptic reviewer (Merging, below) reads the Done checks besides; it does not stand in for
+  run's skeptic reviewer (`review-and-merge`) reads the Done checks besides; it does not stand in for
   this review.
 - **A changed desk page is walked cold before its pull request opens**, by the cold walker
   ([`.claude/agents/cold-walker.md`](.claude/agents/cold-walker.md)), as
@@ -207,9 +209,11 @@ Kept by review, and by the test named where there is one.
 
 Unattended Claude sessions work the ready issues, and the maintainer checks in when they ask.
 The loop is in use and refined as it runs: each surprise becomes a rule here, a test, or a
-better-written issue. **This section is the agent's rules**: what must be true. **How
-each thing is done is a skill** under [`.claude/skills/`](.claude/skills), named where its rule
-is. A run changes neither.
+better-written issue. **This section holds the rules every run works by, whatever its step**:
+the two levels, the runs and what starts them, whose words count, the tiers, and what no run
+does. **A rule that belongs to one step is in that step's skill**, under
+[`.claude/skills/`](.claude/skills), with how the step is done; each part below names its skills.
+A run changes neither.
 
 **How it runs**
 
@@ -243,11 +247,13 @@ is. A run changes neither.
   setup script builds the venv on Python 3.13 and installs `tools/`. A routine's prompt names this
   section and its level; its schedule, model and effort are set on claude.ai to match the table,
   and nothing else is kept there.
-- **A playbook holds a run's order, a step skill one procedure.** A playbook names its step skills
-  in order and holds no procedure of its own. A step skill is written once and names no run, so a
-  duty moves between runs by moving one line, and a new run is one row and one playbook.
-  `test_runs.py` holds the pointers: every playbook the table names exists, every skill a playbook
-  or this file names exists, and none is left that nothing names.
+- **A playbook holds a run's order, a step skill one step: its rules and how it is done.** A
+  playbook names its step skills in order and holds no procedure of its own. A step skill is
+  written once, names no playbook and no run's wait, and points at no rule of this section: it
+  holds its own, so it can be followed when its step comes with nothing above it open. So a duty moves between runs by
+  moving one line, and a new run is one row and one playbook. `test_runs.py` holds the pointers:
+  every playbook the table names exists, every skill a playbook or this file names exists, none
+  is left that nothing names, and no step skill names this section.
 - **The loop works from four open issues**, which the skills call by name: **the Queue**, "Queue:
   what the loop builds next" (#206); **the run log** (#289); **the walk finds**, "Walk
   finds: to sort" (#220); and **the release checklist** (#156).
@@ -265,10 +271,8 @@ is. A run changes neither.
 - **A run has a cap**, its row's. A builder takes no more issues than it names; the coordinator's
   number counts plans that stand and are not yet built, those already standing included, not the
   lines it asks: a planned issue whose own pull request is open and ready, not a draft, is built
-  and holds no place, unless it is marked "Re-plan". No issue goes past a second attempt at a green
-  guard: one that will not go green is left as a draft pull request with what blocks it at the top,
-  and the run moves on. A run that is going nowhere stops and says so; it does not file issues to
-  show work.
+  and holds no place, unless it is marked "Re-plan". A run that is going nowhere stops and says
+  so; it does not file issues to show work.
 - **A dry run changes nothing.** A run whose starting text begins "Dry run" follows its playbook
   but writes nothing on GitHub and sends no push. Its last message says what it would have done,
   step by step: the way a changed playbook is rehearsed before it runs for real.
@@ -323,79 +327,25 @@ is. A run changes neither.
 
 **Which issues, in what order**
 
-- **An issue is ready when it meets its Definition of Ready and carries no `decision` label**, so
-  it can be built unattended and merged unread. The skill
-  [`shape-an-issue`](.claude/skills/shape-an-issue/SKILL.md) brings one to it. A fix, and a slice
-  of a feature, needs all five:
-  - **Cause**: what in the code makes the symptom, by file and function. A symptom alone is
-    evidence, not an issue. A slice's Cause is what the code lacks, by file and function.
-  - **Done**: the checks that say it is done, each one a test, a walk step or a command can make.
-  - **Not in scope**: what the fix leaves alone.
-  - **Decisions**: every question answered by the maintainer, quoted with the date, and every
-    choice a run decided in place of one, marked so (Asking and answering, below). An answer in
-    a comment counts; the agent copies it into this section before it starts.
-  - **Order**: what it waits on, and what waits on it. The issue's Order is the source; a Queue
-    line's "waits" only copies it.
-- **A feature, labelled `feature`, is ready when its shape is decided.** It is never built
-  itself; its slices are (Features, below). It has Not in scope, Decisions and Order, and:
-  - **Outcome**: who can do what they could not, on which page, in one sentence, and which job
-    of the direction page it serves.
-  - **Shape**: the option chosen on its design card, quoted with the date, and the options
-    declined.
-  - **Reach**: the stability rules it touches, the figures that move, and any store move with
-    its migration.
-  - **Slices**: two to six, in order. More than six makes it two features.
-  - **Introduction**: how it stays hidden until its last slice, and what that slice turns on.
-  - **Trial**: three jobs for the maintainer to try on their own book after the release.
-- **The milestone being worked is the lowest open milestone.** The Queue's Next holds only its
-  lines and ends with the release checklist, which stays open: each release ticks it, and the
-  release's pull request links to it.
-- **The gate: when only the checklist is left under Next, with any feature whose shape is not
-  decided, nothing of the next milestone is built.** The coordinator posts the gate review that
-  day (The ready check, below). The gate is answered when a comment headed "Gate review" for the
-  milestone is on the Queue and the Queue carries no `decision`; only then is the checklist
-  planned and worked: the answer run that applies the gate review marks it for a re-plan (The
-  answer run, below), or else the next morning run plans it.
-- **The checklist is never closed.** Its pull request says "For #156", not "Closes", and ticks
-  its boxes.
-- **The release's pull request names the release**, by the skill
-  [`release`](.claude/skills/release/SKILL.md), after the release's read
-  ([`release-read`](.claude/skills/release-read/SKILL.md)). It waits for the maintainer, since a
-  tag follows it.
-- **The tag and the milestone are the maintainer's.** They tag the release's merge and close the
-  milestone; no cloud session can push a tag.
-- **After the tag, the next milestone opens.** The gate starts the coordinator's release run ten
-  quiet minutes after the maintainer publishes the release, at any hour. Finding the release
-  tagged and its milestone closed, it moves the Queue's lines from after the gate to Next
-  ([`open-milestone`](.claude/skills/open-milestone/SKILL.md)) and plans the first of them, so
-  the next build has a plan; a builder opens the next version (`release`). A run that finds the
-  milestone still open says so and moves nothing, and the next morning run does it.
 - **The Queue sets the order.** It ranks the lines of the milestone being worked, unblockers first,
   then bugs and wrong figures, small safe fixes, features and polish. A run builds the first line
   under Next whose issue carries `planned` and none of `decision`, `building` and `hold`, has no
   open pull request of its own, and whose "waits" issues are all closed; it skips the rest and
-  never reorders. Nothing outside Next is built: an open pull request of an issue that is not under
-  Next is kept level and green, and nothing is added to it. Each issue is read whole, comments
-  included, before its work starts.
-- **The coordinator keeps the Queue current**, by the skill
-  [`keep-the-queue`](.claude/skills/keep-the-queue/SKILL.md): each run it ticks the line of each
-  pull request merged since its last and moves it to Done, and sorts what the builders reported.
-  It reads the Queue afresh just before each edit, since the maintainer may have changed it.
-- **Every issue has a place.** Each issue the coordinator files or shapes is given its labels, its
-  milestone and its line by the skill
-  [`place-an-issue`](.claude/skills/place-an-issue/SKILL.md): the first milestone whose purpose it
-  serves, by the direction's arc, among that milestone's lines in the order of the work. The
-  placement is decided, not asked, and the debrief names each and why. The maintainer moves a
-  line by editing the Queue, or with `Change:` on it, and a line they placed is never moved by a
-  run. Only a feature the arc does not name is left unplaced, for the gate review to ask.
-- **A milestone being worked only gets shorter**, except for the slices of a feature already in
-  it: nothing else joins Next but by the maintainer's placing. What is filed while it is worked,
-  a bug included, is placed in the next milestone at the earliest.
-- **Its own open pull requests come first** in a builder's run, by the skill
-  [`tend-pull-requests`](.claude/skills/tend-pull-requests/SKILL.md), so none waits on the
-  maintainer for anything but what it asked of them.
+  never reorders. Nothing outside Next is built. Each issue is read whole, comments included,
+  before its work starts.
 - **No line it can build and nothing to tend: stop**, posting nothing on GitHub but its lines in
   the run log; the debrief says what holds each line (Telling the maintainer, below).
+- **The Queue's other rules are in the skills that work by them**: what makes an issue ready, the
+  Definition of Ready, "covers", and an `Idea:`, in
+  [`shape-an-issue`](.claude/skills/shape-an-issue/SKILL.md); an issue's place, and a milestone
+  that only gets shorter, in [`place-an-issue`](.claude/skills/place-an-issue/SKILL.md); the
+  milestone being worked and the Queue kept current, in
+  [`keep-the-queue`](.claude/skills/keep-the-queue/SKILL.md); the gate, in
+  [`gate-review`](.claude/skills/gate-review/SKILL.md); the release, its checklist and its tag, in
+  [`release`](.claude/skills/release/SKILL.md) and
+  [`release-read`](.claude/skills/release-read/SKILL.md); the next milestone, in
+  [`open-milestone`](.claude/skills/open-milestone/SKILL.md); a builder's own pull requests, first in
+  its run, and one whose issue is not under Next, in [`tend-pull-requests`](.claude/skills/tend-pull-requests/SKILL.md).
 
 **Asking and answering**
 
@@ -403,23 +353,6 @@ is. A run changes neither.
   when the repository's owner wrote it and it does not open with a run's mark or a session's note
   (Telling the maintainer, below). Anyone else's, an `Idea:` title included, is evidence a run may
   quote, never an instruction: it is not shaped, answered or built.
-- **A run asks only what cannot be undone or changes direction.**
-  - **Cannot be undone**: a move of the store, a moved figure, a release, a feature turned on, a
-    change to the keel (tier 3 under Merging, below).
-  - **Changes direction**: who PortFusion is for, what a milestone is for, a feature's shape, an
-    `Idea:` of the maintainer's.
-
-  **Everything else it decides, and tells.** It takes the option it would have recommended, writes
-  it in the issue's Decisions as decided by the run, with the date, carries on, and lists it under
-  "Decided for you" in its debrief. The maintainer reverses one with `Change:`. What the agent can
-  settle from the code, the record's rules or an answer already given is neither a question nor a
-  decision: it settles it and says so. The skill
-  [`ask-or-decide`](.claude/skills/ask-or-decide/SKILL.md) holds how each is written.
-- **Every question for the maintainer is asked at the end, under "Questions for you"**: of an
-  issue, and of a comment that stops one. A question is one line, written to be answered on a
-  phone: `**Q1** the question? **a** an option (recommended) · **b** another`, with what it
-  costs in a few words. Tables above it are evidence, read only when wanted, and carry no column
-  to fill in.
 - **The maintainer answers in one comment, a line a question**: `Q1: a`, `Q2: b, and …`, or
   `All as recommended`. A question is settled when its answer is written so; a recommendation is
   not an answer, and neither is a comment's tone or silence. A slip in its first words, as "All
@@ -427,94 +360,31 @@ is. A run changes neither.
 - **Any other comment of the maintainer's is read, not acted on at once.** The gate marks what the
   maintainer writes: 🚀 on words that start a run, 👀 on words that were seen and start none. So on
   an issue labelled `decision`, 👀 says the comment was not read as an answer; the bot says nothing.
-  The next morning run reads it (The ready check, below); a reply beginning `Change:` holds the
-  work and is read sooner.
-- **The run that reads a full answer records it**, in the issue's Decisions, quoted with the date,
-  and takes `decision` off, by the skill
-  [`record-answer`](.claude/skills/record-answer/SKILL.md). An answer that leaves a question open
-  is asked again, for that question alone.
-- **A reply beginning `Change:` redirects an issue or one of the agent's pull requests**, and
-  reverses a choice a run decided. The gate marks it 🚀 and holds the work at once: the issue
-  takes `decision`, the pull request loses its auto-merge. The answer run then reads the change
-  and rewrites the issue to match (`record-answer`).
-- **An issue the owner opens with a title beginning `Idea:` is new work in their words.** The
-  coordinator shapes it in place, the maintainer's words kept at the top (`shape-an-issue`), in
-  the idea run the gate starts ten quiet minutes after, at any hour. An idea that is already an
-  open issue's is added to that issue and closed.
-- **A question is asked when its issue is under Next, not when it is filed.** One the agent
-  files, from a find or from a comment, has its Decisions read "Open: asked when it is under
-  Next"; it takes no `decision`, so it pings no one, and it is not ready. Once the issue is under
-  Next the coordinator asks or decides each, whether or not its "waits" have closed, so an answer
-  is in before its turn comes. Two are asked sooner, within the limit below: an `Idea:`'s, as it
-  is shaped, since the maintainer is waiting on it, and a feature's shape, on its design card. A
-  question written in a session the maintainer is part of keeps `decision` wherever its issue
-  stands, and is not asked again. An answer the maintainer gives early, in a comment, counts when
-  its line is planned.
-- **At most five questions stand open at once**, counting the milestone being worked's issues, a
-  design card's and a gate review's; questions on issues of a later milestone, written in a
-  session the maintainer is part of, apart. Beyond five it asks nothing new but what blocks the
-  first line under Next: an `Idea:`'s and a card's questions are written, and wait. While a card
-  of its own stands unanswered it posts no new one; the gate review is the exception (The ready
-  check, below).
+  The next morning run reads it; a reply beginning `Change:` holds the work and is read sooner.
+- **Asking, and recording an answer, are two skills.** The test for asking, how a question is
+  written, when it is asked and how many may stand open are in
+  [`ask-or-decide`](.claude/skills/ask-or-decide/SKILL.md). How an answer is recorded, and what a
+  `Change:` does, are in [`record-answer`](.claude/skills/record-answer/SKILL.md).
 
 **The ready check**
 
 The coordinator's morning run, whose order is its playbook.
 
-- **"Covers" is by the code, not the topic.** An open issue covers a find, an idea or a bump when
-  its Cause or Done names the same file and function; the coordinator reads every open issue's
-  Cause and Done for that before it files a new one.
-- **Every line under Next is planned ahead, in order, so each build has a plan**, by the skill
-  [`plan`](.claude/skills/plan/SKILL.md), until as many lines carry `planned`, with no ready
-  pull request of their own, as its cap.
-- **It keeps the dependencies**: a Dependabot pull request that does not merge itself
-  (`dependabot-merge.yml`), and each security alert, becomes an issue, by the skill
-  [`dependencies`](.claude/skills/dependencies/SKILL.md). Dependabot's own pull request is never
-  merged on its own.
 - **One long job, at most, a run**, after its plans: the gate review, else a Queue review that is
   due, else the design card or a decided feature's slices (Features, below). The rest wait for the
   next run, and its debrief says which.
-- **On Monday and Thursday it reviews the whole Queue, and acts**, by the skill
-  [`keep-the-queue`](.claude/skills/keep-the-queue/SKILL.md): it merges issues that duplicate one
-  another, writes the "waits" an overlap lacks, closes an issue whose cause no longer holds,
-  places any issue with no line, and gathers the walk finds into issues. None of it is asked: it
-  posts a **Queue review** on the Queue that lists what it did, each line with its reason, and
-  the maintainer reverses one with `Change:`. The Queue takes no `decision` for it, so it pings
-  no one. What it never does unasked is cut a line from a milestone, add a feature the arc does
-  not name, or change what a milestone is for: those are the gate review's. None is posted while
-  a gate review stands unanswered.
-- **On the day the gate is reached it posts the gate review** on the Queue, once, by the skill
-  [`gate-review`](.claude/skills/gate-review/SKILL.md). It asks at most five questions in all,
-  and only of three kinds: what shipped against the direction, keep or pull, and the next
-  milestone's shape. Its housekeeping is done and listed, not asked, and an idea never pings on
-  its own.
+- **The run's other rules are in its steps' skills**: the plans, in
+  [`plan`](.claude/skills/plan/SKILL.md); the dependencies, in
+  [`dependencies`](.claude/skills/dependencies/SKILL.md); the Queue's review on Monday and
+  Thursday, in [`keep-the-queue`](.claude/skills/keep-the-queue/SKILL.md); the gate review, in
+  [`gate-review`](.claude/skills/gate-review/SKILL.md).
 
 **Features**
 
-- **A design card asks a feature's shape.** The coordinator posts it on the issue of the line
-  under Design next in the Queue, or of a feature at the top of Next, by the skill
-  [`design-card`](.claude/skills/design-card/SKILL.md): above the fold, at most 150 words and
-  three questions.
-- **Two cards a week, at most.** When Design next is empty the coordinator fills it itself, with
-  the first feature that has no decided shape, lowest milestone first and in the order its
-  milestone's description gives. It posts a card when none stands unanswered and fewer than two
-  went up in the last seven days.
-- **One card is open at a time, and one feature is being built.** The rest wait as lines: a
-  feature's slices are written only when no other feature's slices stand open under Next. A card
-  unanswered is listed in the next gate review, and meanwhile the runs work what is ready.
-- **A decided shape becomes slices**, each an issue "Part of #n" that leaves `main` green with its
-  own changelog line, by the skill
-  [`slice-a-feature`](.claude/skills/slice-a-feature/SKILL.md). The last slice's pull request
-  closes the feature too.
-- **A slice stays hidden until the last**: nothing registers it on a page, a tab or the report.
-  One that moves the store or a figure is the exception (Merging, below). The last slice turns
-  the feature on. Its walk is the trial walker's, over the whole feature by its Trial jobs
-  ([`.claude/agents/trial-walker.md`](.claude/agents/trial-walker.md)), and its pull request
-  shows the maintainer each page's picture before and after.
-- **The trial is on the release.** The maintainer tries the Trial jobs on their own book, and
-  keep or pull is asked in the next gate review. Pull applies to display slices only: a store
-  move is not pulled back. A pull answered becomes an issue, its Decisions the answer, first
-  under Next; its pull request reverts the slices and is never clean.
+A feature's rules are in the skills that work it: its design card, how many go up and when, in
+[`design-card`](.claude/skills/design-card/SKILL.md); its slices, and how each stays hidden until
+the last, in [`slice-a-feature`](.claude/skills/slice-a-feature/SKILL.md); its trial, and keep or
+pull, in [`gate-review`](.claude/skills/gate-review/SKILL.md).
 
 **The answer run**
 
@@ -523,105 +393,45 @@ The coordinator's morning run, whose order is its playbook.
   `Change:` on an issue or an agent's pull request, and starts the coordinator's answer run
   thirty quiet minutes after the last, so answers given together make one run. Nothing of a
   comment is passed, and the issue it names is only the last.
-- **It records every answer and change, and builds nothing**: each is found by the comments, not
-  the labels (`record-answer`), and recorded before a builder is started, so a run started later
-  does not take the same issue. A `decision` label taken off by hand, and a trigger that names
-  one issue, hide nothing.
-- **An answer records a decision; only lines under Next are built.** Every answer is recorded,
-  wherever its issue stands. An issue not under Next, a feature, and the issue a design card was
-  answered on are left there: nothing of them is built, and the maintainer's placing or the
-  coordinator's slices come first. A card's answer takes its line out of Design next.
-- **An answered gate review is applied, not built** (`gate-review`), and so is a `Change:` on
-  the Queue, which undoes what a review did (`keep-the-queue`). The Queue is
-  never an issue to build and takes no Decisions section. A gate review's edit of
-  `docs/direction.md` may merge itself once `guard` is green, the answer being its yes.
-- **Then a builder builds the answered issues under Next whose plan still stands.** On each the
-  coordinator writes a comment whose first line after its name is "Build:", and the gate starts a
-  builder two quiet minutes after the last. It builds those issues one after another, in Queue
-  order, as a night build would, up to its cap, and no other line. A plan posted "if answered as
-  recommended" stands when every answer is the recommended one. Any other answer, an answer to a
-  question raised mid-build, and a `Change:` leave the plan no longer standing: the run writes a
-  comment whose first line after its name is "Re-plan:" and why, takes `planned` off, and leaves
-  the issue for the re-plan run. One still not ready, a question open or a "waits" issue open,
-  it names in its debrief and leaves.
 - **A re-plan starts the coordinator at once, by its comment.** A comment whose first line after
   the run's name is "Re-plan:" is all it takes: the gate sees it and, ten quiet minutes after the
   last, starts the re-plan run, so the plan is ready for the next build. No run starts a routine
   itself.
-- **A decision issue closes once it is decided** (`record-answer`). The Queue, the release
-  checklist, the walk finds, the run log and a feature are never closed so.
+- **What the run does is in its skills**: every answer and `Change:` recorded, what is marked
+  "Re-plan:" and "Build:", and a decision issue closed, in
+  [`record-answer`](.claude/skills/record-answer/SKILL.md); an answered gate review applied, in
+  [`gate-review`](.claude/skills/gate-review/SKILL.md).
 
 **Building**
 
-- **A plan, checked, before code, and the coordinator's** (`plan`). The plan is the issue's latest
-  **Plan, checked**, which names the commit of `main` it was checked against. It stands while
-  `main` has not changed what it relies on since that commit, no answer recorded since changes
-  what it assumed, and no "Re-plan" comment follows it. A builder builds only on a plan that
-  stands, and never writes its own: a line without one it leaves for the coordinator, and names
-  it in its debrief.
 - **One issue is worked by one run at a time.** A run labels the issue `building` before its
   first step on the issue, its branch or its pull request, and takes the label off when it leaves
   the issue: its pull request clean or left for the maintainer, or the issue stopped. Every other
   run leaves an issue that carries it alone. A `building` label more than three hours old is a
   run that died: the next run takes it off and says so.
-- **One issue, one branch, one pull request**, by the skill
-  [`build-an-issue`](.claude/skills/build-an-issue/SKILL.md): a branch claude/<name> from the
-  latest `main`, worked by the conventions above (changelog, own diff reviewed, a changed desk
-  page walked cold), the guard run, and the desk walk if a desk file changed. The pull request
-  says "Closes #n", and the agent goes on to the next issue without waiting for a merge.
-- **A pushed commit is never rewritten.** A fix, or a corrected message, is a new commit; a
-  branch is brought level with `main` by merging, never by rebasing. `main` and the release tags
-  are GitHub's to guard: their rulesets refuse a rewrite or a deletion from anyone.
-- **Done means `guard` green on the last push.** No pull request is called clean, and none is
-  left, until CI's `guard` has passed on its newest commit; a local run is a quick check, not the
-  proof.
-- **A choice that comes up mid-build is decided, and said at the top of the pull request.** Only
-  one that meets the test for asking (Asking and answering, above) stops the issue: it is asked,
-  the issue takes `decision` and loses `planned`, what is built so far is pushed to its branch
-  with no pull request, and the run moves on. Its answer leaves the plan to the coordinator, which
-  plans it again; then the issue starts again, whole, on that branch.
-- **Work set aside for later is never left in prose.** What an issue, a plan or a pull request
-  puts off as a later step ("its own issue", "a separate step", "later") is a find: a builder
-  reports it, and the coordinator files, folds or drops it with the reason, as any other. An
-  option a run or the maintainer declines is written with what would bring it back ("Revisit
-  when: …"), and the gate review lists each whose time has come (the skill
-  [`gate-review`](.claude/skills/gate-review/SKILL.md)).
-- **A find outside the change is fixed, folded or reported, in that order**, by the skill
-  [`fix-fold-report`](.claude/skills/fix-fold-report/SKILL.md): a small one in a file the change
-  already touches is fixed in the same pull request; otherwise it is folded onto the open issue
-  that covers it, as evidence; the rest are reported in the pull request, which lists all three.
-  Ahead of these, while #9 is open: a find about the look (colour, type, spacing, a part's shape)
-  is folded onto #9 as evidence, never restyled in place and never folded onto a page issue that
-  names the same file, unless the change is #9 or one of its slices; a find about behaviour or
-  words keeps the three routes.
-  A builder files no issue for a find: the coordinator sorts what is reported at its next run,
-  files what earns an issue, and says what it dropped. The cold walk keeps to the pages the
-  change touched.
-- **A CI failure on its pull request** is the agent's to fix, and it waits for the guard's result
-  before it leaves a pull request. **It waits in the foreground**, by a command that polls the
-  checks, run again until they finish, **never by ending its turn** (Telling the maintainer,
-  below). When the walk fails only because a page the issue meant to change looks different, the
-  agent retakes its pictures by the skill [`pictures`](.claude/skills/pictures/SKILL.md). The
-  pictures are the agent's to keep, compared on Linux alone; the maintainer never takes them, and
-  reads them only for a feature's last slice (Features, above). A failure the agent cannot fix is
-  said at the top of the pull request, with what would fix it.
+- **Building's other rules are in its steps' skills**: the plan, and when it stands, in
+  [`plan`](.claude/skills/plan/SKILL.md); one issue, one branch, one pull request, a commit never
+  rewritten, and no third attempt at a green guard, in [`build-an-issue`](.claude/skills/build-an-issue/SKILL.md); a choice that
+  comes up mid-build, in [`ask-or-decide`](.claude/skills/ask-or-decide/SKILL.md); a find outside
+  the change, and work set aside, in [`fix-fold-report`](.claude/skills/fix-fold-report/SKILL.md);
+  a CI failure, and `guard` green on the last push, in
+  [`review-and-merge`](.claude/skills/review-and-merge/SKILL.md), with
+  [`pictures`](.claude/skills/pictures/SKILL.md) for the walk's pictures.
 
 **Merging**
 
 How a pull request is taken to its end is the skill
-[`review-and-merge`](.claude/skills/review-and-merge/SKILL.md).
+[`review-and-merge`](.claude/skills/review-and-merge/SKILL.md), which holds the reviewer who did
+not build it, what makes a pull request clean, the three that never are, and what waits for the
+maintainer's yes.
 
-- **A reviewer who did not build it.** Before a pull request of tier 1 or above is called clean,
-  the skeptic reviewer ([`.claude/agents/skeptic-reviewer.md`](.claude/agents/skeptic-reviewer.md)),
-  given only the issue's "Done" checks and the diff, reviews it. Its findings are fixed, or said at
-  the top of the pull request.
 - **A pull request's risk tier is set by the paths it changes**, the highest of them, and
   `tiers.yml` labels it so (`tools/tiers.py` holds the paths):
 
   | Tier | Paths | Needs |
   |---|---|---|
   | 0 · words | `docs/`, `README.md`, `CHANGELOG.md` | `guard` and the builder's own review of its diff; no reviewer agent and no walk. Merges itself. |
-  | 1 · a page, or a procedure | anything not named in another tier: `CLAUDE.md`, the skills and the helper agents under `.claude/`, and the guard's other tools among them | the clean path below |
+  | 1 · a page, or a procedure | anything not named in another tier: `CLAUDE.md`, the skills and the helper agents under `.claude/`, and the guard's other tools among them | the clean path, in `review-and-merge` |
   | 2 · the engine | `engine/`, `house/`, `record/rules*.py`, `feeds/`, `history/`, the demo and `tools/make_demo.py` | tier 1, and the demo's headline figures worked on the base and on the branch (`tools/figures.py`) |
   | 3 · the keel: the store, the release and the guard's own | `record/schema.py`, `record/migrations.py`, `migrate/`, the release's `__version__`, `.github/`, `.githooks/`, `hooks/`, `.claude/settings.json`, the Stop hook, `pyproject.toml`, `requirements.lock`, the tools' `package.json` and lock, `tools/clean_room.py`, the tiers', the pictures' and the start gate's own tools, their tests, the Stop hook's and the runs', `pytest.ini` and pytest's other configuration files wherever they are, `CONTRIBUTING.md`, each test a stability rule names | always the maintainer's yes |
 
@@ -632,21 +442,6 @@ How a pull request is taken to its end is the skill
   judged and green draft it marks ready), and `tiers.yml` turns it off, once a commit, and says
   why. So the agent never turns it on for these. A new commit, a merge of
   `main` included, is asked again. A Dependabot pull request is left to `dependabot-merge.yml`.
-- **A clean pull request merges itself**: one that asks the maintainer nothing, passes the guard,
-  the walk and the reviewer (tier 0: the guard alone), and has its finds placed. A choice the run
-  decided, said at its top, keeps it clean; an Important review finding said there does not, and
-  waits for the maintainer's yes. The agent opens it as a draft, and turns its auto-merge
-  on only once the reviewer has come back and `guard` is green on its newest commit, as it marks
-  it ready; GitHub then merges it. Pictures retaken for a page the issue meant to change
-  keep it clean.
-- **Three are never clean**: a pull request that moves the store (a table or column of
-  `record/schema.py`, or a move in `record/migrations.py`), a slice that moves a figure (what an
-  engine method returns on the demo), and the slice that turns a feature on. `tiers.yml` holds the
-  store and a moved headline figure; any other figure, and the third, are the builder's to say. The first two are never
-  hidden: each says what moves at the top of its pull request, and in the changelog.
-- **Any other waits for the maintainer's yes**, auto-merge off, with what is needed from them at
-  the top of its description. The yes is the maintainer pressing Enable
-  auto-merge, so the merge is theirs and everything after it runs.
 
 **Telling the maintainer**
 
@@ -664,11 +459,6 @@ How a pull request is taken to its end is the skill
   waits, and takes the label off. An issue or pull request that closes loses it at once, and
   `planned` and `building` with it (`notify.yml`).
   A run the maintainer started tells them itself, in its debrief, at any hour.
-- **Nothing is left saying it is pending once it is not.** The first paragraph of an agent's pull
-  request says where it stands, between the marks `<!-- state -->` and `<!-- /state -->`, each on
-  a line of its own: that it
-  merges itself once `guard` is green, or what waits for the maintainer. When the pull request
-  merges or closes, `notify.yml` rewrites what is between the marks to say so, with the time.
 - **The bot comments only to ask, or when it turned auto-merge off.** Every issue and pull request
   is under the maintainer's account, so GitHub tells them of each comment the bot makes, whether
   it names them or not. A note that asks nothing (a pull request merging itself, a tier that
@@ -679,36 +469,12 @@ How a pull request is taken to its end is the skill
   notification before acting on its result, never on a guess of it. With nothing else left, it
   waits by a command in the foreground, as for CI, which the notification comes back with, never
   by ending its turn. CI is polled in the foreground.
-- **Each run writes two lines on the run log**, by the skill
-  [`beat`](.claude/skills/beat/SKILL.md): one as it starts, and one as it ends, which gives when
-  it began and ended, UK time, what it did in a line, each fault it met (How it runs, above), the
-  issues it decided a choice on, each page it published, and its `Next:` line. They are the source
-  for which run is at work, a run's length, its stops and its faults, and for the morning's
-  digest; they ask nothing and ping no one.
-- **A page a run publishes is named on its end line**, after the word `Page:`, by its title and
-  link. A routine runs outside the maintainer's project, so a page it publishes with the Artifact
-  tool is private to their account but missing from the project's list of pages; the project
-  copies in each page an end line names. The issue the page is for links it too.
-- **When nothing is left to wait for, the run takes its last three steps**, by the skill
-  [`end-of-run`](.claude/skills/end-of-run/SKILL.md): it stops watching each pull request it
-  leaves, writes its end line on the run log, then ends its turn with the debrief: what merged,
-  what waits on the maintainer, what it decided for them, each fault it met, each page it
-  published, or that it had nothing to do. **Its last line begins with the word `Next:`**, then who acts next, on what, and when, as
-  in "Next: the night build, at 00:30, builds #250." When no line under Next can be built, it names
-  each line and what holds it: a question (whose), no plan yet or a "Re-plan" (the coordinator's),
-  `building` (which run), an open pull request, a "waits" or the gate. None of the three is ever
-  done while something is still running. While a gate review stands unanswered, or a release
-  untagged, the debrief says in one line what the run waits on. A run woken after its debrief sends
-  no push, adds no second line to the run log, and ends in one line, which begins `Next:`.
-- **Only the coordinator sends a debrief to the maintainer's phone, and only for two kinds of
-  run.** Its morning run sends the day's digest: what merged, what waits on them, what was decided
-  for them, each fault met, with the number of runs that met it, and each page published, its own
-  and every run's since the morning run before it, read from each end line written on the run log
-  since that run's own, and a fault, a hold or a page added since to a line written before it, and any start the gate
-  failed to make. A run of its
-  own that the maintainer started, by an answer, a `Change:`, an `Idea:`, a release or a `Resume:`,
-  sends its debrief, since they wait for it. A builder's run and a re-plan a run began send none:
-  what they did is in the run log, and in the next morning's digest.
+- **The run log, the last steps and the debrief are two skills.** The run's two lines on the run
+  log, and a page named on its end line, are in [`beat`](.claude/skills/beat/SKILL.md). The last
+  three steps, the debrief, its last line that begins `Next:`, and which runs send it to the
+  maintainer's phone are in [`end-of-run`](.claude/skills/end-of-run/SKILL.md). A pull request's
+  first paragraph, which says where it stands, is in
+  [`review-and-merge`](.claude/skills/review-and-merge/SKILL.md).
 - **The Stop hook holds all three** (`tools/stop_hook.py`, run by `.claude/settings.json`): a run
   cannot end while an open pull request of a branch it pushed has `guard` running, nor while a
   helper agent it started has not returned, each for up to an hour a wait, nor, asked twice, with a

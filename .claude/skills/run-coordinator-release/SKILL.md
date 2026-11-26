@@ -7,8 +7,8 @@ description: "Playbook: the coordinator's release run, started when the maintain
 
 Started by the gate, ten quiet minutes after the maintainer publishes a release, at any hour,
 with a text that begins "Release:" and names the tag. The ten minutes are for the milestone's
-close, which follows the tag. The rules are in `CONTRIBUTING.md`, The loop, Which
-issues, in what order.
+close, which follows the tag. Each step's rules are in the skill named; the rules every run works by
+are in `CONTRIBUTING.md`, The loop.
 
 1. **The start line**: the skill `beat`, saying it was started by the release, with its tag.
 2. **All else that waits**: a start within another's quiet minutes takes its place

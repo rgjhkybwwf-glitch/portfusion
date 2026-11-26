@@ -1,26 +1,50 @@
 ---
 name: shape-an-issue
-description: "Coordinator: brings an issue, or the maintainer's Idea, to its Definition of Ready (CONTRIBUTING.md, Which issues, and Asking and answering)."
+description: "Coordinator: brings an issue, or the maintainer's Idea, to its Definition of Ready. It holds the two definitions, for a fix or a slice and for a feature, and what \"covers\" means."
 ---
 
 # Shaping an issue
 
-The Definitions of Ready, for a fix or a slice and for a feature, are in `CONTRIBUTING.md`, The
-loop, Which issues, in what order. What an `Idea:` is, and whose words start work, are
-under Asking and answering.
+## The Definition of Ready
+
+- **An issue is ready when it meets its Definition of Ready and carries no `decision` label**, so
+  it can be built unattended and merged unread. A fix, and a slice of a feature, needs all five:
+  - **Cause**: what in the code makes the symptom, by file and function. A symptom alone is
+    evidence, not an issue. A slice's Cause is what the code lacks, by file and function.
+  - **Done**: the checks that say it is done, each one a test, a walk step or a command can make.
+  - **Not in scope**: what the fix leaves alone.
+  - **Decisions**: every question answered by the maintainer, quoted with the date, and every
+    choice a run decided in place of one, marked so (the skill `ask-or-decide`). An answer in a
+    comment counts; the agent copies it into this section before it starts.
+  - **Order**: what it waits on, and what waits on it. The issue's Order is the source; a Queue
+    line's "waits" only copies it.
+- **A feature, labelled `feature`, is ready when its shape is decided.** It is never built
+  itself; its slices are (the skill `slice-a-feature`). It has Not in scope, Decisions and Order,
+  and:
+  - **Outcome**: who can do what they could not, on which page, in one sentence, and which job
+    of the direction page it serves.
+  - **Shape**: the option chosen on its design card, quoted with the date, and the options
+    declined.
+  - **Reach**: the stability rules it touches, the figures that move, and any store move with
+    its migration.
+  - **Slices**: two to six, in order. More than six makes it two features.
+  - **Introduction**: how it stays hidden until its last slice, and what that slice turns on.
+  - **Trial**: three jobs for the maintainer to try on their own book after the release.
 
 ## Does an open issue cover it?
 
-"Covers" is by the code, not the topic. Read every open issue's Cause and Done first, by the wide
-reader ([`.claude/agents/wide-reader.md`](../../agents/wide-reader.md)), which returns a short
-list: an open issue covers a find, an idea or a bump when its Cause or Done names the same file
-and function. A find about the look (colour, type, spacing, a part's shape) is covered by #9
-alone while it is open (the skill `fix-fold-report`). What is covered is added to that issue, as
-evidence, and no new issue is filed.
+**"Covers" is by the code, not the topic.** An open issue covers a find, an idea or a bump when
+its Cause or Done names the same file and function; the coordinator reads every open issue's
+Cause and Done for that before it files a new one, by the wide reader
+([`.claude/agents/wide-reader.md`](../../agents/wide-reader.md)), which returns a short list. A
+find about the look (colour, type, spacing, a part's shape) is covered by #9 alone while it is
+open (the skill `fix-fold-report`). What is covered is added to that issue, as evidence, and no
+new issue is filed.
 
 ## An `Idea:` issue
 
-Shaped in place:
+**An issue the owner opens with a title beginning `Idea:` is new work in their words.** The
+coordinator shapes it in place, in the run the gate starts for it, at any hour:
 
 1. The maintainer's words stay at the top, quoted.
 2. The title is made an issue's title.

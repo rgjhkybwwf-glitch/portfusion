@@ -1,14 +1,19 @@
 ---
 name: place-an-issue
-description: "Coordinator: gives every issue it files or shapes its labels, its milestone and its line in the Queue, and says where and why (CONTRIBUTING.md, Which issues)."
+description: "Coordinator: gives every issue it files or shapes its labels, its milestone and its line in the Queue, and says where and why. A milestone being worked only gets shorter."
 ---
 
 # Placing an issue
 
-The rules are in `CONTRIBUTING.md`, The loop, Which issues, in what order: the
-coordinator places every issue, the Queue sets the order, and a milestone being worked only gets
-shorter. A placement is decided, not asked (the skill `ask-or-decide`): the maintainer moves a
-line by editing the Queue, or with `Change:` on it.
+- **Every issue has a place.** Each issue the coordinator files or shapes is given its labels, its
+  milestone and its line: the first milestone whose purpose it serves, by the direction's arc,
+  among that milestone's lines in the order of the work. The placement is decided, not asked (the
+  skill `ask-or-decide`), and the debrief names each and why. The maintainer moves a line by
+  editing the Queue, or with `Change:` on it, and a line they placed is never moved by a run. Only
+  a feature the arc does not name is left unplaced, for the gate review to ask.
+- **A milestone being worked only gets shorter**, except for the slices of a feature already in
+  it: nothing else joins Next but by the maintainer's placing. What is filed while it is worked,
+  a bug included, is placed in the next milestone at the earliest.
 
 Read the Queue afresh just before each edit: the maintainer may have changed it.
 

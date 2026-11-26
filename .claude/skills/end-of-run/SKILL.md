@@ -1,12 +1,13 @@
 ---
 name: end-of-run
-description: "Any run: the run's last three steps, in order, once nothing is left to wait for. It stops watching its pull requests, writes its end line on the run log, and sends the debrief (CONTRIBUTING.md, Telling the maintainer)."
+description: "Any run: the run's last three steps, in order, once nothing is left to wait for. It stops watching its pull requests, writes its end line on the run log, and sends the debrief, whose last line begins Next."
 ---
 
 # Ending a run
 
-The rules, what the debrief's last line must say among them, are in `CONTRIBUTING.md`, The loop,
-Telling the maintainer. None of the three steps is taken while something is still running.
+**When nothing is left to wait for, the run takes its last three steps**: it stops watching each
+pull request it leaves, writes its end line on the run log, then ends its turn with the debrief.
+None of the three is ever done while something is still running.
 
 ## 1. Stop watching
 
@@ -46,30 +47,37 @@ A few lines, the message that ends the turn:
   none;
 - **Pages**: each page the run published, by its title and link. Left out when it published none;
 - or, with nothing merged, waiting, decided or published, that the run had nothing to do;
-- last, its `Next:` line, as CONTRIBUTING.md says, as in "Next: the night build, at 00:30, builds
-  #250."
+- last, its `Next:` line. **Its last line begins with the word `Next:`**, then who acts next, on
+  what, and when, as in "Next: the night build, at 00:30, builds #250." When no line under Next
+  can be built, it names each line and what holds it: a question (whose), no plan yet or a
+  "Re-plan" (the coordinator's), `building` (which run), an open pull request, a "waits" or the
+  gate.
+
+While a gate review stands unanswered, or a release untagged, the debrief says in one line what
+the run waits on.
 
 ## Which runs also send it to the phone
 
-Two, by the `PushNotification` tool, just before the message that ends the turn. No other run
+**Only the coordinator sends a debrief to the maintainer's phone, and only for two kinds of
+run**, by the `PushNotification` tool, just before the message that ends the turn. No other run
 pushes anything.
 
 - **The coordinator's morning run** sends the day's digest. Under the same five heads, what
   merged, what waits on the maintainer, Decided for you, Faults and Pages, it gives its own and
-  those of every run since the last morning run: it reads each end line on the run log written since the
-  end line of the morning run before it (the coordinator's line whose start line says "the
-  morning run", or
-  where none does, its last that began before 08:00 on a weekday), and of a line written before
-  that and edited since (the comment's `updated_at`), its faults, holds and pages alone, each
-  said as added since,
-  and, for each issue an end line's `Decided for you:` part names, up to its next `·`, the "Decided by the run" line in
-  that issue's Decisions. Under Faults, each fault an end line names after `Fault:` is said once,
+  those of every run since the last morning run, and any start the gate failed to make: it reads
+  each end line on the run log written since the end line of the morning run before it (the
+  coordinator's line whose start line says "the morning run", or where none does, its last that
+  began before 08:00 on a weekday), and of a line written before that and edited since (the
+  comment's `updated_at`), its faults, holds and pages alone, each said as added since, and, for
+  each issue an end line's `Decided for you:` part names, up to its next `·`, the "Decided by the
+  run" line in that issue's Decisions. Under Faults, each fault an end line names after `Fault:` is said once,
   with the number of runs that met it: one fault two lines say in different words is counted as
   one. With nothing merged, nothing waiting, nothing decided, no fault and no page, the digest is
   one line.
 - **A run of the coordinator's that the maintainer started**, by an answer, a `Change:`, an
-  `Idea:`, a release or a `Resume:`, sends its own debrief: they wait for it. A builder's run
-  sends none, an answer build included.
+  `Idea:`, a release or a `Resume:`, sends its own debrief: they wait for it. A builder's run,
+  an answer build included, and a re-plan a run began send none: what they did is in the run log,
+  and in the next morning's digest.
 
 ## A run the hook holds after its end line
 

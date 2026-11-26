@@ -1,12 +1,13 @@
 ---
 name: pictures
-description: "Builder: retakes the walk's pictures when CI's walk fails only because a page the issue meant to change looks different (CONTRIBUTING.md, Building)."
+description: "Builder: retakes the walk's pictures when CI's walk fails only because a page the issue meant to change looks different."
 ---
 
 # Retaking the pictures
 
-The rule is in `CONTRIBUTING.md`, The loop, Building: a CI failure on the agent's pull
-request is the agent's to fix, waited for in the foreground.
+A CI failure on the agent's pull request is the agent's to fix, waited for in the foreground (the
+skill `review-and-merge`). **The pictures are the agent's to keep**, compared on Linux alone; the
+maintainer never takes them, and reads them only for a feature's last slice.
 
 When the walk fails only because a page the issue meant to change looks different:
 
@@ -21,5 +22,3 @@ When the walk fails only because a page the issue meant to change looks differen
 
 The retake leaves no comment. What it did, or why it refused, is its `push` job's result, that
 job's log and the run's summary.
-
-The pictures are compared on Linux alone.

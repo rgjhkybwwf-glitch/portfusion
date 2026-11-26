@@ -1,19 +1,36 @@
 ---
 name: gate-review
-description: "Coordinator: posts the gate review on the Queue on the day a milestone's gate is reached, and applies the maintainer's answer to it (CONTRIBUTING.md, Which issues, and The ready check)."
+description: "Coordinator: posts the gate review on the Queue on the day a milestone's gate is reached, and applies the maintainer's answer to it."
 ---
 
 # The gate review
 
-The gate, when the review is posted and what it may ask are in `CONTRIBUTING.md`, The loop:
-Which issues, in what order, and The ready check.
+- **The gate: when only the checklist is left under Next, with any feature whose shape is not
+  decided, nothing of the next milestone is built.** The coordinator posts the gate review that
+  day. The gate is answered when a comment headed "Gate review" for the milestone is on the Queue
+  and the Queue carries no `decision`; only then is the checklist planned and worked: the run
+  that applies the gate review marks it for a re-plan (Applying its answer, below), or else the
+  next morning run plans it.
+- **On the day the gate is reached it posts the gate review** on the Queue, once. It asks at most
+  five questions in all, and only of three kinds: what shipped against the direction, keep or
+  pull, and the next milestone's shape. Its housekeeping is done and listed, not asked, and an
+  idea never pings on its own.
+- **The trial is on the release.** The maintainer tries the Trial jobs on their own book, and
+  keep or pull is asked in the next gate review. Pull applies to display slices only: a store
+  move is not pulled back. A pull answered becomes an issue, its Decisions the answer, first
+  under Next; its pull request reverts the slices and waits for the maintainer's yes (the skill
+  `review-and-merge`).
+- **An answered gate review is applied, not built**, and so is a `Change:` on the Queue, which
+  undoes what a review did (the skill `keep-the-queue`). The Queue is never an issue to build and
+  takes no Decisions section. A gate review's edit of `docs/direction.md` may merge itself once
+  `guard` is green, the answer being its yes.
 
 ## The review
 
 Posted on the Queue, once, headed "Gate review" with the milestone's name. It takes the Queue
 review's place that day, and asks each line waiting under the Queue's heading for it.
 
-**What it asks**, under "Questions for you", is of three kinds only, up to CONTRIBUTING's limit:
+**What it asks**, under "Questions for you", is of three kinds only, five questions at most:
 
 - **what shipped**, against the milestone's sentence in `docs/direction.md`, the direction page's
   open questions among them;
@@ -35,7 +52,7 @@ carried over is written where it belongs. Decisions that conflict are settled as
   the maintainer, whose "Revisit when" has come true since the last gate, or that has none and
   was declined more than one milestone ago, a line each with its issue. The maintainer reopens one
   with `Change:` or an `Idea:`;
-- the rules of The loop that cost a run a wrong turn, time or money, each with its run.
+- the loop's own rules that cost a run a wrong turn, time or money, each with its run.
 
 The Queue takes `decision`.
 
@@ -46,7 +63,7 @@ The Queue takes `decision`.
 2. Move issues between milestones.
 3. Write the next milestone's lines, in the order answered, under the Queue's heading for after
    the gate.
-4. File the issue for a pull (CONTRIBUTING.md, Features).
+4. File the issue for a pull (The trial is on the release, above).
 5. Edit `docs/direction.md` to the answer in a pull request that links the Queue. It may merge
    itself once `guard` is green, the answer being its yes.
 6. Take `decision` off the Queue.

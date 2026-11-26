@@ -1,16 +1,18 @@
 ---
 name: build-an-issue
-description: "Builder: builds one planned issue on a plan that stands. It claims the issue, works one branch by the conventions, runs the guard and opens one pull request (CONTRIBUTING.md, Building)."
+description: "Builder: builds one planned issue on a plan that stands. It claims the issue, works one branch by the conventions, runs the guard and opens one pull request."
 ---
 
 # Building an issue
 
-The rules are in `CONTRIBUTING.md`, The loop, Building, and the conventions above it. A
-builder builds only on a plan that stands, and never writes its own.
+A builder builds only on a plan that stands, and never writes its own: the skill `plan` says
+when one stands. The work follows `CONTRIBUTING.md`'s conventions, as any change does.
 
 ## 1. Read it whole
 
-The issue, its comments included, and its latest **Plan, checked**.
+The issue, its comments included, and its latest **Plan, checked**. An answer of the
+maintainer's that stands only in a comment is copied into the issue's Decisions, quoted with the
+date, before the work starts.
 
 ## 2. Confirm the plan still stands
 
@@ -31,9 +33,18 @@ issue stopped.
 
 ## 4. One branch
 
-A branch `claude/<name>` from the latest `main`. An issue with a branch of its own continues on
-it, brought level with `main` by merging. An open pull request from it is completed to the whole
-issue, its own "Part of #n" made "Closes #n"; a slice's "Part of" its feature stays.
+- **One issue, one branch, one pull request**: a branch `claude/<name>` from the latest `main`,
+  worked by the conventions (changelog, own diff reviewed, a changed desk page walked cold), the
+  guard run, and the desk walk if a desk file changed. The pull request says "Closes #n", and the
+  agent goes on to the next issue without waiting for a merge.
+- **A pushed commit is never rewritten.** A fix, or a corrected message, is a new commit; a
+  branch is brought level with `main` by merging, never by rebasing. `main` and the release tags
+  are GitHub's to guard: their rulesets refuse a rewrite or a deletion from anyone.
+
+An issue with a branch of its own continues on it, brought level with `main` by merging. An open
+pull request from it is completed to the whole issue, its own "Part of #n" made "Closes #n"; a
+slice's "Part of" its feature stays, but for the last slice, whose pull request closes the
+feature too.
 
 ## 5. The work
 
@@ -47,6 +58,10 @@ each commit's diff reviewed before it is pushed (step 6).
   slice that turns a feature on is walked by the trial walker
   ([`.claude/agents/trial-walker.md`](../../agents/trial-walker.md)), over the whole feature by its
   Trial jobs, and its pull request shows each page's picture before and after.
+- **A slice of a feature**: it stays hidden until the last, registered on no page, no tab and
+  not on the report, unless it moves the store or a figure, which is never hidden (the skill
+  `review-and-merge`, Three are never clean). The last slice's pull request closes the feature
+  too. The rule is the coordinator's, in `slice-a-feature`, and nothing else there is a builder's.
 - **The release checklist**: the skills `release-read` and `release`.
 
 ## 6. The review, the guard, then one pull request
@@ -70,5 +85,5 @@ Run the guard, and the desk walk if a desk file changed. Open one pull request, 
 says "Closes #n" ("For" the release checklist, which is never closed), with any choice the run
 decided at its top. Then the skill `review-and-merge`, which marks it ready at its end.
 
-No issue goes past a second attempt at a green guard: one that will not go green is left as a
-draft pull request with what blocks it at the top, and the run moves on.
+**No issue goes past a second attempt at a green guard**: one that will not go green is left as
+a draft pull request with what blocks it at the top, and the run moves on.
