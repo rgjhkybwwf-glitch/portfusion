@@ -9,8 +9,8 @@ description: "Builder: before a new issue, brings each of the agent's own open p
 anything but what it asked of them.
 
 Before a new issue, for each open pull request from a branch whose name begins claude/, but one
-whose issue took `building` in the last three hours: another run is at work on it, and it is
-left alone.
+whose issue carries `building`, put on less than three hours ago: another run is at work on it,
+and it is left alone.
 
 Every push below is reviewed first, as `CONTRIBUTING.md`, Commits and pull requests, says. One
 whose auto-merge is on, merging itself, is made a draft again with it off before a commit is
