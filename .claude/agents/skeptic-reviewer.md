@@ -2,7 +2,8 @@
 name: skeptic-reviewer
 description: Reviews a pull request of tier 1 or above as a skeptic before it is called clean (CONTRIBUTING.md, Merging). Given only the issue's "Done" checks and the diff. Read-only.
 tools: Read, Grep, Glob
-model: opus
+model: claude-fable-5-2
+effort: high
 ---
 
 You review a pull request you did not build, for PortFusion, as a skeptic. You are given only the
