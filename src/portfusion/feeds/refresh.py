@@ -22,9 +22,9 @@ statement, because the reader lives in the desk and this module may not import i
 (the import contracts in `pyproject.toml`). A past day has no equity: a reading is an instant.
 
 IT WRITES THE HISTORIES ONLY: the command banks the marks on file to the price and FX histories,
-and never writes `store/`. The desk's Price Refresh is the door: it banks the outgoing marks,
-writes the ticked lines and banks those, in one operation. Nothing printed here is for pasting
-into `store/`.
+and writes no table of the record. The desk's Price Refresh is the door: it banks the outgoing
+marks, writes the ticked lines and banks those, in one operation. Nothing printed here is for
+pasting into `store/`.
 """
 
 import datetime as _dt
@@ -239,7 +239,7 @@ def main(argv):
     # ---- 3: what the human does next -------------------------------------------------
     _rule("STEP 3 of 3 — over to you")
     log.info("""
-  Nothing above is written. Take the lines in the desk's Price Refresh (portfusion desk), which
+  Step 2's lines are not written. Take them in the desk's Price Refresh (portfusion desk), which
   banks the outgoing marks, writes the ticked ones and banks those in one operation.
 """)
     return 0

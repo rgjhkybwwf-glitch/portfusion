@@ -3,10 +3,9 @@
 The third store door, beside `commit.py` (appends an event) and `marks.py` (replaces a mark).
 `store/account-readings.csv` is what `Book.reconciliation()` compares the book to.
 
-THE MARKS RULE COVERS THIS. *A feed may write a MARK — "a price, an FX rate, live equity" — on
-the owner's per-line tick.* Live equity is named in that sentence. This door is not a new
-permission; the marks rule grants it. The journal route is `marks` for the same reason: this is a
-marks-class door, not a fourth kind of write.
+THE MARKS RULE COVERS THIS: its one sentence, in `desk/actions.py`, names live equity and this
+door. This door is not a new permission; the marks rule grants it. The journal route is `marks`
+for the same reason: this is a marks-class door, not a fourth kind of write.
 
 WHAT IT REPLACES, AND WHAT IT LEAVES ALONE
 ------------------------------------------

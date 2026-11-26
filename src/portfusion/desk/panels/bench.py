@@ -64,9 +64,9 @@ WHY = [
      "be pulled again, but it is not the dated statement a quarter is checked against. When "
      "the item is written the document is filed with it; one you don't need can be withdrawn."),
     ("A swept event",
-     "Sweep IG events reads the buys, sales, costs and money in or out of each IG account over "
-     "the look-back chosen beside it, never before the account's record began, and checks each "
-     "against the record by its IG deal number. The sweep "
+     "Sweep IG events reads the buys, sales, costs, a bet's dividends and money in or out of "
+     "each IG account over the look-back chosen beside it, never before the account's record "
+     "began, and checks each against the record by its IG deal number. The sweep "
      "writes nothing. Anything the record doesn't have offers \"work it\", which puts it on "
      "the Bench with its figures and evidence filled in; the reason is yours to write."),
     ("Writing it to the record",
@@ -144,8 +144,9 @@ register(Action(
     reaches="network",
     gate=("The owner clicks it, and the window is theirs. Nothing is swept when the panel is "
           "merely opened — a call to the broker is not something to make by arriving."),
-    summary=("Reads IG buys, sales, costs and money in or out over the chosen look-back, and "
-             "checks each against the record by its deal number. It writes nothing."),
+    summary=("Reads IG buys, sales, costs, dividends and money in or out over the chosen "
+             "look-back, and checks each against the record by its deal number. It writes "
+             "nothing."),
     run=sweep.ig_events,
 ))
 

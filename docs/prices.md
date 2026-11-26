@@ -25,7 +25,7 @@ they are meant to.
 **Refresh the whole book or none of it**, when every venue it holds is trading, so every line
 comes back live. Outside that window the sweep still runs: a venue not yet open gives its last
 close, and one that has shut gives that day's close. The audit flags a book whose oldest mark is
-older than `PRICE_AGE_LIMIT`.
+older than `PRICE_AGE_LIMIT`. Prices are a weekly job ([`direction.md`](direction.md), For whom).
 
 **A quarter end needs no sweep of its own.** The freeze takes each line's nearest mark within
 `CLOSE_CHECK_WINDOW_DAYS`. For that day's closes instead, use Price Refresh's *closes of* date,

@@ -140,7 +140,7 @@ register(Action(
           "source and a date cannot be ticked at all."),
     summary=("Bank the outgoing prices and IG readings, replace them with the ticked ones, then "
              "bank those. One operation: if any part of it is refused, every file is left exactly "
-             "as it was. A feed may write a price, a rate or live equity on the "
-             "owner's tick, and never an event."),
+             "as it was. The desk writes the ticked prices, rates and live equity; a feed "
+             "writes none of them."),
     run=marks.refresh,
 ))
