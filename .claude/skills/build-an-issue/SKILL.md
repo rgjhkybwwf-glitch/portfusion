@@ -57,6 +57,8 @@ each commit's diff reviewed before it is pushed (step 6).
   slice that turns a feature on is walked by the trial walker
   ([`.claude/agents/trial-walker.md`](../../agents/trial-walker.md)), over the whole feature by its
   Trial jobs, and its pull request shows each page's picture before and after.
+- **A slice of a feature**: it stays hidden until the last, registered on no page, tab or
+  report, and the last slice's pull request closes the feature too (the skill `slice-a-feature`).
 - **The release checklist**: the skills `release-read` and `release`.
 
 ## 6. The review, the guard, then one pull request

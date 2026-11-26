@@ -10,7 +10,7 @@ description: "Coordinator: posts the gate review on the Queue on the day a miles
   day. The gate is answered when a comment headed "Gate review" for the milestone is on the Queue
   and the Queue carries no `decision`; only then is the checklist planned and worked: the run
   that applies the gate review marks it for a re-plan (Applying its answer, below), or else the
-  coordinator's next run plans it.
+  next morning run plans it.
 - **On the day the gate is reached it posts the gate review** on the Queue, once. It asks at most
   five questions in all, and only of three kinds: what shipped against the direction, keep or
   pull, and the next milestone's shape. Its housekeeping is done and listed, not asked, and an
