@@ -98,8 +98,8 @@ ARCHIVE_CONVENTION = (
 # THE TWO PRICE-FRESHNESS LIMITS, together because they catch different defects:
 #
 #   PRICE_AGE_LIMIT     the OLDEST mark against TODAY: the book has not been refreshed in a while.
-#                       Generous, because the practice is weekly or wider (`docs/prices.md`), and
-#                       a rule that fires on a normal week gets ignored.
+#                       Generous, because the practice is weekly (`docs/prices.md`), and a rule
+#                       that fires on a normal week gets ignored.
 #   PRICE_SPREAD_LIMIT  the oldest mark against the NEWEST: a ticker missed in a sweep, which the
 #                       age limit cannot see. Four days covers the two-feed split (shares at a
 #                       close, IG levels live the next trading day) with slack.

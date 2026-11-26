@@ -5,7 +5,9 @@ the other routes in `desk/app.py` are not actions. What may write a file at all 
 
 THE MARKS RULE IS ENCODED HERE AS STRUCTURE, NOT PROSE:
 
-    a feed may write a MARK on the owner's tick.  A feed may NEVER write an EVENT.
+    a price, an FX rate or live equity a feed read may be written on the owner's tick, by the
+    desk's doors (`desk/doors/marks.py`, `desk/doors/observations.py`); no action may write
+    an EVENT.
 
 `writes` is three-valued — None / "marks" / "events" — and deliberately NOT a boolean. A
 boolean would make "does this write?" answerable and "what may it write?" unanswerable, and the
