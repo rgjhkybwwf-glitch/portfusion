@@ -411,10 +411,10 @@ h2, .text-head { font-size: var(--text-head); font-weight: 600; letter-spacing: 
 .chart .point { fill: var(--surface); stroke: var(--series, var(--chart-1)); stroke-width: 2.5; }
 .chart .fill-top { stop-color: var(--series, var(--chart-1)); stop-opacity: 0.22; }
 .chart .fill-end { stop-color: var(--series, var(--chart-1)); stop-opacity: 0; }
-.chart .bar, .chart .dot { fill: var(--series, var(--chart-1)); }
+.chart .block, .chart .dot { fill: var(--series, var(--chart-1)); }
 .chart .ring { fill: none; stroke: var(--series, var(--chart-1)); }
 .chart text { font-size: var(--text-label); fill: var(--muted); }
-.chart text.name { fill: var(--ink); }
+.chart text.plain { fill: var(--ink); }
 .chart text.amount { font-weight: 600; fill: var(--ink); }
 .chart text.whole { font-size: var(--text-head); }
 .chart .keys { display: flex; flex-wrap: wrap; gap: 4px 14px; padding: 0 4px 8px; }
