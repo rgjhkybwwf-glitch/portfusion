@@ -250,7 +250,7 @@ def test_the_gate_keeps_no_clock_and_no_routines_clock_is_in_the_working_day(sta
                if "its routine's clock" in row["What starts it"]}
     hours = {}
     for run, row in clocked.items():
-        said = re.fullmatch(r"(\d\d):(\d\d) UK time, (every day|Monday to Friday), "
+        said = re.fullmatch(r"(\d\d):(\d\d) UK time, (every day|Monday to Friday|Tuesday to Saturday), "
                             r"by its routine's clock", row["What starts it"])
         assert said, (run, row["What starts it"])
         at = time(int(said.group(1)), int(said.group(2)))
