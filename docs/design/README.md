@@ -1,8 +1,9 @@
 # The new look: the design system
 
 The look the desk's new frame is built in, drawn once, on the demo book. It is the drawing the
-maintainer agreed on 20 Nov 2026 (#9, Decisions) and the dark scheme they chose on 25 Nov 2026,
-written as two stylesheets, a sheet and three pages. It is the design system the loop's builders
+maintainer agreed on 20 Nov 2026 (#9, Decisions), the dark scheme they chose on 25 Nov 2026 and
+the three book-wide lists they agreed on 27 Nov 2026, written as two stylesheets, a sheet and six
+pages. It is the design system the loop's builders
 work from: every value of the look, every part and each of its states, the light and shadow, the
 glass and the motion, in light and in dark. Whoever builds a part can open the sheet, read the
 rule, and compare what they built.
@@ -18,7 +19,10 @@ figure in it is worked out. Every name and figure is the demo's.
 | [`parts.html`](parts.html) | the sheet: every token printed from the two stylesheets, light beside dark, and every part drawn in each of its states, in both schemes |
 | [`home.html`](home.html) | Home, the book: the lead card, two figure cards, what the record needs, the accounts, the largest holdings, the value at each quarter end, and the latest events |
 | [`companies.html`](companies.html) | the Companies list: chips for held, sold and all, a find field, every company in one table that sorts, and its total |
-| [`company.html`](company.html) | a company's page: the lead card with its tiles, the status panel, and six tabs: the overview (lines held and a chart), trades, round trips, income (empty in the demo), the marks, and the reasoning |
+| [`company.html`](company.html) | a company's page: the lead card with its four tiles, the status panel, and six tabs: the overview (lines held and a chart), trades and round trips (each row opening in place), income (empty in the demo), the marks, and the reasoning |
+| [`trades.html`](trades.html) | the Trades list: chips for buys, sales and adjustments, an account and a quarter to choose, a find field, and every trade in one table that sorts, each opening in place |
+| [`round-trips.html`](round-trips.html) | the Round trips list, in two tabs: by holding, with chips for closed out and part closed, an account and a quarter, a find field and its total; and by company life, each company's cost and gain from its first trade to now |
+| [`what-changed.html`](what-changed.html) | what the last price refresh moved, the shares and the spread bets apart, each move split into price, FX and dealing; then what the record learned since, newest first |
 
 ## Opening it
 
@@ -30,11 +34,16 @@ open docs/design/parts.html             # on the Mac, in the default browser
 
 A run with Playwright opens `file://<checkout>/docs/design/home.html` the same way. On Home,
 Quenlan Robotics Inc.'s row opens the company's page, and "Back to Home" returns. The company's
-six tabs each show their own section. Home's "All 5 companies" and the menu's Companies open the
-Companies list, where the chips, the find field and the heads that sort work on the demo's five
-companies. Nothing else on the pages leads anywhere: only these three pages are drawn so far.
+six tabs each show their own section, and a trade or a round trip on them opens in place. Home's
+"All 5 companies" and the menu's Companies open the Companies list, where the chips, the find
+field and the heads that sort work on the demo's five companies. The menu's three Lists lines
+open the lists, where the chips, the choice boxes, the find field and the heads that sort work on
+the demo's rows, a row opens in place, and a total follows what is shown. A trade's "Its round
+trip" opens Round trips, a round trip's "Its trades" opens Trades, and a company life's "Its
+round trips" shows them by holding, found by the company. Only Quenlan Robotics Inc.'s page is
+drawn, so only its "Open the company" leads anywhere; nothing else on the pages does.
 
-The three pages are drawn in the scheme the Mac is set to, as the desk will be. To see the other,
+The pages are drawn in the scheme the Mac is set to, as the desk will be. To see the other,
 change the Mac's Appearance (System Settings, Appearance), or open the page in Playwright with
 `colorScheme: "dark"`. The sheet draws both side by side, whatever the Mac is set to.
 
@@ -124,6 +133,7 @@ not drawn, and is not invented on a page.
 | a well | `.well` | sunken |
 | a table | `.scroll`, `.table`, `.cols`, `.row`, `.n`, `.dim`, `.two` | a row under a soft rule; figures to the right, in tabular numerals, and a cell never wraps; a cell with a smaller second line (`.two`). The scroll box keeps 4px of room round the table for the keyboard's ring |
 | a row that opens its object | `.table > a.row` | at rest, its name in the accent's ink and no rule under it; under the pointer (`--accent-soft`); the keyboard |
+| a row that opens in place | `.table > button.row`, `.opened`, `.whys`, `.why`, `.go` | as a row that opens its object; opened (`aria-expanded="true"`): it keeps the soft fill and holds its record under it, the record's fields (a field grid), its whys, each a label and its words or a gap tag when it is owed, and where to go next. One row is open at a time. For a record read in its list: a trade, a round trip, a company's life |
 | a head that sorts | `.sort` | at rest, in the heads' muted ink; under the pointer, in the ink; the order, down or up (`data-sort`: in the ink, with an arrow); the keyboard |
 | the total row | `.row.total` | under a full rule, in the names' weight |
 | an empty table | `.empty` | one line under the heads, saying so, and where to look instead |
@@ -146,6 +156,12 @@ at work** (`aria-busy="true"` and `aria-disabled="true"`) keeps its violet and h
 what it is doing in the present ("Refreshing prices…"), and turns a small ring before its words,
 so a long wait never looks stuck; the keyboard keeps its place on it. The maintainer chose both on
 25 Nov 2026, from two ways of each drawn side by side.
+
+A **price is written in its own currency, with no symbol**, as the house prints a local price
+(`house/precision.py`): a share's to four places in GBP and two in USD, and a spread bet's level
+in points. A table says its currency in a Ccy column just before its first price, "—" for a spread
+bet, and an amount in pounds says so in its head, "Value (GBP)". The maintainer agreed this with
+the lists, on 27 Nov 2026.
 
 ## Motion
 
@@ -304,9 +320,9 @@ Each is drawn when the maintainer gives it, and until then no page or part decid
 - **The app's own icons.** The tab's, the Dock's and the touch icon are the mark on its tile, and
   are drawn when the frame is turned on (#347). On a dark ground the mark is the same violet
   tile.
-- **Every other page.** Accounts, Quarters, the Inbox, Prices and the lists are drawn
-  one by one, each before it is built (#9, Order). A page not drawn yet is made of the parts
-  on the sheet; a part it needs that is not on the sheet is asked for, never invented on the page.
+- **Every other page.** Accounts, Quarters, the Inbox and Prices are drawn one by one, each
+  before it is built (#9, Order). A page not drawn yet is made of the parts on the sheet; a part
+  it needs that is not on the sheet is asked for, never invented on the page.
 - **Safari.** The pages were checked in Chromium. The glass is written with the
   `-webkit-backdrop-filter` Safari reads, with its values typed, and has not been looked at there.
 - **A phone** is a later study. The pages wrap as the browser narrows, and that is all.

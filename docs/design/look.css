@@ -354,20 +354,41 @@ h2, .text-head { font-size: var(--text-head); font-weight: 600; letter-spacing: 
 .table > .row { min-height: var(--h-row); color: var(--ink); border-bottom: 1px solid var(--divider-soft); }
 .table .n { text-align: right; }
 .table .dim { color: var(--muted); }
-/* A row that opens its object: no rule under it, a soft fill under the pointer, its name in the
-   accent's ink. */
-.table > a.row { text-decoration: none; border-bottom-color: transparent; border-radius: var(--r-row); transition: background var(--dur-pointer) ease; }
-.table > a.row:is(:hover, [data-as~="over"]) { background: var(--accent-soft); color: var(--ink); }
-.table > a.row .name { color: var(--accent-ink); }
+/* A row that opens its object, or opens in place: no rule under it, a soft fill under the
+   pointer, its name in the accent's ink. */
+.table > :is(a, button).row { text-decoration: none; border-bottom-color: transparent; border-radius: var(--r-row); transition: background var(--dur-pointer) ease; }
+.table > :is(a, button).row:is(:hover, [data-as~="over"]) { background: var(--accent-soft); color: var(--ink); }
+.table > :is(a, button).row .name { color: var(--accent-ink); }
+/* A row that opens in place: a trade, a round trip, a company's life. Opened, it keeps the fill
+   and holds its record under it: the record's fields, its whys, and where to go next. One row is
+   open at a time. */
+.table > button.row { width: 100%; background: transparent; }
+.table > button.row[aria-expanded="true"] { background: var(--accent-soft); border-radius: var(--r-row) var(--r-row) 0 0; }
+.table > .opened {
+  background: var(--accent-soft); border-radius: 0 0 var(--r-row) var(--r-row);
+  padding: 6px var(--inset) 16px; margin-bottom: 4px;
+  display: flex; flex-direction: column; gap: 16px; white-space: normal;
+}
+.opened .whys { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px 24px; }
+.opened .why { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+.opened .go { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; }
 .table.holdings > * { grid-template-columns: 2fr 1.4fr 1fr 1fr; }
-.table.lines > * { grid-template-columns: 1fr 2.05fr 1.45fr 0.95fr 0.95fr 1.15fr 1.95fr; }
-.table.trades > * { grid-template-columns: 1.2fr 0.6fr 1fr 1.8fr 1.3fr 0.8fr 1fr; }
+.table.lines > * { grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.65fr) minmax(0, 1.2fr) minmax(0, 0.45fr) minmax(0, 0.75fr) minmax(0, 0.75fr) minmax(0, 0.95fr) minmax(0, 0.9fr); }
+.table.trades > * { grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.45fr) minmax(0, 0.85fr) minmax(0, 1.65fr) minmax(0, 1.2fr) minmax(0, 0.45fr) minmax(0, 0.75fr) minmax(0, 0.95fr); }
+.table.all-trades { min-width: 880px; }
+.table.all-trades > * { grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr) minmax(0, 1.8fr) minmax(0, 1.5fr) minmax(0, 1.25fr) minmax(0, 0.55fr) minmax(0, 0.95fr) minmax(0, 1.05fr); }
 .table.companies { min-width: 900px; }
 .table.quarters > * { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 0.8fr); }
-.table.trips > * { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1.6fr) minmax(0, 1.2fr) minmax(0, 0.7fr) minmax(0, 0.7fr) minmax(0, 0.8fr) minmax(0, 0.9fr); }
+.table.trips > * { grid-template-columns: minmax(0, 1.7fr) minmax(0, 1.45fr) minmax(0, 1.2fr) minmax(0, 0.35fr) minmax(0, 0.7fr) minmax(0, 0.7fr) minmax(0, 0.8fr) minmax(0, 0.85fr); }
+.table.all-trips { min-width: 960px; }
+.table.all-trips > * { grid-template-columns: minmax(0, 1.7fr) minmax(0, 1.8fr) minmax(0, 1.5fr) minmax(0, 1.15fr) minmax(0, 0.5fr) minmax(0, 0.75fr) minmax(0, 0.75fr) minmax(0, 0.75fr) minmax(0, 1fr); }
+.table.lives { min-width: 960px; }
+.table.lives > * { grid-template-columns: minmax(0, 2.2fr) minmax(0, 1.15fr) minmax(0, 1.2fr) minmax(0, 0.45fr) minmax(0, 1.35fr) minmax(0, 0.7fr) minmax(0, 0.9fr) minmax(0, 0.95fr) minmax(0, 1.25fr); }
 .table.income > * { grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 0.9fr) minmax(0, 1.6fr) minmax(0, 1fr); }
-.table.marks > * { grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr) minmax(0, 1.1fr) minmax(0, 0.9fr) minmax(0, 1.6fr); }
+.table.marks > * { grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr) minmax(0, 1.1fr) minmax(0, 0.45fr) minmax(0, 0.9fr) minmax(0, 1.6fr); }
 .table.companies > * { grid-template-columns: minmax(0, 2.2fr) minmax(0, 1.8fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 0.8fr) minmax(0, 1.8fr); }
+.table.changes { min-width: 900px; }
+.table.changes > * { grid-template-columns: minmax(0, 1.7fr) minmax(0, 0.95fr) minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 1.25fr) minmax(0, 1.1fr) minmax(0, 1.2fr) minmax(0, 1.25fr); }
 
 /* A TABLE'S OTHER ROWS AND HEADS */
 /* A head that sorts: the heads' own type, in the ink when its column is the order, with an arrow
@@ -509,7 +530,7 @@ h2, .text-head { font-size: var(--text-head); font-weight: 600; letter-spacing: 
 .tick > input:disabled:checked::after { border-color: var(--muted); }
 
 /* THE KEYBOARD: every control shows where the keyboard is, in one ring. */
-:is(.line, .tab, .push, .quiet, .more, .card.lift, .table > a.row, .sort, .filter, .find, .choice > select, .tick > input):is(:focus-visible, [data-as~="keyboard"]) {
+:is(.line, .tab, .push, .quiet, .more, .card.lift, .table > :is(a, button).row, .sort, .filter, .find, .choice > select, .tick > input):is(:focus-visible, [data-as~="keyboard"]) {
   outline: none; box-shadow: var(--focus);
 }
 
@@ -526,7 +547,7 @@ h2, .text-head { font-size: var(--text-head); font-weight: 600; letter-spacing: 
 /* WHAT THE MAC'S SETTINGS ASK */
 @media (prefers-reduced-motion: reduce) {
   .arrive, .fade, .push[aria-busy="true"]::before { animation: none; }
-  .card.lift, .push, .line, .tab, .table > a.row, .quiet, .sort, .filter, .tick > input { transition: none; }
+  .card.lift, .push, .line, .tab, .table > :is(a, button).row, .quiet, .sort, .filter, .tick > input { transition: none; }
   .card.lift:is(:hover, [data-as~="over"]), .push:is(:hover, [data-as~="over"]) { transform: none; }
 }
 @media (prefers-reduced-transparency: reduce) {

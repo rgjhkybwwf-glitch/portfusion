@@ -33,9 +33,9 @@
 </div>
 <div class="group">
 <div class="title">Lists</div>
-<a class="line"><span class="with-icon"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3 4 7l4 4"/><path d="M4 7h16"/><path d="m16 21 4-4-4-4"/><path d="M20 17H4"/></svg>Trades</span><span class="count">16</span></a>
-<a class="line"><span class="with-icon"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg>Round trips</span><span class="count">4</span></a>
-<a class="line"><span class="with-icon"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>What changed</span></a>
+<a class="line" href="trades.html"><span class="with-icon"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3 4 7l4 4"/><path d="M4 7h16"/><path d="m16 21 4-4-4-4"/><path d="M20 17H4"/></svg>Trades</span><span class="count">16</span></a>
+<a class="line" href="round-trips.html"><span class="with-icon"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg>Round trips</span><span class="count">4</span></a>
+<a class="line" href="what-changed.html"><span class="with-icon"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>What changed</span></a>
 </div>
 <div class="group">
 <div class="title">Reference</div>
@@ -67,6 +67,7 @@
 <div class="tile"><div class="label">Shares owned</div><div class="num-tile">£4,210.53</div></div>
 <div class="tile"><div class="label">Spread-bet notional</div><div class="num-tile">£5,240.00</div></div>
 <div class="tile"><div class="label">Gain over its life</div><div class="num-tile up">+580.53 (4.84%)</div></div>
+<div class="tile"><div class="label">Life cost per share (USD)</div><div class="num-tile">—</div></div>
 </div>
 </section>
 
@@ -90,9 +91,9 @@
 <div class="head"><h2>Lines held</h2></div>
 <div class="scroll">
 <div class="table lines">
-<div class="cols"><span>Line</span><span>Account</span><span class="n">Quantity</span><span class="n">Entry</span><span class="n">Price</span><span class="n">Value (GBP)</span><span class="n">Unrealised</span></div>
-<div class="row"><span class="name">QNLR</span><span class="dim">Voss ii ISA</span><span class="n">50</span><span class="n">$100.00</span><span class="n">$112.00</span><span class="n">4,210.53</span><span class="n name up">+410.53 (10.80%)</span></div>
-<div class="row"><span class="name">QNLR SB</span><span class="dim">Voss IG Spread bet</span><span class="n">£0.50 a point</span><span class="n">10,200</span><span class="n">10,480</span><span class="n">5,240.00</span><span class="n name up">+140.00 (2.75%)</span></div>
+<div class="cols"><span>Line</span><span>Account</span><span class="n">Quantity</span><span class="n">Ccy</span><span class="n">Entry</span><span class="n">Price</span><span class="n">Value (GBP)</span><span class="n">Unrealised</span></div>
+<div class="row"><span class="name">QNLR</span><span class="dim">Voss ii ISA</span><span class="n">50</span><span class="n dim">USD</span><span class="n">100.00</span><span class="n">112.00</span><span class="n">4,210.53</span><span class="n two"><span class="name up">+410.53</span><span class="small">10.80%</span></span></div>
+<div class="row"><span class="name">QNLR SB</span><span class="dim">Voss IG Spread bet</span><span class="n">£0.50 a point</span><span class="n dim">—</span><span class="n">10,200</span><span class="n">10,480</span><span class="n">5,240.00</span><span class="n two"><span class="name up">+140.00</span><span class="small">2.75%</span></span></div>
 </div>
 </div>
 </section>
@@ -128,21 +129,46 @@
 <div class="head"><h2>Trades in this company</h2></div>
 <div class="scroll">
 <div class="table trades">
-<div class="cols"><span>Date</span><span>Side</span><span>Line</span><span>Account</span><span class="n">Quantity</span><span class="n">Price</span><span class="n">Value (GBP)</span></div>
-<div class="row"><span>15 Sep 2026</span><span class="name">Sell</span><span class="name">QNLR SB</span><span class="dim">Voss IG Spread bet</span><span class="n">£0.30 a point</span><span class="n">10,400</span><span class="n">3,120.00</span></div>
-<div class="row"><span>14 Aug 2026</span><span class="name">Buy</span><span class="name">QNLR SB</span><span class="dim">Voss IG Spread bet</span><span class="n">£0.30 a point</span><span class="n">10,300</span><span class="n">3,090.00</span></div>
-<div class="row"><span>14 Aug 2026</span><span class="name">Buy</span><span class="name">QNLR SB</span><span class="dim">Voss IG Spread bet</span><span class="n">£0.50 a point</span><span class="n">10,200</span><span class="n">5,100.00</span></div>
-<div class="row"><span>14 Apr 2026</span><span class="name">Buy</span><span class="name">QNLR</span><span class="dim">Voss ii ISA</span><span class="n">50</span><span class="n">$100.00</span><span class="n">3,800.00</span></div>
+<div class="cols"><span>Date</span><span>Side</span><span>Line</span><span>Account</span><span class="n">Quantity</span><span class="n">Ccy</span><span class="n">Price</span><span class="n">Value (GBP)</span></div>
+<button type="button" class="row" aria-expanded="false" aria-controls="trade-E-004"><span>15 Sep 2026</span><span>Sell</span><span class="name">QNLR SB</span><span class="dim">Voss IG Spread bet</span><span class="n">£0.30 a point</span><span class="n dim">—</span><span class="n">10,400</span><span class="n">3,120.00</span></button>
+<div class="opened" id="trade-E-004" hidden>
+<dl class="fields"><div><dt>Sale ID</dt><dd>E-004</dd></div><div><dt>Source</dt><dd>Not on file: invented for the demo</dd></div><div><dt>Realisation ID</dt><dd>R-QNLRSB</dd></div></dl>
+<div class="whys"><div class="why"><div class="label">Why we exited · 15 Sep 2026</div><p>Invented for the demo: why the smaller leg closed.</p></div></div>
+<div class="go"><a class="more" href="round-trips.html">Its round trip</a></div>
+</div>
+<button type="button" class="row" aria-expanded="false" aria-controls="trade-T-012"><span>14 Aug 2026</span><span>Buy</span><span class="name">QNLR SB</span><span class="dim">Voss IG Spread bet</span><span class="n">£0.30 a point</span><span class="n dim">—</span><span class="n">10,300</span><span class="n">3,090.00</span></button>
+<div class="opened" id="trade-T-012" hidden>
+<dl class="fields"><div><dt>Trade ID</dt><dd>T-012</dd></div><div><dt>Source</dt><dd>Not on file: invented for the demo</dd></div><div><dt>Realisation ID</dt><dd>R-QNLRSB</dd></div><div><dt>IG contract</dt><dd>QNLR-DEC26</dd></div><div><dt>Funding</dt><dd>Dated</dd></div></dl>
+<div class="whys"><div class="why"><div class="label">Why we entered · 14 Aug 2026</div><p>Invented for the demo: why the position was taken.</p></div></div>
+<div class="go"><a class="more" href="round-trips.html">Its round trip</a></div>
+</div>
+<button type="button" class="row" aria-expanded="false" aria-controls="trade-T-011"><span>14 Aug 2026</span><span>Buy</span><span class="name">QNLR SB</span><span class="dim">Voss IG Spread bet</span><span class="n">£0.50 a point</span><span class="n dim">—</span><span class="n">10,200</span><span class="n">5,100.00</span></button>
+<div class="opened" id="trade-T-011" hidden>
+<dl class="fields"><div><dt>Trade ID</dt><dd>T-011</dd></div><div><dt>Source</dt><dd>Not on file: invented for the demo</dd></div><div><dt>IG contract</dt><dd>QNLR-DEC26</dd></div><div><dt>Funding</dt><dd>Dated</dd></div></dl>
+<div class="whys"><div class="why"><div class="label">Why we entered · 14 Aug 2026</div><p>Invented for the demo: why the position was taken.</p></div></div>
+<div class="go"></div>
+</div>
+<button type="button" class="row" aria-expanded="false" aria-controls="trade-T-004"><span>14 Apr 2026</span><span>Buy</span><span class="name">QNLR</span><span class="dim">Voss ii ISA</span><span class="n">50</span><span class="n dim">USD</span><span class="n">100.00</span><span class="n">3,800.00</span></button>
+<div class="opened" id="trade-T-004" hidden>
+<dl class="fields"><div><dt>Trade ID</dt><dd>T-004</dd></div><div><dt>Source</dt><dd>ii contract note 14 Apr 2026</dd></div><div><dt>Broker ref</dt><dd>DMT6WD</dd></div><div><dt>FX at trade</dt><dd>1.3158 per £1</dd></div><div><dt>FX from</dt><dd>interactive investor</dd></div></dl>
+<div class="whys"><div class="why"><div class="label">Why we entered · 14 Apr 2026</div><p>Invented for the demo: why the position was taken.</p></div></div>
+<div class="go"></div>
+</div>
 </div>
 </div>
 </section>
 
 <section class="card tabled fade" id="round-trips" hidden>
-<div class="head"><h2>Round trips in this company</h2><a class="more">All round trips</a></div>
+<div class="head"><h2>Round trips in this company</h2><a class="more" href="round-trips.html">All round trips</a></div>
 <div class="scroll">
 <div class="table trips">
-<div class="cols"><span>Closed</span><span>Line</span><span>Size</span><span class="n">Entry</span><span class="n">Exit</span><span class="n">Days held</span><span class="n">Gain (GBP)</span></div>
-<div class="row"><span class="two"><span>15 Sep 2026</span><span class="small">opened 14 Aug 2026</span></span><span class="two"><span class="name">QNLR SB</span><span class="small">Voss IG Spread bet</span></span><span class="two"><span>£0.30 a point</span><span class="small">part closed</span></span><span class="n">10,300</span><span class="n">10,400</span><span class="n">32</span><span class="n two"><span class="up">+30.00</span><span class="small">0.97%</span></span></div>
+<div class="cols"><span>Closed</span><span>Line</span><span>Size</span><span class="n">Ccy</span><span class="n">Entry</span><span class="n">Exit</span><span class="n">Days held</span><span class="n">Gain (GBP)</span></div>
+<button type="button" class="row" aria-expanded="false" aria-controls="trip-R-QNLRSB"><span class="two"><span>15 Sep 2026</span><span class="small">opened 14 Aug 2026</span></span><span class="two"><span><span class="name">QNLR SB</span></span><span class="small">Voss IG Spread bet</span></span><span class="two"><span>£0.30 a point</span><span class="small">part closed</span></span><span class="n dim">—</span><span class="n">10,300</span><span class="n">10,400</span><span class="n">32</span><span class="n two"><span class="up">+30.00</span><span class="small">0.97%</span></span></button>
+<div class="opened" id="trip-R-QNLRSB" hidden>
+<dl class="fields"><div><dt>Cost (GBP)</dt><dd>3,090.00</dd></div><div><dt>Proceeds (GBP)</dt><dd>3,120.00</dd></div><div><dt>Realisation ID</dt><dd>R-QNLRSB</dd></div></dl>
+<div class="whys"><div class="why"><div class="label">Why we entered · 14 Aug 2026</div><p>Invented for the demo: why the position was taken.</p></div><div class="why"><div class="label">Why we exited · 15 Sep 2026</div><p>Invented for the demo: why the smaller leg closed.</p></div></div>
+<div class="go"><a class="more" href="trades.html">Its trades</a></div>
+</div>
 </div>
 </div>
 </section>
@@ -161,11 +187,11 @@
 <div class="head"><h2>Marks</h2><div class="note">Every price on file for this company's lines, newest first</div></div>
 <div class="scroll">
 <div class="table marks">
-<div class="cols"><span>Day</span><span>Line</span><span>Mark</span><span class="n">Price</span><span>Struck at</span></div>
-<div class="row"><span>30 Sep 2026</span><span class="name">QNLR SB</span><span class="dim">QNLR-DEC26</span><span class="n">10,480</span><span class="dim">Live level, read 15:00</span></div>
-<div class="row"><span>30 Sep 2026</span><span class="name">QNLR</span><span class="dim">QNLR</span><span class="n">$112.00</span><span class="dim">Close</span></div>
-<div class="row"><span>30 Jun 2026</span><span class="name">QNLR</span><span class="dim">QNLR</span><span class="n">$105.00</span><span class="dim">Close</span></div>
-<div class="row"><span>14 Apr 2026</span><span class="name">QNLR</span><span class="dim">QNLR</span><span class="n">$100.00</span><span class="dim">Bought</span></div>
+<div class="cols"><span>Day</span><span>Line</span><span>Mark</span><span class="n">Ccy</span><span class="n">Price</span><span>Struck at</span></div>
+<div class="row"><span>30 Sep 2026</span><span class="name">QNLR SB</span><span class="dim">QNLR-DEC26</span><span class="n dim">—</span><span class="n">10,480</span><span class="dim">Live level, read 15:00</span></div>
+<div class="row"><span>30 Sep 2026</span><span class="name">QNLR</span><span class="dim">QNLR</span><span class="n dim">USD</span><span class="n">112.00</span><span class="dim">Close</span></div>
+<div class="row"><span>30 Jun 2026</span><span class="name">QNLR</span><span class="dim">QNLR</span><span class="n dim">USD</span><span class="n">105.00</span><span class="dim">Close</span></div>
+<div class="row"><span>14 Apr 2026</span><span class="name">QNLR</span><span class="dim">QNLR</span><span class="n dim">USD</span><span class="n">100.00</span><span class="dim">Bought</span></div>
 </div>
 </div>
 </section>
@@ -192,6 +218,7 @@
 <div class="items">
 <div class="item"><span class="tag problem"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>Problem</span><span>Price is 51 days old, past the 21-day limit</span></div>
 <div class="item"><span class="tag gap"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10.1 2.182a10 10 0 0 1 3.8 0"/><path d="M13.9 21.818a10 10 0 0 1-3.8 0"/><path d="M17.609 3.721a10 10 0 0 1 2.69 2.7"/><path d="M2.182 13.9a10 10 0 0 1 0-3.8"/><path d="M20.279 17.609a10 10 0 0 1-2.7 2.69"/><path d="M21.818 10.1a10 10 0 0 1 0 3.8"/><path d="M3.721 6.391a10 10 0 0 1 2.7-2.69"/><path d="M6.391 20.279a10 10 0 0 1-2.69-2.7"/></svg>Gap</span><span>Units unchecked on Voss ii ISA: no holdings export on file</span></div>
+<div class="item"><span class="tag gap"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10.1 2.182a10 10 0 0 1 3.8 0"/><path d="M13.9 21.818a10 10 0 0 1-3.8 0"/><path d="M17.609 3.721a10 10 0 0 1 2.69 2.7"/><path d="M2.182 13.9a10 10 0 0 1 0-3.8"/><path d="M20.279 17.609a10 10 0 0 1-2.7 2.69"/><path d="M21.818 10.1a10 10 0 0 1 0 3.8"/><path d="M3.721 6.391a10 10 0 0 1 2.7-2.69"/><path d="M6.391 20.279a10 10 0 0 1-2.69-2.7"/></svg>Gap</span><span>Life cost per share blank: no USD rate on file for 14 Apr 2026</span></div>
 <div class="item"><span class="tag clear"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m16 9-5.5 5.5L8 12"/></svg>Clear</span><span>Spread bet agrees with IG, read 30 Sep 2026</span></div>
 </div>
 <div class="latest events">
@@ -207,7 +234,8 @@
 </main>
 </div>
 <script>
-// A tab shows its section and hides the others: the page's one behaviour.
+// The page's behaviour, as drawn: a tab shows its section and hides the others, and a trade or a
+// round trip opens in place under its row, one at a time.
 (function () {
   "use strict";
   var tabs = document.querySelectorAll(".tab[data-shows]");
@@ -220,6 +248,44 @@
       });
     });
   });
+
+  // A ROW THAT OPENS IN PLACE: one open at a time; its record sits under it, and moves with it.
+  function opens(table, rows) {
+    table.addEventListener("click", function (e) {
+      var row = e.target.closest("button.row");
+      if (!row) return;
+      var opening = row.getAttribute("aria-expanded") !== "true";
+      rows.forEach(function (r) { r.row.setAttribute("aria-expanded", "false"); r.opened.hidden = true; });
+      if (opening) { row.setAttribute("aria-expanded", "true"); document.getElementById(row.getAttribute("aria-controls")).hidden = false; }
+    });
+  }
+  function pairs(table) {
+    return Array.prototype.slice.call(table.querySelectorAll("button.row")).map(function (row) {
+      return { row: row, opened: document.getElementById(row.getAttribute("aria-controls")) };
+    });
+  }
+  // A HEAD THAT SORTS: words go up first and figures down; pressed again, the other way.
+  function sorts(table, rows, words, before, after) {
+    table.querySelector(".cols").addEventListener("click", function (e) {
+      var head = e.target.closest(".sort");
+      if (!head) return;
+      var key = head.dataset.key;
+      var first = words.indexOf(key) !== -1 ? "ascending" : "descending";
+      var next = head.dataset.sort ? (head.dataset.sort === "ascending" ? "descending" : "ascending") : first;
+      table.querySelectorAll(".sort").forEach(function (each) { delete each.dataset.sort; });
+      head.dataset.sort = next;
+      rows.sort(function (a, b) {
+        var x = a.row.dataset[key], y = b.row.dataset[key];
+        var o = words.indexOf(key) !== -1 ? x.localeCompare(y) : Number(x) - Number(y);
+        if (o === 0) o = Number(b.row.dataset.order) - Number(a.row.dataset.order);
+        return next === "ascending" ? o : -o;
+      });
+      rows.forEach(function (r) { table.insertBefore(r.row, before); table.insertBefore(r.opened, before); });
+      if (after) after();
+    });
+  }
+
+  document.querySelectorAll(".table.trades, .table.trips").forEach(function (table) { opens(table, pairs(table)); });
 })();
 </script>
 </body>
