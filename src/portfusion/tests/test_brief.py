@@ -311,7 +311,14 @@ def test_an_upkeep_line_is_taken_only_once_planned_and_after_next(brief):
     first = [brief.Line(2, "Upkeep, planned", (), True), brief.Line(1, "Next one", ())]
     assert brief.lines_said(first, issues, {}, {})[1] == [1, 2], \
         "Next's line comes first whatever order the headings stand in"
+    issues[3] = issue()
+    replan = {3: {"at": None, "commit": "", "since": ["Re-plan"]}}
+    assert any("#3 " in s for s in brief.lines_said(lines, issues, {}, replan)[0]), \
+        "an Upkeep line whose plan was marked Re-plan is listed, though its label is off"
     del issues[2]
-    assert len(brief.lines_said(lines, issues, {}, {})[0]) == 1, \
-        "a closed Upkeep line is not listed among Next's"
+    assert "closed, not yet ticked" in brief.lines_said(lines, issues, {}, {})[0][1], \
+        "a closed Upkeep line is said so, to be ticked"
+    unread = brief.lines_said(lines, {}, {}, {}, holes=("the open issues, past its first 500",))
+    assert len(unread[0]) == 3 and all("not read" in s for s in unread[0]), \
+        "with the open issues unread, no Upkeep line is dropped"
 

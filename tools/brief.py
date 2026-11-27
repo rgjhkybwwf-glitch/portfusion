@@ -117,7 +117,7 @@ def next_lines(queue: str) -> list[Line]:
             named = tuple(int(n) for n in re.findall(r"#(\d+)", waits[1])) if waits else ()
             above = tuple(ln.number for ln in lines if not ln.upkeep) if LAST in found[2] else ()
             lines.append(Line(int(found[1]), title[:70], named + above, under == "upkeep"))
-    return lines
+    return [ln for ln in lines if not ln.upkeep] + [ln for ln in lines if ln.upkeep]
 
 
 def _at(stamp: str) -> datetime:
@@ -186,15 +186,14 @@ def lines_said(lines: list[Line], issues: dict[int, dict], own: dict[int, list[d
     unread = any(hole.startswith("the open issues") for hole in holes)
     for line in lines:
         issue = issues.get(line.number)
-        if issue is None and line.upkeep:
-            continue
         if issue is None:
             said.append(f"  #{line.number} {'not read' if unread else 'closed, not yet ticked'}"
                         f" · {line.title}")
             continue
         labels = issue["labels"]
         pulls = own.get(line.number, [])
-        if line.upkeep and "planned" not in labels and not pulls:
+        replanned = "Re-plan" in (plans.get(line.number) or {}).get("since", [])
+        if line.upkeep and "planned" not in labels and not pulls and not replanned:
             continue
         parts = ["planned" if "planned" in labels else "no plan"]
         plan = plans.get(line.number)
@@ -338,7 +337,10 @@ def brief(level: str, text: str, now: datetime, asked: Asked) -> list[str]:
     lines = next_lines(queue.get("body") or "")
     plans = {}
     for line in lines:
-        if "planned" in issues.get(line.number, {}).get("labels", []):
+        # An open Upkeep line is read for its plan too, planned or not: a "Re-plan:" took the
+        # label off, and only its comments say it waits to be planned again.
+        if ("planned" in issues.get(line.number, {}).get("labels", [])
+                or (line.upkeep and line.number in issues)):
             plans[line.number] = plan_of(asked.get(f"issues/{line.number}/comments",
                                                    f"#{line.number}'s comments", pages=5))
 
