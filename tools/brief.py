@@ -112,7 +112,8 @@ def next_lines(queue: str) -> list[Line]:
         found = NEXT.match(line.strip()) if under else None
         if found:
             waits = WAITS.search(found[2])
-            title = found[2].split(" (")[0].split(" · waits")[0].split(LAST)[0].strip()
+            title = (found[2].split(" (")[0].split(" · waits")[0].split(LAST)[0]
+                     .split(" · yours")[0].strip())
             named = tuple(int(n) for n in re.findall(r"#(\d+)", waits[1])) if waits else ()
             above = tuple(ln.number for ln in lines if not ln.upkeep) if LAST in found[2] else ()
             lines.append(Line(int(found[1]), title[:70], named + above, under == "upkeep"))
@@ -185,6 +186,8 @@ def lines_said(lines: list[Line], issues: dict[int, dict], own: dict[int, list[d
     unread = any(hole.startswith("the open issues") for hole in holes)
     for line in lines:
         issue = issues.get(line.number)
+        if issue is None and line.upkeep:
+            continue
         if issue is None:
             said.append(f"  #{line.number} {'not read' if unread else 'closed, not yet ticked'}"
                         f" · {line.title}")
@@ -214,11 +217,13 @@ def lines_said(lines: list[Line], issues: dict[int, dict], own: dict[int, list[d
             standing.append(line.number)
         if (not holes and "planned" in labels and not replan and not pulls and not open_waits
                 and not any(label in labels for label in KEEPS_OFF)
-                and (not marked or "Build" in (plan or {}).get("since", []))):
+                and (not marked or ("Build" in (plan or {}).get("since", []) and not line.upkeep))):
             takeable.append(line.number)
             parts.append("a builder may take it")
         said.append(f"  #{line.number} " + " · ".join(parts) + f" · {line.title}"
                     + (" · Upkeep, in a place Next cannot fill" if line.upkeep else ""))
+    upkeep = {line.number for line in lines if line.upkeep}
+    takeable = [n for n in takeable if n not in upkeep] + [n for n in takeable if n in upkeep]
     return said, takeable, standing
 
 

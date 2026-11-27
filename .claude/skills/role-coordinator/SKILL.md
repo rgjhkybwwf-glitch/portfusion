@@ -58,9 +58,9 @@ exception, and the table says so.
    `place-an-issue` and its questions by `ask-or-decide`, asked as it is shaped. An idea an open
    issue already covers is added to that issue and closed.
 9. **The dependencies**: the skill `dependencies`.
-10. **Plan**: the skill `plan`. First each issue under Next marked "Re-plan" since its last
-    **Plan, checked**, and an issue the maintainer resumed whose plan no longer stands; then the
-    lines under Next, in order, to the cap; then Upkeep, for a place Next leaves empty.
+10. **Plan**: the skill `plan`. First each issue under Next or in Upkeep marked "Re-plan" since its
+    last **Plan, checked**, and an issue the maintainer resumed whose plan no longer stands; then
+    the lines under Next, in order, to the cap; then Upkeep, for a place Next leaves empty.
 11. **One long job, at most**: the skill `gate-review` on the day the gate is reached; else
     `keep-the-queue`, The review, on a Monday or a Thursday; else `design-card`, or
     `slice-a-feature` for a feature whose shape is decided.

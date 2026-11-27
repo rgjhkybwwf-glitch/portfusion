@@ -32,10 +32,12 @@ Every line under Next, in order:
   marked "Re-plan", against that pull request's branch.
 - **A place Next cannot fill takes an Upkeep line.** When no more lines under Next can be planned
   and a place is still free, the run plans the Upkeep lines, in the Queue's order, to the cap:
-  each one that waits on nothing open, is no feature, has no question asked and unanswered, and
-  names in its Cause or its plan no file that a line under Next names in its Cause or its plan.
-  Its line stays under Upkeep. A line under Next that can be planned later takes the next place
-  that comes free; an Upkeep plan that stands keeps its own.
+  each one that waits on nothing open, is skipped by nothing above, has no question asked and
+  unanswered, and names in its Cause or its plan no file that a line under Next names in its
+  Cause or its plan. Its line stays under Upkeep. An Upkeep line marked "Re-plan" is planned
+  first, with those under Next. A line under Next that can be planned later takes the next place
+  that comes free; an Upkeep plan that stands keeps its own, and a later plan under Next that
+  would touch a file it names waits on that Upkeep line, its "waits" written.
 
 The issue carries `building` while it is planned.
 

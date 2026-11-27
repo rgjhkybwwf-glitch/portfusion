@@ -103,6 +103,7 @@ def test_the_lines_under_next_are_read_in_order_with_their_waits(brief):
          "it; and the line that is last waits on every line above")
     assert lines[2].title == "B4 · confirm inside the page"
     assert lines[3].title == "The release checklist: the gate"
+    assert lines[4].title == "A fault no headline needs", "the maintainer's mark is no part of the title"
     assert brief.next_lines("No list here.") == []
 
 
@@ -303,4 +304,14 @@ def test_an_upkeep_line_is_taken_only_once_planned_and_after_next(brief):
     issues[1] = issue()
     assert brief.lines_said(lines, issues, {}, {})[1] == [2], \
         "with nothing under Next to take, the planned Upkeep line is taken"
+    plans = {2: {"at": None, "commit": "", "since": ["Build"]}}
+    assert brief.lines_said(lines, issues, {}, plans, marked=True)[1] == [], \
+        "an answer build takes only lines under Next"
+    issues[1] = issue("planned")
+    first = [brief.Line(2, "Upkeep, planned", (), True), brief.Line(1, "Next one", ())]
+    assert brief.lines_said(first, issues, {}, {})[1] == [1, 2], \
+        "Next's line comes first whatever order the headings stand in"
+    del issues[2]
+    assert len(brief.lines_said(lines, issues, {}, {})[0]) == 1, \
+        "a closed Upkeep line is not listed among Next's"
 

@@ -25,10 +25,10 @@ nothing itself; the new commit's tier is judged again (the skill `review-and-mer
 5. **A `hold` on it**: kept level and green, nothing added to it, and its auto-merge left off
    until the maintainer's `Resume:` takes the label off.
 6. **A draft, once its CI is green** (a run ended before its review came back, or its guard is
-   green now), its issue under Next, and nothing in 4 or 5 on it: the skill `review-and-merge`,
-   from its start.
+   green now), its issue under Next or a planned Upkeep line, and nothing in 4 or 5 on it: the
+   skill `review-and-merge`, from its start.
 
-An open pull request of an issue that is not under Next is kept level and green, and nothing is
-added to it.
+An open pull request of an issue that is neither under Next nor a planned Upkeep line is kept level
+and green, and nothing is added to it.
 
 A pull request that waits for the maintainer to enable auto-merge is never turned on by the agent.
