@@ -362,7 +362,7 @@ def brief(level: str, text: str, now: datetime, asked: Asked) -> list[str]:
     said, takeable, standing = lines_said(lines, issues, own, plans, holes, marked=answer_build)
     out.append(f"Next, in the Queue's order ({sum(not ln.upkeep for ln in lines)} lines; \"waits\" "
                "as the Queue's lines say them), then any Upkeep line planned, being built, closed or "
-               "unread; an Upkeep re-plan is read from the comments since the last run:")
+               "unread:")
     out += said or ["  none read"]
     if level == "builder":
         if holes:
