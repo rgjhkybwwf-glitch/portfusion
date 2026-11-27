@@ -34,10 +34,14 @@ Every line under Next, in order:
   and a place is still free, the run plans the Upkeep lines, in the Queue's order, to the cap:
   each one that waits on nothing open, is skipped by nothing above, has no question asked and
   unanswered, and names in its Cause or its plan no file that a line under Next names in its
-  Cause or its plan. Its line stays under Upkeep. An Upkeep line marked "Re-plan" is planned
-  first, with those under Next. A line under Next that can be planned later takes the next place
-  that comes free; an Upkeep plan that stands keeps its own, and a later plan under Next that
-  would touch a file it names waits on that Upkeep line, its "waits" written.
+  Cause or its plan. Its line stays under Upkeep. **An Upkeep line that names no file**, and meets
+  the rest, is drafted (Writing it), and its plan, settled and checked, is held to the file test
+  on the files it changes before it is posted: one that passes is posted as any plan is; one that
+  fails is posted nowhere, any `building` comes off, and a later run drafts it again. An Upkeep
+  line marked "Re-plan" is planned first, with those under Next. A line under Next that can be
+  planned later takes the next place that comes free; an Upkeep plan that stands keeps its own,
+  and a later plan under Next that would touch a file it names waits on that Upkeep line, its
+  "waits" written.
 
 The issue carries `building` while it is planned.
 
