@@ -314,11 +314,12 @@ is written for the maintainer and which no run needs. A run changes none of them
 
 **Which issues, in what order**
 
-- **The Queue sets the order.** A milestone holds what its release's headline needs, and a
-  share of Upkeep, the faults no headline needs (the skill `place-an-issue`). The Queue ranks the lines of the milestone being worked, its headline's
-  first: unblockers, then bugs and wrong figures, small safe fixes, features and polish, and
-  its share of Upkeep after them. Nothing outside Next is built. Each issue is read whole,
-  comments included, before its work starts.
+- **The Queue sets the order.** A milestone holds what its release's headline needs, and a share of
+  Upkeep, the faults no headline needs (the skill `place-an-issue`). The Queue ranks the lines of
+  the milestone being worked, its headline's first: unblockers, then bugs and wrong figures, small
+  safe fixes, features and polish, and its share of Upkeep after them. Nothing outside Next is
+  built, save Upkeep in a spare place (the skill `plan`). Each issue is read whole, comments
+  included, before its work starts.
 
 **Asking and answering**
 

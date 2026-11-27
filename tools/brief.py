@@ -58,6 +58,8 @@ class Line(NamedTuple):
     number: int
     title: str
     waits: tuple[int, ...]
+    #: An Upkeep line: built only once planned, in a place Next cannot fill (the skill `plan`).
+    upkeep: bool = False
 
 
 def rows(contributing: str) -> list[dict[str, str]]:
@@ -100,19 +102,20 @@ def which(table: list[dict[str, str]], level: str, text: str, now: datetime) -> 
 
 def next_lines(queue: str) -> list[Line]:
     """The Queue's lines under Next, in its order, each with the issues its "waits" names; the
-    line that is "last, after every line above" waits on each of them."""
-    lines, under = [], False
+    line that is "last, after every line above" waits on each of them. The lines under Upkeep
+    follow, in their order, marked as Upkeep: a builder takes one only once it is planned."""
+    lines, under = [], ""
     for line in queue.splitlines():
         if line.startswith("## "):
-            under = line.strip() == "## Next"
+            under = {"## Next": "next", "## Upkeep": "upkeep"}.get(line.strip(), "")
             continue
         found = NEXT.match(line.strip()) if under else None
         if found:
             waits = WAITS.search(found[2])
             title = found[2].split(" (")[0].split(" · waits")[0].split(LAST)[0].strip()
             named = tuple(int(n) for n in re.findall(r"#(\d+)", waits[1])) if waits else ()
-            above = tuple(line.number for line in lines) if LAST in found[2] else ()
-            lines.append(Line(int(found[1]), title[:70], named + above))
+            above = tuple(ln.number for ln in lines if not ln.upkeep) if LAST in found[2] else ()
+            lines.append(Line(int(found[1]), title[:70], named + above, under == "upkeep"))
     return lines
 
 
@@ -187,13 +190,15 @@ def lines_said(lines: list[Line], issues: dict[int, dict], own: dict[int, list[d
                         f" · {line.title}")
             continue
         labels = issue["labels"]
+        pulls = own.get(line.number, [])
+        if line.upkeep and "planned" not in labels and not pulls:
+            continue
         parts = ["planned" if "planned" in labels else "no plan"]
         plan = plans.get(line.number)
         if plan and plan["at"]:
             parts[0] += f" {_uk(plan['at'])}" + (f" at {plan['commit'][:7]}" if plan["commit"] else "")
             parts += [f'"{word}:" since its plan' for word in dict.fromkeys(plan["since"])]
         parts += [f"`{label}`" for label in KEEPS_OFF if label in labels]
-        pulls = own.get(line.number, [])
         parts += [f"its pull request #{p['number']} is open, {'a draft' if p['draft'] else 'ready'}"
                   for p in pulls]
         open_waits = [n for n in line.waits if n in issues or unread]
@@ -212,7 +217,8 @@ def lines_said(lines: list[Line], issues: dict[int, dict], own: dict[int, list[d
                 and (not marked or "Build" in (plan or {}).get("since", []))):
             takeable.append(line.number)
             parts.append("a builder may take it")
-        said.append(f"  #{line.number} " + " · ".join(parts) + f" · {line.title}")
+        said.append(f"  #{line.number} " + " · ".join(parts) + f" · {line.title}"
+                    + (" · Upkeep, in a place Next cannot fill" if line.upkeep else ""))
     return said, takeable, standing
 
 
@@ -351,8 +357,8 @@ def brief(level: str, text: str, now: datetime, asked: Asked) -> list[str]:
 
     answer_build = bool(row) and row["Run"] == "Answer build"
     said, takeable, standing = lines_said(lines, issues, own, plans, holes, marked=answer_build)
-    out.append(f"Next, in the Queue's order ({len(lines)} lines; \"waits\" as the Queue's lines "
-               "say them):")
+    out.append(f"Next, in the Queue's order ({sum(not ln.upkeep for ln in lines)} lines; \"waits\" "
+               "as the Queue's lines say them), then any Upkeep line planned or being built:")
     out += said or ["  none read"]
     if level == "builder":
         if holes:
@@ -362,7 +368,8 @@ def brief(level: str, text: str, now: datetime, asked: Asked) -> list[str]:
         out.append("The line to take: " + (
             f"#{takeable[0]}. Read it whole, with its latest Plan, checked, and confirm the plan "
             "stands (the skill `build-an-issue`)." if takeable else
-            "none. No line under Next is planned, free of `decision`, `building` and `hold`, "
+            "none. No line under Next or in Upkeep is planned, free of `decision`, `building` "
+            "and `hold`, "
             "without a pull request of its own, and with its \"waits\" closed"
             + (", and marked \"Build:\" since its plan, which is all an answer build takes."
                if answer_build else ".")))

@@ -32,11 +32,11 @@ and takes `decision` off:
 3. An answer that leaves a question open: ask that question again, alone, and take `decision` off
    and put it back on, so the maintainer is told.
 
-**An answer records a decision; only lines under Next are built.** Every answer is recorded,
-wherever its issue stands. An issue not under Next, a feature, and the issue a design card was
-answered on are left there: nothing of them is built, and the maintainer's placing or the
-coordinator's slices come first. A card's answer takes its line out of Design next. An answer to
-a gate review is applied by the skill `gate-review`, a `Change:` on the Queue by
+**An answer records a decision; only lines under Next are built**, and Upkeep in a spare place.
+Every answer is recorded, wherever its issue stands. An issue not under Next, a feature, and the
+issue a design card was answered on are left there: nothing of them is built, and the maintainer's
+placing or the coordinator's slices come first. A card's answer takes its line out of Design next.
+An answer to a gate review is applied by the skill `gate-review`, a `Change:` on the Queue by
 `keep-the-queue`, and a move that Monday's review asked by `place-an-issue`.
 
 ## A `Change:`

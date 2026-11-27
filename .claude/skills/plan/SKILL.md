@@ -30,6 +30,12 @@ Every line under Next, in order:
 - Skipped: a feature, an issue labelled `planned`, `building` or `hold`, and one whose questions
   stand asked and unanswered. An issue with an open pull request of its own is planned only when it is
   marked "Re-plan", against that pull request's branch.
+- **A place Next cannot fill takes an Upkeep line.** When no more lines under Next can be planned
+  and a place is still free, the run plans the Upkeep lines, in the Queue's order, to the cap:
+  each one that waits on nothing open, is no feature, has no question asked and unanswered, and
+  names in its Cause or its plan no file that a line under Next names in its Cause or its plan.
+  Its line stays under Upkeep. A line under Next that can be planned later takes the next place
+  that comes free; an Upkeep plan that stands keeps its own.
 
 The issue carries `building` while it is planned.
 
