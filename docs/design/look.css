@@ -350,7 +350,15 @@ h2, .text-head { font-size: var(--text-head); font-weight: 600; letter-spacing: 
   display: grid; gap: var(--gap-cells); align-items: center; white-space: nowrap;
   padding: 0 var(--inset);
 }
-.table > .cols { padding-top: 8px; padding-bottom: 8px; font-size: var(--text-label); font-weight: 600; color: var(--muted); border-bottom: 1px solid var(--divider); }
+/* The heads. Each is house/headings.py's word for its column, never one shortened to fit (README,
+   A head is the house's word). A head too long for its column takes a second line, broken at a
+   space and balanced, and never a third. Every head stands on its last line, so the words nearest
+   the figures line up along the rule. */
+.table > .cols {
+  align-items: end; white-space: normal; line-height: 1.3;
+  padding-top: 8px; padding-bottom: 8px; font-size: var(--text-label); font-weight: 600; color: var(--muted); border-bottom: 1px solid var(--divider);
+}
+.table > .cols > * { text-wrap: balance; }
 .table > .row { min-height: var(--h-row); color: var(--ink); border-bottom: 1px solid var(--divider-soft); }
 .table .n { text-align: right; }
 .table .dim { color: var(--muted); }
@@ -374,7 +382,7 @@ h2, .text-head { font-size: var(--text-head); font-weight: 600; letter-spacing: 
 .opened .go { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; }
 .table.holdings > * { grid-template-columns: 2fr 1.4fr 1fr 1fr; }
 .table.lines > * { grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.65fr) minmax(0, 1.2fr) minmax(0, 0.45fr) minmax(0, 0.75fr) minmax(0, 0.75fr) minmax(0, 0.95fr) minmax(0, 0.9fr); }
-.table.trades > * { grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.45fr) minmax(0, 0.85fr) minmax(0, 1.65fr) minmax(0, 1.2fr) minmax(0, 0.45fr) minmax(0, 0.75fr) minmax(0, 0.95fr); }
+.table.trades > * { grid-template-columns: minmax(0, 1.17fr) minmax(0, 0.71fr) minmax(0, 0.81fr) minmax(0, 1.65fr) minmax(0, 1.17fr) minmax(0, 0.42fr) minmax(0, 0.67fr) minmax(0, 0.9fr); }
 .table.all-trades { min-width: 880px; }
 .table.all-trades > * { grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr) minmax(0, 1.8fr) minmax(0, 1.5fr) minmax(0, 1.25fr) minmax(0, 0.55fr) minmax(0, 0.95fr) minmax(0, 1.05fr); }
 .table.companies { min-width: 900px; }
@@ -392,10 +400,10 @@ h2, .text-head { font-size: var(--text-head); font-weight: 600; letter-spacing: 
 
 /* A TABLE'S OTHER ROWS AND HEADS */
 /* A head that sorts: the heads' own type, in the ink when its column is the order, with an arrow
-   that says which way. */
+   that says which way. On two lines it wraps as any head does, the arrow beside its last line. */
 .sort {
-  display: inline-flex; align-items: center; gap: 4px; padding: 0; border-radius: var(--r-tab);
-  background: transparent; color: inherit; font-weight: inherit; font-size: inherit;
+  display: inline-flex; align-items: last baseline; gap: 4px; padding: 0; border-radius: var(--r-tab);
+  background: transparent; color: inherit; font-weight: inherit; font-size: inherit; text-align: inherit;
   transition: color var(--dur-pointer) ease;
 }
 .sort:is(:hover, [data-as~="over"]) { color: var(--ink); }
