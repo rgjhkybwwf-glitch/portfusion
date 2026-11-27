@@ -131,10 +131,11 @@ not drawn, and is not invented on a page.
 | a card that opens its object | `.card.lift` | at rest; under the pointer (rises 2px, `--shadow-card-over`); the keyboard |
 | the lead card | `.lead`, `.headline`, `.tiles`, `.tile` | one to a page: the page's one large figure, and tiles for the figures that explain it |
 | a well | `.well` | sunken |
-| a table | `.scroll`, `.table`, `.cols`, `.row`, `.n`, `.dim`, `.two` | a row under a soft rule; figures to the right, in tabular numerals, and a cell never wraps; a cell with a smaller second line (`.two`). The scroll box keeps 4px of room round the table for the keyboard's ring |
+| a table | `.scroll`, `.table`, `.cols`, `.row`, `.n`, `.dim`, `.two` | a row under a soft rule; figures to the right, in tabular numerals, and a cell never wraps, though a long head may (a head on two lines); a cell with a smaller second line (`.two`). The scroll box keeps 4px of room round the table for the keyboard's ring |
 | a row that opens its object | `.table > a.row` | at rest, its name in the accent's ink and no rule under it; under the pointer (`--accent-soft`); the keyboard |
 | a row that opens in place | `.table > button.row`, `.opened`, `.whys`, `.why`, `.go` | as a row that opens its object; opened (`aria-expanded="true"`): it keeps the soft fill and holds its record under it, the record's fields (a field grid), its whys, each a label and its words or a gap tag when it is owed, and where to go next. One row is open at a time. For a record read in its list: a trade, a round trip, a company's life |
 | a head that sorts | `.sort` | at rest, in the heads' muted ink; under the pointer, in the ink; the order, down or up (`data-sort`: in the ink, with an arrow); the keyboard |
+| a head on two lines | `.cols` | one line, or for a head too long for its column two, broken at a space and balanced, never a third; every head stands on its last line, so the words nearest the figures line up along the rule; a head that sorts wraps the same, its arrow beside its last line |
 | the total row | `.row.total` | under a full rule, in the names' weight |
 | an empty table | `.empty` | one line under the heads, saying so, and where to look instead |
 | a chart | `.well.chart`, and its parts' `.s1` to `.s6`, `.other`, `.gain`, `.loss` | five kinds, each drawn on the sheet: a line, columns, ranked bars, gain and loss bars, and a donut beside its figures (Charts) |
@@ -162,6 +163,48 @@ A **price is written in its own currency, with no symbol**, as the house prints 
 in points. A table says its currency in a Ccy column just before its first price, "—" for a spread
 bet, and an amount in pounds says so in its head, "Value (GBP)". The maintainer agreed this with
 the lists, on 27 Nov 2026.
+
+**A head is the house's word for its column.** Every head on a page is the word
+[`house/headings.py`](../../src/portfusion/house/headings.py) gives its field on that tab, the one
+the desk and the report head it by today: "Entry price", never "Entry"; "Unrealised gain (GBP)",
+never "Unrealised". A drawing never makes up a shorter word to fit its column. A head too long for
+its column takes a second line (a head on two lines, above), rather than a wider column or a cut
+word. A word never breaks, so a column is never narrower than its head's longest word. The
+maintainer chose this on 27 Nov 2026 (#413, Q1 a): no word, no test and no report heading moves for
+the new look. A word changes only as any word of the nomenclature does, in [the
+glossary](../glossary.md) and its declaration together (the glossary, Changing a word), and then on
+these pages in the same pull request.
+
+The drawings agreed before then typed their own words on some heads. Each now carries the house's,
+and a builder who finds one of the old words in an issue, a picture or a comment reads it as the
+house's:
+
+| In the drawings | The house's word | Where |
+|---|---|---|
+| Line | Ticker | every list, and the company page |
+| Side | Direction | Trades |
+| Price, on a trade | Traded price | Trades |
+| Value (GBP), on a trade | Trade value (GBP) | Trades |
+| Closed | Exit date | Round trips |
+| Opened | Entry date | Round trips, a company's life |
+| Size | Quantity | Round trips |
+| Entry, Exit | Entry price, Exit price | Round trips, the company page's lines |
+| Gain (GBP), Realised | Realised gain (GBP) | Round trips, a company's life |
+| Unrealised | Unrealised gain (GBP) | Companies, a company's life, the company page's lines |
+| Gain over its life | Life gain (GBP) | Companies |
+| Weight | Weight of exposure | Companies |
+| Company and its accounts | Company | Companies, a company's life |
+| Sector and region | Sector, its region under it | Companies |
+| Lines held, a life's field | Lines | a company's life, opened |
+| Paid, Day | Date | the company page's income and prices |
+| Kind | Category | the company page's income |
+| Mark | Price key | the company page's prices |
+| Struck at | Source | the company page's prices |
+| Gain in the quarter | Quarter gain (GBP) | Home |
+| Price move | Price move (%) | [`what-changed.html`](what-changed.html) |
+
+A figure's label outside a table, a lead card's tile, is not a head: "Gain over its life" on the
+company page's lead card stays as drawn.
 
 ## Motion
 
