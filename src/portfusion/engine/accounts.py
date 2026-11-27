@@ -38,8 +38,8 @@ class Accounts(Core):
 
     def account_register(self) -> pd.DataFrame:
         """The account register as filed, with `holder_names`: the words of each holder's name
-        that name them, titles off. THE OWNER'S: holders and numbers are in it, and a reading page
-        names an account by `account_codes()` (`desk/panels/_shape.py`'s `labels()`)."""
+        that name them, titles off. THE OWNER'S: holders and numbers are in it, and wherever the
+        book is read an account is named by `account_codes()` instead."""
         reg = pd.DataFrame(self.D.register, columns=self.D.schema.TABLES["accounts"].header)
         reg["holder_names"] = [tuple(w for w in str(h).split() if w not in self.HOLDER_TITLES)
                                for h in reg["holder"]]

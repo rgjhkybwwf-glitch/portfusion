@@ -693,8 +693,8 @@ def _build() -> dict:
     ]
 
     register = schema.load("accounts")
-    # AN ACCOUNT'S CODE IS ITS NAME ON A READING PAGE (`accounts.code` in `record/schema.py`), so
-    # two accounts may never share one, and each is A and a number. The label beside it is the
+    # AN ACCOUNT'S CODE IS ITS NAME WHERE THE BOOK IS READ (`accounts.code` in `record/schema.py`),
+    # so two accounts may never share one, and each is A and a number. The label beside it is the
     # engine's, `Book.account_codes()`.
     _codes = [r[schema.TABLES["accounts"].header.index("code")] for r in register]
     if len(set(_codes)) != len(_codes) or not all(_re.fullmatch(r"A[1-9]\d*", c) for c in _codes):
