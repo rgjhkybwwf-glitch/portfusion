@@ -10,8 +10,9 @@ from harness import SRC, desk_script, desk_style
 # MOVEMENT COLOUR
 #
 # `house/palette.py` heads UP and DOWN "movement, which is not provenance". That is
-# the rule these tests hold: a THIRD channel, beside font-colour-as-origin and
-# fill-as-state, which must borrow from neither and must say only what a figure's SIGN is.
+# the rule `test_movement_colour_is_used_and_scoped` holds: a THIRD channel, beside
+# font-colour-as-origin and fill-as-state, which must borrow from neither and must say only
+# what a figure's SIGN is.
 # =====================================================================================
 
 

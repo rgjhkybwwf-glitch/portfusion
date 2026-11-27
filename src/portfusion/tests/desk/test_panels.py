@@ -764,7 +764,7 @@ def test_the_desk_says_notional_too():
     say it too.
 
     LABELS, NOT PROSE: the words the glossary retires for it are looked for in what the desk
-    draws, and a comment, which draws nothing, is passed over.
+    draws, and a line that opens as a comment, which draws nothing, is passed over.
     """
     js = desk_script()
     offenders = []

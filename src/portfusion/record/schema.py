@@ -282,8 +282,8 @@ ACCOUNTS = Table(
         Field("holder", "str"),
         Field("broker_firm", "str"),
         Field("number", "str"),            # STRING, not int — "0123456" keeps its zero
-        # WHAT THE ACCOUNT IS CALLED WHERE IT IS READ (`desk/panels/_shape.py`'s `labels()`): A1,
-        # A2… in register order, never reused. `Book.account_codes()` gives each its label.
+        # WHAT THE ACCOUNT IS CALLED WHEREVER THE BOOK IS READ: A1, A2… in register order, never
+        # reused. `Book.account_codes()` gives each its label.
         Field("code", "str", required=True),
         Field("held_as", "str", enum=KINDS, required=True, holds=_HELD_AS),
         # THE LABEL OF THE ACCOUNT'S BLOCK IN credentials.json, for an account a feed reads.
