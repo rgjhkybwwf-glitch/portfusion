@@ -1,5 +1,5 @@
-/* ON A PHONE, below 48rem: every rule a narrow window changes, last, so each wins over the rule
-   it narrows. */
+/* IN A NARROW WINDOW, below 48rem: every rule it changes, last, so each wins over the rule it
+   narrows. */
 
 /* A SMALLER GUTTER AND DISPLAY. */
 @media (max-width: 48rem) {
@@ -21,7 +21,8 @@
   .pages-toggle::after { content: "▾"; margin-left: var(--space-2); }
 }
 
-/* ON A PHONE THE BAND'S FIGURES STACK, each ruled off from the one above rather than beside it. */
+/* IN A NARROW WINDOW THE FIELD'S FIGURES STACK, each ruled off from the one above rather than
+   beside it. */
 @media (max-width: 48rem) {
   .field { padding: var(--space-5); }
   .field-figure { padding: var(--space-4) 0 0; border-left: 0; border-top: 1px solid var(--field-rule); }

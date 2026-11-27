@@ -49,8 +49,8 @@ SCRIPTS = ("core.js", "kit.js", "what-changed.js", "dashboard.js", "holdings.js"
            "bench-combo.js", "sweep.js", "price-refresh.js", "app.js")
 
 #: THE DESK'S STYLESHEET, in the order it is linked: a later file's rule wins a tie with an
-#: earlier one's, so the kit comes first and the phone's rules last. `index()` writes the page's
-#: link tags from this.
+#: earlier one's, so the kit comes first and a narrow window's rules last. `index()` writes the
+#: page's link tags from this.
 STYLES = ("kit.css", "tables.css", "pages.css", "bench.css", "phone.css")
 
 #: WHAT EVERY FILE OF THE SHELL IS SENT WITH: the page loads and connects to its own origin only,

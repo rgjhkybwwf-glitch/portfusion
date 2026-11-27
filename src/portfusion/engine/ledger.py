@@ -112,11 +112,11 @@ def build_ledger() -> pd.DataFrame:
     # the rows it is not, and `event_id`, a buy's trade id or a sale's sale id.
     buys = pd.DataFrame(D.buys, columns=D.Buy._fields).rename(columns={"trade_id": "event_id"})
     buys["direction"] = "Buy"
-    # HOW EACH LEG IS COSTED, from its code's kind (`rules.Trade.mode`): a frame of NamedTuples
+    # HOW EACH LEG IS COSTED, from its code's kind (`rules.Buy.mode`): a frame of NamedTuples
     # carries their fields and not their properties.
     buys["mode"] = [t.mode for t in D.buys]
     # THE LEDGER'S `qty` IS THE LINE'S SIZE IN ITS OWN UNIT: a share's count, a bet's stake per
-    # point (`Trade.size`). The store keeps the two in their own columns; every roll-up here is
+    # point (`Buy.size`). The store keeps the two in their own columns; every roll-up here is
     # size x price, which on a bet is stake x level, the notional.
     buys["qty"] = [t.size for t in D.buys]
 
@@ -134,16 +134,16 @@ def build_ledger() -> pd.DataFrame:
 
     ledger = pd.concat([buys, sells], ignore_index=True)
 
-    # EVERY EVENT IS DATED, in ISO (tests/record/test_record.py holds trades.date to it), so a date that
-    # will not parse is a fault to stop on, never a leg to quietly read as undated.
+    # EVERY EVENT IS DATED, in ISO (tests/record/test_record.py holds buys.date to it), so a date
+    # that will not parse is a fault to stop on, never a leg to quietly read as undated.
     ledger["date"] = pd.to_datetime(ledger["date"], format="%Y-%m-%d")
 
     # --- THE COLUMN THAT MATTERS MOST -------------------------------------------------
     # `held_as` says what KIND of line this row is, from its code (`rules.KIND_OF_CODE`, the one
-    # place it is stored): a share leg is money you own; a spread-bet leg is a contract value, an
-    # economic interest, not money. Encoding it here is the whole point: as data, not a warning a
-    # reader has to remember, so a function that totals "money" can refuse to include exposure,
-    # and the wrong number stops being something you can type by accident.
+    # place it is stored): a share leg is money you own; a spread-bet leg is notional, not money.
+    # Encoding it here is the whole point: as data, not a warning a reader has to remember, so a
+    # function that totals "money" can refuse to include exposure, and the wrong number stops
+    # being something you can type by accident.
     ledger["held_as"] = ledger["ticker"].map(D.KIND_OF_CODE)
 
     # A SHARE BUY BELONGS TO THE REALISATION THAT EMPTIED ITS HOLDING, and to none while the

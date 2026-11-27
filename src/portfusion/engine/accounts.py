@@ -38,16 +38,17 @@ class Accounts(Core):
 
     def account_register(self) -> pd.DataFrame:
         """The account register as filed, with `holder_names`: the words of each holder's name
-        that name them, titles off. THE OWNER'S: holders and numbers are in it, and anything read
-        by anyone else names an account by `account_codes()`."""
+        that name them, titles off. THE OWNER'S: holders and numbers are in it, and wherever the
+        book is read an account is named by `account_codes()` instead."""
         reg = pd.DataFrame(self.D.register, columns=self.D.schema.TABLES["accounts"].header)
         reg["holder_names"] = [tuple(w for w in str(h).split() if w not in self.HOLDER_TITLES)
                                for h in reg["holder"]]
         return reg
 
     def account_codes(self) -> pd.DataFrame:
-        """Each account as it is named to anyone but the owner: its register code, and a `label`
-        that is the code beside the account's name with the holder taken out, `A3 · IG Spread bet`.
+        """Each account as the report and the desk's reading pages (`desk/panels/_shape.py`'s
+        `labels()`) name it: its register code, and a `label` that is the code beside the
+        account's name with the holder taken out, `A3 · IG Spread bet`.
         Columns account, code, label; one row per account, in ACCOUNT_ORDER."""
         reg = self.account_register().set_index("account").loc[list(self.D.ACCOUNT_ORDER)]
         rest = [" ".join(w for w in a.split() if w not in names)
@@ -133,7 +134,7 @@ class Accounts(Core):
         `as_of=None` is the live book. `window` is `_marks_at()`'s, for a quarter end being frozen.
 
         Columns, and the basis each one is measured on (see MEASURE_BASIS):
-          exposure          NOTIONAL  market exposure now — SB accounts at contract value
+          exposure          NOTIONAL  market exposure now — SB accounts at notional
           opening_nav   money     NAV at `ytd_opens()`, from QUARTER_NAV; BLANK until that
                                       quarter end is frozen
           capital_deployed  money     the year's money INTO POSITIONS — purchases less sale

@@ -235,7 +235,7 @@ COMPANIES = Table(
 
 #: DO WE OWN IT, OR HAVE EXPOSURE TO IT — glossary §2.
 #: WHAT KIND OF LINE, AND OF ACCOUNT, which decides whether its figures are money or notional
-#: (`rules.SPREAD_BET`). One vocabulary for both: `securities.kind` and `accounts.kind`.
+#: (`rules.SPREAD_BET`). One vocabulary for both: `securities.held_as` and `accounts.held_as`.
 KINDS = ("shares", "spread bet")
 
 #: THE CLOSED VOCABULARIES, declared to the loader: a value outside one fails on load naming the
@@ -282,7 +282,7 @@ ACCOUNTS = Table(
         Field("holder", "str"),
         Field("broker_firm", "str"),
         Field("number", "str"),            # STRING, not int — "0123456" keeps its zero
-        # WHAT THE ACCOUNT IS CALLED TO ANYONE BUT THE OWNER: A1, A2… in register order, never
+        # WHAT THE ACCOUNT IS CALLED WHEREVER THE BOOK IS READ: A1, A2… in register order, never
         # reused. `Book.account_codes()` gives each its label.
         Field("code", "str", required=True),
         Field("held_as", "str", enum=KINDS, required=True, holds=_HELD_AS),

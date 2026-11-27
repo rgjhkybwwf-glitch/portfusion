@@ -340,8 +340,8 @@ def test_the_close_procedure_names_the_freeze_and_its_window(monkeypatch):
 # ---- the price limits ------------------------------------------------------------------------
 
 def test_the_two_price_limits_are_the_agreed_values():
-    """Tuned to a weekly-or-wider refresh cadence. Changing either is a decision, not a tweak —
-    this is the reminder."""
+    """Tuned to a weekly refresh, the practice the comment above `PRICE_AGE_LIMIT` names. Changing
+    either is a decision, not a tweak — this is the reminder."""
     from portfusion.record import rules as B
     assert B.PRICE_AGE_LIMIT == 21, "the absolute stale limit moved without a decision"
     assert B.PRICE_SPREAD_LIMIT == 4, "the spread limit moved without a decision"

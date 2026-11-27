@@ -46,7 +46,7 @@ source .venv/bin/activate
 .venv/bin/python3 -m pip install --force-reinstall --no-deps -r requirements.txt   # the pinned code
 .venv/bin/python3 -m pip install -r requirements.txt                               # what it needs
 portfusion migrate                   # what the release moves in the store; --write moves it
-portfusion check                     # the guard, on this book
+portfusion check                     # the code on the demo, then this book opening
 portfusion record                    # the audit
 ```
 

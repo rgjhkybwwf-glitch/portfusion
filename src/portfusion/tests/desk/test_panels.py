@@ -763,8 +763,8 @@ def test_the_desk_says_notional_too():
     """A RENDERER NO CHECK COVERS DRIFTS. `notional` is the store's own word, and the desk's labels
     say it too.
 
-    LABELS, NOT PROSE: the phrase survives where it DEFINES the term — "notional is the size of
-    an economic interest" is the sentence that teaches it — and not where it replaces it.
+    LABELS, NOT PROSE: the words the glossary retires for it are looked for in what the desk
+    draws, and a line that opens as a comment, which draws nothing, is passed over.
     """
     js = desk_script()
     offenders = []

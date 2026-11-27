@@ -57,6 +57,12 @@ Each release, newest first. The version is `src/portfusion/__init__.py`'s, and
   trades, costs and capital; and the desk, not a feed, writes the prices you tick.
   `docs/prices.md` says prices are a weekly job. Nothing the sweep, a feed or the desk does
   changes.
+- **The code's comments, its tests' docstrings and the README's line on `portfusion check` name
+  what is so**: a column by its name, `held_as`; notional for the words the glossary retires; an
+  account's code as every reading page shows it; `portfusion check` as the code on the demo, then
+  the book opening; a mistake corrected in its row; and the desk's look as its own, in a narrow
+  window rather than on a phone, with the drawn design system not yet worn. Nothing the app does
+  changes, and no figure, table or page moves.
 
 ### Upgrading a book
 

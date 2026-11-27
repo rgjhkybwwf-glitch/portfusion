@@ -3,9 +3,10 @@
 The desk and the report turn SCREEN and DARK below into CSS custom properties (`desk/theme.py`,
 `report/style.py`). A colour changed here moves every renderer that wears it, or none.
 
-A STAND-IN. PortFusion's own design system is still to be drawn; until it is, these are a set
-of cool greys, status inks and a graphite accent, with grounds and inks legible in both schemes.
-Its arrival replaces this file's values and nothing else.
+A STAND-IN. PortFusion's own design system is drawn, its colour with it, in `docs/design/`;
+until the desk and the report wear it, these are a set of cool greys, status inks and a graphite
+accent, with grounds and inks legible in both schemes. Its arrival replaces this file's values
+and nothing else.
 
 Bare six-digit hex; the screens add the `#`.
 
@@ -21,7 +22,7 @@ TOKENS = {
     "line": "D9DBEA", "line-strong": "0D0E1A", "control-line": "0D0E1A", "control-bg": "FFFFFF",
     # text
     "ink": "0D0E1A", "ink-body": "22253A", "ink-muted": "4A4E63",
-    # the accent, and the field it stands on: graphite, until PortFusion has a colour of its own
+    # the accent, and the field it stands on: graphite, standing in for `docs/design/`'s colour
     "accent": "3A3F52", "field": "3A3F52", "on-field": "FFFFFF", "on-field-muted": "C4C7D4",
     "field-rule": "5A5F74",
     # the thread, the selected point on the rail: white, ringed in the heading's ink

@@ -29,7 +29,7 @@ COMMON = {
     "sector": "Sector",
     "region": "Region",
     "currency": "Ccy",
-    "cur": "Deal ccy",                      # the currency a deal's price is stated in (glossary §4)
+    "cur": "Deal ccy",                      # the currency a deal's price is stated in (glossary §5)
     "held_as": "Held as",
     "direction": "Direction",
     "trade_id": "Trade ID",

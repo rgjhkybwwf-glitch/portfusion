@@ -2,8 +2,8 @@
 
   1. THE BOOK DOES NOT DEPEND ON THE DESK. Delete desk/ and the report builds unchanged: the
      import contracts in `pyproject.toml`.
-  2. NO ACTION CAN WRITE AN EVENT. The marks rule lets a feed write a MARK on the owner's tick and
-     never an event, and `Action` refuses to be constructed otherwise.
+  2. NO ACTION CAN WRITE AN EVENT: `desk/actions.py` states the marks rule, and `Action` refuses
+     to be constructed otherwise.
 
 The rest of tests/desk/ is detail on these two, split by subject.
 """
@@ -21,9 +21,9 @@ from harness import SRC, STORE_NAMES, file_calls, write_call
 # =====================================================================================
 
 def test_no_registered_action_writes_an_event():
-    """The marks rule: a feed may write a mark, never an event. A trade, exit, dividend or
-    capital movement happened once and is history; it goes to the bench for evidence,
-    reasoning and approval.
+    """The marks rule, as `desk/actions.py` states it. A trade, exit, dividend or capital
+    movement happened once and is history; it goes to the bench for evidence, reasoning and
+    approval.
 
     WHY THE LINE FALLS THERE: a wrong mark is one write from right, with the old value kept in
     its history; a wrong event corrupts cost, realised gain and every return built on them."""
@@ -57,8 +57,7 @@ def test_every_writing_action_is_pinned():
     """The actions that declare a write, pinned by name. A NEW WRITING BUTTON FAILS THIS TEST
     until someone declares it on purpose; what may write a file at all is `WRITERS`, below.
 
-    IT IS A MARK, AND THE MARKS RULE NAMES IT: *a feed may write a MARK — a price, an FX rate,
-    LIVE EQUITY — on the owner's per-line tick; it may never write an EVENT.*
+    IT IS A MARK, AND THE MARKS RULE NAMES IT, as `desk/actions.py` states it.
 
       refresh-write-marks  the Price Refresh's write: prices, FX rates, and the IG accounts'
                            equity read with the levels, landing together or not at all.

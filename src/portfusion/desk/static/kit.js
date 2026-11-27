@@ -97,8 +97,8 @@ const page = ({ scope = "", field = null, status = null, figures: strip = null, 
                 work = "", why = null }) => {
   const head = `<header class="page-head"><h1 tabindex="-1">${esc(PAGE_TITLE)}</h1>${scope
       ? `<span class="muted">${esc(scope)}</span>` : ""}</header>`;
-  /* A FIELD CARRIES THE HEAD. The Dashboard's ultramarine band is the page's
-     title band too, so its head sits inside it rather than above it. */
+  /* A FIELD CARRIES THE HEAD. The Dashboard's field is the page's title band
+     too, so its head sits inside it rather than above it. */
   return `
   <div class="page" data-wide>
     ${field ? `<section class="field">${head}${field}</section>` : head}

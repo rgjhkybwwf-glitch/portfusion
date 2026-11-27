@@ -11,8 +11,8 @@ THE GAP IT CLOSES. `bench.discard()` removes the working NOTE and its docstring 
 touches a document; the drop-off cannot make one leave. Without this, a document dropped on the
 bench and then not needed had two exits, both wrong: archive it as evidence, which is false when
 it was never used, or leave it stranded and fail `test_inbox.py::test_the_workbench_is_clear`
-for ever. Or it goes somewhere temporary that gets cleaned, which is `docs/intake.md`'s "never
-delete a document from here" by a slower route.
+for ever. Or it goes somewhere temporary that gets cleaned, which breaks `docs/intake.md`'s
+"Never" by a slower route.
 
 THE SYMMETRY IS WITH commit.py, which is the other terminal route: both move the document and
 close the note in one breath, and both copy the note to `_archive/bench/` so the tracked record
