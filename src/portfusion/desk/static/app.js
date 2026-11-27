@@ -90,8 +90,9 @@ function drawTabs(panels, active, onPick) {
     if (b.dataset.name === active) b.setAttribute("aria-current", "page");
     else b.removeAttribute("aria-current");
   });
-  /* ON A PHONE THE RAIL FOLDS behind one button (phone.css, `.pages-toggle`), which names the open
-     page; choosing a page folds it again. The button is the shell's, so it is wired once. */
+  /* IN A NARROW WINDOW THE RAIL FOLDS behind one button (phone.css, `.pages-toggle`), which
+     names the open page; choosing a page folds it again. The button is the shell's, so it is
+     wired once. */
   const toggle = $("#pages-toggle");
   if (!toggle) return;
   toggle.textContent = (panels.find((p) => p.name === active) || {}).title || "Pages";

@@ -22,7 +22,7 @@ pre.paste, pre.doc {
 }
 pre.doc { max-height: 22rem; overflow-y: auto; }
 
-/* THE DROP-OFF ZONE. A dashed outline is the one place in this design system that reads as
+/* THE DROP-OFF ZONE. A dashed outline is the one place on the desk that reads as
    "put something here" rather than "here is a figure" — everything else is hairlines and
    fills that carry meaning. It lights up on `.over` so a drag has visible feedback before
    the release, which is the moment a drop is either aimed or abandoned. */

@@ -55,8 +55,7 @@ src/portfusion/demo/_inbox/
 # a different tool or a stray deletion would not recreate. Keeping the whole environment
 # out of git should not rest on someone else's default.
 #
-# NO TRAILING SLASH: `.venv/` matches a folder but not a link, and a venv may be either
-# (docs/environment.md).
+# NO TRAILING SLASH: `.venv/` matches a folder but not a link, and a venv may be either.
 .venv
 
 # The JavaScript tools' packages (tools/package.json): `npm ci` rebuilds them from the lock.

@@ -13,7 +13,7 @@
 .diff + .diff { margin-top: var(--space-6); }
 .win { display: inline-block; margin-right: var(--space-3); white-space: nowrap; }
 
-/* THE FIELD: the design system's ultramarine, the one strong moment on the Dashboard.
+/* THE FIELD: the one strong moment on the Dashboard.
    It carries the page's head and the figures the panel marks as leading, each with
    the parts that sit under it, in white; everything else on the page stays on the white ground. */
 .field { background: var(--field); color: var(--on-field); padding: var(--space-6) var(--space-6)
@@ -62,8 +62,8 @@ td.alloc-bar svg { display: block; width: 100%; min-width: 4rem; height: 10px; }
 td.alloc-bar rect { fill: var(--chart); }
 td.alloc-bar rect.track { fill: var(--band); }
 
-/* THE DASHBOARD'S GLANCE: its figures beside what needs attention; on a phone, below them, as
-   beside them the list would be one letter wide. */
+/* THE DASHBOARD'S GLANCE: its figures beside what needs attention; in a narrow window, below
+   them, as beside them the list would be one letter wide. */
 .glance { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-6);
           align-items: start; }
 

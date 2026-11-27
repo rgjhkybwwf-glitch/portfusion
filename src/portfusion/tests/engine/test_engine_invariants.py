@@ -507,8 +507,8 @@ def test_an_account_holds_one_kind_of_line_and_only_one(book):
     separates the two valuation bases — asserted here on the changes frame.
 
     ONE WORD FOR A LINE'S KIND, STORED ONCE. A kind held in more than one place, or read from a
-    name such as a code's ` SB` suffix, is a second answer that can disagree: `securities.kind`
-    holds it per code, and nothing decides from the name.
+    name such as a code's ` SB` suffix, is a second answer that can disagree:
+    `securities.held_as` holds it per code, and nothing decides from the name.
     """
     for account, held_as, _ in _account_kind(book):
         other = "spread bet" if held_as == "shares" else "shares"

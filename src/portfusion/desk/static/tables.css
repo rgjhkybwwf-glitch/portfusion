@@ -10,7 +10,7 @@
    not read, and at 1.3 with --row-pad a plain row is 27px against 35px. Nothing in a row is
    bold: weight is for a headline figure (`table.figures`, `tr.lead`) and an item's label. */
 table { width: 100%; border-collapse: collapse; line-height: 1.3; }
-/* A TABLE OPENS ON THE DESIGN SYSTEM'S 2px RULE, and its heads sit on the page in the label style, with a
+/* A TABLE OPENS ON THE KIT'S 2px RULE, and its heads sit on the page in the label style, with a
    hairline under them: borders, not bands. */
 table { border-top: var(--rule-section) solid var(--rule); }
 th, thead td {
@@ -86,10 +86,10 @@ tr.detail-row .scroll { margin: var(--space-2) 0; max-height: none; }
 .scroll.overflows > table > * > tr > :first-child { box-shadow: inset -1px 0 0 var(--hair); }
 /* AN EDGE WITH MORE BEYOND IT SAYS SO (`more-left`, `more-right`, set by app.js), and the sign
    goes at that end once the box is scrolled there: the 2px rule, in the control's colour, the
-   scrollbar thumb's, so it shows in a picture, on a phone and where no scrollbar is drawn. ON A
-   PINNED COLUMN it is the column's inner edge, a heading cut there going on under it; drawn
-   inside the cell, as the hairline is, since a border would join the table's grid and move its
-   columns. */
+   scrollbar thumb's, so it shows in a picture, in a narrow window and where no scrollbar is
+   drawn. ON A PINNED COLUMN it is the column's inner edge, a heading cut there going on under
+   it; drawn inside the cell, as the hairline is, since a border would join the table's grid and
+   move its columns. */
 .scroll.more-left > table > thead > tr > :first-child,
 .scroll.more-left > table > tbody > tr:not(.detail-row) > td:first-child {
   box-shadow: inset calc(-1 * var(--rule-section)) 0 0 var(--control);

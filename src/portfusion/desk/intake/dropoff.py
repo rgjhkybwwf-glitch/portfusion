@@ -135,11 +135,9 @@ def accept(raw_name: str, data: bytes, modified_ms=None) -> dict:
     if path.resolve().parent != inbox.resolve():
         raise Refused(f"{name!r} does not resolve inside _inbox/")
 
-    # NEVER OVERWRITE. `docs/intake.md`: "Never delete a document from here. It leaves by
-    # being archived, or it goes back where it came from. Deleting it destroys the evidence
-    # the row points at." An overwrite is a deletion with the name left behind, and it is the
-    # quieter of the two — the listing would be unchanged. The exclusive open leaves no moment
-    # between the check and the write.
+    # NEVER OVERWRITE: `docs/intake.md`'s "Never" holds the rule. An overwrite is a deletion with
+    # the name left behind, and it is the quieter of the two — the listing would be unchanged.
+    # The exclusive open leaves no moment between the check and the write.
     try:
         with path.open("xb") as f:
             f.write(data)

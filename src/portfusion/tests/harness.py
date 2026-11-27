@@ -510,7 +510,7 @@ def configure(config) -> None:
     THE DEFAULT RUN IS THE GUARD: green unless the code broke. The audit tests are deselected, not
     skipped, and run on their own command (`docs/testing.md`).
 
-        portfusion check            the guard, on the loaded book (`python3 -m pytest` in a checkout)
+        portfusion check            the guard, on the books `check/__init__.py`'s `check()` names
         portfusion record           the audit: what the record needs today
         python3 -m pytest -m audit  the same set, without the framing
 

@@ -10,7 +10,7 @@ from harness import SRC, desk_script, desk_style
 # MOVEMENT COLOUR
 #
 # `house/palette.py` heads UP and DOWN "movement, which is not provenance". That is
-# the rule these two tests hold: a THIRD channel, beside font-colour-as-origin and
+# the rule these tests hold: a THIRD channel, beside font-colour-as-origin and
 # fill-as-state, which must borrow from neither and must say only what a figure's SIGN is.
 # =====================================================================================
 
@@ -288,7 +288,7 @@ def test_the_template_has_no_note_box_and_no_pill():
     table (explanations live in the fold), and the basis pill beside a figure whose label already
     says what it is.
 
-    The design system's labels are condensed capitals, set by the stylesheet, so every label is
+    The desk's labels are condensed capitals, set by the stylesheet, so every label is
     WRITTEN in sentence case, which this checks — a heading typed in capitals would hide three
     spellings."""
     import re
@@ -312,7 +312,7 @@ def test_the_page_head_is_ruled_off_on_every_page():
 
 def test_every_wide_table_scrolls_in_its_own_box():
     """A wide table scrolls in its own box, so the page never does. The two narrow kinds, a page's
-    figures and Holdings' bars, are two or three columns and fit a phone as they are."""
+    figures and Holdings' bars, are two or three columns and fit a narrow window as they are."""
     import re
     js = desk_script()
     narrow = ('<table class="figures">', '<table class="alloc">')
@@ -324,8 +324,8 @@ def test_every_wide_table_scrolls_in_its_own_box():
 
 
 def test_the_dashboards_glance_stacks_on_a_phone():
-    """The Dashboard's figures stand beside Needs attention. Beside them on a phone the list would
-    be one letter wide, so at the phone's width, the 48rem the gutter narrows at, the list goes
+    """The Dashboard's figures stand beside Needs attention. Beside them in a narrow window the
+    list would be one letter wide, so below 48rem, the width the gutter narrows at, the list goes
     below them."""
     import re
     css = desk_style()

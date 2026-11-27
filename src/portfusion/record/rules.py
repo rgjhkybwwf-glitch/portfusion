@@ -693,8 +693,9 @@ def _build() -> dict:
     ]
 
     register = schema.load("accounts")
-    # AN ACCOUNT'S CODE IS ITS NAME TO EVERYONE BUT THE OWNER, so two accounts may never share one,
-    # and each is A and a number. The label beside it is the engine's, `Book.account_codes()`.
+    # AN ACCOUNT'S CODE IS ITS NAME ON A READING PAGE (`accounts.code` in `record/schema.py`), so
+    # two accounts may never share one, and each is A and a number. The label beside it is the
+    # engine's, `Book.account_codes()`.
     _codes = [r[schema.TABLES["accounts"].header.index("code")] for r in register]
     if len(set(_codes)) != len(_codes) or not all(_re.fullmatch(r"A[1-9]\d*", c) for c in _codes):
         raise ValueError(f"accounts.csv codes must be distinct, each A and a number: {_codes}")
@@ -841,8 +842,8 @@ def _build() -> dict:
     _twice = sorted({e.closes for e in sales if e.closes
                      and sum(x.closes == e.closes for x in sales) > 1})
     # A LEG'S CODE IS ITS ACCOUNT'S KIND, AND EVERY CODE IS REGISTERED. The fact is stored once per
-    # code (securities.kind) and once per account (accounts.kind); this is the check that the two
-    # agree on every leg and every sale, so the engine may decide a line from either.
+    # code (securities.held_as) and once per account (accounts.held_as); this is the check that the
+    # two agree on every leg and every sale, so the engine may decide a line from either.
     _unregistered = sorted({t.ticker for t in buys if t.ticker not in KIND_OF_CODE}
                            | {e.ticker for e in sales if e.ticker not in KIND_OF_CODE})
     _crossed = ([f"{t.trade_id} {t.ticker} is {KIND_OF_CODE[t.ticker]!r} in {t.acct}, a "

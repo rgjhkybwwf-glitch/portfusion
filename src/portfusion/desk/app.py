@@ -125,7 +125,7 @@ def fonts(name: str):
 
 @app.get("/favicon.png")
 def favicon():
-    """THE DESK'S MARK IN A TAB — the small mark, the form the design system keeps for below 20px.
+    """THE DESK'S MARK IN A TAB — the stand-in mark on its rounded tile (`house/mark.py`).
 
     A browser tab with the generic page icon is one you lose among twenty others.
 
@@ -161,8 +161,8 @@ def tokens():
     """The palette's colours as CSS custom properties, DERIVED not retyped.
 
     Generated rather than written down, so a colour changed in `house/palette.py` reaches the
-    desk on the next reload. The desk's stylesheet (`bundle.STYLES`) is the design system and consumes these;
-    replacing it is how a different design system drops in.
+    desk on the next reload. The desk's stylesheet (`bundle.STYLES`) is its look and consumes
+    these; replacing it is how a different look drops in.
     """
     return _shell("/tokens.css")
 

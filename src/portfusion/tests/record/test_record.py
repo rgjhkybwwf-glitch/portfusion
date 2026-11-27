@@ -45,9 +45,10 @@ def test_every_trade_account_is_a_known_account(D):
 
 
 def test_an_account_is_named_by_its_code_without_its_holder():
-    """THE NAME ANYONE BUT THE OWNER READS: one code per account, in the register's own order,
-    and a label that carries no word of the holder's name. The two IG spread bets read alike
-    once the holder comes off, so the code is what tells them apart."""
+    """THE NAME A READING PAGE GIVES AN ACCOUNT (`desk/panels/_shape.py`'s `labels()`): one code
+    per account, in the register's own order, and a label that carries no word of the holder's
+    name. The two IG spread bets read alike once the holder comes off, so the code is what tells
+    them apart."""
     from portfusion.engine import Book
     b = Book()
     codes, reg = b.account_codes(), b.account_register().set_index("account")

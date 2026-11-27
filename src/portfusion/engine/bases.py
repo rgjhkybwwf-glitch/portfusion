@@ -12,10 +12,10 @@ from portfusion.record import rules as D
 # =====================================================================================
 #
 # Every published metric is on ONE of two bases — money (what the book has: NAV, capital, income,
-# growth) or notional (the size of an economic interest) — and roll_up() refuses to add across
-# them, so the wrong sum is impossible rather than forbidden. A spread-bet account contributes its
-# EQUITY to NAV and its NOTIONAL to exposure; both are on the frame, and the basis decides which
-# total each may touch.
+# growth) or notional (the full size of a position, not money) — and roll_up() refuses to add
+# across them, so the wrong sum is impossible rather than forbidden. A spread-bet account
+# contributes its EQUITY to NAV and its NOTIONAL to exposure; both are on the frame, and the basis
+# decides which total each may touch.
 #
 # A LINE'S KIND — `shares` / `spread bet`, the register's own words (schema.KINDS) — asks a
 # different question: DO WE OWN IT, OR HAVE EXPOSURE TO IT. Not `basis` (what kind of number,

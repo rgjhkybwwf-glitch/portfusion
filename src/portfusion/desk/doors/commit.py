@@ -20,8 +20,8 @@ What keeps that honest is structural:
     between them. `tests/desk/test_inbox.py` fails on any item left on disk in that state.
 
 It never deletes a row, and edits one only to move its id when an earlier-dated row takes its
-place (`record/order.py`). A mistake is corrected by a further row, or by a hand edit with a
-commit message saying why; `git revert` is the undo, which is why the store is tracked.
+place (`record/order.py`). A mistake is corrected in its row, by hand, with a `hand` journal
+row; `git revert` is the undo, which is why the store is tracked.
 """
 from __future__ import annotations
 

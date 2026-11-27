@@ -75,7 +75,7 @@ class Book(Positions, Trades, Accounts, Reconciliation, Quarters, PastDates, Fin
         return L.loc[~L["held_as"].isin(MONEY_KINDS), "gbp_value"].sum()
 
     def total_exposure(self) -> float:
-        """Owned + contract value. A measure of position size, NOT of capital."""
+        """Owned + notional. A measure of position size, NOT of capital."""
         return self.owned() + self.exposure()
 
     def portfolio_cost(self) -> float:
