@@ -15,7 +15,9 @@ walk finds.
 
 - **It takes the first line it can build, and never reorders**: the first under Next whose issue
   carries `planned` and none of `decision`, `building` and `hold`, has no open pull request of its
-  own, and whose "waits" issues are all closed. It skips the rest.
+  own, and whose "waits" issues are all closed. It skips the rest. When no line under Next is
+  free, it takes the first Upkeep line that is, by the same test: only one the coordinator planned
+  (the skill `plan`).
 - **An answer build takes only what the coordinator marked**: the issues under Next marked
   "Build:" since their last **Plan, checked**, in the Queue's order, and no other line.
 - **No line it can build and nothing to tend: stop**, posting nothing on GitHub but its lines in

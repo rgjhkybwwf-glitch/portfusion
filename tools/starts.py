@@ -138,12 +138,12 @@ def text(key: str, number: str = "", url: str = "", tag: str = "") -> str:
         "release": f"{tag} was published.",
         "resume": (f"the maintainer resumed {where}." if number != str(QUEUE)
                    else "the maintainer resumed the loop: take all that waited while it was paused."),
-        "replan": f"a run left a re-plan, the last on {where}. Plan the issues under Next marked "
-                  f"\"Re-plan\" since their last \"Plan, checked\".",
+        "replan": f"a run left a re-plan, the last on {where}. Plan the issues under Next or in "
+                  f"Upkeep marked \"Re-plan\" since their last \"Plan, checked\".",
         "build": f"the coordinator left a build, the last on {where}. Build the issues under Next "
                  f"marked \"Build:\" since their last \"Plan, checked\", and no other line.",
         "topup": f"a planned issue closed as done, the last {where}. Tick what merged, and plan "
-                 f"the lines under Next to the cap.",
+                 f"the lines under Next to the cap, then Upkeep for a place Next leaves empty.",
     }
     said["change"] = said["answer"]
     return f"{STARTS[key].run}: {said[key]}"
