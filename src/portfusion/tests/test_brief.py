@@ -27,6 +27,10 @@ The builders build only lines under **Next**.
 ## Design next
 - #20 A feature whose card is drafted next
 
+## Upkeep
+- [ ] #16 A fault no headline needs · yours
+- [ ] #17 Another fault · waits #12 · yours
+
 ## After the gate
 - [ ] #30 A line of the next milestone · waits #15
 """
@@ -91,13 +95,19 @@ def test_a_run_finds_its_row_by_its_clock_or_by_the_gates_own_text(brief, table)
 
 def test_the_lines_under_next_are_read_in_order_with_their_waits(brief):
     lines = brief.next_lines(QUEUE)
-    assert [line.number for line in lines] == [11, 12, 13, 15], "Next only, unticked, in order"
-    assert [line.waits for line in lines] == [(), (11,), (11, 40), (11, 12, 13)], \
+    assert [line.number for line in lines] == [11, 12, 13, 15, 16, 17], \
+        "Next, unticked, in order, then Upkeep in its order"
+    assert [line.upkeep for line in lines] == [False] * 4 + [True] * 2
+    assert [line.waits for line in lines] == [(), (11,), (11, 40), (11, 12, 13), (), (12,)], \
         ("a wait is what follows \"waits\" or \"waits on\", not a number in the brackets after "
          "it; and the line that is last waits on every line above")
     assert lines[2].title == "B4 · confirm inside the page"
     assert lines[3].title == "The release checklist: the gate"
+    assert lines[4].title == "A fault no headline needs", "the maintainer's mark is no part of the title"
     assert brief.next_lines("No list here.") == []
+    upkeep_first = "## Upkeep\n- [ ] #16 A fault\n\n## Next\n- [ ] #11 A first line\n"
+    assert [line.number for line in brief.next_lines(upkeep_first)] == [11, 16], \
+        "Next's lines come first whatever order the headings stand in"
 
 
 def test_a_builder_is_sent_only_to_a_line_it_may_take(brief):
@@ -282,3 +292,32 @@ def test_the_brief_only_reads_and_never_stops_a_run(brief, monkeypatch, capsys):
     assert brief.main(["builder"]) == 0
     assert "it failed and says nothing" in capsys.readouterr().out
     assert brief.main(["maintainer"]) == 2
+
+
+def test_an_upkeep_line_is_taken_only_once_planned_and_after_next(brief):
+    """THE CASE THAT MAKES IT FAIL: a builder sent to an Upkeep line that has no plan, or to one
+    while a line under Next is free; or an Upkeep plan that holds no place."""
+    lines = [brief.Line(1, "Next one", ()), brief.Line(2, "Upkeep, planned", (), True),
+             brief.Line(3, "Upkeep, no plan", (), True)]
+    issues = {1: issue("planned"), 2: issue("planned"), 3: issue()}
+    said, takeable, standing = brief.lines_said(lines, issues, {}, {})
+    assert takeable == [1, 2], "Next's line first, then the planned Upkeep line"
+    assert standing == [1, 2], "an Upkeep plan holds a place like any other"
+    assert len(said) == 2 and "Upkeep" in said[1], "an Upkeep line with no plan is not listed"
+    issues[1] = issue()
+    assert brief.lines_said(lines, issues, {}, {})[1] == [2], \
+        "with nothing under Next to take, the planned Upkeep line is taken"
+    plans = {2: {"at": None, "commit": "", "since": ["Build"]}}
+    assert brief.lines_said(lines, issues, {}, plans, marked=True)[1] == [], \
+        "an answer build takes only lines under Next"
+    issues[1] = issue("planned")
+    first = [brief.Line(2, "Upkeep, planned", (), True), brief.Line(1, "Next one", ())]
+    assert brief.lines_said(first, issues, {}, {})[1] == [1, 2], \
+        "Next's line comes first whatever order the headings stand in"
+    del issues[2]
+    assert "closed, not yet ticked" in brief.lines_said(lines, issues, {}, {})[0][1], \
+        "a closed Upkeep line is said so, to be ticked"
+    unread = brief.lines_said(lines, {}, {}, {}, holes=("the open issues, past its first 500",))
+    assert len(unread[0]) == 3 and all("not read" in s for s in unread[0]), \
+        "with the open issues unread, no Upkeep line is dropped"
+

@@ -41,11 +41,10 @@ exception, and the table says so.
    when there is none. Clear a `building` label more than three hours old: a run that long has
    died.
 4. **Nothing changed: stop.** When nothing has merged, closed, been answered, changed or filed
-   since, as many plans hold a place as the cap or no line under Next could be planned (the
-   skill `plan`), and no review of the Queue is due, go to the last part with
-   a one-line debrief; where this run met a fault, or an end line since its last names one, the
-   Faults head comes before that line, and the Pages head likewise for a page (the skill
-   `end-of-run`).
+   since, as many plans hold a place as the cap or no line under Next or in Upkeep could be planned
+   (the skill `plan`), and no review of the Queue is due, go to the last part with a one-line
+   debrief; where this run met a fault, or an end line since its last names one, the Faults head
+   comes before that line, and the Pages head likewise for a page (the skill `end-of-run`).
 5. **Record** every answer and `Change:` not yet recorded, before anything is built: the skill
    `record-answer`. With it, a `Change:` on the Queue is applied by the skill `keep-the-queue`,
    and an answered gate review by the skill `gate-review`, Applying its answer. Any other comment
@@ -59,9 +58,9 @@ exception, and the table says so.
    `place-an-issue` and its questions by `ask-or-decide`, asked as it is shaped. An idea an open
    issue already covers is added to that issue and closed.
 9. **The dependencies**: the skill `dependencies`.
-10. **Plan**: the skill `plan`. First each issue under Next marked "Re-plan" since its last
-    **Plan, checked**, and an issue the maintainer resumed whose plan no longer stands; then the
-    lines under Next, in order, to the cap.
+10. **Plan**: the skill `plan`. First each issue under Next or in Upkeep marked "Re-plan" since its
+    last **Plan, checked**, and an issue the maintainer resumed whose plan no longer stands; then
+    the lines under Next, in order, to the cap; then Upkeep, for a place Next leaves empty.
 11. **One long job, at most**: the skill `gate-review` on the day the gate is reached; else
     `keep-the-queue`, The review, on a Monday or a Thursday; else `design-card`, or
     `slice-a-feature` for a feature whose shape is decided.
