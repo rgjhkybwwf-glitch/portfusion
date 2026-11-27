@@ -69,10 +69,10 @@ function drawItem(d) {
      session through `python3 -m portfusion.desk.intake.propose`, which fills this item and nothing else. */
   const local = (BENCH.reads_here || []).includes(it.evidence_class);
   const doc = it.document
-    ? `<p><button class="link" id="preview">show the document</button>` +
-      ` · <button class="link" id="readdoc">read ${esc(it.document.name)}</button></p>` +
+    ? `<p>${actButton(`id="preview"`, "show the document")}` +
+      ` · ${actButton(`id="readdoc"`, `read ${esc(it.document.name)}`)}</p>` +
       (local
-        ? `<p><button class="link" id="readhere">read it again</button>
+        ? `<p>${actButton(`id="readhere"`, "read it again")}
              <span class="muted small">on this machine — nothing leaves it</span></p>`
         : `<p><span class="muted small">a Claude session reads it: python3 -m portfusion.desk.intake.propose</span></p>`)
     : "";
@@ -155,7 +155,7 @@ function drawItem(d) {
            what it is. The sign is the record's own rule, so the label follows it. */
         r.table === "income" && parseFloat(r.values.amount) < 0
           ? ` <span class="muted small">a cost — negative</span>` : ""}
-        <button class="link danger" data-delrow="${i}">remove</button></div>
+        ${warnButton(`data-delrow="${i}"`, "remove")}</div>
       ${ratio}
       <div class="grid">${form.map((s) =>
         field(s, r.values[s.name], (r.sources || {})[s.name],
@@ -183,16 +183,16 @@ function drawItem(d) {
        day are legitimate and can occur, so this cannot be a refusal — but it must
        cost a deliberate click that says "yes, I know, and it is still a separate event". */
     (!g.ok && (g.findings || []).length
-      ? ` <button class="link danger" data-ack="${esc(g.name)}">` +
-        `${esc(g.ack || "I know — this is a separate event")}</button>` : "") +
+      ? ` ${warnButton(`data-ack="${esc(g.name)}"`,
+                       esc(g.ack || "I know — this is a separate event"))}` : "") +
     `</li>`).join("");
 
   $("#item").innerHTML = `
-    <div class="row-head"><button class="link" id="back">back to the Bench</button></div>
+    <div class="row-head">${goButton(`id="back"`, "back to the Bench")}</div>
     <div class="row-head"><h2>${esc(it.title)}</h2>
       ${it.document && it.document.name
-        ? `<button class="link danger" id="withdraw">withdraw document</button>` : ""}
-      <button class="link danger" id="discard">discard item</button></div>
+        ? warnButton(`id="withdraw"`, "withdraw document") : ""}
+      ${warnButton(`id="discard"`, "discard item")}</div>
     ${doc}
     <div id="preview-pane"></div>
     <div id="docbody"></div>
@@ -204,9 +204,9 @@ function drawItem(d) {
     <h2>Proposed rows</h2>
     <div id="rows">${rows || `<p class="muted">nothing proposed yet</p>`}${firstMarks(it)}</div>
     <p>${BENCH.tables.map((t) =>
-        `<button class="link" data-addrow="${esc(t)}">+ ${esc(
-          ((BENCH.table_labels || {})[t] || t).toLowerCase())}</button>`).join(" ")}
-      <button class="link" data-addadjustment>+ ${esc(BENCH.adjustment_label.toLowerCase())}</button></p>
+        actButton(`data-addrow="${esc(t)}"`, `+ ${esc(
+          ((BENCH.table_labels || {})[t] || t).toLowerCase())}`)).join(" ")}
+      ${actButton("data-addadjustment", `+ ${esc(BENCH.adjustment_label.toLowerCase())}`)}</p>
     <h2>Reasoning</h2>
     ${WHYS.map((w) => `
       <label class="f"><span>${esc(w.label)}${w.required ? ` <span class="req">required</span>` : ""}</span>

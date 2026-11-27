@@ -55,10 +55,12 @@ const stepLine = (steps) => `<ol class="steps">${steps.map((s) => `
    pressed: a GO leads to another page, its name and an arrow (`goButton()`); an ACT does
    something here, a small outlined button (`actButton()`); an OPEN opens in place, a row's
    chevron (`detailToggle()`). Each class is written here and nowhere else. `attrs` and `html`
-   are markup, escaped by the caller. The Bench's own controls are its own. */
+   are markup, escaped by the caller. An act that removes or overrides is drawn in the warning
+   ink, by `warnButton()`. */
 const goButton = (attrs, html) =>
   `<button class="go" ${attrs}>${html}<span class="mark" aria-hidden="true">→</span></button>`;
 const actButton = (attrs, html) => `<button class="act" ${attrs}>${html}</button>`;
+const warnButton = (attrs, html) => actButton(`data-warns ${attrs}`, html);
 
 /* A step's qualifier, and a link to another tab. One of each: the link is `data-panel`, which
    #main delegates, so a page that redraws keeps it working without wiring its own. */

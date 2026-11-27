@@ -25,7 +25,7 @@ Object.assign(DRAW, {
     /* AN EMPTY LIST IS NOT DRAWN: the status line already counts it. */
     const items = d.items.length ? d.items.map((i) =>
       `<li class="${i.ready ? "clear" : "note"}"><span class="tag">${i.ready ? "ready" : i.state}</span>` +
-      `<button class="link" data-open="${esc(i.id)}">${esc(i.title)}</button> ` +
+      `${goButton(`data-open="${esc(i.id)}"`, esc(i.title))} ` +
       `<span class="muted">${i.rows} row(s)` +
       (i.blocked_by.length ? ` · blocked: ${esc(i.blocked_by.join(", "))}` : "") +
       `</span></li>`).join("") : "";
@@ -48,7 +48,7 @@ Object.assign(DRAW, {
     };
     const docs = d.documents.length ? d.documents.map((f) =>
       `<li class="gap"><span class="tag">waiting</span>${esc(f.name)}${seen(f.recognised)} ` +
-      `<button class="link" data-doc="${esc(f.name)}">work it</button></li>`).join("")
+      `${actButton(`data-doc="${esc(f.name)}"`, "work it")}</li>`).join("")
       : "";
 
     /* A PUBLISHED RESEARCH NOTE THE BOOK HAS NO ROW FOR, and the codes it would be filed under:
@@ -56,7 +56,7 @@ Object.assign(DRAW, {
     const notes = (d.notes || []).map((n) =>
       `<li class="gap"><span class="tag">published</span>${esc(n.ref)} · ${esc(day(n.date))} · ` +
       `${esc(n.company)} · ${esc(n.kind)} → ${esc(n.codes.join(", "))} ` +
-      `<button class="link" data-note="${esc(n.ref)}">record</button></li>`).join("");
+      `${actButton(`data-note="${esc(n.ref)}"`, "record")}</li>`).join("");
 
     /* WHAT MAY LAND COMES FROM THE SERVER. desk/intake/dropoff.py holds the list and the cap; the
        screen states them so a refusal is not the first time anyone hears the rule, and it
@@ -70,8 +70,8 @@ Object.assign(DRAW, {
       scope: "an event, from evidence to an approved row",
       status: [
         { label: "Items", body: `${quiet(`${d.items.length} on the bench`)}
-          <button class="link" id="newitem">+ new item</button>${ready
-            ? ` <button class="link" id="review">review and write (${ready})</button>` : ""}` },
+          ${actButton(`id="newitem"`, "+ new item")}${ready
+            ? ` ${goButton(`id="review"`, `review and write (${ready})`)}` : ""}` },
         { label: "Inbox", body: quiet(`${d.documents.length} document(s) waiting`) },
         { label: "Research", body: quiet(`${(d.notes || []).length} note(s) waiting`) },
       ],
@@ -86,7 +86,7 @@ Object.assign(DRAW, {
           <strong>Drop a contract note or statement here</strong>
           <span class="muted">It waits under Documents and opens on the Bench.
             ${a.extensions.map(esc).join(" · ")} · up to ${mb} MB</span>
-          <span class="muted"><button class="link" id="pickbtn">or choose a file</button></span>
+          <span class="muted">${actButton(`id="pickbtn"`, "or choose a file")}</span>
           <input type="file" id="pick" multiple hidden>
         </div>
         <pre class="error" id="dropout" aria-live="polite" hidden></pre>
