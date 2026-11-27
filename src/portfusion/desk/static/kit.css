@@ -245,8 +245,9 @@ pre { font-family: var(--font-sans); }
          white-space: pre-wrap; font-size: var(--text-note); }
 
 /* GO, ACT AND OPEN — `goButton()`, `actButton()` and `detailToggle()` in kit.js; the chevron's
-   rules are tables.css's. A GO leads to another page: its name and an arrow, in the link's colour
-   at its line's own size, with no underline and no outline, darkening to ink under the pointer. */
+   rules are tables.css's. A GO leads to another page or view: its name and an arrow, in the
+   link's colour at its line's own size, with no underline and no outline, darkening to ink under
+   the pointer. */
 button.go {
   appearance: none; background: none; border: 0; padding: 0; cursor: pointer;
   font: inherit; color: var(--link); text-decoration: none;

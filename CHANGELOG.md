@@ -28,7 +28,7 @@ Each release, newest first. The version is `src/portfusion/__init__.py`'s, and
   item") is a go with its arrow, and what reads, makes, writes or opens a chooser is an act, as
   are the sweep's buttons. One that removes or overrides ("remove", "discard item", "withdraw
   document", a gate's "I know") is an act in the warning ink. No control's words, place or
-  doing changes, and the underlined link is gone from the desk.
+  doing changes, and no button on the desk is drawn as an underlined link.
 
 ### Removed
 

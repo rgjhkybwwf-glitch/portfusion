@@ -52,7 +52,7 @@ const stepLine = (steps) => `<ol class="steps">${steps.map((s) => `
     ${s.body || ""}</li>`).join("")}</ol>`;
 
 /* THREE KINDS OF CONTROL, EACH IN ITS OWN SHAPE, so a word says what it will do before it is
-   pressed: a GO leads to another page, its name and an arrow (`goButton()`); an ACT does
+   pressed: a GO leads to another page or view, its name and an arrow (`goButton()`); an ACT does
    something here, a small outlined button (`actButton()`); an OPEN opens in place, a row's
    chevron (`detailToggle()`). Each class is written here and nowhere else. `attrs` and `html`
    are markup, escaped by the caller. An act that removes or overrides is drawn in the warning
