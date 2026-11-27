@@ -192,8 +192,7 @@ def lines_said(lines: list[Line], issues: dict[int, dict], own: dict[int, list[d
             continue
         labels = issue["labels"]
         pulls = own.get(line.number, [])
-        replanned = "Re-plan" in (plans.get(line.number) or {}).get("since", [])
-        if line.upkeep and "planned" not in labels and not pulls and not replanned:
+        if line.upkeep and "planned" not in labels and not pulls:
             continue
         parts = ["planned" if "planned" in labels else "no plan"]
         plan = plans.get(line.number)
@@ -337,10 +336,7 @@ def brief(level: str, text: str, now: datetime, asked: Asked) -> list[str]:
     lines = next_lines(queue.get("body") or "")
     plans = {}
     for line in lines:
-        # An open Upkeep line is read for its plan too, planned or not: a "Re-plan:" took the
-        # label off, and only its comments say it waits to be planned again.
-        if ("planned" in issues.get(line.number, {}).get("labels", [])
-                or (line.upkeep and line.number in issues)):
+        if "planned" in issues.get(line.number, {}).get("labels", []):
             plans[line.number] = plan_of(asked.get(f"issues/{line.number}/comments",
                                                    f"#{line.number}'s comments", pages=5))
 
@@ -365,7 +361,8 @@ def brief(level: str, text: str, now: datetime, asked: Asked) -> list[str]:
     answer_build = bool(row) and row["Run"] == "Answer build"
     said, takeable, standing = lines_said(lines, issues, own, plans, holes, marked=answer_build)
     out.append(f"Next, in the Queue's order ({sum(not ln.upkeep for ln in lines)} lines; \"waits\" "
-               "as the Queue's lines say them), then any Upkeep line planned or being built:")
+               "as the Queue's lines say them), then any Upkeep line planned, being built, closed or "
+               "unread; an Upkeep re-plan is read from the comments since the last run:")
     out += said or ["  none read"]
     if level == "builder":
         if holes:

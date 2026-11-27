@@ -105,6 +105,9 @@ def test_the_lines_under_next_are_read_in_order_with_their_waits(brief):
     assert lines[3].title == "The release checklist: the gate"
     assert lines[4].title == "A fault no headline needs", "the maintainer's mark is no part of the title"
     assert brief.next_lines("No list here.") == []
+    upkeep_first = "## Upkeep\n- [ ] #16 A fault\n\n## Next\n- [ ] #11 A first line\n"
+    assert [line.number for line in brief.next_lines(upkeep_first)] == [11, 16], \
+        "Next's lines come first whatever order the headings stand in"
 
 
 def test_a_builder_is_sent_only_to_a_line_it_may_take(brief):
@@ -311,10 +314,6 @@ def test_an_upkeep_line_is_taken_only_once_planned_and_after_next(brief):
     first = [brief.Line(2, "Upkeep, planned", (), True), brief.Line(1, "Next one", ())]
     assert brief.lines_said(first, issues, {}, {})[1] == [1, 2], \
         "Next's line comes first whatever order the headings stand in"
-    issues[3] = issue()
-    replan = {3: {"at": None, "commit": "", "since": ["Re-plan"]}}
-    assert any("#3 " in s for s in brief.lines_said(lines, issues, {}, replan)[0]), \
-        "an Upkeep line whose plan was marked Re-plan is listed, though its label is off"
     del issues[2]
     assert "closed, not yet ticked" in brief.lines_said(lines, issues, {}, {})[0][1], \
         "a closed Upkeep line is said so, to be ticked"
