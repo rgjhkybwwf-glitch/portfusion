@@ -33,8 +33,7 @@ async function wireActions(panelName) {
     .filter((a) => a.panel === panelName && !a.inline);
   /* THE BUTTON AND WHAT IT REACHES, and no paragraph: what it does is in the page's fold. */
   $("#acts").innerHTML = acts.map((a) =>
-    `<p><button class="link" data-act="${esc(a.name)}">
-       ${esc(a.label)}</button>` + (a.name === "ig-events" ? ` <select id="lookback" aria-label="Look-back">${
+    `<p>${actButton(`data-act="${esc(a.name)}"`, esc(a.label))}` + (a.name === "ig-events" ? ` <select id="lookback" aria-label="Look-back">${
          LOOKBACKS.map(([v, l]) => `<option value="${v}"${v === LOOKBACK ? " selected" : ""}>${
            esc(l)}</option>`).join("")}</select>`
        : "") + badges(a.name) + `</p>`).join("");
@@ -111,8 +110,8 @@ const ACTION_VIEW = {
                 item.blocked && item.blocked.length
                   ? ` — ${esc(item.blocked.join(", "))} owed` : " — ready"}</span>`
             : setup
-              ? `<button class="link swept-do" data-setup="${esc(r.ref)}">set it up</button>`
-              : `<button class="link swept-do" data-ig-event="${esc(r.ref)}">work it</button>`;
+              ? `<span class="swept-do">${actButton(`data-setup="${esc(r.ref)}"`, "set it up")}</span>`
+              : `<span class="swept-do">${actButton(`data-ig-event="${esc(r.ref)}"`, "work it")}</span>`;
         return `<li class="swept"><div class="swept-head">
             <span class="swept-what">${esc(r.what || r.ref)}</span>${state}</div>
           <p class="muted swept-meta">${esc(r.account || "")} · ${esc(r.ref)}</p>${
@@ -238,7 +237,7 @@ function setupForm(ev) {
       ${pick("funding", choices("contracts", "funding"), ev.funding)}</div>
     ${options("su-company", choices("securities", "company"))}${options("su-sector",
       choices("companies", "sector"))}${options("su-region", choices("companies", "region"))}
-    <p><button class="link" data-setup-go="${esc(ev.ref)}">work it</button></p>`;
+    <p>${actButton(`data-setup-go="${esc(ev.ref)}"`, "work it")}</p>`;
 }
 
 /* The rows a set-up carries, each in its table's own column order: a line not in the register,

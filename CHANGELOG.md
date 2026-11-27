@@ -23,6 +23,12 @@ Each release, newest first. The version is `src/portfusion/__init__.py`'s, and
 - **`docs/store.md`'s table of what each column may hold is written from the schema**: each
   field's `holds` in `record/schema.py`, by `python3 tools/glossary.py --write`, and the suite
   fails when the guide falls behind. The loader reads none of it, so no book moves.
+- **The Bench's controls are the kit's go and act, as every other page's are**: what shows
+  another view of the Bench ("back to the Bench", "review and write", an item's title, "next
+  item") is a go with its arrow, and what reads, makes, writes or opens a chooser is an act, as
+  are the sweep's buttons. One that removes or overrides ("remove", "discard item", "withdraw
+  document", a gate's "I know") is an act in the warning ink. No control's words, place or
+  doing changes, and no button on the desk is drawn as an underlined link.
 
 ### Removed
 

@@ -5,8 +5,8 @@ function nextStep(d) {
   const all = d.bench || [], at = all.findIndex((i) => i.id === d.item.id);
   const owed = [...all.slice(at + 1), ...all.slice(0, Math.max(at, 0))].find((i) => !i.ready);
   return owed
-    ? `<p><button class="link" data-open="${esc(owed.id)}" id="nextitem">next item: ${esc(owed.title)}</button></p>`
-    : `<p><button class="link" id="reviewall">review and write</button></p>`;
+    ? `<p>${goButton(`data-open="${esc(owed.id)}" id="nextitem"`, `next item: ${esc(owed.title)}`)}</p>`
+    : `<p>${goButton(`id="reviewall"`, "review and write")}</p>`;
 }
 
 /* THE REVIEW BEFORE WRITING. Every ready item, each row in the desk's words, its reasons and its
@@ -44,17 +44,18 @@ async function reviewItems() {
       ${rows}${priced}${whys ? `<dl class="detail">${whys}</dl>` : ""}
       <ul class="items gates">${d.gates.map((g) =>
         `<li class="ok"><span class="tag">ok</span><strong>${esc(g.label || g.name)}</strong></li>`).join("")}</ul>
-      <p><button class="link" data-write="${esc(it.id)}">${rdg
-        ? "file the document and write the reading" : "write to the record"}</button></p>
+      <p>${actButton(`data-write="${esc(it.id)}"`, rdg
+        ? "file the document and write the reading" : "write to the record")}</p>
       <pre class="paste" data-out="${esc(it.id)}" hidden></pre></section>`;
   };
   $("#item").innerHTML = `
-    <div class="row-head"><button class="link" id="back">back to the Bench</button></div>
+    <div class="row-head">${goButton(`id="back"`, "back to the Bench")}</div>
     ${ready.map(card).join("")}
-    ${owed.length ? `<h2>Still owed</h2><ul class="items">${owed.map((i) =>
-      `<li class="note"><span class="tag">${esc(i.state)}</span><button class="link" data-open="${
-        esc(i.id)}">${esc(i.title)}</button> <span class="muted">${esc(i.blocked_by.join(", "))}</span></li>`)
-      .join("")}</ul>` : ""}`;
+    ${owed.length ? `<h2>Still owed</h2><ul class="items">${owed.map((i) => {
+      const open = goButton(`data-open="${esc(i.id)}"`, esc(i.title));
+      return `<li class="note"><span class="tag">${esc(i.state)}</span>${open} <span class="muted">${
+        esc(i.blocked_by.join(", "))}</span></li>`;
+    }).join("")}</ul>` : ""}`;
   $("#back").addEventListener("click", () => { REVIEWING = false; show("bench"); });
   $("#item").querySelectorAll("[data-open]").forEach((b) =>
     b.addEventListener("click", () => openItem(b.dataset.open)));

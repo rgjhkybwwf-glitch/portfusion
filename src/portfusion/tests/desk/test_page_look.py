@@ -352,27 +352,58 @@ def test_every_filter_row_can_be_cleared():
         "a page's filters band has no \"clear filters\""
 
 
-#: THE BENCH'S OWN SCRIPTS, whose controls are still the underlined link.
-BENCH_SCRIPTS = ("bench.js", "bench-form.js", "bench-review.js", "sweep.js")
+#: THE BENCH'S CONTROLS AND THE SWEEP'S, by the hook each is drawn with, under the kit's function
+#: that draws it, in the script that draws it: a go only shows another view of the Bench, an act
+#: reads, makes, writes or opens a chooser, and a warning act removes or overrides.
+CONTROLS = {
+    "bench.js": {
+        "goButton": ('data-open="', 'id="review"'),
+        "actButton": ('data-doc="', 'data-note="', 'id="newitem"', 'id="pickbtn"')},
+    "bench-form.js": {
+        "goButton": ('id="back"',),
+        "actButton": ('id="preview"', 'id="readdoc"', 'id="readhere"', 'data-addrow="',
+                      "data-addadjustment"),
+        "warnButton": ('data-delrow="', 'data-ack="', 'id="withdraw"', 'id="discard"')},
+    "bench-review.js": {
+        "goButton": ('id="nextitem"', 'id="reviewall"', 'id="back"', 'data-open="'),
+        "actButton": ('data-write="',)},
+    "sweep.js": {
+        "actButton": ('data-act="', 'data-setup="', 'data-ig-event="', 'data-setup-go="')},
+}
 
 
 def test_a_control_is_drawn_in_the_shape_of_what_it_does():
-    """GO, ACT AND OPEN, each written once in kit.js: a way to another page is `goButton()`, an
-    action `actButton()`, and a row's detail `detailToggle()`. No script but the Bench's draws
-    the underlined link, so a reader can tell what a word does before pressing it."""
+    """GO, ACT AND OPEN, each written once in kit.js: a way to another page or view is
+    `goButton()`, an action `actButton()`, one that removes `warnButton()`, an act in the warning
+    ink, and a row's detail `detailToggle()`. No script draws the underlined link, and each of the
+    Bench's controls is drawn by the function of its kind (`CONTROLS`), so a reader can tell what a
+    word does before pressing it."""
     import re
     from portfusion.desk import bundle
     def shape(name):
         """The class, alone or first among others."""
         return re.compile(rf'class="{name}[\s"]')
     for name in bundle.SCRIPTS:
-        assert name in BENCH_SCRIPTS or not shape("link").search(desk_script(name)), (
+        assert not shape("link").search(desk_script(name)), (
             f"{name} draws a control as an underlined link: draw it through goButton() or "
             "actButton() in kit.js")
+    assert "button.link" not in desk_style(), "the stylesheet still draws the underlined link"
     js, kit = desk_script(), desk_script("kit.js")
     for name in ("go", "act"):
         assert len(shape(name).findall(js)) == 1 and shape(name).search(kit), (
             f"the {name} shape is written somewhere other than kit.js, or twice")
+    assert js.count("data-warns") == 1 and "data-warns" in kit, (
+        "the warning act is marked somewhere other than kit.js, or twice")
+    for script, kinds in CONTROLS.items():
+        text = desk_script(script)
+        assert "<button" not in text, f"{script} draws a button of its own, not by the kit"
+        for fn, hooks in kinds.items():
+            for hook in hooks:
+                drawn = {other for other in ("goButton", "actButton", "warnButton") if re.search(
+                    rf'{other}\((`[^`]*|"[^"]*){re.escape(hook)}', text)}
+                assert drawn == {fn}, (
+                    f"{script} draws its {hook} control by {sorted(drawn) or 'none of the kit'}, "
+                    f"not by {fn}()")
 
 
 # =====================================================================================
