@@ -46,9 +46,9 @@ class Accounts(Core):
         return reg
 
     def account_codes(self) -> pd.DataFrame:
-        """Each account as a reading page and the report name it (`desk/panels/_shape.py`'s
-        `labels()`): its register code, and a `label` that is the code beside the account's name
-        with the holder taken out, `A3 · IG Spread bet`.
+        """Each account as the report and the desk's reading pages (`desk/panels/_shape.py`'s
+        `labels()`) name it: its register code, and a `label` that is the code beside the
+        account's name with the holder taken out, `A3 · IG Spread bet`.
         Columns account, code, label; one row per account, in ACCOUNT_ORDER."""
         reg = self.account_register().set_index("account").loc[list(self.D.ACCOUNT_ORDER)]
         rest = [" ".join(w for w in a.split() if w not in names)
