@@ -396,6 +396,7 @@ def test_a_control_is_drawn_in_the_shape_of_what_it_does():
         "the warning act is marked somewhere other than kit.js, or twice")
     for script, kinds in CONTROLS.items():
         text = desk_script(script)
+        assert "<button" not in text, f"{script} draws a button of its own, not by the kit"
         for fn, hooks in kinds.items():
             for hook in hooks:
                 drawn = {other for other in ("goButton", "actButton", "warnButton") if re.search(
