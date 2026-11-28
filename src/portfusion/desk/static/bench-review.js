@@ -63,7 +63,7 @@ async function reviewItems() {
   $("#item").querySelectorAll("[data-write]").forEach((b) => b.addEventListener("click", async () => {
     const id = b.dataset.write;
     const written = await benchAsk("Write this to the record? It cannot be undone from the desk.",
-      actButton(`data-ask-write`, "write to the record"),
+      actButton(`data-ask-write`, esc(b.textContent)),
       async () => (await post(`/api/bench/${id}/commit`)).error);
     if (!written) return;
     b.disabled = true;

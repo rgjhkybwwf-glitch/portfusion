@@ -36,7 +36,9 @@ Each release, newest first. The version is `src/portfusion/__init__.py`'s, and
 - **The "not already in the record" gate tells a document already filed from an event already
   recorded, and offers each its own way out.** An event is acknowledged as "a separate event"; a
   document is withdrawn ("withdraw this document"), or, on an item that names none, acknowledged
-  as "a further row from this evidence". No gate's verdict changes.
+  as "a further row from this evidence". The gate's verdict is as it was, but on an item that
+  names a document a document finding is no longer acknowledged from the page: the item is
+  withdrawn, discarded or given another reference.
 
 ### Removed
 

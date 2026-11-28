@@ -288,7 +288,8 @@ function drawItem(d) {
   const withdraw = async () => {
     const name = encodeURIComponent(it.document.name);
     const done = await benchAsk(`Withdraw ${esc(it.document.name)}? It goes back to your
-        Downloads folder, unfiled, and this item closes, keeping the reason you give.`,
+        Downloads folder, unfiled, and this item closes with every row unwritten, keeping the
+        reason you give.`,
       warnButton(`data-ask-withdraw`, "withdraw document"),
       async (why) => (await post(`/api/inbox/${name}?why=${encodeURIComponent(why)}`, undefined,
                                  "DELETE")).error,
@@ -410,8 +411,15 @@ function benchAsk(words, yes, act, field = "") {
      answered here, by what it is. */
   if (!box.dataset.wired) {
     box.dataset.wired = "1";
+    /* AN ACT AT WORK IS SEEN THROUGH: an Esc then, which the browser may honour anyway, opens
+       the ask again until the act answers. */
     box.addEventListener("cancel", (e) => { if (BENCH_ASK && BENCH_ASK.busy) e.preventDefault(); });
-    box.addEventListener("close", () => { if (BENCH_ASK && BENCH_ASK.box === box) BENCH_ASK.end(false); });
+    box.addEventListener("close", () => {
+      const ask = BENCH_ASK;
+      if (!ask || ask.box !== box) return;
+      if (ask.busy) box.showModal();
+      else ask.end(false);
+    });
     box.addEventListener("click", async (e) => {
       const b = e.target.closest("button"), ask = BENCH_ASK;
       if (!b || !ask || ask.busy) return;
@@ -420,6 +428,7 @@ function benchAsk(words, yes, act, field = "") {
       const typed = box.querySelector("#ask-field");
       const refused = await ask.act(typed ? typed.value : "");
       ask.busy = b.disabled = false;
+      if (BENCH_ASK !== ask) return;
       if (!refused) { ask.end(true); return; }
       const out = box.querySelector("#ask-out");
       out.hidden = false;
