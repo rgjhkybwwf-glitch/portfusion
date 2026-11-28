@@ -176,15 +176,19 @@ function drawItem(d) {
     return { ...w, text, required: !!gate.required };
   });
 
+  /* A FINDING IS ANSWERED, NEVER OVERRIDDEN SILENTLY, each by a deliberate press: a line or a
+     sign by its gate's own `ack`, and a finding already in the record by the way out of its kind,
+     which the gate sends (`exits`). Two identical legs closed on one day are legitimate, so an
+     event is acknowledged as a separate one; a document filed before is withdrawn. */
+  const exit = (x) => x.act === "withdraw"
+    ? warnButton(`data-withdraw-exit`, esc(x.label))
+    : warnButton(`data-exit="${esc(x.kind)}"`, esc(x.label));
   const gates = d.gates.map((g) =>
     `<li class="${g.ok ? "ok" : "no"}"><span class="tag">${g.ok ? "ok" : "blocked"}</span>` +
     `<strong>${esc(g.label || g.name)}</strong> ${esc(g.detail)}` +
-    /* A DUPLICATE IS ACKNOWLEDGED, NOT OVERRIDDEN SILENTLY. Two identical legs closed on one
-       day are legitimate and can occur, so this cannot be a refusal — but it must
-       cost a deliberate click that says "yes, I know, and it is still a separate event". */
-    (!g.ok && (g.findings || []).length
-      ? ` ${warnButton(`data-ack="${esc(g.name)}"`,
-                       esc(g.ack || "I know — this is a separate event"))}` : "") +
+    (g.ok ? "" : g.ack && (g.findings || []).length
+      ? ` ${warnButton(`data-ack="${esc(g.name)}"`, esc(g.ack))}`
+      : (g.exits || []).map((x) => ` ${exit(x)}`).join("")) +
     `</li>`).join("");
 
   $("#item").innerHTML = `
@@ -280,27 +284,47 @@ function drawItem(d) {
       rows: collect().filter((_, i) => i !== +b.dataset.delrow) })));
   // Withdraw takes the document with it; discard leaves it on the workbench, as its API route
   // promises. The two are side by side because the choice between them is the choice the
-  // operator actually has.
-  const wd = $("#withdraw");
-  if (wd) wd.addEventListener("click", async () => {
-    const why = prompt("Why is this not needed? Recorded on the archived item.");
-    if (why === null) return;
+  // operator actually has, and each asks first, in the page (`benchAsk()`).
+  const withdraw = async () => {
     const name = encodeURIComponent(it.document.name);
-    const { error } = await post(`/api/inbox/${name}?why=${encodeURIComponent(why)}`, undefined,
-                                 "DELETE");
-    if (error) { alert(error); return; }
+    const done = await benchAsk(`Withdraw ${esc(it.document.name)}? It goes back to your
+        Downloads folder, unfiled, and this item closes with every row unwritten, keeping the
+        reason you give.`,
+      warnButton(`data-ask-withdraw`, "withdraw document"),
+      async (why) => {
+        await SAVING;
+        return (await post(`/api/inbox/${name}?why=${encodeURIComponent(why)}`, undefined,
+                           "DELETE")).error;
+      },
+      "Why it is not needed");
+    if (!done) return;
     OPEN_ID = null;
     await show("bench");
-  });
+  };
+  const wd = $("#withdraw");
+  if (wd) wd.addEventListener("click", withdraw);
+  $("#item").querySelectorAll("[data-withdraw-exit]").forEach((b) => b.addEventListener("click", withdraw));
   $("#discard").addEventListener("click", async () => {
-    const { error } = await post(`/api/bench/${OPEN_ID}`, undefined, "DELETE");
-    if (error) { alert(error); return; }
+    const id = OPEN_ID;
+    const done = await benchAsk(`Discard ${esc(it.title)}? The item and its rows are removed` +
+        (it.document && it.document.name
+          ? `; ${esc(it.document.name)} stays on the workbench.` : "."),
+      warnButton(`data-ask-discard`, "discard item"),
+      /* A SAVE IN FLIGHT LANDS FIRST, so it cannot write the item back once it is gone. */
+      async () => { await SAVING; return (await post(`/api/bench/${id}`, undefined, "DELETE")).error; });
+    if (!done) return;
+    BENCH_GONE = { tag: "discarded", title: it.title };
     OPEN_ID = null;
     await show("bench");
   });
   $("#item").querySelectorAll("[data-ack]").forEach((b) => b.addEventListener("click", () => {
     const g = d.gates.find((x) => x.name === b.dataset.ack);
     benchSave({ acknowledged: [...(it.acknowledged || []), ...(g ? g.findings : [])] });
+  }));
+  /* AN EXIT ACKNOWLEDGES ONLY THE FINDINGS OF ITS KIND, and the rest still stand. */
+  $("#item").querySelectorAll("[data-exit]").forEach((b) => b.addEventListener("click", () => {
+    const x = d.gates.flatMap((g) => g.exits || []).find((e) => e.kind === b.dataset.exit);
+    benchSave({ acknowledged: [...(it.acknowledged || []), ...(x ? x.findings : [])] });
   }));
   const rh = $("#readhere");
   if (rh) rh.addEventListener("click", async () => {
@@ -360,7 +384,7 @@ async function openItem(id) {
   let d;
   try { d = await get(`/api/bench/${id}`); }
   catch (e) {
-    BENCH_GONE = (BENCH.items.find((i) => i.id === id) || {}).title || id;
+    BENCH_GONE = { tag: "gone", title: (BENCH.items.find((i) => i.id === id) || {}).title || id };
     OPEN_ID = null;
     await show("bench");
     return;
@@ -374,4 +398,58 @@ function benchFocus(on) {
   const list = $("#bench-list");
   if (list) list.hidden = on;
   if (on) window.scrollTo(0, 0);
+}
+
+/* THE ASK BEFORE AN ACT THAT REMOVES OR WRITES, in the page and never in the browser's own box:
+   the Bench's one closed <dialog> (`DRAW.bench`), filled with the words asked (markup, escaped by
+   the caller), a field when the act takes one, a cancel, and the confirm its caller draws. Cancel
+   or Esc resolves false and does nothing. Confirm hands the field's text to `act`, which does the
+   work and returns a refusal or nothing: a refusal is written in the dialog, which stays open;
+   done, it closes and resolves true. */
+let BENCH_ASK = null;      // the ask open: its dialog, its act, whether it is at work, its end
+
+function benchAsk(words, yes, act, field = "") {
+  const box = $("#bench-ask");
+  /* WIRED ONCE FOR EACH DIALOG THE BENCH DRAWS, never on each open: every control in it is
+     answered here, by what it is. */
+  if (!box.dataset.wired) {
+    box.dataset.wired = "1";
+    /* AN ACT AT WORK IS SEEN THROUGH: an Esc then, which the browser may honour anyway, opens
+       the ask again until the act answers. */
+    box.addEventListener("cancel", (e) => { if (BENCH_ASK && BENCH_ASK.busy) e.preventDefault(); });
+    box.addEventListener("close", () => {
+      const ask = BENCH_ASK;
+      if (!ask || ask.box !== box) return;
+      if (ask.busy) box.showModal();
+      else ask.end(false);
+    });
+    box.addEventListener("click", async (e) => {
+      const b = e.target.closest("button"), ask = BENCH_ASK;
+      if (!b || !ask || ask.busy) return;
+      if (b.id === "ask-cancel") { ask.end(false); return; }
+      ask.busy = b.disabled = true;
+      const typed = box.querySelector("#ask-field");
+      const refused = await ask.act(typed ? typed.value : "");
+      ask.busy = b.disabled = false;
+      if (BENCH_ASK !== ask) return;
+      if (!refused) { ask.end(true); return; }
+      const out = box.querySelector("#ask-out");
+      out.hidden = false;
+      out.textContent = refused;
+    });
+  }
+  box.innerHTML = `<p id="ask-words">${words}</p>` +
+    (field ? `<label class="f long"><span>${esc(field)}</span>
+       <textarea id="ask-field" rows="2"></textarea></label>` : "") +
+    `<pre class="error" id="ask-out" aria-live="polite" hidden></pre>` +
+    `<p>${actButton(`id="ask-cancel"`, "cancel")} ${yes}</p>`;
+  return new Promise((resolve) => {
+    BENCH_ASK = { box, act, busy: false, end: (answer) => {
+      BENCH_ASK = null;
+      box.close();
+      resolve(answer);
+    } };
+    box.showModal();
+    (box.querySelector("#ask-field") || box.querySelector("#ask-cancel")).focus();
+  });
 }

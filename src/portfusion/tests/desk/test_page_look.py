@@ -362,11 +362,13 @@ CONTROLS = {
     "bench-form.js": {
         "goButton": ('id="back"',),
         "actButton": ('id="preview"', 'id="readdoc"', 'id="readhere"', 'data-addrow="',
-                      "data-addadjustment"),
-        "warnButton": ('data-delrow="', 'data-ack="', 'id="withdraw"', 'id="discard"')},
+                      "data-addadjustment", 'id="ask-cancel"'),
+        "warnButton": ('data-delrow="', 'data-ack="', 'id="withdraw"', 'id="discard"',
+                       'data-exit="', "data-withdraw-exit", "data-ask-withdraw",
+                       "data-ask-discard")},
     "bench-review.js": {
         "goButton": ('id="nextitem"', 'id="reviewall"', 'id="back"', 'data-open="'),
-        "actButton": ('data-write="',)},
+        "actButton": ('data-write="', "data-ask-write")},
     "sweep.js": {
         "actButton": ('data-act="', 'data-setup="', 'data-ig-event="', 'data-setup-go="')},
 }
@@ -377,7 +379,8 @@ def test_a_control_is_drawn_in_the_shape_of_what_it_does():
     `goButton()`, an action `actButton()`, one that removes `warnButton()`, an act in the warning
     ink, and a row's detail `detailToggle()`. No script draws the underlined link, and each of the
     Bench's controls is drawn by the function of its kind (`CONTROLS`), so a reader can tell what a
-    word does before pressing it."""
+    word does before pressing it. The Bench asks in its own `<dialog>`, never in the browser's box,
+    which neither a reader's tools nor a test can walk."""
     import re
     from portfusion.desk import bundle
     def shape(name):
@@ -404,6 +407,11 @@ def test_a_control_is_drawn_in_the_shape_of_what_it_does():
                 assert drawn == {fn}, (
                     f"{script} draws its {hook} control by {sorted(drawn) or 'none of the kit'}, "
                     f"not by {fn}()")
+    for name in (n for n in bundle.SCRIPTS if n.startswith("bench")):
+        code = re.sub(r"/\*.*?\*/|//[^\n]*", "", desk_script(name), flags=re.S)
+        native = sorted(set(re.findall(r"\b(confirm|prompt|alert)\(", code)))
+        assert not native, f"{name} asks in the browser's own box, by {native}, not in the page"
+    assert "<dialog" in desk_script("bench.js"), "the Bench draws no <dialog> to ask in"
 
 
 # =====================================================================================

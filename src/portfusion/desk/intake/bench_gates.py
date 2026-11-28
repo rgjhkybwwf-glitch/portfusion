@@ -228,8 +228,21 @@ def _source_shape(item: dict, row: dict) -> list[str]:
 # =================================================================================================
 # IS THIS ALREADY IN THE BOOK?
 # =================================================================================================
-def already_in_the_record(item: dict) -> list[str]:
-    """Findings that this evidence, or this event, is already in the book.
+class Found(str):
+    """A finding that this item is already in the book, and its `kind`: "document", whose
+    reference the record already cites, or "event", a row the record holds or could not be
+    checked against. Still a string, in a set, in `json.dumps` and in an item read back from disk,
+    so an acknowledgement matches it by its words."""
+    kind: str
+
+    def __new__(cls, text: str, kind: str = "event"):
+        self = super().__new__(cls, text)
+        self.kind = kind
+        return self
+
+
+def already_in_the_record(item: dict) -> list[Found]:
+    """Findings that this evidence, or this event, is already in the book, each of its kind.
 
     Without this, a document worked twice writes its event twice — a sale on the record at double
     its size, with nothing to say so. `commit.py`'s own docstring warns of exactly this: "a
@@ -252,12 +265,13 @@ def already_in_the_record(item: dict) -> list[str]:
 
         if len(reference) >= 4:
             for table in recorded.reference_tables(reference):
-                found.append(f"{reference} already appears in {table}.csv — this "
-                             f"document's evidence is in the book already")
+                found.append(Found(f"{reference} already appears in {table}.csv — this "
+                                   f"document's evidence is in the book already", "document"))
             archived = _filed_already(item, reference, schema.filed_statements())
             if archived:
-                found.append(f"{reference} is already filed in _archive/statements/ as "
-                             f"{archived[0]!r} — this document has been worked before")
+                found.append(Found(f"{reference} is already filed in _archive/statements/ as "
+                                   f"{archived[0]!r} — this document has been worked before",
+                                   "document"))
 
         for i, row in enumerate(item.get("rows") or [], 1):
             table = row.get("table")
@@ -269,17 +283,38 @@ def already_in_the_record(item: dict) -> list[str]:
                 # NOT SKIPPED SILENTLY. A row the parser cannot read is a row the duplicate check
                 # cannot see: a proceeds cell carrying a "£" makes float() raise, and a check that
                 # quietly moved on would let an already-recorded sale through.
-                found.append(f"row {i} ({table}) could not be checked against the record — its "
-                             f"cells do not parse yet, so it may be a duplicate")
+                found.append(Found(f"row {i} ({table}) could not be checked against the record "
+                                   f"— its cells do not parse yet, so it may be a duplicate"))
             elif match:
-                found.append(f"row {i} ({table}) is already in the record as {match} — same "
-                             + ", ".join(cols))
+                found.append(Found(f"row {i} ({table}) is already in the record as {match} — "
+                                   "same " + ", ".join(cols)))
         return found
 
     try:
         out = _guarded(_load)
     except RecordUnavailable as e:
-        out = [f"could not check the record for duplicates: {e}"]
+        out = [Found(f"could not check the record for duplicates: {e}")]
+    return out
+
+
+#: THE WAY OUT OF EACH KIND OF FINDING, as the page offers it (`_exits()`): an event the book
+#: already holds may be a second event, and is acknowledged as one; a document already filed is
+#: withdrawn, since a second copy is evidence of nothing new; and on an item with no document,
+#: there is none to withdraw, so the finding is a further row from that evidence, acknowledged.
+EXITS = {"event": ("this is a separate event", "acknowledge"),
+         "document": ("withdraw this document", "withdraw"),
+         "no document": ("a further row from this evidence", "acknowledge")}
+
+
+def _exits(item: dict, unacknowledged: list[Found]) -> list[dict]:
+    """Each kind of finding still to answer, with its exit's words, its act and its findings."""
+    named = bool((item.get("document") or {}).get("name"))
+    out = []
+    for kind in ("document", "event"):
+        covered = [f for f in unacknowledged if f.kind == kind]
+        if covered:
+            label, act = EXITS["no document" if kind == "document" and not named else kind]
+            out.append({"kind": kind, "label": label, "act": act, "findings": covered})
     return out
 
 
@@ -414,7 +449,8 @@ def gates(item: dict) -> list[dict]:
 
     # IS IT ALREADY IN THE BOOK? Reported like every other gate, and ACKNOWLEDGEABLE rather
     # than fatal — two identical legs closed on one day are legitimate and exist in this record.
-    # The acknowledgement is per finding, so a row added afterwards raises it again.
+    # The acknowledgement is per finding, so a row added afterwards raises it again. Each kind
+    # of finding still standing is offered its own way out (`EXITS`).
     findings = already_in_the_record(item)
     acknowledged = set(item.get("acknowledged") or [])
     unacknowledged = [f for f in findings if f not in acknowledged]
@@ -425,6 +461,7 @@ def gates(item: dict) -> list[dict]:
                    else "acknowledged: " + "; ".join(findings) if not unacknowledged
                    else "; ".join(unacknowledged)),
         "findings": findings,
+        "exits": _exits(item, unacknowledged),
     })
 
     # A SIGN ITS CATEGORY DOES NOT USUALLY CARRY. The quote check cannot see a sign (`verify`),

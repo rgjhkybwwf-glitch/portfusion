@@ -59,18 +59,17 @@ async function reviewItems() {
   $("#back").addEventListener("click", () => { REVIEWING = false; show("bench"); });
   $("#item").querySelectorAll("[data-open]").forEach((b) =>
     b.addEventListener("click", () => openItem(b.dataset.open)));
+  /* ASKED IN THE PAGE FIRST (`benchAsk()`); a write refused says why there, and nothing is written. */
   $("#item").querySelectorAll("[data-write]").forEach((b) => b.addEventListener("click", async () => {
-    if (!confirm("Write this to the record?\n\nIt cannot be undone from the desk.")) return;
+    const id = b.dataset.write;
+    const written = await benchAsk("Write this to the record? It cannot be undone from the desk.",
+      actButton(`data-ask-write`, esc(b.textContent)),
+      async () => (await post(`/api/bench/${id}/commit`)).error);
+    if (!written) return;
     b.disabled = true;
-    const { error } = await post(`/api/bench/${b.dataset.write}/commit`);
-    const out = $(`[data-out="${b.dataset.write}"]`);
+    const out = $(`[data-out="${id}"]`);
     out.hidden = false;
-    if (!error) {
-      out.textContent = "written";
-      setTimeout(() => show("bench"), 1200);
-    } else {
-      out.textContent = "not written\n\n" + error;
-      b.disabled = false;
-    }
+    out.textContent = "written";
+    setTimeout(() => show("bench"), 1200);
   }));
 }

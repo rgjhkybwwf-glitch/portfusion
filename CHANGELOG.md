@@ -27,8 +27,18 @@ Each release, newest first. The version is `src/portfusion/__init__.py`'s, and
   another view of the Bench ("back to the Bench", "review and write", an item's title, "next
   item") is a go with its arrow, and what reads, makes, writes or opens a chooser is an act, as
   are the sweep's buttons. One that removes or overrides ("remove", "discard item", "withdraw
-  document", a gate's "I know") is an act in the warning ink. No control's words, place or
-  doing changes, and no button on the desk is drawn as an underlined link.
+  document", a gate's acknowledgement) is an act in the warning ink. No control's words, place
+  or doing changes, and no button on the desk is drawn as an underlined link.
+- **The Bench asks in the page, never in the browser's own box.** "discard item" asks first,
+  naming what it removes and that the document stays on the workbench, and the list then says it
+  was discarded; "withdraw document" asks for its reason in a field; a write asks before it
+  writes; and a refusal is said in the ask, which stays open.
+- **The "not already in the record" gate tells a document already filed from an event already
+  recorded, and offers each its own way out.** An event is acknowledged as "a separate event"; a
+  document is withdrawn ("withdraw this document"), or, on an item that names none, acknowledged
+  as "a further row from this evidence". The gate's verdict is as it was, but on an item that
+  names a document a document finding is no longer acknowledged from the page: the item is
+  withdrawn, discarded or given another reference.
 
 ### Removed
 
