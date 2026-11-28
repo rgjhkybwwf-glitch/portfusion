@@ -14,7 +14,9 @@
 // rule `wireFilters()` states, a line a test: what a hand sets is held through a tab and Back; a
 // link's filter lasts its visit; a hand during that visit makes it the reader's own; a company
 // the box does not list is added to it; a view keeps the boxes it does not draw; and "clear
-// filters" leaves a view and a sort. It writes nothing, and does not prove a figure is right.
+// filters" leaves a view and a sort. Last, on the copy of the demo it is served, it writes one
+// hand-keyed item, and opens a dropped document's withdraw and discard, each asked in the page,
+// never in the browser's own box, and a refusal said there. It does not prove a figure is right.
 //
 //     npm ci --prefix tools && npm --prefix tools run browser      # once: Playwright, its Chromium
 //     npm --prefix tools run walk
@@ -33,6 +35,8 @@ test.beforeEach(async ({ page }) => {
   page.on("pageerror", (e) => said.push(`error: ${e.message}`));
   page.on("console", (m) => m.type() === "error" && said.push(`console.error: ${m.text()}`));
   page.on("response", (r) => r.status() >= 400 && said.push(`${r.status()}: ${r.url()}`));
+  // A BOX OF THE BROWSER'S OWN is dismissed, so the page does not hang, and said.
+  page.on("dialog", (d) => { said.push(`a native ${d.type()}: ${d.message()}`); d.dismiss(); });
   await page.clock.setFixedTime(new Date(DAY));
   await page.goto("/");
   await expect(page.locator("#tabs button[aria-current]")).toBeVisible();
@@ -628,5 +632,84 @@ test('"clear filters" empties every box that narrows, and leaves a view and a so
     await lives(page);
     await expect(page.locator("#rt-view")).toHaveValue("life");
     await expect(page.locator("#rt-company")).toHaveValue("");
+  });
+});
+
+// A SAVE ON THE BENCH, waited for until the item is drawn again: its revision on screen moves.
+const saved = async (page, act) => {
+  const was = await page.evaluate(() => DRAWN);
+  await act();
+  await page.waitForFunction((n) => DRAWN > n, was);
+};
+const typed = (page, at, value) => saved(page, async () => {
+  await page.locator(at).fill(value);
+  await page.locator(at).blur();
+});
+
+// LAST, AND WRITING: one desk serves the run (`playwright.config.mjs`), and a write changes the
+// book every test after it would read. A retry would meet its own row as a duplicate.
+test("an item is written, and a document's withdraw and discard ask, only in the page", async ({ page }) => {
+  await open(page, "bench");
+  const ask = page.locator("#bench-ask");
+  await test.step("a hand-keyed item is written", async () => {
+    await page.locator("#newitem").click();
+    await saved(page, () => page.locator("#evclass").selectOption("ig-api"));
+    await typed(page, '[data-limb="dated"]', "2026-10-01");
+    await typed(page, '[data-limb="reference"]', "WALK-0001");
+    await saved(page, () => page.locator('[data-addrow="income"]').click());
+    // AN ACCOUNT OF THE DEMO'S, the first its box offers.
+    const account = await page.locator('[data-row="0"] [data-f="account"]').evaluate(
+      (el) => JSON.parse(el.dataset.choices)[0]);
+    for (const [field, value] of [["date", "2026-10-01"], ["account", account],
+                                  ["category", "Cash interest"], ["amount", "1.25"]])
+      await typed(page, `[data-row="0"] [data-f="${field}"]`, value);
+    await expect(page.locator("#item .gates li.no")).toHaveCount(0);
+    await page.locator("#reviewall").click();
+    const write = page.locator("#item [data-write]");
+    await write.click();
+    await expect(ask).toBeVisible();
+    await expect(ask).toContainText("Write this to the record?");
+    await ask.locator("[data-ask-write]").click();
+    await expect(ask).toBeHidden();
+    await expect(page.locator("#item [data-out]")).toHaveText("written");
+    await expect(page.locator("#bench-list")).toBeVisible();
+    await expect(page.locator("#item .review-item")).toHaveCount(0);
+  });
+  await test.step("a dropped document's withdraw and discard ask first", async () => {
+    const note = "Walk note.txt";
+    await page.locator("#pick").setInputFiles({ name: note, mimeType: "text/plain",
+                                               buffer: Buffer.from("A note the walk drops.\n") });
+    await expect(page.locator("#item h2").first()).toHaveText(note);
+    const id = await page.evaluate(() => OPEN_ID);
+    const there = async () => (await page.request.get(`/api/bench/${id}`)).status();
+
+    await page.locator("#withdraw").click();
+    await expect(ask).toBeVisible();
+    await expect(ask.locator("#ask-field")).toBeVisible();
+    await ask.locator("#ask-cancel").click();
+    await expect(ask).toBeHidden();
+
+    await page.locator("#discard").click();
+    await expect(ask).toContainText(note);
+    await expect(ask).toContainText("stays on the workbench");
+    await ask.locator("#ask-cancel").click();
+    await expect(ask).toBeHidden();
+    expect(await there(), "a cancelled discard removed the item").toBe(200);
+
+    // A REFUSAL IS SAID IN THE ASK, which stays open: the one answer the walk lets past.
+    const url = new URL(`/api/bench/${id}`, page.url()).href;
+    await page.route(url, (route) => route.request().method() === "DELETE"
+      ? route.fulfill({ status: 409, json: { detail: "refused by the walk" } }) : route.fallback());
+    await page.locator("#discard").click();
+    await ask.locator("[data-ask-discard]").click();
+    await expect(ask.locator("#ask-out")).toHaveText("refused by the walk");
+    await expect(ask).toBeVisible();
+    await page.unroute(url);
+    said = said.filter((s) => s !== `409: ${url}` && !/status of 409/.test(s));
+
+    await ask.locator("[data-ask-discard]").click();
+    await expect(ask).toBeHidden();
+    await expect(page.locator("#bench-list li.gap", { hasText: `${note} was discarded` })).toBeVisible();
+    expect(await there(), "a confirmed discard left the item").toBe(404);
   });
 });
