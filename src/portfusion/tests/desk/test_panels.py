@@ -782,12 +782,16 @@ def test_the_desk_says_notional_too():
         + "\n  ".join(offenders))
 
 
-@needs("buys")
+@needs("buys", "sales", "reasoning")
 def test_the_judgement_reaches_holdings_and_round_trips():
     """THE REASONING IS SHOWN WHERE THE POSITION IS: under each row of Holdings and Round Trips,
-    from Book.with_reasoning() — an issuer row carrying every instrument it collapses."""
+    from Book.with_reasoning() — an issuer row carrying every instrument it collapses. A why filed
+    for a sale under a line still held is a part sale's, and Holdings heads it so; Round Trips,
+    where a line closed whole shows, keeps the common word."""
     from portfusion.desk import engine
     from portfusion.desk.panels import holdings, round_trips
+    from portfusion.house.headings import COMMON
+    from portfusion.record import rules
     b = engine.book()
     by_ticker = {r["ticker"]: r["whys"] for r in
                  b.with_reasoning(b.holdings(by="ticker")).to_dict("records")}
@@ -800,6 +804,16 @@ def test_the_judgement_reaches_holdings_and_round_trips():
         "an issuer row dropped an instrument's thesis"
     trip = round_trips.data()["rows"][0]
     assert {"opened", "whys", "research_notes", "why_entered_owed", "why_exited_owed"} <= set(trip)
+    # A SALE'S WHY, BY WHERE IT SHOWS: the panel's own heads name it, and whyPart() reads them.
+    assert panels.heads(holdings)["why_exited"] == "Why we sold part"
+    assert panels.heads(round_trips)["why_exited"] == COMMON["why_exited"] == "Why we exited"
+    js = desk_script()
+    why_part = js[js.index("const whyPart"):js.index("const listPart")]
+    assert why_part.count("${head(half)}") == 2, "whyPart() heads a why by other than head(half)"
+    sold = {(e.ticker, str(e.date)[:10]) for e in rules.sales}
+    under_held = {(x["ticker"], w["date"]) for r in rows for x in r["reasons"] for w in x["whys"]
+                  if w["half"] == "why_exited"}
+    assert under_held <= sold, f"a held line's exit why explains no sale: {under_held - sold}"
     # THE HISTORY UNDER A HOLDING: the engine's life gain, and the income naming the line.
     lives = b.company_lives()
     lives = lives[lives["closed"].isna()].set_index("company")["life_gain"]

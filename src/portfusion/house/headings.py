@@ -149,7 +149,10 @@ FIGURES = {
 }
 
 BY_TAB = {
-    "Holdings": {},
+    "Holdings": {
+        # A row of Holdings is a line still held, so a sale's why under it is a part sale's.
+        "why_exited": "Why we sold part",
+    },
     "Dashboard": {
         "currency": "Currency",             # a currency as a category, not a line's quote
     },

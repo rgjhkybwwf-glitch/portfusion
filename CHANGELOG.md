@@ -51,6 +51,9 @@ Each release, newest first. The version is `src/portfusion/__init__.py`'s, and
 
 ### Fixed
 
+- **A line part sold and still held no longer says "Why we exited"**: on Holdings, the reasoning
+  filed for a part sale is headed "Why we sold part", Holdings' own word in `house/headings.py`,
+  since every line there is still held. Round Trips and Trades keep "Why we exited".
 - **A guide's pointer at a section named in words is held**, as one at a path is: "CONTRIBUTING's
   Setting up", "`CONTRIBUTING.md`, Building" or "that file's Setting up" must name a heading of
   that guide, or the suite says which pointer leads nowhere (`hooks/pre_push.py`'s
