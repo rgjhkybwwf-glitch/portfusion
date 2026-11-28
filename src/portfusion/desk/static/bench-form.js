@@ -291,8 +291,11 @@ function drawItem(d) {
         Downloads folder, unfiled, and this item closes with every row unwritten, keeping the
         reason you give.`,
       warnButton(`data-ask-withdraw`, "withdraw document"),
-      async (why) => (await post(`/api/inbox/${name}?why=${encodeURIComponent(why)}`, undefined,
-                                 "DELETE")).error,
+      async (why) => {
+        await SAVING;
+        return (await post(`/api/inbox/${name}?why=${encodeURIComponent(why)}`, undefined,
+                           "DELETE")).error;
+      },
       "Why it is not needed");
     if (!done) return;
     OPEN_ID = null;
