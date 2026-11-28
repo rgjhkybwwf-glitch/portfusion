@@ -287,11 +287,12 @@ function drawItem(d) {
   // operator actually has, and each asks first, in the page (`benchAsk()`).
   const withdraw = async () => {
     const name = encodeURIComponent(it.document.name);
-    const done = await benchAsk(`Withdraw ${esc(it.document.name)}? It leaves the workbench, and
-        this item with it.`, warnButton(`data-ask-withdraw`, "withdraw document"),
+    const done = await benchAsk(`Withdraw ${esc(it.document.name)}? It goes back to your
+        Downloads folder, unfiled, and this item closes, keeping the reason you give.`,
+      warnButton(`data-ask-withdraw`, "withdraw document"),
       async (why) => (await post(`/api/inbox/${name}?why=${encodeURIComponent(why)}`, undefined,
                                  "DELETE")).error,
-      "Why it is not needed: recorded on the archived item");
+      "Why it is not needed");
     if (!done) return;
     OPEN_ID = null;
     await show("bench");
