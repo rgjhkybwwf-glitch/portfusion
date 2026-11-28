@@ -178,13 +178,44 @@ def test_the_bench_offers_no_closed_class_and_refuses_one_chosen_anyway(item):
 
 def test_a_dated_statement_filed_before_is_named_as_filed(monkeypatch):
     """WHETHER A DOCUMENT IS ALREADY FILED IS THE ARCHIVE'S RULE TO SAY: a valuation pulled at an
-    instant is filed under a name that writes the instant another way."""
+    instant is filed under a name that writes the instant another way. The finding is about the
+    document, and its way out, on an item that names one, is that document's withdrawal."""
     from portfusion.record import schema
     account = "Rowe HL ISA"
     filed = f"03 Mar 2025 14.05 HL Account Summary download 3 Mar 2025 14-05 ({account}).csv"
     monkeypatch.setattr(schema, "filed_statements", lambda: [filed])
     item = {"evidence_class": "hl-valuation",
             "evidence": {"reference": "3 Mar 2025 14:05"},
+            "document": {"name": filed},
             "rows": [{"table": "account-readings", "values": {"account": account}}]}
     said = _bench.already_in_the_record(item)
     assert any("already filed" in s and filed in s for s in said), said
+    assert {s.kind for s in said} == {"document"}, said
+    exits = _gate(item, "not already in the record")["exits"]
+    assert [(x["label"], x["act"]) for x in exits] == [("withdraw this document", "withdraw")], exits
+
+
+def test_a_finding_already_in_the_record_is_offered_the_way_out_of_its_kind(item, monkeypatch):
+    """EACH KIND OF FINDING HAS ITS OWN WAY OUT (`bench_gates.EXITS`): an event is acknowledged,
+    and a document withdrawn unless the item names none. Each exit covers its own kind alone."""
+    from portfusion.desk.intake import recorded
+    _ready(item)
+    monkeypatch.setattr(recorded, "reference_tables", lambda reference: ["buys"])
+    monkeypatch.setattr(recorded, "matching_row", lambda table, values: "B-0001")
+    said = _bench.already_in_the_record(item)
+    event = [s for s in said if s.kind == "event"]
+    assert len(event) == 1 and "already in the record as B-0001" in event[0], said
+
+    def exits():
+        return {x["kind"]: x for x in _gate(item, "not already in the record")["exits"]}
+    assert (exits()["event"]["label"], exits()["event"]["act"], exits()["event"]["findings"]) \
+        == ("this is a separate event", "acknowledge", event), exits()
+    assert exits()["document"]["act"] == "withdraw", exits()
+
+    item["acknowledged"] = exits()["event"]["findings"]
+    gate = _gate(item, "not already in the record")
+    assert not gate["ok"] and set(exits()) == {"document"}, gate
+
+    item["document"] = None
+    assert (exits()["document"]["label"], exits()["document"]["act"]) \
+        == ("a further row from this evidence", "acknowledge"), exits()
