@@ -130,7 +130,7 @@ not *realized*.
 | The year's income, fees and cash interest included | **YTD income** |
 | A figure the report names outside a table | **Position income** — the quarter's income that names a line · **Capital in and out** — the quarter's capital movements |
 | An income row's kind | **Category** |
-| Reasoning headings | **Why we entered · Why we exited** |
+| Reasoning headings | **Why we entered · Why we exited** · **Why we sold part** — Holdings' word for a sale's why, since every line there is still held |
 | A Bench field | **Sale ID · Closes trade · Rate (per £1) · IG contract · Document kind · Reference · Also retires · Renumbers · Symbol · Quote unit · Points per unit · Shares per unit · Epic · Cash (GBP) · Amount** |
 | An account, as the register holds it | **Account · Account no. · Holder · Code · Feed · Record begins** — the day its record began, blank for one held from the book's opening |
 | What a line is | **Sector · Region · Held as · Funding** — how IG funds a contract, daily or dated |
