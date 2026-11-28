@@ -10,7 +10,7 @@ let BENCH = null;          // the panel payload: forms, limbs, documents
 let OPEN_ID = null;        // which item is being worked
 let DRAWN = 0;             // the revision of it on screen, sent with every save
 let REVIEWING = false;     // the review before writing is on screen
-let BENCH_GONE = null;     // an item opened from a list that was out of date: its title
+let BENCH_GONE = null;     // an item gone from the list or discarded from it: its tag and title
 /* Whether the document preview is open, remembered ACROSS a drawItem() rebuild. Not read off
    `#preview-pane`, which every re-render empties. */
 let PREVIEW_OPEN = false;
@@ -76,8 +76,9 @@ Object.assign(DRAW, {
         { label: "Research", body: quiet(`${(d.notes || []).length} note(s) waiting`) },
       ],
       work: `
-        <div id="bench-list">${BENCH_GONE ? `<ul class="items"><li class="gap"><span class="tag">gone</span>${
-          esc(BENCH_GONE)} is no longer on the bench</li></ul>` : ""}
+        <div id="bench-list">${BENCH_GONE ? `<ul class="items"><li class="gap"><span class="tag">${
+          esc(BENCH_GONE.tag)}</span>${esc(BENCH_GONE.title)} ${BENCH_GONE.tag === "discarded"
+          ? "was discarded" : "is no longer on the bench"}</li></ul>` : ""}
         ${items ? `<h2>On the bench</h2><ul class="items">${items}</ul>` : ""}
         ${docs ? `<h2>Documents waiting</h2><ul class="items">${docs}</ul>` : ""}
         ${notes ? `<h2>Research notes waiting</h2><ul class="items">${notes}</ul>
@@ -95,7 +96,8 @@ Object.assign(DRAW, {
         <div id="actview" hidden></div>
         <pre id="actout" class="paste" aria-live="polite" hidden></pre>
         </div>
-        <section id="item"></section>`,
+        <section id="item"></section>
+        <dialog id="bench-ask" aria-labelledby="ask-words"></dialog>`,
       why: d.why,
     });
   },

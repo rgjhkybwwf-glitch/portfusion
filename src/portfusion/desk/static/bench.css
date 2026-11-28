@@ -67,6 +67,15 @@ body.wide #item > *:not(#preview-pane) { grid-column: 1; }
   .docframe { height: 60vh; }
 }
 
+/* THE ASK BEFORE AN ACT THAT REMOVES OR WRITES (`benchAsk()`): a card on the paper, ruled as a
+   row's card is, over the page dimmed by its own ink. */
+dialog[open] {
+  max-width: min(var(--measure), calc(100vw - 2 * var(--gutter)));
+  padding: var(--space-5); color: var(--ink); background: var(--paper);
+  border: 1px solid var(--hair); border-top: var(--rule-section) solid var(--rule);
+}
+dialog[open]::backdrop { background: color-mix(in srgb, var(--ink) 40%, transparent); }
+
 /* A DRAFTED CELL IS NOT EVIDENCE. Same shape as a quote so the eye reads them together, but
    in the warning colour, because it is a reading of the document rather than a piece of it. */
 .f .quote.drafted { border-left-color: var(--warn-ink); color: var(--warn-ink); }
