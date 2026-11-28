@@ -653,6 +653,7 @@ test("an item is written, and a document's withdraw and discard ask, only in the
   const ask = page.locator("#bench-ask");
   await test.step("a hand-keyed item is written", async () => {
     await page.locator("#newitem").click();
+    await expect(page.locator("#evclass")).toBeVisible();     // drawn, so its revision is read
     await saved(page, () => page.locator("#evclass").selectOption("ig-api"));
     await typed(page, '[data-limb="dated"]', "2026-10-01");
     await typed(page, '[data-limb="reference"]', "WALK-0001");
